@@ -106,8 +106,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         }
     }
 
-    @VisibleForTesting
-    RoutingResult invoke( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException
+    private RoutingResult invoke( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException
     {
         validator.isValidForClientSideRouting( databaseId );
         return routingTableProvider.getRoutingResultForClientSideRouting( databaseId, routingContext );

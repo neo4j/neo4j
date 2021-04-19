@@ -52,6 +52,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -126,7 +127,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         var proc = newProcedure( portRegister, config );
 
-        var result = proc.invoke( ID, MapValue.EMPTY );
+        var result = invoke( proc, ID, MapValue.EMPTY );
 
         assertEquals( Duration.ofMinutes( 42 ).toMillis(), result.ttlMillis() );
 
@@ -185,7 +186,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when/then
-        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
+        assertThrows( ProcedureException.class, () -> invoke( procedure, ID, ctx ), expectedMessage );
     }
 
     @Test
@@ -205,7 +206,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when/then
-        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
+        assertThrows( ProcedureException.class, () -> invoke( procedure, ID, ctx ), expectedMessage );
     }
 
     @Test
@@ -231,7 +232,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var expectedAddress = new SocketAddress( clientProvidedHost, defaultBoltPort );
 
         // when
-        var result = procedure.invoke( ID, ctx );
+        var result = invoke( procedure, ID, ctx );
 
         // then
         assertEquals( singletonList( expectedAddress ), result.readEndpoints() );
@@ -267,7 +268,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var expectedAddress = advertisedBoltAddress;
 
         // when
-        var result = procedure.invoke( ID, ctx );
+        var result = invoke( procedure, ID, ctx );
 
         // then
         assertEquals( singletonList( expectedAddress ), result.readEndpoints() );
@@ -298,7 +299,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when
-        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
+        assertThrows( ProcedureException.class, () -> invoke( procedure, ID, ctx ), expectedMessage );
     }
 
     @Test
@@ -324,7 +325,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when
-        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
+        assertThrows( ProcedureException.class, () -> invoke( procedure, ID, ctx ), expectedMessage );
     }
 
     @Test
@@ -349,7 +350,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var expectedAddress = new SocketAddress( clientProvidedHost, clientProvidedPort );
 
         // when
-        var result = procedure.invoke( ID, ctx );
+        var result = invoke( procedure, ID, ctx );
 
         // then
         assertEquals( singletonList( expectedAddress ), result.readEndpoints() );
@@ -409,5 +410,19 @@ public class SingleInstanceGetRoutingTableProcedureTest
         when( databaseManager.databaseIdRepository() ).thenReturn( databaseIdRepository );
 
         return databaseManager;
+    }
+
+    private RoutingResult invoke( GetRoutingTableProcedure proc, NamedDatabaseId databaseName, MapValue context ) throws ProcedureException
+    {
+        return invoke( proc, databaseName.name(), context );
+    }
+
+    private RoutingResult invoke( GetRoutingTableProcedure proc, String databaseName, MapValue context ) throws ProcedureException
+    {
+        var input = new AnyValue[]{context, stringValue( databaseName )};
+        var result = proc.apply( null, input, null );
+        var routingResultAndTtl = RoutingResultFormat.parse( result.next() );
+        assertFalse( result.hasNext(), "Routing procedure should only return a single row" );
+        return routingResultAndTtl;
     }
 }
