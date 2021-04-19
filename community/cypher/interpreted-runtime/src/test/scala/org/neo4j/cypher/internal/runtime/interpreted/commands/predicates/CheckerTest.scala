@@ -26,6 +26,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.list
 import org.neo4j.values.virtual.VirtualValues.map
 
@@ -80,6 +81,7 @@ class CheckerTest extends CypherFunSuite {
     val (result, newChecker) = buildUp.contains(stringValue("hullo"))
     result should equal(None)
     newChecker shouldBe a[SetChecker]
+    newChecker.contains(list(NO_VALUE))._1 should equal(None)
   }
 
   test("buildUp can handle maps on the lhs") {
@@ -108,6 +110,98 @@ class CheckerTest extends CypherFunSuite {
     val (result, newChecker) = buildUp.contains(stringValue("apa"))
     result should equal(None)
     newChecker shouldBe a[NullListChecker.type]
+  }
+
+  test("buildUp handles null and non nulls") {
+    val buildUp = new BuildUp(iterator(intValue(1), null, intValue(3), intValue(4)))
+    val (result, newChecker) = buildUp.contains(intValue(3))
+    result should equal(Some(true))
+    newChecker shouldBe a[BuildUp]
+
+    val (result2, newChecker2) = newChecker.contains(intValue(4))
+    result2 should equal(Some(true))
+    newChecker2 shouldBe a[SetChecker]
+
+    val (result3, _) = newChecker2.contains(intValue(5))
+    result3 should equal(None)
+  }
+
+  test("handles arrays with null on buildup") {
+    val buildUp = new BuildUp(iterator(iterator(1), iterator(2)))
+    val (result, newChecker) = buildUp.contains(iterator(null))
+    result should equal(None)
+    newChecker shouldBe a[SetChecker]
+
+    val (result2, _) = newChecker.contains(iterator(0))
+    result2 should equal(Some(false))
+
+    val (result3, _) = newChecker.contains(stringValue("apa"))
+    result3 should equal(Some(false))
+  }
+
+  test("handles arrays with even more null on buildup") {
+    val buildUp = new BuildUp(iterator(iterator(1), iterator(2), stringValue("oh no")))
+    val (result, newChecker) = buildUp.contains(iterator(2))
+    result should equal(Some(true))
+    newChecker shouldBe a[BuildUp]
+
+    val (result2, _) = newChecker.contains(iterator(null))
+    result2 should equal(None)
+  }
+
+  test("handles maps with null on buildup") {
+    val buildUp = new BuildUp(iterator(VirtualValues.map(Array("a"), Array(intValue(1)))))
+    val (result, newChecker) = buildUp.contains(VirtualValues.map(Array("a"), Array(NO_VALUE)))
+    result should equal(None)
+    newChecker shouldBe a[SetChecker]
+
+    val (result2, newChecker2) = newChecker.contains(VirtualValues.map(Array("a"), Array(intValue(0))))
+    result2 should equal(Some(false))
+
+    val (result3, _) = newChecker2.contains(stringValue("apa"))
+    result3 should equal(Some(false))
+  }
+
+  test("handles maps with even more null on buildup") {
+    val buildUp = new BuildUp(iterator(VirtualValues.map(Array("a"), Array(intValue(1))), intValue(1), stringValue("oh no")))
+    val (result, newChecker) = buildUp.contains(intValue(1))
+    result should equal(Some(true))
+    newChecker shouldBe a[BuildUp]
+
+    val (result2, newChecker2) = newChecker.contains(VirtualValues.map(Array("a"), Array(NO_VALUE)))
+    result2 should equal(None)
+  }
+
+  test("handles arrays with null after buildup") {
+    val buildUp = new BuildUp(iterator(iterator(1), iterator(2)))
+    val (result, newChecker) = buildUp.contains(stringValue("apa"))
+    result should equal(Some(false))
+    newChecker shouldBe a[SetChecker]
+
+    val (result2, newChecker2) = newChecker.contains(iterator(0))
+    result2 should equal(Some(false))
+
+    val (result3, newChecker3) = newChecker2.contains(iterator(null))
+    result3 should equal(None)
+
+    val (result4, _) = newChecker3.contains(iterator(2))
+    result4 should equal(Some(true))
+  }
+
+  test("handles maps with null after buildup") {
+    val buildUp = new BuildUp(iterator(VirtualValues.map(Array("a"), Array(intValue(1)))))
+    val (result, newChecker) = buildUp.contains(stringValue("apa"))
+    result should equal(Some(false))
+    newChecker shouldBe a[SetChecker]
+
+    val (result2, newChecker2) = newChecker.contains(VirtualValues.map(Array("a"), Array(intValue(0))))
+    result2 should equal(Some(false))
+
+    val (result3, newChecker3) = newChecker2.contains(VirtualValues.map(Array("a"), Array(NO_VALUE)))
+    result3 should equal(None)
+
+    val (result4, _) = newChecker3.contains(VirtualValues.map(Array("a"), Array(intValue(1))))
+    result4 should equal(Some(true))
   }
 
   private def iterator(a: Any*) = list(a.map(ValueUtils.of):_*)
