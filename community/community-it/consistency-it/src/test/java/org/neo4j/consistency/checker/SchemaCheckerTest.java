@@ -147,7 +147,7 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             var cursorTracer = PageCursorTracer.NULL;
-            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
                     .withName( NAME )
                     .withIndexType( IndexType.LOOKUP )
                     .materialise( schemaStore.nextId( cursorTracer ) );

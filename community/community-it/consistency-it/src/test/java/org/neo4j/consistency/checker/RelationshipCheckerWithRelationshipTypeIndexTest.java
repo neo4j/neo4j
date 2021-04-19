@@ -79,7 +79,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP ), PageCursorTracer.NULL );
+                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ), PageCursorTracer.NULL );
         // The Relationship Type Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         rtiDescriptor = indexDescriptors[0];

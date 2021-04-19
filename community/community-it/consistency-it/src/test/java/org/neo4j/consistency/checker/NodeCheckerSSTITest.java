@@ -58,7 +58,7 @@ class NodeCheckerSSTITest extends NodeCheckerTest
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), PageCursorTracer.NULL );
+                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), PageCursorTracer.NULL );
         // The Node Label Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         IndexDescriptor nli = indexDescriptors[0];
