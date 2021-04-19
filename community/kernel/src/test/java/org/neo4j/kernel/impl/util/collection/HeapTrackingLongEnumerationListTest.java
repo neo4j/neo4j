@@ -95,6 +95,59 @@ class HeapTrackingLongEnumerationListTest
     }
 
     @Test
+    void put()
+    {
+        // When
+        for ( long i = 0; i < 10000; i += 5 )
+        {
+            assertNull( table.put( i, i + 1 ) );
+        }
+
+        // Then
+        for ( long i = 10000 - 1; i >= 0; i-- )
+        {
+            if ( i % 5 == 0 )
+            {
+                assertEquals( i + 1, table.get( i ) );
+            }
+            else
+            {
+                assertNull( table.get( i ) );
+            }
+        }
+
+        assertEquals( 9995L, table.lastKey() );
+        assertHeapUsageWithNumberOfLongs( 2000 );
+    }
+
+    @Test
+    void shouldThrowIfPutBeforeFirstKey()
+    {
+        assertNull( table.put( 1, 1L ) );
+        assertThrows( IndexOutOfBoundsException.class, () -> table.put( 0, 0L ) );
+    }
+
+    @Test
+    void putOutOfOrder()
+    {
+        table.put( 10, 10L );
+        table.put( 20, 20L );
+        assertNull( table.put( 15, 14L ) );
+        assertEquals( table.put( 15, 15L ), 14L ); // Replace
+        assertContainsOnly( table, new long[]{10L, 15L, 20L} );
+        assertThrows( IndexOutOfBoundsException.class, () -> table.put( 9, 9L ) );
+    }
+
+    @Test
+    void putOutOfOrderSparse()
+    {
+        table.put( 1000, 1000L );
+        table.put( 8000, 8000L );
+        table.put( 4000, 4000L );
+        assertContainsOnly( table, new long[]{1000L, 4000L, 8000L} );
+    }
+
+    @Test
     void addNullShouldBeTheSameAsAddingAndRemoving()
     {
         // When
@@ -156,6 +209,77 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( 2 ) );
         assertNull( table.getFirst() );
         assertEquals( 6L, table.lastKey() );
+        table.foreach( ( k, v ) -> fail() );
+        assertFalse( table.valuesIterator().hasNext() );
+        assertHeapUsageWithNumberOfLongs( 0 );
+    }
+
+    @Test
+    void putNullShouldBeTheSameAsAddingAndRemoving()
+    {
+        // When
+        table.put( 0L, null );
+        table.put( 1L, null );
+        table.put( 2L, null );
+
+        // Then
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( 1 ) );
+        assertNull( table.get( 2 ) );
+        assertNull( table.getFirst() );
+        assertEquals( 2L, table.lastKey() );
+        table.foreach( ( k, v ) -> fail() );
+        assertFalse( table.valuesIterator().hasNext() );
+        assertHeapUsageWithNumberOfLongs( 0 );
+
+        // When
+        table.put( 5L, 42L );
+
+        // Then
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( 1 ) );
+        assertNull( table.get( 2 ) );
+        assertNull( table.get( 3 ) );
+        assertNull( table.get( 4 ) );
+        assertEquals( 42L, table.get( 5 ) );
+        assertEquals( 42L, table.getFirst() );
+        assertEquals( 5L, table.lastKey() );
+        table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
+        Iterator<Long> it = table.valuesIterator();
+        assertTrue( it.hasNext() );
+        assertEquals( 42L, it.next() );
+        assertFalse( it.hasNext() );
+        assertHeapUsageWithNumberOfLongs( 1 );
+
+        // When
+        table.put( 8L, null );
+        table.put( 6L, null );
+        table.put( 7L, null );
+
+        // Then
+        assertNull( table.get( 6 ) );
+        assertNull( table.get( 7 ) );
+        assertNull( table.get( 8 ) );
+        assertEquals( 42L, table.getFirst() );
+        assertEquals( 8L, table.lastKey() );
+        table.foreach( ( k, v ) -> assertEquals( 42L, v ) );
+        Iterator<Long> it2 = table.valuesIterator();
+        assertTrue( it2.hasNext() );
+        assertEquals( 42L, it2.next() );
+        assertFalse( it2.hasNext() );
+        assertHeapUsageWithNumberOfLongs( 1 );
+
+        // When
+        table.remove( 5 );
+
+        // Then
+        assertNull( table.get( 0 ) );
+        assertNull( table.get( 1 ) );
+        assertNull( table.get( 2 ) );
+        assertNull( table.get( 3 ) );
+        assertNull( table.get( 4 ) );
+        assertNull( table.getFirst() );
+        assertEquals( 8L, table.lastKey() );
         table.foreach( ( k, v ) -> fail() );
         assertFalse( table.valuesIterator().hasNext() );
         assertHeapUsageWithNumberOfLongs( 0 );
@@ -432,6 +556,85 @@ class HeapTrackingLongEnumerationListTest
         table.remove( 11L );
         assertContainsOnly( table, 9 );
         table.add( 12L );
+        assertContainsOnly( table, new long[]{9L, 12L} );
+        table.remove( 9L );
+        assertContainsOnly( table, 12 );
+
+        // Memory should be one chunk + one value
+        long measured4 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured4, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
+        assertEquals( measured3, measured4 );
+
+        table.close();
+    }
+
+    @Test
+    void addPutRemoveScenario()
+    {
+        MemoryTracker memoryTracker = new LocalMemoryTracker();
+        HeapTrackingLongEnumerationList<Long> table = HeapTrackingLongEnumerationList.create( memoryTracker, 4 );
+
+        assertEmpty( table );
+        table.add( 0L );
+        table.put( 2L, 2L );
+        table.put( 1L, 1L );
+        assertContainsOnly( table, 0, 2 );
+
+        table.remove( 0L );
+        table.remove( 1L );
+        assertContainsOnly( table, 2 );
+
+        table.remove( 2 );
+        assertEmpty( table );
+
+        table.add( 9999L );
+        table.put( 4L, 4L );
+        assertEquals( table.put( 3L, 3L ), 9999L ); // Replace
+        table.add( 5L );
+        assertContainsOnly( table, 3, 5 );
+
+        table.remove( 5 );
+        assertContainsOnly( table, 3, 4 );
+
+        table.remove( 4 );
+        assertContainsOnly( table, 3 );
+
+        long measured1 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured1, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
+
+        table.put( 6L, 6L );
+        assertContainsOnly( table, new long[]{3L, 6L} );
+        long measured2 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured2, memoryTracker.estimatedHeapMemory() + 2 * HeapEstimator.LONG_SIZE );
+        assertEquals( HeapEstimator.LONG_SIZE, measured2 - measured1 );
+
+        table.put( 8L, 8L ); // New chunk needed and extra chunk allocated because of poor alignment in tail chunks
+        assertContainsOnly( table, new long[]{3L, 6L, 8L} );
+        table.put( 7L, 7L );
+        assertContainsOnly( table, new long[]{3L, 6L, 7L, 8L} );
+
+        table.remove( 6L );
+        assertContainsOnly( table, new long[]{3L, 7L, 8L} );
+        table.remove( 3L ); // Should recycle chunk
+        assertContainsOnly( table, new long[]{7L, 8L} );
+
+        table.remove( 7L ); // Should recycle chunk
+        assertContainsOnly( table, 8L );
+
+        // Memory should be back to one chunk + one value
+        long measured3 = meter.measureDeep( table ) - measuredMemoryTracker;
+        assertEquals( measured3, memoryTracker.estimatedHeapMemory() + HeapEstimator.LONG_SIZE );
+        assertEquals( measured1, measured3 );
+
+        table.put( 10L, 10L );
+        table.put( 9L, 9L );
+        table.add( 11L );
+        assertContainsOnly( table, 8, 11 );
+        table.remove( 8L );
+        table.remove( 10L );
+        table.remove( 11L );
+        assertContainsOnly( table, 9 );
+        table.put( 12L, 12L );
         assertContainsOnly( table, new long[]{9L, 12L} );
         table.remove( 9L );
         assertContainsOnly( table, 12 );

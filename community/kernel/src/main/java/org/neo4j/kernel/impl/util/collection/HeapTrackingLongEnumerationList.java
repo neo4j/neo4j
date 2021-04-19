@@ -139,6 +139,44 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     }
 
     /**
+     * Put a value at the given key, within or beyond the current enumeration.
+     *
+     * <p>
+     * Replaces the existing value if it exists.
+     * Putting after the last key is the same as adding the value with {@link #add}, after first adding `key - lastKey() - 1` number of null values as padding.
+     * Putting before the first key is not allowed and will throw {@link IndexOutOfBoundsException}
+     *
+     * @param key the key to put at
+     * @param value the value to be inserted
+     * @return the old value at the index or null
+     */
+    @SuppressWarnings( "unchecked" )
+    public V put( long key, V value )
+    {
+        if ( key < firstKey )
+        {
+            throw new IndexOutOfBoundsException( String.format( "Cannot put key %s before first key %s", key, firstKey ) );
+        }
+        if ( key >= lastKey )
+        {
+            // Use add() for padding
+            // If the difference is huge we may want to implement an optimized way of adding entire new chunks
+            while ( lastKey < key )
+            {
+                add( null );
+            }
+            add( value );
+            return null;
+        }
+        // Replace value
+        Chunk<V> chunk = findChunk( key );
+        int indexInChunk = ((int) key) & (chunkSize - 1);
+        V oldValue = (V) chunk.values[indexInChunk];
+        chunk.values[indexInChunk] = value;
+        return oldValue;
+    }
+
+    /**
      * Add a value at the end of the enumeration, accessible at index {@link #lastKey()}, which is increased by 1.
      * <p>
      * Adds to the last chunk if possible, otherwise creates a new chunk and inserts the value in the new chunk.
@@ -222,7 +260,6 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      * @param key The enumeration
      * @return the value that was removed, or null if it was not found or has already been removed.
      */
-    @SuppressWarnings( "unchecked" )
     public V remove( long key )
     {
         if ( key < firstKey || key >= lastKey )

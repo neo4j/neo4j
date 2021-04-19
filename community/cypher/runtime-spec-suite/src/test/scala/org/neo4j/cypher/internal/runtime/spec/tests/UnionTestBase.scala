@@ -462,6 +462,52 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a").withRows(rowCount(size))
   }
 
+  test("should work with distinct and limit under apply, filter on lhs") {
+    val size = sizeHint / 2
+    given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.limit(1)
+      .|.distinct("a AS a")
+      .|.union()
+      .|.|.allNodeScan("a")
+      .|.filter("id(a) % 10 >= 5") // With this filter the lowest argument ids through union will come only from RHS
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a").withRows(rowCount(size))
+  }
+
+  test("should work with distinct and limit under apply, filter on rhs") {
+    val size = sizeHint / 2
+    given { nodeGraph(size) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.limit(1)
+      .|.distinct("a AS a")
+      .|.union()
+      .|.|.filter("id(a) % 10 >= 5") // With this filter the lowest argument ids through union in will come only from LHS
+      .|.|.allNodeScan("a")
+      .|.argument()
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a").withRows(rowCount(size))
+  }
+
   test("should union under apply") {
     val size = Math.sqrt(sizeHint).toInt
     // given
