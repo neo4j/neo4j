@@ -423,7 +423,7 @@
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>licensing-maven-plugin</artifactId>
-          <version>1.7.8</version>
+          <version>1.7.10</version>
           <configuration>
             <failIfDisliked>true</failIfDisliked>
             <failIfMissing>true</failIfMissing>
@@ -826,7 +826,6 @@
         <jdk>[16, )</jdk>
       </activation>
       <properties>
-        <licensing.skip>true</licensing.skip>
         <jdk.custom.options>
           --add-opens java.base/java.lang=ALL-UNNAMED
           --add-opens java.base/java.nio=ALL-UNNAMED
