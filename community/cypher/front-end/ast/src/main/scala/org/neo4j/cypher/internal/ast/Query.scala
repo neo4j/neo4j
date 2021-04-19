@@ -263,12 +263,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
             None
           case Seq(update: UpdateClause, clause) =>
             Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position))
-          case Seq(commandClause: CommandClause, clause) if !clause.isInstanceOf[Yield] =>
-            Some(SemanticError(s"${commandClause.name} may only be followed by WHERE or YIELD", clause.position))
-          case Seq(clause, commandClause: CommandClause) if !clause.isInstanceOf[UseGraph] =>
-            Some(SemanticError(s"${commandClause.name} may only be preceded by USE GRAPH", commandClause.position))
-          case Seq(yieldClause: Yield, clause) if !clause.isInstanceOf[Return] =>
-            Some(SemanticError(s"${yieldClause.name} may only be followed by RETURN", clause.position))
           case _ =>
             None
         }
@@ -282,8 +276,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
       // otherwise
       case seq => seq.last match {
-        case _: UpdateClause | _: Return => None
-        case clause                                       =>
+        case _: UpdateClause | _: Return | _: CommandClause => None
+        case clause                                         =>
           Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
       }
     }

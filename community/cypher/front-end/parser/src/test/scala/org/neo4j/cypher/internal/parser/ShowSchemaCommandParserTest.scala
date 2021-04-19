@@ -213,19 +213,54 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
     failsToParse
   }
 
-  test("SHOW INDEXES YIELD * WITH * MATCH (n) RETURN n") {
-    // Can't parse WITH after SHOW
-    failsToParse
-  }
+  for (prefix <- Seq("USE neo4j", "")) {
 
-  test("UNWIND range(1,10) as b SHOW INDEXES YIELD * RETURN *") {
-    // Can't parse SHOW after UNWIND
-    failsToParse
-  }
+    test(s"$prefix SHOW INDEXES YIELD * WITH * MATCH (n) RETURN n") {
+      // Can't parse WITH after SHOW
+      failsToParse
+    }
 
-  test("SHOW INDEXES WITH name, type RETURN *") {
-    // Can't parse WITH after SHOW
-    failsToParse
+    test(s"$prefix UNWIND range(1,10) as b SHOW INDEXES YIELD * RETURN *") {
+      // Can't parse SHOW  after UNWIND
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES WITH name, type RETURN *") {
+      // Can't parse WITH after SHOW
+      failsToParse
+    }
+
+    test(s"$prefix WITH 'n' as n SHOW INDEXES YIELD name RETURN name as numIndexes") {
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES RETURN name as numIndexes") {
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES WITH 1 as c RETURN name as numIndexes") {
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES WITH 1 as c") {
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES YIELD a WITH a RETURN a") {
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES YIELD as UNWIND as as a RETURN a") {
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES YIELD name SHOW INDEXES YIELD name2 RETURN name2") {
+      failsToParse
+    }
+
+    test(s"$prefix SHOW INDEXES RETURN name2 YIELD name2") {
+      failsToParse
+    }
   }
 
   test("SHOW INDEXES RETURN *") {

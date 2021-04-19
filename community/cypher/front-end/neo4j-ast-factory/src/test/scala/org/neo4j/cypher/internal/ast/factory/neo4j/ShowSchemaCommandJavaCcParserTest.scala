@@ -224,21 +224,6 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
     assertSameAST(testName)
   }
 
-  test("SHOW INDEXES YIELD * WITH * MATCH (n) RETURN n") {
-    // Can't parse WITH after SHOW
-    assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
-  }
-
-  test("UNWIND range(1,10) as b SHOW INDEXES YIELD * RETURN *") {
-    // Can't parse SHOW  after UNWIND
-    assertJavaCCExceptionStart(testName, "Invalid input 'SHOW': expected")
-  }
-
-  test("SHOW INDEXES WITH name, type RETURN *") {
-    // Can't parse WITH after SHOW
-    assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
-  }
-
   test("SHOW INDEXES RETURN *") {
     assertSameAST(testName)
   }
@@ -581,21 +566,6 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
     assertSameAST(testName)
   }
 
-  test("SHOW CONSTRAINTS YIELD * WITH * MATCH (n) RETURN n") {
-    // Can't parse WITH after SHOW
-    assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
-  }
-
-  test("UNWIND range(1,10) as b SHOW CONSTRAINTS YIELD * RETURN *") {
-    // Can't parse SHOW after UNWIND
-    assertJavaCCExceptionStart(testName, "Invalid input 'SHOW': expected")
-  }
-
-  test("SHOW CONSTRAINTS WITH name, type RETURN *") {
-    // Can't parse WITH after SHOW
-    assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
-  }
-
   test("SHOW EXISTS CONSTRAINT WHERE name = 'foo'") {
     assertSameAST(testName)
   }
@@ -628,4 +598,55 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
     assertSameAST(testName)
   }
 
+  // Invalid clause order tests for indexes and constraints
+
+  for {prefix <- Seq("USE neo4j", "")
+       entity <- Seq("INDEXES", "CONSTRAINTS")} {
+    test(s"$prefix SHOW $entity YIELD * WITH * MATCH (n) RETURN n") {
+      // Can't parse WITH after SHOW
+      assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+    }
+
+    test(s"$prefix UNWIND range(1,10) as b SHOW $entity YIELD * RETURN *") {
+      // Can't parse SHOW  after UNWIND
+      assertJavaCCExceptionStart(testName, "Invalid input 'SHOW': expected")
+    }
+
+    test(s"$prefix SHOW $entity WITH name, type RETURN *") {
+      // Can't parse WITH after SHOW
+      assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+    }
+
+    test(s"$prefix WITH 'n' as n SHOW $entity YIELD name RETURN name as numIndexes") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'SHOW': expected")
+    }
+
+    test(s"$prefix SHOW $entity RETURN name as numIndexes") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'RETURN': expected")
+    }
+
+    test(s"$prefix SHOW $entity WITH 1 as c RETURN name as numIndexes") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+    }
+
+    test(s"$prefix SHOW $entity WITH 1 as c") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+    }
+
+    test(s"$prefix SHOW $entity YIELD a WITH a RETURN a") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+    }
+
+    test(s"$prefix SHOW $entity YIELD as UNWIND as as a RETURN a") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'UNWIND': expected")
+    }
+
+    test(s"$prefix SHOW $entity YIELD name SHOW $entity YIELD name2 RETURN name2") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'SHOW': expected")
+    }
+
+    test(s"$prefix SHOW $entity RETURN name2 YIELD name2") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'RETURN': expected")
+    }
+  }
 }
