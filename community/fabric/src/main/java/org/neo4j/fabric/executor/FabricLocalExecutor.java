@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.bolt.runtime.AccessMode;
@@ -70,7 +71,7 @@ public class FabricLocalExecutor
 
     public class LocalTransactionContext implements AutoCloseable
     {
-        private final Map<Long, KernelTxWrapper> kernelTransactions = new ConcurrentHashMap<>();
+        private final Map<UUID, KernelTxWrapper> kernelTransactions = new ConcurrentHashMap<>();
         private final Set<InternalTransaction> internalTransactions = ConcurrentHashMap.newKeySet();
 
         private final CompositeTransaction compositeTransaction;
@@ -106,7 +107,7 @@ public class FabricLocalExecutor
 
         public FabricKernelTransaction getOrCreateTx( Location.Local location, TransactionMode transactionMode )
         {
-            var existingTx = kernelTransactions.get( location.getGraphId() );
+            var existingTx = kernelTransactions.get( location.getUuid() );
             if ( existingTx != null )
             {
                 maybeUpgradeToWritingTransaction( existingTx, transactionMode );
@@ -118,7 +119,7 @@ public class FabricLocalExecutor
             var databaseFacade = getDatabaseFacade( location );
 
             bookmarkManager.awaitUpToDate( location );
-            return kernelTransactions.computeIfAbsent( location.getGraphId(), locationId ->
+            return kernelTransactions.computeIfAbsent( location.getUuid(), dbUuid ->
             {
                 switch ( transactionMode )
                 {
