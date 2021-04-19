@@ -223,7 +223,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
+    public StorageFilesState checkStoreFileState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
         boolean allIdFilesExist = databaseLayout.idFiles().stream().allMatch( fs::fileExists );
         if ( !allIdFilesExist )

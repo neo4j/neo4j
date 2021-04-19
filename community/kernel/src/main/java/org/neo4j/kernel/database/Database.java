@@ -418,7 +418,7 @@ public class Database extends LifecycleAdapter
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             validateStoreAndTxLogs( logFiles, pageCacheTracer, storageExists );
 
-            performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, internalLogProvider, databaseMonitors,
+            performRecovery( fs, databasePageCache, tracers, databaseConfig, databaseLayout, storageEngineFactory, false, internalLogProvider, databaseMonitors,
                     extensionFactories, Optional.of( logFiles ), new RecoveryStartupChecker( startupController, namedDatabaseId ),
                     otherDatabaseMemoryTracker, clock );
 

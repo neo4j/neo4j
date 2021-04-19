@@ -76,7 +76,7 @@ class RecoveryRequiredChecker
         {
             return false;
         }
-        StorageFilesState filesRecoveryState = storageEngineFactory.checkRecoveryRequired( fs, databaseLayout, pageCache );
+        StorageFilesState filesRecoveryState = storageEngineFactory.checkStoreFileState( fs, databaseLayout, pageCache );
         if ( filesRecoveryState.getRecoveryState() != RecoveryState.RECOVERED )
         {
             return true;
