@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
@@ -33,9 +32,12 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.database.SystemGraphDbmsModel.DATABASE_NAME_PROPERTY;
+
 public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAdapter<Object> implements DefaultDatabaseResolver
 {
-    private static final String NAME_PROPERTY = "name";
     private final Config config;
     private final Supplier<GraphDatabaseService> systemDbSupplier;
     private GraphDatabaseService systemDb;
@@ -60,10 +62,10 @@ public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAd
         String defaultDatabase = config.get( GraphDatabaseSettings.default_database );
         try ( Transaction tx = getSystemDb().beginTx() )
         {
-            Node defaultDatabaseNode = tx.findNode( Label.label( "Database" ), "default", true );
+            Node defaultDatabaseNode = tx.findNode( DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true );
             if ( defaultDatabaseNode != null )
             {
-                defaultDatabase = (String) defaultDatabaseNode.getProperty( NAME_PROPERTY, defaultDatabase );
+                defaultDatabase = (String) defaultDatabaseNode.getProperty( DATABASE_NAME_PROPERTY, defaultDatabase );
             }
             tx.commit();
             cachedDefaultDatabase.set( defaultDatabase );
