@@ -246,7 +246,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
+    public StorageFilesState checkStoreFileState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
         Set<Path> storeFiles = databaseLayout.storeFiles();
         // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt

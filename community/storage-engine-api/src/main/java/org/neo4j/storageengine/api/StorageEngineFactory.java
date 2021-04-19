@@ -146,7 +146,7 @@ public interface StorageEngineFactory
      * @param pageCache {@link PageCache} for any data reading needs.
      * @return the state of the storage files.
      */
-    StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
+    StorageFilesState checkStoreFileState( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache );
 
     /**
      * @return a {@link CommandReaderFactory} capable of handing out {@link CommandReader} for specific versions. Generally kernel will take care

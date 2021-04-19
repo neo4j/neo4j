@@ -19,12 +19,18 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -37,6 +43,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -54,6 +64,7 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
@@ -63,7 +74,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.service.Services;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -84,7 +95,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
@@ -94,7 +108,9 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_ST
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
+import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -771,6 +787,67 @@ class RecoveryIT
         }
     }
 
+    @Test
+    void shouldForceRecoveryEvenThoughNotSeeminglyRequired() throws Exception
+    {
+        // given
+        GraphDatabaseAPI db = createDatabase();
+        generateSomeData( db );
+        DatabaseLayout layout = db.databaseLayout();
+        managementService.shutdown();
+        assertFalse( isRecoveryRequired( layout ) );
+        // Make an ID generator, say for the node store, dirty
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
+        try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, layout.idNodeStore(), IdType.NODE, () -> 0L /*will not be used*/, 10_000,
+                writable(), Config.defaults(), NULL, Sets.immutable.empty() ) )
+        {
+            // Merely opening a marker will make the backing GBPTree dirty
+            idGenerator.marker( NULL ).close();
+        }
+        assertFalse( isRecoveryRequired( layout ) );
+        assertTrue( idGeneratorIsDirty( layout.idNodeStore(), IdType.NODE ) );
+
+        // when
+        MutableBoolean recoveryRunEvenThoughNoCommitsAfterLastCheckpoint = new MutableBoolean();
+        RecoveryStartInformationProvider.Monitor monitor = new RecoveryStartInformationProvider.Monitor()
+        {
+            @Override
+            public void noCommitsAfterLastCheckPoint( LogPosition logPosition )
+            {
+                recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.setTrue();
+            }
+        };
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
+        Recovery.performRecovery( fileSystem, pageCache, EMPTY, Config.defaults(), layout, selectStorageEngine(), true, nullLogProvider(), monitors,
+                Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC() );
+
+        // then
+        assertFalse( idGeneratorIsDirty( layout.idNodeStore(), IdType.NODE ) );
+        assertTrue( recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.booleanValue() );
+    }
+
+    private boolean idGeneratorIsDirty( Path path, IdType idType ) throws IOException
+    {
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
+        try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, path, idType, () -> 0L /*will not be used*/, 10_000, readOnly(),
+                Config.defaults(), NULL, Sets.immutable.empty() ) )
+        {
+            MutableBoolean dirtyOnStartup = new MutableBoolean();
+            InvocationHandler invocationHandler = ( proxy, method, args ) ->
+            {
+                if ( method.getName().equals( "dirtyOnStartup" ) )
+                {
+                    dirtyOnStartup.setTrue();
+                }
+                return null;
+            };
+            ReporterFactory reporterFactory = new ReporterFactory( invocationHandler );
+            idGenerator.consistencyCheck( reporterFactory, NULL );
+            return dirtyOnStartup.booleanValue();
+        }
+    }
+
     private static void awaitIndexesOnline( GraphDatabaseService database )
     {
         try ( Transaction transaction = database.beginTx() )
@@ -842,7 +919,7 @@ class RecoveryIT
     {
         return LogFilesBuilder
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
+                .withCommandReaderFactory( selectStorageEngine().commandReaderFactory() )
                 .build();
     }
 

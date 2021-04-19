@@ -53,6 +53,6 @@ public class RecoveryFacade
 
     public void recovery( DatabaseLayout databaseLayout ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, memoryTracker );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, false, memoryTracker );
     }
 }

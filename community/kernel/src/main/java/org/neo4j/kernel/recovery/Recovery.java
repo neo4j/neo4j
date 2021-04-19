@@ -158,7 +158,7 @@ public final class Recovery
      * @param databaseLayout layout of database to check for recovery
      * @param config custom configuration
      * @return true if recovery is required, false otherwise.
-     * @throws Exception
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static boolean isRecoveryRequired( DatabaseLayout databaseLayout, Config config, MemoryTracker memoryTracker ) throws Exception
     {
@@ -177,7 +177,7 @@ public final class Recovery
      * Note: used by external tools.
      * @param databaseLayout database to recover layout.
      * @param tracers underlying events tracers.
-     * @throws Exception
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecovery( DatabaseLayout databaseLayout, DatabaseTracers tracers, MemoryTracker memoryTracker ) throws Exception
     {
@@ -199,7 +199,7 @@ public final class Recovery
      * @param databaseLayout layout of database to check for recovery
      * @param config custom configuration
      * @return true if recovery is required, false otherwise.
-     * @throws Exception
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static boolean isRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config,
             MemoryTracker memoryTracker ) throws Exception
@@ -224,12 +224,12 @@ public final class Recovery
      * @param pageCache page cache used to perform database recovery.
      * @param config custom configuration
      * @param databaseLayout database to recover layout.
-     * @throws Exception
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine(), memoryTracker );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine(), false, memoryTracker );
     }
 
     /**
@@ -243,10 +243,13 @@ public final class Recovery
      * @param config custom configuration
      * @param databaseLayout database to recover layout.
      * @param storageEngineFactory storage engine factory
-     * @throws Exception
+     * @param forceRunRecovery to force recovery to run even if the usual checks indicates that it's not required.
+     * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
+     * even if the normal "is recovery required" checks says that recovery isn't required.
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config,
-            DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, MemoryTracker memoryTracker ) throws IOException
+            DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery, MemoryTracker memoryTracker ) throws IOException
     {
         requireNonNull( fs );
         requireNonNull( pageCache );
@@ -255,8 +258,8 @@ public final class Recovery
         requireNonNull( storageEngineFactory );
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
-        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, selectStorageEngine(), NullLogProvider.getInstance(), new Monitors(),
-                loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
+        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, selectStorageEngine(), forceRunRecovery, NullLogProvider.getInstance(),
+                new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
     }
 
     /**
@@ -272,15 +275,19 @@ public final class Recovery
      * @param globalMonitors global server monitors
      * @param extensionFactories extension factories for extensions that should participate in recovery
      * @param providedLogFiles log files from database
-     * @throws IOException
+     * @param forceRunRecovery to force recovery to run even if the usual checks indicates that it's not required.
+     * In specific cases, like after store copy there's always a need for doing a recovery or at least to start the db, checkpoint and shut down,
+     * even if the normal "is recovery required" checks says that recovery isn't required.
+     * @throws IOException on any unexpected I/O exception encountered during recovery.
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
-            Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, LogProvider logProvider, Monitors globalMonitors,
+            Config config, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory, boolean forceRunRecovery,
+            LogProvider logProvider, Monitors globalMonitors,
             Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogFiles> providedLogFiles,
             RecoveryStartupChecker startupChecker, MemoryTracker memoryTracker, Clock clock ) throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
-        if ( !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker ) )
+        if ( !forceRunRecovery && !isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, providedLogFiles, memoryTracker ) )
         {
             return;
         }
@@ -413,7 +420,7 @@ public final class Recovery
     private static void checkAllFilesPresence( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             StorageEngineFactory storageEngineFactory )
     {
-        StorageFilesState state = storageEngineFactory.checkRecoveryRequired( fs, databaseLayout, pageCache );
+        StorageFilesState state = storageEngineFactory.checkStoreFileState( fs, databaseLayout, pageCache );
         if ( state.getRecoveryState() == RecoveryState.UNRECOVERABLE )
         {
             throw new RuntimeException( format( "Store files %s is(are) missing and recovery is not possible. Please restore from a consistent backup.",
