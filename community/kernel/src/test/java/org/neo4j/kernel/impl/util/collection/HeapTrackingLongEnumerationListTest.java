@@ -615,10 +615,10 @@ class HeapTrackingLongEnumerationListTest
 
         table.remove( 6L );
         assertContainsOnly( table, new long[]{3L, 7L, 8L} );
-        table.remove( 3L ); // Should recycle chunk
+        table.remove( 3L );
         assertContainsOnly( table, new long[]{7L, 8L} );
 
-        table.remove( 7L ); // Should recycle chunk
+        table.remove( 7L );
         assertContainsOnly( table, 8L );
 
         // Memory should be back to one chunk + one value
