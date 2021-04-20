@@ -499,7 +499,7 @@ class IndexPopulationJobTest
 
             // Then
             var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
-            matcher.containsMessageWithArguments( "Index population started: [%s]", ":FIRST(name)" )
+            matcher.containsMessageWithArgumentsContaining( "Index population started: [%s]", "type='GENERAL BTREE', schema=(:FIRST {name})" )
                    .containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
@@ -527,7 +527,7 @@ class IndexPopulationJobTest
 
             // Then
             var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
-            matcher.containsMessageWithArguments( "Index population started: [%s]", ":FIRST(name)" )
+            matcher.containsMessageWithArgumentsContaining( "Index population started: [%s]", "type='UNIQUE BTREE', schema=(:FIRST {name})" )
                    .containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
@@ -554,7 +554,8 @@ class IndexPopulationJobTest
 
         // Then
         assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR )
-                                 .containsMessageWithException( "Failed to populate index: [:FIRST(name)]", failure );
+                                 .containsMessageWithException( "Failed to populate index: [Index(", failure )
+                                 .containsMessageWithException( "type='GENERAL BTREE', schema=(:FIRST {name})", failure );
     }
 
     @Test
