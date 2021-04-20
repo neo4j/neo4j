@@ -211,10 +211,6 @@ trait AggregatingPlan extends LogicalPlan {
 trait UpdatingPlan extends LogicalUnaryPlan {
   override def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
 }
-//Pure updating plans, e.g. CREATE, SET
-trait WriteOnlyPlan extends UpdatingPlan
-//Plan that both read and writes, e.g. MERGE
-trait ReadWritePlan extends UpdatingPlan
 
 abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   final def lhs: Option[LogicalPlan] = Some(left)

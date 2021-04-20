@@ -29,12 +29,13 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
-import org.neo4j.cypher.internal.logical.plans.WriteOnlyPlan
+import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -295,8 +296,12 @@ object Eagerness {
       case apply@Apply(lhs, eager: Eager, fromSubquery) if !fromSubquery =>
         unnestRightUnary(apply, lhs, eager)
 
+      //MERGE is an updating plan that cannot be moved on top of apply since
+      //it is closely tied to its source plan
+      case apply@Apply(_, _: Merge, _) => apply
+
      // L Ax (Up R) => Up Ax (L R), don't unnest when coming from a subquery
-      case apply@Apply(lhs, updatingPlan: WriteOnlyPlan, fromSubquery) if !fromSubquery =>
+      case apply@Apply(lhs, updatingPlan: UpdatingPlan, fromSubquery) if !fromSubquery =>
         unnestRightUnary(apply, lhs, updatingPlan)
     }))
 

@@ -35,8 +35,8 @@ case class SetNodeProperty(override val source: LogicalPlan,
                            propertyKey: PropertyKeyName,
                            value: Expression
                           )(implicit idGen: IdGen)
-  extends LogicalUnaryPlan(idGen) with WriteOnlyPlan {
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with WriteOnlyPlan = copy(source = newLHS)(idGen)
+  extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName
 }
