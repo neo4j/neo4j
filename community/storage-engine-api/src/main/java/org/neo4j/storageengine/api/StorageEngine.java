@@ -64,13 +64,6 @@ public interface StorageEngine extends Lifecycle
     void addNodeLabelUpdateListener( EntityTokenUpdateListener entityTokenUpdateListener );
 
     /**
-     * Adds an {@link EntityTokenUpdateListener} which will receive streams of relationship type updates from changes that gets
-     * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage engine.
-     * @param entityTokenUpdateListener {@link EntityTokenUpdateListener} to add.
-     */
-    void addRelationshipTypeUpdateListener( EntityTokenUpdateListener entityTokenUpdateListener );
-
-    /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
      * ({@code state}.
      * The returned commands can be used to form {@link CommandsToApply} batches, which can be applied to this

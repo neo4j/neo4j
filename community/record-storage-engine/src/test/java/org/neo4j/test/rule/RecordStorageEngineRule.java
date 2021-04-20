@@ -89,7 +89,7 @@ public class RecordStorageEngineRule extends ExternalResource
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, Health databaseHealth,
             DatabaseLayout databaseLayout, Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer,
             IndexUpdateListener indexUpdateListener, EntityTokenUpdateListener nodeLabelUpdateListener,
-            EntityTokenUpdateListener relationshipTypeUpdateListener, LockService lockService, TokenHolders tokenHolders,
+            LockService lockService, TokenHolders tokenHolders,
             Config config, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
@@ -100,7 +100,6 @@ public class RecordStorageEngineRule extends ExternalResource
                         new DefaultIdController(), transactionApplierTransformer );
         engine.addIndexUpdateListener( indexUpdateListener );
         engine.addNodeLabelUpdateListener( nodeLabelUpdateListener );
-        engine.addRelationshipTypeUpdateListener( relationshipTypeUpdateListener );
         life.add( engine );
         return engine;
     }
@@ -122,7 +121,6 @@ public class RecordStorageEngineRule extends ExternalResource
                 applierFacade -> applierFacade;
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private EntityTokenUpdateListener nodeLabelUpdateListener = new EntityTokenUpdateListener.Adapter();
-        private EntityTokenUpdateListener relationshipTypeUpdateListener = new EntityTokenUpdateListener.Adapter();
         private LockService lockService = new ReentrantLockService();
         private TokenHolders tokenHolders = new TokenHolders( mock( TokenHolder.class ), mock( TokenHolder.class ), mock( TokenHolder.class ) );
         private Config config = Config.defaults();
@@ -186,12 +184,6 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder relationshipTypeUpdateListener( EntityTokenUpdateListener entityTokenUpdateListener )
-        {
-            this.relationshipTypeUpdateListener = entityTokenUpdateListener;
-            return this;
-        }
-
         public Builder lockService( LockService lockService )
         {
             this.lockService = lockService;
@@ -225,7 +217,7 @@ public class RecordStorageEngineRule extends ExternalResource
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, databaseHealth, databaseLayout, transactionApplierTransformer, indexUpdateListener,
-                    nodeLabelUpdateListener, relationshipTypeUpdateListener, lockService, tokenHolders, config, constraintSemantics, indexConfigCompleter );
+                    nodeLabelUpdateListener, lockService, tokenHolders, config, constraintSemantics, indexConfigCompleter );
         }
     }
 

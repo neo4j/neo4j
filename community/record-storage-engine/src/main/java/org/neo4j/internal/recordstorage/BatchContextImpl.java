@@ -133,12 +133,6 @@ public class BatchContextImpl implements BatchContext
     }
 
     @Override
-    public List<EntityTokenUpdate> relationshipTypeUpdates()
-    {
-        throw new IllegalStateException( "Scan store updates are not supported" );
-    }
-
-    @Override
     public boolean specialHandlingOfScanStoresNeeded()
     {
         return false;

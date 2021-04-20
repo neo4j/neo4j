@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.common.Subject;
@@ -30,12 +29,10 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -129,22 +126,6 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         @Override
         public boolean visitRelationshipCommand( Command.RelationshipCommand command )
         {
-            if ( batchContext.specialHandlingOfScanStoresNeeded() )
-            {
-                // for relationship type scan store updates
-                RelationshipRecord before = command.getBefore();
-                RelationshipRecord after = command.getAfter();
-
-                int beforeType = before.getType();
-                int afterType = after.getType();
-                long[] beforeArray = beforeType == -1 || !before.inUse() ? EMPTY_LONG_ARRAY : new long[]{beforeType};
-                long[] afterArray = afterType == -1 || !after.inUse() ? EMPTY_LONG_ARRAY : new long[]{afterType};
-                if ( !Arrays.equals( beforeArray, afterArray ) )
-                {
-                    batchContext.relationshipTypeUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), beforeArray, afterArray ) );
-                }
-            }
-
             return indexUpdatesExtractor.visitRelationshipCommand( command );
         }
 

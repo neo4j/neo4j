@@ -42,15 +42,12 @@ import org.neo4j.util.concurrent.WorkSync;
 public class LegacyBatchContext extends BatchContextImpl implements BatchContext
 {
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
-    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync;
     private final PageCursorTracer cursorTracer;
 
     private List<EntityTokenUpdate> labelUpdates;
-    private List<EntityTokenUpdate> relationshipTypeUpdates;
 
     public LegacyBatchContext( IndexUpdateListener indexUpdateListener,
             WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync,
-            WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
             RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, PageCursorTracer cursorTracer, MemoryTracker memoryTracker,
             IdUpdateListener idUpdateListener )
@@ -58,7 +55,6 @@ public class LegacyBatchContext extends BatchContextImpl implements BatchContext
         super( indexUpdateListener, indexUpdatesSync, nodeStore, propertyStore, recordStorageEngine, schemaCache, cursorTracer, memoryTracker,
                 idUpdateListener );
         this.labelScanStoreSync = labelScanStoreSync;
-        this.relationshipTypeScanStoreSync = relationshipTypeScanStoreSync;
         this.cursorTracer = cursorTracer;
     }
 
@@ -66,18 +62,12 @@ public class LegacyBatchContext extends BatchContextImpl implements BatchContext
     public void applyPendingLabelAndIndexUpdates() throws IOException
     {
         AsyncApply labelUpdatesApply = null;
-        AsyncApply relationshipTypeUpdatesApply = null;
         if ( labelUpdates != null )
         {
             // Updates are sorted according to node id here, an artifact of node commands being sorted
             // by node id when extracting from TransactionRecordState.
             labelUpdatesApply = labelScanStoreSync.applyAsync( new TokenUpdateWork( labelUpdates, cursorTracer ) );
             labelUpdates = null;
-        }
-        if ( relationshipTypeUpdates != null )
-        {
-            relationshipTypeUpdatesApply = relationshipTypeScanStoreSync.applyAsync( new TokenUpdateWork( relationshipTypeUpdates, cursorTracer ) );
-            relationshipTypeUpdates = null;
         }
 
         super.applyPendingLabelAndIndexUpdates();
@@ -93,17 +83,6 @@ public class LegacyBatchContext extends BatchContextImpl implements BatchContext
                 throw new IOException( "Failed to flush label updates", e );
             }
         }
-        if ( relationshipTypeUpdatesApply != null )
-        {
-            try
-            {
-                relationshipTypeUpdatesApply.await();
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Failed to flush relationship type updates", e );
-            }
-        }
     }
 
     @Override
@@ -114,16 +93,6 @@ public class LegacyBatchContext extends BatchContextImpl implements BatchContext
             labelUpdates = new ArrayList<>();
         }
         return labelUpdates;
-    }
-
-    @Override
-    public List<EntityTokenUpdate> relationshipTypeUpdates()
-    {
-        if ( relationshipTypeUpdates == null )
-        {
-            relationshipTypeUpdates = new ArrayList<>();
-        }
-        return relationshipTypeUpdates;
     }
 
     @Override

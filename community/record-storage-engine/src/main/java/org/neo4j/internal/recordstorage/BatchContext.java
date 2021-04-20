@@ -40,7 +40,5 @@ public interface BatchContext extends AutoCloseable
 
     List<EntityTokenUpdate> labelUpdates();
 
-    List<EntityTokenUpdate> relationshipTypeUpdates();
-
     boolean specialHandlingOfScanStoresNeeded();
 }

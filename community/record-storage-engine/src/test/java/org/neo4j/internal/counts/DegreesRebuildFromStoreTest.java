@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.test.extension.Inject;
@@ -208,8 +207,6 @@ class DegreesRebuildFromStoreTest
     private RecordStorageEngine openStorageEngine( DatabaseLayout layout, int denseThreshold )
     {
         Config config = Config.defaults( dense_node_threshold, denseThreshold );
-        RecordStorageEngine storageEngine = openSimpleStorageEngine( directory.getFileSystem(), pageCache, layout, config );
-        storageEngine.addRelationshipTypeUpdateListener( new EntityTokenUpdateListener.Adapter() );
-        return storageEngine;
+        return openSimpleStorageEngine( directory.getFileSystem(), pageCache, layout, config );
     }
 }

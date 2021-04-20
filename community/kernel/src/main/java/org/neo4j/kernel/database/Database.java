@@ -801,10 +801,8 @@ public class Database extends LifecycleAdapter
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( RelationshipTypeScanStore.class ), EntityType.RELATIONSHIP ),
                 RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG );
         FullStoreChangeStream relationshipTypeStream = new FullRelationshipTypeStream( indexStoreView );
-        RelationshipTypeScanStore relationshipTypeScanStore = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream,
+        return toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream,
                 readOnlyChecker, monitors, recoveryCleanupWorkCollector, config, cacheTracer, memoryTracker );
-        storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
-        return relationshipTypeScanStore;
     }
 
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, LogProvider logProvider, JobScheduler scheduler,

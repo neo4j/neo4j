@@ -127,7 +127,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LockService lockService;
     private final boolean consistencyCheckApply;
     private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
-    private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
@@ -144,7 +143,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     // installed later
     private IndexUpdateListener indexUpdateListener;
     private EntityTokenUpdateListener nodeLabelUpdateListener;
-    private EntityTokenUpdateListener relationshipTypeUpdateListener;
 
     public RecordStorageEngine( DatabaseLayout databaseLayout,
             Config config,
@@ -327,15 +325,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.labelScanStoreSync = new WorkSync<>( listener );
     }
 
-    @Override
-    public void addRelationshipTypeUpdateListener( EntityTokenUpdateListener listener )
-    {
-        Preconditions.checkState( this.relationshipTypeUpdateListener == null,
-                "Only supports a single listener. Tried to add " + listener + ", but " + this.relationshipTypeUpdateListener + " has already been added" );
-        this.relationshipTypeUpdateListener = listener;
-        this.relationshipTypeScanStoreSync = new WorkSync<>( listener );
-    }
-
     /**
      * @throws TransactionFailureException if command generation fails or some prerequisite of some command didn't validate,
      * for example if trying to delete a node that still has relationships.
@@ -455,7 +444,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     this, schemaCache, initialBatch.cursorTracer(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get() );
         }
 
-        return new LegacyBatchContext( indexUpdateListener, labelScanStoreSync, relationshipTypeScanStoreSync, indexUpdatesSync, neoStores.getNodeStore(),
+        return new LegacyBatchContext( indexUpdateListener, labelScanStoreSync, indexUpdatesSync, neoStores.getNodeStore(),
                 neoStores.getPropertyStore(), this, schemaCache, initialBatch.cursorTracer(), otherMemoryTracker,
                 batchApplier.getIdUpdateListenerSupplier().get() );
     }

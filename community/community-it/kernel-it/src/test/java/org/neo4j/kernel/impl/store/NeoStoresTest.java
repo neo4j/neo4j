@@ -80,7 +80,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
@@ -735,7 +734,6 @@ public class NeoStoresTest
                         new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE, mock( Health.class ), idGeneratorFactory, new DefaultIdController(),
                         immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
                         LockVerificationMonitor.Factory.IGNORE );
-        storageEngine.addRelationshipTypeUpdateListener( mock( EntityTokenUpdateListener.class ) );
         life = new LifeSupport();
         life.add( storageEngine );
         life.add( storageEngine.schemaAndTokensLifecycle() );

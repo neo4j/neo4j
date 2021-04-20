@@ -405,9 +405,6 @@ class BatchingNeoStoresTest
             labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
             int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
-            // Need to register a listener to not get NPE in LegacyBatchContext for relationship updates.
-            // Will be removed when the path for updating RTSS is removed from there.
-            storageEngine.addRelationshipTypeUpdateListener( ( labelUpdates, cursorTracer ) -> {} );
             apply( txState, commandCreationContext, storageEngine );
 
             // Finally, we're initialized and ready to create two nodes and a relationship

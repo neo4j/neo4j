@@ -62,11 +62,10 @@ class IndexTransactionApplierFactoryTest
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
         OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
         WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
-        WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync = mock( WorkSync.class );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
-        try ( var batchContext = new LegacyBatchContext( indexUpdateListener, labelScanSync, relationshipTypeScanStoreSync, indexUpdatesSync,
+        try ( var batchContext = new LegacyBatchContext( indexUpdateListener, labelScanSync, indexUpdatesSync,
                 mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE,
                 mock( IdUpdateListener.class ) ) )
         {
