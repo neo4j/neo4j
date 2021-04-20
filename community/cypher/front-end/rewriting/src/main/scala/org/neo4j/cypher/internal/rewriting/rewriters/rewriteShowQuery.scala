@@ -26,7 +26,9 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
@@ -70,7 +72,10 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     // Just a single command clause (with or without WHERE)
     case (commandClause: CommandClause) :: Nil => rewrittenClause ++ rewriteWithYieldAndReturn(commandClause, commandClause.where)
     // Command clause with only a YIELD
-    case (c: CommandClause) :: (yieldClause: Yield) :: Nil => rewrittenClause :+ c :+ yieldClause :+ returnClause(yieldClause.position)
+    case (c: CommandClause) :: (yieldClause: Yield) :: Nil => {
+      val offset = lastPosition(yieldClause)
+      rewrittenClause :+ c :+ yieldClause :+ returnClause(InputPosition(offset, 1, offset + 1))
+    }
     case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
     case Nil => rewrittenClause
   }
@@ -84,6 +89,12 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
   }
 
   private def returnClause(position: InputPosition): Return = Return(ReturnItems(includeExisting = true, Seq())(position))(position.newUniquePos())
+
+  private def lastPosition(y: Yield): Int = {
+    y.treeFold(0) {
+      case node: ASTNode => acc => TraverseChildren(if (node.position.offset > acc) node.position.offset else acc)
+    }
+  }
 
   override def getRewriter(deprecations: Deprecations,
                            cypherExceptionFactory: CypherExceptionFactory,
