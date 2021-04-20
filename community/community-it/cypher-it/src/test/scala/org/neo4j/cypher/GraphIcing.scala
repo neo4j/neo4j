@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.Direction
@@ -47,6 +45,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
@@ -126,6 +125,10 @@ trait GraphIcing {
       createNodeIndex(None, label, properties)
     }
 
+    def createNodeIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties, Map("indexProvider" -> s"'$provider'"))
+    }
+
     def createRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
       createRelIndex(None, relType, properties)
     }
@@ -138,18 +141,18 @@ trait GraphIcing {
       createRelIndex(Some(name), relType, properties)
     }
 
-    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String]): IndexDefinition = {
-      createIndex(maybeName, s"(e:$label)", properties, () => getNodeIndex(label, properties))
+    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], options: Map[String, String] = Map.empty): IndexDefinition = {
+      createIndex(maybeName, s"(e:$label)", properties, () => getNodeIndex(label, properties), options)
     }
 
     private def createRelIndex(maybeName: Option[String], relType: String, properties: Seq[String]): IndexDefinition = {
       createIndex(maybeName, s"()-[e:$relType]-()", properties, () => getRelIndex(relType, properties))
     }
 
-    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], getIndex: () => IndexDefinition): IndexDefinition = {
+    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], getIndex: () => IndexDefinition, options: Map[String, String] = Map.empty): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
       withTx( tx => {
-        tx.execute(s"CREATE INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})")
+        tx.execute(s"CREATE INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}")
       })
 
       withTx( tx =>  {
@@ -157,6 +160,17 @@ trait GraphIcing {
       } )
 
       getIndex()
+    }
+
+    private def optionsString(options: Map[String, String]): String = {
+      if (options.nonEmpty) {
+        val keyValueString = options
+          .map { case (key, value) => s"$key: $value" }
+          .mkString("{ ", ", ", "}")
+        " OPTIONS " + keyValueString
+      } else {
+        ""
+      }
     }
 
     def createLookupIndex(isNodeIndex: Boolean, maybeName: Option[String] = None): IndexDefinition = {
