@@ -104,9 +104,6 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
-Common Development and Distribution License Version 1.0
-  JavaBeans(TM) Activation Framework
-
 Common Development and Distribution License Version 1.1
   Java Servlet API
   jaxb-api
