@@ -285,7 +285,7 @@ public final class CypherCoercions
 
     private static CypherTypeException cantCoerce( AnyValue value, String type )
     {
-        return new CypherTypeException( format( "Can't coerce `%s` to %s", value, type ), null );
+        return new CypherTypeException( format( "Can't coerce `%s` to %s", value, type ) );
     }
 
     private static class ListMapper implements ValueMapper<ListValue>

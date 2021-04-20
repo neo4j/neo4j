@@ -22,10 +22,10 @@ package org.neo4j.cypher.operations;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InternalException;
 import org.neo4j.exceptions.InvalidSemanticsException;
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.Comparison;
@@ -282,19 +282,19 @@ public final class CypherBoolean
         @Override
         public Value mapNode( VirtualNodeValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapRelationship( VirtualRelationshipValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapMap( MapValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
@@ -312,7 +312,7 @@ public final class CypherBoolean
         @Override
         public Value mapText( TextValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
@@ -324,49 +324,49 @@ public final class CypherBoolean
         @Override
         public Value mapNumber( NumberValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapDateTime( DateTimeValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapLocalDateTime( LocalDateTimeValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapDate( DateValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapTime( TimeValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapLocalTime( LocalTimeValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapDuration( DurationValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
 
         @Override
         public Value mapPoint( PointValue value )
         {
-            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value, null );
+            throw new CypherTypeException( "Don't know how to treat that as a boolean: " + value );
         }
     }
 }

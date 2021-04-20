@@ -151,7 +151,7 @@ public final class CypherMath
         }
 
         throw new CypherTypeException(
-                String.format( "Cannot add `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+                String.format( "Cannot add `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ) );
     }
 
     public static AnyValue subtract( AnyValue lhs, AnyValue rhs )
@@ -186,7 +186,7 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Cannot subtract `%s` from `%s`", rhs.getTypeName(), lhs.getTypeName() ), null );
+                String.format( "Cannot subtract `%s` from `%s`", rhs.getTypeName(), lhs.getTypeName() ) );
     }
 
     public static AnyValue multiply( AnyValue lhs, AnyValue rhs )
@@ -220,7 +220,7 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Cannot multiply `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+                String.format( "Cannot multiply `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ) );
     }
 
     public static boolean divideCheckForNull( AnyValue lhs, AnyValue rhs )
@@ -252,7 +252,7 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Cannot divide `%s` by `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+                String.format( "Cannot divide `%s` by `%s`", lhs.getTypeName(), rhs.getTypeName() ) );
     }
 
     public static AnyValue modulo( AnyValue lhs, AnyValue rhs )
@@ -278,8 +278,7 @@ public final class CypherMath
             }
         }
         throw new CypherTypeException(
-                String.format( "Cannot calculate modulus of `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ),
-                null );
+                String.format( "Cannot calculate modulus of `%s` and `%s`", lhs.getTypeName(), rhs.getTypeName() ) );
     }
 
     public static AnyValue pow( AnyValue lhs, AnyValue rhs )
@@ -291,6 +290,6 @@ public final class CypherMath
             return doubleValue( Math.pow( ((NumberValue) lhs).doubleValue(), ((NumberValue) rhs).doubleValue() ) );
         }
         throw new CypherTypeException(
-                String.format( "Cannot raise `%s` to the power of `%s`", lhs.getTypeName(), rhs.getTypeName() ), null );
+                String.format( "Cannot raise `%s` to the power of `%s`", lhs.getTypeName(), rhs.getTypeName() ) );
     }
 }

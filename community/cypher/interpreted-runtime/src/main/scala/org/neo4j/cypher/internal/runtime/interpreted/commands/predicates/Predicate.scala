@@ -184,9 +184,9 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
       variable match {
         // resolve parameter name to value if possible/needed
         case p: ParameterFromSlot if state.params.length > p.offset =>
-          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + state.params(p.offset) + " to be a property container")
+          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + state.params(p.offset) + " to be a node, relationship or map")
         case _ =>
-          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + variable + " to be a property container")
+          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + variable + " to be a node, relationship or map")
       }
   }
 

@@ -57,7 +57,10 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
   test("should throw if encountering anything other than a relationship") {
     result(false).when(operations).isDeletedInThisTx(any())
 
-    a [CypherTypeException] should be thrownBy function.compute(1337L, null, state)
+    the[CypherTypeException] thrownBy {
+      function.compute(1337L, null, state)
+    } should have message "Invalid input for function 'type()': Expected a Relationship, got: Long(1337)"
+
   }
 
   private def result(value: Any) = doReturn(value, Nil: _*)

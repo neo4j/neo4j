@@ -25,9 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.operations.CypherFunctions
-import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values.NO_VALUE
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
@@ -36,21 +34,6 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
 
   override def arguments: Seq[Expression] = Seq(arg)
 
-}
-
-object StringFunction {
-
-  def notAString(a: Any) = throw new CypherTypeException(
-    s"Expected a string value for $toString, but got: ${a.toString}; consider converting it to a string with toString().")
-}
-
-case object asString extends (AnyValue => String) {
-
-  override def apply(a: AnyValue): String = a match {
-    case x if x eq NO_VALUE => null
-    case x: TextValue => x.stringValue()
-    case _ => StringFunction.notAString(a)
-  }
 }
 
 case class ToStringFunction(argument: Expression) extends StringFunction(argument) {
