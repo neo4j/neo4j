@@ -30,7 +30,7 @@ import static org.neo4j.internal.helpers.Format.duration;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.Monitor;
 
 /**
- * Logs about important events about {@link LabelScanStore} and {@link RelationshipTypeScanStore}.
+ * Logs about important events about {@link LabelScanStore}.
  */
 public class LoggingMonitor extends Monitor.Adaptor
 {

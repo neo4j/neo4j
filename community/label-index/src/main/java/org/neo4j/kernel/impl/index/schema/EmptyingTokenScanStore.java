@@ -54,27 +54,19 @@ public class EmptyingTokenScanStore implements TokenScanStore
     private final DatabaseLayout directoryStructure;
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private final EntityType entityType;
-    private final boolean shouldDeleteExistingStore;
 
     private EmptyingTokenScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker,
-            EntityType entityType, boolean shouldDeleteExistingStore )
+            EntityType entityType )
     {
         this.fileSystem = fileSystem;
         this.directoryStructure = directoryStructure;
         this.readOnlyChecker = readOnlyChecker;
         this.entityType = entityType;
-        this.shouldDeleteExistingStore = shouldDeleteExistingStore;
     }
 
     public static LabelScanStore emptyLss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker )
     {
         return new EmptyingLabelScanStore( fileSystem, directoryStructure, readOnlyChecker );
-    }
-
-    public static RelationshipTypeScanStore emptyRtss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure,
-            DatabaseReadOnlyChecker readOnlyChecker, boolean shouldDeleteExistingStore )
-    {
-        return new EmptyingRelationshipTypeScanStore( fileSystem, directoryStructure, readOnlyChecker, shouldDeleteExistingStore );
     }
 
     @Override
@@ -139,23 +131,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
     @Override
     public void init() throws IOException
     {
-        if ( shouldDeleteExistingStore )
-        {
-            if ( readOnlyChecker.isReadOnly() && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
-            {
-                throw new IllegalStateException(
-                        "Database was started in read only mode and with relationship type scan store turned OFF, " +
-                                "but relationship type scan store file still exists and cannot be deleted in read only mode. " +
-                                "Please start database with relationship type scan store turned ON or " +
-                                "without read only mode to let database delete the relationship type scan store safely. " +
-                                "Note that consistency check use read only mode. " +
-                                "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
-            }
-            if ( fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
-            {
-                fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
-            }
-        }
+        // no-op
     }
 
     @Override
@@ -260,16 +236,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
     {
         EmptyingLabelScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker )
         {
-            super( fileSystem, directoryStructure, readOnlyChecker, EntityType.NODE, false );
-        }
-    }
-
-    private static class EmptyingRelationshipTypeScanStore extends EmptyingTokenScanStore implements RelationshipTypeScanStore
-    {
-        EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker,
-                boolean shouldDeleteExistingStore )
-        {
-            super( fileSystem, directoryStructure, readOnlyChecker, EntityType.RELATIONSHIP, shouldDeleteExistingStore );
+            super( fileSystem, directoryStructure, readOnlyChecker, EntityType.NODE );
         }
     }
 }

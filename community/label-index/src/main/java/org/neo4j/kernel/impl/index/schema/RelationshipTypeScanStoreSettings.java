@@ -31,12 +31,6 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
 @ServiceProvider
 public class RelationshipTypeScanStoreSettings implements SettingsDeclaration
 {
-    @Description( "Decide if relationship type scan store should be enabled or not. This setting might compromise rolling upgrade. " +
-                  "This setting is incompatible with enable_scan_stores_as_token_indexes." )
-    @Internal
-    public static final Setting<Boolean> enable_relationship_type_scan_store =
-            newBuilder( "unsupported.dbms.enable_relationship_type_scan_store", BOOL, false ).build();
-
     @Description( "Decide if scan stores should be treated as token indexes or not. This setting should just be used for testing with the " +
                   "new functionality until it is complete." )
     @Internal

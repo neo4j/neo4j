@@ -27,7 +27,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 /**
- * Stream of changes used to rebuild a {@link LabelScanStore} or {@link RelationshipTypeScanStore}.
+ * Stream of changes used to rebuild a {@link LabelScanStore}.
  */
 public interface FullStoreChangeStream
 {

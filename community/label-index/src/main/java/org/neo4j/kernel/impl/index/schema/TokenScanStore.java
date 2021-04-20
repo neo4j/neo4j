@@ -38,7 +38,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 /**
  * Stores token-->entities mappings. It receives updates in the form of condensed token->entity transaction data
@@ -62,36 +61,6 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
         }
         return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnlyChecker, config, monitors,
                 recoveryCleanupWorkCollector, NODE, cacheTracer, memoryTracker );
-    }
-
-    /**
-     * Create a new {@link RelationshipTypeScanStore}.
-     */
-    static RelationshipTypeScanStore relationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker, Monitors monitors,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
-    {
-        return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnlyChecker, config, monitors,
-                recoveryCleanupWorkCollector, RELATIONSHIP, cacheTracer, memoryTracker );
-    }
-
-    static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker, Monitors monitors,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
-    {
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes )
-             && config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
-        {
-            throw new IllegalStateException( "Settings 'enable_scan_stores_as_token_indexes' and 'enable_relationship_type_scan_store' " +
-                                             "are incompatible with each other." );
-        }
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
-        {
-            return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnlyChecker, monitors, recoveryCleanupWorkCollector,
-                    config, cacheTracer, memoryTracker );
-        }
-        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnlyChecker,
-                !config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
     }
 
     /**

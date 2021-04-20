@@ -45,7 +45,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
@@ -94,8 +93,6 @@ import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.asStream;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.labelScanStore;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.relationshipTypeScanStore;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.toggledRelationshipTypeScanStore;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -207,23 +204,6 @@ public class TokenScanStoreTest
     }
 
     @Test
-    void shouldNotStartIfRelationshipTypeScanStoreIndexDoesNotExistInReadOnlyMode()
-    {
-        // WHEN
-        life = new LifeSupport();
-        RelationshipTypeScanStore store =
-                relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(), Config.defaults(),
-                        PageCacheTracer.NULL, INSTANCE );
-        life.add( store );
-
-        final Exception exception = assertThrows( Exception.class, () -> life.start() );
-        assertTrue( Exceptions.contains( exception, t -> t instanceof ReadOnlyDbException ) );
-        assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
-        assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
-        assertTrue( Exceptions.contains( exception, t -> t.getMessage().contains( "Relationship type scan store" ) ) );
-    }
-
-    @Test
     void shouldUseLabelScanStoreFile()
     {
         LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(), Config.defaults(),
@@ -232,18 +212,6 @@ public class TokenScanStoreTest
         assertTrue( files.hasNext() );
         Path storeFile = files.next();
         assertThat( storeFile ).isEqualTo( databaseLayout.labelScanStore() );
-        assertFalse( files.hasNext() );
-    }
-
-    @Test
-    void shouldUseRelationshipTypeScanStoreFile()
-    {
-        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(),
-                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
-        ResourceIterator<Path> files = store.snapshotStoreFiles();
-        assertTrue( files.hasNext() );
-        Path storeFile = files.next();
-        assertThat( storeFile ).isEqualTo( databaseLayout.relationshipTypeScanStore() );
         assertFalse( files.hasNext() );
     }
 
@@ -596,68 +564,6 @@ public class TokenScanStoreTest
 
         // Then
         assertThat( scanStore.entityType() ).isEqualTo( EntityType.NODE );
-    }
-
-    @Test
-    void shouldReportRelationshipEntityIfRelationshipTypeScanStore()
-    {
-        // When
-        RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(),
-                new Monitors(), ignore(), Config.defaults(), PageCacheTracer.NULL, INSTANCE );
-
-        // When
-        assertThat( relationshipTypeScanStore.entityType() ).isEqualTo( EntityType.RELATIONSHIP );
-    }
-
-    @Test
-    void toggledRelationshipTypeScanStoreShouldBeOffByDefault()
-    {
-        RelationshipTypeScanStore relationshipTypeScanStore =
-        toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(), ignore(), Config.defaults(),
-                PageCacheTracer.NULL, INSTANCE );
-
-        assertThat( relationshipTypeScanStore ).isInstanceOf( EmptyingTokenScanStore.class );
-    }
-
-    @Test
-    void toggledRelationshipTypeScanStoreShouldBeOnByConfigSetting()
-    {
-        Config config = Config.defaults();
-        config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
-
-        RelationshipTypeScanStore relationshipTypeScanStore = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(),
-                new Monitors(), ignore(), config, PageCacheTracer.NULL, INSTANCE );
-
-        assertThat( relationshipTypeScanStore ).isInstanceOf( NativeTokenScanStore.class );
-    }
-
-    @Test
-    void startingEmptyRelationshipTypeScanStoreInReadOnlyModeMustThrowAndLeaveFileIntact() throws IOException
-    {
-        // given
-        RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(),
-                new Monitors(), ignore(), Config.defaults(), PageCacheTracer.NULL, INSTANCE );
-        relationshipTypeScanStore.init();
-        relationshipTypeScanStore.start();
-        relationshipTypeScanStore.shutdown();
-        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore() ) ).as( "relationship type scan store exists" ).isTrue();
-
-        // when
-        Config config = Config.defaults();
-        config.set( GraphDatabaseSettings.read_only_database_default, true );
-        RelationshipTypeScanStore emptyRTSS = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(),
-                ignore(), config, PageCacheTracer.NULL, INSTANCE );
-
-        // then
-        IllegalStateException e = assertThrows( IllegalStateException.class, () -> {
-            emptyRTSS.init();
-            emptyRTSS.start();
-        } );
-        assertThat( e.getMessage() ).contains( "Database was started in read only mode and with relationship type scan store turned OFF",
-                "Note that consistency check use read only mode.",
-                "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
-        assertThat( fileSystem.fileExists( databaseLayout.relationshipTypeScanStore() ) )
-                .as( "relationship type scan store was not deleted in read only mode and does still exists" ).isTrue();
     }
 
     private LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,

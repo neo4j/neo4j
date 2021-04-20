@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -47,7 +46,7 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 /**
  * Scan store with the view given by iterator created by {@link #getEntityIdIterator(PageCursorTracer)}. This might be a full scan of the store
- * or a partial scan backed by {@link LabelScanStore} or {@link RelationshipTypeScanStore}.
+ * or a partial scan backed by {@link LabelScanStore}.
  *
  * @param <CURSOR> the type of cursor used to read the records.
  */

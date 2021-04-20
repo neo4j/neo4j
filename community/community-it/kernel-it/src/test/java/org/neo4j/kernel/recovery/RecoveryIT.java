@@ -111,11 +111,6 @@ class RecoveryIT
     private TestDatabaseManagementServiceBuilder builder;
     private DatabaseManagementService managementService;
 
-    boolean enableRelationshipTypeScanStore()
-    {
-        return false;
-    }
-
     @Test
     void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Throwable
     {
