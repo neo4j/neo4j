@@ -248,6 +248,7 @@ public class FabricExecutor
         {
             notifications.addAll( seqAsJavaList( plan.notifications() ) );
 
+            lifecycle.startExecution( false );
             var query = plan.query();
             Flux<String> columns = Flux.fromIterable( asJavaIterable( query.outputColumns() ) );
 
@@ -404,6 +405,7 @@ public class FabricExecutor
                                                 ? new ExecutionOptions( location.getGraphId() )
                                                 : new ExecutionOptions();
 
+            lifecycle.startExecution( true );
             Mono<StatementResult> statementResult = ctx.getRemote().run( location, executionOptions, queryString, transactionMode, parameters );
             Flux<Record> records = statementResult.flatMapMany( sr -> sr.records().doOnComplete( () -> sr.summary().subscribe( this::updateSummary ) ) );
 

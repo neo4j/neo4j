@@ -123,10 +123,9 @@ public class FabricStatementLifecycles
             }
         }
 
-        void startExecution()
+        void startExecution( Boolean shouldLogIfSingleQuery )
         {
-            getQueryExecutionMonitor().startExecution( executingQuery );
-            monitoringMode.startExecution();
+                monitoringMode.startExecution(shouldLogIfSingleQuery);
         }
 
         void doneFabricPhase()
@@ -195,7 +194,7 @@ public class FabricStatementLifecycles
 
             abstract QueryExecutionMonitor getChildQueryMonitor();
 
-            abstract void startExecution();
+            abstract void startExecution( Boolean shouldLogIfSingleQuery );
         }
 
         private class SingleQueryMonitoringMode extends MonitoringMode
@@ -207,9 +206,13 @@ public class FabricStatementLifecycles
             }
 
             @Override
-            void startExecution()
+            void startExecution( Boolean shouldLogIfSingleQuery )
             {
                 // Query state events triggered by cypher engine
+                if ( shouldLogIfSingleQuery )
+                {
+                    getQueryExecutionMonitor().startExecution( executingQuery );
+                }
             }
 
             @Override
@@ -229,10 +232,14 @@ public class FabricStatementLifecycles
             }
 
             @Override
-            void startExecution()
+            void startExecution( Boolean shouldLogIfSingleQuery )
             {
-                executingQuery.onCompilationCompleted( null, null, null );
-                executingQuery.onExecutionStarted( OptionalMemoryTracker.NONE );
+                if ( !shouldLogIfSingleQuery )
+                {
+                    getQueryExecutionMonitor().startExecution( executingQuery );
+                    executingQuery.onCompilationCompleted( null, null, null );
+                    executingQuery.onExecutionStarted( OptionalMemoryTracker.NONE );
+                }
             }
 
             @Override
