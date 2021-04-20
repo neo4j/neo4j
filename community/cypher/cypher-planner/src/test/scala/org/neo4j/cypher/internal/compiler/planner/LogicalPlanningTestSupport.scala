@@ -235,6 +235,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedPlanContext(statistics: InstrumentedGraphStatistics = newMockedStatistics): PlanContext = {
     val context = mock[PlanContext]
     doReturn(statistics, Nil: _*).when(context).statistics
+    doReturn(true, Nil: _*).when(context).canLookupNodesByLabel
     context
   }
 

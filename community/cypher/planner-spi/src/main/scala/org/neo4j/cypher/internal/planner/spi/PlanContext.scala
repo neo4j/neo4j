@@ -78,6 +78,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
    */
   def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean
 
+  /**
+   * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index)
+   */
+  def canLookupNodesByLabel: Boolean
+
   def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 
   def getPropertiesWithExistenceConstraint(labelName: String): Set[String]

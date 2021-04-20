@@ -69,6 +69,7 @@ import org.neo4j.values.storable.ValueCategory
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.collection.convert.ImplicitConversions.`iterator asScala`
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper,
@@ -237,6 +238,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     // For everything else, we don't know
     case _ =>
       ValueCategory.UNKNOWN
+  }
+
+  override def canLookupNodesByLabel: Boolean = {
+    !tc.schemaRead.scanStoreAsTokenIndexEnabled || tc.schemaRead.indexesGetAll.exists(descriptor =>
+        descriptor.getIndexType == IndexType.LOOKUP && descriptor.schema.entityType == EntityType.NODE)
   }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {

@@ -359,6 +359,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         }
       }.iterator
 
+      override def canLookupNodesByLabel: Boolean = true
+
       override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
         // Existence and node-key constraints are not yet supported by this class.
         Set.empty

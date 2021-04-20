@@ -40,7 +40,7 @@ case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with L
                               interestingOrderConfig: InterestingOrderConfig,
                               context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     e match {
-      case labelPredicate@HasLabels(variable@Variable(varName), labels) if !skipIDs.contains(varName)  =>
+      case labelPredicate@HasLabels(variable@Variable(varName), labels) if !skipIDs.contains(varName) && context.planContext.canLookupNodesByLabel =>
         if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
           val labelName = labels.head
           val hint = qg.hints.collectFirst {

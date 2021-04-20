@@ -238,10 +238,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         }.iterator
       }
 
-      override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
-        config.constraints.filter(p => p._1 == labelName).flatMap(p => p._2)
-      }
-
       private def newIndexDescriptor(indexDef: IndexDef, indexType: IndexType) = {
         // Our fake index either can always or never return property values
         val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
@@ -257,6 +253,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           orderCapability = orderCapability,
           isUnique = indexType.isUnique
         )
+      }
+
+      override def canLookupNodesByLabel: Boolean = true
+
+      override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
+        config.constraints.filter(p => p._1 == labelName).flatMap(p => p._2)
       }
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = {
