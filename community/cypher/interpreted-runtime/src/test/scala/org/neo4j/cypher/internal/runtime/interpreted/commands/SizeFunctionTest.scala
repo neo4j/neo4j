@@ -70,7 +70,7 @@ class SizeFunctionTest extends CypherFunSuite {
 
     //when/then
     val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
-    e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Path{(0)-[0]-(0)}'")
+    e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Path{(0)-[0]-(0)}")
   }
 
   test("size cannot be used on integers") {

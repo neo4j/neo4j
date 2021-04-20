@@ -51,7 +51,6 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.utils.PrettyPrinter;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
@@ -670,8 +669,9 @@ public final class CypherFunctions
         }
         if ( container instanceof MapValue )
         {
-            // this string assumes that the asString method fails and gives context which operation went wrong
-            return ((MapValue) container).containsKey( asString( index, () -> "Cannot use non string value as or in map keys. It was " + index.toString() ) );
+            return ((MapValue) container).containsKey( asString( index, () ->
+                    // this string assumes that the asString method fails and gives context which operation went wrong
+                    "Cannot use non string value as or in map keys. It was " + index.toString() ) );
         }
         else
         {
@@ -1572,7 +1572,7 @@ public final class CypherFunctions
                 }
                 else
                 {
-                    throw new CypherTypeException( format( "integer, %s, is too large", in.stringValue()));
+                    throw new CypherTypeException( format( "integer, %s, is too large", in.stringValue() ) );
                 }
             }
             catch ( NumberFormatException ignore )
@@ -1657,9 +1657,7 @@ public final class CypherFunctions
                                             () -> "Cannot access a list '" + container.toString() + "' using a non-number index, got " + index.toString() );
         if ( !(number instanceof IntegralValue) )
         {
-            PrettyPrinter prettyPrinter = new PrettyPrinter();
-            number.writeTo( prettyPrinter );
-            throw new CypherTypeException( format( "Cannot access a list using an non-integer number index, got %s", prettyPrinter.value() ),
+            throw new CypherTypeException( format( "Cannot access a list using an non-integer number index, got %s", number ),
                                            null );
         }
         long idx = number.longValue();
@@ -1683,14 +1681,16 @@ public final class CypherFunctions
 
     private static int propertyKeyId( DbAccess dbAccess, AnyValue index )
     {
-        // this string assumes that the asString method fails and gives context which operation went wrong
-        return dbAccess.propertyKey( asString( index, () -> "Cannot use a property key with non string name. It was " + index.toString() ) );
+        return dbAccess.propertyKey( asString( index, () ->
+                // this string assumes that the asString method fails and gives context which operation went wrong
+                "Cannot use a property key with non string name. It was " + index.toString() ) );
     }
 
     private static AnyValue mapAccess( MapValue container, AnyValue index )
     {
-        // this string assumes that the asString method fails and gives context which operation went wrong
-        return container.get( asString( index, () -> "Cannot access a map '" + container.toString() + "' by key '" + index.toString() + "'" ) );
+        return container.get( asString( index, () ->
+                // this string assumes that the asString method fails and gives context which operation went wrong
+                "Cannot access a map '" + container.toString() + "' by key '" + index.toString() + "'" ) );
     }
 
     private static String asString( AnyValue value )
@@ -1776,7 +1776,7 @@ public final class CypherFunctions
 
     private static CypherTypeException needsNumbers( String method )
     {
-        return new CypherTypeException( format( "%s requires numbers", method ));
+        return new CypherTypeException( format( "%s requires numbers", method ) );
     }
 
     private static CypherTypeException notAString( String method, AnyValue in )
@@ -1784,8 +1784,8 @@ public final class CypherFunctions
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return new CypherTypeException(
                 format( "Expected a string value for `%s`, but got: %s; consider converting it to a string with " +
-                                "toString().",
-                        method, in ));
+                        "toString().",
+                        method, in ) );
     }
 
     private static CypherTypeException notAModeString( String method, AnyValue mode )
@@ -1793,6 +1793,6 @@ public final class CypherFunctions
         assert mode != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return new CypherTypeException(
                 format( "Expected a string value for `%s`, but got: %s.",
-                        method, mode ));
+                        method, mode ) );
     }
 }
