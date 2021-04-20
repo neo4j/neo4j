@@ -45,7 +45,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -78,7 +77,6 @@ class RelationshipChecker implements Checker
     private final MutableIntObjectMap<MutableIntSet> mandatoryProperties;
     private final List<IndexDescriptor> indexes;
     private final ProgressListener progress;
-    private final RelationshipTypeScanStore relationshipTypeScanStore;
 
     RelationshipChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties )
     {
@@ -93,7 +91,6 @@ class RelationshipChecker implements Checker
         this.mandatoryProperties = mandatoryProperties;
         this.indexes = context.indexAccessors.onlineRules( RELATIONSHIP );
         this.progress = context.progressReporter( this, "Relationships", neoStores.getRelationshipStore().getHighId() );
-        this.relationshipTypeScanStore = context.relationshipTypeScanStore;
     }
 
     @Override

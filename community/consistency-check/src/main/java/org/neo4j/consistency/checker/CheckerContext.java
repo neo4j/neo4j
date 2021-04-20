@@ -37,7 +37,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
@@ -54,7 +53,6 @@ class CheckerContext
     final boolean useScanStoresAsTokenIndexes;
     final IndexSizes indexSizes;
     final LabelScanStore labelScanStore;
-    final RelationshipTypeScanStore relationshipTypeScanStore;
     final ParallelExecution execution;
     final ConsistencyReport.Reporter reporter;
     final CacheAccess cacheAccess;
@@ -77,7 +75,6 @@ class CheckerContext
             NeoStores neoStores,
             IndexAccessors indexAccessors,
             LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore,
             ParallelExecution execution,
             ConsistencyReport.Reporter reporter,
             CacheAccess cacheAccess,
@@ -93,7 +90,7 @@ class CheckerContext
             ConsistencyFlags consistencyFlags,
             boolean useScanStoresAsTokenIndexes )
     {
-        this( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader,
+        this( neoStores, indexAccessors, labelScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader,
                 observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, new AtomicBoolean(), consistencyFlags,
                 useScanStoresAsTokenIndexes );
     }
@@ -102,7 +99,6 @@ class CheckerContext
             NeoStores neoStores,
             IndexAccessors indexAccessors,
             LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore,
             ParallelExecution execution,
             ConsistencyReport.Reporter reporter,
             CacheAccess cacheAccess,
@@ -129,7 +125,6 @@ class CheckerContext
         this.useScanStoresAsTokenIndexes = useScanStoresAsTokenIndexes;
         this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId(), pageCacheTracer );
         this.labelScanStore = labelScanStore;
-        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.execution = execution;
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;
@@ -147,7 +142,7 @@ class CheckerContext
 
     CheckerContext withoutReporting()
     {
-        return new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess,
+        return new CheckerContext( neoStores, indexAccessors, labelScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess,
                 tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, cancelled, consistencyFlags,
                 useScanStoresAsTokenIndexes );
     }

@@ -42,7 +42,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
@@ -82,7 +81,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private final ProgressMonitorFactory.MultiPartBuilder progress;
 
     public RecordStorageConsistencyChecker( PageCache pageCache, NeoStores neoStores, CountsStore counts, LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore, IndexAccessors indexAccessors, InconsistencyReport report,
+            IndexAccessors indexAccessors, InconsistencyReport report,
             ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, boolean debug, ConsistencyFlags consistencyFlags,
             NodeBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
@@ -116,7 +115,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.cacheAccess = new DefaultCacheAccess( defaultByteArray( limiter.rangeSize(), memoryTracker ), Counts.NONE, numberOfThreads );
         this.observedCounts = new CountsState( neoStores, cacheAccess, memoryTracker );
         this.progress = progressFactory.multipleParts( "Consistency check" );
-        this.context = new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution,
+        this.context = new CheckerContext( neoStores, indexAccessors, labelScanStore, execution,
                 reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, memoryTracker,
                 debug, consistencyFlags, config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
     }

@@ -153,7 +153,7 @@ public class FullCheck
 
             try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
                     directStoreAccess.nativeStores(), countsStore, directStoreAccess.labelScanStore(),
-                    directStoreAccess.relationshipTypeScanStore(), indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
+                    indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
                     pageCacheTracer, memoryTracker ) )
             {
                 checker.check();

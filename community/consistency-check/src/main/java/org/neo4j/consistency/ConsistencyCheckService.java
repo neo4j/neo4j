@@ -55,7 +55,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -250,18 +249,12 @@ public class ConsistencyCheckService
             LabelScanStore labelScanStore =
                     TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnlyChecker, monitors, workCollector, config,
                             pageCacheTracer, memoryTracker );
-            RelationshipTypeScanStore relationshipTypeScanstore =
-                    TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnlyChecker, monitors, workCollector,
-                            config, pageCacheTracer, memoryTracker );
             life.add( labelScanStore );
-            life.add( relationshipTypeScanstore );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, readOnlyChecker, pageCacheTracer );
             life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
-            DirectStoreAccess stores =
-                    new DirectStoreAccess( neoStores, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
-                            idGeneratorFactory );
+            DirectStoreAccess stores = new DirectStoreAccess( neoStores, labelScanStore, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker,
                     new DuplicatingLog( log, reportLog ) );

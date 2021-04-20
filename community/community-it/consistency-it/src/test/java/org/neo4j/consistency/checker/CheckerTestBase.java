@@ -65,7 +65,6 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -125,7 +124,6 @@ class CheckerTestBase
     RelationshipStore relationshipStore;
     SchemaStore schemaStore;
     LabelScanStore labelIndex;
-    RelationshipTypeScanStore relationshipTypeIndex;
     ConsistencyReporter reporter;
     ConsistencyReporter.Monitor monitor;
     SchemaStorage schemaStorage;
@@ -164,7 +162,6 @@ class CheckerTestBase
         tokenHolders = dependencies.resolveDependency( TokenHolders.class );
         schemaStorage = new SchemaStorage( schemaStore, tokenHolders );
         labelIndex = dependencies.resolveDependency( LabelScanStore.class );
-        relationshipTypeIndex = dependencies.resolveDependency( RelationshipTypeScanStore.class );
         cacheAccess = new DefaultCacheAccess( NumberArrayFactories.HEAP.newDynamicByteArray( 10_000, new byte[MAX_BYTES], INSTANCE ),
                                               Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
@@ -236,7 +233,7 @@ class CheckerTestBase
                 Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId() );
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
-        context = new CheckerContext( neoStores, indexAccessors, labelIndex, relationshipTypeIndex, execution, reporter, cacheAccess, tokenHolders,
+        context = new CheckerContext( neoStores, indexAccessors, labelIndex, execution, reporter, cacheAccess, tokenHolders,
                 new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, false, consistencyFlags, config.get(
                 RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
         context.initialize();
