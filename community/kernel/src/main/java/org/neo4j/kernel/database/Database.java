@@ -92,7 +92,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
-import org.neo4j.kernel.impl.api.scan.FullRelationshipTypeStream;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
@@ -105,7 +104,6 @@ import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.LoggingMonitor;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
@@ -192,9 +190,7 @@ import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTrunca
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.labelScanStore;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.toggledRelationshipTypeScanStore;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
@@ -459,9 +455,6 @@ public class Database extends LifecycleAdapter
             LabelScanStore labelScanStore =
                     buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, databaseMonitors,
                             pageCacheTracer, otherDatabaseMemoryTracker );
-            RelationshipTypeScanStore relationshipTypeScanStore =
-                    buildRelationshipTypeIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, databaseMonitors,
-                            databaseConfig, otherDatabaseMemoryTracker );
 
             IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
                     databaseConfig, storageEngine::newReader, fullScanStoreView, labelScanStore, lockService, internalLogProvider );
@@ -504,7 +497,6 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( logEntryReader );
             databaseDependencies.satisfyDependency( storageEngine );
             databaseDependencies.satisfyDependency( labelScanStore );
-            databaseDependencies.satisfyDependency( relationshipTypeScanStore );
             databaseDependencies.satisfyDependency( indexingService );
             databaseDependencies.satisfyDependency( indexStoreViewFactory );
             databaseDependencies.satisfyDependency( indexStatisticsStore );
@@ -741,22 +733,6 @@ public class Database extends LifecycleAdapter
     }
 
     /**
-     * Builds a {@link RelationshipTypeScanStore} and adds it to this database's {@link LifeSupport}.
-     */
-    private RelationshipTypeScanStore buildRelationshipTypeIndex(
-            PageCache pageCache,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            StorageEngine storageEngine,
-            FullScanStoreView fullScanStoreView,
-            Monitors monitors,
-            Config config,
-            MemoryTracker memoryTracker )
-    {
-        return life.add( buildRelationshipTypeIndex( recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, monitors, internalLogProvider,
-                pageCache, databaseLayout, fs, readOnlyDatabaseChecker, config, tracers.getPageCacheTracer(), memoryTracker ) );
-    }
-
-    /**
      * Convenience method for building a {@link LabelScanStore}. Doesn't add it to a {@link LifeSupport}.
      */
     public static LabelScanStore buildLabelIndex(
@@ -779,30 +755,6 @@ public class Database extends LifecycleAdapter
                 config, cacheTracer, memoryTracker );
         storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );
         return labelScanStore;
-    }
-
-    /**
-     * Convenience method for building a {@link RelationshipTypeScanStore}. Doesn't add it to a {@link LifeSupport}.
-     */
-    public static RelationshipTypeScanStore buildRelationshipTypeIndex(
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            StorageEngine storageEngine,
-            IndexStoreView indexStoreView,
-            Monitors monitors,
-            LogProvider logProvider,
-            PageCache pageCache,
-            DatabaseLayout databaseLayout,
-            FileSystemAbstraction fs,
-            DatabaseReadOnlyChecker readOnlyChecker,
-            Config config,
-            PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker )
-    {
-        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( RelationshipTypeScanStore.class ), EntityType.RELATIONSHIP ),
-                RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG );
-        FullStoreChangeStream relationshipTypeStream = new FullRelationshipTypeStream( indexStoreView );
-        return toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream,
-                readOnlyChecker, monitors, recoveryCleanupWorkCollector, config, cacheTracer, memoryTracker );
     }
 
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, LogProvider logProvider, JobScheduler scheduler,

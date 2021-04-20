@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
@@ -319,9 +318,6 @@ public final class Recovery
         FullScanStoreView fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, storageEngine::newReader, config, scheduler );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, fullScanStoreView, monitors,
                 logProvider, databasePageCache, databaseLayout, fs, readOnlyChecker, config, tracers.getPageCacheTracer(), memoryTracker );
-        RelationshipTypeScanStore relationshipTypeScanStore =
-                Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, fullScanStoreView, monitors, logProvider, databasePageCache,
-                        databaseLayout, fs, readOnlyChecker, config, tracers.getPageCacheTracer(), memoryTracker );
 
         // Schema indexes
         IndexStoreViewFactory indexStoreViewFactory =
@@ -379,7 +375,6 @@ public final class Recovery
         recoveryLife.add( storageEngine );
         recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logFiles, recoveryLog ) );
         recoveryLife.add( labelScanStore );
-        recoveryLife.add( relationshipTypeScanStore );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( transactionAppender );
