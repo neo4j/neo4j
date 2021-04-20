@@ -25,7 +25,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,12 +38,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AssertionSecurityLogProviderHelper
+public class SecurityLogHelper
 {
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final Log4jLogProvider logProvider;
 
-    public AssertionSecurityLogProviderHelper()
+    public SecurityLogHelper()
     {
         logProvider = new Log4jLogProvider( LogConfig.createBuilder( outContent, Level.INFO )
                                                      .withFormat( FormattedLogFormat.STANDARD_FORMAT )
@@ -54,27 +56,15 @@ public class AssertionSecurityLogProviderHelper
         return logProvider;
     }
 
-    public void assertContainsMessage( Level level, String message, Integer index )
-    {
-        String[] logLines = outContent.toString().split( System.lineSeparator() );
-        Assertions.assertThat( logLines[index] ).contains( message );
-        Assertions.assertThat( logLines[index] ).contains( level.toString() );
-    }
-
-    public void assertContainsMessage( Level level, String message )
-    {
-        Assertions.assertThat( outContent.toString() ).contains( message );
-        Assertions.assertThat( outContent.toString() ).contains( level.toString() );
-    }
-
-    public void assertContainsMessage( Level level, String format, Object... arguments )
-    {
-        assertContainsMessage( level, String.format( format, arguments ) );
-    }
-
     public void assertDoesNotContainsMessage( String message )
     {
         Assertions.assertThat( outContent.toString() ).doesNotContain( message );
+    }
+
+    public ContentValidator assertLog( FormattedLogFormat format )
+    {
+        String[] contentLines = outContent.toString().split( System.lineSeparator() );
+        return assertLog( format, contentLines );
     }
 
     public static ContentValidator assertLog( FormattedLogFormat format, String[] content )
@@ -92,7 +82,9 @@ public class AssertionSecurityLogProviderHelper
 
     public interface ContentValidator
     {
-        void contains( LogLineContent... logLines );
+        void containsOnly( LogLineContent... logLines );
+
+        void containsOrdered( LogLineContent... logLines );
     }
 
     private static class JsonContentValidator implements ContentValidator
@@ -105,7 +97,7 @@ public class AssertionSecurityLogProviderHelper
         }
 
         @Override
-        public void contains( LogLineContent... logLines )
+        public void containsOnly( LogLineContent... logLines )
         {
             try
             {
@@ -114,8 +106,9 @@ public class AssertionSecurityLogProviderHelper
                 {
                     LogLineContent expected = logLines[i];
                     ObjectMapper mapper = new ObjectMapper();
-                    Map<String, String> map = mapper.readValue( contentLines[i], new TypeReference<>()
-                    { } );
+                    Map<String,String> map = mapper.readValue( contentLines[i], new TypeReference<>()
+                    {
+                    } );
                     assertLine( expected, map );
                 }
             }
@@ -125,12 +118,51 @@ public class AssertionSecurityLogProviderHelper
             }
         }
 
+        @Override
+        public void containsOrdered( LogLineContent... logLines )
+        {
+            try
+            {
+                assertThat( contentLines.length ).isGreaterThanOrEqualTo( logLines.length );
+
+                int j = 0;
+                for ( LogLineContent expected : logLines )
+                {
+                    boolean found = false;
+                    for ( ; j < contentLines.length; j++ )
+                    {
+                        ObjectMapper mapper = new ObjectMapper();
+                        Map<String,String> map = mapper.readValue( contentLines[j], new TypeReference<>()
+                        { } );
+                        if ( equalLine( expected, map ) )
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    assertTrue( found, String.format( "Did not find line:  %s", expected ) );
+                }
+            }
+            catch ( JsonProcessingException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        private boolean equalLine( LogLineContent expected, Map<String,String> map )
+        {
+            return Objects.equals( expected.expectedLevel, map.get( "level" ) ) &&
+                   Objects.equals( expected.expectedSource, map.get( "source" ) ) &&
+                   Objects.equals( expected.expectedUser, map.get( "username" ) ) &&
+                   Objects.equals( expected.expectedMessage, map.get( "message" ) );
+        }
+
         private void assertLine( LogLineContent expected, Map<String,String> map )
         {
             assertEquals( expected.expectedLevel, map.get( "level" ), "'level' mismatch" );
-            assertEquals( expected.expectedSource, map.get( "source" ), "'source' mismatch"  );
-            assertEquals( expected.expectedUser, map.get( "username" ), "'user' mismatch"  );
-            assertEquals( expected.expectedMessage, map.get( "message" ), "'message' mismatch"  );
+            assertEquals( expected.expectedSource, map.get( "source" ), "'source' mismatch" );
+            assertEquals( expected.expectedUser, map.get( "username" ), "'user' mismatch" );
+            assertEquals( expected.expectedMessage, map.get( "message" ), "'message' mismatch" );
         }
     }
 
@@ -141,9 +173,9 @@ public class AssertionSecurityLogProviderHelper
         private static final Pattern LOGGER_LINE_PARSER = Pattern.compile(
                 "^(?<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{4}) " +
                 "(?<level>\\w{4,5})\\s{1,2}" +
-                "(?<source>embedded-session\\t|bolt-session[^>]*>|server-session(?:\\t[^\\t]*){3})\\t" +
-                "\\[(?<user>[^\\s]+)] : " +
-                "(?<message>.+?)");
+                "((?<source>embedded-session\\t|bolt-session[^>]*>|server-session(?:\\t[^\\t]*){3})\\t)?" +
+                "\\[(?<user>[^\\s]+)?] : " +
+                "(?<message>.+?)" );
 
         private LoggerContentValidator( String[] contentLines )
         {
@@ -151,7 +183,7 @@ public class AssertionSecurityLogProviderHelper
         }
 
         @Override
-        public void contains( LogLineContent... logLines )
+        public void containsOnly( LogLineContent... logLines )
         {
             assertThat( logLines.length ).isEqualTo( contentLines.length );
             for ( int i = 0; i < logLines.length; i++ )
@@ -160,14 +192,45 @@ public class AssertionSecurityLogProviderHelper
             }
         }
 
+        @Override
+        public void containsOrdered( LogLineContent... logLines )
+        {
+            assertThat( contentLines.length ).isGreaterThanOrEqualTo( logLines.length );
+
+            int j = 0;
+            for ( LogLineContent expected : logLines )
+            {
+                boolean found = false;
+                for ( ; j < contentLines.length; j++ )
+                {
+                    if ( equalLine( contentLines[j], expected ) )
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                assertTrue( found, String.format( "Did not find line:  %s %nin %n%s", expected, Arrays.toString( contentLines ) ) );
+            }
+        }
+
+        private boolean equalLine( String contentLine, LogLineContent expected )
+        {
+            Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
+            return matcher.matches() &&
+                   Objects.equals( expected.expectedLevel, matcher.group( "level" ) ) &&
+                   Objects.equals( expected.expectedSource, matcher.group( "source" ) ) &&
+                   Objects.equals( expected.expectedUser, matcher.group( "user" ) ) &&
+                   Objects.equals( expected.expectedMessage, matcher.group( "message" ) );
+        }
+
         private void assertLine( String contentLine, LogLineContent expected )
         {
             Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
             assertTrue( matcher.matches() );
             assertEquals( expected.expectedLevel, matcher.group( "level" ), "'level' mismatch" );
-            assertEquals( expected.expectedSource, matcher.group("source"), "'source' mismatch"  );
-            assertEquals( expected.expectedUser, matcher.group("user"), "'user' mismatch"  );
-            assertEquals( expected.expectedMessage, matcher.group("message"), "'message' mismatch"  );
+            assertEquals( expected.expectedSource, matcher.group( "source" ), "'source' mismatch" );
+            assertEquals( expected.expectedUser, matcher.group( "user" ), "'user' mismatch" );
+            assertEquals( expected.expectedMessage, matcher.group( "message" ), "'message' mismatch" );
         }
     }
 
@@ -205,6 +268,17 @@ public class AssertionSecurityLogProviderHelper
         {
             this.expectedMessage = message;
             return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "LogLineContent{" +
+                   "expectedLevel='" + expectedLevel + '\'' +
+                   ", expectedSource='" + expectedSource + '\'' +
+                   ", expectedUser='" + expectedUser + '\'' +
+                   ", expectedMessage='" + expectedMessage + '\'' +
+                   '}';
         }
     }
 }

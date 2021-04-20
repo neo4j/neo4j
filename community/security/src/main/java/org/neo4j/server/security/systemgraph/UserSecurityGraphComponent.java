@@ -109,7 +109,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
             if ( !wasInitialized )
             {
 
-                log.info( "Updating the initial password in component '%s'  ", SECURITY_USER_COMPONENT, component.version, component.getStatus() );
+                log.info( "Updating the initial password in component '%s'", SECURITY_USER_COMPONENT );
                 component.updateInitialUserPassword( tx );
                 tx.commit();
             }
