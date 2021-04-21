@@ -46,6 +46,8 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
 import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
@@ -65,7 +67,7 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
   private def nodeIndexLeafPlanner(restrictions: LeafPlanRestrictions) =
     NodeIndexPlanner(Seq(nodeIndexSeekPlanProvider, nodeIndexContainsScanPlanProvider, nodeIndexEndsWithScanPlanProvider, nodeIndexScanPlanProvider), restrictions)
 
-  test("plans all possible index plans") {
+  test("finds all types of index plans") {
 
     val lit42: Expression = literalInt(42)
     val lit6: Expression = literalInt(6)
@@ -73,7 +75,13 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
     val nProp = prop("n", "prop")
     val mProp = prop("m", "prop")
     val oProp = prop("o", "prop")
+    val oFoo = prop("o", "foo")
+    val oBar = prop("o", "bar")
+    val oAaa = prop("o", "aaa")
+    val oBbb = prop("o", "bbb")
+    val oCcc = prop("o", "ccc")
     val xProp = prop("x", "prop")
+
     val nPropEqualsXProp = Equals(nProp, xProp)(pos)
     val nPropEqualsLit42 = equals(lit42, nProp)
     val nPropInLit6Lit42 = in(nProp, listOf(lit6, lit42))
@@ -88,6 +96,12 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
     val mPropIsNotNull = isNotNull(mProp)
     val oPropIsNotNull = isNotNull(oProp)
     val oPropExists = exists(oProp)
+    val oFooExists = exists(oFoo)
+    val oFooEqualsLit6 = equals(oFoo, lit6)
+    val oBarEqualsLit42 = equals(oBar, lit42)
+    val oAaaEqualsLit42 = equals(oAaa, lit42)
+    val oBbbLessThan6 = lessThan(oBbb, lit6)
+    val oCccLessThan6 = lessThan(oCcc, lit6)
     new given {
       addTypeToSemanticTable(nProp, CTInteger.invariant)
       addTypeToSemanticTable(mProp, CTInteger.invariant)
@@ -112,6 +126,12 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         mPropIsNotNull,
         oPropIsNotNull,
         oPropExists,
+        oFooExists,
+        oFooEqualsLit6,
+        oBarEqualsLit42,
+        oAaaEqualsLit42,
+        oBbbLessThan6,
+        oCccLessThan6,
       )
 
       qg = QueryGraph(
@@ -121,6 +141,8 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       )
 
       indexOn("Awesome", "prop")
+      indexOn("Awesome", "foo", "bar")
+      indexOn("Awesome", "aaa", "bbb", "ccc")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
@@ -129,17 +151,13 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
       // then
       val labelToken = LabelToken("Awesome", LabelId(0))
       val propToken = PropertyKeyToken("prop", PropertyKeyId(0))
+      val fooToken = PropertyKeyToken("foo", PropertyKeyId(1))
+      val barToken = PropertyKeyToken("bar", PropertyKeyId(2))
+      val aaaToken = PropertyKeyToken("aaa", PropertyKeyId(3))
+      val bbbToken = PropertyKeyToken("bbb", PropertyKeyId(4))
+      val cccToken = PropertyKeyToken("ccc", PropertyKeyId(5))
 
-      val plansByType = resultPlans.groupBy(_.productPrefix).mapValues(_.toSet)
-
-      plansByType.keySet shouldEqual Set(
-        "NodeIndexSeek",
-        "NodeIndexContainsScan",
-        "NodeIndexEndsWithScan",
-        "NodeIndexScan",
-      )
-
-      plansByType("NodeIndexSeek") shouldEqual Set(
+      resultPlans.toSet shouldEqual Set(
         // nPropInLit6Lit42
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue)), ManyQueryExpression(listOf(lit6, lit42)), Set("x"), IndexOrderNone),
         // nPropLessThanLit6
@@ -154,27 +172,25 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         NodeIndexSeek("n", labelToken, Seq(IndexedProperty(propToken, CanGetValue)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone),
         // mPropEqualsXProp
         NodeIndexSeek("m", labelToken, Seq(IndexedProperty(propToken, CanGetValue)), SingleQueryExpression(xProp), Set("x"), IndexOrderNone),
-      )
-
-      plansByType("NodeIndexContainsScan") shouldEqual Set(
+        // oFooEqualsLit6, oBarEqualsLit42
+        NodeIndexSeek("o", labelToken, Seq(IndexedProperty(fooToken, CanGetValue), IndexedProperty(barToken, CanGetValue)), CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))), Set("x"), IndexOrderNone),
+        // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
+        NodeIndexSeek("o", labelToken, Seq(IndexedProperty(aaaToken, CanGetValue), IndexedProperty(bbbToken, DoNotGetValue), IndexedProperty(cccToken, DoNotGetValue)),
+          CompositeQueryExpression(Seq(SingleQueryExpression(lit42), RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)), ExistenceQueryExpression())), Set("x"), IndexOrderNone),
         // nPropContainsLitFoo
         NodeIndexContainsScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue), litFoo, Set("x"), IndexOrderNone),
-      )
-
-      plansByType("NodeIndexEndsWithScan") shouldEqual Set(
         // nPropEndsWithLitFoo
         NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue), litFoo, Set("x"), IndexOrderNone),
-      )
-
-      plansByType("NodeIndexScan") shouldEqual Set(
         // ..several..
         NodeIndexScan("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue)), Set("x"), IndexOrderNone),
         // oPropIsNotNull, oPropExists
         NodeIndexScan("o", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue)), Set("x"), IndexOrderNone),
+        // oFooExists, oFooEqualsLit6, oBarEqualsLit42,
+        NodeIndexScan("o", labelToken, Seq(IndexedProperty(fooToken, DoNotGetValue), IndexedProperty(barToken, DoNotGetValue)), Set("x"), IndexOrderNone),
+        // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
+        NodeIndexScan("o", labelToken, Seq(IndexedProperty(aaaToken, DoNotGetValue), IndexedProperty(bbbToken, DoNotGetValue), IndexedProperty(cccToken, DoNotGetValue)), Set("x"), IndexOrderNone),
       )
 
     }
   }
-
-
 }
