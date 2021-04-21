@@ -434,6 +434,7 @@ object LogicalPlanToPlanBuilderString {
     valueExpr match {
       case SingleQueryExpression(expression) => s"${propNames.head} = ${expressionStringifier(expression)}"
       case ManyQueryExpression(ListLiteral(expressions)) => s"${propNames.head} = ${expressions.map(expressionStringifier(_)).mkString(" OR ")}"
+      case ManyQueryExpression(expr) => s"${propNames.head} IN ${expressionStringifier(expr)}"
       case RangeQueryExpression(InequalitySeekRangeWrapper(range)) =>
         rangeStr(range, propNames.head).toString
       case RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(expression))) => s"${propNames.head} STARTS WITH ${expressionStringifier(expression)}"
