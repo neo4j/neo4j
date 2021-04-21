@@ -359,6 +359,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
+  def nodePat(): NodePattern =
+    NodePattern(None, Seq(), None)(pos)
+
   def nodePat(name: String): NodePattern =
     NodePattern(Some(Variable(name)(pos)), Seq(), None)(pos)
 

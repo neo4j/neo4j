@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -322,12 +323,12 @@ case class Match(
 
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelName), properties, _)
-        if !containsLabelPredicate(variable, labelName) =>
+      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelName), _, _)
+        if !containsLabelOrRelTypePredicate(variable, labelName) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             | Must use label on node that hint is referring to.""".stripLinesAndMargins, hint.position)
-      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelName), properties, _)
+             | Must use label/relationship type on node/relationship that hint is referring to.""".stripLinesAndMargins, hint.position)
+      case hint@UsingIndexHint(Variable(variable), LabelOrRelTypeName(_), properties, _)
         if !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.
@@ -336,14 +337,14 @@ case class Match(
              | equality comparison, inequality (range) comparison, STARTS WITH,
              | IN condition or checking property existence.
              | The comparison cannot be performed between two property values.
-             | Note that the label and property comparison must be specified on a
-             | non-optional node""".stripLinesAndMargins, hint.position)
+             | Note that the label/relationship type and property comparison must be specified on a
+             | non-optional node/relationship.""".stripLinesAndMargins, hint.position)
       case hint@UsingScanHint(Variable(variable), LabelOrRelTypeName(labelName))
-        if !containsLabelPredicate(variable, labelName) =>
+        if !containsLabelOrRelTypePredicate(variable, labelName) =>
         SemanticError(
-          """|Cannot use label scan hint in this context.
-             | Label scan hints require using a simple label test in WHERE (either directly or as part of a
-             | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
+          """|Cannot use label/relationship type scan hint in this context.
+             | Label/relationship type scan hints require using a simple label/relationship type test in WHERE (either directly or as part of a
+             | top-level AND). Note that the label/relationship type must be specified on a non-optional node/relationship.""".stripLinesAndMargins, hint.position)
       case hint@UsingJoinHint(_)
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
@@ -411,25 +412,36 @@ case class Match(
     }
   }
 
-  private def containsLabelPredicate(variable: String, label: String): Boolean = {
-    var labels = pattern.fold(Seq.empty[String]) {
+  private[ast] def containsLabelOrRelTypePredicate(variable: String, labelOrRelType: String): Boolean = {
+    val inlinedLabels = pattern.fold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), nodeLabels, _) if variable == id =>
         list => list ++ nodeLabels.map(_.name)
     }
-    labels = where match {
-      case Some(innerWhere) => innerWhere.treeFold(labels) {
-        case HasLabels(Variable(id), predicateLabels) if id == variable =>
-          acc => SkipChildren(acc ++ predicateLabels.map(_.name))
-        case HasLabelsOrTypes(v@Variable(id), predicateLabels) if id == variable =>
-          acc => SkipChildren(acc ++ predicateLabels.map(_.name))
+    val inlinedRelTypes = pattern.fold(Seq.empty[String]) {
+      case RelationshipPattern(Some(Variable(id)), types, _, _, _, _) if variable == id =>
+        list => list ++ types.map(_.name)
+    }
+    val (predicateLabels, predicateRelTypes) = where match {
+      case Some(innerWhere) => innerWhere.treeFold((Seq.empty[String], Seq.empty[String])) {
+        case HasLabels(Variable(id), predicateLabels) if id == variable => {
+          case (ls, rs) => SkipChildren((ls ++ predicateLabels.map(_.name), rs))
+        }
+        case HasLabelsOrTypes(Variable(id), predicateLabelsOrRelTypes) if id == variable => {
+          case (ls, rs) => SkipChildren((ls ++ predicateLabelsOrRelTypes.map(_.name), rs  ++ predicateLabelsOrRelTypes.map(_.name)))
+        }
+        case HasTypes(Variable(id), predicateRelTypes) if id == variable => {
+          case (ls, rs) => SkipChildren((ls, rs ++ predicateRelTypes.map(_.name)))
+        }
         case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] =>
           acc => TraverseChildren(acc)
         case _ =>
           acc => SkipChildren(acc)
       }
-      case None => labels
+      case None => (inlinedLabels, inlinedRelTypes)
     }
-    labels.contains(label)
+    val allLabels = inlinedLabels ++ predicateLabels
+    val allRelTypes = inlinedRelTypes ++ predicateRelTypes
+    allLabels.contains(labelOrRelType) || allRelTypes.contains(labelOrRelType)
   }
 
   def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findByAllClass[LogicalVariable].toSet

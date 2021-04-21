@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher
 
-import java.util.Optional
-
 import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
+
+import java.util.Optional
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
@@ -190,14 +190,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     graph.createUniqueConstraint("Person", "id")
     expectError(
       "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.name = 'Andres' RETURN n",
-      "Cannot use index hint in this context. Index hints are only supported for the following predicates in WHERE (either directly or as part of a top-level AND or OR): equality comparison, inequality (range) comparison, STARTS WITH, IN condition or checking property existence. The comparison cannot be performed between two property values. Note that the label and property comparison must be specified on a non-optional node (line 1, column 18 (offset: 17))"
+      "Cannot use index hint in this context. Index hints are only supported for the following predicates in WHERE (either directly or as part of a top-level AND or OR): equality comparison, inequality (range) comparison, STARTS WITH, IN condition or checking property existence. The comparison cannot be performed between two property values. Note that the label/relationship type and property comparison must be specified on a non-optional node/relationship. (line 1, column 18 (offset: 17))"
     )
   }
 
   test("report wrong usage of label scan hint") {
     expectError(
       "MATCH (n) USING SCAN n:Person WHERE n:Person OR n:Bird RETURN n",
-      "Cannot use label scan hint in this context. Label scan hints require using a simple label test in WHERE (either directly or as part of a top-level AND). Note that the label must be specified on a non-optional node")
+      "Cannot use label/relationship type scan hint in this context. Label/relationship type scan hints require using a simple label/relationship type test in WHERE (either directly or as part of a top-level AND). Note that the label/relationship type must be specified on a non-optional node/relationship.")
   }
 
   test("should forbid bound relationship list in shortestPath pattern parts") {
