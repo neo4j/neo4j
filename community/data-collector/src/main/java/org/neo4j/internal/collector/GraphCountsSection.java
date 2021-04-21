@@ -143,10 +143,21 @@ final class GraphCountsSection
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
-
+            EntityType entityType = index.schema().entityType();
             Map<String,Object> data = new HashMap<>();
-            data.put( "labels", map( index.schema().getEntityTokenIds(),
-                                     id -> anonymizer.label( tokens.labelGetName( id ), id ) ) );
+
+            switch ( entityType )
+            {
+            case NODE:
+                data.put( "labels", map( index.schema().getEntityTokenIds(),
+                                         id -> anonymizer.label( tokens.labelGetName( id ), id ) ) );
+                break;
+            case RELATIONSHIP:
+                data.put( "relationshipTypes", map( index.schema().getEntityTokenIds(),
+                                                    id -> anonymizer.relationshipType( tokens.relationshipTypeGetName( id ), id ) ) );
+                break;
+            default:
+            }
 
             data.put( "properties", map( index.schema().getPropertyIds(),
                                          id -> anonymizer.propertyKey( tokens.propertyKeyGetName( id ), id ) ) );
