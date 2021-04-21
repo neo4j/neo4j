@@ -36,12 +36,16 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator {
                      queryGraph: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Iterator[SelectionCandidate] = {
-    unsolvedPredicates.iterator.filterNot(containsPatternPredicates).collect {
-      case s@HasLabels(variable: Variable, Seq(labelName)) if queryGraph.patternNodes.contains(variable.name) =>
-        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
-        val labelScan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(s), None, queryGraph.argumentIds, providedOrder, context)
-        val plan = context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), input, labelScan, Set.empty, context)
-        SelectionCandidate(plan, Set(s))
+    if (!context.planContext.canLookupNodesByLabel) {
+      Iterator.empty
+    } else {
+      unsolvedPredicates.iterator.filterNot(containsPatternPredicates).collect {
+        case s@HasLabels(variable: Variable, Seq(labelName)) if queryGraph.patternNodes.contains(variable.name) =>
+          val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
+          val labelScan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(s), None, queryGraph.argumentIds, providedOrder, context)
+          val plan = context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), input, labelScan, Set.empty, context)
+          SelectionCandidate(plan, Set(s))
+      }
     }
   }
 }

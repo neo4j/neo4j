@@ -19,15 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Optional
@@ -37,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Inside.inside
@@ -114,5 +120,23 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
               (NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _), _)
         if args == Set("n") => ()
     }
+  }
+
+  test("should not produce any candidates when node by label lookup is disabled") {
+    val planContext = mock[PlanContext]
+    when(planContext.canLookupNodesByLabel).thenReturn(false)
+
+    val ctx = mock[LogicalPlanningContext]
+    when(ctx.planContext).thenReturn(planContext)
+
+    val candidates = selectHasLabelWithJoin(
+      mock[LogicalPlan],
+      Set(hasLabels("n", "Label")),
+      QueryGraph.empty.addPatternNodes("n"),
+      InterestingOrderConfig.empty,
+      ctx
+    )
+
+    candidates shouldBe empty
   }
 }
