@@ -22,11 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.PathImpl
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{SizeFunction, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SizeFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 
 class SizeFunctionTest extends CypherFunSuite {
@@ -64,6 +67,17 @@ class SizeFunctionTest extends CypherFunSuite {
     val sizeFunction = SizeFunction(Variable("p"))
 
     //when/then
-    intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
+    val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Path{(0)-[0]-(0)}")
+  }
+
+  test("size cannot be used on integers") {
+    //given
+    val m = ExecutionContext.from("p" -> Values.of(33))
+    val sizeFunction = SizeFunction(Variable("p"))
+
+    //when/then
+    val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Int(33)")
   }
 }

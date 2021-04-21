@@ -1023,11 +1023,7 @@ public final class CypherFunctions
     public static IntegralValue size( AnyValue item )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( item instanceof PathValue )
-        {
-            throw new CypherTypeException( "SIZE cannot be used on paths", null );
-        }
-        else if ( item instanceof TextValue )
+        if ( item instanceof TextValue )
         {
             return longValue( ((TextValue) item).length() );
         }
@@ -1037,7 +1033,7 @@ public final class CypherFunctions
         }
         else
         {
-            return longValue( 1 );
+            throw new CypherTypeException( "Invalid input for function 'size()': Expected a String or List, got: " + item );
         }
     }
 
@@ -1048,17 +1044,9 @@ public final class CypherFunctions
         {
             return longValue( ((PathValue) item).size() );
         }
-        else if ( item instanceof TextValue )
-        {
-            throw new CypherTypeException( "LENGTH cannot be used on strings", null );
-        }
-        else if ( item instanceof SequenceValue )
-        {
-            throw new CypherTypeException( "LENGTH cannot be used on lists", null );
-        }
         else
         {
-            return longValue( 1 );
+            throw new CypherTypeException( "Invalid input for function 'length()': Expected a Path, got: " + item );
         }
     }
 

@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.PathImpl
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{LengthFunction, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.LengthFunction
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values.intValue
 
@@ -44,6 +46,7 @@ class LengthFunctionTest extends CypherFunSuite {
     //then
     result should equal(intValue(1))
   }
+
   test("length cannot be used on collections") {
     //given
     val l = Seq("it", "was", "the")
@@ -51,7 +54,8 @@ class LengthFunctionTest extends CypherFunSuite {
     val lengthFunction = LengthFunction(Variable("l"))
 
     //when/then
-    intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    val e = intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'length()': Expected a Path, got: List{String(\"it\"), String(\"was\"), String(\"the\")}")
   }
 
   test("length cannot be used on strings") {
@@ -61,6 +65,7 @@ class LengthFunctionTest extends CypherFunSuite {
     val lengthFunction = LengthFunction(Variable("s"))
 
     //when/then
-    intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    val e = intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'length()': Expected a Path, got: String(\"it was the\")")
   }
 }
