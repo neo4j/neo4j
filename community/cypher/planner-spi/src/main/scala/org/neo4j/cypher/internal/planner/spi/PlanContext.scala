@@ -83,6 +83,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
    */
   def canLookupNodesByLabel: Boolean
 
+  /**
+   * Checks if it is possible to lookup relationships by their types
+   */
+  def canLookupRelationshipsByType: Boolean
+
   def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 
   def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String]
@@ -98,8 +103,6 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def statistics: InstrumentedGraphStatistics
 
   def notificationLogger(): InternalNotificationLogger
-
-  def relationshipTypeScanStoreEnabled: Boolean
 }
 
 trait ProcedureSignatureResolver {

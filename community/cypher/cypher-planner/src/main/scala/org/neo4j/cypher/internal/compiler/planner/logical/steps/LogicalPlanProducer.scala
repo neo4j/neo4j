@@ -295,6 +295,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                  argumentIds: Set[String],
                                  providedOrder: ProvidedOrder,
                                  context: LogicalPlanningContext): LogicalPlan = {
+
+    checkOnlyWhenAssertionsAreEnabled(context.planContext.canLookupRelationshipsByType, "Relationship type scan should not be planned when lookup is not available")
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addArgumentIds(argumentIds.toIndexedSeq)

@@ -75,6 +75,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def canLookupNodesByLabel: Boolean =
     translateException(tokenNameLookup, inner.canLookupNodesByLabel)
 
+  override def canLookupRelationshipsByType: Boolean =
+    translateException(tokenNameLookup, inner.canLookupRelationshipsByType)
+
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(tokenNameLookup, inner.hasNodePropertyExistenceConstraint(labelName, propertyKey))
 
@@ -119,6 +122,4 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def notificationLogger(): InternalNotificationLogger =
     translateException(tokenNameLookup, inner.notificationLogger())
-
-  override def relationshipTypeScanStoreEnabled: Boolean = translateException(tokenNameLookup, inner.relationshipTypeScanStoreEnabled)
 }

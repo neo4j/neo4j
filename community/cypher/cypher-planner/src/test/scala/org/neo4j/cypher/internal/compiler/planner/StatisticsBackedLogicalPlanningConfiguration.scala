@@ -77,7 +77,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
                       connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
-                      relationshipTypeScanStoreEnabled: Boolean = false,
+                      relationshipByTypeLookupEnabled: Boolean = false,
                       enablePlanningRelationshipIndexes: Boolean = false,
                     )
   case class Cardinalities(
@@ -294,8 +294,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(executionModel = executionModel))
   }
 
-  def enableRelationshipTypeScanStore(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(options = options.copy(relationshipTypeScanStoreEnabled = enable))
+  def enableRelationshipByTypeLookup(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(relationshipByTypeLookupEnabled = enable))
   }
 
   def enablePlanningRelationshipIndexes(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -391,6 +391,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def canLookupNodesByLabel: Boolean = true
 
+      override def canLookupRelationshipsByType: Boolean =
+        options.relationshipByTypeLookupEnabled
+
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
         constraints.collect {
           case ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(`labelName`), property) => property
@@ -468,9 +471,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def getOptRelTypeId(relType: String): Option[Int] =
         resolver.getOptRelTypeId(relType)
-
-      override def relationshipTypeScanStoreEnabled: Boolean =
-        options.relationshipTypeScanStoreEnabled
 
       private def newIndexDescriptor(indexDef: IndexDefinition): IndexDescriptor = {
         // Our fake index either can always or never return property values

@@ -884,7 +884,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   private val relationshipTypeScanConfig: StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
     .setAllNodesCardinality(100)
     .setRelationshipCardinality("()-[:REL]->()", 10)
-    .enableRelationshipTypeScanStore()
+    .enableRelationshipByTypeLookup()
     .build()
 
   test("should plan relationship type scan with inlined type predicate") {

@@ -396,7 +396,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   def planningContext(typeScanEnabled: Boolean = true): LogicalPlanningContext = {
     val planContext = newMockedPlanContext()
-    when(planContext.relationshipTypeScanStoreEnabled).thenReturn(typeScanEnabled)
+    when(planContext.canLookupRelationshipsByType).thenReturn(typeScanEnabled)
     newMockedLogicalPlanningContext(planContext = planContext, semanticTable = newMockedSemanticTable)
   }
 

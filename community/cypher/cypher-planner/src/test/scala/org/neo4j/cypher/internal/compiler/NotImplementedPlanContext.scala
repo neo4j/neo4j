@@ -48,6 +48,8 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def canLookupNodesByLabel: Boolean = ???
 
+  override def canLookupRelationshipsByType: Boolean = ???
+
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 
   override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = ???
@@ -85,6 +87,4 @@ class NotImplementedPlanContext extends PlanContext {
   override def getOptRelTypeId(relType: String): Option[Int] = ???
 
   override def getRelTypeId(relType: String): Int = ???
-
-  override def relationshipTypeScanStoreEnabled: Boolean = false
 }

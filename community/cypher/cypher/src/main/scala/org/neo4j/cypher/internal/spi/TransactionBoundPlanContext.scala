@@ -242,7 +242,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def canLookupNodesByLabel: Boolean = {
     !tc.schemaRead.scanStoreAsTokenIndexEnabled || tc.schemaRead.indexesGetAll.exists(descriptor =>
-        descriptor.getIndexType == IndexType.LOOKUP && descriptor.schema.entityType == EntityType.NODE)
+      descriptor.getIndexType == IndexType.LOOKUP && descriptor.schema.entityType == EntityType.NODE)
+  }
+
+  override def canLookupRelationshipsByType: Boolean = {
+    tc.schemaRead.scanStoreAsTokenIndexEnabled() &&
+      tc.schemaRead.index(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)).hasNext
   }
 
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
@@ -320,6 +325,4 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = TransactionBoundPlanContext.functionSignature(tc.kernelTransaction, name)
 
   override def notificationLogger(): InternalNotificationLogger = logger
-
-  override def relationshipTypeScanStoreEnabled: Boolean = tc.schemaRead.scanStoreAsTokenIndexEnabled()
 }

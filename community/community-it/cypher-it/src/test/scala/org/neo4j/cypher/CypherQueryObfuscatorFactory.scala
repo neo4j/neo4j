@@ -102,6 +102,7 @@ class CypherQueryObfuscatorFactory {
     override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Nothing = fail()
     override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Nothing = fail()
     override def canLookupNodesByLabel: Nothing = fail()
+    override def canLookupRelationshipsByType: Nothing = fail()
     override def uniqueIndexesGetForLabel(labelId: Int): Nothing = fail()
     override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Nothing = fail()
     override def getNodePropertiesWithExistenceConstraint(labelName: String): Nothing = fail()
@@ -121,7 +122,6 @@ class CypherQueryObfuscatorFactory {
     override def getRelTypeName(id: Int): Nothing = fail()
     override def getOptRelTypeId(relType: String): Nothing = fail()
     override def getRelTypeId(relType: String): Nothing = fail()
-    override def relationshipTypeScanStoreEnabled: Boolean = fail()
 
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }
