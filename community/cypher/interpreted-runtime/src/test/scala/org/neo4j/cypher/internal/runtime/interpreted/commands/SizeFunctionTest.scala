@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
 
 class SizeFunctionTest extends CypherFunSuite {
@@ -68,6 +69,17 @@ class SizeFunctionTest extends CypherFunSuite {
     val sizeFunction = SizeFunction(Variable("p"))
 
     //when/then
-    intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
+    val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Path{(0)-[0]-(0)}")
+  }
+
+  test("size cannot be used on integers") {
+    //given
+    val m = CypherRow.from("p" -> Values.of(33))
+    val sizeFunction = SizeFunction(Variable("p"))
+
+    //when/then
+    val e = intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'size()': Expected a String or List, got: Int(33)")
   }
 }
