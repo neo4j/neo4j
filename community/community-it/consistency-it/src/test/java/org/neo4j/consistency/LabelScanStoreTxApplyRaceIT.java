@@ -106,7 +106,7 @@ class LabelScanStoreTxApplyRaceIT
         managementService.shutdown();
 
         assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() ),
-                NONE, new Log4jLogProvider( System.out ), false, new ConsistencyFlags( true, true, true, true, true, false ) ).isSuccessful() );
+                NONE, new Log4jLogProvider( System.out ), false, new ConsistencyFlags( true, true, true ) ).isSuccessful() );
     }
 
     private Runnable creator( AtomicReferenceArray<Node> nodeHeads, int guy )

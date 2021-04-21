@@ -41,6 +41,7 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -136,16 +137,20 @@ class CheckConsistencyCommandIT
                 "                              Default: true%n" +
                 "      --check-label-scan-store=<true/false>%n" +
                 "                            Perform consistency checks on the label scan store.%n" +
-                "                              Default: true%n" +
+                "                              This option is deprecated and its value will be%n" +
+                "                              ignored. Checking of label scan store/lookup%n" +
+                "                              index on labels is controlled by --check-graph.%n" +
                 "      --check-relationship-type-scan-store=<true/false>%n" +
                 "                            Perform consistency checks on the relationship type%n" +
-                "                              scan store.%n" +
-                "                              Default: false%n" +
+                "                              scan store. This option is deprecated and its%n" +
+                "                              value will be ignored. Checking of relationship%n" +
+                "                              type scan store/lookup index on relationship%n" +
+                "                              types is controlled by --check-graph.%n" +
                 "      --check-property-owners=<true/false>%n" +
                 "                            Perform additional consistency checks on property%n" +
                 "                              ownership. This check is very expensive in time%n" +
-                "                              and memory.%n" +
-                "                              Default: false"
+                "                              and memory. This option is deprecated and its%n" +
+                "                              value will be ignored."
         ) );
     }
 
@@ -168,6 +173,40 @@ class CheckConsistencyCommandIT
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb" );
         checkConsistencyCommand.execute();
 
+        verify( consistencyCheckService )
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
+                        any( ConsistencyFlags.class ) );
+    }
+
+    @Test
+    void warnsOnUseOfDeprecatedOptions() throws Exception
+    {
+        ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream( baos );
+        CheckConsistencyCommand checkConsistencyCommand =
+                new CheckConsistencyCommand( new ExecutionContext( homeDir, confPath, out, System.err, new DefaultFileSystemAbstraction() ),
+                        consistencyCheckService );
+
+        DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "mydb" );
+
+        when( consistencyCheckService
+                .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
+                        any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
+                        any( ConsistencyFlags.class ) ) )
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
+
+        CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--check-label-scan-store=true",
+                "--check-relationship-type-scan-store=true", "--check-property-owners=true" );
+        checkConsistencyCommand.execute();
+
+        // See that warnings were printed and that command was still run.
+        String log = baos.toString();
+        assertThat( log ).contains( "Option '--check-label-scan-store' has been deprecated and its value will be ignored" );
+        assertThat( log ).contains( "Option '--check-relationship-type-scan-store' has been deprecated and its value will be ignored" );
+        assertThat( log ).contains( "Option '--check-property-owners' has been deprecated and its value will be ignored" );
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
@@ -321,13 +360,12 @@ class CheckConsistencyCommandIT
                 .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--check-graph=false",
-                "--check-indexes=false", "--check-index-structure=false", "--check-label-scan-store=false", "--check-relationship-type-scan-store=false",
-                "--check-property-owners=true" );
+                "--check-indexes=false", "--check-index-structure=true" );
         checkConsistencyCommand.execute();
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                        any(), eq( new ConsistencyFlags( false, false, false, false, false, true ) ) );
+                        any(), eq( new ConsistencyFlags( false, false, true ) ) );
     }
 
     @Test

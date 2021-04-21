@@ -430,7 +430,7 @@ public class DetectRandomSabotageIT
         Config.Builder builder = Config.newBuilder().set( neo4j_home, directory.homePath() );
         Config config = addConfig( builder ).build();
         return new ConsistencyCheckService().runFullConsistencyCheck( DatabaseLayout.of( config ), config, ProgressMonitorFactory.NONE,
-                NullLogProvider.getInstance(), false, DEFAULT.withCheckRelationshipTypeScanStore( true ) );
+                NullLogProvider.getInstance(), false, DEFAULT );
     }
 
     protected  <T> T addConfig( T t, SetConfigAction<T> action )

@@ -191,7 +191,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     PageCursorTracer.NULL );
         }, indexFiles );
 
-        ConsistencyFlags flags = new ConsistencyFlags( true, false, false, true, true, true );
+        ConsistencyFlags flags = new ConsistencyFlags( true, false, false );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
 
         assertTrue( result.isSuccessful(), "Expected store to be consistent when not checking indexes." );
@@ -208,7 +208,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     PageCursorTracer.NULL );
         }, indexFiles );
 
-        ConsistencyFlags flags = new ConsistencyFlags( true, false, true, true, true, true );
+        ConsistencyFlags flags = new ConsistencyFlags( true, false, true );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
 
         assertFalse( result.isSuccessful(), "Expected store to be inconsistent when checking index structure." );
@@ -225,7 +225,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             tree.unsafe( GBPTreeCorruption.addFreelistEntry( 5 ), PageCursorTracer.NULL );
         }, indexFiles );
 
-        ConsistencyFlags flags = new ConsistencyFlags( true, true, false, true, true, true );
+        ConsistencyFlags flags = new ConsistencyFlags( true, true, false );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
 
         assertTrue( result.isSuccessful(), "Expected store to be consistent when not checking indexes." );
@@ -673,7 +673,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     PageCursorTracer.NULL );
         }, countsLayoutBootstrapper, countsStoreFile );
 
-        ConsistencyFlags flags = new ConsistencyFlags( false, false, true, false, false, false );
+        ConsistencyFlags flags = new ConsistencyFlags( false, false, true );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
         assertFalse( result.isSuccessful() );
         assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
@@ -692,7 +692,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     PageCursorTracer.NULL );
         }, idStoreFiles );
 
-        ConsistencyFlags flags = new ConsistencyFlags( false, false, true, false, false, false );
+        ConsistencyFlags flags = new ConsistencyFlags( false, false, true );
         ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(), flags );
         assertFalse( result.isSuccessful() );
         assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );

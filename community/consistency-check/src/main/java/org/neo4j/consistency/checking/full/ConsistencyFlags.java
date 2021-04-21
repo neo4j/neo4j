@@ -24,28 +24,19 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class ConsistencyFlags
 {
-    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags( true, true, true, true, false, false );
+    public static final ConsistencyFlags DEFAULT = new ConsistencyFlags( true, true, true );
 
     private final boolean checkGraph;
     private final boolean checkIndexes;
     private final boolean checkIndexStructure;
-    private final boolean checkLabelScanStore;
-    private final boolean checkRelationshipTypeScanStore;
-    private final boolean checkPropertyOwners;
 
     public ConsistencyFlags( boolean checkGraph,
             boolean checkIndexes,
-            boolean checkIndexStructure,
-            boolean checkLabelScanStore,
-            boolean checkRelationshipTypeScanStore,
-            boolean checkPropertyOwners )
+            boolean checkIndexStructure )
     {
         this.checkGraph = checkGraph;
         this.checkIndexes = checkIndexes;
         this.checkIndexStructure = checkIndexStructure;
-        this.checkLabelScanStore = checkLabelScanStore;
-        this.checkRelationshipTypeScanStore = checkRelationshipTypeScanStore;
-        this.checkPropertyOwners = checkPropertyOwners;
     }
 
     public boolean isCheckGraph()
@@ -61,26 +52,6 @@ public class ConsistencyFlags
     public boolean isCheckIndexStructure()
     {
         return checkIndexStructure;
-    }
-
-    public boolean isCheckLabelScanStore()
-    {
-        return checkLabelScanStore;
-    }
-
-    public boolean isCheckRelationshipTypeScanStore()
-    {
-        return checkRelationshipTypeScanStore;
-    }
-
-    public boolean isCheckPropertyOwners()
-    {
-        return checkPropertyOwners;
-    }
-
-    public ConsistencyFlags withCheckRelationshipTypeScanStore( boolean check )
-    {
-        return new ConsistencyFlags( checkGraph, checkIndexes, checkIndexStructure, checkLabelScanStore, check, checkPropertyOwners );
     }
 
     @Override

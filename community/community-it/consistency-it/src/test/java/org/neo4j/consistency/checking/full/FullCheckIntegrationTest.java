@@ -83,7 +83,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -2067,22 +2066,6 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    void shouldWarnIfConfiguredToValidateRelationshipTypeScanStoreButItIsDisabled() throws ConsistencyCheckIncompleteException
-    {
-        // given
-        Config config = config();
-        config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, false );
-        ConsistencyFlags flags = new ConsistencyFlags( true, true, true, true, true, true );
-
-        // when
-        ConsistencySummaryStatistics check = check( config, flags );
-
-        // then
-        assertThat( check.getTotalWarningCount() ).isEqualTo( 1 );
-        on( check ).andThatsAllFolks();
-    }
-
-    @Test
     void shouldOnlyReportFirstNodeInconsistencyOnFailFast() throws Exception
     {
         // given
@@ -2493,8 +2476,7 @@ public class FullCheckIntegrationTest
             ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees ) throws ConsistencyCheckIncompleteException
     {
         Config config = config();
-        boolean checkRelationshipTypeScanStore = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
-        final var consistencyFlags = new ConsistencyFlags( true, true, true, true, checkRelationshipTypeScanStore, true );
+        final var consistencyFlags = new ConsistencyFlags( true, true, true );
         return check( pageCache, stores, counts, groupDegrees, config, consistencyFlags );
     }
 

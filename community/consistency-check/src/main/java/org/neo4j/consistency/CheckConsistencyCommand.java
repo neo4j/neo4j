@@ -107,6 +107,8 @@ public class CheckConsistencyCommand extends AbstractCommand
     @Override
     public void execute()
     {
+        options.warnOnUsageOfDeprecatedOptions( spec, ctx );
+
         if ( target.backup != null )
         {
             target.backup = target.backup.toAbsolutePath();
@@ -143,8 +145,7 @@ public class CheckConsistencyCommand extends AbstractCommand
                     consistencyCheckResult = consistencyCheckService
                             .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory, logProvider, fileSystem,
                                     verbose, options.getReportDir().normalize(),
-                                    new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure(),
-                                            options.isCheckLabelScanStore(), options.isCheckRelationshipTypeScanStore(), options.isCheckPropertyOwners() ) );
+                                    new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckIndexStructure() ) );
                 }
 
                 if ( !consistencyCheckResult.isSuccessful() )

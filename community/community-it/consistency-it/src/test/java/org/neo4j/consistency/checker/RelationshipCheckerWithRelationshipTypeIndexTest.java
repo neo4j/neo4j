@@ -60,7 +60,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 @ExtendWith( RandomExtension.class )
 class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
@@ -340,7 +339,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
         }
 
         // when
-        ConsistencyFlags flags = new ConsistencyFlags( true, true, true, true, true, true );
+        ConsistencyFlags flags = new ConsistencyFlags( true, true, true );
         check( context( flags ) );
 
         // then
@@ -407,7 +406,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        check( context( DEFAULT.withCheckRelationshipTypeScanStore( true ) ) );
+        check( context() );
     }
 
     private void check( CheckerContext context ) throws Exception

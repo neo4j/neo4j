@@ -19,9 +19,14 @@
  */
 package org.neo4j.consistency;
 
+import picocli.CommandLine;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 
+import java.io.PrintStream;
 import java.nio.file.Path;
+
+import org.neo4j.cli.ExecutionContext;
 
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 
@@ -44,16 +49,19 @@ public class ConsistencyCheckOptions
             description = "Perform structure checks on indexes." )
     private boolean checkIndexStructure = true;
 
-    @Option( names = "--check-label-scan-store", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
-            description = "Perform consistency checks on the label scan store." )
+    @Option( names = "--check-label-scan-store", arity = "1", paramLabel = "<true/false>",
+            description = "Perform consistency checks on the label scan store. This option is deprecated and its value will be ignored. " +
+                          "Checking of label scan store/lookup index on labels is controlled by --check-graph." )
     private boolean checkLabelScanStore = true;
 
-    @Option( names = "--check-relationship-type-scan-store", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
-            description = "Perform consistency checks on the relationship type scan store." )
+    @Option( names = "--check-relationship-type-scan-store", arity = "1", paramLabel = "<true/false>",
+            description = "Perform consistency checks on the relationship type scan store. This option is deprecated and its value will be ignored. " +
+                          "Checking of relationship type scan store/lookup index on relationship types is controlled by --check-graph." )
     private boolean checkRelationshipTypeScanStore;
 
-    @Option( names = "--check-property-owners", arity = "1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
-            description = "Perform additional consistency checks on property ownership. This check is @|bold,red very|@ expensive in time and memory." )
+    @Option( names = "--check-property-owners", arity = "1", paramLabel = "<true/false>",
+            description = "Perform additional consistency checks on property ownership. This check is @|bold,red very|@ expensive in time and memory. " +
+                          "This option is deprecated and its value will be ignored." )
     private boolean checkPropertyOwners;
 
     public Path getReportDir()
@@ -76,18 +84,20 @@ public class ConsistencyCheckOptions
         return checkIndexStructure;
     }
 
-    public boolean isCheckLabelScanStore()
+    public void warnOnUsageOfDeprecatedOptions( CommandSpec spec, ExecutionContext ctx )
     {
-        return checkLabelScanStore;
+        CommandLine.ParseResult parseResult = spec.commandLine().getParseResult();
+        PrintStream out = ctx.out();
+        checkUsageOfDeprecatedOption( parseResult, out, "--check-label-scan-store" );
+        checkUsageOfDeprecatedOption( parseResult, out, "--check-relationship-type-scan-store" );
+        checkUsageOfDeprecatedOption( parseResult, out, "--check-property-owners" );
     }
 
-    public boolean isCheckRelationshipTypeScanStore()
+    private void checkUsageOfDeprecatedOption( CommandLine.ParseResult parseResult, PrintStream out, String deprecatedOption )
     {
-        return checkRelationshipTypeScanStore;
-    }
-
-    public boolean isCheckPropertyOwners()
-    {
-        return checkPropertyOwners;
+        if ( parseResult.hasMatchedOption( deprecatedOption ) )
+        {
+            out.println( "Warning: Option '" + deprecatedOption + "' has been deprecated and its value will be ignored." );
+        }
     }
 }

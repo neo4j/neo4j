@@ -99,7 +99,7 @@ class RelationshipChecker implements Checker
     @Override
     public boolean shouldBeChecked( ConsistencyFlags flags )
     {
-        return flags.isCheckGraph() || !indexes.isEmpty() && flags.isCheckIndexes() || flags.isCheckRelationshipTypeScanStore();
+        return flags.isCheckGraph() || !indexes.isEmpty() && flags.isCheckIndexes();
     }
 
     @Override
