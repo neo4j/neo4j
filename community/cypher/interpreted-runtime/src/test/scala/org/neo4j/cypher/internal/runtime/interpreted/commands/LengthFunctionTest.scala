@@ -54,7 +54,8 @@ class LengthFunctionTest extends CypherFunSuite {
     val lengthFunction = LengthFunction(Variable("l"))
 
     //when/then
-    intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    val e = intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'length()': Expected a Path, got: List{String(\"it\"), String(\"was\"), String(\"the\")}")
   }
 
   test("length cannot be used on strings") {
@@ -64,6 +65,7 @@ class LengthFunctionTest extends CypherFunSuite {
     val lengthFunction = LengthFunction(Variable("s"))
 
     //when/then
-    intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    val e = intercept[CypherTypeException](lengthFunction.apply(m, QueryStateHelper.empty))
+    e.getMessage should be("Invalid input for function 'length()': Expected a Path, got: String(\"it was the\")")
   }
 }
