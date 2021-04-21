@@ -295,16 +295,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addPatternRelationship(pattern)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
-    val newArguments = solver.newArguments
-    val leafPlan = annotate(DirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
-    solver.rewriteLeafPlan(leafPlan)
+    annotate(DirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planUndirectedRelationshipByTypeScan(idName: String,
-                                           startNode: String,
                                            typ: RelTypeName,
-                                           endNode: String,
                                            pattern: PatternRelationship,
                                            argumentIds: Set[String],
                                            providedOrder: ProvidedOrder,
@@ -313,10 +308,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addPatternRelationship(pattern)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
-    val newArguments = solver.newArguments
-    val leafPlan = annotate(UndirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
-    solver.rewriteLeafPlan(leafPlan)
+    annotate(UndirectedRelationshipTypeScan(idName, pattern.left, typ, pattern.right, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

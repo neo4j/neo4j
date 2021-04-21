@@ -64,7 +64,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
 
       //(a)-[:R]-(b)
       case p@PatternRelationship(name, (startNode, endNode), BOTH, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planUndirectedRelationshipByTypeScan(name, startNode, typ, endNode, p, queryGraph.argumentIds, providedOrderFor(name), context))
+        Some(context.logicalPlanProducer.planUndirectedRelationshipByTypeScan(name, typ, p, queryGraph.argumentIds, providedOrderFor(name), context))
 
       case _ => None
     }.toIndexedSeq
