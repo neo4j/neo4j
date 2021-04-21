@@ -73,8 +73,7 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     case (commandClause: CommandClause) :: Nil => rewrittenClause ++ rewriteWithYieldAndReturn(commandClause, commandClause.where)
     // Command clause with only a YIELD
     case (c: CommandClause) :: (yieldClause: Yield) :: Nil => {
-      val offset = lastPosition(yieldClause)
-      rewrittenClause :+ c :+ yieldClause :+ returnClause(InputPosition(offset, 1, offset + 1))
+      rewrittenClause :+ c :+ yieldClause :+ returnClause(lastPosition(yieldClause))
     }
     case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
     case Nil => rewrittenClause
@@ -90,9 +89,9 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
 
   private def returnClause(position: InputPosition): Return = Return(ReturnItems(includeExisting = true, Seq())(position))(position.newUniquePos())
 
-  private def lastPosition(y: Yield): Int = {
-    y.treeFold(0) {
-      case node: ASTNode => acc => TraverseChildren(if (node.position.offset > acc) node.position.offset else acc)
+  private def lastPosition(y: Yield): InputPosition = {
+    y.treeFold(InputPosition.NONE) {
+      case node: ASTNode => acc => TraverseChildren(Seq(acc, node.position).max)
     }
   }
 
