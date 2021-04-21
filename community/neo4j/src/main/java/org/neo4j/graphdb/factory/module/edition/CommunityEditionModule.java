@@ -48,7 +48,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
-import org.neo4j.internal.kernel.api.security.SecurityLogWrapper;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -72,7 +72,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.log4j.LogExtended;
-import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
@@ -265,7 +264,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         LogProvider logProvider = globalModule.getLogService().getUserLogProvider();
         LogExtended securityLog = (LogExtended) logProvider.getLog( UserSecurityGraphComponent.class );
 
-        var communityComponent = CommunitySecurityModule.createSecurityComponent( new SecurityLogWrapper( securityLog ), config, fileSystem, logProvider );
+        var communityComponent = CommunitySecurityModule.createSecurityComponent( new CommunitySecurityLog( securityLog ), config, fileSystem, logProvider );
 
         Dependencies dependencies = globalModule.getGlobalDependencies();
         SystemGraphComponents systemGraphComponents = dependencies.resolveDependency( SystemGraphComponents.class );
@@ -280,6 +279,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     private static SecurityProvider makeSecurityModule( GlobalModule globalModule )
     {
+        globalModule.getGlobalDependencies().satisfyDependency( CommunitySecurityLog.NULL_LOG );
         setupSecurityGraphInitializer( globalModule );
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
         {

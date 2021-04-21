@@ -27,8 +27,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -48,7 +46,6 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -59,7 +56,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexConfig;
@@ -200,7 +196,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long nodeCreate()
     {
-        assertAllowsCreateNode( null );
+        ktx.securityAuthorizationHandler().assertAllowsCreateNode( ktx.securityContext(), token::labelGetName, null );
         ktx.assertOpen();
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
@@ -215,7 +211,7 @@ public class Operations implements Write, SchemaWrite
         {
             return nodeCreate();
         }
-        assertAllowsCreateNode( labels );
+        ktx.securityAuthorizationHandler().assertAllowsCreateNode( ktx.securityContext(), token::labelGetName, labels );
 
         // We don't need to check the node for existence, like we do in nodeAddLabel, because we just created it.
         // We also don't need to check if the node already has some of the labels, because we know it has none.
@@ -290,7 +286,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public long relationshipCreate( long sourceNode, int relationshipType, long targetNode ) throws EntityNotFoundException
     {
-        assertAllowsCreateRelationship( relationshipType );
+        ktx.securityAuthorizationHandler().assertAllowsCreateRelationship( ktx.securityContext(), token::relationshipTypeGetName, relationshipType );
         ktx.assertOpen();
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
@@ -333,7 +329,7 @@ public class Operations implements Write, SchemaWrite
             return false;
         }
 
-        assertAllowsDeleteRelationship( relationshipCursor.type() );
+        ktx.securityAuthorizationHandler().assertAllowsDeleteRelationship( ktx.securityContext(), token::relationshipTypeGetName, relationshipCursor.type() );
         txState.relationshipDoDelete( relationship, relationshipCursor.type(),
                 relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
         return true;
@@ -358,7 +354,7 @@ public class Operations implements Write, SchemaWrite
         LongSet removed = ktx.txState().nodeStateLabelDiffSets( node ).getRemoved();
         if ( !removed.contains( nodeLabel ) )
         {
-            assertAllowsSetLabel(nodeLabel);
+            ktx.securityAuthorizationHandler().assertAllowsSetLabel( ktx.securityContext(), token::labelGetName, nodeLabel);
         }
 
         checkConstraintsAndAddLabelToNode( node, nodeLabel );
@@ -462,7 +458,7 @@ public class Operations implements Write, SchemaWrite
             acquireSharedNodeLabelLocks();
             sharedTokenSchemaLock( ResourceTypes.LABEL );
 
-            assertAllowsDeleteNode( nodeCursor::labels );
+            ktx.securityAuthorizationHandler().assertAllowsDeleteNode( ktx.securityContext(), token::labelGetName, nodeCursor::labels );
             ktx.txState().nodeDoDelete( node );
             return true;
         }
@@ -621,7 +617,7 @@ public class Operations implements Write, SchemaWrite
         LongSet added = ktx.txState().nodeStateLabelDiffSets( node ).getAdded();
         if ( !added.contains( labelId ) )
         {
-            assertAllowsRemoveLabel(labelId);
+            ktx.securityAuthorizationHandler().assertAllowsRemoveLabel( ktx.securityContext(), token::labelGetName, labelId );
         }
 
         sharedSchemaLock( ResourceTypes.LABEL, labelId );
@@ -668,7 +664,7 @@ public class Operations implements Write, SchemaWrite
 
         if ( existingValue == NO_VALUE )
         {
-            assertAllowsSetProperty( labels, propertyKey );
+            ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, Labels.from( labels ), propertyKey );
             checkUniquenessConstraints( node, propertyKey, value, labels, existingPropertyKeyIds );
 
             //no existing value, we just add it
@@ -680,7 +676,7 @@ public class Operations implements Write, SchemaWrite
         }
         else if ( propertyHasChanged( value, existingValue ) )
         {
-            assertAllowsSetProperty( labels, propertyKey );
+            ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, Labels.from( labels ), propertyKey );
             checkUniquenessConstraints( node, propertyKey, value, labels, existingPropertyKeyIds );
 
             //the value has changed to a new value
@@ -691,6 +687,20 @@ public class Operations implements Write, SchemaWrite
             }
         }
         return existingValue;
+    }
+
+    private String resolvePropertyKey( long propertyKey )
+    {
+        String propKeyName;
+        try
+        {
+            propKeyName = token.propertyKeyName( (int) propertyKey );
+        }
+        catch ( PropertyKeyIdNotFoundKernelException e )
+        {
+            propKeyName = "<unknown>";
+        }
+        return propKeyName;
     }
 
     private void checkUniquenessConstraints( long node, int propertyKey, Value value, long[] labels, int[] existingPropertyKeyIds )
@@ -713,7 +723,7 @@ public class Operations implements Write, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             long[] labels = acquireSharedNodeLabelLocks();
-            assertAllowsSetProperty( labels, propertyKey );
+            ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, Labels.from( labels ), propertyKey );
             ktx.txState().nodeDoRemoveProperty( node, propertyKey );
             if ( storageReader.hasRelatedSchema( labels, propertyKey, NODE ) )
             {
@@ -741,7 +751,7 @@ public class Operations implements Write, SchemaWrite
         }
         if ( existingValue == NO_VALUE )
         {
-            assertAllowsSetProperty( type, propertyKey );
+            ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, propertyKey );
             ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, NO_VALUE, value );
             if ( hasRelatedSchema )
             {
@@ -753,7 +763,7 @@ public class Operations implements Write, SchemaWrite
         {
             if ( propertyHasChanged( existingValue, value ) )
             {
-                assertAllowsSetProperty( type, propertyKey );
+                ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, propertyKey );
                 ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
                 if ( hasRelatedSchema )
                 {
@@ -776,7 +786,7 @@ public class Operations implements Write, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             int type = acquireSharedRelationshipTypeLock();
-            assertAllowsSetProperty( type, propertyKey );
+            ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, propertyKey );
             ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey );
             if ( storageReader.hasRelatedSchema( new long[]{type}, propertyKey, RELATIONSHIP ) )
             {
@@ -1739,100 +1749,5 @@ public class Operations implements Write, SchemaWrite
         }
 
         return constraint;
-    }
-
-    private void assertAllowsCreateNode( int[] labelIds )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsCreateNode( labelIds ) )
-        {
-            String labels = null == labelIds ? "" : Arrays.stream( labelIds ).mapToObj( token::labelGetName ).collect( Collectors.joining( "," ) );
-            throw accessMode.onViolation( format( "Create node with labels '%s' is not allowed for %s.", labels, ktx.securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsDeleteNode( Supplier<TokenSet> labelSupplier )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsDeleteNode( labelSupplier ) )
-        {
-            String labels = Arrays.stream( labelSupplier.get().all() ).mapToObj( id -> token.labelGetName( (int) id ) ).collect( Collectors.joining( "," ) );
-            throw accessMode.onViolation( format( "Delete node with labels '%s' is not allowed for %s.", labels, ktx.securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsCreateRelationship( int relType )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsCreateRelationship( relType ) )
-        {
-            throw accessMode.onViolation( format( "Create relationship with type '%s' is not allowed for %s.", token.relationshipTypeGetName( relType ),
-                            ktx.securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsDeleteRelationship( int relType )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsDeleteRelationship( relType ) )
-        {
-            throw accessMode
-                    .onViolation( format( "Delete relationship with type '%s' is not allowed for %s.", token.relationshipTypeGetName( relType ),
-                    ktx.securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsSetLabel( long labelId )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsSetLabel( labelId ) )
-        {
-            throw accessMode.onViolation( format( "Set label for label '%s' is not allowed for %s.", token.labelGetName( (int) labelId),
-                                                  ktx.securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsRemoveLabel( long labelId )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsRemoveLabel( labelId ) )
-        {
-            throw accessMode.onViolation( format( "Remove label for label '%s' is not allowed for %s.", token.labelGetName( (int) labelId),
-                                                  ktx.securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsSetProperty( long[] labelIds, long propertyKey )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsSetProperty( () -> Labels.from( labelIds ), (int) propertyKey ) )
-        {
-            throw accessMode.onViolation( format( "Set property for property '%s' is not allowed for %s.", resolvePropertyKey(propertyKey),
-                                                  ktx.securityContext().description() ) );
-        }
-    }
-
-    private void assertAllowsSetProperty( long relType, long propertyKey )
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsSetProperty( () -> (int) relType, (int) propertyKey ) )
-        {
-            throw accessMode.onViolation( format( "Set property for property '%s' is not allowed for %s.", resolvePropertyKey( propertyKey ),
-                                                  ktx.securityContext().description() ) );
-        }
-    }
-
-    private String resolvePropertyKey( long propertyKey )
-    {
-        String propKeyName;
-        try
-        {
-            propKeyName = token.propertyKeyName( (int) propertyKey );
-        }
-        catch ( PropertyKeyIdNotFoundKernelException e )
-        {
-            propKeyName = "<unknown>";
-        }
-        return propKeyName;
     }
 }

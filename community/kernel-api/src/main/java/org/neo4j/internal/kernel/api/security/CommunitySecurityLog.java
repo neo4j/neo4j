@@ -17,20 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.systemgraph.versions;
+package org.neo4j.internal.kernel.api.security;
 
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
-import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.log4j.LogExtended;
 
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41;
-
-/**
- * This is the UserSecurityComponent version for Neo4j 4.1
- */
-public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySecurityComponentVersion
+public class CommunitySecurityLog extends AbstractSecurityLog
 {
-    public CommunitySecurityComponentVersion_2_41( AbstractSecurityLog log, UserRepository userRepository )
+    public static final CommunitySecurityLog NULL_LOG = new CommunitySecurityLog( NullLog.getInstance() );
+
+    public CommunitySecurityLog( LogExtended log )
     {
-        super( COMMUNITY_SECURITY_41, log, userRepository );
+        setLog(log);
     }
 }

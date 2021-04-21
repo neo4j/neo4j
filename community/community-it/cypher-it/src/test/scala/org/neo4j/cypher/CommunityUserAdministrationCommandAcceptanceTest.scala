@@ -1595,7 +1595,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     }
 
     // THEN
-    e.getMessage should startWith("Permission denied.")
+    e.getMessage should startWith("ACCESS on database neo4j is not allowed.")
   }
 
   // Helper methods

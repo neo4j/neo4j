@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -34,27 +33,19 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-
-import static java.lang.String.format;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 
 public class RestrictedSchemaWrite implements SchemaWrite
 {
-    private SchemaWrite inner;
-    private SecurityContext securityContext;
+    private final SchemaWrite inner;
+    private final SecurityContext securityContext;
+    private final SecurityAuthorizationHandler securityAuthorizationHandler;
 
-    RestrictedSchemaWrite( SchemaWrite inner, SecurityContext securityContext )
+    RestrictedSchemaWrite( SchemaWrite inner, SecurityContext securityContext, SecurityAuthorizationHandler securityAuthorizationHandler )
     {
         this.inner = inner;
         this.securityContext = securityContext;
-    }
-
-    private void assertSchemaWrites( PrivilegeAction action )
-    {
-        AccessMode accessMode = securityContext.mode();
-        if ( !accessMode.allowsSchemaWrites( action ) )
-        {
-            throw accessMode.onViolation( format( "Schema operation '%s' is not allowed for %s.", action, securityContext.description() ) );
-        }
+        this.securityAuthorizationHandler = securityAuthorizationHandler;
     }
 
     @Override
@@ -66,98 +57,98 @@ public class RestrictedSchemaWrite implements SchemaWrite
     @Override
     public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
         return inner.indexCreate( prototype );
     }
 
     @Override
     public IndexDescriptor indexCreate( SchemaDescriptor schema, String name ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
         return inner.indexCreate( schema, name );
     }
 
     @Override
     public IndexDescriptor indexCreate( SchemaDescriptor schema, IndexConfig indexConfig, String name ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
         return inner.indexCreate( schema, indexConfig, name );
     }
 
     @Override
     public IndexDescriptor indexCreate( SchemaDescriptor schema, String provider, IndexConfig indexConfig, String name ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_INDEX );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_INDEX );
         return inner.indexCreate( schema, provider, indexConfig, name );
     }
 
     @Override
     public void indexDrop( IndexDescriptor index ) throws SchemaKernelException
     {
-        assertSchemaWrites( PrivilegeAction.DROP_INDEX );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_INDEX );
         inner.indexDrop( index );
     }
 
     @Override
     public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
     {
-        assertSchemaWrites( PrivilegeAction.DROP_INDEX );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_INDEX );
         inner.indexDrop( schema );
     }
 
     @Override
     public void indexDrop( String indexName ) throws SchemaKernelException
     {
-        assertSchemaWrites( PrivilegeAction.DROP_INDEX );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_INDEX );
         inner.indexDrop( indexName );
     }
 
     @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_CONSTRAINT );
         return inner.uniquePropertyConstraintCreate( prototype );
     }
 
     @Override
     public ConstraintDescriptor nodeKeyConstraintCreate( IndexPrototype prototype ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_CONSTRAINT );
         return inner.nodeKeyConstraintCreate( prototype );
     }
 
     @Override
     public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_CONSTRAINT );
         return inner.nodePropertyExistenceConstraintCreate( schema, name );
     }
 
     @Override
     public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor schema, String name ) throws KernelException
     {
-        assertSchemaWrites( PrivilegeAction.CREATE_CONSTRAINT );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_CONSTRAINT );
         return inner.relationshipPropertyExistenceConstraintCreate( schema, name );
     }
 
     @Override
     public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
     {
-        assertSchemaWrites( PrivilegeAction.DROP_CONSTRAINT );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_CONSTRAINT );
         inner.constraintDrop( schema, type );
     }
 
     @Override
     public void constraintDrop( String name ) throws SchemaKernelException
     {
-        assertSchemaWrites( PrivilegeAction.DROP_CONSTRAINT );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_CONSTRAINT );
         inner.constraintDrop( name );
     }
 
     @Override
     public void constraintDrop( ConstraintDescriptor constraint ) throws SchemaKernelException
     {
-        assertSchemaWrites( PrivilegeAction.DROP_CONSTRAINT );
+        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_CONSTRAINT );
         inner.constraintDrop( constraint );
     }
 }

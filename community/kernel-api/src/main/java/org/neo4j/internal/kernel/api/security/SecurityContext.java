@@ -22,7 +22,9 @@ package org.neo4j.internal.kernel.api.security;
 import java.util.Collections;
 import java.util.Set;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -98,7 +100,8 @@ public class SecurityContext extends LoginContext
     {
         if ( AuthenticationResult.PASSWORD_CHANGE_REQUIRED.equals( subject().getAuthenticationResult() ) )
         {
-            throw mode().onViolation( PERMISSION_DENIED );
+            throw new AuthorizationViolationException( SecurityAuthorizationHandler.generateCredentialsExpiredMessage( PERMISSION_DENIED ),
+                                                       Status.Security.CredentialsExpired );
         }
     }
 

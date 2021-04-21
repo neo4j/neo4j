@@ -38,6 +38,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.MutableTransactionState;
 import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.StatementOutcome;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -61,7 +62,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -81,6 +81,20 @@ class TransactionStateMachineTest
         public void consume( BoltResult boltResult )
         {
             throw new RuntimeException( "some error" );
+        }
+    };
+    private static final AuthenticationResult AUTH_DISABLED = new AuthenticationResult()
+    {
+        @Override
+        public LoginContext getLoginContext()
+        {
+            return LoginContext.AUTH_DISABLED;
+        }
+
+        @Override
+        public boolean credentialsExpired()
+        {
+            return false;
         }
     };
 

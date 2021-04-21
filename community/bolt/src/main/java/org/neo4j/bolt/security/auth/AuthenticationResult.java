@@ -26,20 +26,4 @@ public interface AuthenticationResult
     LoginContext getLoginContext();
 
     boolean credentialsExpired();
-
-    // TODO Only used in one test...
-    AuthenticationResult AUTH_DISABLED = new AuthenticationResult()
-    {
-        @Override
-        public LoginContext getLoginContext()
-        {
-            return LoginContext.AUTH_DISABLED;
-        }
-
-        @Override
-        public boolean credentialsExpired()
-        {
-            return false;
-        }
-    };
 }

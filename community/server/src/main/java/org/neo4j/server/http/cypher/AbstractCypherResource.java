@@ -33,7 +33,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -45,7 +44,6 @@ import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.rest.Neo4jError;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
-import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNullElse;
@@ -209,7 +207,8 @@ public abstract class AbstractCypherResource
     {
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
-        return transactionFacade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout );
+        return transactionFacade
+                .newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout );
     }
 
     private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, MemoryTracker memoryTracker,

@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -297,6 +298,12 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @throws NotInTransactionException if the transaction is closed.
      */
     SecurityContext securityContext();
+
+    /**
+     *
+     * @return current security authorization handler
+     */
+    SecurityAuthorizationHandler securityAuthorizationHandler();
 
     /**
      * @return transaction originator info

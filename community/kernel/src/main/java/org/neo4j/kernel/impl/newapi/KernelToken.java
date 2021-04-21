@@ -246,7 +246,7 @@ public class KernelToken implements Token
         {
             return id;
         }
-        ktx.assertAllowsTokenCreates( action );
+        ktx.securityAuthorizationHandler().assertAllowsTokenCreates( ktx.securityContext(), action );
         return tokens.getOrCreateId( name );
     }
 
@@ -259,7 +259,7 @@ public class KernelToken implements Token
             ids[i] = tokenHolder.getIdByName( checkValidTokenName( names[i] ) );
             if ( ids[i] == NO_TOKEN )
             {
-                ktx.assertAllowsTokenCreates( action );
+                ktx.securityAuthorizationHandler().assertAllowsTokenCreates( ktx.securityContext(), action );
                 tokenHolder.getOrCreateIds( names, ids );
                 return;
             }

@@ -140,7 +140,7 @@ public class SecurityLogHelper
                             break;
                         }
                     }
-                    assertTrue( found, String.format( "Did not find line:  %s", expected ) );
+                    assertTrue( found, String.format( "Did not find line:  %s %nin %n%s", expected, Arrays.toString( contentLines ) ) );
                 }
             }
             catch ( JsonProcessingException e )
@@ -153,7 +153,7 @@ public class SecurityLogHelper
         {
             return Objects.equals( expected.expectedLevel, map.get( "level" ) ) &&
                    Objects.equals( expected.expectedSource, map.get( "source" ) ) &&
-                   Objects.equals( expected.expectedUser, map.get( "username" ) ) &&
+                   Objects.equals( expected.expectedUser == null ? "" : expected.expectedUser, map.get( "username" ) ) &&
                    Objects.equals( expected.expectedMessage, map.get( "message" ) );
         }
 
@@ -174,7 +174,7 @@ public class SecurityLogHelper
                 "^(?<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{4}) " +
                 "(?<level>\\w{4,5})\\s{1,2}" +
                 "((?<source>embedded-session\\t|bolt-session[^>]*>|server-session(?:\\t[^\\t]*){3})\\t)?" +
-                "\\[(?<user>[^\\s]+)?] : " +
+                "(\\[(?<user>[^\\s]+)]: )?" +
                 "(?<message>.+?)" );
 
         private LoggerContentValidator( String[] contentLines )
@@ -218,8 +218,7 @@ public class SecurityLogHelper
             Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
             return matcher.matches() &&
                    Objects.equals( expected.expectedLevel, matcher.group( "level" ) ) &&
-                   Objects.equals( expected.expectedSource, matcher.group( "source" ) ) &&
-                   Objects.equals( expected.expectedUser, matcher.group( "user" ) ) &&
+                   ( expected.expectedUser == null || Objects.equals( expected.expectedUser, matcher.group( "user" ) ) ) &&
                    Objects.equals( expected.expectedMessage, matcher.group( "message" ) );
         }
 
@@ -228,8 +227,10 @@ public class SecurityLogHelper
             Matcher matcher = LOGGER_LINE_PARSER.matcher( contentLine );
             assertTrue( matcher.matches() );
             assertEquals( expected.expectedLevel, matcher.group( "level" ), "'level' mismatch" );
-            assertEquals( expected.expectedSource, matcher.group( "source" ), "'source' mismatch" );
-            assertEquals( expected.expectedUser, matcher.group( "user" ), "'user' mismatch" );
+            if ( expected.expectedUser != null )
+            {
+                assertEquals( expected.expectedUser, matcher.group( "user" ), "'user' mismatch" );
+            }
             assertEquals( expected.expectedMessage, matcher.group( "message" ), "'message' mismatch" );
         }
     }

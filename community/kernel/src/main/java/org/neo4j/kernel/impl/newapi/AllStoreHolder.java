@@ -32,7 +32,6 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -987,7 +986,8 @@ public class AllStoreHolder extends Read
         AccessMode mode = ktx.securityContext().mode();
         if ( !mode.allowsExecuteProcedure( id ) )
         {
-            throw new AuthorizationViolationException( format("Executing procedure is not allowed for %s.", ktx.securityContext().description() ) );
+            String message = format("Executing procedure is not allowed for %s.", ktx.securityContext().description() );
+            throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
         }
 
         final SecurityContext procedureSecurityContext = mode.shouldBoostProcedure( id ) ?
@@ -1036,8 +1036,8 @@ public class AllStoreHolder extends Read
         AccessMode mode = ktx.securityContext().mode();
         if ( !globalProcedures.isBuiltInFunction( id ) && !mode.allowsExecuteFunction( id ) )
         {
-            throw new AuthorizationViolationException(
-                    format( "Executing a user defined function is not allowed for %s.", ktx.securityContext().description() ) );
+            String message = format( "Executing a user defined function is not allowed for %s.", ktx.securityContext().description() );
+            throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
         }
 
         final SecurityContext securityContext = mode.shouldBoostFunction( id ) ?
@@ -1057,8 +1057,8 @@ public class AllStoreHolder extends Read
         AccessMode mode = ktx.securityContext().mode();
         if ( !globalProcedures.isBuiltInAggregatingFunction( id ) && !mode.allowsExecuteAggregatingFunction( id ) )
         {
-            throw new AuthorizationViolationException(
-                    format( "Executing a user defined aggregating function is not allowed for %s.", ktx.securityContext().description() ) );
+            String message = format( "Executing a user defined aggregating function is not allowed for %s.", ktx.securityContext().description() );
+            throw ktx.securityAuthorizationHandler().logAndGetAuthorizationException( ktx.securityContext(), message );
         }
 
         final SecurityContext securityContext = mode.shouldBoostAggregatingFunction( id ) ?

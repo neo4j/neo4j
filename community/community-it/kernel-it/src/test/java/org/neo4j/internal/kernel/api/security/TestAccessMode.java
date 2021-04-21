@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api.security;
 
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 
@@ -242,12 +241,6 @@ public class TestAccessMode implements AccessMode
     public boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey )
     {
         return allowWrite;
-    }
-
-    @Override
-    public AuthorizationViolationException onViolation( String msg )
-    {
-        return new AuthorizationViolationException( "Forbidden in testAccessMode" );
     }
 
     @Override

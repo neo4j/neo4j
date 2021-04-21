@@ -35,6 +35,7 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.kernel.api.exceptions.Status.Security.CredentialsExpired;
 import static org.neo4j.kernel.api.exceptions.Status.Security.Forbidden;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
@@ -86,16 +87,16 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
 
     protected void assertPermissionErrorAtDataAccess( HTTP.Response response ) throws JsonParseException
     {
-        assertPermissionError( response, Collections.singletonList( CredentialsExpired.code().serialize() ) );
+        assertPermissionError( response, Collections.singletonList( CredentialsExpired.code().serialize() ), "ACCESS on database neo4j is not allowed." );
     }
 
     void assertPermissionErrorAtSystemAccess( HTTP.Response response ) throws JsonParseException
     {
         List<String> possibleErrors = Arrays.asList( CredentialsExpired.code().serialize(), Forbidden.code().serialize() );
-        assertPermissionError( response, possibleErrors );
+        assertPermissionError( response, possibleErrors, PERMISSION_DENIED );
     }
 
-    private void assertPermissionError( HTTP.Response response, List<String> errors ) throws JsonParseException
+    private void assertPermissionError( HTTP.Response response, List<String> errors, String message ) throws JsonParseException
     {
         assertThat( response.status() ).isEqualTo( 200 );
         assertThat( response.get( "errors" ).size() ).isEqualTo( 1 );
@@ -103,7 +104,7 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
         JsonNode firstError = response.get( "errors" ).get( 0 );
         assertThat( firstError.get( "code" ).asText() ).isIn( errors );
 
-        assertThat( firstError.get( "message" ).asText() ).startsWith( "Permission denied." );
+        assertThat( firstError.get( "message" ).asText() ).contains( message );
     }
 
     protected static HTTP.RawPayload query( String statement )

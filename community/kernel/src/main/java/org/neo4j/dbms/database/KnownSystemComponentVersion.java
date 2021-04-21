@@ -23,8 +23,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.security.SecurityLog;
-import org.neo4j.logging.Log;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 
 /**
  * Version of a system graph component.
@@ -42,9 +41,9 @@ public abstract class KnownSystemComponentVersion
     protected final String componentVersionProperty;
     public final int version;
     public final String description;
-    protected final SecurityLog log;
+    protected final AbstractSecurityLog log;
 
-    protected KnownSystemComponentVersion( ComponentVersion componentVersion, SecurityLog log )
+    protected KnownSystemComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog log )
     {
         this.componentVersion = componentVersion;
         this.componentVersionProperty = componentVersion.getComponentName();

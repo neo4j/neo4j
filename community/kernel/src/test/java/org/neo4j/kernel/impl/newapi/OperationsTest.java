@@ -41,6 +41,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.helpers.StubCursorFactory;
@@ -49,7 +50,9 @@ import org.neo4j.internal.kernel.api.helpers.StubRead;
 import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -86,6 +89,10 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.logging.FormattedLogFormat;
+import org.neo4j.logging.Level;
+import org.neo4j.logging.SecurityLogHelper;
+import org.neo4j.logging.log4j.LogExtended;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -125,6 +132,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.lock.LockTracer.NONE;
+import static org.neo4j.logging.SecurityLogHelper.line;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -149,6 +157,8 @@ class OperationsTest
     private IndexingService indexingService;
     private TokenHolders tokenHolders;
     private CommandCreationContext creationContext;
+    private SecurityLogHelper logHelper;
+    private CommunitySecurityLog securityLog;
 
     @BeforeEach
     void setUp() throws Exception
@@ -162,6 +172,9 @@ class OperationsTest
         when( transaction.lockTracer() ).thenReturn( LockTracer.NONE );
         when( transaction.txState() ).thenReturn( txState );
         when( transaction.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
+        logHelper = new SecurityLogHelper();
+        securityLog = new CommunitySecurityLog( (LogExtended) logHelper.getLogProvider().getLog( this.getClass() ) );
+        when( transaction.securityAuthorizationHandler() ).thenReturn( new SecurityAuthorizationHandler( securityLog ) );
 
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
         nodeCursor = mock( FullAccessNodeCursor.class );
@@ -1038,12 +1051,11 @@ class OperationsTest
     void shouldAcquireTxStateBeforeAllocatingNodeIdInBareCreateMethod()
     {
         // given
-        SecurityContext sctx = mock( SecurityContext.class );
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
-        when( ktx.securityContext() ).thenReturn( sctx );
+        when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
+        when( ktx.securityAuthorizationHandler() ).thenReturn( new SecurityAuthorizationHandler( CommunitySecurityLog.NULL_LOG ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
-        when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
@@ -1062,17 +1074,17 @@ class OperationsTest
     void shouldAcquireTxStateBeforeAllocatingNodeIdInCreateWithLabelsMethod() throws ConstraintValidationException
     {
         // given
-        SecurityContext sctx = mock(SecurityContext.class);
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
+        when( ktx.securityAuthorizationHandler() ).thenReturn( new SecurityAuthorizationHandler( CommunitySecurityLog.NULL_LOG ) );
         Locks.Client lockClient = mock( Locks.Client.class );
         when( ktx.lockClient() ).thenReturn( lockClient );
-        when( ktx.securityContext() ).thenReturn( sctx );
+        when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
         when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
         when( cursors.allocateFullAccessPropertyCursor( NULL, INSTANCE ) ).thenReturn( mock( FullAccessPropertyCursor.class ) );
-        when( sctx.mode()).thenReturn( AccessMode.Static.FULL );
+
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
@@ -1093,16 +1105,15 @@ class OperationsTest
     void shouldAcquireTxStateBeforeAllocatingRelationshipId() throws EntityNotFoundException
     {
         // given
-        SecurityContext sctx = mock( SecurityContext.class );
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
         Locks.Client lockClient = mock( Locks.Client.class );
         when( ktx.lockClient() ).thenReturn( lockClient );
-        when( ktx.securityContext() ).thenReturn( sctx );
+        when( ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
+        when( ktx.securityAuthorizationHandler() ).thenReturn( new SecurityAuthorizationHandler( CommunitySecurityLog.NULL_LOG ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
         when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
-        when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                                                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
                                                 mock( ConstraintIndexCreator.class ),
@@ -1263,6 +1274,10 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.READ, false);
         assertThat( message).contains("Set label for label 'Label' is not allowed");
+        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+                line().level( Level.ERROR )
+                      .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
+                      .message( "Set label for label 'Label' is not allowed for AUTH_DISABLED with READ." ) );
     }
 
     @Test
@@ -1270,6 +1285,10 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.ACCESS, false);
         assertThat( message).contains("Set label for label 'Label' is not allowed");
+        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+                line().level( Level.ERROR )
+                      .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
+                      .message( "Set label for label 'Label' is not allowed for AUTH_DISABLED with ACCESS." ) );
     }
 
     @Test
@@ -1295,6 +1314,10 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.READ, false);
         assertThat( message).contains("Remove label for label 'Label' is not allowed");
+        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+                line().level( Level.ERROR )
+                      .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
+                      .message( "Remove label for label 'Label' is not allowed for AUTH_DISABLED with READ." ) );
     }
 
     @Test
@@ -1302,6 +1325,10 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.ACCESS, false);
         assertThat( message).contains("Remove label for label 'Label' is not allowed");
+        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+                line().level( Level.ERROR )
+                      .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
+                      .message( "Remove label for label 'Label' is not allowed for AUTH_DISABLED with ACCESS." ) );
     }
 
     @Test
@@ -1324,9 +1351,8 @@ class OperationsTest
 
     private String runForSecurityLevel( Executable executable, AccessMode mode, boolean shoudldBeAuthorized ) throws Exception
     {
-        SecurityContext sctx = mock( SecurityContext.class );
-        when( transaction.securityContext() ).thenReturn( sctx );
-        when( sctx.mode() ).thenReturn( mode );
+        when( transaction.securityContext() ).thenReturn( SecurityContext.authDisabled( mode, ClientConnectionInfo.EMBEDDED_CONNECTION ) );
+        when( transaction.securityAuthorizationHandler() ).thenReturn( new SecurityAuthorizationHandler( securityLog ) );
 
         when( nodeCursor.next() ).thenReturn( true );
         when( nodeCursor.hasLabel( 2 ) ).thenReturn( false );

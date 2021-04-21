@@ -23,10 +23,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
-import org.neo4j.kernel.api.exceptions.Status;
 
 /** Controls the capabilities of a KernelTransaction. */
 public interface AccessMode
@@ -36,26 +34,7 @@ public interface AccessMode
         /** No reading or writing allowed. */
         ACCESS( false, false, false, false, false ),
         /** No reading or writing allowed because of expired credentials. */
-        CREDENTIALS_EXPIRED( false, false, false, false, false )
-                {
-                    @Override
-                    public AuthorizationViolationException onViolation( String msg )
-                    {
-                        return new AuthorizationViolationException( String.format(
-                                msg + "%n%nThe credentials you provided were valid, but must be " +
-                                "changed before you can " +
-                                "use this instance. If this is the first time you are using Neo4j, this is to " +
-                                "ensure you are not using the default credentials in production. If you are not " +
-                                "using default credentials, you are getting this message because an administrator " +
-                                "requires a password change.%n" +
-                                "Changing your password is easy to do via the Neo4j Browser.%n" +
-                                "If you are connecting via a shell or programmatically via a driver, " +
-                                "just issue a `ALTER CURRENT USER SET PASSWORD FROM 'current password' TO 'new password'` " +
-                                "statement against the system database in the current " +
-                                "session, and then restart your driver with the new password configured." ),
-                                Status.Security.CredentialsExpired );
-                    }
-                },
+        CREDENTIALS_EXPIRED( false, false, false, false, false ),
 
         /** Allows reading data and schema, but not writing. */
         READ( true, false, false, false, false ),
@@ -288,12 +267,6 @@ public interface AccessMode
         {
             return write;
         }
-
-        @Override
-        public AuthorizationViolationException onViolation( String msg )
-        {
-            return new AuthorizationViolationException( msg );
-        }
     }
 
     boolean allowsWrites();
@@ -420,7 +393,6 @@ public interface AccessMode
 
     boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey );
 
-    AuthorizationViolationException onViolation( String msg );
     String name();
 
     default Set<String> roles()

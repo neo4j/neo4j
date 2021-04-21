@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.security.SecurityLog;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
@@ -42,7 +42,7 @@ public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySe
     private final UserRepository userRepository;
     private final SecureHasher secureHasher;
 
-    SupportedCommunitySecurityComponentVersion( ComponentVersion componentVersion, SecurityLog log, UserRepository userRepository )
+    SupportedCommunitySecurityComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog log, UserRepository userRepository )
     {
         super( componentVersion, log );
         this.userRepository = userRepository;

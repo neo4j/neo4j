@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -182,6 +183,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public SecurityContext securityContext()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public SecurityAuthorizationHandler securityAuthorizationHandler()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

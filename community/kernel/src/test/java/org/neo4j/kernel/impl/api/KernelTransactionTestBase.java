@@ -38,6 +38,7 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -182,6 +183,7 @@ class KernelTransactionTestBase
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
+        dependencies.satisfyDependency( CommunitySecurityLog.NULL_LOG );
         var memoryPool = new MemoryPools().pool( MemoryGroup.TRANSACTION, ByteUnit.mebiBytes( 4 ), null );
         return new KernelTransactionImplementation( config, mock( DatabaseTransactionEventListeners.class ),
                                                     null, null,

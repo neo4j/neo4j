@@ -45,6 +45,7 @@ import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -726,6 +727,7 @@ class KernelTransactionsTest
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
+        dependencies.satisfyDependency( CommunitySecurityLog.NULL_LOG );
         return dependencies;
     }
 

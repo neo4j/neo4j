@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.security.SecurityLog;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.string.UTF8;
@@ -44,7 +44,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     public static final Label USER_LABEL = Label.label( "User" );
     private final SecureHasher secureHasher = new SecureHasher();
 
-    KnownCommunitySecurityComponentVersion( ComponentVersion componentVersion, SecurityLog log )
+    KnownCommunitySecurityComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog log )
     {
         super( componentVersion, log );
     }

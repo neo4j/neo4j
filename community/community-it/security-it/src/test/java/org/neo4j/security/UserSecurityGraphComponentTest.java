@@ -41,11 +41,10 @@ import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.security.SecurityLogWrapper;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.logging.NullLog;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
@@ -98,7 +97,7 @@ class UserSecurityGraphComponentTest
         oldUsers.create( oldUser );
         UserRepository initialPassword = new InMemoryUserRepository();
         userSecurityGraphComponent =
-                new UserSecurityGraphComponent( new SecurityLogWrapper( NullLog.getInstance() ), oldUsers, initialPassword, Config.defaults() );
+                new UserSecurityGraphComponent( CommunitySecurityLog.NULL_LOG, oldUsers, initialPassword, Config.defaults() );
         systemGraphComponents.register( userSecurityGraphComponent );
 
         // remove DBMS runtime component as it is not a subject of this test

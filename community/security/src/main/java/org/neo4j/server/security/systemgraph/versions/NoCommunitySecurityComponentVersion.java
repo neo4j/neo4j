@@ -20,8 +20,7 @@
 package org.neo4j.server.security.systemgraph.versions;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.security.SecurityLogWrapper;
-import org.neo4j.logging.NullLog;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_UNKNOWN_VERSION;
 
@@ -29,7 +28,7 @@ public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityC
 {
     public NoCommunitySecurityComponentVersion()
     {
-        super( COMMUNITY_SECURITY_UNKNOWN_VERSION, new SecurityLogWrapper( NullLog.getInstance() ) );
+        super( COMMUNITY_SECURITY_UNKNOWN_VERSION, CommunitySecurityLog.NULL_LOG );
     }
 
     @Override

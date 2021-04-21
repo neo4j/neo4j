@@ -34,6 +34,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -273,6 +274,7 @@ class TransactionStatusResultTest
         {
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
+            dependencies.satisfyDependency( mock( AbstractSecurityLog.class ) );
             KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                     Config.defaults(),
                     mock( DatabaseTransactionEventListeners.class ),

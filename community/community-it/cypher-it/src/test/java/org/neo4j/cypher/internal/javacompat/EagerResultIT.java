@@ -209,13 +209,13 @@ class EagerResultIT
             var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertEquals( 1, versionContext.getNumIsDirtyCalls() );
-            String expected = "+-----+\n" +
-                    "| n.c |\n" +
-                    "+-----+\n" +
-                    "| \"d\" |\n" +
-                    "| \"y\" |\n" +
-                    "+-----+\n" +
-                    "2 rows\n";
+            String expected = "+-----+" + System.lineSeparator() +
+                    "| n.c |" + System.lineSeparator() +
+                    "+-----+" + System.lineSeparator() +
+                    "| \"d\" |" + System.lineSeparator() +
+                    "| \"y\" |" + System.lineSeparator() +
+                    "+-----+" + System.lineSeparator() +
+                    "2 rows" + System.lineSeparator();
             assertEquals( expected, printToStream( result ) );
             transaction.commit();
         }

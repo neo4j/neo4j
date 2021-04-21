@@ -48,7 +48,6 @@ import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -57,6 +56,7 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource;
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.UserSegment;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -89,7 +89,6 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.UNINITIALIZED;
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope.ALL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.TERMINATE_TRANSACTION;
@@ -116,6 +115,9 @@ public class BuiltInDbmsProcedures
 
     @Context
     public Transaction transaction;
+
+    @Context
+    public KernelTransaction kernelTransaction;
 
     @Context
     public SecurityContext securityContext;
@@ -148,12 +150,13 @@ public class BuiltInDbmsProcedures
 
         Config config = graph.getDependencyResolver().resolveDependency( Config.class );
 
-        config.getValues().forEach( ( setting, value ) -> {
-            if ( !setting.internal() && setting.name().toLowerCase().contains( lowerCasedSearchString ) )
-            {
-                results.add( new ConfigResult( setting, value ) );
-            }
-        } );
+        config.getValues().forEach( ( setting, value ) ->
+                                    {
+                                        if ( !setting.internal() && setting.name().toLowerCase().contains( lowerCasedSearchString ) )
+                                        {
+                                            results.add( new ConfigResult( setting, value ) );
+                                        }
+                                    } );
         return results.stream().sorted( Comparator.comparing( c -> c.name ) );
     }
 
@@ -174,25 +177,25 @@ public class BuiltInDbmsProcedures
 
         Config config = graph.getDependencyResolver().resolveDependency( Config.class );
         config.getValues().forEach( ( setting, value ) ->
-        {
-            if ( browserSettings.contains( setting.name().toLowerCase() ) )
-            {
-                results.add( new ConfigResult( setting, value ) );
-            }
-        } );
+                                    {
+                                        if ( browserSettings.contains( setting.name().toLowerCase() ) )
+                                        {
+                                            results.add( new ConfigResult( setting, value ) );
+                                        }
+                                    } );
         return results.stream().sorted( Comparator.comparing( c -> c.name ) );
     }
 
     @Description( "Attaches a map of data to the transaction. The data will be printed when listing queries, and " +
-            "inserted into the query log." )
+                  "inserted into the query log." )
     @Procedure( name = "tx.setMetaData", mode = DBMS )
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
         securityContext.assertCredentialsNotExpired();
         int totalCharSize = data.entrySet()
-                .stream()
-                .mapToInt( e -> e.getKey().length() + ((e.getValue() != null) ? e.getValue().toString().length() : 0) )
-                .sum();
+                                .stream()
+                                .mapToInt( e -> e.getKey().length() + ((e.getValue() != null) ? e.getValue().toString().length() : 0) )
+                                .sum();
 
         if ( totalCharSize >= HARD_CHAR_LIMIT )
         {
@@ -228,9 +231,9 @@ public class BuiltInDbmsProcedures
     {
         securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( GlobalProcedures.class ).getAllProcedures().stream()
-                .filter( proc -> !proc.internal() )
-                .sorted( Comparator.comparing( a -> a.name().toString() ) )
-                .map( ProcedureResult::new );
+                    .filter( proc -> !proc.internal() )
+                    .sorted( Comparator.comparing( a -> a.name().toString() ) )
+                    .map( ProcedureResult::new );
     }
 
     @Deprecated( since = "4.3.0", forRemoval = true )
@@ -252,14 +255,14 @@ public class BuiltInDbmsProcedures
 
         // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
         Stream<FunctionResult> loadedFunctions = globalProcedures.getAllNonAggregatingFunctions()
-                .map( f -> new FunctionResult( f, false ) );
+                                                                 .map( f -> new FunctionResult( f, false ) );
 
         // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
         Stream<FunctionResult> loadedAggregationFunctions = globalProcedures.getAllAggregatingFunctions()
-                .map( f -> new FunctionResult( f, true ) );
+                                                                            .map( f -> new FunctionResult( f, true ) );
 
         return Stream.concat( Stream.concat( languageFunctions, loadedFunctions ), loadedAggregationFunctions )
-                .sorted( Comparator.comparing( a -> a.name ) );
+                     .sorted( Comparator.comparing( a -> a.name ) );
     }
 
     @Admin
@@ -320,7 +323,7 @@ public class BuiltInDbmsProcedures
                                   {
                                       try
                                       {
-                                         component.upgradeToCurrent( graph );
+                                          component.upgradeToCurrent( graph );
                                       }
                                       catch ( Exception e )
                                       {
@@ -476,7 +479,7 @@ public class BuiltInDbmsProcedures
                             {
                                 result.add(
                                         new QueryStatusResult( query, (InternalTransaction) transaction, zoneId,
-                                                databaseContext.databaseFacade().databaseName() ) );
+                                                               databaseContext.databaseFacade().databaseName() ) );
                             }
 
                             query = query.getPreviousQuery();
@@ -567,9 +570,9 @@ public class BuiltInDbmsProcedures
         ZoneId timeZone = getConfiguredTimeZone();
 
         return connectionTracker.activeConnections()
-                .stream()
-                .filter( connection -> isAdminOrSelf( connection.username() ) )
-                .map( connection -> new ListConnectionResult( connection, timeZone ) );
+                                .stream()
+                                .filter( connection -> isAdminOrSelf( connection.username() ) )
+                                .map( connection -> new ListConnectionResult( connection, timeZone ) );
     }
 
     @SystemProcedure
@@ -631,7 +634,10 @@ public class BuiltInDbmsProcedures
                 connection.close();
                 return new ConnectionTerminationResult( id, connection.username() );
             }
-            throw new AuthorizationViolationException( format("Executing admin procedure is not allowed for %s.", securityContext.description() ) );
+
+            throw kernelTransaction.securityAuthorizationHandler()
+                                   .logAndGetAuthorizationException( securityContext,
+                                                                     format( "Not allowed to terminate connection for user %s.", connection.username() ) );
         }
         return new ConnectionTerminationFailedResult( id );
     }
@@ -653,7 +659,10 @@ public class BuiltInDbmsProcedures
         }
         else
         {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
+            throw kernelTransaction.securityAuthorizationHandler().logAndGetAuthorizationException( securityContext,
+                                                                                                    format( "Not allowed to terminate %s run by user %s.",
+                                                                                                            queryId,
+                                                                                                            username ) );
         }
     }
 
@@ -668,7 +677,10 @@ public class BuiltInDbmsProcedures
         }
         else
         {
-            throw new AuthorizationViolationException( PERMISSION_DENIED );
+            throw kernelTransaction.securityAuthorizationHandler().logAndGetAuthorizationException( securityContext,
+                                                                                                    format( "Not allowed to terminate %s run by user %s.",
+                                                                                                            queryId,
+                                                                                                            username ) );
         }
     }
 
@@ -680,9 +692,9 @@ public class BuiltInDbmsProcedures
     private List<ExecutingQuery> getActiveFabricQueries( FabricTransaction tx )
     {
         return tx.getLastSubmittedStatement().stream()
-                .filter( FabricStatementLifecycles.StatementLifecycle::inFabricPhase )
-                .map( FabricStatementLifecycles.StatementLifecycle::getMonitoredQuery )
-                .collect( toList() );
+                 .filter( FabricStatementLifecycles.StatementLifecycle::inFabricPhase )
+                 .map( FabricStatementLifecycles.StatementLifecycle::getMonitoredQuery )
+                 .collect( toList() );
     }
 
     private TransactionManager getFabricTransactionManager()

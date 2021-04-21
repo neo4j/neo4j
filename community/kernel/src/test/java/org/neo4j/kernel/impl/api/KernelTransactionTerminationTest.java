@@ -35,6 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.KernelVersion;
@@ -314,6 +315,7 @@ class KernelTransactionTerminationTest
         {
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
+            dependencies.satisfyDependency( mock( AbstractSecurityLog.class ) );
             return new TestKernelTransaction( new CommitTrackingMonitor(), dependencies );
         }
 

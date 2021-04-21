@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.security.SecurityLog;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -136,7 +136,7 @@ public class CommunitySecurityModule extends SecurityModule
         return authStoreDir.resolve( fileName );
     }
 
-    public static UserSecurityGraphComponent createSecurityComponent( SecurityLog securityLog, Config config, FileSystemAbstraction fileSystem,
+    public static UserSecurityGraphComponent createSecurityComponent( AbstractSecurityLog securityLog, Config config, FileSystemAbstraction fileSystem,
                                                                       LogProvider logProvider )
     {
         UserRepository migrationUserRepository = CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );

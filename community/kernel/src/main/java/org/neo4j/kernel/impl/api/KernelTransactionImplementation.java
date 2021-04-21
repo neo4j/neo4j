@@ -58,10 +58,9 @@ import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.PrivilegeAction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
@@ -78,6 +77,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
@@ -173,6 +173,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintSemantics constraintSemantics;
     private CursorContext cursorContext;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
+    private final SecurityAuthorizationHandler securityAuthorizationHandler;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -259,6 +260,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, config );
+        this.securityAuthorizationHandler = new SecurityAuthorizationHandler( dependencies.resolveDependency( AbstractSecurityLog.class ) );
         this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
                         dependencies, config, memoryTracker );
@@ -464,6 +466,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public boolean isOpen()
     {
         return !closed && !closing;
+    }
+
+    @Override
+    public SecurityAuthorizationHandler securityAuthorizationHandler()
+    {
+        return securityAuthorizationHandler;
     }
 
     @Override
@@ -874,10 +882,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         accessCapability.assertCanWrite();
         //TODO: Consider removing this since we re-check with fine graned a few lines below
-        assertAllowsSchemaWrites();
+        securityAuthorizationHandler.assertAllowsSchemaWrites( securityContext() );
 
         upgradeToSchemaWrites();
-        return new RestrictedSchemaWrite( operations, securityContext() );
+        return new RestrictedSchemaWrite( operations, securityContext(), securityAuthorizationHandler );
     }
 
     @Override
@@ -954,41 +962,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public LockTracer lockTracer()
     {
         return currentStatement.lockTracer();
-    }
-
-    private void assertAllowsSchemaWrites()
-    {
-        AccessMode accessMode = securityContext().mode();
-        if ( !accessMode.allowsSchemaWrites() )
-        {
-            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.", securityContext().description() ) );
-        }
-    }
-
-    public final void assertAllowsTokenCreates( PrivilegeAction action )
-    {
-        AccessMode accessMode = securityContext().mode();
-        if ( !accessMode.allowsTokenCreates( action ) )
-        {
-            switch ( action )
-            {
-            case CREATE_LABEL:
-                throw accessMode
-                        .onViolation( format( "Creating new node label is not allowed for %s. See GRANT CREATE NEW NODE LABEL ON DATABASE...",
-                                              securityContext().description() ) );
-            case CREATE_PROPERTYKEY:
-                throw accessMode.onViolation(
-                        format( "Creating new property name is not allowed for %s. See GRANT CREATE NEW PROPERTY NAME ON DATABASE...",
-                                securityContext().description() ) );
-            case CREATE_RELTYPE:
-                throw accessMode.onViolation(
-                        format( "Creating new relationship type is not allowed for %s. See GRANT CREATE NEW RELATIONSHIP TYPE ON DATABASE...",
-                                securityContext().description() ) );
-            default:
-                throw accessMode.onViolation(
-                        format( "'%s' operations are not allowed for %s.", action, securityContext().description() ) );
-            }
-        }
     }
 
     private void afterCommit( TransactionListenersState listenersState )

@@ -1206,19 +1206,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.schemaWrite()
 
   override def assertShowIndexAllowed(): Unit = {
-    val securityContext = transactionalContext.kernelTransaction.securityContext()
-    val mode = securityContext.mode()
-    if (!mode.allowsShowIndex()) {
-      throw mode.onViolation(s"Show indexes are not allowed for ${securityContext.description}.")
-    }
+    val ktx = transactionalContext.kernelTransaction
+    ktx.securityAuthorizationHandler().assertShowIndexAllowed(transactionalContext.kernelTransaction.securityContext())
   }
 
   override def assertShowConstraintAllowed(): Unit = {
-    val securityContext = transactionalContext.kernelTransaction.securityContext()
-    val mode = securityContext.mode()
-    if (!mode.allowsShowConstraint()) {
-      throw mode.onViolation(s"Show constraints are not allowed for ${securityContext.description}.")
-    }
+    val ktx = transactionalContext.kernelTransaction
+    ktx.securityAuthorizationHandler().assertShowConstraintAllowed(transactionalContext.kernelTransaction.securityContext())
   }
 
   override def graph(): GraphDatabaseQueryService = {

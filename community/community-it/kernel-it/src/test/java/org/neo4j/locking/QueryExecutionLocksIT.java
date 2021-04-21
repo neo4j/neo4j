@@ -56,6 +56,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -766,6 +767,12 @@ class QueryExecutionLocksIT
         public SecurityContext securityContext()
         {
             return internal.securityContext();
+        }
+
+        @Override
+        public SecurityAuthorizationHandler securityAuthorizationHandler()
+        {
+            return internal.securityAuthorizationHandler();
         }
 
         @Override

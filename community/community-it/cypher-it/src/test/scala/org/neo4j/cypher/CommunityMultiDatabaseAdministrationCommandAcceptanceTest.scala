@@ -32,7 +32,7 @@ import org.neo4j.dbms.database.DefaultSystemGraphComponent
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.dbms.database.SystemGraphComponents
 import org.neo4j.exceptions.SyntaxException
-import org.neo4j.internal.kernel.api.security.SecurityLog
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.InMemoryUserRepository
 import org.neo4j.server.security.systemgraph.SystemGraphRealmHelper
@@ -596,7 +596,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   private def initSystemGraph(config: Config): Unit = {
     val systemGraphComponents = new SystemGraphComponents()
     systemGraphComponents.register(new DefaultSystemGraphComponent(config))
-    systemGraphComponents.register(new UserSecurityGraphComponent(mock[SecurityLog], new InMemoryUserRepository, new InMemoryUserRepository, config))
+    systemGraphComponents.register(new UserSecurityGraphComponent(mock[AbstractSecurityLog], new InMemoryUserRepository, new InMemoryUserRepository, config))
 
     val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
     val systemSupplier = SystemGraphRealmHelper.makeSystemSupplier(databaseManager)

@@ -47,12 +47,6 @@ abstract class WrappedAccessMode implements AccessMode
     }
 
     @Override
-    public AuthorizationViolationException onViolation( String msg )
-    {
-        return wrapping.onViolation( msg );
-    }
-
-    @Override
     public boolean allowsExecuteProcedure( int procedureId )
     {
         return original.allowsExecuteProcedure( procedureId );
