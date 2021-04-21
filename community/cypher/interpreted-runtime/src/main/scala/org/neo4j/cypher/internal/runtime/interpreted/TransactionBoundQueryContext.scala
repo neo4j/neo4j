@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.net.URL
-
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -69,7 +67,6 @@ import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
 import org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered
-import org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -122,6 +119,7 @@ import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.net.URL
 import scala.collection.Iterator
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
@@ -278,11 +276,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getRelationshipsByType(session: TokenReadSession, relType: Int): ClosingLongIterator = {
+  override def getRelationshipsByType(session: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator = {
     val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     val read = reads()
-    read.relationshipTypeScan(session, cursor, unconstrained(), new TokenPredicate(relType))
+    read.relationshipTypeScan(session, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType))
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.relationshipReference() else -1L
       override def close(): Unit = cursor.close()

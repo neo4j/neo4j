@@ -50,7 +50,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Seq(
-      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty)
+      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, _)
     ))
   }
 
@@ -65,7 +65,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Seq(
-      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty)
+      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, _)
     ))
   }
 
@@ -80,7 +80,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Seq(
-      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty)
+      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, _)
     ))
   }
 

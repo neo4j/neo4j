@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  *
  *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
-case class DirectedRelationshipTypeScan(idName: String, startNode: String, relType: RelTypeName, endNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
+case class DirectedRelationshipTypeScan(idName: String, startNode: String, relType: RelTypeName, endNode: String, argumentIds: Set[String], indexOrder: IndexOrder)(implicit idGen: IdGen)
   extends RelationshipLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)

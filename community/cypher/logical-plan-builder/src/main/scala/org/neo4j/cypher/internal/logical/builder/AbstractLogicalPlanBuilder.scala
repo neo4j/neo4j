@@ -669,6 +669,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def relationshipTypeScan(pattern: String, args: String*): IMPL = {
+    relationshipTypeScan(pattern, IndexOrderNone, args: _*)
+  }
+
+  def relationshipTypeScan(pattern: String, indexOrder: IndexOrder, args: String*): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
     newNode(varFor(p.from))
@@ -678,11 +682,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
     p.dir match {
       case SemanticDirection.OUTGOING =>
-        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(p.relName, p.from, typ, p.to, args.toSet)(_)))
+        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(p.relName, p.from, typ, p.to, args.toSet, indexOrder)(_)))
       case SemanticDirection.INCOMING =>
-        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(p.relName, p.to, typ, p.from, args.toSet)(_)))
+        appendAtCurrentIndent(LeafOperator(DirectedRelationshipTypeScan(p.relName, p.to, typ, p.from, args.toSet, indexOrder)(_)))
       case SemanticDirection.BOTH =>
-        appendAtCurrentIndent(LeafOperator(UndirectedRelationshipTypeScan(p.relName, p.from, typ, p.to, args.toSet)(_)))
+        appendAtCurrentIndent(LeafOperator(UndirectedRelationshipTypeScan(p.relName, p.from, typ, p.to, args.toSet, indexOrder)(_)))
     }
   }
 

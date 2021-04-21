@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ: LazyType, toNode: String)
+case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ: LazyType, toNode: String, indexOrder: IndexOrder)
                                            (val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
@@ -33,7 +34,7 @@ case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ
     val typeId = typ.getId(query)
     if (typeId == LazyType.UNKNOWN) ClosingIterator.empty
     else {
-      PrimitiveLongHelper.map(query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId), relationshipId => {
+      PrimitiveLongHelper.map(query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId, indexOrder), relationshipId => {
         val relationship = state.query.relationshipById(relationshipId)
         rowFactory.copyWith(ctx, ident, relationship, fromNode, relationship.startNode(), toNode, relationship.endNode())
       })

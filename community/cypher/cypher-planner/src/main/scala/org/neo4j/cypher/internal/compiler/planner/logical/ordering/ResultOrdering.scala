@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.annotation.tailrec
@@ -195,6 +196,21 @@ object ResultOrdering {
         ProvidedOrder.desc(variable)
       case Some(Asc(expression, projection)) if satisfies(expression, projection) =>
         ProvidedOrder.asc(variable)
+    }.getOrElse(ProvidedOrder.empty)
+  }
+
+  def providedOrderForRelationshipTypeScan(interestingOrder: InterestingOrder,
+                                           name: String): ProvidedOrder = {
+    def satisfies(expression: Expression, projections: Map[String, Expression]): Boolean =
+      extractVariableForValue(expression, projections).exists(_.name == name)
+
+    val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
+
+    candidates.map(_.headOption).collectFirst {
+      case Some(Desc(expression, projection)) if satisfies(expression, projection) =>
+        ProvidedOrder.desc(Variable(name)(InputPosition.NONE))
+      case Some(Asc(expression, projection)) if satisfies(expression, projection) =>
+        ProvidedOrder.asc(Variable(name)(InputPosition.NONE))
     }.getOrElse(ProvidedOrder.empty)
   }
 

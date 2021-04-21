@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -321,4 +323,95 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
 
+  test("directed relationship scan should use ascending index order when provided") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (_, _, relationships, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]->(y)", IndexOrderAscending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withRows(
+      inOrder(
+        relationships
+          .map(r => Array(r, r.getStartNode, r.getEndNode))
+          .sortBy(_.head.getId)))
+  }
+
+  test("directed relationship scan should use descending index order when provided") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (_, _, relationships, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]->(y)", IndexOrderDescending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withRows(
+      inOrder(
+        relationships
+          .map(r => Array(r, r.getStartNode, r.getEndNode))
+          .sortBy(_.head.getId * -1)))
+  }
+
+  test("undirected relationship scan should use ascending index order when provided") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (_, _, relationships, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]-(y)", IndexOrderAscending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withRows(
+      inOrder(
+        relationships
+          .flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
+          .sortBy(_.head.getId)))
+  }
+
+  test("undirected relationship scan should use descending index order when provided") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (_, _, relationships, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .relationshipTypeScan("(x)-[r:R]-(y)", IndexOrderDescending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "x", "y").withRows(
+      inOrder(
+        relationships
+          .flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
+          .sortBy(_.head.getId * -1)))
+  }
 }

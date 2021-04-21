@@ -183,7 +183,7 @@ object StaticEvaluation {
 
     override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator = notAvailable()
 
-    override def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int): ClosingLongIterator = notAvailable()
+    override def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator = notAvailable()
 
     override def relationshipById(id: Long, startNode: Long, endNode: Long, `type`: Int): RelationshipValue = notAvailable()
 

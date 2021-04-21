@@ -323,13 +323,13 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case UndirectedRelationshipByIdSeek(ident, relIdExpr, fromNode, toNode, _) =>
         UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, relIdExpr), toNode, fromNode)(id = id)
 
-      case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _) =>
+      case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>
         indexRegistrator.registerTypeScan()
-        DirectedRelationshipTypeScanPipe(ident, fromNode, LazyType(typ)(semanticTable), toNode)(id = id)
+        DirectedRelationshipTypeScanPipe(ident, fromNode, LazyType(typ)(semanticTable), toNode, indexOrder)(id = id)
 
-      case UndirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _) =>
+      case UndirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>
         indexRegistrator.registerTypeScan()
-        UndirectedRelationshipTypeScanPipe(ident, fromNode,  LazyType(typ)(semanticTable), toNode)(id = id)
+        UndirectedRelationshipTypeScanPipe(ident, fromNode,  LazyType(typ)(semanticTable), toNode, indexOrder)(id = id)
 
       case DirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)

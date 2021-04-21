@@ -101,7 +101,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator
 
-  def getRelationshipsByType(tokenReadSession: TokenReadSession,  relType: Int): ClosingLongIterator
+  def getRelationshipsByType(tokenReadSession: TokenReadSession,  relType: Int, indexOrder: IndexOrder): ClosingLongIterator
 
   def nodeCursor(): NodeCursor
 

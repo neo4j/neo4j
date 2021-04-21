@@ -348,10 +348,10 @@ object LogicalPlanToPlanBuilderString {
       case DirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
-      case DirectedRelationshipTypeScan(idName, start, typ, end, argumentIds) =>
+      case DirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, _) =>
         val args = if(argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
         s""" "($start)-[$idName:${typ.name}]->($end)"$args """.trim
-      case UndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds) =>
+      case UndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, _) =>
         val args = if(argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
         s""" "($start)-[$idName:${typ.name}]-($end)"$args """.trim
       case NodeIndexScan(idName, labelToken, properties, argumentIds, indexOrder) =>
