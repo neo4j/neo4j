@@ -417,6 +417,7 @@ object LogicalPlanToPlanBuilderString {
       case LoadCSV(_, url, variableName, format, fieldTerminator, _, _) =>
         val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
         Seq(wrapInQuotations(expressionStringifier(url)), wrapInQuotations(variableName), format, fieldTerminatorStr).mkString(", ")
+      case Apply(_, _, fromSubquery) => fromSubquery.toString
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[NodeIndexSeekLeafPlan]) =>
