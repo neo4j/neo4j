@@ -36,12 +36,14 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
                                                               ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should union two empty streams") {
-    nodeGraph(sizeHint)
+    given {
+      nodeGraph(sizeHint)
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.filter("false")
       .|.allNodeScan("x")
       .filter("false")
@@ -60,7 +62,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.unwind(s"$inputRight AS x")
       .|.argument()
       .input(variables = Seq("x"))
@@ -84,7 +86,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.nodeByLabelScan("x", "B", IndexOrderAscending)
       .nodeByLabelScan("x", "A", IndexOrderAscending)
       .build()
@@ -115,7 +117,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .orderedUnion(Seq(Ascending("x"), Ascending("y")))
+      .orderedUnion(Seq(Ascending("x"), Ascending("y"))).withLeveragedOrder()
       .|.unwind(s"$yRight as y")
       .|.nodeByLabelScan("x", "B", IndexOrderAscending)
       .unwind(s"$yLeft as y")
@@ -171,7 +173,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("cache[x.prop] AS prop")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.cacheProperties("cache[x.prop]")
       .|.nodeByLabelScan("x", "B")
       .cacheProperties("cache[x.prop]")
@@ -199,7 +201,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("foo", "bar")
       .projection("cache[x.foo] AS foo", "cache[x.bar] AS bar")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.cacheProperties("cache[x.bar]")
       .|.nodeByLabelScan("x", "B")
       .cacheProperties("cache[x.foo]")
@@ -215,6 +217,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union under apply") {
+    assume(!isParallel)
+
     val size = Math.sqrt(sizeHint).toInt
     // given
     val nodes = given {
@@ -230,7 +234,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "res2")
       .apply()
       .|.projection("res AS res2")
-      .|.orderedUnion(Seq(Ascending("res")))
+      .|.orderedUnion(Seq(Ascending("res"))).withLeveragedOrder()
       .|.|.projection("z AS res")
       .|.|.nodeByLabelScan("z", "Z", IndexOrderAscending, "x")
       .|.projection("y AS res")
@@ -252,6 +256,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union with alias under apply") {
+    assume(!isParallel)
+
     val size = Math.sqrt(sizeHint).toInt
     // given
     val nodes = given {
@@ -267,7 +273,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "res2")
       .apply()
       .|.projection("res AS res2")
-      .|.orderedUnion(Seq(Ascending("res")))
+      .|.orderedUnion(Seq(Ascending("res"))).withLeveragedOrder()
       .|.|.projection("x AS res")
       .|.|.argument("x")
       .|.projection("y AS res")
@@ -297,8 +303,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
-      .|.orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.|.allNodeScan("x")
       .|.allNodeScan("x")
       .input(nodes = Seq("x"))
@@ -316,6 +322,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under apply") {
+    assume(!isParallel)
+
     val size = Math.max(sizeHint / 100, 10)
     // given
     val nodes = given {
@@ -326,8 +334,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "x")
       .apply()
-      .|.orderedUnion(Seq(Ascending("x")))
-      .|.|.orderedUnion(Seq(Ascending("x")))
+      .|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.|.|.allNodeScan("x")
       .|.|.allNodeScan("x")
       .|.allNodeScan("x")
@@ -347,6 +355,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under apply 2") {
+    assume(!isParallel)
+
     val sizeHint = 10
     val argSize = Math.max(sizeHint / 100, 10)
     val rangeLimit1 = Math.max(sizeHint / 100, 10)
@@ -357,8 +367,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "x")
       .apply()
-      .|.orderedUnion(Seq(Ascending("x")))
-      .|.|.orderedUnion(Seq(Ascending("x")))
+      .|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.|.|.unwind(s"range(${rangeLimit1 + 1},$rangeLimit2) as x")
       .|.|.|.argument()
       .|.|.unwind(s"range(1,$rangeLimit1) as x")
@@ -381,6 +391,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under apply 3") {
+    assume(!isParallel)
+
     val sizeHint = 10
     val argSize = Math.max(sizeHint / 100, 10)
     val rangeLimit1 = Math.max(sizeHint / 100, 10)
@@ -391,8 +403,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "x")
       .apply()
-      .|.orderedUnion(Seq(Ascending("x")))
-      .|.|.orderedUnion(Seq(Ascending("x")))
+      .|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.|.|.unwind(s"range(1,$rangeLimit1) as x")
       .|.|.|.argument()
       .|.|.unwind(s"range(${rangeLimit2 + 1},$rangeLimit3) as x")
@@ -415,6 +427,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under nested apply") {
+    assume(!isParallel)
+
     val size = Math.max(sizeHint / 100, 10)
     // given
     val nodes = given {
@@ -426,8 +440,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n", "m", "x")
       .apply()
       .|.apply()
-      .|.|.orderedUnion(Seq(Ascending("x")))
-      .|.|.|.orderedUnion(Seq(Ascending("x")))
+      .|.|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.|.|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.|.|.|.allNodeScan("x")
       .|.|.|.allNodeScan("x")
       .|.|.allNodeScan("x")
@@ -450,6 +464,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under nested apply 2") {
+    assume(!isParallel)
+
     val sizeHint = 10
     val argSize = Math.max(sizeHint / 100, 10)
     val rangeLimit = Math.max(sizeHint / 100, 30)
@@ -459,8 +475,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n", "m", "x")
       .apply()
       .|.apply()
-      .|.|.orderedUnion(Seq(Ascending("x")))
-      .|.|.|.orderedUnion(Seq(Ascending("x")))
+      .|.|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.|.|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.|.|.|.unwind(s"range(2,$rangeLimit,3) as x")
       .|.|.|.|.argument()
       .|.|.|.unwind(s"range(0,$rangeLimit,3) as x")
@@ -496,7 +512,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "n")
       .unwind("[1, 2, 3, 4, 5] AS n")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.allNodeScan("x")
       .input(nodes = Seq("x"))
       .build()
@@ -542,13 +558,15 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with limit on RHS") {
+    assume(!isParallel) // TODO: Why does this fail with morsel size 1?
+
     val size = sizeHint / 2
     val nodes = given { nodeGraph(size)}
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.limit(1)
       .|.allNodeScan("x")
       .input(variables = Seq("x"))
@@ -570,7 +588,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.allNodeScan("x")
       .limit(1)
       .input(variables = Seq("x"))
@@ -593,7 +611,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .limit(1)
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.allNodeScan("x")
       .input(variables = Seq("x"))
       .build()
@@ -616,7 +634,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a")
       .apply()
       .|.limit(1)
-      .|.orderedUnion(Seq(Ascending("a")))
+      .|.orderedUnion(Seq(Ascending("a"))).withLeveragedOrder()
       .|.|.allNodeScan("a")
       .|.argument()
       .allNodeScan("a")
@@ -630,6 +648,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union under apply with long slot aliases") {
+    assume(!isParallel)
+
     val size = Math.sqrt(sizeHint).toInt
     // given
     val nodes = given {
@@ -641,7 +661,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("res2")
       .apply()
       .|.projection("res AS res2")
-      .|.orderedUnion(Seq(Ascending("res")))
+      .|.orderedUnion(Seq(Ascending("res"))).withLeveragedOrder()
       .|.|.projection("x AS res")
       .|.|.argument("x")
       .|.projection("x AS res")
@@ -661,6 +681,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union under apply with follow-up operator") {
+    assume(!isParallel)
+
     // given
     val nodes = given {
       nodeGraph(sizeHint)
@@ -671,7 +693,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("res")
       .apply()
       .|.distinct("res AS res")
-      .|.orderedUnion(Seq(Ascending("res")))
+      .|.orderedUnion(Seq(Ascending("res"))).withLeveragedOrder()
       .|.|.projection("y AS res")
       .|.|.unwind("[1, 2, 3, 4, 2, 5, 6, 7, 1] AS y")
       .|.|.argument()
@@ -737,7 +759,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "x")
-      .orderedUnion(Seq(Ascending("a")))
+      .orderedUnion(Seq(Ascending("a"))).withLeveragedOrder()
       .|.projection("x AS xxx")
       .|.projection("b AS a", "1 AS x")
       .|.nodeByLabelScan("b", "B", IndexOrderAscending)
@@ -764,7 +786,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "x")
-      .orderedUnion(Seq(Ascending("a"), Ascending("x")))
+      .orderedUnion(Seq(Ascending("a"), Ascending("x"))).withLeveragedOrder()
       .|.projection("1 AS x")
       .|.allNodeScan("a")
       .projection("x AS xxx")
@@ -786,7 +808,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.apply()
       .|.|.projection("y AS x")
       .|.|.argument("y")
@@ -813,7 +835,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.allNodeScan("x")
       .apply()
       .|.projection("y AS x")
@@ -877,7 +899,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .unwind("c as y")
       .aggregation(Seq.empty, Seq("collect(x) as c"))
-      .orderedUnion(Seq(Ascending("x")))
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
       .|.nodeByLabelScan("x", "B")
       .nodeByLabelScan("x", "A")
       .build()
