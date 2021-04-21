@@ -123,7 +123,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                         databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
                     },
                     // Config
-                    builder -> builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ) );
+                    builder -> {} );
             sourceSnapshot = fs.snapshot();
         }
 
@@ -716,7 +716,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             {
                 Label label = Label.label( "label2" );
                 indexWithNumberData( db, label );
-            }, builder -> builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ) );
+            }, builder -> {} );
 
             DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome ) );
 
@@ -803,8 +803,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
             LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
-        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags,
-                config -> config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ) );
+        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags, config -> {} );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,

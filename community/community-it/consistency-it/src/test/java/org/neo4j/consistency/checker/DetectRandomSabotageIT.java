@@ -123,7 +123,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -435,7 +434,6 @@ public class DetectRandomSabotageIT
 
     protected  <T> T addConfig( T t, SetConfigAction<T> action )
     {
-        action.setConfig( t, enable_relationship_type_scan_store, true );
         return t;
     }
 

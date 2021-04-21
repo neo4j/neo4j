@@ -2464,26 +2464,18 @@ public class FullCheckIntegrationTest
         return check( fixture.getInstantiatedPageCache(), stores, fixture.counts(), fixture.groupDegrees() );
     }
 
-    private ConsistencySummaryStatistics check( Config config, ConsistencyFlags consistencyFlags )
-            throws ConsistencyCheckIncompleteException
-    {
-        PageCache pageCache = fixture.getInstantiatedPageCache();
-        DirectStoreAccess stores = fixture.readOnlyDirectStoreAccess();
-        return check( pageCache, stores, fixture.counts(), fixture.groupDegrees(), config, consistencyFlags );
-    }
-
     private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts,
             ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees ) throws ConsistencyCheckIncompleteException
     {
         Config config = config();
-        final var consistencyFlags = new ConsistencyFlags( true, true, true );
-        return check( pageCache, stores, counts, groupDegrees, config, consistencyFlags );
+        return check( pageCache, stores, counts, groupDegrees, config );
     }
 
     private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts,
-            ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees, Config config, ConsistencyFlags consistencyFlags )
+            ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees, Config config )
             throws ConsistencyCheckIncompleteException
     {
+        final var consistencyFlags = new ConsistencyFlags( true, true, true );
         FullCheck checker =
                 new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), consistencyFlags, config, false, memoryLimit() );
         return checker.execute( pageCache, stores, counts, groupDegrees, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
