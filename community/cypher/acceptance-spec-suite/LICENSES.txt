@@ -22,6 +22,9 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
+  Jackson-annotations
+  Jackson-core
+  jackson-databind
   Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
   Jettison
