@@ -49,7 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val idName = "n"
   private val lit12 = literalInt(12)
@@ -69,13 +69,10 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   private val propEndsWithBepa = endsWith(prop("n", "prop"), litBepa)
 
   private val fooExists = function(Exists.name, prop("n", "foo"))
-  private val fooIsNotNull = isNotNull(prop("n", "foo"))
   private val fooContainsApa = contains(prop("n", "foo"), litApa)
   private val fooEndsWithApa = endsWith(prop("n", "foo"), litApa)
   private val barExists = function(Exists.name, prop("n", "bar"))
-  private val barIsNotNull = isNotNull(prop("n", "foo"))
   private val bazExists = function(Exists.name, prop("n", "baz"))
-  private val bazIsNotNull = isNotNull(prop("n", "baz"))
   private val bazEquals12 = equals(prop("n", "baz"), lit12)
 
   private def nodeIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =

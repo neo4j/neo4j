@@ -67,7 +67,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val idName = "n"
   private val property = prop("n", "prop")
