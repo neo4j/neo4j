@@ -288,7 +288,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
         val info = indexInfoString(idName, unique = false, typ, tokens, predicates, p.cachedProperties)
         PlanDescriptionImpl(id, "DirectedRelationshipIndexScan", NoChildren, Seq(Details(info)), variables,  withRawCardinalities)
-      case p@UndirectedRelationshipIndexScan(idName, start, end, typ, properties, _, _) =>
+      case p@UndirectedRelationshipIndexScan(idName, _, _, typ, properties, _, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")

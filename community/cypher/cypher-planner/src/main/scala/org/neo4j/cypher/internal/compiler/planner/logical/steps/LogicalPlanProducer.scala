@@ -287,6 +287,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                          endNode: String,
                                          pattern: PatternRelationship,
                                          argumentIds: Set[String],
+                                         providedOrder: ProvidedOrder,
                                          context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
@@ -294,7 +295,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     )
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
     val newArguments = solver.newArguments
-    val leafPlan = annotate(DirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments, IndexOrderNone), solved, ProvidedOrder.empty, context)
+    val leafPlan = annotate(DirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
     solver.rewriteLeafPlan(leafPlan)
   }
 
@@ -304,6 +305,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                            endNode: String,
                                            pattern: PatternRelationship,
                                            argumentIds: Set[String],
+                                           providedOrder: ProvidedOrder,
                                            context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
@@ -311,7 +313,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     )
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
     val newArguments = solver.newArguments
-    val leafPlan = annotate(UndirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments, IndexOrderNone), solved, ProvidedOrder.empty, context)
+    val leafPlan = annotate(UndirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
     solver.rewriteLeafPlan(leafPlan)
   }
 

@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -44,6 +46,8 @@ import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
@@ -905,6 +909,112 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
       .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should provide ascending order from directed relationship type scan") {
+    val query =
+      """MATCH (a)-[r:REL]->(b)
+        |RETURN a, b, r ORDER BY r ASC""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan.printLogicalPlanBuilderString()
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .relationshipTypeScan("(a)-[r:REL]->(b)", IndexOrderAscending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should provide descending order from directed relationship type scan") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE r:REL
+        |RETURN a, b, r ORDER BY r DESC""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .relationshipTypeScan("(a)-[r:REL]->(b)", IndexOrderDescending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should provide ascending order from undirected relationship type scan") {
+    val query =
+      """MATCH (a)-[r:REL]-(b)
+        |RETURN a, b, r ORDER BY r ASC""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan.printLogicalPlanBuilderString()
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .relationshipTypeScan("(a)-[r:REL]-(b)", IndexOrderAscending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should provide descending order from undirected relationship type scan") {
+    val query =
+      """MATCH (a)-[r]-(b)
+        |WHERE r:REL
+        |RETURN a, b, r ORDER BY r DESC""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .relationshipTypeScan("(a)-[r:REL]-(b)", IndexOrderDescending)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should plan full sort if first sorting on unlabeled node and then labeled relationship") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE r:REL
+        |RETURN a, b, r ORDER BY a ASC, r ASC""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .sort(Seq(Ascending("a"), Ascending("r")))
+      .relationshipTypeScan("(a)-[r:REL]->(b)", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should plan only partial sort when first sorting on labeled relationship and then unlabeled node") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE r:REL
+        |RETURN a, b, r ORDER BY r DESC, a DESC""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .partialSort(Seq(Descending("r")), Seq(Descending("a")))
+      .relationshipTypeScan("(a)-[r:REL]->(b)", IndexOrderDescending)
       .build()
 
     plan shouldEqual expectedPlan

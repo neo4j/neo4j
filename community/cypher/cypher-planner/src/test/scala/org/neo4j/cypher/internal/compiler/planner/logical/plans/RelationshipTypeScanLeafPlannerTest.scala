@@ -34,7 +34,14 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
+import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -50,7 +57,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Seq(
-      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, _)
+      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderNone)
     ))
   }
 
@@ -65,7 +72,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Seq(
-      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, _)
+      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, IndexOrderNone)
     ))
   }
 
@@ -80,7 +87,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Seq(
-      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, _)
+      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderNone)
     ))
   }
 
@@ -179,6 +186,202 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should be(empty)
+  }
+
+  test("outgoing directed relationship type scan with required ascending order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+    ))
+  }
+
+  test("outgoing directed relationship type scan with required descending order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+    ))
+  }
+
+  test("incoming directed relationship type scan with required ascending order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", INCOMING, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, IndexOrderAscending)
+    ))
+  }
+
+  test("incoming directed relationship type scan with required descending order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", INCOMING, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, IndexOrderDescending)
+    ))
+  }
+
+  test("outgoing directed relationship type scan with interesting order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq()),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+    ))
+  }
+
+  test("outgoing directed relationship type scan with required and interesting order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", OUTGOING, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(
+          RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+    ))
+  }
+
+  test("undirected relationship type scan with required ascending order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", BOTH, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+    ))
+  }
+
+  test("undirected relationship type scan with required descending order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", BOTH, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+    ))
+  }
+
+  test("undirected relationship type scan with interesting order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", BOTH, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(RequiredOrderCandidate(Seq()),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+    ))
+  }
+
+  test("undirected relationship type scan with required and interesting order") {
+    // given
+    val context = planningContext()
+    //(a)-[:R]->(b)
+    val qg = pattern("r", "a", "b", BOTH, "R")
+
+    // when
+    val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
+      qg,
+      InterestingOrderConfig(
+        InterestingOrder(
+          RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
+      context)
+
+    // then
+    resultPlans should equal(Seq(
+      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+    ))
   }
 
   private def pattern(name: String, from: String, to: String, direction: SemanticDirection, types: String*) =

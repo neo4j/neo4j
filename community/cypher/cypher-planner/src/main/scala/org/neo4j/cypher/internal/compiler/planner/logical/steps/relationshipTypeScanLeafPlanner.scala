@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -49,19 +50,21 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
           case _ => false
         }
 
+    def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(interestingOrderConfig.orderToSolve, _)
+
     queryGraph.patternRelationships.flatMap {
 
       //(a)-[:R]->(b)
       case p@PatternRelationship(name, (startNode, endNode), OUTGOING, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planDirectedRelationshipByTypeScan(name, startNode, typ, endNode, p, queryGraph.argumentIds, context))
+        Some(context.logicalPlanProducer.planDirectedRelationshipByTypeScan(name, startNode, typ, endNode, p, queryGraph.argumentIds, providedOrderFor(name), context))
 
       //(a)<-[:R]-(b)
       case p@PatternRelationship(name, (startNode, endNode), INCOMING, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planDirectedRelationshipByTypeScan(name, endNode, typ, startNode, p, queryGraph.argumentIds, context))
+        Some(context.logicalPlanProducer.planDirectedRelationshipByTypeScan(name, endNode, typ, startNode, p, queryGraph.argumentIds, providedOrderFor(name), context))
 
       //(a)-[:R]-(b)
       case p@PatternRelationship(name, (startNode, endNode), BOTH, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planUndirectedRelationshipByTypeScan(name, startNode, typ, endNode, p, queryGraph.argumentIds, context))
+        Some(context.logicalPlanProducer.planUndirectedRelationshipByTypeScan(name, startNode, typ, endNode, p, queryGraph.argumentIds, providedOrderFor(name), context))
 
       case _ => None
     }.toIndexedSeq
