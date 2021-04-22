@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.config
 
-import java.io.File
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
@@ -31,6 +29,8 @@ import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherVersion
+
+import java.io.File
 
 /**
  * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
@@ -82,6 +82,7 @@ class CypherConfiguration private (val config: Config) {
   val enableMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
   val useJavaCCParser: Boolean = config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED
   val disallowSplittingTop: Boolean = config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
+  val enablePlanningRelationshipIndexes: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes)
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)

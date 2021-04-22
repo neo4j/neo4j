@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import java.time.Clock
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
@@ -44,7 +42,11 @@ import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.values.virtual.MapValue
+
+import java.time.Clock
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                                     metricsFactory: MetricsFactory,
@@ -117,6 +119,13 @@ object CypherPlannerConfiguration {
     fromCypherConfiguration(CypherConfiguration.fromConfig(cfg), cfg, planSystemCommands = false)
   }
 
+  def withSettings(settings: Map[Setting[_], AnyRef]): CypherPlannerConfiguration = {
+    val cfg = Config.defaults(
+      settings.asJava
+    )
+    fromCypherConfiguration(CypherConfiguration.fromConfig(cfg), cfg, planSystemCommands = false)
+  }
+
 }
 
 class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val planSystemCommands: Boolean) {
@@ -134,4 +143,5 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def obfuscateLiterals: Boolean = config.obfuscateLiterals
   def pipelinedBatchSizeSmall: Int = config.pipelinedBatchSizeSmall
   def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
+  def enablePlanningRelationshipIndexes: Boolean = config.enablePlanningRelationshipIndexes
 }

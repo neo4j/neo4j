@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
@@ -27,13 +29,15 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanResolver
 import org.neo4j.cypher.internal.compiler.helpers.TokenContainer
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Cardinalities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition.EntityType
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -77,6 +81,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
                       relationshipTypeScanStoreEnabled: Boolean = false,
+                      enablePlanningRelationshipIndexes: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -296,6 +301,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(relationshipTypeScanStoreEnabled = enable))
   }
 
+  def enablePlanningRelationshipIndexes(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(enablePlanningRelationshipIndexes = enable))
+  }
+
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -485,13 +495,13 @@ class StatisticsBackedLogicalPlanningConfiguration(
 ) extends LogicalPlanConstructionTestSupport
   with AstConstructionTestSupport {
 
-  def plan(queryString: String): LogicalPlan = {
-    planState(queryString).logicalPlan
-  }
+  private def getInitialStateAndContext(queryString: String): (InitialState, PlannerContext) = {
+    val plannerConfiguration = CypherPlannerConfiguration.withSettings(
+      Map(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes -> options.enablePlanningRelationshipIndexes.asInstanceOf[AnyRef])
+    )
 
-  def planState(queryString: String): LogicalPlanState = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, cypherCompilerConfig, options.executionModel)
+    val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, plannerConfiguration, options.executionModel)
 
     val context = ContextHelper.create(
       planContext = planContext,
@@ -500,13 +510,28 @@ class StatisticsBackedLogicalPlanningConfiguration(
         if (options.connectComponentsPlanner) LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
         else LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(),
       metrics = metrics,
-      config = cypherCompilerConfig,
+      config = plannerConfiguration,
       logicalPlanIdGen = idGen,
       debugOptions = options.debug,
       executionModel = options.executionModel
     )
     val state = InitialState(queryString, None, IDPPlannerName)
+    (state, context)
+  }
+
+  def plan(queryString: String): LogicalPlan = {
+    planState(queryString).logicalPlan
+  }
+
+  def planState(queryString: String): LogicalPlanState = {
+    val (state, context) = getInitialStateAndContext(queryString)
     LogicalPlanningTestSupport2.pipeLine().transform(state, context)
+  }
+
+  def getLogicalPlanningContext(queryString: String): LogicalPlanningContext = {
+    val (initialState, context) = getInitialStateAndContext(queryString)
+    val state = LogicalPlanningTestSupport2.pipeLine().transform(initialState, context)
+    QueryPlanner.getLogicalPlanningContext(state, context)
   }
 
   def planBuilder(): LogicalPlanBuilder = new LogicalPlanBuilder(wholePlan = true, resolver)
