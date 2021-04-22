@@ -122,9 +122,9 @@ public class DefaultPageCacheTracerTest
         var pagedFile = Mockito.mock( PagedFile.class );
         when(pagedFile.path()).thenReturn( Path.of( "a" ) );
 
-        tracer.mappedFile( pagedFile );
+        tracer.mappedFile( 1, pagedFile );
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  0d );
-        tracer.unmappedFile( pagedFile );
+        tracer.unmappedFile( 1, pagedFile );
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  0d );
     }
 

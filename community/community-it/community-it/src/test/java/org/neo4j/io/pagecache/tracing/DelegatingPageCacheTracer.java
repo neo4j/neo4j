@@ -44,9 +44,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( PagedFile pagedFile )
+    public void mappedFile( int swapperId, PagedFile pagedFile )
     {
-        delegate.mappedFile( pagedFile );
+        delegate.mappedFile( swapperId, pagedFile );
     }
 
     @Override
@@ -110,9 +110,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void unmappedFile( PagedFile pagedFile )
+    public void unmappedFile( int swapperId, PagedFile pagedFile )
     {
-        delegate.unmappedFile( pagedFile );
+        delegate.unmappedFile( swapperId, pagedFile );
     }
 
     @Override

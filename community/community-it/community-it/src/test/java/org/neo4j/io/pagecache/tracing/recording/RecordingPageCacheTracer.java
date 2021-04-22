@@ -50,13 +50,13 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
-    public void mappedFile( PagedFile pagedFile )
+    public void mappedFile( int swapperId, PagedFile pagedFile )
     {
         // we currently do not record these
     }
 
     @Override
-    public void unmappedFile( PagedFile pagedFile )
+    public void unmappedFile( int swapperId, PagedFile pagedFile )
     {
         // we currently do not record these
     }

@@ -521,7 +521,7 @@ public class MuninnPageCache implements PageCache
         current = new FileMapping( path, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
-        pageCacheTracer.mappedFile( pagedFile );
+        pageCacheTracer.mappedFile( pagedFile.swapperId, pagedFile );
         return pagedFile;
     }
 
@@ -634,7 +634,7 @@ public class MuninnPageCache implements PageCache
                     {
                         prev.next = current.next;
                     }
-                    pageCacheTracer.unmappedFile( file );
+                    pageCacheTracer.unmappedFile( file.swapperId, file );
                     flushAndCloseWithoutFail( file );
                     break;
                 }

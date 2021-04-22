@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
@@ -45,12 +43,12 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
-        public void mappedFile( PagedFile pagedFile )
+        public void mappedFile( int swapperId, PagedFile pagedFile )
         {
         }
 
         @Override
-        public void unmappedFile( PagedFile pagedFile )
+        public void unmappedFile( int swapperId, PagedFile pagedFile )
         {
         }
 
@@ -262,12 +260,12 @@ public interface PageCacheTracer extends PageCacheCounters
     /**
      * The given file has been mapped, where no existing mapping for that file existed.
      */
-    void mappedFile( PagedFile pagedFile );
+    void mappedFile( int swapperId, PagedFile pagedFile );
 
     /**
      * The last reference to the given file has been unmapped.
      */
-    void unmappedFile( PagedFile pagedFile );
+    void unmappedFile( int swapperId, PagedFile pagedFile );
 
     /**
      * A background eviction has begun. Called from the background eviction thread.

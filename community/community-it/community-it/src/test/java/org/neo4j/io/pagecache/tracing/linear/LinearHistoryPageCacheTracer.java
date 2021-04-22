@@ -55,13 +55,13 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( PagedFile pagedFile )
+    public void mappedFile( int swapperId, PagedFile pagedFile )
     {
         tracer.add( new MappedFileHEvent( pagedFile.path() ) );
     }
 
     @Override
-    public void unmappedFile( PagedFile pagedFile )
+    public void unmappedFile( int swapperId, PagedFile pagedFile )
     {
         tracer.add( new UnmappedFileHEvent( pagedFile.path() ) );
     }

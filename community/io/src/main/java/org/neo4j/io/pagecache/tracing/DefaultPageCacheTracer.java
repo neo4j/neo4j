@@ -188,13 +188,13 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( PagedFile mappedFile )
+    public void mappedFile( int swapperId, PagedFile mappedFile )
     {
         filesMapped.increment();
     }
 
     @Override
-    public void unmappedFile( PagedFile mappedFile )
+    public void unmappedFile( int swapperId, PagedFile mappedFile )
     {
         filesUnmapped.increment();
     }
