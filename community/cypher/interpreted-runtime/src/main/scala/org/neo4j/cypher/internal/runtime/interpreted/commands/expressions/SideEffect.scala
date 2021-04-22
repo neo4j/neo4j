@@ -34,11 +34,11 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
-trait InterpretedSideEffect {
+trait SideEffect {
   def execute(row: CypherRow, state: QueryState)
 }
 
-case class CreateNode(command: CreateNodeCommand) extends InterpretedSideEffect {
+case class CreateNode(command: CreateNodeCommand, allowNullProperty: Boolean) extends SideEffect {
   override def execute(row: CypherRow,
                        state: QueryState): Unit = {
     val query = state.query
@@ -47,7 +47,11 @@ case class CreateNode(command: CreateNodeCommand) extends InterpretedSideEffect 
     command.properties.foreach(p => p.apply(row, state) match {
       case IsMap(map) =>
         map(state).foreach((k: String, v: AnyValue) => {
-          if (v eq Values.NO_VALUE) CreateNode.handleNoValue(command.labels.map(_.name), k)
+          if (v eq Values.NO_VALUE) {
+            if (!allowNullProperty) {
+              CreateNode.handleNoValue(command.labels.map(_.name), k)
+            }
+          }
           else {
             val propId = query.getOrCreatePropertyKeyId(k)
             query.nodeOps.setProperty(node.id(), propId, makeValueNeoSafe(v))
@@ -69,7 +73,7 @@ object CreateNode {
   }
 }
 
-case class CreateRelationship(command: CreateRelationshipCommand) extends InterpretedSideEffect {
+case class CreateRelationship(command: CreateRelationshipCommand, allowNullProperty: Boolean) extends SideEffect {
   override def execute(row: CypherRow,
                        state: QueryState): Unit = {
     val start = getNode(row, command.idName, command.startNode, state.lenientCreateRelationship)
@@ -85,7 +89,9 @@ case class CreateRelationship(command: CreateRelationshipCommand) extends Interp
         case IsMap(map) =>
           map(state).foreach((k: String, v: AnyValue) => {
             if (v eq Values.NO_VALUE) {
-              CreateRelationship.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
+              if (!allowNullProperty) {
+               CreateRelationship.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
+              }
             } else {
               val propId = state.query.getOrCreatePropertyKeyId(k)
               state.query.relationshipOps.setProperty(relationship.id(), propId, makeValueNeoSafe(v))

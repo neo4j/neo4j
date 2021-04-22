@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InvalidArgumentException
@@ -45,7 +46,10 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.mutable.ArrayBuffer
 
-trait SetOperation {
+trait SetOperation extends SideEffect {
+
+  override def execute(row: CypherRow,
+                       state: QueryState): Unit = set(row, state)
 
   def set(executionContext: CypherRow, state: QueryState): Long
 

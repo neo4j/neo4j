@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ExpressionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpressionWithTxStateChangesTests
 import org.neo4j.cypher.internal.runtime.spec.tests.FilterTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ForeachApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.ForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportMemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportProfileMemoryTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
@@ -272,6 +273,7 @@ class InterpretedSetRelationshipPropertiesFromMapTest extends SetRelationshipPro
 class InterpretedMergeTest extends MergeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedLockNodesTest extends LockNodesTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedForEachTest extends ForeachTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetRelationshipPropertyTest extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedEitherTest extends EitherTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

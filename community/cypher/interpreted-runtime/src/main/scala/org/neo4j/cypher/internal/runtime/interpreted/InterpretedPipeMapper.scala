@@ -25,12 +25,15 @@ import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -67,6 +70,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -153,6 +157,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Create
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand
@@ -188,6 +193,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekModeFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.InputPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
@@ -238,7 +244,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetLabelsOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyOperation
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyOperation
@@ -404,9 +409,50 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     }
   }
 
+
+
   def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {
     val id = plan.id
     val buildExpression = getBuildExpression(id)
+
+    def compileEffects(sideEffect: SimpleMutatingPattern): Seq[SideEffect] = {
+      sideEffect match {
+        case CreatePattern(nodes, relationships) =>
+          val nodeOps = nodes.map {
+            case ir.CreateNode(node, labels, properties) =>
+              CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)), allowNullProperty = true)
+
+          }
+          val relOps = relationships.map { r: ir.CreateRelationship =>
+            CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),
+              allowNullProperty = true)
+          }
+          nodeOps ++ relOps
+
+        case SetLabelPattern(node, labelNames) => Seq(SetLabelsOperation(node, labelNames.map(LazyLabel.apply)))
+        case SetNodePropertyPattern(node, propertyKey, value) =>
+          val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)
+          Seq(SetNodePropertyOperation(node, LazyPropertyKey(propertyKey),
+            buildExpression(value), needsExclusiveLock))
+        case SetNodePropertiesFromMapPattern(node, map, removeOtherProps) =>
+          val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(node, map)
+          Seq(SetNodePropertyFromMapOperation(node, buildExpression(map), removeOtherProps, needsExclusiveLock))
+        case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
+          val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(relationship, value, propertyKey)
+          Seq(SetRelationshipPropertyOperation(relationship, LazyPropertyKey(propertyKey), buildExpression(value), needsExclusiveLock))
+        case SetRelationshipPropertiesFromMapPattern(relationship, map, removeOtherProps) =>
+          val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(relationship, map)
+          Seq(SetRelationshipPropertyFromMapOperation(relationship, buildExpression(map), removeOtherProps, needsExclusiveLock))
+        case SetPropertyPattern(entityExpression, propertyKeyName, expression) =>
+         Seq(SetPropertyOperation(buildExpression(entityExpression),  LazyPropertyKey(propertyKeyName), buildExpression(expression)))
+        case SetPropertiesFromMapPattern(entityExpression, expression, removeOtherProps) =>
+          Seq(SetPropertyFromMapOperation(buildExpression(entityExpression), buildExpression(expression), removeOtherProps))
+
+
+          case other => throw new IllegalStateException(s"Cannot compile $other")
+      }
+    }
+
     plan match {
       case Projection(_, expressions) =>
         ProjectionPipe(source,  InterpretedCommandProjection(Eagerly.immutableMapValues(expressions, buildExpression)))(id = id)
@@ -647,33 +693,17 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         )(id = id)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
-        def compileEffect(sideEffect: SetMutatingPattern): SetOperation = sideEffect match {
-          case SetLabelPattern(node, labelNames) => SetLabelsOperation(node, labelNames.map(LazyLabel.apply))
-          case SetNodePropertyPattern(node, propertyKey, value) =>
-            val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)
-            SetNodePropertyOperation(node, LazyPropertyKey(propertyKey),
-              buildExpression(value), needsExclusiveLock)
-          case SetNodePropertiesFromMapPattern(node, map, removeOtherProps) =>
-            val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(node, map)
-            SetNodePropertyFromMapOperation(node, buildExpression(map), removeOtherProps, needsExclusiveLock)
-          case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
-            val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(relationship, value, propertyKey)
-              SetRelationshipPropertyOperation(relationship, LazyPropertyKey(propertyKey), buildExpression(value), needsExclusiveLock)
-          case SetRelationshipPropertiesFromMapPattern(relationship, map, removeOtherProps) =>
-            val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(relationship, map)
-            SetRelationshipPropertyFromMapOperation(relationship, buildExpression(map), removeOtherProps, needsExclusiveLock)
-          case other => throw new IllegalStateException(s"Cannot merge with $other")
-        }
-
         val creates = createNodes.map {
           case ir.CreateNode(node, labels, properties) =>
-            CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)))
+            CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
+              allowNullProperty = false)
         }  ++ createRelationships.map {
           r: ir.CreateRelationship =>
-            CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)))
+            CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),
+              allowNullProperty = false)
         }
 
-        new MergePipe(source, creates.toArray, onMatch.map(compileEffect).toArray, onCreate.map(compileEffect).toArray)(id = id)
+        new MergePipe(source, (creates ++ onCreate.flatMap(compileEffects)).toArray , onMatch.flatMap(compileEffects).toArray)(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
@@ -735,6 +765,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case ErrorPlan(_, ex) =>
         ErrorPipe(source, ex)(id = id)
+
+      case Foreach(_, variable, expression, mutations) =>
+        ForeachPipe(source, variable, buildExpression(expression), mutations.flatMap(compileEffects).toArray)(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")

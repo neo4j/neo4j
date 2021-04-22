@@ -21,31 +21,26 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ListSupport
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.util.attribution.Id
 
-class MergePipe(src: Pipe,
-                createOps: Array[SideEffect],
-                matchOps: Array[SideEffect])(val id: Id = Id.INVALID_ID) extends PipeWithSource(src) {
-  override protected def internalCreateResults(input: ClosingIterator[CypherRow],
-                                               state: QueryState): ClosingIterator[CypherRow] = {
-    if (input.hasNext) {
-      input.map(r => {
+case class ForeachPipe(source: Pipe, variable: String, expression: Expression, sideEffects: Array[SideEffect])
+                      (val id: Id = Id.INVALID_ID)
+  extends PipeWithSource(source) with ListSupport {
+
+  override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
+    input.map(row => {
+      val values = makeTraversable(expression(row, state)).iterator()
+      while (values.hasNext) {
+        val innerRow = rowFactory.copyWith(row, variable, values.next())
         var i = 0
-        while (i < matchOps.length) {
-          matchOps(i).execute(r, state)
+        while (i < sideEffects.length) {
+          sideEffects(i).execute(innerRow, state)
           i += 1
         }
-        r
-      })
-    } else {
-      val row = state.newRowWithArgument(rowFactory)
-      var i = 0
-      while (i < createOps.length) {
-        createOps(i).execute(row,state)
-        i += 1
       }
-      ClosingIterator.single(row)
-    }
-  }
+      row
+    })
 }
