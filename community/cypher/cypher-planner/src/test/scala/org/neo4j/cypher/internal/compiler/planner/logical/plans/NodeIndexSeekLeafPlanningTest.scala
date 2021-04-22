@@ -43,12 +43,12 @@ import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.ExclusiveBound
+import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
-import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
@@ -70,12 +70,14 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val idName = "n"
-  private val property = prop("n", "prop")
+  private val nProp = prop("n", "prop")
+  private val nFoo = prop("n", "foo")
   private val lit42: Expression = literalInt(42)
   private val lit6: Expression = literalInt(6)
 
-  private val inPredicate = in(property, listOf(lit42))
-  private val lessThanPredicate = AndedPropertyInequalities(varFor("n"), property, NonEmptyList(lessThan(property, lit42)))
+  private val nPropInLit42 = in(nProp, listOf(lit42))
+  private val nFooExists = exists(nFoo)
+  private val nPropLessThanLit42 = AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit42)))
 
   private def hasLabel(l: String) = hasLabels("n", l)
 
@@ -86,7 +88,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
@@ -100,7 +102,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"))
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -116,7 +118,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("index seek with values (equality predicate) when there is an index on the property") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -277,7 +279,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("index seek without values when there is an index on the property") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(lessThanPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropLessThanLit42, hasLabel("Awesome"))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -294,7 +296,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("index seek with values (from index) when there is an index on the property") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(lessThanPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropLessThanLit42, hasLabel("Awesome"))
 
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -313,7 +315,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       addTypeToSemanticTable(lit6, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       private val inPredicate2 = in(prop("n", "prop2"), listOf(lit6))
-      qg = queryGraph(inPredicate, inPredicate2, hasLabel("Awesome"))
+      qg = queryGraph(nPropInLit42, inPredicate2, hasLabel("Awesome"))
 
       indexOn("Awesome", "prop", "prop2")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -414,7 +416,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
       val x: Expression = varFor("x")
-      qg = queryGraph(in(property, listOf(x)), hasLabel("Awesome")).addArgumentIds(Seq("x"))
+      qg = queryGraph(in(nProp, listOf(x)), hasLabel("Awesome")).addArgumentIds(Seq("x"))
 
       addTypeToSemanticTable(x, CTNode.invariant)
       indexOn("Awesome", "prop")
@@ -434,7 +436,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       // MATCH a, x WHERE a.prop IN [x]
-      qg = queryGraph(in(property, listOf(varFor("x"))), hasLabel("Awesome"))
+      qg = queryGraph(in(nProp, listOf(varFor("x"))), hasLabel("Awesome"))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -615,7 +617,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("unique index seek with values (equality predicate) when there is an unique index on the property") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -632,7 +634,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("unique index seek without values when there is an index on the property") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(lessThanPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropLessThanLit42, hasLabel("Awesome"))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -649,7 +651,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("unique index seek with values (from index) when there is an index on the property") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(lessThanPredicate, hasLabel("Awesome"))
+      qg = queryGraph(nPropLessThanLit42, hasLabel("Awesome"))
 
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -668,7 +670,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome")).addHints(Some(hint))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome")).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -691,7 +693,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome")).addHints(Some(hint))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome")).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -712,7 +714,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("plans merge unique index seeks when there are two unique indexes") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"), hasLabel("Awesomer"))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"), hasLabel("Awesomer"))
 
       uniqueIndexOn("Awesome", "prop")
       uniqueIndexOn("Awesomer", "prop")
@@ -732,7 +734,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("plans merge unique index seeks when there are only one unique index") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"), hasLabel("Awesomer"))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"), hasLabel("Awesomer"))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -749,7 +751,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("plans merge unique index seeks with AssertSameNode when there are three unique indexes") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"), hasLabel("Awesomer"), hasLabel("Awesomest"))
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"), hasLabel("Awesomer"), hasLabel("Awesomest"))
 
       uniqueIndexOn("Awesome", "prop")
       uniqueIndexOn("Awesomer", "prop")
@@ -773,7 +775,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("plans merge unique index seeks with AssertSameNode when there are four unique indexes") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(inPredicate, hasLabel("Awesome"), hasLabel("Awesomer"),
+      qg = queryGraph(nPropInLit42, hasLabel("Awesome"), hasLabel("Awesomer"),
         hasLabel("Awesomest"), hasLabel("Awesomestest"))
 
       uniqueIndexOn("Awesome", "prop")
@@ -907,6 +909,38 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         SingleQueryExpression(`val3`))), _, _)
         ) => ()
       }
+    }
+  }
+
+  test("should not plan using implicit exists() if explicit exists() exists") {
+
+    new given {
+      addTypeToSemanticTable(lit42, CTInteger.invariant)
+      qg = queryGraph(nPropInLit42, nFooExists, hasLabel("Awesome"))
+
+      existenceOrNodeKeyConstraintOn("Awesome", Set("prop", "foo"))
+      indexOn("Awesome", "prop", "foo")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(p@NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+          val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+          plannedQG.selections.flatPredicates.toSet shouldEqual Set(
+            nPropInLit42, nFooExists, hasLabel("Awesome")
+          )
+      }
+
+      // We should not consider solutions that use an implicit exists(n.foo), since we have one explicitly in the query
+      // Otherwise we risk mixing up the solveds, since the plans would be exactly the same
+      val implicitExistsSolutions = ctx.planningAttributes.solveds.toSeq
+                                       .filter(_.hasValue)
+                                       .map(_.value.asSinglePlannerQuery.queryGraph.selections.flatPredicates.toSet)
+                                       .filter(_ == Set(nPropInLit42, hasLabel("Awesome")))
+
+      implicitExistsSolutions shouldEqual Seq.empty
     }
   }
 

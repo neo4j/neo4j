@@ -144,7 +144,7 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
     def valid(ident: LogicalVariable, dependencies: Set[LogicalVariable]): Boolean =
       !arguments.contains(ident) && dependencies.subsetOf(arguments)
 
-    predicates.flatMap {
+    val compatiblePredicates = predicates.flatMap {
       // n.prop IN [ ... ]
       case predicate@AsPropertySeekable(seekable: PropertySeekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.args.asQueryExpression
@@ -195,19 +195,27 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
         Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate), dependencies = expr.dependencies))
 
-      // n:User ... aggregation(n.prop)
-      // or
-      // n:User with CREATE CONSTRAINT ON (n:User) ASSERT EXISTS (n.prop)
-      case HasLabels(variable: Variable, labels) if valid(variable, Set.empty) =>
-        for {
-          (property, predicate) <- implicitExistsPredicates(variable, labels.head, context)
-        } yield IndexCompatiblePredicate(variable, property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
-          solvedPredicate = None, dependencies = Set.empty)
-
       case _ =>
         Set.empty[IndexCompatiblePredicate]
 
     }
+
+    val implicitCompatiblePredicates = predicates.flatMap {
+      // n:User ... aggregation(n.prop)
+      // or
+      // n:User with CREATE CONSTRAINT ON (n:User) ASSERT EXISTS (n.prop)
+      case HasLabels(variable: Variable, labels) if valid(variable, Set.empty) => for {
+        (property, predicate) <- implicitExistsPredicates(variable, labels.head, context)
+        // Don't add implicit predicates if we already have them explicitly
+        if !compatiblePredicates.exists(_.predicate == predicate)
+      } yield IndexCompatiblePredicate(variable, property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
+        solvedPredicate = None, dependencies = Set.empty)
+
+      case _ =>
+        Set.empty[IndexCompatiblePredicate]
+    }
+
+    compatiblePredicates ++ implicitCompatiblePredicates
   }
 
   private def implicitExistsPredicates(variable: Variable, label: LabelName, context: LogicalPlanningContext): Set[(Property, Expression)] = {
