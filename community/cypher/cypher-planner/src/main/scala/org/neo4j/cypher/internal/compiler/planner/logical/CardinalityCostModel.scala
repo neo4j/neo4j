@@ -47,6 +47,10 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -80,6 +84,10 @@ import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -190,6 +198,11 @@ object CardinalityCostModel {
   val LABEL_CHECK_DB_HITS = 1
   val EXPAND_INTO_COST: CostPerRow = 6.4
 
+  val INDEX_SCAN_COST_PER_ROW = 1.0
+  val INDEX_SEEK_COST_PER_ROW = 1.9
+  // When reading from node store or relationship store
+  val STORE_LOOKUP_COST_PER_ROW = 6.2
+
   /**
    * The cost of evaluating an expression, per row.
    */
@@ -221,9 +234,11 @@ object CardinalityCostModel {
      */
 
     case _: NodeByLabelScan |
-         _: NodeIndexScan |
-         _: ProjectEndpoints
-    => 1.0
+         _: NodeIndexScan
+    => INDEX_SCAN_COST_PER_ROW
+
+    case _: ProjectEndpoints
+    => STORE_LOOKUP_COST_PER_ROW
 
     case Selection(predicate, _)
     => costPerRowFor(predicate, semanticTable)
@@ -245,14 +260,39 @@ object CardinalityCostModel {
          _: NodeIndexSeek |
          _: NodeIndexContainsScan |
          _: NodeIndexEndsWithScan
-    => 1.9
+    => INDEX_SEEK_COST_PER_ROW
 
     case _: NodeByIdSeek |
-         _: DirectedRelationshipByIdSeek |
-         _: UndirectedRelationshipByIdSeek |
-         _: DirectedRelationshipTypeScan |
-         _: UndirectedRelationshipTypeScan
-    => 6.2
+         _: DirectedRelationshipByIdSeek
+    => STORE_LOOKUP_COST_PER_ROW
+
+    case _: UndirectedRelationshipByIdSeek
+      // Only every second row needs to access the store
+    => STORE_LOOKUP_COST_PER_ROW / 2
+
+    case
+      _: DirectedRelationshipTypeScan |
+      _: DirectedRelationshipIndexScan
+    => INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
+
+    case
+      _: UndirectedRelationshipTypeScan |
+      _: UndirectedRelationshipIndexScan
+      // Only every second row needs to access the index and the store
+    => (INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW) / 2
+
+    case
+      _: DirectedRelationshipIndexSeek |
+      _: DirectedRelationshipIndexContainsScan |
+      _: DirectedRelationshipIndexEndsWithScan
+    => INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
+
+    case
+      _: UndirectedRelationshipIndexSeek |
+      _: UndirectedRelationshipIndexContainsScan |
+      _: UndirectedRelationshipIndexEndsWithScan
+      // Only every second row needs to access the index and the store
+    => (INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW) / 2
 
     case _: NodeHashJoin |
          _: AggregatingPlan |
