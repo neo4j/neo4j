@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCard
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
-import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
@@ -58,7 +57,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
@@ -189,11 +187,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
   val deduplicateNames: Boolean = LogicalPlanningTestSupport2.deduplicateNames
   val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
-  var astRewriter = new ASTRewriter(innerVariableNamer = innerVariableNamer)
-  final var planner = QueryPlanner
   var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
 
-  val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
+  val realConfig: RealLogicalPlanningConfiguration = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
   def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
 
