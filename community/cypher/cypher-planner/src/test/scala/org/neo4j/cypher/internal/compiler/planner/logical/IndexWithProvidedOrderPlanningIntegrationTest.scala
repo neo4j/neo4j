@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.Predicate
@@ -307,6 +308,30 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property (directed) should plan partial sort if index does partially provide order") {
+      val query = s"MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r.prop ORDER BY r.prop $cypherToken, r.foo ASC"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(10)
+        .setRelationshipCardinality("()-[:REL]-()", 10)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .partialSort(Seq(sortOrder("r.prop")), Seq(Ascending("r.foo")))
+        .projection("r.foo AS `r.foo`")
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan partial sort if index does partially provide order and the second column is more complicated") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
@@ -462,6 +487,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           nodeIndexSeek(
             "n:Awesome(prop)", indexOrder = plannedOrder),
           Map("n.prop" -> prop("n", "prop")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (scan)") {
+      val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r.prop ORDER BY r.prop $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .build()
       )
     }
 
@@ -683,6 +730,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property (directed) in a plan with a distinct") {
+      val query = s"MATCH (a)<-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN DISTINCT r.prop ORDER BY r.prop $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(10)
+        .setRelationshipCardinality("()-[:REL]-()", 10)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .orderedDistinct(Seq("cacheRFromStore[r.prop]"), "cacheRFromStore[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)<-[r:REL(prop)]-(b)", indexOrder = plannedOrder)
+        .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an outer join") {
       // Left outer hash join can only maintain ASC order
       assume(sortOrder == Ascending)
@@ -727,10 +796,39 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) in a plan with a tail apply") {
+      val query =
+        s"""MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL WITH r SKIP 0
+           |MATCH (c)
+           |RETURN r.prop, c ORDER BY r.prop $cypherToken""".stripMargin
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .apply()
+        .|.allNodeScan("c", "r")
+        .cacheProperties("cacheRFromStore[r.prop]")
+        .skip(0)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder)
+        .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan) in case of existence constraint") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
-        existenceOrNodeKeyConstraintOn("Awesome", Set("prop"))
+        nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
       } getLogicalPlanFor s"MATCH (n:Awesome) RETURN n.prop ORDER BY n.prop $cypherToken"
 
       plan._2 should equal(
@@ -738,6 +836,30 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           nodeIndexSeek(
             "n:Awesome(prop)", indexOrder = plannedOrder),
           Map("n.prop" -> prop("n", "prop")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (scan) in case of existence constraint") {
+      val query = s"MATCH (a)-[r:REL]-(b) RETURN r.prop ORDER BY r.prop $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 10)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .addRelationshipExistenceConstraint("REL", "prop")
+        .enablePrintCostComparisons()
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .build()
       )
     }
 
@@ -830,6 +952,32 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .build()
 
       plan shouldEqual expectedPlan
+    }
+
+    test(s"$cypherToken-$orderCapability: Should use OrderedAggregation if there is an ordered relationship index available, in presence of ORDER BY for aggregating column") {
+      val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r.prop, count(*) AS c ORDER BY c $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(10)
+        .setRelationshipCardinality("()-[:REL]-()", 10)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      // We should prefer ASC index order if we can choose between both
+      val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
+
+      plan should equal(planner.subPlanBuilder()
+        .sort(Seq(sortOrder("c")))
+        .orderedAggregation(Seq("cacheR[r.prop] AS `r.prop`"), Seq("count(*) AS c"), Seq("cacheR[r.prop]"))
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .build()
+      )
     }
 
   }
@@ -1543,7 +1691,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           NodeIndexScan(
             "n",
             LabelToken("Awesome", LabelId(0)),
-            Seq(indexedProperty("prop", 0, GetValue)),
+            Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
             Set.empty,
             IndexOrderNone),
           Map.empty,

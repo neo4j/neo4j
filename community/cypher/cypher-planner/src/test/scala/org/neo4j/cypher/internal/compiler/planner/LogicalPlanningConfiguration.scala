@@ -52,7 +52,8 @@ trait LogicalPlanningConfiguration {
   def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Map[IndexDef, IndexType]
-  def constraints: Set[(String, Set[String])]
+  def nodeConstraints: Set[(String, Set[String])]
+  def relationshipConstraints: Set[(String, Set[String])]
   def procedureSignatures: Set[ProcedureSignature]
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
@@ -81,7 +82,8 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def costModel() = parent.costModel()
   override def graphStatistics = parent.graphStatistics
   override def indexes = parent.indexes
-  override def constraints: Set[(String, Set[String])] = parent.constraints
+  override def nodeConstraints: Set[(String, Set[String])] = parent.nodeConstraints
+  override def relationshipConstraints: Set[(String, Set[String])] = parent.relationshipConstraints
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
   override def knownRelationships = parent.knownRelationships

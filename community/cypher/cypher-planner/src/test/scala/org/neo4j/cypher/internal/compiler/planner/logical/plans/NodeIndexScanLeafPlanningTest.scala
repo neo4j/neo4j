@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexE
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -115,7 +116,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) => ()
+        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _)) => ()
       }
     }
   }
@@ -250,7 +251,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) => ()
+        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _)) => ()
       }
     }
   }
@@ -266,7 +267,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) => ()
+        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _)) => ()
       }
     }
   }
@@ -282,7 +283,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) => ()
+        case Seq(NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _)) => ()
       }
     }
   }
@@ -363,7 +364,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -386,7 +387,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -409,7 +410,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -432,7 +433,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -454,7 +455,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -476,7 +477,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -498,7 +499,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -520,7 +521,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -542,7 +543,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -564,7 +565,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
+        case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -590,10 +591,10 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         case Seq(plan@NodeIndexScan(`idName`, _, properties, _, _)) =>
           properties should beLike {
             case Seq(
-            IndexedProperty(PropertyKeyToken("foo", _), CanGetValue),
-            IndexedProperty(PropertyKeyToken("prop", _), CanGetValue),
-            IndexedProperty(PropertyKeyToken("bar", _), CanGetValue),
-            IndexedProperty(PropertyKeyToken("baz", _), CanGetValue),
+            IndexedProperty(PropertyKeyToken("foo", _), CanGetValue, NODE_TYPE),
+            IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE),
+            IndexedProperty(PropertyKeyToken("bar", _), CanGetValue, NODE_TYPE),
+            IndexedProperty(PropertyKeyToken("baz", _), CanGetValue, NODE_TYPE),
             ) => ()
           }
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
@@ -624,10 +625,10 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         case Seq(plan@NodeIndexScan(`idName`, _, properties, _, _)) =>
           properties should beLike {
             case Seq(
-            IndexedProperty(PropertyKeyToken("foo", _), CanGetValue),
-            IndexedProperty(PropertyKeyToken("prop", _), CanGetValue),
-            IndexedProperty(PropertyKeyToken("bar", _), CanGetValue),
-            IndexedProperty(PropertyKeyToken("baz", _), CanGetValue),
+            IndexedProperty(PropertyKeyToken("foo", _), CanGetValue, NODE_TYPE),
+            IndexedProperty(PropertyKeyToken("prop", _), CanGetValue, NODE_TYPE),
+            IndexedProperty(PropertyKeyToken("bar", _), CanGetValue, NODE_TYPE),
+            IndexedProperty(PropertyKeyToken("baz", _), CanGetValue, NODE_TYPE),
             ) => ()
           }
 
@@ -686,7 +687,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `litApa`, _, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue, NODE_TYPE), `litApa`, _, _)) => ()
       }
     }
   }
@@ -702,7 +703,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `litApa`, _, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _)) => ()
       }
     }
   }
@@ -719,8 +720,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case Seq(
-        NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `litApa`, _, _),
-        NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `litBepa`, _, _),
+        NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _),
+        NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litBepa`, _, _),
         ) => ()
       }
     }
@@ -753,7 +754,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `litApa`, _, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, DoNotGetValue, NODE_TYPE), `litApa`, _, _)) => ()
       }
     }
   }
@@ -769,7 +770,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue), `litApa`, _, _)) => ()
+        case Seq(NodeIndexContainsScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _)) => ()
       }
     }
   }
@@ -851,7 +852,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, DoNotGetValue), `litApa`, _, _)) => ()
+        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, DoNotGetValue, NODE_TYPE), `litApa`, _, _)) => ()
       }
     }
   }
@@ -867,7 +868,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue), `litApa`, _, _)) => ()
+        case Seq(NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _)) => ()
       }
     }
   }
@@ -884,8 +885,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case Seq(
-        NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue), `litApa`, _, _),
-        NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue), `litBepa`, _, _),
+        NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litApa`, _, _),
+        NodeIndexEndsWithScan(`idName`, _, IndexedProperty(_, CanGetValue, NODE_TYPE), `litBepa`, _, _),
         ) => ()
       }
     }
@@ -998,7 +999,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         .copy(argumentIds = Set(idName))
 
       indexOn("Awesome", "prop")
-      existenceOrNodeKeyConstraintOn("Awesome", Set("prop"))
+      nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)

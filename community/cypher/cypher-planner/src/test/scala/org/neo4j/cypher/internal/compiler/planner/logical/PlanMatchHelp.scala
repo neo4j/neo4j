@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
@@ -28,6 +29,6 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 
 trait PlanMatchHelp extends AstConstructionTestSupport {
 
-  protected def indexedProperty(propName: String, keyId: Int, getValueFromIndex: GetValueFromIndexBehavior): IndexedProperty =
-    IndexedProperty(PropertyKeyToken(PropertyKeyName(propName) _, PropertyKeyId(keyId)), getValueFromIndex)
+  protected def indexedProperty(propName: String, keyId: Int, getValueFromIndex: GetValueFromIndexBehavior, entityType: EntityType): IndexedProperty =
+    IndexedProperty(PropertyKeyToken(PropertyKeyName(propName) _, PropertyKeyId(keyId)), getValueFromIndex, entityType)
 }

@@ -75,11 +75,20 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def canLookupNodesByLabel: Boolean =
     translateException(tokenNameLookup, inner.canLookupNodesByLabel)
 
-  override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
-    translateException(tokenNameLookup, inner.hasPropertyExistenceConstraint(labelName, propertyKey))
+  override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
+    translateException(tokenNameLookup, inner.hasNodePropertyExistenceConstraint(labelName, propertyKey))
 
-  override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] =
-    translateException(tokenNameLookup, inner.getPropertiesWithExistenceConstraint(labelName))
+  override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] =
+    translateException(tokenNameLookup, inner.getNodePropertiesWithExistenceConstraint(labelName))
+
+  override def hasRelationshipPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
+    translateException(tokenNameLookup, inner.hasRelationshipPropertyExistenceConstraint(labelName, propertyKey))
+
+  override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] =
+    translateException(tokenNameLookup, inner.getRelationshipPropertiesWithExistenceConstraint(labelName))
+
+  override def getPropertiesWithExistenceConstraint: Set[String] =
+    translateException(tokenNameLookup, inner.getPropertiesWithExistenceConstraint)
 
   override def getOptRelTypeId(relType: String): Option[Int] =
     translateException(tokenNameLookup, inner.getOptRelTypeId(relType))

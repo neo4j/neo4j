@@ -19,25 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import java.nio.file.Files
-import java.util.concurrent.TimeUnit
-
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression
 import org.apache.commons.math3.stat.regression.SimpleRegression
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Property
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
@@ -74,6 +72,8 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
+import java.nio.file.Files
+import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -344,7 +344,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val labelToken = LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = Seq(PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId)))
       // We are calculating the cost excluding deserialization of values from the index
-      val properties = propertyKeyToken.map(IndexedProperty(_, DoNotGetValue)).toArray
+      val properties = propertyKeyToken.map(IndexedProperty(_, DoNotGetValue, NODE_TYPE)).toArray
 
       NodeIndexSeekPipe(LABEL.name(), labelToken, properties, 0, SingleQueryExpression(literalValue), IndexSeek, IndexOrderNone)()
     }
@@ -361,7 +361,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propertyKeyToken = PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
       // We are calculating the cost excluding deserialization of values from the index
 
-      NodeIndexScanPipe(LABEL.name(), labelToken, Seq(IndexedProperty(propertyKeyToken, DoNotGetValue)), 0, IndexOrderNone)()
+      NodeIndexScanPipe(LABEL.name(), labelToken, Seq(IndexedProperty(propertyKeyToken, DoNotGetValue, NODE_TYPE)), 0, IndexOrderNone)()
     }
   }
 

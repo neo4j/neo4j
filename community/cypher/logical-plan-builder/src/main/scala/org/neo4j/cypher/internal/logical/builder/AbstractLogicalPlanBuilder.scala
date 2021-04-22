@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -784,22 +785,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def pointDistanceIndexSeek(node: String,
-                             labelName: String,
-                             property: String,
-                             point: String,
-                             distance: Double,
-                             getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                             indexOrder: IndexOrder = IndexOrderNone,
-                             inclusive: Boolean = false,
-                             argumentIds: Set[String] = Set.empty): IMPL = {
+  def pointDistanceNodeIndexSeek(node: String,
+                                 labelName: String,
+                                 property: String,
+                                 point: String,
+                                 distance: Double,
+                                 getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                 indexOrder: IndexOrder = IndexOrderNone,
+                                 inclusive: Boolean = false,
+                                 argumentIds: Set[String] = Set.empty): IMPL = {
     val label = resolver.getLabelId(labelName)
 
     val propId = resolver.getPropertyKeyId(property)
     val planBuilder = (idGen: IdGen) => {
       val labelToken = LabelToken(labelName, LabelId(label))
       val propToken = PropertyKeyToken(PropertyKeyName(property)(NONE), PropertyKeyId(propId))
-      val indexedProperty = IndexedProperty(propToken, getValue)
+      val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
       val e =
         RangeQueryExpression(PointDistanceSeekRangeWrapper(
           PointDistanceRange(function("point", Parser.parseExpression(point)), literalFloat(distance), inclusive))(NONE))

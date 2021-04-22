@@ -79,9 +79,12 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
 
   override def phase = AST_REWRITE
 
-  override def visit(value: BaseState, context: PlannerContext): Unit = value.statement() match {
-    case q: Query => resolve(q)(value.semanticTable(), context.planContext)
-    case _ =>
+  override def visit(value: BaseState, context: PlannerContext): Unit = {
+    value.statement() match {
+      case q: Query => resolve(q)(value.semanticTable(), context.planContext)
+      case _ =>
+    }
+    context.planContext.getPropertiesWithExistenceConstraint.foreach(resolvePropertyKeyName(_)(value.semanticTable(), context.planContext))
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(

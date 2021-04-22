@@ -49,7 +49,7 @@ case class UndirectedRelationshipIndexSeek(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: UndirectedRelationshipIndexSeek =
-    UndirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    UndirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue, p.entityType) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty):  UndirectedRelationshipIndexSeek =
     UndirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))

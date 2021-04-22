@@ -85,7 +85,8 @@ case object countStorePlanner {
         if func.function == functions.Count =>
         val labelCheck: Option[LabelName] => Option[LogicalPlan] => Option[LogicalPlan] = {
           case None => _ => None
-          case Some(LabelName(labelName)) => (plan: Option[LogicalPlan]) => plan.filter(_ => context.planContext.hasPropertyExistenceConstraint(labelName, propKeyName))
+          case Some(LabelName(labelName)) => (plan: Option[LogicalPlan]) => plan.filter(_ => context.planContext.hasNodePropertyExistenceConstraint(labelName,
+            propKeyName))
         }
         trySolveNodeAggregation(query, columnName, None, patternRelationships, patternNodes, argumentIds, selections, context, labelCheck)
 

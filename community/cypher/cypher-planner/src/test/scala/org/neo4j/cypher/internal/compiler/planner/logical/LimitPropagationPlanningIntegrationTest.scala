@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
@@ -48,8 +49,11 @@ class LimitPropagationPlanningIntegrationTest
       .setRelationshipCardinality("(:C)-[:REL_CB]->()", 4444)
       .setRelationshipCardinality("(:C)-[:REL_CB]->(:B)", 4444)
       .setRelationshipCardinality("()-[:REL_CB]->(:B)", 10000)
+      .setRelationshipCardinality("()-[:REL_CB]->()", 10000)
       .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.ASC)
       .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.ASC)
+      .addRelationshipIndex("REL_CB", Seq("id"), 0.5, 1.0 / 10000, providesOrder = IndexOrderCapability.ASC)
+      .enablePlanningRelationshipIndexes()
       .build()
 
   private def assertExpectedPlanForQueryGivenStatistics(queryString: String,
@@ -74,6 +78,27 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  // TODO enable this test (and add more tests) when https://trello.com/c/8rs9Pysx/374-cardinality-estimation-should-use-relationship-indexes is done
+  ignore("should plan lazy relationship index seek instead of sort when under limit") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE cb.id IS NOT NULL
+         |RETURN a, c ORDER BY cb.id LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .limit(10)
+      .nodeHashJoin("b")
+      .|.relationshipIndexOperator("(c)-[cb:RELCB(id)]->(b)", indexOrder = IndexOrderAscending, getValue = GetValue)
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")

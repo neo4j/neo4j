@@ -264,8 +264,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def canLookupNodesByLabel: Boolean = true
 
-      override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
-        config.constraints.filter(p => p._1 == labelName).flatMap(p => p._2)
+      override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
+        config.nodeConstraints.filter(p => p._1 == labelName).flatMap(p => p._2)
+      }
+
+      override def getRelationshipPropertiesWithExistenceConstraint(relTypeName: String): Set[String] = {
+        config.relationshipConstraints.filter(p => p._1 == relTypeName).flatMap(p => p._2)
+      }
+
+      override def getPropertiesWithExistenceConstraint: Set[String] = {
+        config.relationshipConstraints.flatMap(_._2) ++ config.nodeConstraints.flatMap(_._2)
       }
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = {

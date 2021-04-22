@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -147,9 +147,9 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val propC = propEquality("x", "c", 30)
     val propD = propEquality("x", "d", 40)
     val propE = propEquality("x", "e", 50)
-    val iPropA = IndexedProperty(PropertyKeyToken("a", PropertyKeyId(0)), DoNotGetValue)
-    val iPropB = IndexedProperty(PropertyKeyToken("b", PropertyKeyId(1)), DoNotGetValue)
-    val iPropC = IndexedProperty(PropertyKeyToken("c", PropertyKeyId(2)), DoNotGetValue)
+    val iPropA = IndexedProperty(PropertyKeyToken("a", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)
+    val iPropB = IndexedProperty(PropertyKeyToken("b", PropertyKeyId(1)), DoNotGetValue, NODE_TYPE)
+    val iPropC = IndexedProperty(PropertyKeyToken("c", PropertyKeyId(2)), DoNotGetValue, NODE_TYPE)
 
     val seek_A_a = addPlan(context, NodeIndexSeek("x", labelA, Seq(iPropA), ExistenceQueryExpression(), Set.empty, IndexOrderNone), solved("x", propA))
     val seek_A_b = addPlan(context, NodeIndexSeek("x", labelA, Seq(iPropB), ExistenceQueryExpression(), Set.empty, IndexOrderNone), solved("x", propB))

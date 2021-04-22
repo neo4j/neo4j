@@ -717,8 +717,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
-      .|.pointDistanceIndexSeek("y", "L", "prop", "{x: 1.0, y: 2.0, crs: 'cartesian'}", 10, argumentIds = Set("x"), getValue = GetValue)
-      .pointDistanceIndexSeek("x", "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", 100, indexOrder = IndexOrderDescending)
+      .|.pointDistanceNodeIndexSeek("y", "L", "prop", "{x: 1.0, y: 2.0, crs: 'cartesian'}", 10, argumentIds = Set("x"), getValue = GetValue)
+      .pointDistanceNodeIndexSeek("x", "L", "prop","{x: 0.0, y: 1.0, crs: 'cartesian'}", 100, indexOrder = IndexOrderDescending)
       .build())
 
   testPlan("directedRelationshipByIdSeek",

@@ -51,7 +51,7 @@ case class DirectedRelationshipIndexContainsScan(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexContainsScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexContainsScan =
-    DirectedRelationshipIndexContainsScan(idName, leftNode, rightNode, typeToken, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    DirectedRelationshipIndexContainsScan(idName, leftNode, rightNode, typeToken, IndexedProperty(property.propertyKeyToken, DoNotGetValue, property.entityType), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexLeafPlan =
     DirectedRelationshipIndexContainsScan(idName, leftNode, rightNode, typeToken, f(property), valueExpr, argumentIds, indexOrder)(SameId(this.id))

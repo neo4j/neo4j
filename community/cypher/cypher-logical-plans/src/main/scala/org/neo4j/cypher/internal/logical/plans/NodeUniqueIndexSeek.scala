@@ -45,7 +45,7 @@ case class NodeUniqueIndexSeek(idName: String,
   override def withoutArgumentIds(argsToExclude: Set[String]): NodeUniqueIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: NodeUniqueIndexSeek =
-    NodeUniqueIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    NodeUniqueIndexSeek(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue, p.entityType) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeUniqueIndexSeek =
     NodeUniqueIndexSeek(idName, label, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))

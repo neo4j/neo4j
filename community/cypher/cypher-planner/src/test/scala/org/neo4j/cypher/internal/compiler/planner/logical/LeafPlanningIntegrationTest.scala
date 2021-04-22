@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -77,8 +77,6 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
-import org.neo4j.cypher.internal.options.CypherDebugOption
-import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -195,7 +193,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeIndexSeek(
           "a",
           LabelToken("Person", LabelId(0)),
-          Seq(indexedProperty("name", 0, GetValue)),
+          Seq(indexedProperty("name", 0, GetValue, NODE_TYPE)),
           ManyQueryExpression(listOfString("prefix1", "prefix2")),
           Set.empty,
           IndexOrderNone)
@@ -221,7 +219,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       NodeIndexSeek(
         "a",
         LabelToken("Person", LabelId(0)),
-        Seq(indexedProperty("age", 0, DoNotGetValue)),
+        Seq(indexedProperty("age", 0, DoNotGetValue, NODE_TYPE)),
         RangeQueryExpression(
           InequalitySeekRangeWrapper(
             RangeBetween(
@@ -380,7 +378,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan._2 should equal(
       NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
-        Seq(indexedProperty("prop", 0, DoNotGetValue)),
+        Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
         SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone)
     )
   }
@@ -478,7 +476,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       case NodeIndexSeek(
               "n",
               LabelToken("Awesome", _),
-      Seq(IndexedProperty(PropertyKeyToken("prop", _), DoNotGetValue)),
+      Seq(IndexedProperty(PropertyKeyToken("prop", _), DoNotGetValue, NODE_TYPE)),
               SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _, _) => ()
     }
   }
@@ -584,7 +582,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan._2 should equal(
       NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)),
-        Seq(indexedProperty("prop", 0, DoNotGetValue)),
+        Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
         ManyQueryExpression(listOfInt(42, 1337)), Set.empty, IndexOrderNone)
     )
   }
@@ -624,7 +622,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan._2 should equal(
       NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
-        Seq(indexedProperty("prop", 0, DoNotGetValue)),
+        Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
         SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone)
     )
   }
@@ -639,7 +637,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Selection(
         ands(equals(prop("n", "prop1"), literalInt(42))),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
-          Seq(indexedProperty("prop2", 1, DoNotGetValue)),
+          Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
           SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone)
       )
     )
@@ -655,7 +653,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Selection(
         ands(equals(prop("n", "prop1"), literalInt(42))),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
-          Seq(indexedProperty("prop2", 1, DoNotGetValue)),
+          Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
           SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone)
       )
     )

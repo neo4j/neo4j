@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -136,6 +139,7 @@ object IndexSeek {
 
     createPlan[NodeIndexLeafPlan](
       predicates,
+      NODE_TYPE,
       getValue,
       paramExpr,
       propIds,
@@ -203,6 +207,7 @@ object IndexSeek {
 
     createPlan[RelationshipIndexLeafPlan](
       predicates,
+      RELATIONSHIP_TYPE,
       getValue,
       paramExpr,
       propIds,
@@ -214,6 +219,7 @@ object IndexSeek {
   }
 
   private def createPlan[T <: LogicalLeafPlan](predicates: Array[String],
+                                               entityType: EntityType,
                                                getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                                paramExpr: Option[Expression],
                                                propIds: Option[PartialFunction[String, Int]],
@@ -241,7 +247,7 @@ object IndexSeek {
           nextPropId()
         }
 
-      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue)
+      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue, entityType)
     }
 
     def value(value: String): Expression =

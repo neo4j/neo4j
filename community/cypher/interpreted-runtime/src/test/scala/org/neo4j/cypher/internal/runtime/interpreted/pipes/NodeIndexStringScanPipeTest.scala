@@ -24,6 +24,7 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -71,7 +72,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, literal("hello"), IndexOrderNone)()
+    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue, NODE_TYPE), 0, literal("hello"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then
@@ -91,7 +92,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, literal("bye"), IndexOrderNone)()
+    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue, NODE_TYPE), 0, literal("bye"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then
@@ -116,7 +117,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val pipe = NodeIndexContainsScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue),
+      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
       IndexOrderNone)()
@@ -139,7 +140,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val pipe = NodeIndexContainsScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue),
+      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
       IndexOrderNone)()
@@ -162,7 +163,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val pipe = NodeIndexEndsWithScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue),
+      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
       IndexOrderNone)()
@@ -185,7 +186,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val pipe = NodeIndexEndsWithScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue),
+      IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE),
       0,
       LiteralHelper.literal("text"),
       IndexOrderNone)()

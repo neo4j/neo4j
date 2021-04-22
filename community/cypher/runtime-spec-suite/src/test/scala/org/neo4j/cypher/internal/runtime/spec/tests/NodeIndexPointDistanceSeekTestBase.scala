@@ -49,7 +49,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceIndexSeek("n", "Place", "location",
+      .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, inclusive = true)
       .build()
 
@@ -70,7 +70,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceIndexSeek("n", "Place", "location",
+      .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, inclusive = false)
       .build()
 
@@ -91,7 +91,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceIndexSeek("n", "Place", "location",
+      .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, inclusive = true)
       .build()
 
@@ -112,7 +112,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.x AS location")
-      .pointDistanceIndexSeek("n", "Place", "location",
+      .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, inclusive = false)
       .build()
 
@@ -135,7 +135,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
-      .pointDistanceIndexSeek("n", "Place", "location",
+      .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", d, inclusive = true)
       .build()
 
@@ -158,7 +158,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("n.location.longitude AS location")
-      .pointDistanceIndexSeek("n", "Place", "location",
+      .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}", d, inclusive = true)
       .build()
 
@@ -180,7 +180,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("location")
       .projection("cache[n.location] AS location")
-      .pointDistanceIndexSeek("n", "Place", "location",
+      .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{x: 0.0, y: 0.0, crs: 'cartesian'}",
                               2,
                               inclusive = true,

@@ -53,7 +53,8 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics
   override def indexes: Map[IndexDef, IndexType] = Map.empty
-  override def constraints: Set[(String, Set[String])] = Set.empty
+  override def nodeConstraints: Set[(String, Set[String])] = Set.empty
+  override def relationshipConstraints: Set[(String, Set[String])] = Set.empty
   override def procedureSignatures: Set[ProcedureSignature] = Set.empty
   override def labelCardinality: Map[String, Cardinality] = Map.empty
   override def knownLabels: Set[String] = Set.empty

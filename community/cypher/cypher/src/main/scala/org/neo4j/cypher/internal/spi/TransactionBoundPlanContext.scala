@@ -245,7 +245,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         descriptor.getIndexType == IndexType.LOOKUP && descriptor.schema.entityType == EntityType.NODE)
   }
 
-  override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
+  override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
     try {
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
@@ -256,19 +256,56 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
   }
 
-  override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
+  override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
     try {
       val labelId = getLabelId(labelName)
 
       val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabel(labelId).asScala
 
-      // We are only interested of existence and node key constraints, not unique constraints
-      val existsConstraints = constraints.filter(c => c.enforcesPropertyExistence())
+      getPropertiesFromExistenceConstraints(constraints)
+    } catch {
+      case _: KernelException => Set.empty
+    }
+  }
 
-      // Fetch the names of all unique properties that are part of at least one existence/node key constraint with the given label
-      // i.e. the name of all properties that a node with the given label must have
-      val distinctPropertyIds: Set[Int] = existsConstraints.flatMap(_.schema().getPropertyIds).toSet
-      distinctPropertyIds.map(id => tc.tokenRead.propertyKeyName(id))
+  private def getPropertiesFromExistenceConstraints(constraints: Iterator[ConstraintDescriptor]):Set[String] = {
+    // We are only interested in existence constraints, not unique constraints
+    val existsConstraints = constraints.filter(c => c.enforcesPropertyExistence())
+
+    // Fetch the names of all unique properties that are part of at least one existence constraint with the given label
+    // i.e. the names of all properties that an entity with the given label/relationship type must have
+    val distinctPropertyIds: Set[Int] = existsConstraints.flatMap(_.schema().getPropertyIds).toSet
+    distinctPropertyIds.map(id => tc.tokenRead.propertyKeyName(id))
+  }
+
+  override def hasRelationshipPropertyExistenceConstraint(relTypeName: String, propertyKey: String): Boolean = {
+    try {
+      val relTypeId = getRelTypeId(relTypeName)
+      val propertyKeyId = getPropertyKeyId(propertyKey)
+
+      tc.schemaRead.constraintsGetForSchema(SchemaDescriptor.forRelType(relTypeId, propertyKeyId)).hasNext
+    } catch {
+      case _: KernelException => false
+    }
+  }
+
+  override def getRelationshipPropertiesWithExistenceConstraint(relTypeName: String): Set[String] = {
+    try {
+      val relTypeId = getRelTypeId(relTypeName)
+
+      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForRelationshipType(relTypeId).asScala
+
+      getPropertiesFromExistenceConstraints(constraints)
+    } catch {
+      case _: KernelException => Set.empty
+    }
+  }
+
+  override def getPropertiesWithExistenceConstraint: Set[String] = {
+    try {
+      val constraints = tc.schemaRead.constraintsGetAll().asScala
+
+      getPropertiesFromExistenceConstraints(constraints)
     } catch {
       case _: KernelException => Set.empty
     }

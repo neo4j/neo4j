@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -113,6 +114,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -186,6 +188,7 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -309,6 +312,64 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
     annotate(UndirectedRelationshipTypeScan(idName, pattern.left, typ, pattern.right, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+  }
+
+  def planUndirectedRelationshipIndexScan(idName: String,
+                                          relationshipType: RelationshipTypeToken,
+                                          pattern: PatternRelationship,
+                                          properties: Seq[IndexedProperty],
+                                          solvedPredicates: Seq[Expression] = Seq.empty,
+                                          solvedHint: Option[UsingIndexHint] = None,
+                                          argumentIds: Set[String],
+                                          providedOrder: ProvidedOrder,
+                                          indexOrder: IndexOrder,
+                                          context: LogicalPlanningContext): LogicalPlan = {
+    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+      .addPatternRelationship(pattern)
+      .addPredicates(solvedPredicates: _*)
+      .addHints(solvedHint)
+      .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+
+    annotate(UndirectedRelationshipIndexScan(
+      idName,
+      pattern.left,
+      pattern.right,
+      relationshipType,
+      properties,
+      argumentIds,
+      indexOrder
+    ), solved, providedOrder, context)
+  }
+
+  def planDirectedRelationshipIndexScan(idName: String,
+                                        relationshipType: RelationshipTypeToken,
+                                        pattern: PatternRelationship,
+                                        startNode: String,
+                                        endNode: String,
+                                        properties: Seq[IndexedProperty],
+                                        solvedPredicates: Seq[Expression] = Seq.empty,
+                                        solvedHint: Option[UsingIndexHint] = None,
+                                        argumentIds: Set[String],
+                                        providedOrder: ProvidedOrder,
+                                        indexOrder: IndexOrder,
+                                        context: LogicalPlanningContext): LogicalPlan = {
+    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+      .addPatternRelationship(pattern)
+      .addPredicates(solvedPredicates: _*)
+      .addHints(solvedHint)
+      .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+
+    annotate(DirectedRelationshipIndexScan(
+      idName,
+      startNode,
+      endNode,
+      relationshipType,
+      properties,
+      argumentIds,
+      indexOrder
+    ), solved, providedOrder, context)
   }
 
   def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -1593,6 +1654,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         case Some(ProvidedOrder.Both) => loop(current.lhs.get); loop(current.rhs.get)
         case Some(ProvidedOrder.Self) => // done
         case None =>
+          //noinspection NameBooleanParameters
           AssertMacros.checkOnlyWhenAssertionsAreEnabled(false,
             s"While marking leveraged order we encountered a plan with no provided order:\n ${LogicalPlanToPlanBuilderString(current)}")
       }

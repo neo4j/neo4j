@@ -48,9 +48,15 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def canLookupNodesByLabel: Boolean = ???
 
-  override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
+  override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 
-  override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = ???
+  override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = ???
+
+  override def hasRelationshipPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
+
+  override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = ???
+
+  override def getPropertiesWithExistenceConstraint: Set[String] = ???
 
   override def txIdProvider: () => Long = ???
 

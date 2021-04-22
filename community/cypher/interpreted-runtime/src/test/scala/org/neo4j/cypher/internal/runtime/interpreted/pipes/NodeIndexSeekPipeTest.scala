@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -35,9 +36,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
+import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 
 class NodeIndexSeekPipeTest extends CypherFunSuite {
   test("exhaust should close cursor") {
@@ -54,7 +55,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
     val pipe = NodeIndexSeekPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      Array(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)),
+      Array(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
       UniqueIndexSeek,
@@ -79,7 +80,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
     val pipe = NodeIndexSeekPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      Array(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)),
+      Array(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
       UniqueIndexSeek,

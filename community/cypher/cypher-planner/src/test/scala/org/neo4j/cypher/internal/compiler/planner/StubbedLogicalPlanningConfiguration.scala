@@ -55,7 +55,9 @@ case class IndexModifier(indexType: IndexType) {
 trait FakeIndexAndConstraintManagement {
   var indexes: Map[IndexDef, IndexType] = Map.empty
 
-  var constraints: Set[(String, Set[String])] = Set.empty
+  var nodeConstraints: Set[(String, Set[String])] = Set.empty
+
+  var relationshipConstraints: Set[(String, Set[String])] = Set.empty
 
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
@@ -88,8 +90,20 @@ trait FakeIndexAndConstraintManagement {
     indexDef
   }
 
-  def existenceOrNodeKeyConstraintOn(label: String, properties: Set[String]): Unit = {
-    constraints = constraints + (label -> properties)
+  /**
+   * Adds an existence constraint from the given label to the properties. This could also be a node key constraint.
+   */
+  def nodePropertyExistenceConstraintOn(label: String, properties: Set[String]): Unit = {
+    nodeConstraints = nodeConstraints + (label -> properties)
+  }
+
+  /**
+   * Adds an existence constraint from the given relationship type to the properties.
+   *
+   * This could later on also be a relationship key constraint, which is not implemented at the moment.
+   */
+  def relationshipPropertyExistenceConstraintOn(relType: String, properties: Set[String]): Unit = {
+    relationshipConstraints = relationshipConstraints + (relType -> properties)
   }
 
   def procedure(signature: ProcedureSignature): Unit = {

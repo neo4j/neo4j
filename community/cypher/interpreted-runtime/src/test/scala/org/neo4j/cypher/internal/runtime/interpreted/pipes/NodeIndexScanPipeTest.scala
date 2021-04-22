@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -52,7 +53,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite {
     val pipe = NodeIndexScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)),
+      Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
       IndexOrderNone)()
     // exhaust
@@ -75,7 +76,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite {
     val pipe = NodeIndexScanPipe(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue)),
+      Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
       IndexOrderNone)()
     val result = pipe.createResults(state)

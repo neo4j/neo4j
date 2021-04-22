@@ -83,9 +83,15 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
    */
   def canLookupNodesByLabel: Boolean
 
-  def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
+  def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 
-  def getPropertiesWithExistenceConstraint(labelName: String): Set[String]
+  def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String]
+
+  def hasRelationshipPropertyExistenceConstraint(relationshipTypeName: String, propertyKey: String): Boolean
+
+  def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Set[String]
+
+  def getPropertiesWithExistenceConstraint: Set[String]
 
   def txIdProvider: () => Long
 
