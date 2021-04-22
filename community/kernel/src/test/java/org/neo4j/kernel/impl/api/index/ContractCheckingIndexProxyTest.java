@@ -32,6 +32,8 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ThreadTestUtils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -322,6 +324,31 @@ class ContractCheckingIndexProxyTest
 
         thread.join();
         actionThread.join();
+    }
+
+    @Test
+    void exceptionFromNewUpdaterDoesNotAddOpenCalls()
+    {
+        var outer = newContractCheckingIndexProxy( new IndexProxyAdapter()
+        {
+            @Override
+            public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+            {
+                throw new IllegalStateException( "Can't create updater" );
+            }
+        } );
+        outer.start();
+
+        assertThatThrownBy( () ->
+                {
+                    try ( IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                    {
+                        // nothing
+                    }
+                }
+        ).isInstanceOf( IllegalStateException.class );
+
+        assertThat( outer.getOpenCalls() ).as( "Failure to create updater should result in zero open calls" ).isZero();
     }
 
     private interface ThrowingRunnable

@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * {@link IndexProxy} layer that enforces the dynamic contract of {@link IndexProxy} (cf. Test)
@@ -95,22 +96,33 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
     {
         if ( IndexUpdateMode.ONLINE == mode )
         {
-            openCall( "update" );
-            return new DelegatingIndexUpdater( super.newUpdater( mode, cursorTracer ) )
+            if ( tryOpenCall() )
             {
-                @Override
-                public void close() throws IndexEntryConflictException
+                try
                 {
-                    try
+                    return new DelegatingIndexUpdater( super.newUpdater( mode, cursorTracer ) )
                     {
-                        delegate.close();
-                    }
-                    finally
-                    {
-                        closeCall();
-                    }
+                        @Override
+                        public void close() throws IndexEntryConflictException
+                        {
+                            try
+                            {
+                                delegate.close();
+                            }
+                            finally
+                            {
+                                closeCall();
+                            }
+                        }
+                    };
                 }
-            };
+                catch ( Throwable e )
+                {
+                    closeCall();
+                    throw e;
+                }
+            }
+            throw new IllegalStateException( "Cannot create new updater when index state is " + state.get() );
         }
         else
         {
@@ -190,23 +202,10 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
     }
 
-    private void openCall( String name )
+    @VisibleForTesting
+    int getOpenCalls()
     {
-        // do not open call unless we are in STARTED
-        if ( State.STARTED == state.get() )
-        {
-            // increment openCalls for closers to see
-            openCalls.incrementAndGet();
-            // ensure that the previous increment actually gets seen by closers
-            if ( State.CLOSED == state.get() )
-            {
-                throw new IllegalStateException( "Cannot call " + name + "() after index has been closed" );
-            }
-        }
-        else
-        {
-            throw new IllegalStateException( "Cannot call " + name + "() when index state is " + state.get() );
-        }
+        return openCalls.intValue();
     }
 
     private boolean tryOpenCall()
