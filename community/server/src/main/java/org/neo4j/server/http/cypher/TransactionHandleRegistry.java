@@ -31,24 +31,35 @@ import java.util.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 
 public class TransactionHandleRegistry implements TransactionRegistry
 {
+    @VisibleForTesting
+    public static final long ACTIVE_TRANSACTION_SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ActiveTransaction.class );
+    @VisibleForTesting
+    public static final long SUSPENDED_TRANSACTION_SHALLOW_SIZE = HeapEstimator.shallowSizeOf( SuspendedTransaction.class );
+
     private final AtomicLong idGenerator = new AtomicLong( 0L );
-    private final ConcurrentHashMap<Long, TransactionMarker> registry = new ConcurrentHashMap<>( 64 );
+    private final ConcurrentHashMap<Long,TransactionMarker> registry = new ConcurrentHashMap<>( 64 );
 
     private final Clock clock;
 
     private final Log log;
     private final Duration transactionTimeout;
 
-    public TransactionHandleRegistry( Clock clock, Duration transactionTimeout, LogProvider logProvider )
+    private final MemoryPool memoryPool;
+
+    public TransactionHandleRegistry( Clock clock, Duration transactionTimeout, LogProvider logProvider, MemoryPool memoryPool )
     {
         this.clock = clock;
         this.transactionTimeout = transactionTimeout;
         this.log = logProvider.getLog( getClass() );
+        this.memoryPool = memoryPool;
     }
 
     private abstract static class TransactionMarker
@@ -133,6 +144,8 @@ public class TransactionHandleRegistry implements TransactionRegistry
     @Override
     public long begin( TransactionHandle handle )
     {
+        memoryPool.reserveHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
+
         long id = idGenerator.incrementAndGet();
         if ( null == registry.putIfAbsent( id, new ActiveTransaction( handle ) ) )
         {
@@ -140,6 +153,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         }
         else
         {
+            memoryPool.releaseHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
             throw new IllegalStateException( "Attempt to begin transaction for id that was already registered" );
         }
     }
@@ -159,11 +173,15 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new IllegalStateException( "Trying to suspend transaction that was already suspended" );
         }
 
+        memoryPool.reserveHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+
         SuspendedTransaction suspendedTx = new SuspendedTransaction( marker.getActiveTransaction(), transactionHandle );
         if ( !registry.replace( id, marker, suspendedTx ) )
         {
+            memoryPool.releaseHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
             throw new IllegalStateException( "Trying to suspend transaction that has been concurrently suspended" );
         }
+
         return computeNewExpiryTime( suspendedTx.getLastActiveTimestamp() );
     }
 
@@ -185,6 +203,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         SuspendedTransaction transaction = marker.getSuspendedTransaction();
         if ( registry.replace( id, marker, marker.getActiveTransaction() ) )
         {
+            memoryPool.releaseHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
             return transaction.transactionHandle;
         }
         else
@@ -213,6 +232,8 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new IllegalStateException(
                     "Trying to finish transaction that has been concurrently finished or suspended" );
         }
+
+        memoryPool.releaseHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
     }
 
     @Override
@@ -224,6 +245,8 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new InvalidTransactionId();
         }
 
+        memoryPool.releaseHeap( ACTIVE_TRANSACTION_SHALLOW_SIZE );
+
         TransactionTerminationHandle handle = marker.getActiveTransaction().getTerminationHandle();
         handle.terminate();
 
@@ -232,6 +255,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
             SuspendedTransaction transaction = marker.getSuspendedTransaction();
             if ( registry.replace( id, marker, marker.getActiveTransaction() ) )
             {
+                memoryPool.releaseHeap( SUSPENDED_TRANSACTION_SHALLOW_SIZE );
                 return transaction.transactionHandle;
             }
         }

@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.InputFormatException;
@@ -63,6 +64,7 @@ import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -72,6 +74,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -136,7 +139,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -167,7 +171,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, false );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, false );
 
         // when
         invocation.execute( outputEventStream );
@@ -201,7 +206,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, false );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, false );
 
         invocation.execute( outputEventStream );
         reset( transactionContext, registry, internalTransaction, outputEventStream );
@@ -243,7 +249,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -271,7 +278,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -327,7 +335,8 @@ class InvocationTest
 
         // when
         TransactionHandle handle = getTransactionHandle( executionEngine, registry );
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // then
         verifyNoInteractions( databaseFacade );
@@ -360,7 +369,8 @@ class InvocationTest
         Statement statement = new Statement( "query", map() );
         when( inputEventStream.read() ).thenReturn( statement, NULL_STATEMENT );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -393,7 +403,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -427,7 +438,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -456,7 +468,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -485,7 +498,8 @@ class InvocationTest
         Statement statement = new Statement( queryText, map() );
         when( inputEventStream.read() ).thenReturn( statement, NULL_STATEMENT );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -513,7 +527,8 @@ class InvocationTest
         Statement statement = new Statement( "query", map() );
         when( inputEventStream.read() ).thenReturn( statement, NULL_STATEMENT );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -542,7 +557,8 @@ class InvocationTest
         Statement statement = new Statement( "query", map() );
         when( inputEventStream.read() ).thenReturn( statement, NULL_STATEMENT );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -575,7 +591,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         invocation.execute( outputEventStream );
 
@@ -599,7 +616,8 @@ class InvocationTest
         Statement statement = new Statement( "query", map() );
         when( inputEventStream.read() ).thenReturn( statement, NULL_STATEMENT );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -625,7 +643,8 @@ class InvocationTest
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenReturn( null );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -644,7 +663,8 @@ class InvocationTest
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenThrow( new InputFormatException( "Cannot parse input", new IOException( "JSON ERROR" ) ) );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         invocation.execute( outputEventStream );
@@ -669,7 +689,8 @@ class InvocationTest
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenThrow( new ConnectionException( "Connection error", new IOException( "Broken pipe" ) ) );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         var e = assertThrows( ConnectionException.class, () -> invocation.execute( outputEventStream ) );
@@ -692,7 +713,8 @@ class InvocationTest
         InputEventStream inputEventStream = mock( InputEventStream.class );
         when( inputEventStream.read() ).thenThrow( new ConnectionException( "Connection error", new IOException( "Broken pipe" ) ) );
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         // when
         var e = assertThrows( ConnectionException.class, () -> invocation.execute( outputEventStream ) );
@@ -721,7 +743,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, true );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
 
         doThrow( new ConnectionException( "Connection error", new IOException( "Broken pipe" ) ) ).when( outputEventStream ).writeStatementEnd( any(), any(),
                 any(), any() );
@@ -756,7 +779,8 @@ class InvocationTest
 
         mockDefaultResult();
 
-        Invocation invocation = new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), inputEventStream, false );
+        Invocation invocation =
+                new Invocation( log, handle, uriScheme.txCommitUri( 1337L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, false );
 
         doThrow( new ConnectionException( "Connection error", new IOException( "Broken pipe" ) ) ).when( outputEventStream ).writeStatementEnd( any(), any(),
                 any(), any() );
@@ -774,6 +798,55 @@ class InvocationTest
         verifyDefaultResultRows( outputOrder );
         outputOrder.verify( outputEventStream ).writeStatementEnd( queryExecutionType, queryStatistics, executionPlanDescription, notifications );
         verifyNoMoreInteractions( outputEventStream );
+    }
+
+    @Test
+    void shouldAllocateAndFreeMemory()
+    {
+
+        var handle = getTransactionHandle( executionEngine, registry, false );
+        var memoryPool = mock( MemoryPool.class );
+        var inputEventStream = mock( InputEventStream.class );
+
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
+        when( inputEventStream.read() ).thenReturn( new Statement( "query", map() ), NULL_STATEMENT );
+
+        mockDefaultResult();
+
+        var invocation = new Invocation( mock( Log.class ), handle, uriScheme.txCommitUri( 1337L ), memoryPool, inputEventStream, true );
+
+        invocation.execute( outputEventStream );
+
+        verify( memoryPool, times( 2 ) ).reserveHeap( Statement.SHALLOW_SIZE );
+        verify( memoryPool, times( 2 ) ).releaseHeap( Statement.SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryPool );
+    }
+
+    @Test
+    void shouldFreeMemoryOnException()
+    {
+        var handle = getTransactionHandle( executionEngine, registry, false );
+        var memoryPool = mock( MemoryPool.class );
+        var inputEventStream = mock( InputEventStream.class );
+
+        when( internalTransaction.execute( "query", emptyMap() ) ).thenReturn( executionResult );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
+        when( inputEventStream.read() ).thenReturn( new Statement( "query", map() ), NULL_STATEMENT );
+
+        mockDefaultResult();
+
+        doThrow( new ConnectionException( "Something broke", new IOException( "Oh no" ) ) )
+                .when( outputEventStream )
+                .writeStatementEnd( any(), any(), any(), any() );
+
+        var invocation = new Invocation( mock( Log.class ), handle, uriScheme.txCommitUri( 1337L ), memoryPool, inputEventStream, true );
+
+        assertThrows( ConnectionException.class, () -> invocation.execute( outputEventStream ) );
+
+        verify( memoryPool ).reserveHeap( Statement.SHALLOW_SIZE );
+        verify( memoryPool ).releaseHeap( Statement.SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryPool );
     }
 
     private void mockDefaultResult()

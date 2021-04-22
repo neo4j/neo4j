@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
@@ -54,6 +55,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class TransactionHandle implements TransactionTerminationHandle
 {
+    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionHandle.class );
+
     private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;

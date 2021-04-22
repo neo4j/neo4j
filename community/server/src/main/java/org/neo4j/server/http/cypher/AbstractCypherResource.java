@@ -38,6 +38,9 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.rest.Neo4jError;
@@ -52,14 +55,16 @@ public abstract class AbstractCypherResource
 {
     private final HttpTransactionManager httpTransactionManager;
     private final TransactionUriScheme uriScheme;
+    private final MemoryPool memoryPool;
     private final Log log;
     private final String databaseName;
 
-    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, Log log, String databaseName )
+    AbstractCypherResource( HttpTransactionManager httpTransactionManager, UriInfo uriInfo, MemoryPool memoryPool, Log log, String databaseName )
     {
         this.httpTransactionManager = httpTransactionManager;
         this.databaseName = databaseName;
         this.uriScheme = new TransactionUriBuilder( dbUri( uriInfo, databaseName ), cypherUri( uriInfo, databaseName ) );
+        this.memoryPool = memoryPool;
         this.log = log;
     }
 
@@ -70,88 +75,128 @@ public abstract class AbstractCypherResource
     @POST
     public Response executeStatementsInNewTransaction( InputEventStream inputEventStream, @Context HttpServletRequest request, @Context HttpHeaders headers )
     {
-        InputEventStream inputStream = ensureNotNull( inputEventStream );
+        try ( var memoryTracker = createMemoryTracker() )
+        {
+            InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-        var graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-        return graphDatabaseAPI.map( databaseAPI -> {
-            if ( isDatabaseNotAvailable( databaseAPI ) )
-            {
-                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
-            }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, request, headers, false );
+            var graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+            return graphDatabaseAPI.map(
+                    databaseAPI ->
+                    {
+                        if ( isDatabaseNotAvailable( databaseAPI ) )
+                        {
+                            return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+                        }
 
-            Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, false );
-            OutputEventStreamImpl outputStream = new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
-            return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
+                        memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
 
-        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+                        final TransactionFacade transactionFacade =
+                                httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
+                        TransactionHandle transactionHandle =
+                                createNewTransactionHandle( transactionFacade, request, headers, memoryTracker, false );
+
+                        Invocation invocation =
+                                new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), memoryPool, inputStream,
+                                                false );
+                        OutputEventStreamImpl outputStream =
+                                new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme,
+                                                           invocation::execute );
+                        return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
+                    } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+        }
     }
 
     @POST
     @Path( "/{id}" )
     public Response executeStatements( @PathParam( "id" ) long id, InputEventStream inputEventStream )
     {
-        return executeInExistingTransaction( id, inputEventStream, false );
+        try ( var memoryTracker = createMemoryTracker() )
+        {
+            return executeInExistingTransaction( id, inputEventStream, memoryTracker, false );
+        }
     }
 
     @POST
     @Path( "/{id}/commit" )
     public Response commitTransaction( @PathParam( "id" ) long id, InputEventStream inputEventStream )
     {
-        return executeInExistingTransaction( id, inputEventStream, true );
+        try ( var memoryTracker = createMemoryTracker() )
+        {
+            return executeInExistingTransaction( id, inputEventStream, memoryTracker, true );
+        }
     }
 
     @POST
     @Path( "/commit" )
     public Response commitNewTransaction( InputEventStream inputEventStream, @Context HttpServletRequest request, @Context HttpHeaders headers )
     {
-        InputEventStream inputStream = ensureNotNull( inputEventStream );
-
-        Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-        return graphDatabaseAPI.map( databaseAPI ->
+        try ( var memoryTracker = createMemoryTracker() )
         {
-            if ( isDatabaseNotAvailable( databaseAPI ) )
-            {
-                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
-            }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, request, headers, true );
+            InputEventStream inputStream = ensureNotNull( inputEventStream );
 
-            Invocation invocation = new Invocation( log, transactionHandle, null, inputStream, true );
-            OutputEventStreamImpl outputStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
-            return Response.ok( outputStream ).build();
-        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+            Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+            return graphDatabaseAPI.map(
+                    databaseAPI ->
+                    {
+                        if ( isDatabaseNotAvailable( databaseAPI ) )
+                        {
+                            return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+                        }
+
+                        memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
+
+                        final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
+                        TransactionHandle transactionHandle = createNewTransactionHandle( transactionFacade, request, headers, memoryTracker, true );
+
+                        Invocation invocation = new Invocation( log, transactionHandle, null, memoryPool, inputStream, true );
+                        OutputEventStreamImpl outputStream =
+                                new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme,
+                                                           invocation::execute );
+                        return Response.ok( outputStream ).build();
+                    } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+        }
     }
 
     @DELETE
     @Path( "/{id}" )
     public Response rollbackTransaction( @PathParam( "id" ) final long id )
     {
-        Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-        return graphDatabaseAPI.map( databaseAPI ->
+        try ( var memoryTracker = createMemoryTracker() )
         {
-            if ( isDatabaseNotAvailable( databaseAPI ) )
-            {
-                return createNonAvailableDatabaseResponse( emptyMap() );
-            }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle;
-            try
-            {
-                transactionHandle = transactionFacade.terminate( id );
-            }
-            catch ( TransactionLifecycleException e )
-            {
-                return invalidTransaction( e, emptyMap() );
-            }
+            Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
+            return graphDatabaseAPI.map(
+                    databaseAPI ->
+                    {
+                        if ( isDatabaseNotAvailable( databaseAPI ) )
+                        {
+                            return createNonAvailableDatabaseResponse( emptyMap() );
+                        }
 
-            RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
-            OutputEventStreamImpl outputEventStream = new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
-            return Response.ok().entity( outputEventStream ).build();
+                        memoryTracker.allocateHeap( RollbackInvocation.SHALLOW_SIZE );
 
-        } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
+                        final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
+
+                        TransactionHandle transactionHandle;
+                        try
+                        {
+                            transactionHandle = transactionFacade.terminate( id );
+                        }
+                        catch ( TransactionLifecycleException e )
+                        {
+                            return invalidTransaction( e, emptyMap() );
+                        }
+
+                        RollbackInvocation invocation = new RollbackInvocation( log, transactionHandle );
+                        OutputEventStreamImpl outputEventStream =
+                                new OutputEventStreamImpl( emptyMap(), null, uriScheme, invocation::execute );
+                        return Response.ok().entity( outputEventStream ).build();
+                    } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
+        }
+    }
+
+    private MemoryTracker createMemoryTracker()
+    {
+        return new LocalMemoryTracker( memoryPool, 0, 64, null );
     }
 
     private boolean isDatabaseNotAvailable( GraphDatabaseAPI databaseAPI )
@@ -160,40 +205,51 @@ public abstract class AbstractCypherResource
     }
 
     private TransactionHandle createNewTransactionHandle( TransactionFacade transactionFacade, HttpServletRequest request, HttpHeaders headers,
-            boolean implicitTransaction )
+                                                          MemoryTracker memoryTracker, boolean implicitTransaction )
     {
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
         ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
-        return transactionFacade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, connectionInfo, customTransactionTimeout );
+        return transactionFacade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, connectionInfo, memoryTracker, customTransactionTimeout );
     }
 
-    private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, boolean finishWithCommit )
+    private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, MemoryTracker memoryTracker,
+                                                   boolean finishWithCommit )
     {
         InputEventStream inputStream = ensureNotNull( inputEventStream );
 
         Optional<GraphDatabaseAPI> graphDatabaseAPI = httpTransactionManager.getGraphDatabaseAPI( databaseName );
-        return graphDatabaseAPI.map( databaseAPI ->
-        {
-            if ( isDatabaseNotAvailable( databaseAPI ) )
-            {
-                return createNonAvailableDatabaseResponse( inputStream.getParameters() );
-            }
-            final TransactionFacade transactionFacade = httpTransactionManager.createTransactionFacade( databaseAPI );
-            TransactionHandle transactionHandle;
-            try
-            {
-                transactionHandle = transactionFacade.findTransactionHandle( transactionId );
-            }
-            catch ( TransactionLifecycleException e )
-            {
-                return invalidTransaction( e, inputStream.getParameters() );
-            }
-            Invocation invocation = new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), inputStream, finishWithCommit );
-            OutputEventStreamImpl outputEventStream =
-                    new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
-            return Response.ok( outputEventStream ).build();
-        } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+        return graphDatabaseAPI.map(
+                databaseAPI ->
+                {
+                    if ( isDatabaseNotAvailable( databaseAPI ) )
+                    {
+                        return createNonAvailableDatabaseResponse( inputStream.getParameters() );
+                    }
+
+                    memoryTracker.allocateHeap( Invocation.SHALLOW_SIZE );
+
+                    final TransactionFacade transactionFacade =
+                            httpTransactionManager.createTransactionFacade( databaseAPI, memoryTracker );
+
+                    TransactionHandle transactionHandle;
+                    try
+                    {
+                        transactionHandle = transactionFacade.findTransactionHandle( transactionId );
+                    }
+                    catch ( TransactionLifecycleException e )
+                    {
+                        return invalidTransaction( e, inputStream.getParameters() );
+                    }
+
+                    Invocation invocation =
+                            new Invocation( log, transactionHandle, uriScheme.txCommitUri( transactionHandle.getId() ), memoryPool, inputStream,
+                                            finishWithCommit );
+                    OutputEventStreamImpl outputEventStream =
+                            new OutputEventStreamImpl( inputStream.getParameters(), transactionHandle, uriScheme, invocation::execute );
+
+                    return Response.ok( outputEventStream ).build();
+                } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
     }
 
     private Response invalidTransaction( TransactionLifecycleException e, Map<String,Object> parameters )

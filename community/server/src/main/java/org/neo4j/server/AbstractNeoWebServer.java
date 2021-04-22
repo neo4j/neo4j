@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -51,9 +52,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.http.HttpMemoryPool;
+import org.neo4j.server.http.HttpTransactionMemoryPool;
 import org.neo4j.server.http.cypher.HttpTransactionManager;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 import org.neo4j.server.modules.ServerModule;
@@ -92,6 +97,8 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected final LogProvider userLogProvider;
     private final Log log;
     private final DbmsInfo dbmsInfo;
+    private final MemoryPool requestMemoryPool;
+    private final MemoryPool transactionMemoryPool;
 
     private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
@@ -109,6 +116,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
+    protected ArrayByteBufferPool byteBufferPool;
     private Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
     private HttpTransactionManager httpTransactionManager;
     private CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
@@ -121,7 +129,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected abstract WebServer createWebServer();
 
     public AbstractNeoWebServer( DatabaseManagementService databaseManagementService, Dependencies globalDependencies, Config config,
-            LogProvider userLogProvider, DbmsInfo dbmsInfo )
+                                 LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools )
     {
         this.databaseManagementService = databaseManagementService;
         this.globalDependencies = globalDependencies;
@@ -130,6 +138,13 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         this.log = userLogProvider.getLog( getClass() );
         this.dbmsInfo = dbmsInfo;
         log.info( NEO4J_IS_STARTING_MESSAGE );
+
+        byteBufferPool = new ArrayByteBufferPool();
+        requestMemoryPool = new HttpMemoryPool( memoryPools, byteBufferPool );
+        life.add( new MemoryPoolLifecycleAdapter( requestMemoryPool ) );
+
+        transactionMemoryPool = new HttpTransactionMemoryPool( memoryPools );
+        life.add( new MemoryPoolLifecycleAdapter( transactionMemoryPool ) );
 
         verifyConnectorsConfiguration( config );
 
@@ -195,7 +210,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         JobScheduler jobScheduler = globalDependencies.resolveDependency( JobScheduler.class );
         Clock clock = Clocks.systemClock();
         Duration transactionTimeout = getTransactionTimeout();
-        return new HttpTransactionManager( databaseManagementService, jobScheduler, clock, transactionTimeout, userLogProvider );
+        return new HttpTransactionManager( databaseManagementService, transactionMemoryPool, jobScheduler, clock, transactionTimeout, userLogProvider );
     }
 
     /**
@@ -414,6 +429,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         binder.addSingletonBinding( databaseStateService, DatabaseStateService.class );
         binder.addSingletonBinding( this, NeoWebServer.class );
         binder.addSingletonBinding( getConfig(), Config.class );
+        binder.addSingletonBinding( transactionMemoryPool, MemoryPool.class );
         binder.addSingletonBinding( getWebServer(), WebServer.class );
         binder.addSingletonBinding( new RepresentationFormatRepository(), RepresentationFormatRepository.class );
         binder.addLazyBinding( InputFormatProvider.class, InputFormat.class );
@@ -478,6 +494,22 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
             stopWebServer();
             stopModules();
             clearModules();
+        }
+    }
+
+    private class MemoryPoolLifecycleAdapter extends LifecycleAdapter
+    {
+        private final MemoryPool memoryPool;
+
+        private MemoryPoolLifecycleAdapter( MemoryPool memoryPool )
+        {
+            this.memoryPool = memoryPool;
+        }
+
+        @Override
+        public void shutdown() throws Exception
+        {
+            memoryPool.free();
         }
     }
 }

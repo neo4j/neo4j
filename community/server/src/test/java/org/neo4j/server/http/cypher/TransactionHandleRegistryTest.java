@@ -20,11 +20,13 @@
 package org.neo4j.server.http.cypher;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.memory.MemoryPool;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -32,7 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -45,7 +49,8 @@ class TransactionHandleRegistryTest
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider, memoryPool );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // when
@@ -55,6 +60,9 @@ class TransactionHandleRegistryTest
         // then
         assertNotEquals( id1, id2 );
         assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        verify( memoryPool, times( 2 ) ).reserveHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryPool );
     }
 
     @Test
@@ -62,7 +70,8 @@ class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider, memoryPool );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -74,6 +83,12 @@ class TransactionHandleRegistryTest
         // Then
         assertSame( handle, acquiredHandle );
         assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        var inOrder = inOrder( memoryPool );
+        inOrder.verify( memoryPool ).reserveHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).reserveHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).releaseHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryPool );
     }
 
     @Test
@@ -81,7 +96,8 @@ class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider, memoryPool );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -93,6 +109,12 @@ class TransactionHandleRegistryTest
 
         // then
         assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        var inOrder = inOrder( memoryPool );
+        inOrder.verify( memoryPool ).reserveHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).reserveHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).releaseHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -100,7 +122,8 @@ class TransactionHandleRegistryTest
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider );
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( Clocks.fakeClock(), Duration.ofMillis( 0 ), logProvider, memoryPool );
 
         long madeUpTransactionId = 1337;
 
@@ -109,6 +132,8 @@ class TransactionHandleRegistryTest
 
         // then
         assertThat( logProvider ).doesNotHaveAnyLogs();
+
+        verifyNoMoreInteractions( memoryPool );
     }
 
     @Test
@@ -117,7 +142,8 @@ class TransactionHandleRegistryTest
         // Given
         FakeClock clock = Clocks.fakeClock();
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( 0 ), logProvider );
+        var memoryPool = mock( MemoryPool.class );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( 0 ), logProvider, memoryPool );
         TransactionHandle oldTx = mock( TransactionHandle.class );
         TransactionHandle newTx = mock( TransactionHandle.class );
         TransactionHandle handle = mock( TransactionHandle.class );
@@ -142,6 +168,13 @@ class TransactionHandleRegistryTest
         assertThat( logProvider ).forClass( TransactionHandleRegistry.class )
                 .forLevel( INFO ).containsMessages( "Transaction with id 1 has been automatically rolled " +
                         "back due to transaction timeout." );
+
+        var inOrder = inOrder( memoryPool );
+        inOrder.verify( memoryPool, times( 2 ) ).reserveHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool, times( 2 ) ).reserveHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).releaseHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).releaseHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -150,9 +183,10 @@ class TransactionHandleRegistryTest
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = Clocks.fakeClock();
+        var memoryPool = mock( MemoryPool.class );
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider, memoryPool );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         long id = registry.begin( handle );
@@ -178,9 +212,10 @@ class TransactionHandleRegistryTest
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = Clocks.fakeClock();
+        var memoryPool = mock( MemoryPool.class );
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider, memoryPool );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // Active Tx in Registry
@@ -192,6 +227,10 @@ class TransactionHandleRegistryTest
         // Then
         verify( handle ).terminate();
         verifyNoMoreInteractions( handle );
+
+        verify( memoryPool ).reserveHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        verify( memoryPool ).releaseHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryPool );
     }
 
     @Test
@@ -200,9 +239,10 @@ class TransactionHandleRegistryTest
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = Clocks.fakeClock();
+        var memoryPool = mock( MemoryPool.class );
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider, memoryPool );
         TransactionHandle handle = mock( TransactionHandle.class );
 
         // Suspended Tx in Registry
@@ -215,6 +255,12 @@ class TransactionHandleRegistryTest
         // Then
         verify( handle ).terminate();
         verifyNoMoreInteractions( handle );
+
+        var inOrder = inOrder( memoryPool );
+        inOrder.verify( memoryPool ).reserveHeap( TransactionHandleRegistry.ACTIVE_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).reserveHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verify( memoryPool ).releaseHeap( TransactionHandleRegistry.SUSPENDED_TRANSACTION_SHALLOW_SIZE );
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -223,11 +269,14 @@ class TransactionHandleRegistryTest
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FakeClock clock = Clocks.fakeClock();
+        var memoryPool = mock( MemoryPool.class );
         int timeoutLength = 123;
 
-        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider );
+        TransactionHandleRegistry registry = new TransactionHandleRegistry( clock, Duration.ofMillis( timeoutLength ), logProvider, memoryPool );
 
         // When
         assertThrows( InvalidTransactionId.class, () -> registry.terminate( 456 ) );
+
+        verifyNoMoreInteractions( memoryPool );
     }
 }

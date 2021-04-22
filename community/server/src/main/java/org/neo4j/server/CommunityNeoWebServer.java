@@ -28,6 +28,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.modules.AuthorizationModule;
@@ -46,9 +47,9 @@ import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communit
 public class CommunityNeoWebServer extends AbstractNeoWebServer
 {
     public CommunityNeoWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-            LogProvider userLogProvider, DbmsInfo dbmsInfo )
+                                  LogProvider userLogProvider, DbmsInfo dbmsInfo, MemoryPools memoryPools )
     {
-        super( managementService, globalDependencies, config, userLogProvider, dbmsInfo );
+        super( managementService, globalDependencies, config, userLogProvider, dbmsInfo, memoryPools );
     }
 
     @Override
@@ -85,7 +86,7 @@ public class CommunityNeoWebServer extends AbstractNeoWebServer
     {
         var globalDependencies = getGlobalDependencies();
         var connectionTracker = globalDependencies.resolveDependency( NetworkConnectionTracker.class );
-        var webServer = new Jetty9WebServer( userLogProvider, getConfig(), connectionTracker );
+        var webServer = new Jetty9WebServer( userLogProvider, getConfig(), connectionTracker, byteBufferPool );
         globalDependencies.satisfyDependency( webServer );
         return webServer;
     }

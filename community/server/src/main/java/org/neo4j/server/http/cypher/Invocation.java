@@ -31,6 +31,8 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.InputFormatException;
@@ -60,11 +62,14 @@ import org.neo4j.server.rest.Neo4jError;
  */
 class Invocation
 {
+    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Invocation.class );
+
     private final Log log;
     private final TransactionHandle transactionHandle;
     private final InputEventStream inputEventStream;
     private final boolean finishWithCommit;
     private final URI commitUri;
+    private final MemoryPool memoryPool;
 
     private OutputEventStream outputEventStream;
     private boolean hasPrevious;
@@ -72,11 +77,13 @@ class Invocation
     private RuntimeException outputError;
     private TransactionNotificationState transactionNotificationState = TransactionNotificationState.NO_TRANSACTION;
 
-    Invocation( Log log, TransactionHandle transactionHandle, URI commitUri, InputEventStream inputEventStream, boolean finishWithCommit )
+    Invocation( Log log, TransactionHandle transactionHandle, URI commitUri, MemoryPool memoryPool, InputEventStream inputEventStream,
+                boolean finishWithCommit )
     {
         this.log = log;
         this.transactionHandle = transactionHandle;
         this.commitUri = commitUri;
+        this.memoryPool = memoryPool;
         this.inputEventStream = inputEventStream;
         this.finishWithCommit = finishWithCommit;
     }
@@ -204,13 +211,23 @@ class Invocation
         {
             while ( outputError == null )
             {
-                Statement statement = readStatement();
-                if ( statement == null )
-                {
-                    return;
-                }
+                memoryPool.reserveHeap( Statement.SHALLOW_SIZE );
 
-                executeStatement( statement );
+                try
+                {
+
+                    Statement statement = readStatement();
+                    if ( statement == null )
+                    {
+                        return;
+                    }
+
+                    executeStatement( statement );
+                }
+                finally
+                {
+                    memoryPool.releaseHeap( Statement.SHALLOW_SIZE );
+                }
             }
         }
         catch ( InputFormatException e )

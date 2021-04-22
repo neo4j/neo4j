@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -95,11 +96,11 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
     private final HttpConnectorFactory connectorFactory;
     private final Log log;
 
-    public Jetty9WebServer( LogProvider logProvider, Config config, NetworkConnectionTracker connectionTracker )
+    public Jetty9WebServer( LogProvider logProvider, Config config, NetworkConnectionTracker connectionTracker, ByteBufferPool byteBufferPool )
     {
         this.log = logProvider.getLog( getClass() );
-        sslSocketFactory = new SslSocketConnectorFactory( connectionTracker, config );
-        connectorFactory = new HttpConnectorFactory( connectionTracker, config );
+        sslSocketFactory = new SslSocketConnectorFactory( connectionTracker, config, byteBufferPool );
+        connectorFactory = new HttpConnectorFactory( connectionTracker, config, byteBufferPool );
     }
 
     @Override

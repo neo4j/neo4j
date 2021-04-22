@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -38,17 +39,19 @@ public class HttpConnectorFactory
     private final String name;
     private final NetworkConnectionTracker connectionTracker;
     private final Config configuration;
+    private final ByteBufferPool byteBufferPool;
 
-    public HttpConnectorFactory( NetworkConnectionTracker connectionTracker, Config config )
+    public HttpConnectorFactory( NetworkConnectionTracker connectionTracker, Config config, ByteBufferPool byteBufferPool )
     {
-        this( NAME, connectionTracker, config );
+        this( NAME, connectionTracker, config, byteBufferPool );
     }
 
-    protected HttpConnectorFactory( String name, NetworkConnectionTracker connectionTracker, Config configuration )
+    protected HttpConnectorFactory( String name, NetworkConnectionTracker connectionTracker, Config configuration, ByteBufferPool byteBufferPool )
     {
         this.name = name;
         this.connectionTracker = connectionTracker;
         this.configuration = configuration;
+        this.byteBufferPool = byteBufferPool;
     }
 
     public ConnectionFactory createHttpConnectionFactory()
@@ -78,7 +81,7 @@ public class HttpConnectorFactory
         int selectors = jettyThreadCalculator.getSelectors();
 
         ServerConnector connector =
-                new ServerConnector( server, null, null, null, acceptors, selectors, httpFactories );
+                new ServerConnector( server, null, null, byteBufferPool, acceptors, selectors, httpFactories );
 
         connector.setName( name );
 

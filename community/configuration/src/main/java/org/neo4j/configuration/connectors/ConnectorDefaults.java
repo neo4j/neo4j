@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
@@ -36,7 +37,8 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
 @Deprecated( forRemoval = true )
 public class ConnectorDefaults
 {
-    static final Setting<Boolean> http_enabled = newBuilder( "dbms.connector.http.enabled", BOOL, false ).build();
+    @VisibleForTesting
+    public static final Setting<Boolean> http_enabled = newBuilder( "dbms.connector.http.enabled", BOOL, false ).build();
     static final Setting<Boolean> https_enabled = newBuilder( "dbms.connector.https.enabled", BOOL, false ).build();
     static final Setting<Boolean> bolt_enabled = newBuilder( "dbms.connector.bolt.enabled", BOOL, false ).build();
 

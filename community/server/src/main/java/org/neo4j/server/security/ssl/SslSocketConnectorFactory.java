@@ -20,6 +20,7 @@
 package org.neo4j.server.security.ssl;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.server.Server;
@@ -43,9 +44,9 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
 
     private final Customizer requestCustomizer;
 
-    public SslSocketConnectorFactory( NetworkConnectionTracker connectionTracker, Config config )
+    public SslSocketConnectorFactory( NetworkConnectionTracker connectionTracker, Config config, ByteBufferPool byteBufferPool )
     {
-        super( NAME, connectionTracker, config );
+        super( NAME, connectionTracker, config, byteBufferPool );
         requestCustomizer = new HttpsRequestCustomizer( config );
     }
 

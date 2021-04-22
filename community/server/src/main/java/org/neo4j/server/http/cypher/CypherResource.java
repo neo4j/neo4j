@@ -30,6 +30,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.MemoryPool;
 import org.neo4j.server.configuration.ServerSettings;
 
 @Path( CypherResource.DB_TRANSACTION_PATH )
@@ -41,13 +42,14 @@ public class CypherResource extends AbstractCypherResource
     static final String DB_TRANSACTION_PATH = "/{" + DB_PATH_PARAM_NAME + "}/" + TRANSACTION_PATH_FRAGMENT;
 
     public CypherResource( @Context HttpTransactionManager httpTransactionManager,
-            @Context UriInfo uriInfo,
-            @Context Log log,
-            @Context HttpHeaders headers,
-            @Context HttpServletRequest request,
-            @PathParam( DB_PATH_PARAM_NAME ) String databaseName )
+                           @Context UriInfo uriInfo,
+                           @Context MemoryPool memoryPool,
+                           @Context Log log,
+                           @Context HttpHeaders headers,
+                           @Context HttpServletRequest request,
+                           @PathParam( DB_PATH_PARAM_NAME ) String databaseName )
     {
-        super( httpTransactionManager, uriInfo, log, databaseName );
+        super( httpTransactionManager, uriInfo, memoryPool, log, databaseName );
     }
 
     @Override

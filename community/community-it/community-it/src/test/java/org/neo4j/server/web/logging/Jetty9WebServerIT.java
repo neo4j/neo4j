@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web.logging;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +33,7 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
@@ -47,7 +49,7 @@ public class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
     public void shouldBeAbleToUsePortZero() throws Exception
     {
         // Given
-        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP );
+        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) );
 
         webServer.setHttpAddress( new SocketAddress( "localhost", 0 ) );
 
@@ -61,7 +63,7 @@ public class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
     public void shouldBeAbleToRestart() throws Throwable
     {
         // given
-        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP );
+        webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) );
         webServer.setHttpAddress( new SocketAddress( "127.0.0.1", 7878 ) );
 
         // when
@@ -75,7 +77,7 @@ public class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
     @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
-        new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP ).stop();
+        new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) ).stop();
     }
 
     @After

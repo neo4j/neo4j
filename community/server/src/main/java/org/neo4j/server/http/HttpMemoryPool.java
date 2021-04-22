@@ -17,32 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.http.cypher.format.api;
+package org.neo4j.server.http;
 
-import java.util.Map;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 
-import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
+import org.neo4j.memory.MemoryPools;
 
-public class Statement
+import static org.neo4j.memory.MemoryGroup.HTTP;
+
+public class HttpMemoryPool extends GlobalMemoryGroupTracker
 {
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Statement.class );
+    private final ArrayByteBufferPool byteBufferPool;
 
-    private final String statement;
-    private final Map<String,Object> parameters;
-
-    public Statement( String statement, Map<String,Object> parameters )
+    public HttpMemoryPool( MemoryPools memoryPools, ArrayByteBufferPool byteBufferPool )
     {
-        this.statement = statement;
-        this.parameters = parameters;
+        super( memoryPools, HTTP, 0, false, true, null );
+        this.byteBufferPool = byteBufferPool;
+
+        memoryPools.registerPool( this );
     }
 
-    public String getStatement()
+    @Override
+    public long usedHeap()
     {
-        return statement;
+        return super.usedHeap() + byteBufferPool.getHeapMemory();
     }
 
-    public Map<String,Object> getParameters()
+    @Override
+    public long usedNative()
     {
-        return parameters;
+        return super.usedNative() + byteBufferPool.getDirectMemory();
     }
 }

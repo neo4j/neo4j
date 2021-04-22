@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
@@ -47,7 +49,8 @@ class JettyThreadLimitIT
     @Test
     void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-        Jetty9WebServer server = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP );
+        Jetty9WebServer server = new Jetty9WebServer(
+                NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) );
         int numCores = 1;
         int configuredMaxThreads = 12; // 12 is the new min max Threads value, for one core
         int acceptorThreads = 1; // In this configuration, 1 thread will become an acceptor...

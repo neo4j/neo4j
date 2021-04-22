@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
+import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +30,11 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
@@ -42,6 +47,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class HttpTransactionManagerTest
@@ -53,7 +59,7 @@ class HttpTransactionManagerTest
         JobScheduler jobScheduler = mock( JobScheduler.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-        new HttpTransactionManager( managementService, jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ), logProvider );
+        new HttpTransactionManager( managementService, mock( MemoryPool.class ), jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ), logProvider );
 
         long runEvery = Math.round( Duration.ofMinutes( 1 ).toMillis() / 2.0 );
         verify( jobScheduler ).scheduleRecurring( eq( Group.SERVER_TRANSACTION_TIMEOUT ), any( JobMonitoringParams.class ), any(), eq( runEvery ),
@@ -67,8 +73,9 @@ class HttpTransactionManagerTest
         JobScheduler jobScheduler = mock( JobScheduler.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-        HttpTransactionManager manager =
-                new HttpTransactionManager( managementService, jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ), logProvider );
+        var manager =
+                new HttpTransactionManager( managementService, mock( MemoryPool.class ), jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ),
+                                            logProvider );
 
         assertNotNull( manager.getTransactionHandleRegistry() );
     }
@@ -77,7 +84,8 @@ class HttpTransactionManagerTest
     void shouldGetEmptyTransactionFacadeOfDatabaseData()
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
-        HttpTransactionManager manager = newTransactionManager( managementService );
+        var memoryPool = mock( MemoryPool.class );
+        var manager = newTransactionManager( managementService, memoryPool );
         var graphDatabaseFacade = manager.getGraphDatabaseAPI( "data" );
 
         assertFalse( graphDatabaseFacade.isPresent() );
@@ -89,7 +97,8 @@ class HttpTransactionManagerTest
     void shouldGetTransactionFacadeOfDatabaseWithSpecifiedName()
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
-        HttpTransactionManager manager = newTransactionManager( managementService );
+        var memoryPool = mock( MemoryPool.class );
+        var manager = newTransactionManager( managementService, memoryPool );
         var transactionFacade = manager.getGraphDatabaseAPI( "neo4j" );
 
         assertTrue( transactionFacade.isPresent() );
@@ -101,7 +110,8 @@ class HttpTransactionManagerTest
     void shouldGetEmptyTransactionFacadeForUnknownDatabase()
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
-        HttpTransactionManager manager = newTransactionManager( managementService );
+        var memoryPool = mock( MemoryPool.class );
+        var manager = newTransactionManager( managementService, memoryPool );
         var transactionFacade = manager.getGraphDatabaseAPI( "foo" );
 
         assertFalse( transactionFacade.isPresent() );
@@ -109,7 +119,33 @@ class HttpTransactionManagerTest
         verify( managementService ).database( "foo" );
     }
 
-    private HttpTransactionManager newTransactionManager( DatabaseManagementService managementService )
+    @Test
+    void shouldCreateTransactionFacade()
+    {
+        var managementService = mock( DatabaseManagementService.class );
+        var graphDatabase = mock( GraphDatabaseAPI.class );
+
+        var dependencyResolver = mock( DependencyResolver.class );
+        var queryExecutionEngine = mock( QueryExecutionEngine.class );
+
+        var memoryPool = mock( MemoryPool.class );
+        var memoryTracker = mock( MemoryTracker.class );
+        var manager = newTransactionManager( managementService, memoryPool );
+
+        when( graphDatabase.getDependencyResolver() )
+                .thenReturn( dependencyResolver );
+        when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) )
+                .thenReturn( queryExecutionEngine );
+
+        var facade = manager.createTransactionFacade( graphDatabase, memoryTracker );
+
+        verify( memoryTracker ).allocateHeap( TransactionFacade.SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryTracker );
+
+        assertNotNull( facade );
+    }
+
+    private HttpTransactionManager newTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool )
     {
         JobScheduler jobScheduler = mock( JobScheduler.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -128,7 +164,8 @@ class HttpTransactionManagerTest
             }
 
         } );
-        return new HttpTransactionManager( managementService, jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ), logProvider );
+        return new HttpTransactionManager( managementService, memoryPool, jobScheduler, Clocks.systemClock(), Duration.ofMinutes( 1 ),
+                                           logProvider );
     }
 
     private GraphDatabaseFacade graphWithName( String name )

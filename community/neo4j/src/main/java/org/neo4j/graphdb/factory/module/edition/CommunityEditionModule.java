@@ -71,6 +71,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
@@ -204,9 +205,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     @Override
     public Lifecycle createWebServer( DatabaseManagementService managementService, Dependencies globalDependencies, Config config,
-            LogProvider userLogProvider, DbmsInfo dbmsInfo )
+                                      LogProvider userLogProvider, DbmsInfo dbmsInfo )
     {
-        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo );
+        return new CommunityNeoWebServer( managementService, globalDependencies, config, userLogProvider, dbmsInfo, globalModule.getMemoryPools() );
     }
 
     @Override

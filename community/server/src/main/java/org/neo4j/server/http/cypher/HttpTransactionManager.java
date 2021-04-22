@@ -29,6 +29,8 @@ import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
@@ -46,13 +48,13 @@ public class HttpTransactionManager
     private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
 
-    public HttpTransactionManager( DatabaseManagementService managementService, JobScheduler jobScheduler, Clock clock, Duration transactionTimeout,
-            LogProvider userLogProvider )
+    public HttpTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool,
+                                   JobScheduler jobScheduler, Clock clock, Duration transactionTimeout, LogProvider userLogProvider )
     {
         this.managementService = managementService;
         this.jobScheduler = jobScheduler;
 
-        transactionRegistry = new TransactionHandleRegistry( clock, transactionTimeout, userLogProvider );
+        transactionRegistry = new TransactionHandleRegistry( clock, transactionTimeout, userLogProvider, memoryPool );
         scheduleTransactionTimeout( transactionTimeout );
     }
 
@@ -81,10 +83,11 @@ public class HttpTransactionManager
         return transactionRegistry;
     }
 
-    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI )
+    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker )
     {
         DependencyResolver dependencyResolver = databaseAPI.getDependencyResolver();
 
+        memoryTracker.allocateHeap( TransactionFacade.SHALLOW_SIZE );
         return new TransactionFacade( databaseAPI,
                 dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry );
     }

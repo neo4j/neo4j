@@ -23,6 +23,8 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 
 /**
@@ -47,6 +49,8 @@ import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
  */
 class TransactionFacade
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionFacade.class );
+
     private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
@@ -59,8 +63,10 @@ class TransactionFacade
     }
 
     TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
-            LoginContext loginContext, ClientConnectionInfo connectionInfo, long customTransactionTimeout )
+            LoginContext loginContext, ClientConnectionInfo connectionInfo, MemoryTracker memoryTracker, long customTransactionTimeout )
     {
+        memoryTracker.allocateHeap( TransactionHandle.SHALLOW_SIZE );
+
         return new TransactionHandle( databaseAPI, engine, registry, uriScheme, implicitTransaction,
                 loginContext, connectionInfo, customTransactionTimeout );
     }

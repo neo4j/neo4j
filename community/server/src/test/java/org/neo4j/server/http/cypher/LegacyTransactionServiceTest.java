@@ -34,6 +34,7 @@ import javax.ws.rs.core.UriInfo;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryPool;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -58,7 +59,7 @@ class LegacyTransactionServiceTest
         request = mock( HttpServletRequest.class );
         databaseResolver = mock( DefaultDatabaseResolver.class );
         httpTransactionManager = spy( new HttpTransactionManager(
-                null, mock( JobScheduler.class ), Clock.systemUTC(), Duration.ofMinutes( 2 ), mock( LogProvider.class ) ) );
+                null, mock( MemoryPool.class ), mock( JobScheduler.class ), Clock.systemUTC(), Duration.ofMinutes( 2 ), mock( LogProvider.class ) ) );
         uriInfo = mock( UriInfo.class );
         log = mock( Log.class );
 
@@ -90,7 +91,7 @@ class LegacyTransactionServiceTest
                 .thenReturn( "db-" + user );
 
         // When
-        var transactionService = new LegacyTransactionService( request, databaseResolver, httpTransactionManager, uriInfo, log );
+        var transactionService = new LegacyTransactionService( request, databaseResolver, httpTransactionManager, uriInfo, mock( MemoryPool.class ), log );
         transactionService.rollbackTransaction( 42 );
 
         // Verify

@@ -17,29 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.memory;
+package org.neo4j.server.http;
 
-public enum MemoryGroup
+import org.neo4j.memory.GlobalMemoryGroupTracker;
+import org.neo4j.memory.MemoryPools;
+
+import static org.neo4j.memory.MemoryGroup.HTTP_TRANSACTION;
+
+public class HttpTransactionMemoryPool extends GlobalMemoryGroupTracker
 {
-    TRANSACTION( "Transaction" ),
-    BOLT( "Bolt" ),
-    HTTP( "HTTP" ),
-    HTTP_TRANSACTION( "HTTP Transaction" ),
-    PAGE_CACHE( "Page Cache" ),
-    OTHER( "Other" ),
-    RECENT_QUERY_BUFFER( "Recent Query Buffer" ),
-    CENTRAL_BYTE_BUFFER_MANAGER( "Central Byte Buffer Manager" ),
-    NO_TRACKING( "No Tracking" );
 
-    private final String name;
-
-    MemoryGroup( String name )
+    public HttpTransactionMemoryPool( MemoryPools memoryPools )
     {
-        this.name = name;
-    }
-
-    public String getName()
-    {
-        return name;
+        super( memoryPools, HTTP_TRANSACTION, 0, false, true, null );
+        memoryPools.registerPool( this );
     }
 }
