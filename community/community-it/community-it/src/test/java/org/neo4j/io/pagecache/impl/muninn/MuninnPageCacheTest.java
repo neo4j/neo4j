@@ -55,11 +55,16 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
+import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
@@ -317,10 +322,30 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    void reportFreeListSizeToTracers() throws IOException
+    {
+        var pageCacheTracer = new InfoTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
+        {
+            for ( int pageId = 0; pageId < 5; pageId++ )
+            {
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, pageCacheTracer.createPageCursorTracer( "test" ) ) )
+                {
+                    assertTrue( cursor.next() );
+                    cursor.putLong( 1 );
+                }
+                assertEquals( 10 - (pageId + 1), pageCacheTracer.getFreeListSize() );
+            }
+            pagedFile.flushAndForce();
+        }
+    }
+
+    @Test
     void countNotModifiedPagesPerChunkWithNoBuffers() throws IOException
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -363,7 +388,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void flushFileWithSeveralChunks() throws IOException
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         int maxPages = 4096 /* chunk size */ + 10;
         PageSwapperFactory swapperFactory = new MultiChunkSwapperFilePageSwapperFactory();
         try ( MuninnPageCache pageCache = createPageCache( swapperFactory, maxPages, pageCacheTracer, EMPTY );
@@ -393,7 +418,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void countNotModifiedPagesPerChunkWithBuffers() throws IOException
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -437,7 +462,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void countFlushesPerChunkWithNoBuffers() throws IOException
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -500,7 +525,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void countFlushesPerChunkWithBuffers() throws IOException
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -563,7 +588,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void countMergesPerChunkWithNoBuffers() throws IOException
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -626,7 +651,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void countMergesPerChunkWithBuffers() throws IOException
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -689,7 +714,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void countUsedBuffersPerChunkWithNoBuffers() throws IOException
     {
         assumeTrue( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -752,7 +777,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void usedBuffersPerChunkIsAlwaysOneWithBuffers() throws IOException
     {
         assumeFalse( DISABLED_BUFFER_FACTORY.equals( fixture.getBufferFactory() ) );
-        var pageCacheTracer = new FlushInfoTracer();
+        var pageCacheTracer = new InfoTracer();
         try ( MuninnPageCache pageCache = createPageCache( fs, 10, pageCacheTracer );
                 PagedFile pagedFile = map( pageCache, file( "a" ), (int) ByteUnit.kibiBytes( 8 ) ) )
         {
@@ -1458,19 +1483,107 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
     }
 
-    private static class FlushInfoTracer extends DefaultPageCacheTracer
+    private static class InfoTracer extends DefaultPageCacheTracer
     {
         private final CopyOnWriteArrayList<ChunkInfo> observedChunks = new CopyOnWriteArrayList<>();
+        private volatile int freeListSize;
 
         public CopyOnWriteArrayList<ChunkInfo> getObservedChunks()
         {
             return observedChunks;
         }
 
+        public int getFreeListSize()
+        {
+            return freeListSize;
+        }
+
+        @Override
+        public PageCursorTracer createPageCursorTracer( String tag )
+        {
+            return new InfoPageCursorTracer( this, tag );
+        }
+
         @Override
         public MajorFlushEvent beginFileFlush( PageSwapper swapper )
         {
             return new FlushInfoMajorFlushEvent();
+        }
+
+        private class InfoPageCursorTracer extends DefaultPageCursorTracer
+        {
+            InfoPageCursorTracer( PageCacheTracer pageCacheTracer, String tag )
+            {
+                super( pageCacheTracer, tag );
+            }
+
+            @Override
+            public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
+            {
+                return new PinEvent()
+                {
+                    @Override
+                    public void setCachePageId( long cachePageId )
+                    {
+
+                    }
+
+                    @Override
+                    public PageFaultEvent beginPageFault( long filePageId, int swapperId )
+                    {
+                        return new PageFaultEvent()
+                        {
+                            @Override
+                            public void addBytesRead( long bytes )
+                            {
+
+                            }
+
+                            @Override
+                            public void setCachePageId( long cachePageId )
+                            {
+
+                            }
+
+                            @Override
+                            public void done()
+                            {
+
+                            }
+
+                            @Override
+                            public void fail( Throwable throwable )
+                            {
+
+                            }
+
+                            @Override
+                            public void freeListSize( int listSize )
+                            {
+                                freeListSize = listSize;
+                            }
+
+                            @Override
+                            public EvictionEvent beginEviction( long cachePageId )
+                            {
+                                return null;
+                            }
+                        };
+                    }
+
+                    @Override
+                    public void hit()
+                    {
+
+                    }
+
+                    @Override
+                    public void done()
+                    {
+
+                    }
+                };
+            }
         }
 
         private class FlushInfoMajorFlushEvent implements MajorFlushEvent

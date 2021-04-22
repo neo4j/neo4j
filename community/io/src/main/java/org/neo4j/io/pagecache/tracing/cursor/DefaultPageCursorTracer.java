@@ -245,7 +245,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void freeListSize( int freeListSize )
+        public void freeListSize( int listSize )
         {
         }
 
