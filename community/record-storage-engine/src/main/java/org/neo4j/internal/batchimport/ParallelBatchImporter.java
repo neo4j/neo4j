@@ -29,11 +29,14 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogFilesInitializer;
+
+import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 /**
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
@@ -94,7 +97,6 @@ public class ParallelBatchImporter implements BatchImporter
         {
             store.createNew();
             logic.initialize( input );
-
             logic.importNodes();
             logic.prepareIdMapper();
             logic.importRelationships();
@@ -102,8 +104,8 @@ public class ParallelBatchImporter implements BatchImporter
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
+            logic.createTokenIndexes();
             logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT );
-
             logic.success();
         }
     }

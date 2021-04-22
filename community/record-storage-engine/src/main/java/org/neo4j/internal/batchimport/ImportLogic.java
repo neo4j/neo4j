@@ -26,14 +26,17 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -51,6 +54,11 @@ import org.neo4j.internal.batchimport.staging.ExecutionSupervisors;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -68,11 +76,19 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.auto;
 import static org.neo4j.internal.helpers.Format.duration;
+import static org.neo4j.internal.helpers.collection.Iterators.stream;
+import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAccess;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 /**
  * Contains all algorithms and logic for doing an import. It exposes all stages as methods so that
@@ -537,6 +553,41 @@ public class ImportLogic implements Closeable
                 }
             }, pageCacheTracer, cursorTracer, memoryTracker );
         }
+    }
+
+    public void createTokenIndexes() throws IOException
+    {
+        if ( dbConfig.get( enable_scan_stores_as_token_indexes ) )
+        {
+            SchemaRuleAccess schemaRuleAccess = getSchemaRuleAccess( neoStore.getNeoStores().getSchemaStore(), neoStore.getTokenHolders() );
+            if ( !hasTokenIndexes( schemaRuleAccess ) )
+            {
+                try
+                {
+                    schemaRuleAccess.writeSchemaRule( indexSchemaRule( NODE ), NULL, memoryTracker );
+                    schemaRuleAccess.writeSchemaRule( indexSchemaRule( RELATIONSHIP ), NULL, memoryTracker );
+                }
+                catch ( KernelException e )
+                {
+                    throw new RuntimeException( "Error preparing indexes", e );
+                }
+            }
+        }
+    }
+
+    private boolean hasTokenIndexes( SchemaRuleAccess schemaRuleAccess )
+    {
+        Iterator<IndexDescriptor> descriptors = schemaRuleAccess.indexesGetAll( NULL );
+        return stream( descriptors ) .map( descriptor -> descriptor.schema().entityType() ) .anyMatch( type -> type == NODE || type == RELATIONSHIP );
+    }
+
+    private IndexDescriptor indexSchemaRule( EntityType entityType )
+    {
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "token", "1.0" );
+        IndexPrototype prototype = IndexPrototype.forSchema(
+                forAnyEntityTokens( entityType ) ).withIndexType( LOOKUP ).withIndexProvider( providerDescriptor );
+        prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{}, new String[]{} ) );
+        return prototype.materialise( neoStore.getNeoStores().getSchemaStore().nextId( NULL ) );
     }
 
     public void success()

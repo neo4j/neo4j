@@ -45,15 +45,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -65,6 +67,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.Type;
@@ -93,6 +96,8 @@ import static java.lang.System.currentTimeMillis;
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -102,13 +107,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
@@ -118,6 +126,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
+import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 @Neo4jLayoutExtension
 @ExtendWith( { RandomExtension.class, SuppressOutputExtension.class} )
@@ -154,7 +163,7 @@ class ImportCommandTest
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
-        Configuration config = Configuration.COMMAS;
+        Configuration config = COMMAS;
         Path dbConfig = prepareDefaultConfigFile();
 
         // WHEN
@@ -166,7 +175,68 @@ class ImportCommandTest
 
         // THEN
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
+        assertThat( databaseLayout.labelScanStore().toFile().exists() ).isTrue();
+        assertThat( databaseLayout.relationshipTypeScanStore().toFile().exists() ).isFalse();
         verifyData();
+    }
+
+    @Test
+    void shouldImportAndCreateTokenIndexes() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Path dbConfig = file( "neo4j.properties" );
+        enableTokenIndexes( dbConfig );
+
+        // WHEN
+        runImport(
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, COMMAS, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--high-io", "false",
+                "--relationships", relationshipData( true, COMMAS, nodeIds, TRUE, true ).toAbsolutePath().toString() );
+
+        // THEN
+        assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
+        assertThat( databaseLayout.relationshipTypeScanStore().toFile().exists() ).isFalse();
+        assertTokenIndexesCreated();
+    }
+
+    @Test
+    void shouldNotCreateDuplicateTokenIndexes() throws Exception
+    {
+        // GIVEN
+        createDefaultDatabaseWithTokenIndexes();
+        List<String> nodeIds = nodeIds();
+        Configuration config = COMMAS;
+        Path dbConfig = file( "neo4j.properties" );
+        enableTokenIndexes( dbConfig );
+
+        // WHEN
+        runImport(
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--high-io", "false",
+                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
+
+        // THEN
+        assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
+        assertTokenIndexesCreated();
+    }
+
+    private void assertTokenIndexesCreated()
+    {
+        DatabaseManagementService dbms = dbmsService();
+        try ( var tx = dbms.database( DEFAULT_DATABASE_NAME ).beginTx() )
+        {
+            var indexes = stream( tx.schema().getIndexes().spliterator(), false ).collect( toList() );
+            assertThat( indexes.stream().filter( index -> index.getIndexType() == LOOKUP ).count() ).isEqualTo( 2 );
+            assertTrue( indexes.stream().anyMatch( IndexDefinition::isNodeIndex ) );
+            assertTrue( indexes.stream().anyMatch( IndexDefinition::isRelationshipIndex ) );
+        }
+        finally
+        {
+            dbms.shutdown();
+        }
     }
 
     @Test
@@ -1815,7 +1885,7 @@ class ImportCommandTest
     {
         // given
         List<String> nodeIds = nodeIds();
-        Configuration config = Configuration.COMMAS;
+        Configuration config = COMMAS;
         Path argumentFile = file( "args" );
         String nodesEscapedSpaces = nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString();
         String relationshipsEscapedSpaced = relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString();
@@ -1839,7 +1909,7 @@ class ImportCommandTest
     void shouldCreateDebugLogInExpectedPlace() throws Exception
     {
         // given
-        runImport( "--nodes", nodeData( true, Configuration.COMMAS, nodeIds(), TRUE ).toAbsolutePath().toString() );
+        runImport( "--nodes", nodeData( true, COMMAS, nodeIds(), TRUE ).toAbsolutePath().toString() );
 
         // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
         Path internalLogFile = Config.defaults( neo4j_home, testDirectory.homePath() ).get( store_internal_log_path );
@@ -1925,10 +1995,10 @@ class ImportCommandTest
             writer.println( "1,1,DC,9999999999,123456789" );
         } );
         var e = assertThrows( InputException.class, () -> runImport(
-                    "--additional-config", dbConfig.toAbsolutePath().toString(),
-                    "--normalize-types", "false",
-                    "--nodes", nodeData.toAbsolutePath().toString(),
-                    "--relationships", relationshipData.toAbsolutePath().toString() ) );
+                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                "--normalize-types", "false",
+                "--nodes", nodeData.toAbsolutePath().toString(),
+                "--relationships", relationshipData.toAbsolutePath().toString() ) );
         String message = e.getMessage();
         assertThat( message ).contains( "1000000" );
         assertThat( message ).contains( "too big" );
@@ -2027,16 +2097,14 @@ class ImportCommandTest
         verifyData( Validators.emptyValidator(), Validators.emptyValidator() );
     }
 
-    private void verifyData(
-            Validator<Node> nodeAdditionalValidation,
-            Validator<Relationship> relationshipAdditionalValidation )
+    private void verifyData( Validator<Node> nodeAdditionalValidation, Validator<Relationship> relationshipAdditionalValidation )
     {
         verifyData( NODE_COUNT, RELATIONSHIP_COUNT, nodeAdditionalValidation, relationshipAdditionalValidation );
     }
 
     private void verifyData( int expectedNodeCount, int expectedRelationshipCount,
-            Validator<Node> nodeAdditionalValidation,
-            Validator<Relationship> relationshipAdditionalValidation )
+                             Validator<Node> nodeAdditionalValidation,
+                             Validator<Relationship> relationshipAdditionalValidation )
     {
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )
@@ -2462,9 +2530,34 @@ class ImportCommandTest
         if ( managementService == null )
         {
             managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                    .setConfig( GraphDatabaseSettings.default_database, defaultDatabaseName ).build();
+                    .setConfig( default_database, defaultDatabaseName ).build();
         }
         return (GraphDatabaseAPI) managementService.database( defaultDatabaseName );
+    }
+
+    private void createDefaultDatabaseWithTokenIndexes()
+    {
+        // Default token indexes are created on startup
+        var managementService = dbmsService();
+        assertThat( managementService.database( DEFAULT_DATABASE_NAME ).isAvailable( TimeUnit.MINUTES.toMillis( 5 ) ) ).isTrue();
+        managementService.shutdown();
+    }
+
+    private DatabaseManagementService dbmsService()
+    {
+        return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
+                .setConfig( default_database, DEFAULT_DATABASE_NAME )
+                .setConfig( enable_scan_stores_as_token_indexes, true )
+                .build();
+    }
+
+    private void enableTokenIndexes( Path dbConfig ) throws IOException
+    {
+        store( Map.of(
+                neo4j_home.name(), testDirectory.absolutePath().toString(),
+                preallocate_logical_logs.name(), FALSE,
+                enable_scan_stores_as_token_indexes.name(), SettingValueParsers.TRUE
+        ), dbConfig );
     }
 
     private void runImport( String... arguments )

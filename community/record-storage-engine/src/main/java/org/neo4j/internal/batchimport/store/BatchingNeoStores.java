@@ -74,6 +74,8 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.READ;
@@ -92,6 +94,9 @@ import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
 
 /**
  * Creator and accessor of {@link NeoStores} with some logic to provide very batch friendly services to the
@@ -133,6 +138,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private BatchingPropertyKeyTokenRepository propertyKeyRepository;
     private BatchingLabelTokenRepository labelRepository;
     private BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
+    private TokenHolders tokenHolders;
     private LifeSupport life = new LifeSupport();
     private LabelScanStore labelScanStore;
     private RelationshipTypeScanStore relationshipTypeScanStore;
@@ -263,6 +269,12 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         propertyKeyRepository = new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore() );
         labelRepository = new BatchingLabelTokenRepository( neoStores.getLabelTokenStore() );
         relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository( neoStores.getRelationshipTypeTokenStore() );
+        tokenHolders = new TokenHolders(
+                new DelegatingTokenHolder( ( key, internal ) -> propertyKeyRepository.getOrCreateId( key, internal ), TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( ( key, internal ) -> labelRepository.getOrCreateId( key, internal ), TYPE_LABEL ),
+                new DelegatingTokenHolder( ( key, internal ) -> relationshipTypeRepository.getOrCreateId( key, internal ), TYPE_RELATIONSHIP_TYPE ) );
+        tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( PageCursorTracer.NULL ) );
+
         temporaryNeoStores = instantiateTempStores();
         instantiateExtensions();
 
@@ -477,6 +489,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public NeoStores getNeoStores()
     {
         return neoStores;
+    }
+
+    public TokenHolders getTokenHolders()
+    {
+        return tokenHolders;
     }
 
     public void startFlushingPageCache()

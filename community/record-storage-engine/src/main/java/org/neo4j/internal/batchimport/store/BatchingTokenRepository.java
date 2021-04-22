@@ -50,7 +50,7 @@ import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
  */
 public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implements ToIntFunction<Object>
 {
-    private final Map<String,Integer> tokens = new HashMap<>();
+    private final Map<String,TokenId> tokens = new HashMap<>();
     private final TokenStore<RECORD> store;
     private final IntFunction<RECORD> recordInstantiator;
     private int highId;
@@ -60,7 +60,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
     {
         this.store = store;
         this.recordInstantiator = recordInstantiator;
-        this.highId = (int)store.getHighId();
+        this.highId = (int) store.getHighId();
         this.highestCreatedId = highId - 1;
     }
 
@@ -73,6 +73,18 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
      */
     public int getOrCreateId( String name )
     {
+        return getOrCreateId( name, false );
+    }
+
+    /**
+     * Returns the id for token with the specified {@code name}, potentially creating that token and assigning a new id as part of this call.
+     *
+     * @param name     token name.
+     * @param internal flag to mark the token as internal
+     * @return the id (created or existing) for the token by this name.
+     */
+    public int getOrCreateId( String name, boolean internal )
+    {
         try
         {
             TokenWrite.checkValidTokenName( name );
@@ -82,15 +94,15 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
             throw new IllegalArgumentException( e );
         }
 
-        Integer id = tokens.get( name );
+        TokenId id = tokens.get( name );
         if ( id == null )
         {
             synchronized ( tokens )
             {
-                id = tokens.computeIfAbsent( name, k -> highId++ );
+                id = tokens.computeIfAbsent( name, k -> new TokenId( highId++, internal ) );
             }
         }
-        return id;
+        return id.value;
     }
 
     /**
@@ -176,25 +188,27 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
     public void flush( PageCursorTracer cursorTracer )
     {
         int highest = highestCreatedId;
-        for ( Map.Entry<Integer,String> tokenToCreate : sortCreatedTokensById() )
+        for ( Map.Entry<TokenId,String> tokenToCreate : sortCreatedTokensById( tokens ) )
         {
-            if ( tokenToCreate.getKey() > highestCreatedId )
+            if ( tokenToCreate.getKey().value > highestCreatedId )
             {
-                createToken( tokenToCreate.getValue(), tokenToCreate.getKey(), cursorTracer );
-                highest = Math.max( highest, tokenToCreate.getKey() );
+                createToken( tokenToCreate.getValue(), tokenToCreate.getKey().value, tokenToCreate.getKey().internal, cursorTracer );
+                highest = Math.max( highest, tokenToCreate.getKey().value );
             }
         }
+
         // Store them
         int highestId = max( toIntExact( store.getHighestPossibleIdInUse( cursorTracer ) ), highest );
         store.setHighestPossibleIdInUse( highestId );
         highestCreatedId = highestId;
     }
 
-    private void createToken( String name, int tokenId, PageCursorTracer cursorTracer )
+    private void createToken( String name, int tokenId, boolean internal, PageCursorTracer cursorTracer )
     {
         RECORD record = recordInstantiator.apply( tokenId );
         record.setInUse( true );
         record.setCreated();
+        record.setInternal( internal );
         Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer, EmptyMemoryTracker.INSTANCE );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
@@ -202,10 +216,10 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         nameRecords.forEach( nameRecord -> store.getNameStore().updateRecord( nameRecord, cursorTracer ) );
     }
 
-    private Iterable<Map.Entry<Integer,String>> sortCreatedTokensById()
+    private Iterable<Map.Entry<TokenId,String>> sortCreatedTokensById( Map<String,TokenId> tokens )
     {
-        Map<Integer,String> sorted = new TreeMap<>();
-        for ( Map.Entry<String,Integer> entry : tokens.entrySet() )
+        Map<TokenId,String> sorted = new TreeMap<>();
+        for ( Map.Entry<String,TokenId> entry : tokens.entrySet() )
         {
             sorted.put( entry.getValue(), entry.getKey() );
         }
@@ -235,6 +249,24 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord> store )
         {
             super( store, RelationshipTypeTokenRecord::new );
+        }
+    }
+
+    private static class TokenId implements Comparable<TokenId>
+    {
+        private final Integer value;
+        private final boolean internal;
+
+        TokenId( int value, boolean internal )
+        {
+            this.value = value;
+            this.internal = internal;
+        }
+
+        @Override
+        public int compareTo( TokenId other )
+        {
+            return value.compareTo( other.value );
         }
     }
 }
