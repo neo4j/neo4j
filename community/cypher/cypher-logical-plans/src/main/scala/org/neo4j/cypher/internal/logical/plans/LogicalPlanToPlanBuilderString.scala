@@ -348,12 +348,12 @@ object LogicalPlanToPlanBuilderString {
       case DirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
-      case DirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, _) =>
-        val args = if(argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
-        s""" "($start)-[$idName:${typ.name}]->($end)"$args """.trim
-      case UndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, _) =>
-        val args = if(argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
-        s""" "($start)-[$idName:${typ.name}]-($end)"$args """.trim
+      case DirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
+        val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
+        s""" "($start)-[$idName:${typ.name}]->($end)", ${args.mkString(", ")} """.trim
+      case UndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
+        val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
+        s""" "($start)-[$idName:${typ.name}]-($end)", ${args.mkString(", ")} """.trim
       case NodeIndexScan(idName, labelToken, properties, argumentIds, indexOrder) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, propNames.mkString(", "))

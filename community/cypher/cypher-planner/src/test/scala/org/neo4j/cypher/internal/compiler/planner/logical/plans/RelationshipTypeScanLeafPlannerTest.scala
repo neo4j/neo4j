@@ -274,7 +274,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq()),
+        InterestingOrder(RequiredOrderCandidate(Seq.empty),
           Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
       context)
 
@@ -353,7 +353,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq()),
+        InterestingOrder(RequiredOrderCandidate(Seq.empty),
           Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false)))))),
       context)
 

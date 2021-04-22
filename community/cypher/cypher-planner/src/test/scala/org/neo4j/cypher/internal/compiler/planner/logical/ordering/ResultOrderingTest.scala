@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.PropertyAndPredicateType
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.extractVariableForValue
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.providedOrderForLabelScan
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.providedOrderForRelationshipTypeScan
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.indexOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.indexPropertyXFoo
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderingTest.indexPropertyXFooExact
@@ -244,6 +245,40 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](ascXFoo: Interesting
   test("Label scan: results in empty provided order when it can't be fulfilled") {
     providedOrderForLabelScan(toInterestingOrder(orderCandidateFactory.asc(xFoo)), x) should be(ProvidedOrder.empty)
     providedOrderForLabelScan(toInterestingOrder(orderCandidateFactory.desc(xFoo)), x) should be(ProvidedOrder.empty)
+  }
+
+  // RelType scan
+
+  test("RelType scan: Empty order results in empty provided order") {
+    providedOrderForRelationshipTypeScan(InterestingOrder.empty, "x") should be(ProvidedOrder.empty)
+  }
+
+  test("RelType scan: Simple order results in matching provided order") {
+    providedOrderForRelationshipTypeScan(ascX, "x") should be(ProvidedOrder.asc(x))
+    providedOrderForRelationshipTypeScan(descX, "x") should be(ProvidedOrder.desc(x))
+  }
+
+  test("RelType scan: Simple order with projected variable results in matching provided order") {
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map("blob" -> x)))
+    providedOrderForRelationshipTypeScan(interestingAsc, "x") should be(ProvidedOrder.asc(x))
+
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map("blob" -> x)))
+    providedOrderForRelationshipTypeScan(interestingDesc, "x") should be(ProvidedOrder.desc(x))
+  }
+
+  test("RelType scan: Multi variable order results in matching provided order") {
+    val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(x).asc(y))
+    providedOrderForRelationshipTypeScan(interestingOrder, "x") should be(ProvidedOrder.asc(x))
+  }
+
+  test("RelType scan: Multi variable order results in empty provided order if variable order does not match") {
+    val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(y).asc(x))
+    providedOrderForRelationshipTypeScan(interestingOrder, "x") should be(ProvidedOrder.empty)
+  }
+
+  test("RelType scan: results in empty provided order when it can't be fulfilled") {
+    providedOrderForRelationshipTypeScan(toInterestingOrder(orderCandidateFactory.asc(xFoo)), "x") should be(ProvidedOrder.empty)
+    providedOrderForRelationshipTypeScan(toInterestingOrder(orderCandidateFactory.desc(xFoo)), "x") should be(ProvidedOrder.empty)
   }
 
   // Extract Variable for Value

@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.OrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -186,6 +186,17 @@ object ResultOrdering {
 
   def providedOrderForLabelScan(interestingOrder: InterestingOrder,
                                 variable: Variable): ProvidedOrder = {
+    providedOrderForScan(interestingOrder, variable)
+
+  }
+
+  def providedOrderForRelationshipTypeScan(interestingOrder: InterestingOrder,
+                                           name: String): ProvidedOrder = {
+    providedOrderForScan(interestingOrder, Variable(name)(InputPosition.NONE))
+  }
+
+  private def providedOrderForScan(interestingOrder: InterestingOrder,
+                                   variable: Variable): ProvidedOrder = {
     def satisfies(expression: Expression, projections: Map[String, Expression]): Boolean =
       extractVariableForValue(expression, projections).contains(variable)
 
@@ -199,20 +210,6 @@ object ResultOrdering {
     }.getOrElse(ProvidedOrder.empty)
   }
 
-  def providedOrderForRelationshipTypeScan(interestingOrder: InterestingOrder,
-                                           name: String): ProvidedOrder = {
-    def satisfies(expression: Expression, projections: Map[String, Expression]): Boolean =
-      extractVariableForValue(expression, projections).exists(_.name == name)
-
-    val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
-
-    candidates.map(_.headOption).collectFirst {
-      case Some(Desc(expression, projection)) if satisfies(expression, projection) =>
-        ProvidedOrder.desc(Variable(name)(InputPosition.NONE))
-      case Some(Asc(expression, projection)) if satisfies(expression, projection) =>
-        ProvidedOrder.asc(Variable(name)(InputPosition.NONE))
-    }.getOrElse(ProvidedOrder.empty)
-  }
 
   @tailrec
   private[ordering] def extractVariableForValue(expression: Expression,

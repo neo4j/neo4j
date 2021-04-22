@@ -143,11 +143,12 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
@@ -266,6 +267,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -533,6 +535,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop ENDS WITH 'Foo')]-(y)"), 23.0),
       planDescription(id, "UndirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
+  }
+
+  test("RelationshipTypeScan") {
+    assertGood(
+      attach(DirectedRelationshipTypeScan("r", "x", RelTypeName("R")(InputPosition.NONE), "y", Set.empty, IndexOrderNone), 23.0),
+      planDescription(id, "DirectedRelationshipTypeScan", NoChildren, Seq(details("r:R")), Set("r", "x", "y")))
+
+    assertGood(
+      attach(UndirectedRelationshipTypeScan("r", "x", RelTypeName("R")(InputPosition.NONE), "y", Set.empty, IndexOrderNone), 23.0),
+      planDescription(id, "UndirectedRelationshipTypeScan", NoChildren, Seq(details("r:R")), Set("r", "x", "y")))
   }
 
   test("MultiNodeIndexSeek") {

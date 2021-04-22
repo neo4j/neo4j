@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import java.lang.reflect.Modifier
-
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -50,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
+import java.lang.reflect.Modifier
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -713,6 +712,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.relationshipTypeScan("(x)-[r:R]-(y)")
       .relationshipTypeScan("(x)-[r:R]->(y)")
+      .build())
+
+  testPlan("relationshipTypeScan with providedOrder",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.relationshipTypeScan("(x)-[r:R]-(y)", IndexOrderDescending)
+      .relationshipTypeScan("(x)-[r:R]->(y)", IndexOrderAscending)
       .build())
 
   // Formatting paramExpr and customQueryExpression is currently not supported.

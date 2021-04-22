@@ -923,8 +923,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .plan(query)
       .stripProduceResults
 
-    plan.printLogicalPlanBuilderString()
-
     val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
       .relationshipTypeScan("(a)-[r:REL]->(b)", IndexOrderAscending)
       .build()
@@ -957,8 +955,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = relationshipTypeScanConfig
       .plan(query)
       .stripProduceResults
-
-    plan.printLogicalPlanBuilderString()
 
     val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
       .relationshipTypeScan("(a)-[r:REL]-(b)", IndexOrderAscending)
