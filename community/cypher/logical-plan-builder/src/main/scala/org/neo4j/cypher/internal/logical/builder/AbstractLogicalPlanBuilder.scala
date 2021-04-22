@@ -49,15 +49,19 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
@@ -96,6 +100,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -872,6 +877,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def foreachApply(variable: String, expression: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ForeachApply(lhs, rhs, variable, Parser.parseExpression(expression))(_)))
 
+  def foreach(variable: String, expression: String, mutations: Seq[SimpleMutatingPattern]): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => Foreach(lp, variable, Parser.parseExpression(expression), mutations)(_)))
+
   def cartesianProduct(fromSubquery: Boolean = false): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs, fromSubquery)(_)))
 
@@ -1134,6 +1142,11 @@ object AbstractLogicalPlanBuilder {
     }
   }
 
+  def createPattern(nodes: Seq[CreateNode] = Seq.empty,
+                    relationships: Seq[CreateRelationship] = Seq.empty): CreatePattern = {
+    CreatePattern(nodes, relationships)
+  }
+
   def createNode(node: String, labels: String*): CreateNode =
     CreateNode(node, labels.map(LabelName(_)(pos)), None)
 
@@ -1159,6 +1172,12 @@ object AbstractLogicalPlanBuilder {
 
   def setRelationshipPropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
     SetRelationshipPropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
+
+  def setProperty(entity: String, key: String, value: String): SetMutatingPattern =
+    SetPropertyPattern(Parser.parseExpression(entity), PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+
+  def setPropertyFromMap(entity: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
+    SetPropertiesFromMapPattern(Parser.parseExpression(entity), Parser.parseExpression(map), removeOtherProps)
 
   def setLabel(node: String, labels: String*): SetMutatingPattern =
     SetLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))

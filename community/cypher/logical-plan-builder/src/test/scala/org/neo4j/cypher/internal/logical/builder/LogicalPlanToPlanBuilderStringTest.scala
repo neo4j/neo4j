@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
@@ -329,6 +330,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.setNodeProperty("n", "n.prop", "i")
       .|.create(createNode("n"))
       .|.argument("i")
+      .allNodeScan("x")
+      .build())
+
+  testPlan("foreach",
+    new TestPlanBuilder()
+      .produceResults("x", "list")
+      .foreach("i", "[1, 2, 3]",
+        Seq(createPattern(nodes = Seq(createNode("n"))), setNodeProperty("n", "prop", "i")))
       .allNodeScan("x")
       .build())
 
@@ -1067,7 +1076,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       interpreter.beSilentDuring {
         // imports
         interpreter.interpret(
-          """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+          """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
@@ -1075,6 +1085,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setPropertyFromMap
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
             |import org.neo4j.cypher.internal.logical.plans._

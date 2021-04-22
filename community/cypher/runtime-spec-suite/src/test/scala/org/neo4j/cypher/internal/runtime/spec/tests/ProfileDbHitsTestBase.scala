@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -1206,6 +1207,34 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val createPropKeyHits = createCount * properties.size
     val setPropertyHits = createCount * properties.size
     createProfile.dbHits() shouldBe (createNodesHits + createLabelsHits + createPropKeyHits + setPropertyHits)
+  }
+
+  test("should profile rows and dbhits of foreach correctly") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]",
+        Seq(
+          setNodeProperty("x", "prop", "i")))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val produceResultProfile = queryProfile.operatorProfile(0)
+    val foreachProfile = queryProfile.operatorProfile(1)
+
+    foreachProfile.rows() shouldBe sizeHint
+    foreachProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ +  3 * sizeHint * costOfProperty
+    produceResultProfile.rows() shouldBe sizeHint
+    produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
   }
 
   protected def propertiesString(properties: Map[String, Any]): String = {

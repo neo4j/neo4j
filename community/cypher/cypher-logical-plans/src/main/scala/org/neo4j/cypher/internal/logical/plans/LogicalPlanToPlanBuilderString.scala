@@ -35,15 +35,18 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -168,26 +171,18 @@ object LogicalPlanToPlanBuilderString {
       case Create(_, nodes, relationships) =>
         s"Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")})"
       case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
-        def setOpToString(op: SetMutatingPattern): String = op match {
-          case SetLabelPattern(node, labelNames) =>
-            s"setLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
-          case SetNodePropertyPattern(node, propertyKey, value) =>
-            s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node, propertyKey.name, expressionStringifier(value)))})"
-          case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
-            s"setRelationshipProperty(${wrapInQuotationsAndMkString(Seq(relationship, propertyKey.name, expressionStringifier(value)))})"
-          case SetNodePropertiesFromMapPattern(idName, expression, removeOtherProps) =>
-            s"setNodePropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
-          case SetRelationshipPropertiesFromMapPattern(idName, expression, removeOtherProps) =>
-            s"setRelationshipPropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
-        }
+
 
         val nodesToCreate = createNodes.map(createNodeToString)
         val relsToCreate = createRelationships.map(createRelationshipToString)
 
-        val onMatchString = onMatch.map(setOpToString)
-        val onCreateString = onCreate.map(setOpToString)
+        val onMatchString = onMatch.map(mutationToString)
+        val onCreateString = onCreate.map(mutationToString)
 
         s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(", ")}), Seq(${onCreateString.mkString(", ")})"
+
+      case Foreach(_, variable, list, mutations) =>
+        s"${wrapInQuotations(variable)}, ${wrapInQuotations(expressionStringifier(list))}, Seq(${mutations.map(mutationToString).mkString(", ")})"
 
       case Expand(_, from, dir, types, to, relName, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
@@ -533,6 +528,25 @@ object LogicalPlanToPlanBuilderString {
   private def createRelationshipToString(rel: CreateRelationship) =  {
     val propString = rel.properties.map(p => s", Some(${wrapInQuotations(expressionStringifier(p))})").getOrElse("")
     s"createRelationship(${wrapInQuotationsAndMkString(Seq(rel.idName, rel.leftNode, rel.relType.name, rel.rightNode))}, ${rel.direction}$propString)"
+  }
+
+  private def mutationToString(op: SimpleMutatingPattern): String = op match {
+    case CreatePattern(nodes, relationships) =>
+      s"createPattern(Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")}))"
+    case SetLabelPattern(node, labelNames) =>
+      s"setLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
+    case SetNodePropertyPattern(node, propertyKey, value) =>
+      s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node, propertyKey.name, expressionStringifier(value)))})"
+    case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
+      s"setRelationshipProperty(${wrapInQuotationsAndMkString(Seq(relationship, propertyKey.name, expressionStringifier(value)))})"
+    case SetNodePropertiesFromMapPattern(idName, expression, removeOtherProps) =>
+      s"setNodePropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
+    case SetRelationshipPropertiesFromMapPattern(idName, expression, removeOtherProps) =>
+      s"setRelationshipPropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
+    case SetPropertyPattern(entityExpression, propertyKey, value) =>
+      s"setProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), propertyKey.name, expressionStringifier(value)))})"
+    case SetPropertiesFromMapPattern(entityExpression, map, removeOtherProps) =>
+      s"setPropertyFromMap(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(map)))}, $removeOtherProps)"
   }
 
   private def pointDistanceIndexSeek(idName: String,
