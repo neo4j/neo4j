@@ -614,7 +614,10 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def projectStrs(map: Map[String, Expression]): String = wrapInQuotationsAndMkString(map.map {
-    case (alias, expr) => s"${expressionStringifier(expr)} AS $alias"
+    case (alias, expr) => {
+      val escapedAlias = if (alias.matches("\\w+")) alias else s"`$alias`"
+      s"${expressionStringifier(expr)} AS $escapedAlias"
+    }
   })
 
   private def wrapInQuotations(c: String): String = "\"" + c + "\""
