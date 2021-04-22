@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -59,6 +60,11 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
         Config config = dependencies.getConfig();
         var readOnlyChecker = dependencies.readOnlyChecker();
+        if ( OperationalMode.SINGLE != context.dbmsInfo().operationalMode )
+        {
+            // if running as part of cluster indexes should be writable to allow catchup process to accept transactions
+            readOnlyChecker = DatabaseReadOnlyChecker.writable();
+        }
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
         PageCacheTracer pageCacheTracer = dependencies.pageCacheTracer();
         DatabaseLayout databaseLayout = dependencies.databaseLayout();
