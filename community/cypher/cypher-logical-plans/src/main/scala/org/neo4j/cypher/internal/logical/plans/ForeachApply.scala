@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * ForeachApply is a side-effect type apply, which operates on a list value. Each left row is used to compute a
  * list, and each value in this list applied as the argument to right. Left rows are produced unchanged.
  *
+ * {{{
  * for ( leftRow <- left)
  *   list <- expression.evaluate( leftRow )
  *   for ( value <- list )
@@ -34,6 +35,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *       // just consume
  *
  *   produce leftRow
+ * }}}
  */
 case class ForeachApply(override val left: LogicalPlan, override val right: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
   extends LogicalBinaryPlan(idGen) with ApplyPlan {

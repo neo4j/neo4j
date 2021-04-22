@@ -45,7 +45,9 @@ sealed trait NoSymbols {
   override def coveredIds = Set.empty[String]
 }
 
-sealed trait SetMutatingPattern extends MutatingPattern with NoSymbols
+sealed trait SimpleMutatingPattern extends MutatingPattern
+
+sealed trait SetMutatingPattern extends SimpleMutatingPattern with NoSymbols
 
 case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern
   with HasMappableExpressions[SetPropertyPattern] {
@@ -91,7 +93,7 @@ case class RemoveLabelPattern(idName: String, labels: Seq[LabelName]) extends Mu
   override def dependencies: Set[String] = Set(idName)
 }
 
-case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelationship]) extends MutatingPattern with HasMappableExpressions[CreatePattern] {
+case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelationship]) extends SimpleMutatingPattern with HasMappableExpressions[CreatePattern] {
   override def coveredIds: Set[String] = {
     val builder = Set.newBuilder[String]
     for (node <- nodes)

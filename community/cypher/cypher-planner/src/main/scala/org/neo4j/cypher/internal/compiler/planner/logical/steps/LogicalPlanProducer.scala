@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
@@ -122,6 +123,7 @@ import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -1395,6 +1397,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val (rewrittenExpression, rewrittenLeft) = PatternExpressionSolver.ForSingle.solve(left, expression, context)
     val plan = ForeachApply(rewrittenLeft, innerUpdates, pattern.variable, rewrittenExpression)
     val providedOrder = providedOrderOfApply(rewrittenLeft, innerUpdates)
+    annotate(plan, solved, providedOrder, context)
+  }
+
+  def planForeach(inner: LogicalPlan,
+                  pattern: ForeachPattern,
+                  context: LogicalPlanningContext,
+                  expression: Expression,
+                  mutations: Seq[SimpleMutatingPattern]): LogicalPlan = {
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val (rewrittenExpression, rewrittenLeft) = PatternExpressionSolver.ForSingle.solve(inner, expression, context)
+    val plan = Foreach(rewrittenLeft, pattern.variable, rewrittenExpression, mutations)
+    val providedOrder = providedOrderOfUpdate(plan, inner)
     annotate(plan, solved, providedOrder, context)
   }
 

@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
@@ -52,12 +53,12 @@ import org.neo4j.exceptions.InternalException
  */
 case object PlanUpdates extends UpdatesPlanner {
 
-  private def computePlan(plan: LogicalPlan, query: SinglePlannerQuery, firstPlannerQuery: Boolean, context: LogicalPlanningContext) = {
+  private def computePlan(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext) = {
     var updatePlan = plan
     val iterator = query.queryGraph.mutatingPatterns.iterator
     val orderForPlanning = InterestingOrderConfig(query.interestingOrder)
     while(iterator.hasNext) {
-      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery, orderForPlanning, context)
+      updatePlan = planUpdate(updatePlan, iterator.next(), orderForPlanning, context)
     }
     updatePlan
   }
@@ -70,7 +71,7 @@ case object PlanUpdates extends UpdatesPlanner {
     //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
       Eagerness.tailReadWriteEagerizeNonRecursive(in, query, context)
 
-    val updatePlan = computePlan(plan, query, firstPlannerQuery, context)
+    val updatePlan = computePlan(plan, query, context)
 
     if (firstPlannerQuery)
       Eagerness.headWriteReadEagerize(updatePlan, query, context)
@@ -81,7 +82,6 @@ case object PlanUpdates extends UpdatesPlanner {
 
   private def planUpdate(source: LogicalPlan,
                          pattern: MutatingPattern,
-                         first: Boolean,
                          interestingOrderConfig: InterestingOrderConfig,
                          context: LogicalPlanningContext) = {
 
@@ -96,9 +96,18 @@ case object PlanUpdates extends UpdatesPlanner {
     pattern match {
       //FOREACH
       case foreach: ForeachPattern =>
-        val innerLeaf = context.logicalPlanProducer.planArgument(Set.empty, Set.empty, source.availableSymbols + foreach.variable, context)
-        val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
-        context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context, foreach.expression)
+
+        val allPatterns = foreach.innerUpdates.allPlannerQueries.flatMap(_.queryGraph.mutatingPatterns)
+        val sideEffects = allPatterns.collect {
+          case s: SimpleMutatingPattern => s
+        }
+        if (allPatterns.length == sideEffects.length) {
+          context.logicalPlanProducer.planForeach(source, foreach, context, foreach.expression, sideEffects)
+        } else {
+          val innerLeaf = context.logicalPlanProducer.planArgument(Set.empty, Set.empty, source.availableSymbols + foreach.variable, context)
+          val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
+          context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context, foreach.expression)
+        }
 
       //CREATE ()
       //CREATE (a)-[:R]->(b)
