@@ -24,12 +24,9 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.UserRepository;
-import org.neo4j.util.Preconditions;
 
-import static java.lang.String.format;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_35;
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
 
 /**
  * This is the UserSecurityComponent version for Neo4j 3.5
@@ -78,10 +75,8 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
     }
 
     @Override
-    public void upgradeSecurityGraph( Transaction tx, KnownCommunitySecurityComponentVersion latest ) throws Exception
+    public void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception
     {
-        Preconditions.checkState( latest.version == LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION,
-                format("Latest version should be %s but was %s", LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION, latest.version ));
         userRepository.start();
         ListSnapshot<User> users = userRepository.getSnapshot();
 
@@ -100,6 +95,5 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
         {
             log.info( "No users migrated from auth file into system graph." );
         }
-        setVersionProperty( tx, latest.version );
     }
 }

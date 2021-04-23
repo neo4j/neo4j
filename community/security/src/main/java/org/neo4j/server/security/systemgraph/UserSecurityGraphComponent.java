@@ -53,9 +53,13 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     {
         super( config );
         this.log = log;
-        knownUserSecurityComponentVersions.add( new CommunitySecurityComponentVersion_0_35( log, userRepository ) );
-        knownUserSecurityComponentVersions.add( new CommunitySecurityComponentVersion_1_40( log, initialPasswordRepo ) );
-        knownUserSecurityComponentVersions.add( new CommunitySecurityComponentVersion_2_41( log, initialPasswordRepo ) );
+        KnownCommunitySecurityComponentVersion version0 = new CommunitySecurityComponentVersion_0_35( log, userRepository );
+        KnownCommunitySecurityComponentVersion version1 = new CommunitySecurityComponentVersion_1_40( log, initialPasswordRepo, version0 );
+        KnownCommunitySecurityComponentVersion version2 = new CommunitySecurityComponentVersion_2_41( log, initialPasswordRepo, version1 );
+
+        knownUserSecurityComponentVersions.add( version0 );
+        knownUserSecurityComponentVersions.add( version1 );
+        knownUserSecurityComponentVersions.add( version2 );
     }
 
     @Override
@@ -134,7 +138,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
                 if ( currentVersion.migrationSupported() )
                 {
                     log.info( "Upgrading security graph to latest version" );
-                    currentVersion.upgradeSecurityGraph( tx, knownUserSecurityComponentVersions.latestComponentVersion() );
+                    knownUserSecurityComponentVersions.latestComponentVersion().upgradeSecurityGraph( tx, currentVersion.version );
                 }
                 else
                 {
