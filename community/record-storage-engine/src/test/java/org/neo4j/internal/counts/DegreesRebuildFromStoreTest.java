@@ -21,6 +21,7 @@ package org.neo4j.internal.counts;
 
 import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -34,7 +35,10 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
@@ -46,6 +50,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -67,6 +72,56 @@ class DegreesRebuildFromStoreTest
 
     @Inject
     private RandomRule random;
+
+    @Test
+    void skipNotUsedRecordsOnDegreeStoreRebuild() throws Exception
+    {
+        // given a dataset containing mixed sparse and dense nodes with relationships in random directions,
+        //       where some chains have been marked as having external degrees
+        int denseThreshold = dense_node_threshold.defaultValue();
+        DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
+        int[] relationshipTypes;
+        MutableLongLongMap expectedDegrees = LongLongMaps.mutable.empty();
+        try ( Lifespan life = new Lifespan() )
+        {
+            RecordStorageEngine storageEngine = openStorageEngine( layout, denseThreshold );
+            relationshipTypes = createRelationshipTypes( storageEngine );
+            life.add( storageEngine );
+            generateData( storageEngine, denseThreshold, relationshipTypes );
+            storageEngine.relationshipGroupDegreesStore().accept(
+                    ( groupId, direction, degree ) -> expectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree ), NULL );
+            assertThat( expectedDegrees.isEmpty() ).isFalse();
+
+            RelationshipGroupStore groupStore = storageEngine.testAccessNeoStores().getRelationshipGroupStore();
+            long highId = groupStore.getHighId();
+            assertThat( highId ).isGreaterThan( 1 );
+            for ( int i = 10; i < highId; i++ )
+            {
+                RelationshipGroupRecord record = groupStore.getRecord( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, NULL );
+                record.setInUse( false );
+                groupStore.updateRecord( record, NULL );
+            }
+            storageEngine.flushAndForce( NULL );
+        }
+
+        // when
+        directory.getFileSystem().deleteFile( layout.relationshipGroupDegreesStore() );
+        try ( Lifespan life = new Lifespan() )
+        {
+            RecordStorageEngine storageEngine = assertDoesNotThrow( () -> life.add( openStorageEngine( layout, denseThreshold ) ) );
+
+            // then
+            storageEngine.relationshipGroupDegreesStore().accept( ( groupId, direction, degree ) ->
+            {
+                long key = combinedKeyOnGroupAndDirection( groupId, direction );
+                assertThat( expectedDegrees.containsKey( key ) ).isTrue();
+                long expectedDegree = expectedDegrees.get( key );
+                expectedDegrees.remove( key );
+                assertThat( degree ).isEqualTo( expectedDegree );
+            }, NULL );
+            assertThat( expectedDegrees.size() ).isGreaterThan( 0 );
+        }
+    }
 
     @Test
     void shouldRebuildDegreesStore() throws Exception
@@ -105,6 +160,7 @@ class DegreesRebuildFromStoreTest
                 assertThat( degree ).isEqualTo( expectedDegree );
             }, NULL );
         }
+        assertThat( expectedDegrees.size() ).isEqualTo( 0 );
     }
 
     private int[] createRelationshipTypes( RecordStorageEngine storageEngine )
