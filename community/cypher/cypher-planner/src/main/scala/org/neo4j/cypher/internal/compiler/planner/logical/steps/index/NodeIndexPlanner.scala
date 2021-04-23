@@ -122,10 +122,9 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
     }
 
     val result = resultFromPropertyPredicates ++ resultFromLabelPredicates
-    if (result.isEmpty) {
-      val seekableIdentifiers: Set[Variable] = findNonSeekableIdentifiers(qg.selections.flatPredicates, context)
-      DynamicPropertyNotifier.process(seekableIdentifiers, IndexLookupUnfulfillableNotification, qg, context)
-    }
+
+    issueNotifications(result, qg, context)
+
     result
   }
 
@@ -238,23 +237,6 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
 
   }
 
-  private def findNonSeekableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] =
-    predicates.flatMap {
-      // n['some' + n.prop] IN [ ... ]
-      case AsDynamicPropertyNonSeekable(nonSeekableId)
-        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
-
-      // n['some' + n.prop] STARTS WITH "prefix%..."
-      case AsStringRangeNonSeekable(nonSeekableId)
-        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
-
-      // n['some' + n.prop] <|<=|>|>= value
-      case AsValueRangeNonSeekable(nonSeekableId)
-        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
-
-      case _ => None
-    }.toSet
-
   private def producePlansForSpecificVariable(idName: String,
                                               indexCompatiblePredicates: Set[IndexCompatiblePredicate],
                                               labelPredicates: Set[HasLabels],
@@ -271,10 +253,7 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
     plans.toSet
   }
 
-  private def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
-    context.planContext.indexesGetForLabel(labelId)
-
-  private[steps] def findIndexMatches(
+  private def findIndexMatches(
     variableName: String,
     indexCompatiblePredicates: Set[IndexCompatiblePredicate],
     labelPredicates: Set[HasLabels],
@@ -297,6 +276,9 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
       indexDescriptor,
     )
   } yield indexMatch
+
+  private def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
+    context.planContext.indexesGetForLabel(labelId)
 
   /**
    * Find and group all predicates, where one PredicatesForIndex contains one predicate for each indexed property, in the right order.
@@ -340,6 +322,31 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
 
     PredicatesForIndex(matchingPredicates, providedOrder, indexOrder)
   }
+
+  private def issueNotifications(result: Set[LeafPlansForVariable], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
+    if (result.isEmpty) {
+      val seekableIdentifiers: Set[Variable] = findNonSeekableIdentifiers(qg.selections.flatPredicates, context)
+      DynamicPropertyNotifier.process(seekableIdentifiers, IndexLookupUnfulfillableNotification, qg, context)
+    }
+  }
+
+  private def findNonSeekableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] =
+    predicates.flatMap {
+      // n['some' + n.prop] IN [ ... ]
+      case AsDynamicPropertyNonSeekable(nonSeekableId)
+        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
+
+      // n['some' + n.prop] STARTS WITH "prefix%..."
+      case AsStringRangeNonSeekable(nonSeekableId)
+        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
+
+      // n['some' + n.prop] <|<=|>|>= value
+      case AsValueRangeNonSeekable(nonSeekableId)
+        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
+
+      case _ => None
+    }.toSet
+
 
 }
 
