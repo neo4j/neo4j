@@ -1191,7 +1191,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .create(createNodeWithProperties("n", labels, propertiesString(properties)))
-      .unwind(s"${Range(0, createCount).mkString("[",",","]")} AS i")
+      .unwind(s"${Range(0, createCount).mkString("[", ",", "]")} AS i")
       .argument()
       .build(readOnly = false)
 
@@ -1207,6 +1207,32 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val createPropKeyHits = createCount * properties.size
     val setPropertyHits = createCount * properties.size
     createProfile.dbHits() shouldBe (createNodesHits + createLabelsHits + createPropKeyHits + setPropertyHits)
+  }
+
+  test("should profile rows and dbhits of merge correctly") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .merge(nodes = Seq(createNode("x")), onMatch = Seq(setNodeProperty("x", "prop", "42")))
+      .nodeByLabelScan("x", "A")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val produceResultProfile = queryProfile.operatorProfile(0)
+    val mergeProfile = queryProfile.operatorProfile(1)
+
+    mergeProfile.rows() shouldBe sizeHint
+    mergeProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ +  sizeHint * costOfProperty
+    produceResultProfile.rows() shouldBe sizeHint
+    produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
   }
 
   test("should profile rows and dbhits of foreach correctly") {
