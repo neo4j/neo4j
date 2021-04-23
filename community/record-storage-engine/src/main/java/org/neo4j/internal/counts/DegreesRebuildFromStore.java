@@ -76,7 +76,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
             long highGroupId = groupStore.getHighId();
             for ( long id = groupStore.getNumberOfReservedLowIds(); id < highGroupId; id++ )
             {
-                groupStore.getRecordByCursor( id, groupRecord, RecordLoad.LENIENT_NORMAL, groupCursor );
+                groupStore.getRecordByCursor( id, groupRecord, RecordLoad.LENIENT_CHECK, groupCursor );
                 if ( groupRecord.inUse() &&
                         (groupRecord.hasExternalDegreesOut() || groupRecord.hasExternalDegreesIn() || groupRecord.hasExternalDegreesLoop()) )
                 {
