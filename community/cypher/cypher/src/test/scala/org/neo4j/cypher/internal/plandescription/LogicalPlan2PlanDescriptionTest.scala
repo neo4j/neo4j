@@ -100,6 +100,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -172,6 +173,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
@@ -955,10 +957,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("Merge") {
-    val properties = MapExpression(Seq(
-      (key("y"), number("1")),
-      (key("crs"), stringLiteral("cartesian"))))(pos)
-
     assertGood(
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)), Seq.empty, Seq.empty), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x), (x)<-[r:R]-(y)"))), Set("a")))
@@ -967,7 +965,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
         Seq(SetLabelPattern("x", Seq(label("NEW")))), Seq.empty), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x:NEW"))), Set("a")))
-
 
     assertGood(
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
@@ -978,6 +975,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
         Seq(SetLabelPattern("x", Seq(label("ON_MATCH")))), Seq(SetLabelPattern("x", Seq(label("ON_CREATE"))))), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x:ON_MATCH", "ON CREATE SET x:ON_CREATE"))), Set("a")))
+  }
+
+  test("foreach") {
+    assertGood(
+      attach(Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(SetNodePropertyPattern("x", PropertyKeyName("prop")(InputPosition.NONE), stringLiteral("foo")))), 32.2),
+      planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "SET x.prop = \"foo\""))), Set("a")))
   }
 
   test("Delete") {

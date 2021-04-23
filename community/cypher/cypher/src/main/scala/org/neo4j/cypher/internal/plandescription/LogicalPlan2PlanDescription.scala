@@ -41,16 +41,19 @@ import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
@@ -92,8 +95,8 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
@@ -111,6 +114,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
@@ -592,21 +596,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables, withRawCardinalities)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
-        def setOpDetails(setOp: SetMutatingPattern): PrettyString = setOp match {
-          case SetLabelPattern(node, labelNames) =>
-            val prettyId = asPrettyString(node)
-            val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
-            pretty"$prettyId$prettyLabels"
-          case SetNodePropertyPattern(node, propertyKey, value) =>
-            setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)
-          case SetNodePropertiesFromMapPattern(node, value, removeOtherProps) =>
-            setPropertyInfo(asPrettyString(node),  value, removeOtherProps)
-          case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
-            setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)
-          case SetRelationshipPropertiesFromMapPattern(relationship, value, removeOtherProps) =>
-            setPropertyInfo(asPrettyString(relationship),  value, removeOtherProps)
-        }
-
         val createNodesPretty = createNodes.map {
           case CreateNode(node, labels, _) =>
             pretty"(${asPrettyString(node)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
@@ -616,8 +605,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
             expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
         }
         val details: Seq[PrettyString] = Seq(pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}") ++
-          (if (onMatch.nonEmpty) Seq(pretty"ON MATCH SET ${onMatch.map(setOpDetails).mkPrettyString(", ")}") else Seq.empty) ++
-          (if (onCreate.nonEmpty) Seq(pretty"ON CREATE SET ${onCreate.map(setOpDetails).mkPrettyString(", ")}") else Seq.empty)
+          (if (onMatch.nonEmpty) Seq(pretty"ON MATCH ${onMatch.map(mutatingPatternString).mkPrettyString(", ")}") else Seq.empty) ++
+          (if (onCreate.nonEmpty) Seq(pretty"ON CREATE ${onCreate.map(mutatingPatternString).mkPrettyString(", ")}") else Seq.empty)
 
         PlanDescriptionImpl(id, "Merge", children, Seq(Details(details)), variables, withRawCardinalities)
 
@@ -754,6 +743,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case PreserveOrder(_) =>
         PlanDescriptionImpl(id, "PreserveOrder", children, Seq.empty[Argument], variables, withRawCardinalities)
 
+      case Foreach(_, variable, expression, mutations) =>
+        val details = pretty"${asPrettyString(variable)} IN ${asPrettyString(expression)}" +: mutations.map(mutatingPatternString)
+        PlanDescriptionImpl(id, "Foreach", children, Seq(Details(details)), variables, withRawCardinalities)
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
@@ -1209,5 +1201,35 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     val setString = if (removeOtherProps) pretty"=" else pretty"+="
 
     pretty"$idName $setString ${asPrettyString(expression)}"
+  }
+
+  def mutatingPatternString(setOp: SimpleMutatingPattern): PrettyString = setOp match {
+    case CreatePattern(nodes, relationships) =>
+      val createNodesPretty = nodes.map {
+        case CreateNode(node, labels, _) =>
+          pretty"(${asPrettyString(node)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
+      }
+      val createRelsPretty = relationships.map {
+        case CreateRelationship(relationship, startNode, typ, endNode, direction, _) =>
+          expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
+      }
+      pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}"
+    case SetLabelPattern(node, labelNames) =>
+      val prettyId = asPrettyString(node)
+      val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
+      pretty"SET $prettyId$prettyLabels"
+    case SetNodePropertyPattern(node, propertyKey, value) =>
+      pretty"SET ${setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
+    case SetNodePropertiesFromMapPattern(node, value, removeOtherProps) =>
+      pretty"SET ${setPropertyInfo(asPrettyString(node),  value, removeOtherProps)}"
+    case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
+      pretty" SET ${setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
+    case SetRelationshipPropertiesFromMapPattern(relationship, value, removeOtherProps) =>
+      pretty" SET ${setPropertyInfo(asPrettyString(relationship),  value, removeOtherProps)}"
+    case SetPropertyPattern(entity, propertyKey, expression) =>
+      val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(propertyKey.name)}"
+      pretty" SET ${setPropertyInfo(entityString, expression, true)}"
+    case SetPropertiesFromMapPattern(entity, expression, removeOtherProps) =>
+      pretty" SET ${setPropertyInfo(asPrettyString(entity), expression, removeOtherProps)}"
   }
 }
