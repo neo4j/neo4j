@@ -57,6 +57,8 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -645,6 +647,20 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // Delete the old counts store
             fileSystem.deleteFile( directoryLayout.databaseDirectory().resolve( "neostore.counts.db.a" ) );
             fileSystem.deleteFile( directoryLayout.databaseDirectory().resolve( "neostore.counts.db.b" ) );
+        }
+
+        // The addition of the group degrees store is additive and so if upgrading to a version where it's now present ...
+        if ( !oldFormat.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE ) && newFormat.hasCapability( RecordStorageCapability.GROUP_DEGREES_STORE ) )
+        {
+            // ... then just create an empty such store, so that there will be no rebuild triggered on the first startup (which would not find anything anyway)
+            try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
+                    directoryLayout.relationshipGroupDegreesStore(), fileSystem, immediate(), GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD, writable(),
+                    cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, directoryLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
+                    PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( "empty group degrees store rebuild" ) )
+            {
+                groupDegreesStore.start( cursorTracer, memoryTracker );
+                groupDegreesStore.checkpoint( cursorTracer );
+            }
         }
     }
 

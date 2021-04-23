@@ -47,6 +47,9 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -85,6 +88,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionId;
@@ -102,6 +106,7 @@ import static java.util.Collections.singleton;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -218,6 +223,29 @@ class RecordStorageMigratorIT
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN starting the new store should be successful
+        assertThat( testDirectory.getFileSystem().fileExists( databaseLayout.relationshipGroupDegreesStore() ) ).isTrue();
+        GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder noRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
+        {
+            @Override
+            public void rebuild( RelationshipGroupDegreesStore.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            {
+                throw new IllegalStateException( "Rebuild should not be required" );
+            }
+
+            @Override
+            public long lastCommittedTxId()
+            {
+                throw new IllegalStateException( "Rebuild should not be required" );
+            }
+        };
+        try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
+                databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(), immediate(), noRebuildAssertion, writable(),
+                PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue() ) )
+        {
+            // The rebuild would happen here in start and will throw exception (above) if invoked
+            groupDegreesStore.start( NULL, INSTANCE );
+        }
+
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
                 logService.getInternalLogProvider(), PageCacheTracer.NULL, writable() );
