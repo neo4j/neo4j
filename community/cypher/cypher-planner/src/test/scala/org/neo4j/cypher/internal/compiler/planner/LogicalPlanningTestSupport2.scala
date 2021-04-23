@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCac
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -113,8 +113,6 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   val deduplicateNames: Boolean = true
   val innerVariableNamer: InnerVariableNamer = new GeneratingNamer
 
-  val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
-
   val configurationThatForcesCompacting: CypherPlannerConfiguration = {
     val builder = Config.newBuilder()
     //NOTE: 10 is the minimum allowed value
@@ -167,6 +165,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
                innerVariableNamer: InnerVariableNamer = innerVariableNamer,
                deduplicateNames: Boolean = deduplicateNames,
+               cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults(),
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
     val p1 = parsing(ParsingConfig(innerVariableNamer, literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
@@ -188,6 +187,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val deduplicateNames: Boolean = LogicalPlanningTestSupport2.deduplicateNames
   val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
   var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
+  val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
 
   val realConfig: RealLogicalPlanningConfiguration = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
@@ -195,7 +195,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def pipeLine(deduplicateNames: Boolean = deduplicateNames
               ): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
-    pushdownPropertyReads, innerVariableNamer, deduplicateNames
+    pushdownPropertyReads, innerVariableNamer, deduplicateNames, cypherCompilerConfig
   )
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
@@ -221,7 +221,15 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         config.labelsById.get(labelId).toIterator.flatMap(label =>
           config.indexes.collect {
-            case (indexDef, indexType) if indexDef.label == label =>
+            case (indexDef@IndexDef(IndexDefinition.EntityType.Node(labelOrRelType), _), _) if labelOrRelType == label =>
+              newIndexDescriptor(indexDef, config.indexes(indexDef))
+          })
+      }
+
+      override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+        config.relTypesById.get(relTypeId).toIterator.flatMap(relType =>
+          config.indexes.collect {
+            case (indexDef@IndexDef(IndexDefinition.EntityType.Relationship(labelOrRelType), _), _) if labelOrRelType == relType =>
               newIndexDescriptor(indexDef, config.indexes(indexDef))
           })
       }
@@ -229,7 +237,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val label = config.labelsById(labelId)
         config.indexes.collect {
-          case (indexDef, indexType) if indexType.isUnique && indexDef.label == label =>
+          case (indexDef@IndexDef(IndexDefinition.EntityType.Node(labelOrRelType), _), indexType) if indexType.isUnique && labelOrRelType == label =>
             newIndexDescriptor(indexDef, config.indexes(indexDef))
         }.iterator
       }
@@ -239,9 +247,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
         val orderCapability: OrderCapability = _ => indexType.withOrdering
-        val entityType = IndexDescriptor.EntityType.Node(
-          semanticTable.resolvedLabelNames(indexDef.label)
-        )
+        val entityType = indexDef.entityType match {
+          case IndexDefinition.EntityType.Node(label) => IndexDescriptor.EntityType.Node(
+            semanticTable.resolvedLabelNames(label))
+          case IndexDefinition.EntityType.Relationship(relType) => IndexDescriptor.EntityType.Relationship(
+            semanticTable.resolvedRelTypeNames(relType))
+        }
         IndexDescriptor(
           entityType,
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
@@ -263,14 +274,35 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def indexExistsForLabel(labelId: Int): Boolean = {
         val labelName = config.labelsById(labelId)
-        config.indexes.keys.exists(_.label == labelName)
+        config.indexes.keys.exists {
+          case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _) => true
+          case _ => false
+        }
+      }
+
+      override def indexExistsForRelType(relTypeId: Int): Boolean = {
+        val relationshipTypeName = config.relTypesById(relTypeId)
+        config.indexes.keys.exists {
+          case IndexDef(IndexDefinition.EntityType.Relationship(`relationshipTypeName`), _) => true
+          case _ => false
+        }
       }
 
       override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-        config.indexes.contains(IndexDef(labelName, propertyKey))
+        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKey))
+
+
+      override def indexExistsForRelTypeAndProperties(relTypeName: String,
+                                                      propertyKey: Seq[String]): Boolean =
+        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKey))
 
       override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        val indexDef = IndexDef(labelName, propertyKeys)
+        val indexDef = IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKeys)
+        config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
+      }
+
+      override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKeys)
         config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
       }
 
@@ -328,7 +360,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         innerVariableNamer = innerVariableNamer,
         idGen = idGen,
         executionModel = ExecutionModel.default,
-        debugOptions = CypherDebugOptions.default)
+        debugOptions = CypherDebugOptions.default,
+        enablePlanningRelationshipIndexes = cypherCompilerConfig.enablePlanningRelationshipIndexes,
+      )
       f(config, ctx)
     }
 
@@ -350,7 +384,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         innerVariableNamer = innerVariableNamer,
         idGen = idGen,
         executionModel = ExecutionModel.default,
-        debugOptions = CypherDebugOptions.default)
+        debugOptions = CypherDebugOptions.default,
+        enablePlanningRelationshipIndexes = cypherCompilerConfig.enablePlanningRelationshipIndexes,
+      )
       f(config, ctx)
     }
   }

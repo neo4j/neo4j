@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
-import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 import org.scalatest.prop.TableDrivenPropertyChecks.Table
+import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 import org.scalatest.prop.TableFor5
 
 class CypherPlannerTest extends CypherFunSuite {
@@ -76,7 +76,7 @@ class CypherPlannerTest extends CypherFunSuite {
   test("should use correct solvers") {
     forAll(configOptions) {
       (planner: CypherPlannerOption, componentConnector: CypherConnectComponentsPlannerOption, expectedMaxTableSize: Int, expectedIterationDurationLimit: Long, componentConnectorAssertion: (Int, Long) => JoinDisconnectedQueryGraphComponents => Assertion) =>
-        val qgSolver = CypherPlanner.createQueryGraphSolver(cypherCompilerConfig, planner, componentConnector, mock[Monitors])
+        val qgSolver = CypherPlanner.createQueryGraphSolver(CypherPlannerConfiguration.defaults(), planner, componentConnector, mock[Monitors])
 
         qgSolver.singleComponentSolver.solverConfig.maxTableSize should equal(expectedMaxTableSize)
         qgSolver.singleComponentSolver.solverConfig.iterationDurationLimit should equal(expectedIterationDurationLimit)

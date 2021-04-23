@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import java.util
-
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.util.dbstructure.DbStructureCollector
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 
+import java.util
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable
 
@@ -68,12 +68,13 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
       override def procedureSignatures: Set[ProcedureSignature] = Set.empty
       override val knownLabels: Set[String] = resolvedLabels.keys.toSet
       override val labelsById: Map[Int, String] = resolvedLabels.map(pair => pair._2.id -> pair._1).toMap
+      override val relTypesById: Map[Int, String] = resolvedRelTypeNames.map(pair => pair._2.id -> pair._1).toMap
     }
   }
 
   private def indexSet(indices: util.Iterator[collection.Pair[Array[String], Array[String]]]): Map[IndexDef, IndexType] =
   //We use a zero index here as to not bleed multi-token descriptors into cypher.
-    indices.asScala.map { pair => IndexDef(pair.first().head, pair.other().toSeq) -> new IndexType }.toMap
+    indices.asScala.map { pair => IndexDef(IndexDefinition.EntityType.Node(pair.first().head), pair.other().toSeq) -> new IndexType }.toMap
 
   private def resolveTokens[T](iterator: util.Iterator[collection.Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]

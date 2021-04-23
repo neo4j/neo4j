@@ -61,13 +61,15 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   innerVariableNamer: InnerVariableNamer,
                                   /*
                                    * A set of all properties over which aggregation is performed,
-                                   * where we potentially could use a NodeIndexScan.
+                                   * where we potentially could use an IndexScan.
                                    * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
                                    */
                                   aggregatingProperties: Set[(String, String)] = Set.empty,
                                   idGen: IdGen,
                                   executionModel: ExecutionModel,
-                                  debugOptions: CypherDebugOptions) {
+                                  debugOptions: CypherDebugOptions,
+                                  enablePlanningRelationshipIndexes: Boolean = false
+                                 ) {
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =
     copy(input = input.withLimitSelectivityConfig(cfg))

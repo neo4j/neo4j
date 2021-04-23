@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -63,6 +64,11 @@ trait FakeIndexAndConstraintManagement {
     IndexModifier(indexes(indexDef))
   }
 
+  def relationshipIndexOn(relationshipType: String, properties: String*): IndexModifier = {
+    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE)
+    IndexModifier(indexes(indexDef))
+  }
+
   def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
     val indexDef = indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE)
     IndexModifier(indexes(indexDef))
@@ -70,7 +76,14 @@ trait FakeIndexAndConstraintManagement {
 
   def indexOn(label: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability): IndexDef = {
     val indexType = new IndexType(isUnique, withValues, providesOrder)
-    val indexDef = IndexDef(label, properties)
+    val indexDef = IndexDef(IndexDefinition.EntityType.Node(label), properties)
+    indexes += indexDef -> indexType
+    indexDef
+  }
+
+  def relationshipIndexOn(relationshipType: String, properties: Seq[String], isUnique: Boolean, withValues: Boolean, providesOrder: IndexOrderCapability): IndexDef = {
+    val indexType = new IndexType(isUnique, withValues, providesOrder)
+    val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), properties)
     indexes += indexDef -> indexType
     indexDef
   }
@@ -107,8 +120,19 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   }
 
   lazy val labelsById: Map[Int, String] = {
-    val indexed = indexes.keys.map(_.label).toSeq
+    val indexed = indexes.keys.collect {
+      case IndexDef(IndexDefinition.EntityType.Node(label), _) => label
+    }.toSeq
     val known = knownLabels.toSeq
+    val indexedThenKnown = (indexed ++ known).distinct
+    indexedThenKnown.zipWithIndex.map(_.swap).toMap
+  }
+
+  lazy val relTypesById: Map[Int, String] = {
+    val indexed = indexes.keys.collect {
+      case IndexDef(IndexDefinition.EntityType.Relationship(relationshipType), _) => relationshipType
+    }.toSeq
+    val known = knownRelationships.toSeq
     val indexedThenKnown = (indexed ++ known).distinct
     indexedThenKnown.zipWithIndex.map(_.swap).toMap
   }

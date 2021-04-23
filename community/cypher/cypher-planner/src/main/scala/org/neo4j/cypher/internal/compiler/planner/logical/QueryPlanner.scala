@@ -54,6 +54,21 @@ case object QueryPlanner
   override def phase = LOGICAL_PLANNING
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
+    val logicalPlanningContext = getLogicalPlanningContext(from, context)
+
+    // Not using from.returnColumns, since they are the original ones given by the user,
+    // whereas the one in the statement might have been rewritten and contain the variables
+    // that will actually be available to ProduceResults
+    val produceResultColumns = from.statement().returnColumns.map(_.name)
+    val logicalPlan = plan(from.query, logicalPlanningContext, produceResultColumns)
+
+    from.copy(
+      maybePeriodicCommit = Some(from.query.periodicCommit),
+      maybeLogicalPlan = Some(logicalPlan),
+      maybeSemanticTable = Some(logicalPlanningContext.semanticTable))
+  }
+
+  def getLogicalPlanningContext(from: LogicalPlanState, context: PlannerContext): LogicalPlanningContext = {
     val printCostComparisons = context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
     val costComparisonListener =
@@ -64,7 +79,7 @@ case object QueryPlanner
 
     val planningAttributes = from.planningAttributes
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
-    val logicalPlanningContext = LogicalPlanningContext(
+    LogicalPlanningContext(
       planContext = context.planContext,
       logicalPlanProducer = logicalPlanProducer,
       metrics = getMetricsFrom(context),
@@ -83,18 +98,8 @@ case object QueryPlanner
       idGen = context.logicalPlanIdGen,
       executionModel = context.executionModel,
       debugOptions = context.debugOptions,
+      enablePlanningRelationshipIndexes = context.config.enablePlanningRelationshipIndexes
     )
-
-    // Not using from.returnColumns, since they are the original ones given by the user,
-    // whereas the one in the statement might have been rewritten and contain the variables
-    // that will actually be available to ProduceResults
-    val produceResultColumns = from.statement().returnColumns.map(_.name)
-    val logicalPlan = plan(from.query, logicalPlanningContext, produceResultColumns)
-
-    from.copy(
-      maybePeriodicCommit = Some(from.query.periodicCommit),
-      maybeLogicalPlan = Some(logicalPlan),
-      maybeSemanticTable = Some(logicalPlanningContext.semanticTable))
   }
 
   private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.inverseCostEnabled) {
