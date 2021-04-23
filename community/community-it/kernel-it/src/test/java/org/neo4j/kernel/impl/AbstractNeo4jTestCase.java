@@ -121,6 +121,19 @@ public abstract class AbstractNeo4jTestCase
         return inUse;
     }
 
+    protected static <RECORD extends AbstractBaseRecord> long lastUsedRecordId( RecordStore<RECORD> store )
+    {
+        for ( long id = store.getHighId(); id > store.getNumberOfReservedLowIds(); id-- )
+        {
+            RECORD record = store.getRecord( id, store.newRecord(), RecordLoad.FORCE, NULL );
+            if ( record.inUse() )
+            {
+                return id;
+            }
+        }
+        return 0;
+    }
+
     protected long dynamicStringRecordsInUse()
     {
         return numberOfRecordsInUse( propertyStore().getStringStore() );

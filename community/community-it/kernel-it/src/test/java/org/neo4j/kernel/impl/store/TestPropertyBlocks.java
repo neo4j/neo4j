@@ -128,6 +128,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
     {
         long inUseBefore = propertyRecordsInUse();
         Node node = createNode();
+        long offset = lastUsedRecordId( propertyStore() ) + 1; // expected first record id that will be used for this test
 
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
@@ -140,7 +141,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
         assertEquals( inUseBefore + 3, propertyRecordsInUse() );
 
-        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord( 1 );
+        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord( offset + 1 );
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
             middleRecordProps.forEach( nameAndValue ->
@@ -157,13 +158,13 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             var txNode = transaction.getNodeById( node.getId() );
             middleRecordProps.forEach( nameAndValue -> assertFalse( txNode.hasProperty( nameAndValue.getOne() ) ) );
-            getPropertiesFromRecord( 0 ).forEach( nameAndValue ->
+            getPropertiesFromRecord(  offset ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
                 assertEquals( value, txNode.removeProperty( name ) );
             } );
-            getPropertiesFromRecord( 2 ).forEach( nameAndValue ->
+            getPropertiesFromRecord( offset + 2 ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
@@ -492,6 +493,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
     {
         Node node = createNode();
         long recordsInUseAtStart = propertyRecordsInUse();
+        long offset = lastUsedRecordId( propertyStore() ) + 1; // expected first record id that will be used for this test
 
         int stuffedShortStrings = 0;
         try ( Transaction transaction = getGraphDb().beginTx() )
@@ -505,7 +507,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
         assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
 
-        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord( 1 );
+        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord( offset + 1 );
         final Pair<String, Object> secondBlockInMiddleRecord = middleRecordProps.get( 1 );
         final Pair<String, Object> thirdBlockInMiddleRecord = middleRecordProps.get( 2 );
 
@@ -556,13 +558,13 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             var txNode = transaction.getNodeById( node.getId() );
             middleRecordProps.forEach( nameAndValue -> assertFalse( txNode.hasProperty( nameAndValue.getOne() ) ) );
-            getPropertiesFromRecord( 0 ).forEach( nameAndValue ->
+            getPropertiesFromRecord( offset ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
                 assertEquals( value, txNode.removeProperty( name ) );
             } );
-            getPropertiesFromRecord( 2 ).forEach( nameAndValue ->
+            getPropertiesFromRecord( offset + 2 ).forEach( nameAndValue ->
             {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
