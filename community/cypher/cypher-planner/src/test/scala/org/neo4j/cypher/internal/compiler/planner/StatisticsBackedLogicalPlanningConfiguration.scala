@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.helpers.TokenContainer
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Cardinalities
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition.EntityType
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
@@ -131,6 +132,9 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
       final case class Relationship(relType: String) extends EntityType
     }
   }
+
+  case class ExistenceConstraintDefinition(entityType: IndexDefinition.EntityType,
+                                           propertyKey: String)
 }
 
 case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
@@ -138,7 +142,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                                                                         cardinalities: Cardinalities = Cardinalities(),
                                                                         tokens: TokenContainer = TokenContainer(),
                                                                         indexes: Seq[IndexDefinition] = Seq.empty,
-                                                                        procedures: Set[ProcedureSignature] = Set.empty
+                                                                        constraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
+                                                                        procedures: Set[ProcedureSignature] = Set.empty,
                                                                       ) {
 
   def addLabel(label: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -238,6 +243,24 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     }
     withProperties
       .copy(indexes = indexes :+ indexDef)
+  }
+
+  def addNodeExistenceConstraint(label: String,
+                                 property: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    val constraintDef = ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(label), property)
+
+    addLabel(label).addProperty(property).copy(
+      constraints = constraints :+ constraintDef
+    )
+  }
+
+  def addRelationshipExistenceConstraint(relType: String,
+                                         property: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    val constraintDef = ExistenceConstraintDefinition(IndexDefinition.EntityType.Relationship(relType), property)
+
+    addRelType(relType).addProperty(property).copy(
+      constraints = constraints :+ constraintDef
+    )
   }
 
   def addProcedure(signature: ProcedureSignature): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -362,8 +385,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def canLookupNodesByLabel: Boolean = true
 
       override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
-        // Existence and node-key constraints are not yet supported by this class.
-        Set.empty
+        constraints.collect {
+          case ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(`labelName`), property) => property
+        }.toSet
+      }
+
+      override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
+        constraints.exists {
+          case ExistenceConstraintDefinition(IndexDefinition.EntityType.Node(`labelName`), `propertyKey`) => true
+          case _ => false
+        }
       }
 
       override def procedureSignature(name: QualifiedName): ProcedureSignature = {
