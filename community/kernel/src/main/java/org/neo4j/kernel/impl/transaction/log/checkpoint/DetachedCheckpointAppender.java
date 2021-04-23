@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
@@ -60,16 +61,18 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private NativeScopedBuffer buffer;
     private PhysicalLogVersionedStoreChannel channel;
     private LogVersionRepository logVersionRepository;
+    private final Log log;
 
     public DetachedCheckpointAppender( TransactionLogChannelAllocator channelAllocator, TransactionLogFilesContext context, CheckpointFile checkpointFile,
             LogRotation checkpointRotation )
     {
-        this.checkpointFile = checkpointFile;
-        this.context = context;
+        this.checkpointFile = requireNonNull( checkpointFile );
+        this.context = requireNonNull( context );
         this.pageCacheTracer = requireNonNull( context.getDatabaseTracers().getPageCacheTracer() );
         this.channelAllocator = requireNonNull( channelAllocator );
         this.databaseHealth = requireNonNull( context.getDatabaseHealth() );
         this.logRotation = requireNonNull( checkpointRotation );
+        this.log = context.getLogProvider().getLog( DetachedCheckpointAppender.class );
     }
 
     @Override
@@ -96,6 +99,12 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     @Override
     public void checkPoint( LogCheckPointEvent logCheckPointEvent, LogPosition logPosition, Instant checkpointTime, String reason ) throws IOException
     {
+        if ( checkpointWriter == null )
+        {
+            // we were not started but on a failure path someone tried to shutdown everything with checkpoint.
+            log.warn( "Checkpoint was attempted while appender is not started. No checkpoint will record be appended." );
+            return;
+        }
         synchronized ( checkpointFile )
         {
             try

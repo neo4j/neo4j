@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockSettings;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -34,7 +35,10 @@ import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
@@ -48,8 +52,14 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.RETURNS_SMART_NULLS;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
+import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 @Neo4jLayoutExtension
@@ -93,6 +103,15 @@ class DetachedCheckpointAppenderTest
 
         LogPosition logPosition = new LogPosition( 0, 10 );
         assertThrows( IOException.class, () -> checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "test" ) );
+    }
+
+    @Test
+    void skipCheckpointOnAttemptToAppendCheckpointWhenNotStarted()
+    {
+        DetachedCheckpointAppender appender =
+                new DetachedCheckpointAppender( mock( TransactionLogChannelAllocator.class ), mock( TransactionLogFilesContext.class, RETURNS_MOCKS ),
+                        logFiles.getCheckpointFile(), NO_ROTATION );
+        assertDoesNotThrow( () -> appender.checkPoint( LogCheckPointEvent.NULL, UNSPECIFIED, Instant.now(), "test" ) );
     }
 
     @Test
