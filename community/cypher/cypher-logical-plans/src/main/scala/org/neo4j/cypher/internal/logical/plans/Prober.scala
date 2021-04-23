@@ -45,6 +45,12 @@ object Prober {
      * @param row a CypherRow representation
      */
     def onRow(row: AnyRef): Unit
+
+    /**
+     * A name to identify the prober in debug information.
+     * E.g. in pipelined runtime, the name will be included in the WorkIdentity.workDescription of the operator
+     */
+    def name: String = ""
   }
 
   object NoopProbe extends Probe {

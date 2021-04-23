@@ -430,7 +430,9 @@ object ThreadSafeRecordingProbe {
  * Probe that prints the requested variables for each row that it sees
  * Inject into the query using a [[Prober]] plan
  */
-class PrintingProbe(variablesToPrint: String*)(prefix: String = "", printStream: PrintStream = System.out)(chain: Prober.Probe = null) extends Prober.Probe() {
+class PrintingProbe(variablesToPrint: String*)(prefix: String = "",
+                                               override val name: String = "",
+                                               printStream: PrintStream = System.out)(chain: Prober.Probe = null) extends Prober.Probe() {
   private[this] var rowCount = 0L
 
   override def onRow(row: AnyRef): Unit = {
