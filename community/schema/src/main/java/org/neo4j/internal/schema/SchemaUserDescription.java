@@ -31,6 +31,9 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 public final class SchemaUserDescription
 {
+    public static final String TOKEN_LABEL = "<any-labels>";
+    public static final String TOKEN_REL_TYPE = "<any-types>";
+
     private SchemaUserDescription()
     {
     }
@@ -43,7 +46,7 @@ public final class SchemaUserDescription
         // Token indexes, that works on all entity tokens, have no specified entityTokens or propertyKeyIds.
         if ( entityTokens.length == 0 && propertyKeyIds.length == 0 )
         {
-            String entityTokenType = entityType == RELATIONSHIP ? ":<any-types>" : ":<any-labels>";
+            String entityTokenType = ":" + (entityType == RELATIONSHIP ? TOKEN_REL_TYPE : TOKEN_LABEL);
             return prefix + entityTokenType + suffix;
         }
 

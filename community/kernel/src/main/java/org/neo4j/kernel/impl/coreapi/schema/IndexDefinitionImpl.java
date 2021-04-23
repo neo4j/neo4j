@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.util.Arrays;
 import java.util.Map;
 
@@ -32,6 +34,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaUserDescription;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
@@ -57,7 +60,6 @@ public class IndexDefinitionImpl implements IndexDefinition
         this.relTypes = null;
         this.propertyKeys = propertyKeys;
         this.constraintIndex = constraintIndex;
-
     }
 
     public IndexDefinitionImpl(
@@ -284,20 +286,29 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public String toString()
     {
-        String entityTokenType;
-        String entityTokens;
-        if ( internalIsNodeIndex() )
-        {
-            entityTokenType = labels.length > 1 ? "labels" : "label";
-            entityTokens = Arrays.stream( labels ).map( Label::name ).collect( joining( "," ) );
-        }
-        else
-        {
-            entityTokenType = relTypes.length > 1 ? "relationship types" : "relationship type";
-            entityTokens = Arrays.stream( relTypes ).map( RelationshipType::name ).collect( joining( "," ) );
-        }
-        return "IndexDefinition[" + entityTokenType + ":" + entityTokens + " on:" + String.join( ",", propertyKeys ) + "]" +
-                (description == null ? "" : " (" + description + ")");
+        return "IndexDefinition[" +
+               (internalIsNodeIndex() ? getSchemaForLabels() : getSchemaForRelType()) + "]" +
+               (description == null ? "" : " (" + description + ")");
+    }
+
+    private String getSchemaForLabels()
+    {
+        var entityTokenType = labels.length > 1 ? "labels" : "label";
+        var entityTokens = ArrayUtils.isNotEmpty( labels )
+                           ? Arrays.stream( labels ).map( Label::name ).collect( joining( "," ) )
+                           : SchemaUserDescription.TOKEN_LABEL;
+        var onPropertyKeys = ArrayUtils.isNotEmpty( propertyKeys ) ? " on:" + String.join( ",", propertyKeys ) : "";
+        return entityTokenType + ":" + entityTokens + onPropertyKeys;
+    }
+
+    private String getSchemaForRelType()
+    {
+        var entityTokenType = relTypes.length > 1 ? "relationship types" : "relationship type";
+        var entityTokens = ArrayUtils.isNotEmpty( relTypes )
+                           ? Arrays.stream( relTypes ).map( RelationshipType::name ).collect( joining( "," ) )
+                           : SchemaUserDescription.TOKEN_REL_TYPE;
+        var onPropertyKeys = ArrayUtils.isNotEmpty( propertyKeys ) ? " on:" + String.join( ",", propertyKeys ) : "";
+        return entityTokenType + ":" + entityTokens + onPropertyKeys;
     }
 
     static String labelNameList( Iterable<Label> labels, String prefix, String postfix )
