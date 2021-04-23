@@ -78,6 +78,7 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -113,7 +114,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.max;
-import static java.util.Collections.singletonList;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -822,7 +823,7 @@ class DatabaseRecoveryIT
         }
         managementService = new TestDatabaseManagementServiceBuilder( homeDir )
                 .setFileSystem( fs )
-                .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
+                .setExtensions( asList( new IndexExtensionFactory( indexProvider ), new TokenIndexProviderFactory() ) )
                 .impermanent()
                 .noOpSystemGraphInitializer()
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )

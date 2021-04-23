@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -73,7 +74,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.singletonList;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -334,7 +335,7 @@ class IndexRecoveryIT
 
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( testDirectory.getFileSystem() )
-                .setExtensions( singletonList( mockedIndexProviderFactory ) )
+                .setExtensions( asList( mockedIndexProviderFactory, new TokenIndexProviderFactory() ) )
                 .noOpSystemGraphInitializer()
                 .setMonitors( monitors )
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )

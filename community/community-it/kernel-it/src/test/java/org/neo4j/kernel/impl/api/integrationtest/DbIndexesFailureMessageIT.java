@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -140,6 +141,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         return super.createGraphDatabaseFactory( databaseRootDir )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .noOpSystemGraphInitializer()
-                .addExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) );
+                .addExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) )
+                .addExtension( new TokenIndexProviderFactory() );
     }
 }

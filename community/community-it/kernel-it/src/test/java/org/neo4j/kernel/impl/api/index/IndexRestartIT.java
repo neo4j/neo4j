@@ -23,7 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import java.util.Arrays;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,6 +34,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -66,7 +67,7 @@ class IndexRestartIT
     {
         factory = new TestDatabaseManagementServiceBuilder();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
-        factory.setExtensions( List.of( singleInstanceIndexProviderFactory( "test", provider ) ) );
+        factory.setExtensions( Arrays.asList( singleInstanceIndexProviderFactory( "test", provider ), new TokenIndexProviderFactory() ) );
     }
 
     @AfterEach

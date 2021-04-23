@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -43,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.Lock;
@@ -50,6 +50,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -130,7 +131,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
     public void setUp()
     {
         managementService = new TestDatabaseManagementServiceBuilder( graphDbDir )
-                .setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) )
+                .setExtensions( asList( new PredefinedIndexProviderFactory( indexProvider ), new TokenIndexProviderFactory() ) )
                 .noOpSystemGraphInitializer()
                 .impermanent()
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )

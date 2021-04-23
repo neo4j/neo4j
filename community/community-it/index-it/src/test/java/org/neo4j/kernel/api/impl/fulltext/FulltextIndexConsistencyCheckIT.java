@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -555,6 +556,7 @@ class FulltextIndexConsistencyCheckIT
                         .setFileSystem( fs )
                         .removeExtensions( INDEX_PROVIDERS_FILTER )
                         .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
+                        .addExtension( new TokenIndexProviderFactory() )
                         .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )

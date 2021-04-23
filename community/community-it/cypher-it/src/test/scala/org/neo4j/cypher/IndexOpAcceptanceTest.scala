@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import java.io.File
 import java.util.concurrent.TimeUnit
-
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -33,6 +32,7 @@ import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.test.rule.TestDirectory
 
@@ -123,6 +123,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
     dbFactory.removeExtensions(TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER)
     dbFactory.addExtension(providerFactory)
+    dbFactory.addExtension(new TokenIndexProviderFactory)
     managementService = dbFactory.build()
     graph = new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
     eengine = createEngine(graph)

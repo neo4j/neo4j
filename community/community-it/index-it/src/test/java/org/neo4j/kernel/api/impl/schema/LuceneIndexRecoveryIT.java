@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -57,6 +57,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -237,7 +238,7 @@ class LuceneIndexRecoveryIT
 
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         factory.setFileSystem( fs );
-        factory.setExtensions( Collections.singletonList( indexProviderFactory ) );
+        factory.setExtensions( asList( indexProviderFactory, new TokenIndexProviderFactory() ) );
         managementService = factory.impermanent()
                 .setConfig( default_schema_provider, DESCRIPTOR.name() ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

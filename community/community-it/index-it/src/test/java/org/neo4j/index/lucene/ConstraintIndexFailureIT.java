@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -78,6 +79,7 @@ class ConstraintIndexFailureIT
         managementService = new TestDatabaseManagementServiceBuilder( dir )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
                 .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )
+                .addExtension( new TokenIndexProviderFactory() )
                 .noOpSystemGraphInitializer()
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );

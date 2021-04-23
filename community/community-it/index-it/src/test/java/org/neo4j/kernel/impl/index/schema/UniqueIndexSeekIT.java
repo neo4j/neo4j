@@ -32,8 +32,8 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -48,7 +48,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Collections.singletonList;
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -109,7 +109,7 @@ class UniqueIndexSeekIT
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory, IndexProviderDescriptor descriptor )
     {
         managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .setExtensions( singletonList( indexExtensionFactory ) )
+                .setExtensions( asList( indexExtensionFactory, new TokenIndexProviderFactory() ) )
                 .setConfig( default_schema_provider, descriptor.name() )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

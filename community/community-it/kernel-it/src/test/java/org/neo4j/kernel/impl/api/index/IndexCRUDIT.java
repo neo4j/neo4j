@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -62,6 +62,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -179,7 +180,7 @@ class IndexCRUDIT
 
         managementService = new TestDatabaseManagementServiceBuilder()
             .setFileSystem( fs )
-                .setExtensions( Collections.singletonList( mockedIndexProviderFactory ) )
+                .setExtensions( asList( mockedIndexProviderFactory, new TokenIndexProviderFactory() ) )
                 .noOpSystemGraphInitializer()
                 .impermanent()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )
