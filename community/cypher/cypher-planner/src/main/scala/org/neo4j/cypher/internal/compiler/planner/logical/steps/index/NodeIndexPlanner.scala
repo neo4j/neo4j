@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonScannable
 import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonSeekable
 import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
 import org.neo4j.cypher.internal.logical.plans.AsValueRangeNonSeekable
@@ -324,28 +325,34 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
   }
 
   private def issueNotifications(result: Set[LeafPlansForVariable], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
-    if (result.isEmpty) {
-      val seekableIdentifiers: Set[Variable] = findNonSeekableIdentifiers(qg.selections.flatPredicates, context)
-      DynamicPropertyNotifier.process(seekableIdentifiers, IndexLookupUnfulfillableNotification, qg, context)
-    }
+    val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
+    DynamicPropertyNotifier.process(nonSolvable, IndexLookupUnfulfillableNotification, qg, context)
   }
 
-  private def findNonSeekableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] =
+  private def findNonSolvableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] = {
+    def isNode(variable: Variable) = context.semanticTable.isNode(variable)
+
     predicates.flatMap {
       // n['some' + n.prop] IN [ ... ]
-      case AsDynamicPropertyNonSeekable(nonSeekableId)
-        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
-
+      case AsDynamicPropertyNonSeekable(nonSeekableId) if isNode(nonSeekableId) =>
+        Some(nonSeekableId)
       // n['some' + n.prop] STARTS WITH "prefix%..."
-      case AsStringRangeNonSeekable(nonSeekableId)
-        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
-
+      case AsStringRangeNonSeekable(nonSeekableId) if isNode(nonSeekableId) =>
+        Some(nonSeekableId)
       // n['some' + n.prop] <|<=|>|>= value
-      case AsValueRangeNonSeekable(nonSeekableId)
-        if context.semanticTable.isNode(nonSeekableId) => Some(nonSeekableId)
+      case AsValueRangeNonSeekable(nonSeekableId) if isNode(nonSeekableId) =>
+        Some(nonSeekableId)
 
-      case _ => None
+      case AsDynamicPropertyNonScannable(nonScannableId) if isNode(nonScannableId) =>
+        Some(nonScannableId)
+
+      case AsStringRangeNonSeekable(nonScannableId) if isNode(nonScannableId) =>
+        Some(nonScannableId)
+
+      case _ =>
+        None
     }.toSet
+  }
 
 
 }
