@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Distinct
@@ -1787,9 +1788,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .expandAll("(b)-[r2:R]->(c)")
       .sort(Seq(Ascending("a")))
       .eager()
-      .foreachApply("x", "[1, 2, 3]")
-      .|.setNodeProperty("a", "prop", "x")
-      .|.argument("a", "b", "r1", "x")
+      .foreach("x", "[1, 2, 3]", Seq(setNodeProperty("a", "prop", "x")))
       .expandAll("(a)-[r1:NARROW]->(b)")
       .allNodeScan("a")
       .build()

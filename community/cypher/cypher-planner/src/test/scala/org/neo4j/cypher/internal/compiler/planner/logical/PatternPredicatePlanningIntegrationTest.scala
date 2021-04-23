@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
@@ -1036,7 +1037,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     val q =
       """
         |FOREACH (num IN [reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)] |
-        |  CREATE ({foo: num}) )
+        |  MERGE ({foo: num}) )
       """.stripMargin
 
     planFor(q)._2 should beLike {
@@ -1045,6 +1046,20 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                                    RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
       )) => ()
+    }
+  }
+
+  test("should solve pattern comprehensions for Foreach") {
+    val q =
+      """
+        |FOREACH (num IN [reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)] |
+        |  CREATE ({foo: num}) )
+      """.stripMargin
+
+    planFor(q)._2 should beLike {
+      case EmptyResult(
+      Foreach(
+        RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _), _, _, _)) => ()
     }
   }
 

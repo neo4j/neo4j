@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -185,9 +186,15 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
     )
   }
 
-  test("ForeachApply containing update should eliminate provided order and cause planning Sort") {
+  test("Foreach containing update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "FOREACH (x in [1,2,3] | SET n.prop = x)",
+      {case _:Foreach => true})
+  }
+
+  test("ForeachApply containing update should eliminate provided order and cause planning Sort") {
+    shouldEliminateProvidedSortOrder(
+      "FOREACH (x in [1,2,3] | MERGE (m)-[:R]-(n))",
       {case _:ForeachApply => true})
   }
 

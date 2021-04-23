@@ -1022,6 +1022,32 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val b = Iterators.single(tx.getAllNodes.stream().filter(n => n.getProperty("prop", null) == 1).iterator())
     runtimeResult should beColumns("b").withRows((1 to sizeHint).map(_ => Array[Any](b))).withStatistics(nodesCreated = 1, propertiesSet = 1)
   }
+
+  test("should profile rows and dbhits of merge correctly") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .merge(nodes = Seq(createNode("x")), onMatch = Seq(setNodeProperty("x", "prop", "42")))
+      .nodeByLabelScan("x", "A")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val produceResultProfile = queryProfile.operatorProfile(0)
+    val mergeProfile = queryProfile.operatorProfile(1)
+
+    mergeProfile.rows() shouldBe sizeHint
+    mergeProfile.dbHits() should (be (3 + sizeHint) or be (sizeHint))
+    produceResultProfile.rows() shouldBe sizeHint
+    produceResultProfile.dbHits() shouldBe sizeHint * 2
+  }
 }
 
 
