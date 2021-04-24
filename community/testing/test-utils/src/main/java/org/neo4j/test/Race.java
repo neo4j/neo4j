@@ -30,6 +30,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
+import static java.lang.Long.max;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -260,9 +261,9 @@ public class Race
                 else
                 {
                     long timeNanoStart = nanoTime();
-                    contestant.join( maxWaitTimeMillis - waitedSoFar );
+                    contestant.join( max( 1, maxWaitTimeMillis - waitedSoFar ) );
                     waitedSoFar += NANOSECONDS.toMillis( nanoTime() - timeNanoStart );
-                    if ( waitedSoFar >= maxWaitTimeMillis )
+                    if ( waitedSoFar >= maxWaitTimeMillis && contestant.isAlive() )
                     {
                         throw new TimeoutException( "Didn't complete after " + maxWaitTime + " " + unit );
                     }
