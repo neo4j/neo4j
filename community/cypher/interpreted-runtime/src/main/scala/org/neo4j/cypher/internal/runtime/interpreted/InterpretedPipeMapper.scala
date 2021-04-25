@@ -155,6 +155,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternCon
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateRelationship
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.DeleteOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.RemoveLabelsOperation
@@ -431,6 +432,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           }
           nodeOps ++ relOps
 
+        case ir.DeleteExpression(expression, forced) => Seq(DeleteOperation(buildExpression(expression), forced))
         case SetLabelPattern(node, labelNames) => Seq(SetLabelsOperation(node, labelNames.map(LazyLabel.apply)))
         case RemoveLabelPattern(node, labelNames) => Seq(RemoveLabelsOperation(node, labelNames.map(LazyLabel.apply)))
         case SetNodePropertyPattern(node, propertyKey, value) =>
@@ -450,7 +452,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
          Seq(SetPropertyOperation(buildExpression(entityExpression),  LazyPropertyKey(propertyKeyName), buildExpression(expression)))
         case SetPropertiesFromMapPattern(entityExpression, expression, removeOtherProps) =>
           Seq(SetPropertyFromMapOperation(buildExpression(entityExpression), buildExpression(expression), removeOtherProps))
-
 
           case other => throw new IllegalStateException(s"Cannot compile $other")
       }

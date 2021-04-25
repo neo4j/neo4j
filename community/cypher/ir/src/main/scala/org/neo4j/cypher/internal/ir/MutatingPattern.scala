@@ -120,7 +120,7 @@ case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelati
   }
 }
 
-case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols with HasMappableExpressions[DeleteExpression] {
+case class DeleteExpression(expression: Expression, forced: Boolean) extends SimpleMutatingPattern with NoSymbols with HasMappableExpressions[DeleteExpression] {
   override def dependencies: Set[String] = expression.dependencies.map(_.name)
 
   override def mapExpressions(f: Expression => Expression): DeleteExpression = copy(expression = f(expression))

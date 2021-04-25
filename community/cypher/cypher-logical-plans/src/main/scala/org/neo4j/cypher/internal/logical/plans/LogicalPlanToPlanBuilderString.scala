@@ -534,6 +534,8 @@ object LogicalPlanToPlanBuilderString {
   private def mutationToString(op: SimpleMutatingPattern): String = op match {
     case CreatePattern(nodes, relationships) =>
       s"createPattern(Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")}))"
+    case org.neo4j.cypher.internal.ir.DeleteExpression(expression, forced) =>
+      s"delete(${wrapInQuotations(expressionStringifier(expression))}, $forced)"
     case SetLabelPattern(node, labelNames) =>
       s"setLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
     case RemoveLabelPattern(node, labelNames) =>

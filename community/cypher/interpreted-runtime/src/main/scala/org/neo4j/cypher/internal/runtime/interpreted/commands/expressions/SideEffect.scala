@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
@@ -149,5 +150,11 @@ case class RemoveLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) exten
       val labelIds = labels.map(_.getOrCreateId(state.query))
       state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
     }
+  }
+}
+
+case class DeleteOperation(expression: Expression, forced: Boolean) extends SideEffect {
+  override def execute(executionContext: CypherRow, state: QueryState): Unit = {
+    DeletePipe.delete(expression(executionContext, state), state, forced)
   }
 }

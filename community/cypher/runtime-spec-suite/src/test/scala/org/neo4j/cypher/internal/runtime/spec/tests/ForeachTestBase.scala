@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
@@ -426,5 +427,45 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       n.hasLabel(Label.label("B")) shouldBe false
       n.hasLabel(Label.label("C")) shouldBe true
     }
+  }
+
+  test("foreach + delete" ) {
+    val nodes = given(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]",
+        Seq(delete("n")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(nodesDeleted = sizeHint)
+    tx.getAllNodes.asScala shouldBe empty
+  }
+
+  test("foreach + detach delete" ) {
+    val (nodes, _) = given(circleGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]",
+        Seq(delete("n", forced = true)))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(nodesDeleted = sizeHint, relationshipsDeleted = sizeHint)
+    tx.getAllNodes.asScala shouldBe empty
   }
 }

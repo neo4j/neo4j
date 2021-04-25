@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
@@ -1215,6 +1216,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
           expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
       }
       pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}"
+    case ir.DeleteExpression(toDelete, forced) =>
+      if (forced) pretty"DETACH DELETE ${asPrettyString(toDelete)}" else  pretty"DELETE ${asPrettyString(toDelete)}"
     case SetLabelPattern(node, labelNames) =>
       val prettyId = asPrettyString(node)
       val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")

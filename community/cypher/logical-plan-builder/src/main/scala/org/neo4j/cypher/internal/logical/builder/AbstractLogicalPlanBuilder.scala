@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -1185,4 +1186,7 @@ object AbstractLogicalPlanBuilder {
 
   def removeLabel(node: String, labels: String*): RemoveLabelPattern =
     RemoveLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
+
+  def delete(entity: String, forced: Boolean = false): ir.DeleteExpression =
+    ir.DeleteExpression(Parser.parseExpression(entity), forced)
 }

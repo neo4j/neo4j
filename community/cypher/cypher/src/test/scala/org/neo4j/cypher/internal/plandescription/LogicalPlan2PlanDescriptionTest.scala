@@ -95,6 +95,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Point
+import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -986,6 +987,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(RemoveLabelPattern("x", Seq(label("L"), label("M"))))), 32.2),
       planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "REMOVE x:L:M"))), Set("a")))
+
+    assertGood(
+      attach(Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(ir.DeleteExpression(varFor("x"), forced = true))), 32.2),
+      planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "DETACH DELETE x"))), Set("a")))
+    assertGood(
+      attach(Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(ir.DeleteExpression(varFor("x"), forced = false))), 32.2),
+      planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "DELETE x"))), Set("a")))
   }
 
   test("Delete") {
