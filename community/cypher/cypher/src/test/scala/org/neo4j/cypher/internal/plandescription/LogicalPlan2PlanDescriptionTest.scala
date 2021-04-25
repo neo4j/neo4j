@@ -99,6 +99,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
@@ -981,6 +982,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(SetNodePropertyPattern("x", PropertyKeyName("prop")(InputPosition.NONE), stringLiteral("foo")))), 32.2),
       planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "SET x.prop = \"foo\""))), Set("a")))
+
+    assertGood(
+      attach(Foreach(lhsLP, "i", parameter("p", CTList(CTInteger)), Seq(RemoveLabelPattern("x", Seq(label("L"), label("M"))))), 32.2),
+      planDescription(id, "Foreach", SingleChild(lhsPD), Seq(details(Seq("i IN $p", "REMOVE x:L:M"))), Set("a")))
   }
 
   test("Delete") {

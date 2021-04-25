@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
@@ -535,6 +536,8 @@ object LogicalPlanToPlanBuilderString {
       s"createPattern(Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")}))"
     case SetLabelPattern(node, labelNames) =>
       s"setLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
+    case RemoveLabelPattern(node, labelNames) =>
+      s"removeLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
     case SetNodePropertyPattern(node, propertyKey, value) =>
       s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node, propertyKey.name, expressionStringifier(value)))})"
     case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>

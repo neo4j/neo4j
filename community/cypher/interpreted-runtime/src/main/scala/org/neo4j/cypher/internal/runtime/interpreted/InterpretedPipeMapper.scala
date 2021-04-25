@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
@@ -156,6 +157,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Create
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.RemoveLabelsOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -430,6 +432,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           nodeOps ++ relOps
 
         case SetLabelPattern(node, labelNames) => Seq(SetLabelsOperation(node, labelNames.map(LazyLabel.apply)))
+        case RemoveLabelPattern(node, labelNames) => Seq(RemoveLabelsOperation(node, labelNames.map(LazyLabel.apply)))
         case SetNodePropertyPattern(node, propertyKey, value) =>
           val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)
           Seq(SetNodePropertyOperation(node, LazyPropertyKey(propertyKey),

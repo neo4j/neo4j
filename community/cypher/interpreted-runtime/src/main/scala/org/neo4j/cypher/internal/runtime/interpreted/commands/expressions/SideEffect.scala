@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.exceptions.CypherTypeException
@@ -33,9 +35,10 @@ import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 trait SideEffect {
-  def execute(row: CypherRow, state: QueryState)
+  def execute(row: CypherRow, state: QueryState): Unit
 }
 
 case class CreateNode(command: CreateNodeCommand, allowNullProperty: Boolean) extends SideEffect {
@@ -137,4 +140,14 @@ object CreateRelationship {
   }
 }
 
+case class RemoveLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SideEffect {
 
+  override def execute(executionContext: CypherRow, state: QueryState): Unit = {
+    val value: AnyValue = executionContext.getByName(nodeName)
+    if (!(value eq Values.NO_VALUE)) {
+      val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
+      val labelIds = labels.map(_.getOrCreateId(state.query))
+      state.query.removeLabelsFromNode(nodeId, labelIds.iterator)
+    }
+  }
+}

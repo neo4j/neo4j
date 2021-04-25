@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -1181,4 +1182,7 @@ object AbstractLogicalPlanBuilder {
 
   def setLabel(node: String, labels: String*): SetMutatingPattern =
     SetLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
+
+  def removeLabel(node: String, labels: String*): RemoveLabelPattern =
+    RemoveLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
 }

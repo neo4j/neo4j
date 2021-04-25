@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
@@ -1218,6 +1219,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       val prettyId = asPrettyString(node)
       val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
       pretty"SET $prettyId$prettyLabels"
+    case RemoveLabelPattern(node, labelNames) =>
+      val prettyId = asPrettyString(node)
+      val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
+      pretty"REMOVE $prettyId$prettyLabels"
     case SetNodePropertyPattern(node, propertyKey, value) =>
       pretty"SET ${setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
     case SetNodePropertiesFromMapPattern(node, value, removeOtherProps) =>

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
@@ -400,6 +401,30 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       n.getProperty("prop1") should equal(1)
       n.getProperty("prop2") should equal(2)
       n.getProperty("prop3") should equal(3)
+    }
+  }
+
+  test("foreach + remove label" ) {
+    val nodes = given(nodeGraph(sizeHint, "A", "B", "C"))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]",
+        Seq(removeLabel("n", "A", "B")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(labelsRemoved = 2 * sizeHint)
+    tx.getAllNodes.asScala.foreach {n =>
+      n.hasLabel(Label.label("A")) shouldBe false
+      n.hasLabel(Label.label("B")) shouldBe false
+      n.hasLabel(Label.label("C")) shouldBe true
     }
   }
 }
