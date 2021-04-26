@@ -83,7 +83,7 @@ public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent
     /**
      * Begin flushing the given single page.
      */
-    FlushEvent beginFlush( long cachePageId, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator );
+    FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator );
 
     /**
      * Start flushing of given translation table
