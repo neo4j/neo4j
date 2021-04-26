@@ -286,7 +286,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       .build()
 
     val plan = cfg.plan(
-      s"""MATCH (n:N)-[r:R]-() WHERE exists(n.prop)
+      s"""MATCH (n:N)-[r:R]-() WHERE n.prop IS NOT NULL
          |$clause
          |RETURN n
          |ORDER BY n.prop""".stripMargin)

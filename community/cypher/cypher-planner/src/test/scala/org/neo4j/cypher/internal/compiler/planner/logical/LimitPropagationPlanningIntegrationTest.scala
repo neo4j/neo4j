@@ -109,7 +109,7 @@ class LimitPropagationPlanningIntegrationTest
     val query =
       s"""
          |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
-         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE EXISTS(c.id)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id IS NOT NULL
          |RETURN a, c ORDER BY c.id LIMIT 10
          |""".stripMargin
 

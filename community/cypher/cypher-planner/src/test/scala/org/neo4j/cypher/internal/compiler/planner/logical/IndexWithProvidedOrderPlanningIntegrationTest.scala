@@ -868,7 +868,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) RETURN DISTINCT a.prop")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.prop")._2
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -886,7 +886,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) RETURN DISTINCT a.foo, a.prop")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.foo, a.prop")._2
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -904,7 +904,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "foo", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) AND exists(a.foo) RETURN DISTINCT a.foo, a.prop")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.foo, a.prop")._2
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -922,7 +922,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "foo", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE exists(a.prop) AND exists(a.foo) RETURN DISTINCT a.prop, a.foo")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.prop, a.foo")._2
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending

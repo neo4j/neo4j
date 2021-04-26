@@ -485,7 +485,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
   test("should find UNWIND property required order when it's usable by the head query part") {
     val q = buildSinglePlannerQuery(
       """
-        |MATCH (n:N)-[r:R]-() WHERE exists(n.prop)
+        |MATCH (n:N)-[r:R]-() WHERE n.prop IS NOT NULL
         |UNWIND [1, 2, 3] AS i
         |RETURN n
         |ORDER BY n.prop""".stripMargin)
