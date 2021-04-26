@@ -270,8 +270,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         // dynamic property lookup with range seek (reverse)
         queries.add( "EXPLAIN MATCH (n:Person) WHERE 10 > n['key-' + n.name] RETURN n" );
 
-        // dynamic property lookup with a single label and property existence check with exists
-        queries.add( "EXPLAIN MATCH (n:Person) WHERE exists(n['na' + 'me']) RETURN n" );
+        // dynamic property lookup with a single label and property existence check with IS NOT NULL
+        queries.add( "EXPLAIN MATCH (n:Person) WHERE n['na' + 'me'] IS NOT NULL RETURN n" );
 
         // dynamic property lookup with a single label and starts with
         queries.add( "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] STARTS WITH 'Foo' RETURN n" );

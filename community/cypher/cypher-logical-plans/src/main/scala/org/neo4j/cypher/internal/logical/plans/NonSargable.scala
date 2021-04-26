@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.NotEquals
@@ -51,6 +52,9 @@ object AsDynamicPropertyNonScannable {
 
     case func@FunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
       if  func.function == functions.Exists =>
+      Some(variable)
+
+    case IsNotNull(ContainerIndex(variable: Variable, _)) =>
       Some(variable)
 
     case Equals(ContainerIndex(variable: Variable, _), _) =>
