@@ -25,6 +25,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -85,10 +86,15 @@ public class IndexCreateIT extends KernelIntegrationTest
     void shouldFailCreateIndexWithDuplicateLabels() throws KernelException
     {
         // given
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        int labelId = tokenWrite.labelGetOrCreateForName( "Label" );
+        int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+        commit();
+
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{0, 0}, new int[]{1} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{labelId, labelId}, new int[]{propId} );
         // then
         assertThrows( RepeatedLabelInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
@@ -97,10 +103,15 @@ public class IndexCreateIT extends KernelIntegrationTest
     void shouldFailCreateIndexWithDuplicateRelationshipTypes() throws KernelException
     {
         // given
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        int relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( "RELATIONSHIP" );
+        int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+        commit();
+
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{0, 0}, new int[]{1} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{relTypeId, relTypeId}, new int[]{propId} );
         // then
         assertThrows( RepeatedRelationshipTypeInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
@@ -109,10 +120,15 @@ public class IndexCreateIT extends KernelIntegrationTest
     void shouldFailCreateIndexWithDuplicateProperties() throws KernelException
     {
         // given
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        int labelId = tokenWrite.labelGetOrCreateForName( "Label" );
+        int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+        commit();
+
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{0}, new int[]{1, 1} );
+        final FulltextSchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{labelId}, new int[]{propId, propId} );
         // then
         assertThrows( RepeatedPropertyInSchemaException.class, () -> schemaWrite.indexCreate( descriptor, null ) );
     }
@@ -120,23 +136,34 @@ public class IndexCreateIT extends KernelIntegrationTest
     protected void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException
     {
         // given
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        int labelId = tokenWrite.labelGetOrCreateForName( "Label" );
+        int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+        commit();
+
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
         assertThrows( IndexProviderNotFoundException.class,
-            () -> creator.create( schemaWrite, forLabel( 0, 0 ), "something-completely-different", "index name" ) );
+                      () -> creator.create( schemaWrite, forLabel( labelId, propId ), "something-completely-different", "index name" ) );
     }
 
     protected void shouldCreateWithSpecificExistingProviderName( IndexCreator creator ) throws KernelException
     {
-        int labelId = 0;
+
+        int counter = 0;
         for ( GraphDatabaseSettings.SchemaIndex indexSetting : GraphDatabaseSettings.SchemaIndex.values() )
         {
             // given
+            TokenWrite tokenWrite = tokenWriteInNewTransaction();
+            int labelId = tokenWrite.labelGetOrCreateForName( "Label" + counter );
+            int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+            commit();
+
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+            LabelSchemaDescriptor descriptor = forLabel( labelId, propId );
             String provider = indexSetting.providerName();
-            LabelSchemaDescriptor descriptor = forLabel( labelId++, 0 );
-            String indexName = "index-" + labelId;
+            String indexName = "index-" + counter;
             creator.create( schemaWrite, descriptor, provider, indexName );
             IndexDescriptor index = transaction.kernelTransaction().schemaRead().indexGetForName( indexName );
 
@@ -145,6 +172,7 @@ public class IndexCreateIT extends KernelIntegrationTest
 
             // then
             assertEquals( provider, indexingService.getIndexProxy( index ).getDescriptor().getIndexProvider().name() );
+            counter++;
         }
     }
 
