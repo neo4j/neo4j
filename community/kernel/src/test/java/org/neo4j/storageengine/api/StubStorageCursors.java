@@ -76,7 +76,7 @@ public class StubStorageCursors implements StorageReader
         IndexPrototype indexPrototype = IndexPrototype
                 .forSchema( forAnyEntityTokens( entityType ) )
                 .withIndexType( LOOKUP )
-                .withIndexProvider( new IndexProviderDescriptor( "token", "1.0" ) );
+                .withIndexProvider( new IndexProviderDescriptor( "token-lookup", "1.0" ) );
         indexPrototype = indexPrototype.withName( SchemaRule.generateName( indexPrototype, new String[]{}, new String[]{} ) );
         return indexPrototype.materialise( id );
     }

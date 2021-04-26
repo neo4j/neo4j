@@ -58,8 +58,7 @@ import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 public class TokenIndexProvider extends IndexProvider
 {
-    // todo is 'token-1.0' a good name for this provider. Note that it is user facing.
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "token", "1.0" );
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "token-lookup", "1.0" );
     public static final IndexCapability CAPABILITY = new TokenIndexCapability();
 
     private final DatabaseIndexContext databaseIndexContext;

@@ -583,7 +583,7 @@ public class ImportLogic implements Closeable
 
     private IndexDescriptor indexSchemaRule( EntityType entityType )
     {
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "token", "1.0" );
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "token-lookup", "1.0" );
         IndexPrototype prototype = IndexPrototype.forSchema(
                 forAnyEntityTokens( entityType ) ).withIndexType( LOOKUP ).withIndexProvider( providerDescriptor );
         prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{}, new String[]{} ) );

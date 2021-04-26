@@ -121,14 +121,14 @@ public final class SchemaUserDescription
             IndexProviderDescriptor indexProvider, StringJoiner joiner )
     {
         maybeAddName( name, joiner );
-        addType( indexType( isUnique, indexType ), joiner );
+        addType( indexType( schema.isAnyTokenSchemaDescriptor(), isUnique, indexType ), joiner );
         addSchema( tokenNameLookup, schema, joiner );
         joiner.add( "indexProvider='" + indexProvider.name() + "'" );
     }
 
-    private static String indexType( boolean isUnique, IndexType indexType )
+    private static String indexType( boolean isToken, boolean isUnique, IndexType indexType )
     {
-        return (isUnique ? "UNIQUE" : "GENERAL") + " " + indexType;
+        return (isToken ? "TOKEN" : isUnique ? "UNIQUE" : "GENERAL") + " " + indexType;
     }
 
     private static void addType( String type, StringJoiner joiner )

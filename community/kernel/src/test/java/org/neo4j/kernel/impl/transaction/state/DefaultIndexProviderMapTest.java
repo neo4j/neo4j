@@ -103,7 +103,7 @@ class DefaultIndexProviderMapTest
 
     private IndexProvider tokenProvider()
     {
-        return provider( "token", "1.0" );
+        return provider( "token-lookup", "1.0" );
     }
 
     private static DefaultIndexProviderMap createDefaultProviderMap( Dependencies dependencies, IndexProviderDescriptor descriptor )

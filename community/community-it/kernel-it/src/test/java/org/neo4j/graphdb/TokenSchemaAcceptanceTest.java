@@ -122,7 +122,7 @@ public class TokenSchemaAcceptanceTest extends SchemaAcceptanceTest
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
                 "An equivalent index already exists, 'Index( id=",
-                "name='name', type='GENERAL LOOKUP', schema=(:<any-labels>), indexProvider='token-1.0' )'." );
+                "name='name', type='TOKEN LOOKUP', schema=(:<any-labels>), indexProvider='token-lookup-1.0' )'." );
     }
 
     @ParameterizedTest

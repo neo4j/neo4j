@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
@@ -40,7 +41,7 @@ import static java.util.Objects.requireNonNull;
 
 public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexProviderMap
 {
-    private static final String TOKEN_INDEX_PROVIDER_NAME = "token-1.0";
+    private static final String TOKEN_INDEX_PROVIDER_NAME = TokenIndexProvider.DESCRIPTOR.name();
 
     private final Map<IndexProviderDescriptor,IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();

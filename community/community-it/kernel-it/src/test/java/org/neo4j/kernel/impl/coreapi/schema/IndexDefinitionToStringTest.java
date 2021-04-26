@@ -80,8 +80,8 @@ class IndexDefinitionToStringTest
 
             assertIndexString( labelTokenIndex,
                                "IndexDefinition[label:<any-labels>] " +
-                               "(Index( id=%d, name='labelTokenIndex', type='GENERAL LOOKUP', " +
-                               "schema=(:<any-labels>), indexProvider='token-1.0' ))" );
+                               "(Index( id=%d, name='labelTokenIndex', type='TOKEN LOOKUP', " +
+                               "schema=(:<any-labels>), indexProvider='token-lookup-1.0' ))" );
             assertIndexString( labelProperty,
                                "IndexDefinition[label:someLabel on:someProperty] " +
                                "(Index( id=%d, name='labelIndexName', type='GENERAL BTREE', " +
@@ -93,8 +93,8 @@ class IndexDefinitionToStringTest
 
             assertIndexString( relTypeTokenIndex,
                                "IndexDefinition[relationship type:<any-types>] " +
-                               "(Index( id=%d, name='relTypeTokenIndex', type='GENERAL LOOKUP', " +
-                               "schema=-[:<any-types>]-, indexProvider='token-1.0' ))" );
+                               "(Index( id=%d, name='relTypeTokenIndex', type='TOKEN LOOKUP', " +
+                               "schema=-[:<any-types>]-, indexProvider='token-lookup-1.0' ))" );
             assertIndexString( relTypeProperty,
                                "IndexDefinition[relationship type:someRelationship on:someProperty] " +
                                "(Index( id=%d, name='relTypeIndexName', type='GENERAL BTREE', " +

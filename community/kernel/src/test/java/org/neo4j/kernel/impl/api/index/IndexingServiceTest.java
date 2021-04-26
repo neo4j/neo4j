@@ -163,7 +163,7 @@ class IndexingServiceTest
     private static final IndexProviderDescriptor nativeBtree10Descriptor =
             new IndexProviderDescriptor( NATIVE_BTREE10.providerKey(), NATIVE_BTREE10.providerVersion() );
     private static final IndexProviderDescriptor fulltextDescriptor = new IndexProviderDescriptor( "fulltext", "1.0" );
-    private static final IndexProviderDescriptor tokenDescriptor = new IndexProviderDescriptor( "token", "1.0" );
+    private static final IndexProviderDescriptor tokenDescriptor = new IndexProviderDescriptor( "token-lookup", "1.0" );
     private static final IndexProviderDescriptor[] indexProviderDescriptors =
             new IndexProviderDescriptor[]{native30Descriptor, nativeBtree10Descriptor, fulltextDescriptor};
     private final SchemaState schemaState = mock( SchemaState.class );

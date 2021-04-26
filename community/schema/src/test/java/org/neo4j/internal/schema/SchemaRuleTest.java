@@ -129,8 +129,8 @@ class SchemaRuleTest
         assertUserDescription( "Index( type='UNIQUE BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )", relTypeUniquePrototype );
         assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=(:Label1:Label2 {prop1, prop2}), indexProvider='Undecided-0' )", nodeFtsPrototype );
         assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=-[:Type1:Type2 {prop1, prop2}]-, indexProvider='Undecided-0' )", relFtsPrototype );
-        assertUserDescription( "Index( type='GENERAL LOOKUP', schema=(:<any-labels>), indexProvider='Undecided-0' )", allLabelsPrototype );
-        assertUserDescription( "Index( type='GENERAL LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )", allRelTypesPrototype );
+        assertUserDescription( "Index( type='TOKEN LOOKUP', schema=(:<any-labels>), indexProvider='Undecided-0' )", allLabelsPrototype );
+        assertUserDescription( "Index( type='TOKEN LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )", allRelTypesPrototype );
         assertUserDescription( "Constraint( type='UNIQUENESS', schema=(:Label1 {prop2, prop3}) )", uniqueLabelConstraint );
         assertUserDescription( "Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}) )", existsLabelConstraint );
         assertUserDescription( "Constraint( type='NODE KEY', schema=(:Label1 {prop2, prop3}) )", nodeKeyConstraint );
@@ -161,9 +161,9 @@ class SchemaRuleTest
         assertUserDescription(
                 "Index( name='nodeFtsPrototype2Named', type='GENERAL FULLTEXT', schema=(:`La:bel`:Label1 {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
                 nodeFtsPrototype2Named );
-        assertUserDescription( "Index( name='allLabelsPrototypeNamed', type='GENERAL LOOKUP', schema=(:<any-labels>), indexProvider='Undecided-0' )",
+        assertUserDescription( "Index( name='allLabelsPrototypeNamed', type='TOKEN LOOKUP', schema=(:<any-labels>), indexProvider='Undecided-0' )",
                 allLabelsPrototypeNamed );
-        assertUserDescription( "Index( name='allRelTypesPrototypeNamed', type='GENERAL LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )",
+        assertUserDescription( "Index( name='allRelTypesPrototypeNamed', type='TOKEN LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )",
                 allRelTypesPrototypeNamed );
 
         assertUserDescription( "Index( id=1, name='labelIndexNamed', type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
@@ -187,9 +187,9 @@ class SchemaRuleTest
         assertUserDescription(
                 "Index( id=8, name='nodeFtsIndex2Named', type='GENERAL FULLTEXT', schema=(:`La:bel`:Label1 {`prop:erty`, prop1}), " +
                         "indexProvider='Undecided-0' )", nodeFtsIndex2Named );
-        assertUserDescription( "Index( id=9, name='allLabelsIndexNamed', type='GENERAL LOOKUP', schema=(:<any-labels>), indexProvider='Undecided-0' )",
+        assertUserDescription( "Index( id=9, name='allLabelsIndexNamed', type='TOKEN LOOKUP', schema=(:<any-labels>), indexProvider='Undecided-0' )",
                 allLabelsIndexNamed );
-        assertUserDescription( "Index( id=10, name='allRelTypesIndexNamed', type='GENERAL LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )",
+        assertUserDescription( "Index( id=10, name='allRelTypesIndexNamed', type='TOKEN LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )",
                 allRelTypesIndexNamed );
         assertUserDescription(
                 "Index( id=11, name='indexBelongingToConstraint', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), " +
