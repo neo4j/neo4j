@@ -650,6 +650,60 @@ class RecoveryIT
     }
 
     @Test
+    void failRecoveryWithMissingStoreFile() throws Exception
+    {
+        GraphDatabaseAPI database = createDatabase();
+        generateSomeData( database );
+        DatabaseLayout layout = database.databaseLayout();
+        managementService.shutdown();
+
+        fileSystem.deleteFileOrThrow( layout.nodeStore() );
+
+        GraphDatabaseAPI restartedDb = createDatabase();
+
+        try
+        {
+            DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+
+            var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
+            assertTrue( failure.isPresent() );
+            assertThat( failure.get().getCause() ).hasMessageContainingAll( "neostore.nodestore.db", "is(are) missing and recovery is not possible" );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void failRecoveryWithMissingStoreFileAndIdFile() throws Exception
+    {
+        GraphDatabaseAPI database = createDatabase();
+        generateSomeData( database );
+        DatabaseLayout layout = database.databaseLayout();
+        managementService.shutdown();
+
+        // Recovery should not be attempted on any store with missing store files, even if other recoverable files are missing as well.
+        fileSystem.deleteFileOrThrow( layout.nodeStore() );
+        fileSystem.deleteFileOrThrow( layout.idLabelTokenStore() );
+
+        GraphDatabaseAPI restartedDb = createDatabase();
+
+        try
+        {
+            DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
+
+            var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
+            assertTrue( failure.isPresent() );
+            assertThat( failure.get().getCause() ).hasMessageContainingAll( "neostore.nodestore.db", "is(are) missing and recovery is not possible" );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
     void cancelRecoveryInTheMiddle() throws Throwable
     {
         GraphDatabaseAPI db = createDatabase();

@@ -247,12 +247,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StorageFilesState checkRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
-        boolean allIdFilesExist = databaseLayout.idFiles().stream().allMatch( fs::fileExists );
-        if ( !allIdFilesExist )
-        {
-            return StorageFilesState.recoverableState();
-        }
-
         Set<Path> storeFiles = databaseLayout.storeFiles();
         // count store, index statistics and label scan store are not mandatory stores to have since they can be automatically rebuilt
         storeFiles.remove( databaseLayout.countStore() );
@@ -264,6 +258,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         if ( !allStoreFilesExist )
         {
             return StorageFilesState.unrecoverableState( storeFiles.stream().filter( file -> !fs.fileExists( file ) ).collect( toList() ) );
+        }
+
+        boolean allIdFilesExist = databaseLayout.idFiles().stream().allMatch( fs::fileExists );
+        if ( !allIdFilesExist )
+        {
+            return StorageFilesState.recoverableState();
         }
 
         return StorageFilesState.recoveredState();
