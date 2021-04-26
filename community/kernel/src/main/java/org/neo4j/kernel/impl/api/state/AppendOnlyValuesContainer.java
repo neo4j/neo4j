@@ -633,7 +633,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 
         private static ValueType forValue( Value value )
         {
-            for ( ValueType valueType: values() )
+            for ( ValueType valueType: VALUE_TYPES )
             {
                 if ( valueType.valueClass.isAssignableFrom( value.getClass() ) )
                 {
