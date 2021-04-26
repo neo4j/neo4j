@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractExpression
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -174,6 +175,12 @@ object Deprecations {
         )
 
       case e@Exists(Property(_, _)) =>
+        Deprecation(
+          () => e,
+          () => Some(DeprecatedPropertyExistenceSyntax(e.position))
+        )
+
+      case e@Exists(ContainerIndex(_, _)) =>
         Deprecation(
           () => e,
           () => Some(DeprecatedPropertyExistenceSyntax(e.position))

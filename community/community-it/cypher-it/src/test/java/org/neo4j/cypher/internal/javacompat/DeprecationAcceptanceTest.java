@@ -182,9 +182,30 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    void deprecatedMapExistenceSyntax()
+    void deprecatedExistenceSyntaxOnMapKey()
     {
         assertNotificationsInSupportedVersions( "EXPLAIN WITH {key:'blah'} as map RETURN EXISTS(map.key)",
+                containsItem( deprecatedPropertyExistenceSyntax ));
+    }
+
+    @Test
+    void deprecatedExistenceSyntaxOnMapNotationInWhere()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE EXISTS(n['prop']) RETURN n",
+                containsItem( deprecatedPropertyExistenceSyntax ));
+    }
+
+    @Test
+    void deprecatedExistenceSyntaxOnMapNotationInWhereWithNot()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE NOT EXISTS(n['prop']) RETURN n",
+                containsItem( deprecatedPropertyExistenceSyntax ));
+    }
+
+    @Test
+    void deprecatedExistenceSyntaxOnMapNotationInReturn()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) RETURN EXISTS(n['prop'])",
                 containsItem( deprecatedPropertyExistenceSyntax ));
     }
 
