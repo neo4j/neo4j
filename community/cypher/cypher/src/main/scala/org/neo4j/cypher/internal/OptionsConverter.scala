@@ -102,7 +102,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   }
 }
 
-case class CreateIndexOptionsConverter(schemaType: String) extends OptionsConverter[CreateIndexOptions] {
+case class CreateBtreeIndexOptionsConverter(schemaType: String) extends OptionsConverter[CreateBtreeIndexOptions] {
 
   implicit class MapValueExists(mv: MapValue) {
     def exists(f: (Any, Any) => Boolean): Boolean = {
@@ -112,7 +112,7 @@ case class CreateIndexOptionsConverter(schemaType: String) extends OptionsConver
     }
   }
 
-  override def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateIndexOptions =  {
+  override def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateBtreeIndexOptions =  {
     val lowerCaseOptions = options.map { case (k, v) => (k.toLowerCase, v) }
     val maybeIndexProvider = lowerCaseOptions.get("indexprovider")
     val maybeConfig = lowerCaseOptions.get("indexconfig")
@@ -122,7 +122,7 @@ case class CreateIndexOptionsConverter(schemaType: String) extends OptionsConver
       .getOrElse(Collections.emptyMap())
     val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
 
-    CreateIndexOptions(indexProvider, indexConfig)
+    CreateBtreeIndexOptions(indexProvider, indexConfig)
   }
 
   private def assertValidIndexProvider(indexProvider: Expression, params: MapValue, schemaType: String): String = evaluate(indexProvider, params) match {
@@ -131,7 +131,7 @@ case class CreateIndexOptionsConverter(schemaType: String) extends OptionsConver
       if (indexProviderString.equalsIgnoreCase(FulltextIndexProviderFactory.DESCRIPTOR.name()))
         throw new InvalidArgumentsException(
           s"""Could not create $schemaType with specified index provider '$indexProviderString'.
-             |To create fulltext index, please use 'db.index.fulltext.createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'.""".stripMargin)
+             |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin)
 
       if (!indexProviderString.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) &&
         !indexProviderString.equalsIgnoreCase(NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()))
@@ -161,7 +161,7 @@ case class CreateIndexOptionsConverter(schemaType: String) extends OptionsConver
           itemsMap.writeTo(pp)
           throw new InvalidArgumentsException(
             s"""Could not create $schemaType with specified index config '${pp.value()}', contains fulltext config options.
-               |To create fulltext index, please use 'db.index.fulltext.createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'.""".stripMargin)
+               |To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'.""".stripMargin)
         }
 
         val hm = new java.util.HashMap[String, Array[Double]]()
@@ -181,5 +181,5 @@ case class CreateIndexOptionsConverter(schemaType: String) extends OptionsConver
   }
 }
 
-case class CreateIndexOptions(provider: Option[String], config: IndexConfig)
+case class CreateBtreeIndexOptions(provider: Option[String], config: IndexConfig)
 case class CreateDatabaseOptions(existingData: String, databaseSeed: Option[String])

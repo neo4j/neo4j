@@ -86,7 +86,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
     case CreateNodeKeyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateNodeKeyConstraint", (ctx, _) => {
-        val CreateIndexOptions(indexProvider, indexConfig) = CreateIndexOptionsConverter("node key constraint").convert(options)
+        val CreateBtreeIndexOptions(indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("node key constraint").convert(options)
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
         ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
@@ -106,7 +106,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
     case CreateUniquePropertyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateUniqueConstraint", (ctx, _) => {
-        val CreateIndexOptions(indexProvider, indexConfig) = CreateIndexOptionsConverter("uniqueness constraint").convert(options)
+        val CreateBtreeIndexOptions(indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("uniqueness constraint").convert(options)
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
         ctx.createUniqueConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
@@ -165,7 +165,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateBtreeIndex(source, entityName, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val CreateIndexOptions(indexProvider, indexConfig) = CreateIndexOptionsConverter("index").convert(options, params)
+        val CreateBtreeIndexOptions(indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("btree index").convert(options, params)
         val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
         ctx.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
