@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
+import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -225,6 +227,12 @@ object Additions {
       // CREATE LOOKUP INDEX ...
       case c: CreateLookupIndex =>
         throw cypherExceptionFactory.syntaxException("Lookup indexes are not supported in this Cypher version.", c.position)
+
+      // CREATE FULLTEXT INDEX ...
+      case c: CreateFulltextNodeIndex =>
+        throw cypherExceptionFactory.syntaxException("Fulltext indexes can only be created using procedures in this Cypher version.", c.position)
+      case c: CreateFulltextRelationshipIndex =>
+        throw cypherExceptionFactory.syntaxException("Fulltext indexes can only be created using procedures in this Cypher version.", c.position)
 
       // CREATE DATABASE OPTIONS {}
       case c@CreateDatabase(_, _, OptionsMap(_), _) =>

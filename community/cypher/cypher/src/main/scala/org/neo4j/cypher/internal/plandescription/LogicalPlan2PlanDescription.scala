@@ -78,6 +78,7 @@ import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
+import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
@@ -100,6 +101,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
@@ -379,11 +381,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case DoNothingIfExistsForLookupIndex(isNodeIndex, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
 
+      case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateLookupIndex(_, isNodeIndex, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+
+      case CreateFulltextIndex(_, entityNames, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case DropIndex(labelName, propertyKeyNames) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, Left(labelName), propertyKeyNames, Map.empty))), variables, withRawCardinalities)
@@ -721,6 +729,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
       case CreateLookupIndex(_, isNodeIndex, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+
+      case CreateFulltextIndex(_, entityNames, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE"), options))
@@ -1168,6 +1179,23 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         pretty"()-[:$prettyType]-()"
     }
     pretty"INDEX$name FOR $pattern ON $propertyString${prettyOptions(options)}"
+  }
+
+  private def fulltextIndexInfo(nameOption: Option[String], entityNames: Either[List[LabelName], List[RelTypeName]], properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
+    val name = nameOption match {
+      case Some(n) => pretty" ${asPrettyString(n)}"
+      case _ => pretty""
+    }
+    val propertyString = properties.map(asPrettyString(_)).mkPrettyString("[", SEPARATOR, "]")
+    val pattern = entityNames match {
+      case Left(labels) =>
+        val innerPattern = labels.map(l => asPrettyString(l.name)).mkPrettyString(":", "|", "")
+        pretty"($innerPattern)"
+      case Right(relTypes) =>
+        val innerPattern = relTypes.map(r => asPrettyString(r.name)).mkPrettyString(":", "|", "")
+        pretty"()-[$innerPattern]-()"
+    }
+    pretty"INDEX$name FOR $pattern ON EACH $propertyString${prettyOptions(options)}"
   }
 
   private def indexInfo(nameOption: Option[String], isNodeIndex: Boolean): PrettyString = {

@@ -55,6 +55,8 @@ import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
+import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
+import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
@@ -1189,6 +1191,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     indexType <- oneOf((AllIndexes, verbose), (BtreeIndexes, verbose), (FulltextIndexes, None), (LookupIndexes, None))
   } yield indexType
 
+  def _listOfLabels: Gen[List[LabelName]] = for {
+    labels <- oneOrMore(_labelName)
+  } yield labels
+
+  def _listOfRelTypes: Gen[List[RelTypeName]] = for {
+    types <- oneOrMore(_relTypeName)
+  } yield types
+
   def _constraintInfo: Gen[(ShowConstraintType, Option[Boolean], YieldOrWhere)] = for {
     unfilteredVerbose         <- frequency(8 -> const(None), 2 -> some(boolean)) // option(boolean) but None more often than Some
     unfilteredYields          <- _eitherYieldOrWhere
@@ -1259,19 +1269,23 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield props
 
   def _createIndex: Gen[CreateIndex] = for {
-    variable        <- _variable
-    labelName       <- _labelName
-    relType         <- _relTypeName
-    props           <- _listOfProperties
-    name            <- option(_identifier)
-    ifExistsDo      <- _ifExistsDo
-    options         <- _mapStringKeys
-    use             <- option(_use)
-    btreeNodeIndex  = CreateBtreeNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    btreeRelIndex   = CreateBtreeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    lookupNodeIndex = CreateLookupIndex(variable, isNodeIndex = true, FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
-    lookupRelIndex  = CreateLookupIndex(variable, isNodeIndex = false, FunctionInvocation(FunctionName(Type.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
-    command         <- oneOf(btreeNodeIndex, btreeRelIndex, lookupNodeIndex, lookupRelIndex)
+    variable          <- _variable
+    labelName         <- _labelName
+    labels            <- _listOfLabels
+    relType           <- _relTypeName
+    types             <- _listOfRelTypes
+    props             <- _listOfProperties
+    name              <- option(_identifier)
+    ifExistsDo        <- _ifExistsDo
+    options           <- _mapStringKeys
+    use               <- option(_use)
+    btreeNodeIndex    = CreateBtreeNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    btreeRelIndex     = CreateBtreeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    lookupNodeIndex   = CreateLookupIndex(variable, isNodeIndex = true, FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
+    lookupRelIndex    = CreateLookupIndex(variable, isNodeIndex = false, FunctionInvocation(FunctionName(Type.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
+    fulltextNodeIndex = CreateFulltextNodeIndex(variable, labels, props, name, ifExistsDo, options, use)(pos)
+    fulltextRelIndex  = CreateFulltextRelationshipIndex(variable, types, props, name, ifExistsDo, options, use)(pos)
+    command           <- oneOf(btreeNodeIndex, btreeRelIndex, lookupNodeIndex, lookupRelIndex, fulltextNodeIndex, fulltextRelIndex)
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {

@@ -315,6 +315,84 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "CREATE LOOKUP index FOR ()-[r]-() ON each type(r) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
       """CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(r) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
+    "create FULLTEXT INDEX FOR (n:A) ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX FOR (n:A) ON EACH [n.p]",
+
+    "create FULLTEXT INDEX FOR (n:A) ON EACH [n.p1, n.p2,n.p3]" ->
+      "CREATE FULLTEXT INDEX FOR (n:A) ON EACH [n.p1, n.p2, n.p3]",
+
+    "create FULLTEXT INDEX foo FOR (n:A | B) ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX foo FOR (n:A|B) ON EACH [n.p]",
+
+    "create FULLTEXT INDEX `$foo` FOR (n:A|B|C|D) ON EACH [n.p1,n.p2, n.p3]" ->
+      "CREATE FULLTEXT INDEX `$foo` FOR (n:A|B|C|D) ON EACH [n.p1, n.p2, n.p3]",
+
+    "CREATE fulltext index FOR (n:Person) on EACH [n.name] OPtiONS {indexProvider: 'fulltext-1.0'}" ->
+      """CREATE FULLTEXT INDEX FOR (n:Person) ON EACH [n.name] OPTIONS {indexProvider: "fulltext-1.0"}""",
+
+    "create FULLTEXT INDEX for (n:Person) ON EACH [n.name] OPTIONS {`indexProvider`: 'fulltext-1.0', indexConfig: {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true}}" ->
+      """CREATE FULLTEXT INDEX FOR (n:Person) ON EACH [n.name] OPTIONS {indexProvider: "fulltext-1.0", indexConfig: {`fulltext.analyzer`: "some_analyzer", `fulltext.eventually_consistent`: true}}""",
+
+    "create FULLTEXT INDEX myIndex for (n:Person) ON EACH [n.name] OPTIONS {indexConfig: {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true }}" ->
+      """CREATE FULLTEXT INDEX myIndex FOR (n:Person) ON EACH [n.name] OPTIONS {indexConfig: {`fulltext.analyzer`: "some_analyzer", `fulltext.eventually_consistent`: true}}""",
+
+    "CREATE FULLTEXT index FOR (n:Person) on EACH [n.name] OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE FULLTEXT INDEX FOR (n:Person) ON EACH [n.name] OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE fulltext index FOR (n:Person) on EACH [n.name] OPtiONS {}" ->
+      """CREATE FULLTEXT INDEX FOR (n:Person) ON EACH [n.name]""",
+
+    "create or REPLACE FULLTEXT INDEX FOR (n:A) ON EACH [n.p]" ->
+      "CREATE OR REPLACE FULLTEXT INDEX FOR (n:A) ON EACH [n.p]",
+
+    "create or REPLACE FULLTEXT INDEX foo FOR (n:A) ON EACH [n.p]" ->
+      "CREATE OR REPLACE FULLTEXT INDEX foo FOR (n:A) ON EACH [n.p]",
+
+    "create FULLTEXT INDEX IF not EXISTS FOR (n:A) ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX IF NOT EXISTS FOR (n:A) ON EACH [n.p]",
+
+    "create FULLTEXT INDEX foo IF not EXISTS FOR (n:A) ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX foo IF NOT EXISTS FOR (n:A) ON EACH [n.p]",
+
+    "create FULLTEXT INDEX FOR ()-[n:R]->() ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.p]",
+
+    "create FULLTEXT INDEX FOR ()-[n:R|S]-() ON EACH [n.p1,n.p2, n.p3]" ->
+      "CREATE FULLTEXT INDEX FOR ()-[n:R|S]-() ON EACH [n.p1, n.p2, n.p3]",
+
+    "create FULLTEXT INDEX `foo` FOR ()-[n:R|S|T|U]-() ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX foo FOR ()-[n:R|S|T|U]-() ON EACH [n.p]",
+
+    "create FULLTEXT INDEX `$foo` FOR ()-[n:R]-() ON EACH [n.p1, n.p2,n.p3]" ->
+      "CREATE FULLTEXT INDEX `$foo` FOR ()-[n:R]-() ON EACH [n.p1, n.p2, n.p3]",
+
+    "CREATE FULLtext index FOR ()-[n:R]->() on EACH [n.name] OPtiONS {indexProvider: 'fulltext-1.0'}" ->
+      """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name] OPTIONS {indexProvider: "fulltext-1.0"}""",
+
+    "create FULLTEXT INDEX for ()-[n:R]-() ON EACH [n.name] OPTIONS {`indexProvider`: 'fulltext-1.0', indexConfig: {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true }}" ->
+      """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name] OPTIONS {indexProvider: "fulltext-1.0", indexConfig: {`fulltext.analyzer`: "some_analyzer", `fulltext.eventually_consistent`: true}}""",
+
+    "create FULLTEXT INDEX myIndex for ()-[n:R]-() ON EACH [n.name] OPTIONS {indexConfig: {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true }}" ->
+      """CREATE FULLTEXT INDEX myIndex FOR ()-[n:R]-() ON EACH [n.name] OPTIONS {indexConfig: {`fulltext.analyzer`: "some_analyzer", `fulltext.eventually_consistent`: true}}""",
+
+    "CREATE fullTEXT index FOR ()-[n:R]-() on EACH [n.name] OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name] OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE fulltext index FOR ()<-[n:R]-() on EACH [n.name] OPtiONS {}" ->
+      """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name]""",
+
+    "create or REPLACE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.p]" ->
+      "CREATE OR REPLACE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.p]",
+
+    "create or REPLACE FULLTEXT INDEX foo FOR ()-[n:R]-() ON EACH [n.p]" ->
+      "CREATE OR REPLACE FULLTEXT INDEX foo FOR ()-[n:R]-() ON EACH [n.p]",
+
+    "create FULLTEXT INDEX IF not EXISTS FOR ()-[n:R]-() ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX IF NOT EXISTS FOR ()-[n:R]-() ON EACH [n.p]",
+
+    "create FULLTEXT INDEX foo IF not EXISTS FOR ()-[n:R]-() ON EACH [n.p]" ->
+      "CREATE FULLTEXT INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON EACH [n.p]",
+
     "drop INDEX ON :A(p)" ->
       "DROP INDEX ON :A(p)",
 

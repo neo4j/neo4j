@@ -230,6 +230,141 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       }
   }
 
+  Seq(
+    ("(n:Person)", fulltextNodeIndex(_, List("Person"), _, _, _)),
+    ("(n:Person|Colleague|Friend)", fulltextNodeIndex(_, List("Person", "Colleague", "Friend"), _, _, _)),
+    ("()-[n:R]->()", fulltextRelIndex(_, List("R"), _, _, _)),
+    ("()<-[n:R|S]-()", fulltextRelIndex(_, List("R", "S"), _, _, _))
+  ).foreach {
+    case (pattern, createIndex: CreateFulltextIndexFunction) =>
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name]") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"USE neo4j CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name]") {
+        yields(_ => createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, Map.empty).withGraph(Some(use(varFor("neo4j")))))
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name, n.age]") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name]") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name, n.age]") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE FULLTEXT INDEX `$$my_index` FOR $pattern ON EACH [n.name]") {
+        yields(createIndex(List(prop("n", "name")), Some("$my_index"), ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE FULLTEXT INDEX FOR $pattern ON EACH [n.name]") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsReplace, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name, n.age]") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), ast.IfExistsReplace, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n.name]") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsInvalidSyntax, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n.name]") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsInvalidSyntax, Map.empty))
+      }
+
+      test(s"CREATE FULLTEXT INDEX IF NOT EXISTS FOR $pattern ON EACH [n.name, n.age]") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, ast.IfExistsDoNothing, Map.empty))
+      }
+
+      test(s"CREATE FULLTEXT INDEX my_index IF NOT EXISTS FOR $pattern ON EACH [n.name]") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsDoNothing, Map.empty))
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexProvider : 'fulltext-1.0'}") {
+        yields(createIndex(List(prop("n", "name")),
+          None, ast.IfExistsThrowError, Map("indexProvider" -> literalString("fulltext-1.0"))))
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexProvider : 'fulltext-1.0', indexConfig : {`fulltext.analyzer`: 'some_analyzer'}}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          Map("indexProvider" -> literalString("fulltext-1.0"),
+            "indexConfig"   -> mapOf("fulltext.analyzer" -> literalString("some_analyzer"))
+          )
+        ))
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexConfig : {`fulltext.eventually_consistent`: false}, indexProvider : 'fulltext-1.0'}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          Map("indexProvider" -> literalString("fulltext-1.0"),
+            "indexConfig"   -> mapOf("fulltext.eventually_consistent" -> falseLiteral)
+          )
+        ))
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexConfig : {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true}}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError,
+          Map("indexConfig" -> mapOf(
+            "fulltext.analyzer" -> literalString("some_analyzer"),
+            "fulltext.eventually_consistent" -> trueLiteral
+          ))
+        ))
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {nonValidOption : 42}") {
+        yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, Map("nonValidOption" -> literalInt(42))))
+      }
+
+      test(s"CREATE FULLTEXT INDEX my_index FOR $pattern ON EACH [n.name] OPTIONS {}") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE FULLTEXT INDEX $$my_index FOR $pattern ON EACH [n.name]") {
+        failsToParse
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] {indexProvider : 'fulltext-1.0'}") {
+        failsToParse
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS") {
+        failsToParse
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH (n.name)") {
+        failsToParse
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH n.name") {
+        failsToParse
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH []") {
+        failsToParse
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH") {
+        failsToParse
+      }
+
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON [n.name]") {
+        failsToParse
+      }
+
+      test(s"CREATE INDEX FOR $pattern ON EACH [n.name]") {
+        failsToParse
+      }
+
+      // Missing escaping around `fulltext.analyzer`
+      test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n.name] OPTIONS {indexConfig : {fulltext.analyzer: 'some_analyzer'}}") {
+        failsToParse
+      }
+  }
+
   test("CREATE LOOKUP INDEX FOR (x) ON EACH labels(x)") {
     yields(ast.CreateLookupIndex(varFor("x"), isNodeIndex = true, function(Labels.name, varFor("x")), None, ast.IfExistsThrowError, Map.empty))
   }
@@ -326,6 +461,62 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
     failsToParse
   }
 
+  test("CREATE FULLTEXT INDEX FOR (n) ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n]-() ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n|:A) ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n|:R]-() ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n:A|:B) ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n:R|:S]-() ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n:A||B) ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n:R||S]-() ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n:A:B) ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n:R:S]-() ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n:A&B) ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n:R&S]-() ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR (n:A B) ON EACH [n.x]") {
+    failsToParse
+  }
+
+  test("CREATE FULLTEXT INDEX FOR ()-[n:R S]-() ON EACH [n.x]") {
+    failsToParse
+  }
+
   // Drop index
 
   test("DROP INDEX ON :Person(name)") {
@@ -393,26 +584,42 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
   type CreateBtreeIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
 
   private def btreeNodeIndex(props: List[expressions.Property],
-                        name: Option[String],
-                        ifExistsDo: ast.IfExistsDo,
-                        options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+                             name: Option[String],
+                             ifExistsDo: ast.IfExistsDo,
+                             options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
     ast.CreateBtreeNodeIndex(varFor("n"), labelName("Person"), props, name, ifExistsDo, options)
 
   private def btreeRelIndex(props: List[expressions.Property],
-                       name: Option[String],
-                       ifExistsDo: ast.IfExistsDo,
-                       options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+                            name: Option[String],
+                            ifExistsDo: ast.IfExistsDo,
+                            options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
     ast.CreateBtreeRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
 
   type CreateLookupIndexFunction = (Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
 
   private def lookupNodeIndex(name: Option[String],
-                        ifExistsDo: ast.IfExistsDo,
-                        options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+                              ifExistsDo: ast.IfExistsDo,
+                              options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
     ast.CreateLookupIndex(varFor("n"), isNodeIndex = true, function(Labels.name, varFor("n")), name, ifExistsDo, options)
 
   private def lookupRelIndex(name: Option[String],
-                       ifExistsDo: ast.IfExistsDo,
-                       options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+                             ifExistsDo: ast.IfExistsDo,
+                             options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
     ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Type.name, varFor("r")), name, ifExistsDo, options)
+
+  type CreateFulltextIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
+
+  private def fulltextNodeIndex(props: List[expressions.Property],
+                                labels: List[String],
+                                name: Option[String],
+                                ifExistsDo: ast.IfExistsDo,
+                                options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+    ast.CreateFulltextNodeIndex(varFor("n"), labels.map(labelName), props, name, ifExistsDo, options)
+
+  private def fulltextRelIndex(props: List[expressions.Property],
+                               types: List[String],
+                               name: Option[String],
+                               ifExistsDo: ast.IfExistsDo,
+                               options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+    ast.CreateFulltextRelationshipIndex(varFor("n"), types.map(relTypeName), props, name, ifExistsDo, options)
 }

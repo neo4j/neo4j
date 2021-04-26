@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
+import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
@@ -75,6 +77,19 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         case _ => None
       }
       Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))
+    }
+
+    def createFulltextIndex(entityNames: Either[List[LabelName], List[RelTypeName]],
+                    props: List[Property],
+                    name: Option[String],
+                    ifExistsDo: IfExistsDo,
+                    options: Map[String, Expression]): Option[LogicalPlan] = {
+      val propKeys = props.map(_.propertyKey)
+      val source = ifExistsDo match {
+        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForFulltextIndex(entityNames, propKeys, name))
+        case _ => None
+      }
+      Some(plans.CreateFulltextIndex(source, entityNames, propKeys, name, options))
     }
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
@@ -154,6 +169,14 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
           case _ => None
         }
         Some(plans.CreateLookupIndex(source, isNodeIndex, name))
+
+      // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR (n[:LABEL[|...]]) ON EACH (n.prop[, ...]) [OPTIONS {...}]
+      case CreateFulltextNodeIndex(_, labels, props, name, ifExistsDo, options, _) =>
+        createFulltextIndex(Left(labels), props, name, ifExistsDo, options)
+
+      // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR ()-[r[:RELATIONSHIP_TYPE[|...]]]->() ON EACH (r.prop[, ...]) [OPTIONS {...}]
+      case CreateFulltextRelationshipIndex(_, relTypes, props, name, ifExistsDo, options, _) =>
+        createFulltextIndex(Right(relTypes), props, name, ifExistsDo, options)
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props, _) =>

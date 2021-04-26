@@ -62,9 +62,9 @@ trait SchemaCommand extends Parser
   }
 
   private def RelationshipPatternSyntax: Rule2[Variable, RelTypeName] = rule(
-    ("()-[" ~~ Variable~~ RelType ~~ "]-()")
-      | ("()-[" ~~ Variable~~ RelType ~~ "]->()")
-      | ("()<-[" ~~ Variable~~ RelType ~~ "]-()")
+    ("()-[" ~~ Variable ~~ RelType ~~ "]-()")
+      | ("()-[" ~~ Variable ~~ RelType ~~ "]->()")
+      | ("()<-[" ~~ Variable ~~ RelType ~~ "]-()")
   )
 
   // INDEX commands
@@ -74,7 +74,7 @@ trait SchemaCommand extends Parser
   }
 
   private def CreateIndex: Rule1[ast.CreateIndex] = rule {
-    CreateLookupIndex | CreateBtreeIndex
+    CreateLookupIndex | CreateFulltextIndex | CreateBtreeIndex
   }
 
   private def CreateBtreeIndex: Rule1[ast.CreateIndex] = rule {
@@ -146,6 +146,56 @@ trait SchemaCommand extends Parser
   private def lookupIndexFunctions: Rule1[expressions.FunctionInvocation] = rule("a function for lookup index creation") {
     group(FunctionName ~~ "(" ~~ Variable ~~ ")") ~~>> ((fName, variable) => expressions.FunctionInvocation(fName, distinct = false, IndexedSeq(variable)))
   }
+
+  private def CreateFulltextIndex: Rule1[ast.CreateIndex] = rule {
+    group(CreateFulltextIndexStart ~~ FulltextRelationshipIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, relTypes, properties, options) => ast.CreateFulltextRelationshipIndex(variable, relTypes, properties, name, ifExistsDo, options)) |
+    group(CreateFulltextIndexStart ~~ FulltextNodeIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, labels, properties, options) => ast.CreateFulltextNodeIndex(variable, labels, properties, name, ifExistsDo, options))
+  }
+
+  private def CreateFulltextIndexStart: Rule2[Option[String], ast.IfExistsDo] = rule {
+    // without name
+    keyword("CREATE OR REPLACE FULLTEXT INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsInvalidSyntax) |
+      keyword("CREATE OR REPLACE FULLTEXT INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsReplace) |
+      keyword("CREATE FULLTEXT INDEX IF NOT EXISTS FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsDoNothing) |
+      keyword("CREATE FULLTEXT INDEX FOR") ~~~> (_ => None) ~> (_ => ast.IfExistsThrowError) |
+      // with name
+      group(keyword("CREATE OR REPLACE FULLTEXT INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsInvalidSyntax) |
+      group(keyword("CREATE OR REPLACE FULLTEXT INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsReplace) |
+      group(keyword("CREATE FULLTEXT INDEX") ~~ SymbolicNameString ~~ keyword("IF NOT EXISTS FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsDoNothing) |
+      group(keyword("CREATE FULLTEXT INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
+  }
+
+  private def FulltextNodeIndexPatternSyntax: Rule4[Variable, List[LabelName], List[Property], Map[String, Expression]] = rule {
+    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ options) |
+    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => Map.empty)
+  }
+
+  private def FulltextNodeLabels: Rule1[List[LabelName]] = rule(
+    group(NodeLabel ~~ operator("|") ~~ oneOrMore(LabelName, operator("|"))) ~~>> ((firstLabel, labels) => _ => firstLabel +: labels) |
+    NodeLabel ~~>> (label => _ => List(label))
+  )
+
+  private def FulltextRelationshipIndexPatternSyntax: Rule4[Variable, List[RelTypeName], List[Property], Map[String, Expression]] = rule {
+    group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ options) |
+      group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => Map.empty)
+  }
+
+  private def FulltextRelationshipPatternSyntax: Rule2[Variable, List[RelTypeName]] = rule(
+    group("()-[" ~~ Variable ~~ FulltextRelTypes ~~ "]-()") |
+    group("()-[" ~~ Variable ~~ FulltextRelTypes ~~ "]->()") |
+    group("()<-[" ~~ Variable ~~ FulltextRelTypes ~~ "]-()")
+  )
+
+  private def FulltextRelTypes: Rule1[List[RelTypeName]] = rule(
+    group(RelType ~~ operator("|") ~~ oneOrMore(RelTypeName, operator("|"))) ~~>> ((firstType, types) => _ => firstType +: types) |
+      RelType ~~>> (relType => _ => List(relType))
+  )
+
+  private def FulltextPropertyProjection: Rule1[List[Property]] = rule(
+    keyword("EACH") ~~ "[" ~~ VariablePropertyExpressions ~~ "]" ~~> (s => s.toList)
+  )
 
   private def DropIndex: Rule1[ast.DropIndex] = rule {
     group(keyword("DROP INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>> (ast.DropIndex(_, _))

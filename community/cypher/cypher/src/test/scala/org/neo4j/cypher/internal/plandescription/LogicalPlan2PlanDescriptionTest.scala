@@ -133,6 +133,7 @@ import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateDatabase
+import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
@@ -158,6 +159,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
@@ -701,6 +703,36 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty)
       ), Seq(details("INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON EACH [prop]")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop1"), key("prop2")), None, Map.empty), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON EACH [prop1, prop2]")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label1"), label("Label2"))), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("fulltext-1.0"))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR (:Label1|Label2) ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(Some(DoNothingIfExistsForFulltextIndex(Left(List(label("Label"))), List(key("prop")), None)),
+      Left(List(label("Label"))), List(key("prop")), None, Map.empty), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON EACH [prop]")), Set.empty)
+      ), Seq(details("INDEX FOR (:Label) ON EACH [prop]")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"), relType("Type"))), List(key("prop1"), key("prop2")), None, Map.empty), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR ()-[:Label|Type]-() ON EACH [prop1, prop2]")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("fulltext-1.0"))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(Some(DoNothingIfExistsForFulltextIndex(Right(List(relType("Label"))), List(key("prop")), None)),
+      Right(List(relType("Label"))), List(key("prop")), None, Map.empty), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty)
+      ), Seq(details("INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
   }
 
   test("DropIndex") {
