@@ -48,6 +48,11 @@ import static org.neo4j.util.Preconditions.checkArgument;
 
 public final class LogConfig
 {
+    static
+    {
+        Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
+    }
+
     private static final String APPENDER_NAME = "log";
 
     private LogConfig()

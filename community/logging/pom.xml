@@ -91,4 +91,68 @@
             <artifactId>log4j-core</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <includes>
+                                    <include>org.apache.logging.log4j:*</include>
+                                </includes>
+                            </artifactSet>
+                            <relocations>
+                                <relocation>
+                                    <!-- Don't change shadedPattern without updating in Log4jPluginLoadingWorkaround as well -->
+                                    <pattern>org.apache.logging.log4j</pattern>
+                                    <shadedPattern>org.neo4j.logging.shaded.log4j</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <!-- workaround for also relocating log4j multi-release jars -->
+                                    <pattern>META-INF.versions.9.org.apache.logging.log4j</pattern>
+                                    <shadedPattern>META-INF.versions.9.org.neo4j.logging.shaded.log4j</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Multi-Release>true</Multi-Release>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>**/javax.annotation.processing.Processor</exclude>
+                                        <!-- Skip the plugins listing file to not interfere with any external Log4j dependencies.
+                                             We work around this file not existing in Log4jPluginLoadingWorkaround. -->
+                                        <exclude>**/Log4j2Plugins.dat</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>org.apache.logging.log4j:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

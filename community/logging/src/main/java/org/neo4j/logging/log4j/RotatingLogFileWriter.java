@@ -46,6 +46,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  */
 public class RotatingLogFileWriter implements Closeable
 {
+    static
+    {
+        Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
+    }
+
     private static final String APPENDER_NAME = "log";
 
     private final Logger log;
