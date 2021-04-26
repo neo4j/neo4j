@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -231,7 +232,11 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
     {
         // Given
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( 1, 1 ) ).withName( "my_constraint" ) );
+        TokenWrite tokenWrite = transaction.tokenWrite();
+        int labelId = tokenWrite.labelGetOrCreateForName( "Label" );
+        int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+        SchemaWrite schemaWrite = transaction.schemaWrite();
+        schemaWrite.uniquePropertyConstraintCreate( uniqueForSchema( forLabel( labelId, propId ) ).withName( "my_constraint" ) );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
