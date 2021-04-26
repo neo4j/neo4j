@@ -85,6 +85,6 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     @Override
     public long getMaxId()
     {
-        return 0;
+        return -1;
     }
 }
