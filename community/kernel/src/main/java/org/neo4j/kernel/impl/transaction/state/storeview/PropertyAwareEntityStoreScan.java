@@ -134,7 +134,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.phaseTracker = phaseTracker;
     }
 
-    protected EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
+    public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
     {
         return new CursorEntityIdIterator<>( cursorBehaviour.allocateEntityScanCursor( cursorTracer ) );
     }

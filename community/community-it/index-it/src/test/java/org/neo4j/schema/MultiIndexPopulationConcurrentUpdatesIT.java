@@ -78,7 +78,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.LegacyDynamicIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.storeview.LegacyLabelViewNodeStoreScan;
+import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
@@ -522,24 +522,24 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyScanConsumer,
                     labelScanConsumer, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
-            return new LabelViewNodeStoreWrapper( storageEngine.get(), locks, getLabelScanStore(),
+            return new LabelViewNodeStoreWrapper( storageEngine.get(), locks,
                     null, propertyScanConsumer, labelIds, propertyKeyIdFilter,
-                    (LegacyLabelViewNodeStoreScan) storeScan, customAction, jobScheduler );
+                    (NodeStoreScan) storeScan, customAction, jobScheduler );
         }
     }
 
-    private static class LabelViewNodeStoreWrapper extends LegacyLabelViewNodeStoreScan
+    private static class LabelViewNodeStoreWrapper extends NodeStoreScan
     {
-        private final LegacyLabelViewNodeStoreScan delegate;
+        private final NodeStoreScan delegate;
         private final Runnable customAction;
 
         LabelViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
-                LabelScanStore labelScanStore, TokenScanConsumer labelScanConsumer,
+                TokenScanConsumer labelScanConsumer,
                 PropertyScanConsumer propertyUpdatesConsumer, int[] labelIds, IntPredicate propertyKeyIdFilter,
-                LegacyLabelViewNodeStoreScan delegate, Runnable customAction,
+                NodeStoreScan delegate, Runnable customAction,
                 JobScheduler jobScheduler )
         {
-            super( Config.defaults(), storageReader, locks, labelScanStore, labelScanConsumer, propertyUpdatesConsumer, labelIds, propertyKeyIdFilter, false,
+            super( Config.defaults(), storageReader, locks, labelScanConsumer, propertyUpdatesConsumer, labelIds, propertyKeyIdFilter, false,
                     jobScheduler, PageCacheTracer.NULL, INSTANCE );
             this.delegate = delegate;
             this.customAction = customAction;
