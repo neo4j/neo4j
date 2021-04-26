@@ -152,7 +152,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     TokenRead tokenRead();
 
     /**
-     * @return Token read operations
+     * @return Token write operations
      */
     TokenWrite tokenWrite();
 
