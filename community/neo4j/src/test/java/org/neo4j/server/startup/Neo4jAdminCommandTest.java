@@ -36,6 +36,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
+import static org.neo4j.server.startup.Bootloader.PROP_JAVA_VERSION;
+import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
+import static org.neo4j.server.startup.Bootloader.PROP_VM_VENDOR;
 
 /**
  * This test class just verifies that the Neo4jAdminCommand is correctly invoking AdminTool
@@ -133,6 +136,15 @@ class Neo4jAdminCommandTest
             addConf( BootloaderSettings.initial_heap_size, "222m" );
             assertThat( execute( null ) ).isEqualTo( 0 );
             assertThat( out.toString() ).doesNotContain( "-Xms" );
+        }
+
+        @Test
+        void shouldPrintJVMInfo()
+        {
+            Map<String,String> vm = Map.of( PROP_JAVA_VERSION, "11.0", PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM", PROP_VM_VENDOR, "Oracle" );
+            assertThat( execute( List.of(), vm ) ).isEqualTo( 0 );
+            assertThat( out.toString() ).containsSubsequence( String.format( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
+                    vm.get( PROP_JAVA_VERSION ), vm.get( PROP_VM_NAME ), vm.get( PROP_VM_VENDOR ) ) );
         }
 
         @Override

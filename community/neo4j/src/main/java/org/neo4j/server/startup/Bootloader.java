@@ -48,6 +48,7 @@ class Bootloader
     static final String PROP_JAVA_CP = "java.class.path";
     static final String PROP_JAVA_VERSION = "java.version";
     static final String PROP_VM_NAME = "java.vm.name";
+    static final String PROP_VM_VENDOR = "java.vm.vendor";
     static final String PROP_BASEDIR = "basedir";
 
     static final String ARG_EXPAND_COMMANDS = "--expand-commands";
@@ -244,6 +245,8 @@ class Bootloader
 
     int admin()
     {
+        ctx.out.printf( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
+                ctx.getProp( PROP_JAVA_VERSION ), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
         try
         {
             ctx.os().admin();
