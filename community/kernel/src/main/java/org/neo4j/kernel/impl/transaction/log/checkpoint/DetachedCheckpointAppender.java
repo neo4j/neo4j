@@ -102,7 +102,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         if ( checkpointWriter == null )
         {
             // we were not started but on a failure path someone tried to shutdown everything with checkpoint.
-            log.warn( "Checkpoint was attempted while appender is not started. No checkpoint will record be appended." );
+            log.warn( "Checkpoint was attempted while appender is not started. No checkpoint record will be appended." );
             return;
         }
         synchronized ( checkpointFile )
