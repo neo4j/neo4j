@@ -59,11 +59,9 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,7 +69,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
@@ -267,10 +264,9 @@ class IndexIT extends KernelIntegrationTest
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
         } );
-        assertEquals(
-                "Unable to drop index: Index does not exist: Index( id=1, name='my index', type='GENERAL BTREE', schema=(:Label {prop}), " +
-                        "indexProvider='native-btree-1.0' )",
-                e.getUserMessage( new InMemoryTokens() ) );
+        assertThat( e.getMessage() ).containsSubsequence( "Unable to drop index", "Index does not exist" )
+                                    .contains( "Index(", "id=", "name='my index'", "type='GENERAL BTREE'",
+                                               "schema=(:Label {prop})", "indexProvider='native-btree-1.0'" );
         commit();
     }
 
@@ -389,6 +385,7 @@ class IndexIT extends KernelIntegrationTest
     {
         // given
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
         int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "property1" );
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId );
@@ -398,13 +395,13 @@ class IndexIT extends KernelIntegrationTest
         // when
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
-
             // then
-            assertEquals( 1, indexes.size() );
-            IndexDefinition index = indexes.iterator().next();
-            assertEquals( "Label1", single( index.getLabels() ).name() );
-            assertEquals( asSet( "property1" ), Iterables.asSet( index.getPropertyKeys() ) );
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
+            assertThat( indexes.size() ).isEqualTo( initialIndexCount + 1 );
+
+            IndexDefinition index = tx.schema().getIndexByName( "constraint name" );
+            assertThat( index.getLabels() ).map( Label::name ).containsOnly( "Label1" );
+            assertThat( index.getPropertyKeys() ).containsOnly( "property1" );
             assertTrue( index.isConstraintIndex(), "index should be a constraint index" );
 
             // when
@@ -417,27 +414,29 @@ class IndexIT extends KernelIntegrationTest
     void shouldListMultiTokenIndexesInTheCoreAPI() throws Exception
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
         SchemaDescriptor schema = SchemaDescriptor.fulltext(
                 EntityType.NODE, new int[]{labelId, labelId2}, new int[]{propertyKeyId} );
-        IndexPrototype prototype = IndexPrototype.forSchema( schema, FulltextIndexProviderFactory.DESCRIPTOR ).withIndexType( IndexType.FULLTEXT );
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, FulltextIndexProviderFactory.DESCRIPTOR )
+                                                 .withIndexType( IndexType.FULLTEXT ).withName( "multi token index" );
         transaction.schemaWrite().indexCreate( prototype );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
-
             // then
-            assertEquals( 1, indexes.size() );
-            IndexDefinition index = indexes.iterator().next();
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
+            assertThat( indexes.size() ).isEqualTo( initialIndexCount + 1 );
+
+            IndexDefinition index = tx.schema().getIndexByName( "multi token index" );
             assertThrows( IllegalStateException.class, index::getRelationshipTypes );
-            assertThat( index.getLabels() ).contains( label( LABEL ), label( LABEL2 ) );
+            assertThat( index.getLabels() ).containsOnly( label( LABEL ), label( LABEL2 ) );
+            assertThat( index.getPropertyKeys() ).containsOnly( PROPERTY_KEY );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
             assertFalse( index.isCompositeIndex(), "should not be a composite index" );
             assertTrue( index.isNodeIndex(), "should be a node index" );
             assertFalse( index.isRelationshipIndex(), "should not be a relationship index" );
-            assertEquals( asSet( PROPERTY_KEY ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
@@ -445,26 +444,26 @@ class IndexIT extends KernelIntegrationTest
     void shouldListCompositeIndexesInTheCoreAPI() throws Exception
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
         SchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( schema, "my index" );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
-
             // then
-            assertEquals( 1, indexes.size() );
-            IndexDefinition index = indexes.iterator().next();
-            assertEquals( LABEL, single( index.getLabels() ).name() );
-            assertThat( index.getLabels() ).contains( label( LABEL ) );
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
+            assertThat( indexes.size() ).isEqualTo( initialIndexCount + 1 );
+
+            IndexDefinition index = tx.schema().getIndexByName( "my index" );
             assertThrows( IllegalStateException.class, index::getRelationshipTypes );
+            assertThat( index.getLabels() ).containsOnly( label( LABEL ) );
+            assertThat( index.getPropertyKeys() ).containsOnly( PROPERTY_KEY, PROPERTY_KEY2 );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
             assertTrue( index.isCompositeIndex(), "should be a composite index" );
             assertTrue( index.isNodeIndex(), "should be a node index" );
             assertFalse( index.isRelationshipIndex(), "should not be a relationship index" );
-            assertEquals( asSet( PROPERTY_KEY, PROPERTY_KEY2 ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
@@ -472,25 +471,26 @@ class IndexIT extends KernelIntegrationTest
     void shouldListRelationshipIndexesInTheCoreAPI() throws Exception
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
         SchemaDescriptor schema = SchemaDescriptor.forRelType( relType, propertyKeyId );
         transaction.schemaWrite().indexCreate( schema, "my index" );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
-
             // then
-            assertEquals( 1, indexes.size() );
-            IndexDefinition index = indexes.iterator().next();
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
+            assertThat( indexes.size() ).isEqualTo( initialIndexCount + 1 );
+
+            IndexDefinition index = tx.schema().getIndexByName( "my index" );
             assertThrows( IllegalStateException.class, index::getLabels );
-            assertEquals( singletonList( withName( REL_TYPE ) ), index.getRelationshipTypes() );
+            assertThat( index.getRelationshipTypes() ).containsOnly( withName( REL_TYPE ) );
+            assertThat( index.getPropertyKeys() ).containsOnly( PROPERTY_KEY );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
             assertFalse( index.isCompositeIndex(), "should not be a composite index" );
             assertFalse( index.isNodeIndex(), "should not be a node index" );
             assertTrue( index.isRelationshipIndex(), "should be a relationship index" );
-            assertEquals( asSet( PROPERTY_KEY ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
@@ -498,6 +498,7 @@ class IndexIT extends KernelIntegrationTest
     void shouldListCompositeMultiTokenRelationshipIndexesInTheCoreAPI() throws Exception
     {
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        long initialIndexCount = Iterators.count( transaction.schemaRead().indexesGetAll() );
         SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{relType, relType2},
                 new int[]{propertyKeyId, propertyKeyId2} );
         IndexPrototype prototype = IndexPrototype.forSchema( schema, FulltextIndexProviderFactory.DESCRIPTOR )
@@ -508,19 +509,19 @@ class IndexIT extends KernelIntegrationTest
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
-
             // then
-            assertEquals( 1, indexes.size() );
-            IndexDefinition index = indexes.iterator().next();
+            Set<IndexDefinition> indexes = Iterables.asSet( tx.schema().getIndexes() );
+            assertThat( indexes.size() ).isEqualTo( initialIndexCount + 1 );
+
+            IndexDefinition index = tx.schema().getIndexByName( "index name" );
             assertThrows( IllegalStateException.class, index::getLabels );
-            assertThat( index.getRelationshipTypes() ).contains( withName( REL_TYPE ), withName( REL_TYPE2 ) );
+            assertThat( index.getRelationshipTypes() ).containsOnly( withName( REL_TYPE ), withName( REL_TYPE2 ) );
+            assertThat( index.getPropertyKeys() ).containsOnly( PROPERTY_KEY, PROPERTY_KEY2 );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
             assertTrue( index.isCompositeIndex(), "should be a composite index" );
             assertFalse( index.isNodeIndex(), "should not be a node index" );
             assertTrue( index.isRelationshipIndex(), "should be a relationship index" );
-            assertEquals( asSet( PROPERTY_KEY, PROPERTY_KEY2 ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
