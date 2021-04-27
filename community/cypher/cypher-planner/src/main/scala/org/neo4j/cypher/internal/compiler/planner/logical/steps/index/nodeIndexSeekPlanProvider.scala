@@ -53,11 +53,11 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
     context: LogicalPlanningContext,
     solvedPredicates: Seq[Expression],
     predicatesForCardinalityEstimation: Seq[Expression]
-  ): LogicalPlan =
+  ): Option[LogicalPlan] =
     if (isUnique) {
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, properties, valueExpr, solvedPredicates, predicatesForCardinalityEstimation, hint, argumentIds, providedOrder, indexOrder, context)
+      Some(context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, properties, valueExpr, solvedPredicates, predicatesForCardinalityEstimation, hint, argumentIds, providedOrder, indexOrder, context))
     } else {
-      context.logicalPlanProducer.planNodeIndexSeek(idName, label, properties, valueExpr, solvedPredicates, predicatesForCardinalityEstimation, hint, argumentIds, providedOrder, indexOrder, context)
+      Some(context.logicalPlanProducer.planNodeIndexSeek(idName, label, properties, valueExpr, solvedPredicates, predicatesForCardinalityEstimation, hint, argumentIds, providedOrder, indexOrder, context))
     }
 }
 

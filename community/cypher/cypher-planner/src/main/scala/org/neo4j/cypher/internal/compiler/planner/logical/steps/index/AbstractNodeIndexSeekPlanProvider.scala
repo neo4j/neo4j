@@ -62,7 +62,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
     context: LogicalPlanningContext,
     solvedPredicates: Seq[Expression],
     predicatesForCardinalityEstimation: Seq[Expression],
-  ): LogicalPlan
+  ): Option[LogicalPlan]
 
   def doCreatePlans(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
 
@@ -83,7 +83,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
       // TODO: This seems very unfair if there is a tail of non-seekable predicates
       val predicatesForCardinalityEstimation = originalPredicates.map(p => p.predicate) :+ indexMatch.labelPredicate
 
-      Set(constructPlan(
+      constructPlan(
         indexMatch.variableName,
         indexMatch.labelToken,
         properties,
@@ -96,7 +96,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         context,
         predicateSet.allSolvedPredicates,
         predicatesForCardinalityEstimation,
-      ))
+      ).toSet
     }
   }
 
