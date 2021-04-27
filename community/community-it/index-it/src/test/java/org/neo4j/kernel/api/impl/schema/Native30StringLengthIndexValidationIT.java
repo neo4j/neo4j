@@ -44,7 +44,7 @@ public class Native30StringLengthIndexValidationIT extends StringLengthIndexVali
     }
 
     @Override
-    protected String expectedPopulationFailureCauseMessage( long entityId )
+    protected String expectedPopulationFailureCauseMessage( long indexId, long entityId )
     {
         return "Document contains at least one immense term in field=\"string\" (whose UTF8 encoding is longer than the max length 32766), " +
                 "all of which were skipped.  Please correct the analyzer to not produce such terms.";
