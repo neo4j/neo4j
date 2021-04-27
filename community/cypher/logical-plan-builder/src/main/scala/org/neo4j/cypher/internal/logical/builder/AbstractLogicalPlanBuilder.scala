@@ -973,8 +973,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def merge(nodes: Seq[CreateNode] = Seq.empty,
             relationships: Seq[CreateRelationship] = Seq.empty,
             onMatch: Seq[SetMutatingPattern] = Seq.empty,
-            onCreate : Seq[SetMutatingPattern] = Seq.empty): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => Merge(source, nodes, relationships, onMatch, onCreate)(_)))
+            onCreate : Seq[SetMutatingPattern] = Seq.empty,
+            lockNodes: Set[String] = Set.empty): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => Merge(source, nodes, relationships, onMatch, onCreate, lockNodes)(_)))
   }
 
   def nodeHashJoin(nodes: String*): IMPL = {

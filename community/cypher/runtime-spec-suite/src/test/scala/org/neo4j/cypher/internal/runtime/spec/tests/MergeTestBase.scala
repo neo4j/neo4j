@@ -1037,7 +1037,8 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("handle continuations from rhs of apply") {
-    given(nodeGraph(sizeHint))
+    val size = Math.sqrt(sizeHint).toInt
+    given(nodeGraph(size))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1054,7 +1055,86 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val b = Iterators.single(tx.getAllNodes.stream().filter(n => n.getProperty("prop", null) == 1).iterator())
-    runtimeResult should beColumns("b").withRows((1 to sizeHint).map(_ => Array[Any](b))).withStatistics(nodesCreated = 1, propertiesSet = 1)
+    runtimeResult should beColumns("b").withRows((1 to size).map(_ => Array[Any](b))).withStatistics(nodesCreated = 1, propertiesSet = 1)
+  }
+
+  test("should lock nodes if no matches") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y")),
+               relationships = Seq(createRelationship("r", "x", "R", "y")),
+               lockNodes = Set("x"))
+      .|.expand("(x)-[r:R]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("x")
+      .withRows(nodes.map(Array(_)))
+      .withStatistics(nodesCreated = sizeHint, relationshipsCreated = sizeHint)
+      .withLockedNodes(nodes.map(_.getId).toSet)
+  }
+
+  test("should not lock nodes if on matches") {
+    // given
+    val (nodes, _) = given {
+      circleGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y")),
+               relationships = Seq(createRelationship("r", "x", "R", "y")),
+               lockNodes = Set("x"))
+      .|.expand("(x)-[r:R]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("x")
+      .withRows(nodes.map(Array(_)))
+      .withNoUpdates()
+      .withLockedNodes(Set.empty)
+  }
+
+  test("should lock refslot nodes") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("xRef")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y")),
+               relationships = Seq(createRelationship("r", "x", "R", "y")),
+              lockNodes = Set("xRef"))
+      .|.expand("(xRef)-[r:R]->(y)")
+      .|.argument("xRef")
+      .unwind("[x] as xRef")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("xRef")
+      .withRows(nodes.map(Array(_)))
+      .withStatistics(nodesCreated = sizeHint, relationshipsCreated = sizeHint)
+      .withLockedNodes(nodes.map(_.getId).toSet)
   }
 
   test("should profile rows and dbhits of merge correctly") {
