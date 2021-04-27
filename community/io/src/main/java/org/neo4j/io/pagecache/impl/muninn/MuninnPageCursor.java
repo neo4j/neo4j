@@ -407,8 +407,6 @@ public abstract class MuninnPageCursor extends PageCursor
             {
                 // The grabFreePage method might throw.
                 pageRef = pagedFile.grabFreeAndExclusivelyLockedPage( faultEvent );
-                pageId = pagedFile.toId( pageRef );
-                faultEvent.setCachePageId( pageId );
                 // We got a free page, and we know that we have race-free access to it. Well, it's not entirely race
                 // free, because other paged files might have it in their translation tables (or rather, their reads of
                 // their translation tables might race with eviction) and try to pin it.
@@ -445,6 +443,8 @@ public abstract class MuninnPageCursor extends PageCursor
             }
             // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race with
             // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
+            pageId = pagedFile.toId( pageRef );
+            faultEvent.setCachePageId( pageId );
             MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, pageId );
             // Once we page has been published to the translation table, we can convert our exclusive lock to whatever we
             // need for the page cursor.
