@@ -24,7 +24,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -130,7 +129,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.AbstractLogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -186,8 +184,6 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
-import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTruncation;
-import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.labelScanStore;
@@ -910,28 +906,6 @@ public class Database extends LifecycleAdapter
         }
         deleteDatabaseFiles( List.of( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() ) );
         eventListeners.databaseDrop( namedDatabaseId );
-    }
-
-    public synchronized void truncate() throws IOException
-    {
-        boolean truncateStartedDatabase = started;
-        List<Path> filesToKeep = filesToKeepOnTruncation( databaseLayout );
-        Path[] transactionLogsFiles = databaseDependencies != null ? databaseDependencies.resolveDependency( LogFiles.class ).logFiles()
-                : new TransactionLogFilesHelper( fs, databaseLayout.getTransactionLogsDirectory() ).getMatchedFiles();
-
-        final Path[] transactionLogs = Arrays.stream( transactionLogsFiles ).toArray( Path[]::new );
-        if ( truncateStartedDatabase )
-        {
-            prepareStop( pagedFile -> !filesToKeep.contains( pagedFile.path() ) );
-            stop();
-        }
-
-        List<Path> filesToDelete = filesToDeleteOnTruncation( filesToKeep, databaseLayout, transactionLogs );
-        deleteDatabaseFiles( filesToDelete );
-        if ( truncateStartedDatabase )
-        {
-            start();
-        }
     }
 
     private void deleteDatabaseFiles( List<Path> files )

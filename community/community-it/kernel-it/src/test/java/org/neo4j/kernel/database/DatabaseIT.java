@@ -25,14 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -69,7 +65,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 
@@ -148,69 +143,6 @@ class DatabaseIT
 
         assertFalse( fs.fileExists( databaseLayout.databaseDirectory() ) );
         assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
-    }
-
-    @Test
-    void truncateNotStartedDatabase() throws IOException
-    {
-        database.stop();
-
-        Path databaseDirectory = databaseLayout.databaseDirectory();
-        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
-
-        Path[] databaseFilesShouldExist = filesToKeepOnTruncation( databaseLayout ).stream().filter( Files::exists ).toArray( Path[]::new );
-
-        database.truncate();
-
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
-        Path[] currentDatabaseFiles = fs.listFiles( databaseDirectory );
-        assertThat( currentDatabaseFiles ).contains( databaseFilesShouldExist );
-    }
-
-    @Test
-    void doNotFlushDataFilesOnDatabaseTruncate() throws IOException
-    {
-        database.start();
-        var mappingsBefore = new ArrayList<>( pageCacheWrapper.listExistingMappings() );
-
-        database.truncate();
-
-        var removedFiles = new ArrayList<>( pageCacheWrapper.listExistingMappings() );
-        removedFiles.removeAll( mappingsBefore );
-        var removedPaths = removedFiles.stream().map( PagedFile::path ).collect( Collectors.toList() );
-
-        DatabaseLayout databaseLayout = database.getDatabaseLayout();
-        Set<Path> files = databaseLayout.storeFiles();
-        files.removeAll( filesToKeepOnTruncation( databaseLayout ) );
-        Path[] filesShouldBeDeleted = files.stream().filter( Files::exists ).toArray( Path[]::new );
-        assertThat( removedPaths ).contains( filesShouldBeDeleted );
-    }
-
-    @Test
-    void filesRecreatedAfterTruncate() throws IOException
-    {
-        Path databaseDirectory = databaseLayout.databaseDirectory();
-        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
-
-        Path[] databaseFilesBeforeTruncate = fs.listFiles( databaseDirectory );
-        Path[] logFilesBeforeTruncate = fs.listFiles( transactionLogsDirectory );
-
-        database.truncate();
-
-        assertTrue( fs.fileExists( databaseDirectory ) );
-        assertTrue( fs.fileExists( transactionLogsDirectory ) );
-
-        Path[] databaseFiles = fs.listFiles( databaseDirectory );
-        Path[] logFiles = fs.listFiles( transactionLogsDirectory );
-
-        // files are equal by name - every store file is recreated as result
-        assertThat( databaseFilesBeforeTruncate ).contains( databaseFiles );
-        assertThat( logFilesBeforeTruncate ).contains( logFiles );
     }
 
     @Test
