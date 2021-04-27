@@ -52,6 +52,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -132,11 +133,17 @@ class RecoveryIT
     @Test
     void recoverEmptyDatabase() throws Throwable
     {
-        createDatabase();
+        // The database is only completely empty if we don't have token index feature.
+        // With the feature on there will be entries in the transaction logs for the default token indexes, so recovery is required if we remove the checkpoint.
+        Config config = Config.newBuilder().set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false )
+                .set( preallocate_logical_logs, false ).build();
+
+        managementService = new TestDatabaseManagementServiceBuilder( neo4jLayout ).setConfig( config ).build();
+        managementService.database( databaseLayout.getDatabaseName() );
         managementService.shutdown();
         RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( databaseLayout, fileSystem );
 
-        assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
+        assertFalse( isRecoveryRequired( databaseLayout, config ) );
     }
 
     @Test
@@ -794,9 +801,19 @@ class RecoveryIT
         recoverDatabase( EMPTY );
     }
 
+    void additionalConfiguration( Config config )
+    {
+    }
+
+    TestDatabaseManagementServiceBuilder additionalConfiguration( TestDatabaseManagementServiceBuilder builder )
+    {
+        return builder;
+    }
+
     private void recoverDatabase( DatabaseTracers databaseTracers ) throws Exception
     {
         Config config = Config.newBuilder().build();
+        additionalConfiguration( config );
         assertTrue( isRecoveryRequired( databaseLayout, config ) );
         performRecovery( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE );
         assertFalse( isRecoveryRequired( databaseLayout, config ) );
@@ -805,6 +822,7 @@ class RecoveryIT
     private boolean isRecoveryRequired( DatabaseLayout layout ) throws Exception
     {
         Config config = Config.newBuilder().build();
+        additionalConfiguration( config );
         return isRecoveryRequired( layout, config );
     }
 
@@ -883,6 +901,7 @@ class RecoveryIT
             builder = new TestDatabaseManagementServiceBuilder( neo4jLayout )
                     .setConfig( preallocate_logical_logs, false )
                     .setConfig( logical_log_rotation_threshold, logThreshold );
+            builder = additionalConfiguration( builder );
         }
     }
 
@@ -894,9 +913,9 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                .setConfig( fail_on_missing_files, false )
-                .build();
+        TestDatabaseManagementServiceBuilder serviceBuilder = new TestDatabaseManagementServiceBuilder( neo4jLayout )
+                .setConfig( fail_on_missing_files, false );
+        return additionalConfiguration( serviceBuilder ).build();
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )
