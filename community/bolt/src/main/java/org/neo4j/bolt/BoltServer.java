@@ -177,7 +177,9 @@ public class BoltServer extends LifecycleAdapter
             NettyServer nettyServer;
 
             var isNotReadReplica = config.get( GraphDatabaseSettings.mode ) != GraphDatabaseSettings.Mode.READ_REPLICA;
-            var loopbackProtocolInitializer = createLoopbackProtocolInitializer( loopbackBoltProtocolFactory, throttleGroup );
+            var loopbackProtocolInitializer = createLoopbackProtocolInitializer( loopbackBoltProtocolFactory,
+                    throttleGroup,
+                    bufferAllocator );
             if ( config.get( GraphDatabaseSettings.routing_enabled ) && isNotReadReplica )
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
@@ -270,7 +272,9 @@ public class BoltServer extends LifecycleAdapter
                 throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator, boltMemoryPool );
     }
 
-    private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
+    private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory,
+            TransportThrottleGroup throttleGroup,
+            ByteBufAllocator bufferAllocator )
     {
         if ( config.get( BoltConnectorInternalSettings.enable_loopback_auth ) )
         {
@@ -306,7 +310,7 @@ public class BoltServer extends LifecycleAdapter
             long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
             return new SocketTransport( BoltConnectorInternalSettings.LOOPBACK_NAME, loopbackListenAddress, null, false, logService.getInternalLogProvider(),
-                                        throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR,
+                                        throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator,
                                         boltMemoryPool );
         }
         else
