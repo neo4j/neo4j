@@ -21,16 +21,19 @@ package org.neo4j.kernel.impl.coreapi.internal;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.Cursor;
 
-abstract class PrefetchingEntityResourceIterator<T extends Entity> extends PrefetchingResourceIterator<T>
+abstract class PrefetchingEntityResourceIterator<CURSOR extends Cursor, T extends Entity> extends PrefetchingResourceIterator<T>
 {
-    private final EntityFactory<T> entityFactory;
+    private final CURSOR cursor;
+    private final CursorEntityFactory<CURSOR,T> entityFactory;
     private boolean closed;
 
     protected static final long NO_ID = -1L;
 
-    PrefetchingEntityResourceIterator( EntityFactory<T> entityFactory )
+    PrefetchingEntityResourceIterator( CURSOR cursor, CursorEntityFactory<CURSOR,T> entityFactory )
     {
+        this.cursor = cursor;
         this.entityFactory = entityFactory;
     }
 
@@ -40,7 +43,7 @@ abstract class PrefetchingEntityResourceIterator<T extends Entity> extends Prefe
         var id = fetchNext();
         if ( id != NO_ID )
         {
-            return entityFactory.make( id );
+            return entityFactory.make( cursor );
         }
         close();
         return null;

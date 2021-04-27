@@ -27,14 +27,14 @@ import org.neo4j.internal.kernel.api.Cursor;
 
 import static org.neo4j.io.IOUtils.closeAllSilently;
 
-public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends PrefetchingEntityResourceIterator<E>
+public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends PrefetchingEntityResourceIterator<CURSOR,E>
 {
     private final CURSOR cursor;
     private final ToLongFunction<CURSOR> toReferenceFunction;
 
-    public CursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, EntityFactory<E> entityFactory )
+    public CursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR,E> entityFactory )
     {
-        super( entityFactory );
+        super( cursor, entityFactory );
         this.cursor = cursor;
         this.toReferenceFunction = toReferenceFunction;
     }

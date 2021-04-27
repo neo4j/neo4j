@@ -454,7 +454,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allNodesScan( cursor );
-            return new CursorIterator<>( cursor, NodeCursor::nodeReference, this::newNodeEntity );
+            return new CursorIterator<>( cursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
         };
     }
 
@@ -562,7 +562,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allRelationshipsScan( cursor );
-            return new CursorIterator<>( cursor, RelationshipScanCursor::relationshipReference, this::newRelationshipEntity );
+            return new CursorIterator<>( cursor, RelationshipScanCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference(),
+                    c.sourceNodeReference(), c.type(), c.targetNodeReference() ) );
         };
     }
 
@@ -775,7 +776,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );
 
-                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, this::newNodeEntity );
+                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
             }
             catch ( KernelException e )
             {
@@ -805,7 +806,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.relationshipIndexSeek( indexSession, cursor, unconstrained(), query );
 
-                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, this::newRelationshipEntity );
+                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference() ) );
             }
             catch ( KernelException e )
             {
@@ -857,7 +858,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                             cursor,
                             nodeCursor,
                             propertyCursor,
-                            this::newNodeEntity,
+                            c -> newNodeEntity( c.nodeReference() ),
                             queries );
                 }
                 catch ( KernelException e )
@@ -878,7 +879,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 nodeLabelCursor,
                 nodeCursor,
                 propertyCursor,
-                this::newNodeEntity,
+                c -> newNodeEntity( c.nodeReference() ),
                 queries );
     }
 
@@ -893,7 +894,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 List.of( propertyCursor ) );
 
         ktx.dataRead().allNodesScan( nodeCursor );
-        return new CursorIterator<>( propertyFilteredCursor, NodeCursor::nodeReference, this::newNodeEntity );
+        return new CursorIterator<>( propertyFilteredCursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
     }
 
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int typeId,
@@ -918,7 +919,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                             cursor,
                             relationshipScanCursor,
                             propertyCursor,
-                            this::newRelationshipEntity,
+                            c -> newRelationshipEntity( c.relationshipReference() ),
                             queries );
                 }
                 catch ( KernelException e )
@@ -942,7 +943,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 List.of( propertyCursor ) );
 
         ktx.dataRead().allRelationshipsScan( relationshipScanCursor );
-        return new CursorIterator<>( propertyFilteredCursor, RelationshipScanCursor::relationshipReference, this::newRelationshipEntity );
+        return new CursorIterator<>( propertyFilteredCursor, RelationshipScanCursor::relationshipReference,
+                c -> newRelationshipEntity( c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference() ) );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperties( KernelTransaction transaction, int labelId, PropertyIndexQuery.ExactPredicate... queries )
@@ -965,7 +967,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
-                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, this::newNodeEntity );
+                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
             }
             catch ( KernelException e )
             {
@@ -1014,7 +1016,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                     var session = ktx.dataRead().tokenReadSession( index );
                     var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
                     ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
-                    return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, this::newNodeEntity );
+                    return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
                 }
                 catch ( KernelException e )
                 {
@@ -1027,7 +1029,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
         ktx.dataRead().nodeLabelScan( labelId, cursor, IndexOrder.NONE );
-        return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, this::newNodeEntity );
+        return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
     }
 
     private ResourceIterator<Node> allNodesByLabelWithoutIndex( KernelTransaction ktx, int labelId )
@@ -1035,7 +1037,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
         ktx.dataRead().allNodesScan( cursor );
         var filetredCursor = new FilteringNodeCursorWrapper( cursor, CursorPredicates.hasLabel( labelId ) );
-        return new CursorIterator<>( filetredCursor, NodeCursor::nodeReference, this::newNodeEntity );
+        return new CursorIterator<>( filetredCursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
     }
 
     private ResourceIterator<Relationship> allRelationshipsWithType( final RelationshipType type )
@@ -1059,7 +1061,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                     var session = ktx.dataRead().tokenReadSession( index );
                     var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.pageCursorTracer() );
                     ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
-                    return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, this::newRelationshipEntity );
+                    return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference,
+                            c -> newRelationshipEntity( c.relationshipReference() ) );
                 }
                 catch ( KernelException e )
                 {
@@ -1076,7 +1079,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         var cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
         ktx.dataRead().allRelationshipsScan( cursor );
         var filteredCursor = new FilteringRelationshipScanCursorWrapper( cursor, CursorPredicates.hasType( typeId ) );
-        return new CursorIterator<>( filteredCursor, RelationshipScanCursor::relationshipReference, this::newRelationshipEntity );
+        return new CursorIterator<>( filteredCursor, RelationshipScanCursor::relationshipReference,
+                c -> newRelationshipEntity( c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference() ) );
     }
 
     private ResourceIterator<Relationship> relationshipsByTypeAndProperties( KernelTransaction tx, int typeId, PropertyIndexQuery.ExactPredicate... queries )
@@ -1099,7 +1103,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.relationshipIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
-                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, this::newRelationshipEntity );
+                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference() ) );
             }
             catch ( KernelException e )
             {

@@ -35,7 +35,7 @@ public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<
             RelationshipTypeIndexCursor relationshipTypeIndexCursor,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
-            EntityFactory<Relationship> relationshipFactory,
+            CursorEntityFactory<RelationshipTypeIndexCursor,Relationship> relationshipFactory,
             PropertyIndexQuery... queries )
     {
         super( relationshipTypeIndexCursor, relationshipScanCursor, propertyCursor, relationshipFactory, queries );

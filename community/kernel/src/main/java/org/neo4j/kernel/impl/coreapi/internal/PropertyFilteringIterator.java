@@ -27,7 +27,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.newapi.CursorPredicates;
 
 public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR extends Cursor, ENTITY_CURSOR extends Cursor>
-        extends PrefetchingEntityResourceIterator<T>
+        extends PrefetchingEntityResourceIterator<TOKEN_CURSOR,T>
 {
 
     private final TOKEN_CURSOR entityTokenCursor;
@@ -38,10 +38,10 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
     protected PropertyFilteringIterator( TOKEN_CURSOR entityTokenCursor,
                                          ENTITY_CURSOR entityCursor,
                                          PropertyCursor propertyCursor,
-                                         EntityFactory<T> entityFactory,
+                                         CursorEntityFactory<TOKEN_CURSOR,T> entityFactory,
                                          PropertyIndexQuery[] queries )
     {
-        super( entityFactory );
+        super( entityTokenCursor, entityFactory );
         this.entityTokenCursor = entityTokenCursor;
         this.entityCursor = entityCursor;
         this.propertyCursor = propertyCursor;
