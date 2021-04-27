@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
@@ -136,7 +137,7 @@ class FileWatchIT
     }
 
     @Test
-    void doNotNotifyAboutLuceneIndexFilesDeletion() throws IOException, InterruptedException
+    void doNotNotifyAboutIndexFilesDeletion() throws IOException, InterruptedException
     {
         DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
         FileWatcher fileWatcher = getFileWatcher( database );
@@ -270,7 +271,10 @@ class FileWatchIT
         {
             for ( IndexDefinition definition : transaction.schema().getIndexes() )
             {
-                definition.drop();
+                if ( definition.getIndexType() != IndexType.LOOKUP )
+                {
+                    definition.drop();
+                }
             }
             transaction.commit();
         }
