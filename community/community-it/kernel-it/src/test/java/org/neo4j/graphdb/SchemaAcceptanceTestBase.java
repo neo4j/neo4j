@@ -41,12 +41,8 @@ public class SchemaAcceptanceTestBase
     {
         final Throwable cause = exception.getCause();
         assertEquals( expectedCause, cause.getClass(),
-                "Expected cause to be of type " + expectedCause + " but was " + cause.getClass() );
-        String message = exception.getMessage();
-        for ( String messagePart : expectedMessageParts )
-        {
-            assertThat( message ).contains( messagePart );
-        }
+                      "Expected cause to be of type " + expectedCause + " but was " + cause.getClass() );
+        assertThat( exception.getMessage() ).contains( expectedMessageParts );
     }
 
     protected enum Labels implements Label
