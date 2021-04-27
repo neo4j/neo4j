@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.logical.plans.ConstraintType
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
+import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExisten
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
@@ -180,6 +182,17 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
+    // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON EACH (n.prop) [OPTIONS {...}]
+    // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON EACH (n.prop) [OPTIONS {...}]
+    case CreateFulltextIndex(source, entityNames, props, name, options) => context =>
+      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
+        val CreateFulltextIndexOptions(indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter.convert(options, params)
+        val (entityIds, isNodeIndex) = getMultipleEntityInfo(entityNames, ctx)
+        val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+        ctx.addFulltextIndexRule(entityIds, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
+        SuccessResult
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
+
     // DROP INDEX ON :LABEL(prop)
     case DropIndex(label, props) => _ =>
       SchemaExecutionPlan("DropIndex", (ctx, _)=> {
@@ -222,6 +235,19 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
+    case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, name) => _ =>
+      SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
+        val (entityIds, isNodeIndex) = getMultipleEntityInfo(entityNames, ctx)
+        val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
+        if (Try(ctx.fulltextIndexReference(entityIds, isNodeIndex, propertyKeyIds: _*).getName).isSuccess) {
+          IgnoredResult
+        } else if (name.exists(ctx.indexExists)) {
+          IgnoredResult
+        } else {
+          SuccessResult
+        }
+      }, None)
+
     case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
         val (entityId, _) = getEntityInfo(entityName, ctx)
@@ -240,6 +266,12 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // returns (entityId, isNodeEntity)
     case Left(label)    => (ctx.getOrCreateLabelId(label.name), true)
     case Right(relType) => (ctx.getOrCreateRelTypeId(relType.name), false)
+  }
+
+  private def getMultipleEntityInfo(entityName: Either[List[LabelName], List[RelTypeName]], ctx: QueryContext) = entityName match {
+    // returns (entityIds, isNodeEntity)
+    case Left(labels)    => (labels.map(label => ctx.getOrCreateLabelId(label.name)), true)
+    case Right(relTypes) => (relTypes.map(relType => ctx.getOrCreateRelTypeId(relType.name)), false)
   }
 
   def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)

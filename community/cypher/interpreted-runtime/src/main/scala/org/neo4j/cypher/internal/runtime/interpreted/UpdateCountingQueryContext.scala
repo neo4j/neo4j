@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
@@ -121,6 +122,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = {
     val result = inner.addLookupIndexRule(isNodeIndex, name)
+    indexesAdded.increase()
+    result
+  }
+
+  override def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = {
+    val result = inner.addFulltextIndexRule(entityIds, isNodeIndex, propertyKeyIds, name, provider, indexConfig)
     indexesAdded.increase()
     result
   }

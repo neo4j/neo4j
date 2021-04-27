@@ -211,6 +211,15 @@ trait GraphIcing {
       })
     }
 
+    def getFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): IndexDefinition = withTx(tx => {
+      tx.schema().getIndexes().asScala.find(id =>
+        id.getIndexType.equals(IndexType.FULLTEXT) &&
+        id.isNodeIndex == isNodeIndex &&
+        getEntities(id).equals(entities) &&
+        id.getPropertyKeys.asScala.toList.equals(props)
+      ).get
+    })
+
     def getMaybeNodeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = {
       withTx( tx =>  {
         tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
@@ -229,6 +238,15 @@ trait GraphIcing {
       })
     }
 
+    def getMaybeFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
+      tx.schema().getIndexes().asScala.find(id =>
+        id.getIndexType.equals(IndexType.FULLTEXT) &&
+        id.isNodeIndex == isNodeIndex &&
+        getEntities(id).equals(entities) &&
+        id.getPropertyKeys.asScala.toList.equals(props)
+      )
+    })
+
     def getIndexSchemaByName(name: String): (String, Seq[String]) = {
       withTx( tx =>  {
         val index = tx.schema().getIndexByName(name)
@@ -244,6 +262,16 @@ trait GraphIcing {
         (index.getIndexType, index.isNodeIndex)
       } )
     }
+
+    def getFulltextIndexSchemaByName(name: String): (List[String], List[String], Boolean) = withTx(tx =>  {
+      val index = tx.schema().getIndexByName(name)
+      val labelOrRelTypes = getEntities(index)
+      val properties = index.getPropertyKeys.asScala.toList
+      (labelOrRelTypes, properties, index.isNodeIndex)
+    } )
+
+    private def getEntities(index: IndexDefinition) =
+      if (index.isNodeIndex) index.getLabels.asScala.toList.map(_.name) else index.getRelationshipTypes.asScala.toList.map(_.name)
 
     def getIndexConfig(name: String): Map[IndexSetting, AnyRef] = {
       withTx( tx =>  {

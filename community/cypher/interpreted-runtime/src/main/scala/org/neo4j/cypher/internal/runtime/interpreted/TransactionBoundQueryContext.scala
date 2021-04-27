@@ -93,6 +93,7 @@ import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexPrototype
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -379,6 +380,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = {
     val descriptor = if (isNodeIndex) SchemaDescriptor.forAnyEntityTokens(EntityType.NODE) else SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)
+    Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
+  }
+
+  override def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor = {
+    val entityType = if (isNodeIndex) EntityType.NODE else EntityType.RELATIONSHIP
+    val descriptor = SchemaDescriptor.fulltext(entityType, entityIds.toArray, properties.toArray)
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
@@ -935,6 +942,27 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val ktx = transactionalContext.kernelTransaction
     val descriptor = if (isNodeIndex) SchemaDescriptor.forAnyEntityTokens(EntityType.NODE) else SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)
     val prototype = IndexPrototype.forSchema(descriptor).withIndexType(IndexType.LOOKUP)
+    val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
+    try {
+      ktx.schemaWrite().indexCreate(namedPrototype)
+    } catch {
+      case e: EquivalentSchemaRuleAlreadyExistsException => handleEquivalentSchema(ktx, descriptor, e)
+    }
+  }
+
+  override def addFulltextIndexRule(entityIds: List[Int],
+                           isNodeIndex: Boolean,
+                           propertyKeyIds: Seq[Int],
+                           name: Option[String],
+                           provider: Option[IndexProviderDescriptor],
+                           indexConfig: IndexConfig): IndexDescriptor = {
+    val ktx = transactionalContext.kernelTransaction
+    val entityType = if (isNodeIndex) EntityType.NODE else EntityType.RELATIONSHIP
+    val descriptor = SchemaDescriptor.fulltext(entityType, entityIds.toArray, propertyKeyIds.toArray)
+    val prototype =
+      provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor))
+        .withIndexType(IndexType.FULLTEXT)
+        .withIndexConfig(indexConfig)
     val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
     try {
       ktx.schemaWrite().indexCreate(namedPrototype)

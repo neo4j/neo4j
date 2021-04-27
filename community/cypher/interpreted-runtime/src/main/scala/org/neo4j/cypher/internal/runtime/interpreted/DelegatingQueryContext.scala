@@ -58,6 +58,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -172,6 +173,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor =
     singleDbHit(inner.addLookupIndexRule(isNodeIndex, name))
 
+  override def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
+    singleDbHit(inner.addFulltextIndexRule(entityIds, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
+
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
@@ -188,6 +192,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.btreeIndexReference(entityId, isNodeIndex, properties:_*))
 
   override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = singleDbHit(inner.lookupIndexReference(isNodeIndex))
+
+  override def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.fulltextIndexReference(entityIds, isNodeIndex, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

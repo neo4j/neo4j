@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
@@ -128,6 +129,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor
 
+  def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
+
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   def dropIndexRule(name: String): Unit
@@ -137,6 +140,8 @@ trait QueryContext extends TokenContext with DbAccess {
   def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor
 
   def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor
+
+  def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor
 
   def indexExists(name: String): Boolean
 
