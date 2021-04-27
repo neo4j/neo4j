@@ -1304,6 +1304,9 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should verify that two nodes are identical with locking reads") {
+    // Temporarily disabled due to https://trello.com/c/2BBKguHd
+    assume(runtime.name != "Pipelined")
+
     val nodes = given {
       uniqueIndex("Honey", "prop")
       nodePropertyGraph(sizeHint, {
