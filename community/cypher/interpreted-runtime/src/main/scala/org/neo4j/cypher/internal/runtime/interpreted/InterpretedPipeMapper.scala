@@ -212,6 +212,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCSVPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockingMergePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
@@ -703,7 +704,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           ).toArray
         )(id = id)
 
-      case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
+      case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
         val creates = createNodes.map {
           case ir.CreateNode(node, labels, properties) =>
             CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
@@ -713,8 +714,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
             CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),
               allowNullProperty = false)
         }
-
-        new MergePipe(source, (creates ++ onCreate.flatMap(compileEffects)).toArray , onMatch.flatMap(compileEffects).toArray)(id = id)
+        if (nodesToLock.isEmpty) new MergePipe(source, (creates ++ onCreate.flatMap(compileEffects)).toArray , onMatch.flatMap(compileEffects).toArray)(id = id)
+        else new LockingMergePipe(source,  (creates ++ onCreate.flatMap(compileEffects)).toArray, onMatch.flatMap(compileEffects).toArray,  nodesToLock.toArray)(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe.getNodes
 import org.neo4j.cypher.internal.util.attribution.Id
 
 class MergePipe(src: Pipe,
@@ -31,20 +32,57 @@ class MergePipe(src: Pipe,
                                                state: QueryState): ClosingIterator[CypherRow] = {
     if (input.hasNext) {
       input.map(r => {
-        var i = 0
-        while (i < matchOps.length) {
-          matchOps(i).execute(r, state)
-          i += 1
-        }
+        performOnMatchOps(state, r)
         r
       })
     } else {
-      val row = state.newRowWithArgument(rowFactory)
-      var i = 0
-      while (i < createOps.length) {
-        createOps(i).execute(row,state)
-        i += 1
-      }
+      onNoMatch(state)
+    }
+  }
+
+  protected def onNoMatch(state: QueryState): ClosingIterator[CypherRow] = {
+    val row = state.newRowWithArgument(rowFactory)
+    performOnCreateOps(state, row)
+    ClosingIterator.single(row)
+  }
+
+  protected def performOnMatchOps(state: QueryState,
+                                  row: CypherRow): Unit = {
+    var i = 0
+    while (i < matchOps.length) {
+      matchOps(i).execute(row, state)
+      i += 1
+    }
+  }
+
+  protected def performOnCreateOps(state: QueryState,
+                                  row: CypherRow): Unit = {
+    var i = 0
+    while (i < createOps.length) {
+      createOps(i).execute(row,state)
+      i += 1
+    }
+  }
+}
+
+class LockingMergePipe(src: Pipe,
+                       createOps: Array[SideEffect],
+                       onMatchOps: Array[SideEffect],
+                       nodesToLock: Array[String])(id: Id = Id.INVALID_ID) extends MergePipe(src, createOps, onMatchOps)(id) {
+
+  override protected def onNoMatch(state: QueryState): ClosingIterator[CypherRow] = {
+    val row = state.newRowWithArgument(rowFactory)
+    val longs = getNodes(row, nodesToLock)
+    state.query.lockNodes(longs: _*)
+
+    val reRead = src.createResults(state)
+    if (reRead.hasNext) {
+      reRead.map(r => {
+        performOnMatchOps(state, r)
+        r
+      })
+    } else {
+      performOnCreateOps(state, row)
       ClosingIterator.single(row)
     }
   }
