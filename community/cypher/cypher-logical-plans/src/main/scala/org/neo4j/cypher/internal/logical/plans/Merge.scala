@@ -32,7 +32,8 @@ case class Merge(read: LogicalPlan,
                  createNodes: Seq[CreateNode],
                  createRelationships: Seq[CreateRelationship],
                  onMatch: Seq[SetMutatingPattern],
-                 onCreate: Seq[SetMutatingPattern])
+                 onCreate: Seq[SetMutatingPattern],
+                 nodesToLock: Set[String])
                 (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
   override def source: LogicalPlan = read
 

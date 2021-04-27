@@ -595,7 +595,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone),
-          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty,
+          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty, Set.empty
         ),
         Map("n.prop" -> cachedNodeProp("n", "prop")))
     )
@@ -616,7 +616,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone),
-          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty
+          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty, Set.empty
         ),
         Map("n.prop" -> cachedNodeProp("n", "prop")))
     )
@@ -638,7 +638,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone),
-          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty
+          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty, Set.empty
         ),
         Map(propertyProj("n", "foo")))
     )

@@ -1372,6 +1372,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                 createRelationshipPatterns: Seq[CreateRelationship],
                 onMatchPatterns: Seq[SetMutatingPattern],
                 onCreatePatterns: Seq[SetMutatingPattern],
+                nodesToLock: Set[String],
                 context: LogicalPlanningContext): Merge = {
 
     val patterns = if (createRelationshipPatterns.isEmpty) {
@@ -1383,7 +1384,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val rewrittenRelPatterns = createRelationshipPatterns.map(p => PatternExpressionSolver.ForMappable().solve(inner, p, context)._1)
 
     val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
-    val merge = Merge(inner, rewrittenNodePatterns, rewrittenRelPatterns, onMatchPatterns, onCreatePatterns)
+    val merge = Merge(inner, rewrittenNodePatterns, rewrittenRelPatterns, onMatchPatterns, onCreatePatterns, nodesToLock)
     val providedOrder = providedOrderOfUpdate(merge, inner)
     annotate(merge, solved, providedOrder, context)
   }

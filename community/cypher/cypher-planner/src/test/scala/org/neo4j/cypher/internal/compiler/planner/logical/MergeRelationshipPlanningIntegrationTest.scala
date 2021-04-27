@@ -54,7 +54,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val createRel = CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)
 
-    val mergeNode = Merge(expand, Seq(createNodeA, createNodeB), Seq(createRel), Seq.empty, Seq.empty)
+    val mergeNode = Merge(expand, Seq(createNodeA, createNodeB), Seq(createRel), Seq.empty, Seq.empty, Set.empty)
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a:A)-[r:R]->(b)")._2 should equal(emptyResult)
@@ -72,7 +72,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val createRel = CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)
 
-    val mergeNode = Merge(expand, Seq(createNodeA, createNodeB), Seq(createRel), Seq.empty, Seq.empty)
+    val mergeNode = Merge(expand, Seq(createNodeA, createNodeB), Seq(createRel), Seq.empty, Seq.empty, Set.empty)
     val apply = Apply(projection, mergeNode)
     val emptyResult = EmptyResult(apply)
 
@@ -115,7 +115,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             Seq(CreateNode("b", Seq.empty, None)),
             Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
             Seq(),
-            Seq()
+            Seq(),
+            Set()
           )
         )
       )
@@ -142,7 +143,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
               "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto)
           ),
           Seq(),
-          Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "m", SemanticDirection.OUTGOING, None)), Seq(), Seq()
+          Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "m", SemanticDirection.OUTGOING, None)), Seq(), Seq(), Set()
         )
       )
     ))
@@ -172,7 +173,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             Seq(),
             Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
             Seq(),
-            Seq()
+            Seq(),
+            Set()
           )
         )
       )
@@ -199,7 +201,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             Seq(CreateNode("b", Seq.empty, None)),
             Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
             Seq(),
-            Seq()
+            Seq(),
+            Set()
           )
         )
       )

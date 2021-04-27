@@ -971,7 +971,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
             Selection(_,
               RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
             ),
-            Seq(CreateNode("n", Seq(), Some(_:MapExpression))), Seq(), Seq(), Seq()
+            Seq(CreateNode("n", Seq(), Some(_:MapExpression))), Seq(), Seq(), Seq(), _
       ) => ()
     }
   }
@@ -989,7 +989,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
                Selection(_,
                        RollUpApply(
                           Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part
-               ), _, _, _, _
+               ), _, _, _, _, _
       ) => ()
     }
   }

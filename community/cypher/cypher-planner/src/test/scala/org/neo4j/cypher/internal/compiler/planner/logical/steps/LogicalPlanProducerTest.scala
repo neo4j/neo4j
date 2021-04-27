@@ -373,12 +373,12 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   test("MERGE ... ON MATCH should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planMerge(ctx.lhs, Seq(CreateNode("n", Seq(), None)), Seq.empty,
-        Seq(SetNodePropertyPattern("x", PropertyKeyName("p")(pos),  literalInt(1))), Seq.empty, ctx.context))
+        Seq(SetNodePropertyPattern("x", PropertyKeyName("p")(pos),  literalInt(1))), Seq.empty, Set.empty, ctx.context))
   }
 
   test("MERGE without ON MATCH should not eliminate provided order") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planMerge(ctx.lhs, Seq(CreateNode("n", Seq(), None)), Seq.empty, Seq.empty, Seq.empty, ctx.context))
+      ctx.producer.planMerge(ctx.lhs, Seq(CreateNode("n", Seq(), None)), Seq.empty, Seq.empty, Seq.empty,  Set.empty, ctx.context))
   }
 
   test("DeleteNode should eliminate provided order") {

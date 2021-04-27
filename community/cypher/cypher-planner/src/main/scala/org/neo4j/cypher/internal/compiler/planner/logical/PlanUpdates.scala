@@ -225,7 +225,12 @@ case object PlanUpdates extends UpdatesPlanner {
                 onMatchPatterns: Seq[SetMutatingPattern],
                 interestingOrderConfig: InterestingOrderConfig,
                 context: LogicalPlanningContext): LogicalPlan = {
-
+    def mergeRead(ctx: LogicalPlanningContext) = {
+      val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrderConfig, ctx).result
+      if (context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph != matchGraph)
+        throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph}\n not equal to \n$matchGraph")
+      mergeReadPart
+    }
     val producer: LogicalPlanProducer = context.logicalPlanProducer
 
     //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
@@ -234,33 +239,10 @@ case object PlanUpdates extends UpdatesPlanner {
 
     val innerContext: LogicalPlanningContext =
       context.withUpdatedLabelInfo(source).copy(config = context.config.withLeafPlanners(leafPlanners))
-    val mergeMatch = mergeMatchPart(matchGraph, interestingOrderConfig, innerContext)
-
-    producer.planApply(source, producer.planMerge(mergeMatch, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns, context), context)
-  }
-
-  private def mergeMatchPart(matchGraph: QueryGraph,
-                             interestingOrderConfig: InterestingOrderConfig,
-                             context: LogicalPlanningContext) = {
-
-    def mergeRead(ctx: LogicalPlanningContext) = {
-      val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrderConfig, ctx).result
-      if (context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph != matchGraph)
-        throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph}\n not equal to \n$matchGraph")
-      mergeReadPart
-    }
-
-    val read =  mergeRead(context)
+    val read =  mergeRead(innerContext)
     // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
-
-    if (nodesToLock.nonEmpty) {
-      val lockingContext = context.withAddedLeafPlanUpdater(AddLockToPlan(nodesToLock, context.logicalPlanProducer, context))
-      val merge = context.logicalPlanProducer.planEither(read, mergeRead(lockingContext), lockingContext)
-      merge
-    } else {
-      read
-    }
+    producer.planApply(source, producer.planMerge(read, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns, nodesToLock, context), context)
   }
 
   case class AddLockToPlan(nodesToLock: Set[String], producer: LogicalPlanProducer, context: LogicalPlanningContext) extends LeafPlanUpdater {

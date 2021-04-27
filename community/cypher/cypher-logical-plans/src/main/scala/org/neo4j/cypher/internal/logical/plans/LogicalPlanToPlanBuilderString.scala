@@ -171,8 +171,8 @@ object LogicalPlanToPlanBuilderString {
         nodes.map(createNodeToString).mkString(", ")
       case Create(_, nodes, relationships) =>
         s"Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")})"
-      case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
 
+      case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
 
         val nodesToCreate = createNodes.map(createNodeToString)
         val relsToCreate = createRelationships.map(createRelationshipToString)

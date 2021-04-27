@@ -72,7 +72,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)
     val mergeRel = Merge(Argument(), Seq.empty,
-      Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)), Seq.empty, Seq.empty)
+      Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)), Seq.empty, Seq.empty, Set.empty)
 
     val input = AntiConditionalApply(apply, mergeRel, Seq.empty)
 
