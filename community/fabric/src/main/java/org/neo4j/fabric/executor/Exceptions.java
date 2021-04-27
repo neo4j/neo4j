@@ -22,6 +22,7 @@ package org.neo4j.fabric.executor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -30,6 +31,11 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class Exceptions
 {
     public static RuntimeException transform( Status defaultStatus, Throwable t )
+    {
+        return Exceptions.transform( defaultStatus, t, OptionalLong.empty() );
+    }
+
+    public static RuntimeException transform( Status defaultStatus, Throwable t, OptionalLong queryId )
     {
         var unwrapped = reactor.core.Exceptions.unwrap( t );
         unwrapped = transformComposite( unwrapped );
@@ -40,15 +46,15 @@ public class Exceptions
         // or try to preserve  at least the original status
         if ( unwrapped instanceof Status.HasStatus )
         {
-            if ( unwrapped instanceof RuntimeException )
+            if ( unwrapped instanceof RuntimeException && queryId.isEmpty() )
             {
                 return (RuntimeException) unwrapped;
             }
 
-            return new FabricException( ((Status.HasStatus) unwrapped).status(), message, unwrapped );
+            return new FabricException( ((Status.HasStatus) unwrapped).status(), message, unwrapped, queryId );
         }
 
-        return new FabricException( defaultStatus, message, unwrapped );
+        return new FabricException( defaultStatus, message, unwrapped, queryId );
     }
 
     private static Throwable transformComposite( Throwable potentialComposite )

@@ -59,8 +59,17 @@ class ErrorReporter
     {
         if ( error.status().code().classification() == DatabaseError )
         {
-            String message = format( "Client triggered an unexpected error [%s]: %s, reference %s.",
-                    error.status().code().serialize(), error.message(), error.reference() );
+            String message;
+            if ( error.queryId().isPresent() )
+            {
+                message = format( "Client triggered an unexpected error [%s]: %s, reference %s, queryId: %s.",
+                                  error.status().code().serialize(), error.message(), error.reference(), error.queryId().getAsLong() );
+            }
+            else
+            {
+                message = format( "Client triggered an unexpected error [%s]: %s, reference %s.",
+                                  error.status().code().serialize(), error.message(), error.reference());
+            }
 
             // Writing to user log gets duplicated to the internal log
             userLog.error( message );

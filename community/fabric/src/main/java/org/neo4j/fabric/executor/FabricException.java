@@ -19,33 +19,53 @@
  */
 package org.neo4j.fabric.executor;
 
+import java.util.OptionalLong;
+
+import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class FabricException extends RuntimeException implements Status.HasStatus
+public class FabricException extends RuntimeException implements Status.HasStatus, HasQuery
 {
     private final Status statusCode;
+    private final OptionalLong queryId;
 
     public FabricException( Status statusCode, Throwable cause )
     {
         super( cause );
         this.statusCode = statusCode;
+        this.queryId = OptionalLong.empty();
     }
 
     public FabricException( Status statusCode, String message, Object... parameters )
     {
         super( String.format( message, parameters ) );
         this.statusCode = statusCode;
+        this.queryId = OptionalLong.empty();
     }
 
     public FabricException( Status statusCode, String message, Throwable cause )
     {
         super( message, cause );
         this.statusCode = statusCode;
+        this.queryId = OptionalLong.empty();
+    }
+
+    public FabricException( Status statusCode, String message, Throwable cause, OptionalLong queryId )
+    {
+        super( message, cause );
+        this.statusCode = statusCode;
+        this.queryId = queryId;
     }
 
     @Override
     public Status status()
     {
         return statusCode;
+    }
+
+    @Override
+    public OptionalLong query()
+    {
+        return queryId;
     }
 }

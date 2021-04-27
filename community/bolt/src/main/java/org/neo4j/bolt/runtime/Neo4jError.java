@@ -19,9 +19,11 @@
  */
 package org.neo4j.bolt.runtime;
 
+import java.util.OptionalLong;
 import java.util.UUID;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -35,24 +37,26 @@ public class Neo4jError
     private final Throwable cause;
     private final UUID reference;
     private final boolean fatal;
+    private final OptionalLong queryId;
 
-    private Neo4jError( Status status, String message, Throwable cause, boolean fatal )
+    private Neo4jError( Status status, String message, Throwable cause, boolean fatal, OptionalLong queryId )
     {
         this.status = status;
         this.message = message;
         this.cause = cause;
         this.fatal = fatal;
         this.reference = UUID.randomUUID();
+        this.queryId = queryId;
     }
 
     private Neo4jError( Status status, String message, boolean fatal )
     {
-        this( status, message, null, fatal );
+        this( status, message, null, fatal, OptionalLong.empty() );
     }
 
-    private Neo4jError( Status status, Throwable cause, boolean fatal )
+    private Neo4jError( Status status, Throwable cause, boolean fatal, OptionalLong queryId )
     {
-        this( status, status.code().description(), cause, fatal );
+        this( status, status.code().description(), cause, fatal, queryId );
     }
 
     public Status status()
@@ -73,6 +77,11 @@ public class Neo4jError
     public UUID reference()
     {
         return reference;
+    }
+
+    public OptionalLong queryId()
+    {
+        return queryId;
     }
 
     @Override
@@ -148,28 +157,33 @@ public class Neo4jError
     {
         for ( Throwable cause = any; cause != null; cause = cause.getCause() )
         {
+            OptionalLong queryId = OptionalLong.empty();
+            if ( cause instanceof HasQuery )
+            {
+                queryId = ((HasQuery) cause).query();
+            }
             if ( cause instanceof DatabaseShutdownException )
             {
-                return new Neo4jError( Status.Database.DatabaseUnavailable, cause, isFatal );
+                return new Neo4jError( Status.Database.DatabaseUnavailable, cause, isFatal, queryId );
             }
             if ( cause instanceof Status.HasStatus )
             {
-                return new Neo4jError( ((Status.HasStatus) cause).status(), cause.getMessage(), any, isFatal );
+                return new Neo4jError( ((Status.HasStatus) cause).status(), cause.getMessage(), any, isFatal, queryId );
             }
             if ( cause instanceof OutOfMemoryError )
             {
-                return new Neo4jError( Status.General.OutOfMemoryError, cause, isFatal );
+                return new Neo4jError( Status.General.OutOfMemoryError, cause, isFatal, queryId );
             }
             if ( cause instanceof StackOverflowError )
             {
-                return new Neo4jError( Status.General.StackOverFlowError, cause, isFatal );
+                return new Neo4jError( Status.General.StackOverFlowError, cause, isFatal, queryId );
             }
         }
 
         // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
         // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
 
-        return new Neo4jError( Status.General.UnknownError, any != null ? any.getMessage() : null, any, isFatal );
+        return new Neo4jError( Status.General.UnknownError, any != null ? any.getMessage() : null, any, isFatal, OptionalLong.empty() );
     }
 
     public static Neo4jError from( Status status, String message )
