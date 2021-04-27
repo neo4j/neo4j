@@ -538,6 +538,10 @@ public class Database extends LifecycleAdapter
     {
         if ( !storageExists && databaseConfig.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
         {
+            if ( databaseConfig.get( GraphDatabaseInternalSettings.skip_default_indexes_on_creation ) )
+            {
+                return;
+            }
             try ( var tx = kernelModule.kernelAPI().beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
             {
                 createLookupIndex( tx, EntityType.NODE );

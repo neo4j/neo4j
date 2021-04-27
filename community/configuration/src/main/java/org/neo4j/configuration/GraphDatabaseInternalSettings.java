@@ -356,6 +356,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.index.default_fulltext_provider", STRING, "fulltext-1.0" ).build();
 
     @Internal
+    @Description( "If 'true', new database will be created without token indexes for labels and relationships." )
+    public static final Setting<Boolean> skip_default_indexes_on_creation =
+            newBuilder( "unsupported.dbms.index.skip_default_indexes_on_creation", BOOL, false ).build();
+
+    @Internal
     @Description( "If `true`, Neo4j will abort recovery if any errors are encountered in the logical log. Setting " +
             "this to `false` will allow Neo4j to restore as much as possible from the corrupted log files and ignore " +
             "the rest, but, the integrity of the database might be compromised." )
