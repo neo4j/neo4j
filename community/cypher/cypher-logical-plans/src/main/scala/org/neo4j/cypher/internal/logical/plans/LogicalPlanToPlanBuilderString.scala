@@ -255,7 +255,7 @@ object LogicalPlanToPlanBuilderString {
           case SimplePatternLength => ""
           case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
         }
-        s""" "($start)$dirStrA[$relName$typeStr$lenStr]$dirStrB($end)", $startInScope, $endInScope """.trim
+        s""" "($start)$dirStrA[$relName$typeStr$lenStr]$dirStrB($end)", startInScope = $startInScope, endInScope = $endInScope """.trim
       case ValueHashJoin(_, _, join) =>
         wrapInQuotations(expressionStringifier(join))
       case NodeHashJoin(nodes, _, _) =>
