@@ -159,6 +159,7 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val C_ANY_ANY = C_T1_ANY + C_T2_ANY
   val ANY_T1_C = A_T1_C + B_T1_C + C_T1_C + D_T1_C + E_T1_C
   val ANY_T2_C = A_T2_C + B_T2_C + C_T2_C + D_T2_C + E_T2_C
+  val ANY_T2_C_sel = ANY_T2_C / (N * C)
   val ANY_ANY_C = ANY_T1_C + ANY_T2_C
 
   val D_T1_ANY = D_T1_A + D_T1_B + D_T1_C + D_T1_D + D_T1_E

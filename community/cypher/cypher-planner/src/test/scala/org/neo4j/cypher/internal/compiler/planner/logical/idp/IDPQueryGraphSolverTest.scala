@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
@@ -53,7 +55,6 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
-import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 
 class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   self =>
@@ -884,13 +885,13 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
       plan should equal(
-        Expand(
-          ProjectEndpoints(
-            ProjectEndpoints(
-              Argument(Set("r2", "r1", "a", "d", "b", "c")),
-              "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength),
-            "r1", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength),
-          "a", SemanticDirection.OUTGOING, List(), "d", "r3", ExpandInto))
+        new LogicalPlanBuilder(wholePlan = false)
+          .projectEndpoints("(a)-[r1]->(b)", startInScope = true, endInScope = true)
+          .projectEndpoints("(c)-[r2]->(d)", startInScope = true, endInScope = true)
+          .expandInto("(a)-[r3]->(d)")
+          .argument("a", "b", "r1", "r2", "c", "d")
+          .build()
+      )
     }
   }
 

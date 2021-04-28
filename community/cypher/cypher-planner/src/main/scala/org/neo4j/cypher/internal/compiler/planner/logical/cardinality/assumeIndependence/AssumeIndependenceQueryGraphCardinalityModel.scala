@@ -72,7 +72,12 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
 
   private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
     val patternMultiplier = calculateMultiplier(qg, input.labelInfo, semanticTable)
-    val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
+    val numberOfPatternNodes = qg.patternNodes.count { n =>
+      !qg.argumentIds.contains(n) && !qg.patternRelationships.exists(r =>
+        qg.argumentIds.contains(r.name) && Seq(r.left, r.right).contains(n)
+      )
+    }
+
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
     (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
@@ -85,7 +90,10 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
                                         .getOrElse(Selectivity.ONE)
 
     val patternRelationships = qg.patternRelationships.toIndexedSeq
-    val patternMultipliers = patternRelationships.map(relMultiplierCalculator.relationshipMultiplier(_, labels)(semanticTable))
+    val patternMultipliers = patternRelationships.map(r =>
+      if (qg.argumentIds.contains(r.name)) Multiplier.ONE
+      else relMultiplierCalculator.relationshipMultiplier(r, labels)(semanticTable)
+    )
 
     patternMultipliers.product * expressionSelectivity
   }

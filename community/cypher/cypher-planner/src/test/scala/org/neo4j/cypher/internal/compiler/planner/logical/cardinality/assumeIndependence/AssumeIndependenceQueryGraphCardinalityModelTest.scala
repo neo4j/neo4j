@@ -439,6 +439,30 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..3]->(b:B)", varLength1_1 + varLength2_2 + varLength3_3)
   }
 
+  test("MATCH (a:A)-[r:T1]->(b:B) WITH r SKIP 0 MATCH ()-[r]->()") {
+    expectCardinality(A_T1_B)
+  }
+
+  test("MATCH (a:A)-[r:T1]->(b:B) WITH * SKIP 0 MATCH (a)-[r]->(b)") {
+    expectCardinality(A_T1_B)
+  }
+
+  test("MATCH (a:A)-[r:T1]->(b:B) WITH a, r SKIP 0 MATCH (a)-[r]->()") {
+    expectCardinality(A_T1_B)
+  }
+
+  test("MATCH (a:A)-[r:T1]->(b:B) WITH r SKIP 0 MATCH (a1)-[r]->()") {
+    expectCardinality(A_T1_B)
+  }
+
+  test("MATCH (a:A)-[r:T1]->(b:B) WITH r SKIP 0 MATCH ()-[r]->()-[r2:T2]->(c:C)") {
+    // Actually, we would expect N * N * N * Asel * A_T1_B_sel * Bsel * B_T2_C_sel * Csel rows.
+    // But the label and rel type information from the first match is currently not propagated to the 2nd match.
+    // This also means that the planner cannot prove that r != r2 and therefore applies a filter with the
+    // selectivity for 2 unique relationships.
+    expectCardinality(N * N * N * Asel * A_T1_B_sel * Bsel * ANY_T2_C_sel * Csel * uniquenessSelectivityForNRels(2).factor)
+  }
+
   private def expectCardinality(expected: Double): Unit =
     queryShouldHaveCardinality(testName, expected)
 
