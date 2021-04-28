@@ -90,8 +90,8 @@ class ConstraintRecoveryIT
 
         // This test relies on behaviour that is specific to the Lucene populator, where uniqueness is controlled
         // after index has been populated, which is why we're using NATIVE20 and index booleans (they end up in Lucene)
-        DatabaseManagementService managementService = dbFactory.impermanent()
-                .setConfig( default_schema_provider, NATIVE30.providerName() ).build();
+        DatabaseManagementService managementService = configure( dbFactory.impermanent()
+                                                                          .setConfig( default_schema_provider, NATIVE30.providerName() ) ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction tx = db.beginTx() )
@@ -118,7 +118,7 @@ class ConstraintRecoveryIT
         // when
         dbFactory = new TestDatabaseManagementServiceBuilder( pathToDb );
         dbFactory.setFileSystem( storeInNeedOfRecovery[0] );
-        DatabaseManagementService secondManagementService = dbFactory.impermanent().build();
+        DatabaseManagementService secondManagementService = configure( dbFactory.impermanent() ).build();
         db = (GraphDatabaseAPI) secondManagementService.database( DEFAULT_DATABASE_NAME );
 
         // then
@@ -139,11 +139,16 @@ class ConstraintRecoveryIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition orphanedConstraintIndex = single( tx.schema().getIndexes() );
+            IndexDefinition orphanedConstraintIndex = single( tx.schema().getIndexes( LABEL ) );
             assertEquals( LABEL.name(), single( orphanedConstraintIndex.getLabels() ).name() );
             assertEquals( KEY, single( orphanedConstraintIndex.getPropertyKeys() ) );
         }
 
         secondManagementService.shutdown();
+    }
+
+    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        return builder;
     }
 }
