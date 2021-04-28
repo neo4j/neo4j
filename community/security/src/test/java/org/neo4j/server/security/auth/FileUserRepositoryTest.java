@@ -84,7 +84,7 @@ class FileUserRepositoryTest
     }
 
     @Test
-    void shouldPersistUsers() throws Throwable
+    void shouldPersistUserWithoutId() throws Throwable
     {
         // Given
         FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
@@ -99,6 +99,25 @@ class FileUserRepositoryTest
 
         // Then
         assertThat( resultByName ).isEqualTo( user );
+    }
+
+    @Test
+    void shouldNotPersistIdForUserWithValidId() throws Throwable
+    {
+        // Given
+        FileUserRepository users = new FileUserRepository( fs, authFile, logProvider );
+        User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withId( "id" ).withRequiredPasswordChange( true ).build();
+        users.create( user );
+
+        users = new FileUserRepository( fs, authFile, logProvider );
+        users.start();
+
+        // When
+        User resultByName = users.getUserByName( user.name() );
+
+        // Then
+        User userWithoutId = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
+        assertThat( resultByName ).isEqualTo( userWithoutId );
     }
 
     @Test

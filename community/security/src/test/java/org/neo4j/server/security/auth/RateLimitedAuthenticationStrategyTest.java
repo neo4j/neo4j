@@ -53,6 +53,18 @@ class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
+    void shouldReturnSuccessForValidAttemptWithUserId()
+    {
+        // Given
+        FakeClock clock = getFakeClock();
+        AuthenticationStrategy authStrategy = newAuthStrategy( clock, 3 );
+        User user = new User.Builder( "user", credentialFor( "right" ) ).withId( "id" ).build();
+
+        // Then
+        assertThat( authStrategy.authenticate( user, password( "right" ) ) ).isEqualTo( AuthenticationResult.SUCCESS );
+    }
+
+    @Test
     void shouldReturnFailureForInvalidAttempt()
     {
         // Given

@@ -21,37 +21,33 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4;
 
 /**
- * This is the UserSecurityComponent version for Neo4j 4.0
+ * This is the UserSecurityComponent version for Neo4j 4.3-Drop04
  */
-public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySecurityComponentVersion
+public class CommunitySecurityComponentVersion_3_43D4 extends SupportedCommunitySecurityComponentVersion
 {
     private final KnownCommunitySecurityComponentVersion previous;
 
-    public CommunitySecurityComponentVersion_1_40( AbstractSecurityLog securityLog, UserRepository userRepository,
+    public CommunitySecurityComponentVersion_3_43D4( AbstractSecurityLog securityLog, UserRepository userRepository,
             KnownCommunitySecurityComponentVersion previous )
     {
-        super( COMMUNITY_SECURITY_40, securityLog, userRepository );
+        super( COMMUNITY_SECURITY_43D4, securityLog, userRepository );
         this.previous = previous;
-    }
-
-    @Override
-    public boolean detected( Transaction tx )
-    {
-        return componentNotInVersionNode( tx ) && nodesWithLabelExist( tx, USER_LABEL );
     }
 
     @Override
     public void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception
     {
-       if ( fromVersion < version )
-       {
-           // this will create users
-           previous.upgradeSecurityGraph( tx, fromVersion );
-       }
+        if ( fromVersion < version )
+        {
+            previous.upgradeSecurityGraph( tx, fromVersion );
+            this.setVersionProperty( tx, version );
+            this.setUserIds( tx );
+        }
     }
 }

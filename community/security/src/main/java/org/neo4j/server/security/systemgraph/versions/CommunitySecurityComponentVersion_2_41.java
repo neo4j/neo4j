@@ -32,7 +32,8 @@ public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySe
 {
     private final KnownCommunitySecurityComponentVersion previous;
 
-    public CommunitySecurityComponentVersion_2_41( AbstractSecurityLog securityLog, UserRepository userRepository, KnownCommunitySecurityComponentVersion previous )
+    public CommunitySecurityComponentVersion_2_41( AbstractSecurityLog securityLog, UserRepository userRepository,
+            KnownCommunitySecurityComponentVersion previous )
     {
         super( COMMUNITY_SECURITY_41, securityLog, userRepository );
         this.previous = previous;
