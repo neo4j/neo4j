@@ -38,13 +38,7 @@ class UserSerializationTest
     {
         // Given
         UserSerialization serialization = new UserSerialization();
-
-        List<User> users = asList(
-                new User.Builder( "Mike", LegacyCredential.forPassword( "1234321" ) ).withFlag( "not_as_nice" ).build(),
-                new User.Builder( "Steve", LegacyCredential.forPassword( "1234321" ) ).build(),
-                new User.Builder( "steve.stevesson@WINDOMAIN", LegacyCredential.forPassword( "1234321" ) ).build(),
-                new User.Builder( "Bob", LegacyCredential.forPassword( "0987654" ) ).build()
-            );
+        List<User> users = legacyUsers();
 
         // When
         byte[] serialized = serialization.serialize( users );
@@ -58,14 +52,7 @@ class UserSerializationTest
     {
         // Given
         UserSerialization serialization = new UserSerialization();
-        SecureHasher hasher = new SecureHasher();
-
-        List<User> users = asList(
-                new User.Builder( "Mike", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
-                new User.Builder( "Steve", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
-                new User.Builder( "steve.stevesson@WINDOMAIN", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
-                new User.Builder( "Bob", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "0987654" ), hasher ) ).build()
-        );
+        List<User> users = users();
 
         // When
         byte[] serialized = serialization.serialize( users );
@@ -87,13 +74,7 @@ class UserSerializationTest
     void shouldMaskAndUnmaskSerializedSystemGraphCredential() throws Exception
     {
         // Given
-        SecureHasher hasher = new SecureHasher();
-        List<User> users = asList(
-                new User.Builder( "Mike", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
-                new User.Builder( "Steve", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
-                new User.Builder( "steve.stevesson@WINDOMAIN", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).build(),
-                new User.Builder( "Bob", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "0987654" ), hasher ) ).build()
-        );
+        List<User> users = users();
 
         for ( User user : users )
         {
@@ -111,12 +92,7 @@ class UserSerializationTest
     void shouldMaskAndUnmaskSerializedCredentialsMissingIterations() throws Exception
     {
         // Given
-        List<User> users = asList(
-                new User.Builder( "Mike", LegacyCredential.forPassword( UTF8.encode( "1234321" ) ) ).build(),
-                new User.Builder( "Steve", LegacyCredential.forPassword( UTF8.encode( "1234321" ) ) ).build(),
-                new User.Builder( "steve.stevesson@WINDOMAIN", LegacyCredential.forPassword( UTF8.encode( "1234321" ) ) ).build(),
-                new User.Builder( "Bob", LegacyCredential.forPassword( UTF8.encode( "0987654" ) ) ).build()
-        );
+        List<User> users = legacyUsers();
 
         for ( User user : users )
         {
@@ -154,7 +130,28 @@ class UserSerializationTest
 
         // Then
         assertThat( deserialized ).isEqualTo( asList( new User.Builder( "Mike", new LegacyCredential( salt1, hash1 ) ).build(),
-                new User.Builder( "Steve", new LegacyCredential( salt1, hash1 ) ).withRequiredPasswordChange( true ).withFlag( "nice_guy" ).build(),
+                new User.Builder( "Steve", new LegacyCredential( salt1, hash1 ) )
+                        .withRequiredPasswordChange( true ).withFlag( "nice_guy" ).build(),
                 new User.Builder( "Bob", new LegacyCredential( salt2, hash2 ) ).withRequiredPasswordChange( true ).build() ) );
+    }
+
+    private List<User> legacyUsers()
+    {
+        return asList(
+                new User.Builder( "Mike", LegacyCredential.forPassword( "1234321" ) ).withFlag( "not_as_nice" ).build(),
+                new User.Builder( "Steve", LegacyCredential.forPassword( "1234321" ) ).build(),
+                new User.Builder( "steve.stevesson@WINDOMAIN", LegacyCredential.forPassword( "1234321" ) ).build(),
+                new User.Builder( "Bob", LegacyCredential.forPassword( "0987654" ) ).build() );
+    }
+
+    private List<User> users()
+    {
+        SecureHasher hasher = new SecureHasher();
+        return asList(
+                new User.Builder( "Mike", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).withId( "id1" ).build(),
+                new User.Builder( "Steve", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).withId( "id2" ).build(),
+                new User.Builder( "steve.stevesson@WINDOMAIN",
+                        SystemGraphCredential.createCredentialForPassword( UTF8.encode( "1234321" ), hasher ) ).withId( "id3" ).build(),
+                new User.Builder( "Bob", SystemGraphCredential.createCredentialForPassword( UTF8.encode( "0987654" ), hasher ) ).build() );
     }
 }
