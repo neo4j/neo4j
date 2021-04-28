@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.functions.Rand
 import org.neo4j.cypher.internal.expressions.functions.RandomUUID
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
@@ -53,10 +54,11 @@ object Metrics {
 
   object QueryGraphSolverInput {
 
-    def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty)
+    def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Map.empty)
   }
 
   case class QueryGraphSolverInput(labelInfo: LabelInfo,
+                                   relTypeInfo: RelTypeInfo,
                                    limitSelectivityConfig: LimitSelectivityConfig = LimitSelectivityConfig.default,
                                    activePlanner: PlannerType = PlannerType.Match) {
 
@@ -67,6 +69,9 @@ object Metrics {
 
     def withFusedLabelInfo(newLabelInfo: LabelInfo): QueryGraphSolverInput =
       copy(labelInfo = labelInfo.fuse(newLabelInfo)(_ ++ _))
+
+    def withFusedRelTypeInfo(newRelTypeInfo: RelTypeInfo): QueryGraphSolverInput =
+      copy(relTypeInfo = relTypeInfo ++ newRelTypeInfo)
 
     def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): QueryGraphSolverInput =
       copy(limitSelectivityConfig = cfg)
@@ -109,7 +114,16 @@ object Metrics {
     def expressionSelectivityCalculator: ExpressionSelectivityCalculator
   }
 
+  /**
+   * A node can have multiple labels at the same time. If labelInfo("n") = Set(LabelName("Foo"), LabelName("Bar")), then n:Foo AND n:Bar.
+   */
   type LabelInfo = Map[String, Set[LabelName]]
+
+  /**
+   * A relationship can only have one type. If labelInfo("r") = Set(RelTypeName("Foo")), then we are certain that r:Foo.
+   * If a relationship is given with multiple OR'ed types, such as ()-[:T1|T2]-(), then none of those types should be present in this map.
+   */
+  type RelTypeInfo = Map[String, RelTypeName]
 }
 
 trait ExpressionEvaluator {

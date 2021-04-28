@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel.CardinalityAndInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
@@ -71,7 +72,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
   }
 
   private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
-    val patternMultiplier = calculateMultiplier(qg, input.labelInfo, semanticTable)
+    val patternMultiplier = calculateMultiplier(qg, input.labelInfo, input.relTypeInfo, semanticTable)
     val numberOfPatternNodes = qg.patternNodes.count { n =>
       !qg.argumentIds.contains(n) && !qg.patternRelationships.exists(r =>
         qg.argumentIds.contains(r.name) && Seq(r.left, r.right).contains(n)
@@ -83,9 +84,9 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
   }
 
-  private def calculateMultiplier(qg: QueryGraph, labels: LabelInfo, semanticTable: SemanticTable): Multiplier = {
+  private def calculateMultiplier(qg: QueryGraph, labels: LabelInfo, relTypes: RelTypeInfo, semanticTable: SemanticTable): Multiplier = {
     val expressions = qg.selections.flatPredicates
-    val expressionSelectivities = expressions.map(expressionSelectivityCalculator(_, labels)(semanticTable))
+    val expressionSelectivities = expressions.map(expressionSelectivityCalculator(_, labels, relTypes)(semanticTable))
     val expressionSelectivity = combiner.andTogetherSelectivities(expressionSelectivities)
                                         .getOrElse(Selectivity.ONE)
 

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.shouldPlanExhaustiveLimit
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext.Results
@@ -115,6 +116,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
         Set.empty,
         List(Cardinality.SINGLE),
         Map.empty.withDefaultValue(Set.empty),
+        Map.empty,
         new Cardinalities,
         new SequentialIdGen())
     }
@@ -137,6 +139,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
                    parameters: Set[String],
                    private val leafCardinalityMultipliersStack: List[Cardinality],
                    labelInfo: LabelInfo,
+                   relTypeInfo: RelTypeInfo,
                    cardinalities: Cardinalities,
                    idGen: IdGen) {
 
@@ -634,6 +637,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
       state.parameters,
       List(state.leafCardinalityMultiplier),
       Map.empty.withDefaultValue(Set.empty),
+      Map.empty,
       state.cardinalities,
       state.idGen)
   }

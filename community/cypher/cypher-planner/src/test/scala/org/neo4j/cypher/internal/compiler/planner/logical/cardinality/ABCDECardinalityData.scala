@@ -54,6 +54,8 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val Bprop = 0.003 // Selectivity of index on :B(prop)
   val Abar = 0.002 // Selectivity of index on :A(bar)
 
+  val T1prop = 0.003 // Selectivity of index on :T1(prop)
+
   // Multipliers for patterns
 
   val A_T1_A_sel = 5.0 / A
@@ -180,6 +182,7 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val ANY_T1_ANY_sel = ANY_T1_ANY / (N * N)
 
   val ANY_T2_ANY = A_T2_ANY + B_T2_ANY + C_T2_ANY + D_T2_ANY + E_T2_ANY
+  val ANY_T2_ANY_sel = ANY_T2_ANY / (N * N)
 
   // Relationship count: the total number of relationships in the system
   val R = A_ANY_ANY + B_ANY_ANY + C_ANY_ANY + D_ANY_ANY + E_ANY_ANY
@@ -285,4 +288,6 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
       .setRelationshipCardinality("(:E)-[:T2]->(:D)", E_T2_D)
       .setRelationshipCardinality("(:E)-[:T1]->(:E)", E_T1_E)
       .setRelationshipCardinality("(:E)-[:T2]->(:E)", E_T2_E)
+
+      .addRelationshipIndex("T1", Seq("prop"), 1.0, T1prop)
 }

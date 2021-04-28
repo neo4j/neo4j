@@ -200,7 +200,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                      ): LogicalPlanningContext = {
     val planningAttributes = PlanningAttributes.newAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty),
+      strategy, QueryGraphSolverInput(Map.empty, Map.empty),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
@@ -218,7 +218,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                                         useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
     val planningAttributes = newStubbedPlanningAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty),
+      strategy, QueryGraphSolverInput(Map.empty, Map.empty),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
       config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,

@@ -188,22 +188,22 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
                                                        where: Selections,
                                                        semanticTable: SemanticTable): CardinalityAndInput = {
     val inboundCardinality = inputBeforeSelection.cardinality
-    val inputWithKnownLabelInfo = inputBeforeSelection.input.withFusedLabelInfo(where.labelInfo)
-    val expressionSelectivities = where.flatPredicates.map(expressionSelectivityCalculator(_, inputWithKnownLabelInfo.labelInfo)(semanticTable))
+    val fusedInput = inputBeforeSelection.input.withFusedLabelInfo(where.labelInfo)
+    val expressionSelectivities = where.flatPredicates.map(expressionSelectivityCalculator(_, fusedInput.labelInfo, fusedInput.relTypeInfo)(semanticTable))
     val maybeWhereSelectivity = combiner.andTogetherSelectivities(expressionSelectivities)
     val cardinality = maybeWhereSelectivity match {
       case Some(whereSelectivity) => inboundCardinality * whereSelectivity
       case None => inboundCardinality
     }
-    CardinalityAndInput(cardinality, inputWithKnownLabelInfo)
+    CardinalityAndInput(cardinality, fusedInput)
   }
 
   private def calculateCardinalityForQueryGraph(graph: QueryGraph,
                                                 input: QueryGraphSolverInput,
                                                 semanticTable: SemanticTable): CardinalityAndInput = {
-    val inputWithKnownLabelInfo = input.withFusedLabelInfo(graph.patternNodeLabels)
-    val cardinality = queryGraphCardinalityModel(graph, inputWithKnownLabelInfo, semanticTable)
-    CardinalityAndInput(cardinality, inputWithKnownLabelInfo)
+    val fusedInput = input.withFusedLabelInfo(graph.patternNodeLabels).withFusedRelTypeInfo(graph.patternRelationshipTypes)
+    val cardinality = queryGraphCardinalityModel(graph, fusedInput, semanticTable)
+    CardinalityAndInput(cardinality, fusedInput)
   }
 }
 

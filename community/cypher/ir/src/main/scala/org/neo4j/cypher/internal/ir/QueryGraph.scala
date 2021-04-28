@@ -263,8 +263,17 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
 
   def hasOptionalPatterns: Boolean = optionalMatches.nonEmpty
 
-  def patternNodeLabels: Map[String, Set[LabelName]] =
+  def patternNodeLabels: Map[String, Set[LabelName]] = {
+    // Node label predicates are extracted from the pattern nodes to predicates in LabelPredicateNormalizer.
+    // Therefore, we only need to look in selections.
     patternNodes.collect { case node: String => node -> selections.labelsOnNode(node) }.toMap
+  }
+
+  def patternRelationshipTypes: Map[String, RelTypeName] = {
+    // Pattern relationship type predicates are inlined in PlannerQueryBuilder::inlineRelationshipTypePredicates().
+    // Therefore, we don't need to look at predicates in selections.
+    patternRelationships.collect { case PatternRelationship(name, _, _, Seq(relType), _) => name -> relType}.toMap
+  }
 
   /**
    * Returns the connected patterns of this query graph where each connected pattern is represented by a QG.

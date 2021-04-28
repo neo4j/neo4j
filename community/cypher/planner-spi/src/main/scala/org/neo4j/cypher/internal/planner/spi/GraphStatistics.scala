@@ -59,7 +59,7 @@ trait GraphStatistics {
   def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity]
 
   /**
-   * Probability of any node with the given label, to have a particular property
+   * Probability of any node or relationship with the given label or relType, to have a particular property
    *
    * indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
    */

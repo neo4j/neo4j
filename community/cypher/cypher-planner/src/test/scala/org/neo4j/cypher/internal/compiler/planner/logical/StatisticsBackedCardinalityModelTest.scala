@@ -426,4 +426,36 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
       inboundCardinality * whereSelectivity * nodes)
   }
+
+  test("should use relationship index for cardinality estimation with inlined type predicate") {
+    val inboundCardinality = 10
+    val whereSelectivity = 0.1
+    val config = plannerBuilder()
+      .setAllNodesCardinality(500)
+      .setLabelCardinality("A", inboundCardinality)
+      .setRelationshipCardinality("(:A)-[:R]->()", inboundCardinality)
+      .setRelationshipCardinality("()-[:R]->()", inboundCardinality)
+      .setAllRelationshipsCardinality(10)
+      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity)
+      .build()
+
+    queryShouldHaveCardinality(config, s"MATCH (a:A)-[r:R]->() WHERE r.prop IS NOT NULL",
+      inboundCardinality * whereSelectivity)
+  }
+
+  test("should use relationship index for cardinality estimation with non-inlined type predicate") {
+    val inboundCardinality = 10
+    val whereSelectivity = 0.1
+    val config = plannerBuilder()
+      .setAllNodesCardinality(500)
+      .setLabelCardinality("A", inboundCardinality)
+      .setRelationshipCardinality("(:A)-[:R]->()", inboundCardinality)
+      .setRelationshipCardinality("()-[:R]->()", inboundCardinality)
+      .setAllRelationshipsCardinality(10)
+      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity)
+      .build()
+
+    queryShouldHaveCardinality(config, s"MATCH (a:A)-[r]->() WHERE r:R AND r.prop IS NOT NULL",
+      inboundCardinality * whereSelectivity)
+  }
 }

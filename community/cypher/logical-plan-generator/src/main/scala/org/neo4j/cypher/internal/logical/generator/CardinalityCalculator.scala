@@ -115,7 +115,7 @@ object CardinalityCalculator {
         patternRelationships = Set(PatternRelationship(relName, (from, to), dir, relTypes, SimplePatternLength)),
         argumentIds = state.arguments
       )
-      val qgsi = QueryGraphSolverInput(labelInfo = state.labelInfo)
+      val qgsi = QueryGraphSolverInput(labelInfo = state.labelInfo, state.relTypeInfo)
       val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(stats, IndependenceCombiner)
       val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable)
       expandCardinality * inboundCardinality

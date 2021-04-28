@@ -204,6 +204,122 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(maxRelCount * relMult)
   }
 
+  test("MATCH ()-[t: T1]->() WHERE t.prop IS NOT NULL") {
+    expectCardinality(ANY_T1_ANY)
+  }
+
+  test("MATCH ()-[t: T1]->() WHERE t.prop = 2") {
+    expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
+  test("MATCH ()-[t: T1 {prop: 2}]->()") {
+    expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
+  test("MATCH ()-[t: T2 {prop: 2}]->()") {
+    expectCardinality(ANY_T2_ANY * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
+  test("MATCH ()-[t {prop: 2}]->() WHERE t:T1") {
+    expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
+  test("MATCH ()-[t]->() WHERE t:T1 AND t.prop = 2") {
+    expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
+  test("MATCH ()<-[t: T1]-() WHERE t.prop IS NOT NULL") {
+    expectCardinality(ANY_T1_ANY)
+  }
+
+  test("MATCH ()-[t: T1]-() WHERE t.prop = 2") {
+    expectCardinality(ANY_T1_ANY * 2 * T1prop)
+  }
+
+  test("MATCH (a:A)-[t: T1]->() WHERE t.prop = 2 AND a.prop = 2") {
+    expectCardinality(A_T1_ANY * T1prop * Aprop)
+  }
+
+  test("MATCH (a:A)-[t: T1]->() WHERE t.prop = 2") {
+    expectCardinality(A_T1_ANY * T1prop)
+  }
+
+  test("MATCH ()-[t:T1]->() WHERE t.bar = 42") {
+    expectCardinality(ANY_T1_ANY * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
+  test("MATCH ()-[t:T1]->() WHERE NOT t.prop = 42") {
+    expectCardinality(ANY_T1_ANY * (1 - T1prop))
+  }
+
+  test("MATCH ()-[t:T1]->() WHERE t.prop = 42 OR t.prop = 43") {
+    expectCardinality(ANY_T1_ANY * or(T1prop, T1prop))
+  }
+
+  test("MATCH ()-[t1: T1]->()-[t2:T2]->()") {
+    expectCardinality(N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel)
+  }
+
+  test("MATCH ()-[t1: T1]->()-[t2:T2]->() WHERE t1.prop = 2") {
+    expectCardinality(N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop)
+  }
+
+  test("MATCH ()-[t1: T1]->()-[t2:T2]->() WHERE t1.prop = 2 AND t2.prop = 3") {
+    expectCardinality(N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
+  test("MATCH ()-[t1:T1]->()-[t2:T2*2..2]->() WHERE t1.prop = 2") {
+    expectCardinality(N * N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * ANY_T2_ANY_sel * uniquenessSelectivityForNRels(2).factor * T1prop)
+  }
+
+  test("MATCH ()-[t:T1]->() WHERE t.prop STARTS WITH 'prefix'") {
+    expectCardinality(ANY_T1_ANY * (DEFAULT_RANGE_SEEK_FACTOR / "prefix".length))
+  }
+
+  test("MATCH ()-[t:T1]->() WHERE t.prop > 2") {
+  expectCardinality(ANY_T1_ANY * (1 - T1prop) * DEFAULT_RANGE_SEEK_FACTOR)
+  }
+
+  test("MATCH ()-[t:T1]->() WHERE t.prop >= 2") {
+    expectCardinality(ANY_T1_ANY * ((1 - T1prop) * DEFAULT_RANGE_SEEK_FACTOR + T1prop))
+  }
+
+  test("MATCH ()-[t: T1]->() WHERE t.prop IN [1, 2, 3]") {
+    expectCardinality(ANY_T1_ANY * or(T1prop, T1prop, T1prop))
+  }
+
+  test("MATCH ()-[t: T1]->() WHERE t.prop = 2 AND t.prop IN [1, 2, 3]") {
+    expectCardinality(ANY_T1_ANY * T1prop * or(T1prop, T1prop, T1prop))
+  }
+
+  test("MATCH ()-[t: T1]->() WHERE t.prop = 2 AND t.bar = 2") {
+    expectCardinality(ANY_T1_ANY * T1prop * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
+  test("MATCH ()-[t: T1]->() WITH t AS t WHERE t.prop = 2") {
+    expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
+  test("MATCH ()-[t: T1]->() WITH *, 1 AS horizon MATCH ()-[t]->()") {
+    expectCardinality(ANY_T1_ANY)
+  }
+
+  test("MATCH ()-[t: T1]->() WITH *, 1 AS horizon MATCH ()-[t]->() WHERE t.prop = 2") {
+    expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
+  test("MATCH ()-[t:T1]->() OPTIONAL MATCH ()-[t]->() WHERE t.prop = 17") {
+    expectCardinality(Math.max(ANY_T1_ANY, ANY_T1_ANY * T1prop))
+  }
+
+  test("MATCH ()-[t1:T1]->() OPTIONAL MATCH ()-[t1]->(), (n) WHERE t1.prop = 17") {
+    expectCardinality(ANY_T1_ANY * N * T1prop)
+  }
+
+  test("MATCH ()-[t: T1]->() WITH * CALL { WITH t MATCH ()-[t]->() WHERE t.prop = 17 RETURN 42 as ft }") {
+    expectCardinality(ANY_T1_ANY * T1prop)
+  }
+
   test("MATCH (a) WITH a, 1 AS foo WHERE a:A AND a.prop = 2") {
     // Use index for a.prop = 2
     expectCardinality(A * Aprop)
