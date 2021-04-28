@@ -46,6 +46,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -229,7 +230,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             stores.start( cursorTracer );
             TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), cursorTracer );
             List<SchemaRule> rules = new ArrayList<>();
-            new SchemaStorage( stores.getSchemaStore(), tokenHolders ).getAll( cursorTracer ).forEach( rules::add );
+            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST, false ).getAll( cursorTracer ).forEach( rules::add );
             return rules;
         }
         catch ( IOException e )
@@ -296,7 +297,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             return Math.toIntExact( tokenId );
         };
         TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, cursorTracer );
-        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ), cursorTracer, memoryTracker );
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST, false ),
+                cursorTracer, memoryTracker );
     }
 
     private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, PageCursorTracer cursorTracer )

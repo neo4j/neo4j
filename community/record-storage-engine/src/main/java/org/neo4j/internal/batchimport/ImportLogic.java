@@ -559,7 +559,8 @@ public class ImportLogic implements Closeable
     {
         if ( dbConfig.get( enable_scan_stores_as_token_indexes ) )
         {
-            SchemaRuleAccess schemaRuleAccess = getSchemaRuleAccess( neoStore.getNeoStores().getSchemaStore(), neoStore.getTokenHolders() );
+            SchemaRuleAccess schemaRuleAccess = getSchemaRuleAccess( neoStore.getNeoStores().getSchemaStore(), neoStore.getTokenHolders(),
+                    neoStore.getNeoStores().getMetaDataStore(), true );
             if ( !hasTokenIndexes( schemaRuleAccess ) )
             {
                 try

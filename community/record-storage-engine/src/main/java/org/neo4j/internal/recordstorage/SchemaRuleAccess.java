@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.KernelVersionRepository;
@@ -39,15 +38,15 @@ import org.neo4j.util.VisibleForTesting;
 
 public interface SchemaRuleAccess
 {
+    /**
+     * @param versionRepository Used to know whether or not to inject a rule for NLI (that was formerly labelscanstore).
+     *                          Use metadatastore as versionRepository if you are not absolutely sure that the injected
+     *                          rule is never needed.
+     */
     static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders, KernelVersionRepository versionRepository,
             boolean tokenIndexFeatureOn )
     {
         return new SchemaStorage( store, tokenHolders, versionRepository, tokenIndexFeatureOn );
-    }
-
-    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders )
-    {
-        return new SchemaStorage( store, tokenHolders, () -> KernelVersion.LATEST, false );
     }
 
     long newRuleId( PageCursorTracer cursorTracer );

@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -82,7 +83,8 @@ class IndexIteratorIT
         }
 
         var neoStores = storageEngine.testAccessNeoStores();
-        indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), PageCacheTracer.NULL, SIMPLE_NAME_LOOKUP );
+        indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), PageCacheTracer.NULL, SIMPLE_NAME_LOOKUP,
+                config, () -> KernelVersion.LATEST );
         pageCacheTracer = new DefaultPageCacheTracer();
     }
 

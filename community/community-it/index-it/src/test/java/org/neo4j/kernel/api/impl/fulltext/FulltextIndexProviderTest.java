@@ -74,6 +74,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -529,7 +530,7 @@ class FulltextIndexProviderTest
                 {
                     TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores, PageCursorTracer.NULL );
                     SchemaStore schemaStore = neoStores.getSchemaStore();
-                    SchemaStorage storage = new SchemaStorage( schemaStore, tokens );
+                    SchemaStorage storage = new SchemaStorage( schemaStore, tokens, () -> KernelVersion.LATEST, false );
                     IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule( indexId, PageCursorTracer.NULL );
                     Map<String,Value> indexConfigMap = new HashMap<>( index.getIndexConfig().asMap() );
                     for ( Map.Entry<String,Value> entry : indexConfigMap.entrySet() )

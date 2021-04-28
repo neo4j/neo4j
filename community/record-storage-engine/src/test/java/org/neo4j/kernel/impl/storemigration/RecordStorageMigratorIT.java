@@ -66,6 +66,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -436,7 +437,7 @@ class RecordStorageMigratorIT
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
             TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, NULL );
-            SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders );
+            SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST, false );
             List<SchemaRule> migratedRules = new ArrayList<>();
             storage.getAll( NULL ).iterator().forEachRemaining( migratedRules::add );
 

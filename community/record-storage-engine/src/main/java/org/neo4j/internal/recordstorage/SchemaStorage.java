@@ -28,21 +28,16 @@ import java.util.Iterator;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -65,21 +60,17 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
     private final KernelVersionRepository versionSupplier;
     private final boolean tokenIndexFeatureOn;
 
+    /**
+     * @param versionSupplier Used to know whether or not to inject a rule for NLI (that was formerly labelscanstore).
+     *                        Use metadatastore as versionSupplier if you are not absolutely sure that the injected
+     *                        rule is never needed.
+     */
     public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders, KernelVersionRepository versionSupplier, boolean tokenIndexFeatureOn )
     {
         this.schemaStore = schemaStore;
         this.tokenHolders = tokenHolders;
         this.versionSupplier = versionSupplier;
         this.tokenIndexFeatureOn = tokenIndexFeatureOn;
-    }
-
-    //TODO remove me when not needed
-    public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders )
-    {
-        this.schemaStore = schemaStore;
-        this.tokenHolders = tokenHolders;
-        this.versionSupplier = () -> KernelVersion.LATEST;
-        this.tokenIndexFeatureOn = false;
     }
 
     @Override

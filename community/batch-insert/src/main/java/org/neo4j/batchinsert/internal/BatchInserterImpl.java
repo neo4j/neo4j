@@ -362,7 +362,7 @@ public class BatchInserterImpl implements BatchInserter
 
             indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
 
-            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
+            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders, neoStores.getMetaDataStore(), false );
             schemaCache = new SchemaCache( getConstraintSemantics(), indexProviderMap );
             schemaCache.load( schemaRuleAccess.getAll( cursorTracer ) );
 

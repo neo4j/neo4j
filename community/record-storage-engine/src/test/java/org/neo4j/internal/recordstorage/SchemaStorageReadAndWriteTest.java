@@ -33,6 +33,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -96,7 +97,7 @@ class SchemaStorageReadAndWriteTest
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.propertyKeyTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.labelTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.relationshipTypeTokens().size() ) );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), tokens );
+        storage = new SchemaStorage( neoStores.getSchemaStore(), tokens, () -> KernelVersion.LATEST, false );
     }
 
     @AfterAll

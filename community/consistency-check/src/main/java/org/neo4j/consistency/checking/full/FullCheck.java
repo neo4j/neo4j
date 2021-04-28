@@ -139,7 +139,8 @@ public class FullCheck
             throws ConsistencyCheckIncompleteException
     {
         try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores(), samplingConfig,
-                indexAccessorLookup, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds() ) )
+                indexAccessorLookup, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds(), config,
+                directStoreAccess.nativeStores().getMetaDataStore() ) )
         {
             if ( flags.isCheckIndexStructure() )
             {

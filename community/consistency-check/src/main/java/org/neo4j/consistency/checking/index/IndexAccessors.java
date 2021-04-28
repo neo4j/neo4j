@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -44,8 +45,10 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.token.TokenHolders;
 
 public class IndexAccessors implements Closeable
@@ -61,10 +64,12 @@ public class IndexAccessors implements Closeable
     public IndexAccessors(
             IndexProviderMap providers,
             NeoStores neoStores,
-            IndexSamplingConfig samplingConfig, PageCacheTracer pageCacheTracer, TokenNameLookup tokenNameLookup )
+            IndexSamplingConfig samplingConfig, PageCacheTracer pageCacheTracer, TokenNameLookup tokenNameLookup,
+            Config config, KernelVersionRepository versionProvider )
             throws IOException
     {
-        this( providers, neoStores, samplingConfig, null /*we'll use a default below, if this is null*/, pageCacheTracer, tokenNameLookup );
+        this( providers, neoStores, samplingConfig, null /*we'll use a default below, if this is null*/, pageCacheTracer, tokenNameLookup,
+                config, versionProvider );
     }
 
     public IndexAccessors(
@@ -73,13 +78,16 @@ public class IndexAccessors implements Closeable
             IndexSamplingConfig samplingConfig,
             IndexAccessorLookup accessorLookup,
             PageCacheTracer pageCacheTracer,
-            TokenNameLookup tokenNameLookup )
+            TokenNameLookup tokenNameLookup,
+            Config config,
+            KernelVersionRepository versionProvider )
             throws IOException
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) )
         {
             TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, cursorTracer );
-            Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders )
+            Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, versionProvider, config.get(
+                    RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
                     .indexesGetAll( cursorTracer );
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null ? accessorLookup

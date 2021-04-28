@@ -160,7 +160,8 @@ class CheckerTestBase
         relationshipStore = neoStores.getRelationshipStore();
         schemaStore = neoStores.getSchemaStore();
         tokenHolders = dependencies.resolveDependency( TokenHolders.class );
-        schemaStorage = new SchemaStorage( schemaStore, tokenHolders );
+        schemaStorage = new SchemaStorage( schemaStore, tokenHolders, neoStores.getMetaDataStore(),
+                additionalConfigToCC( Config.defaults() ).get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
         labelIndex = dependencies.resolveDependency( LabelScanStore.class );
         cacheAccess = new DefaultCacheAccess( NumberArrayFactories.HEAP.newDynamicByteArray( 10_000, new byte[MAX_BYTES], INSTANCE ),
                                               Counts.NONE, NUMBER_OF_THREADS );
@@ -223,7 +224,7 @@ class CheckerTestBase
         IndexProviderMap indexProviders = dependencies.resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders, neoStores, new IndexSamplingConfig( config ),
-                new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL, tokenHolders );
+                new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL, tokenHolders, config, neoStores.getMetaDataStore() );
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );

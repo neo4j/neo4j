@@ -936,7 +936,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, PageCursorTracer cursorTracer )
             {
                 schemaStore = store.getSchemaStore();
-                return new org.neo4j.internal.recordstorage.SchemaStorage( schemaStore, tokenHolders );
+                return new org.neo4j.internal.recordstorage.SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST, false );
             }
 
             @Override

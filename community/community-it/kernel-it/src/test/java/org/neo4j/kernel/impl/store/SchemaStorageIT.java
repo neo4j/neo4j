@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
@@ -104,7 +105,7 @@ class SchemaStorageIT
             transaction.commit();
         }
         schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
-        storage = new SchemaStorage( schemaStore, tokenHolders );
+        storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST, false );
     }
 
     @Test
