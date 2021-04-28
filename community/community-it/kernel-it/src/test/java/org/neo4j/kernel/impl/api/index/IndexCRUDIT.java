@@ -42,7 +42,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -72,7 +72,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -216,7 +216,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
         {
             updatesCommitted.addAll( updates );
         }
@@ -227,19 +227,19 @@ class IndexCRUDIT
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
         {
             return newUpdater( IndexUpdateMode.ONLINE, NULL );
         }
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode, PageCursorTracer cursorTracer )
+        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext )
         {
             return new CollectingIndexUpdater( updatesCommitted::addAll );
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
         {
         }
 
@@ -255,7 +255,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public IndexSample sample( PageCursorTracer cursorTracer )
+        public IndexSample sample( CursorContext cursorContext )
         {
             long indexSize = 0;
             for ( Set<Long> nodeIds : indexSamples.values() )

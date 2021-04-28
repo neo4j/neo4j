@@ -25,11 +25,13 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
+
 /**
  * Abstraction over page cache backed number arrays.
  *
@@ -63,8 +65,8 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         this.defaultValue = defaultValue;
         this.base = base;
 
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG );
-              PageCursor cursorToSetLength = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG ) );
+              PageCursor cursorToSetLength = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             setLength( cursorToSetLength, length );
         }
@@ -101,15 +103,15 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
 
     protected void setDefaultValue( long defaultValue ) throws IOException
     {
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG );
-              PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_WORKER_TAG ) );
+              PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorContext ) )
         {
             writeCursor.next();
             int pageSize = pagedFile.pageSize();
             fillPageWithDefaultValue( writeCursor, defaultValue, pageSize );
             if ( pageId( length - 1 ) > 0 )
             {
-                try ( PageCursor cursor = pagedFile.io( 1, PF_NO_GROW | PF_SHARED_WRITE_LOCK, cursorTracer ) )
+                try ( PageCursor cursor = pagedFile.io( 1, PF_NO_GROW | PF_SHARED_WRITE_LOCK, cursorContext ) )
                 {
                     while ( cursor.next() )
                     {

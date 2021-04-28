@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 class ContractCheckingIndexProxyTest
@@ -253,9 +253,9 @@ class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+            public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
             {
-                return super.newUpdater( mode, cursorTracer );
+                return super.newUpdater( mode, cursorContext );
             }
         };
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
@@ -299,7 +299,7 @@ class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public void force( PageCursorTracer cursorTracer )
+            public void force( CursorContext cursorContext )
             {
                 try
                 {
@@ -332,7 +332,7 @@ class ContractCheckingIndexProxyTest
         var outer = newContractCheckingIndexProxy( new IndexProxyAdapter()
         {
             @Override
-            public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+            public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
             {
                 throw new IllegalStateException( "Can't create updater" );
             }

@@ -25,7 +25,7 @@ package org.neo4j.io.pagecache.tracing.cursor;
  * Exposed counters are relevant only for particular cursor and do not represent global page cache wide picture.
  *
  * @see PageCursorCounters
- * @see PageCursorTracer
+ * @see CursorContext
  */
 public interface PageCursorCounters
 {

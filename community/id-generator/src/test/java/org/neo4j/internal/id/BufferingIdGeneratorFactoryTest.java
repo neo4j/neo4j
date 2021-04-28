@@ -40,7 +40,7 @@ import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdType.STRING_BLOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class BufferingIdGeneratorFactoryTest
@@ -148,7 +148,7 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer pageCursorTracer, ImmutableSet<OpenOption> openOptions )
+                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
             Marker marker = mock( Marker.class );
@@ -161,9 +161,9 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
         {
-            return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorTracer, openOptions );
+            return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorContext, openOptions );
         }
 
         @Override
@@ -179,7 +179,7 @@ class BufferingIdGeneratorFactoryTest
         }
 
         @Override
-        public void clearCache( PageCursorTracer cursorTracer )
+        public void clearCache( CursorContext cursorContext )
         {
             // no-op
         }

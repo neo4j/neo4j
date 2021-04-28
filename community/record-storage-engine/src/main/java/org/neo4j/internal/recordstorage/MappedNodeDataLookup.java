@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -35,16 +35,16 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
     private final MutableLongObjectMap<NodeContext> contexts;
     private final RelationshipGroupGetter relGroupGetter;
     private final RecordAccessSet recordChanges;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
 
     MappedNodeDataLookup( MutableLongObjectMap<NodeContext> contexts, RelationshipGroupGetter relGroupGetter, RecordAccessSet recordChanges,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         this.contexts = contexts;
         this.relGroupGetter = relGroupGetter;
         this.recordChanges = recordChanges;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
     }
 
@@ -68,12 +68,12 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
     {
         // (Temporarily?) we can create groups lazily here
         NodeContext nodeContext = contexts.getIfAbsentPutWithKey( nodeId,
-                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorTracer ), memoryTracker ) );
+                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorContext ), memoryTracker ) );
         NodeContext.DenseContext context = nodeContext.denseContext( type );
         RecordProxy<RelationshipGroupRecord,Integer> group = context.group();
         if ( group == null )
         {
-            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
+            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext );
             group = create
                     ? relGroupGetter.getOrCreateRelationshipGroup( nodeChange, type, recordChanges.getRelGroupRecords() )
                     : relGroupGetter.getRelationshipGroup( nodeChange.forReadingLinkage(), type, recordChanges.getRelGroupRecords(), EMPTY ).group();
@@ -87,10 +87,10 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
      */
     public RecordProxy<RelationshipGroupRecord,Integer> group( long groupId )
     {
-        RecordProxy<RelationshipGroupRecord,Integer> groupProxy = recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorTracer );
+        RecordProxy<RelationshipGroupRecord,Integer> groupProxy = recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorContext );
         RelationshipGroupRecord group = groupProxy.forReadingData();
         NodeContext nodeContext = contexts.getIfAbsentPutWithKey( group.getOwningNode(),
-                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorTracer ), memoryTracker ) );
+                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorContext ), memoryTracker ) );
         NodeContext.DenseContext context = nodeContext.denseContext( group.getType() );
         context.setGroup( groupProxy );
         return groupProxy;

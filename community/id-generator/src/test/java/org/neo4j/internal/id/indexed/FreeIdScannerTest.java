@@ -45,6 +45,7 @@ import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -63,7 +64,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
 @PageCacheExtension
@@ -558,18 +559,19 @@ class FreeIdScannerTest
         int cacheSize = IDS_PER_ENTRY / 2;
         FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cacheSize, generation );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var scannerTracer = pageCacheTracer.createPageCursorTracer( "tracerPageCacheAccessOnCacheScan" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracerPageCacheAccessOnCacheScan" ) ) )
         {
-            assertThat( scannerTracer.pins() ).isZero();
-            assertThat( scannerTracer.unpins() ).isZero();
-            assertThat( scannerTracer.hits() ).isZero();
+            var cursorTracer = cursorContext.getCursorTracer();
+            assertThat( cursorTracer.pins() ).isZero();
+            assertThat( cursorTracer.unpins() ).isZero();
+            assertThat( cursorTracer.hits() ).isZero();
 
             atLeastOneFreeId.set( true );
-            scanner.tryLoadFreeIdsIntoCache( false, scannerTracer );
+            scanner.tryLoadFreeIdsIntoCache( false, cursorContext );
 
-            assertThat( scannerTracer.pins() ).isOne();
-            assertThat( scannerTracer.unpins() ).isOne();
-            assertThat( scannerTracer.hits() ).isOne();
+            assertThat( cursorTracer.pins() ).isOne();
+            assertThat( cursorTracer.unpins() ).isOne();
+            assertThat( cursorTracer.hits() ).isOne();
         }
     }
 
@@ -580,16 +582,17 @@ class FreeIdScannerTest
         int cacheSize = IDS_PER_ENTRY / 2;
         FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cacheSize, generation );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var scannerTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCacheClear" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCacheClear" ) ) )
         {
-            assertThat( scannerTracer.pins() ).isZero();
-            assertThat( scannerTracer.unpins() ).isZero();
-            assertThat( scannerTracer.hits() ).isZero();
+            var cursorTracer = cursorContext.getCursorTracer();
+            assertThat( cursorTracer.pins() ).isZero();
+            assertThat( cursorTracer.unpins() ).isZero();
+            assertThat( cursorTracer.hits() ).isZero();
 
-            scanner.clearCache( scannerTracer );
+            scanner.clearCache( cursorContext );
 
-            assertThat( scannerTracer.pins() ).isOne();
-            assertThat( scannerTracer.unpins() ).isOne();
+            assertThat( cursorTracer.pins() ).isOne();
+            assertThat( cursorTracer.unpins() ).isOne();
         }
     }
 
@@ -666,10 +669,10 @@ class FreeIdScannerTest
         }
 
         @Override
-        public ReservedMarker getMarker( PageCursorTracer cursorTracer )
+        public ReservedMarker getMarker( CursorContext cursorContext )
         {
             ReservedMarker actual = instantiateRealMarker();
-            cursorTracer.beginPin( false, 1, null ).done();
+            cursorContext.getCursorTracer().beginPin( false, 1, null ).done();
             return new ReservedMarker()
             {
                 @Override

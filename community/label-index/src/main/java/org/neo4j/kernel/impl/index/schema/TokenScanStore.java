@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
@@ -76,44 +76,44 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Acquire a writer for updating the store.
      *
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor events tracer.
      * @return {@link TokenScanWriter} that can modify the {@link TokenScanStore}.
      */
-    TokenScanWriter newWriter( PageCursorTracer cursorTracer );
+    TokenScanWriter newWriter( CursorContext cursorContext );
 
     /**
      * Acquire a writer that is specialized in bulk-append writing, e.g. building from initial data.
      *
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor events tracer.
      * @return {@link TokenScanWriter} that can modify the {@link TokenScanStore}.
      */
-    TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer );
+    TokenScanWriter newBulkAppendWriter( CursorContext cursorContext );
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. There cannot be any essential state not forced to disk
      * after completion of this call.
      *
-     * @param cursorTracer underlying page cursor events tracer
+     * @param cursorContext underlying page cursor events tracer
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
-    void force( PageCursorTracer cursorTracer ) throws IOException;
+    void force( CursorContext cursorContext ) throws IOException;
 
     /**
      * Acquire a reader for all {@link EntityTokenRange entity token} ranges.
      *
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor events tracer.
      * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesTokenScanReader allEntityTokenRanges( PageCursorTracer cursorTracer );
+    AllEntriesTokenScanReader allEntityTokenRanges( CursorContext cursorContext );
 
     /**
      * Acquire a reader for all {@link EntityTokenRange entity token} ranges.
      *
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor events tracer.
      * @return the {@link AllEntriesTokenScanReader reader}.
      */
-    AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer );
+    AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, CursorContext cursorContext );
 
     ResourceIterator<Path> snapshotStoreFiles();
 
@@ -126,7 +126,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      * @return {@code true} if there's no data at all in this token scan store, otherwise {@code false}.
      * @throws IOException on I/O error.
      */
-    boolean isEmpty( PageCursorTracer cursorTracer ) throws IOException;
+    boolean isEmpty( CursorContext cursorContext ) throws IOException;
 
     /**
      * Initializes the store. Recovery updates can be processed after this has been called.

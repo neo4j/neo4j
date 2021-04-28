@@ -23,8 +23,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+
 /**
- * A PageCursor is returned from {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)},
+ * A PageCursor is returned from {@link PagedFile#io(long, int, CursorContext)},
  * and is used to scan through pages and process them in a consistent and safe fashion.
  * <p>
  * A page must be processed in the following manner:
@@ -383,7 +385,7 @@ public abstract class PageCursor implements AutoCloseable
 
     /**
      * Open a new page cursor with the same pf_flags as this cursor,
-     * as if calling the {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)}
+     * as if calling the {@link PagedFile#io(long, int, CursorContext)}
      * on the relevant paged file. This cursor will then also delegate to the linked cursor when checking
      * {@link #shouldRetry()} and {@link #checkAndClearBoundsFlag()}.
      * <p>

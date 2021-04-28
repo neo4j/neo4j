@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Store used by {@link TreeNodeDynamicSize} to store keys and values that are too large to be inlined in {@link GBPTree}.
@@ -36,9 +36,9 @@ public interface OffloadStore<KEY, VALUE>
     /**
      * Read only key.
      *
-     * @see #readKeyValue(long, Object, Object, PageCursorTracer)
+     * @see #readKeyValue(long, Object, Object, CursorContext)
      */
-    void readKey( long offloadId, KEY into, PageCursorTracer cursorTracer ) throws IOException;
+    void readKey( long offloadId, KEY into, CursorContext cursorContext ) throws IOException;
 
     /**
      * Read key and value mapped to by given offloadId.
@@ -46,24 +46,24 @@ public interface OffloadStore<KEY, VALUE>
      * @param offloadId id for which to read key and value.
      * @param key instance to read key into.
      * @param value instance to read value into
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @throws IOException if something went wrong while reading key or value.
      */
-    void readKeyValue( long offloadId, KEY key, VALUE value, PageCursorTracer cursorTracer ) throws IOException;
+    void readKeyValue( long offloadId, KEY key, VALUE value, CursorContext cursorContext ) throws IOException;
 
     /**
      * Read only value.
      *
-     * @see #readKeyValue(long, Object, Object, PageCursorTracer)
+     * @see #readKeyValue(long, Object, Object, CursorContext)
      */
-    void readValue( long offloadId, VALUE into, PageCursorTracer cursorTracer ) throws IOException;
+    void readValue( long offloadId, VALUE into, CursorContext cursorContext ) throws IOException;
 
     /**
      * Store key in offload store.
      *
-     * @see #writeKeyValue(Object, Object, long, long, PageCursorTracer)
+     * @see #writeKeyValue(Object, Object, long, long, CursorContext)
      */
-    long writeKey( KEY key, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException;
+    long writeKey( KEY key, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
 
     /**
      * Store key and value in offload store, mapping them to offloadId
@@ -73,11 +73,11 @@ public interface OffloadStore<KEY, VALUE>
      * @param value the value to write to offload store together with key.
      * @param stableGeneration current stable generation when key is written.
      * @param unstableGeneration current unstable generation when key is written.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return offloadId to use when reading key and value back.
      * @throws IOException if something went wrong while writing key or value.
      */
-    long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException;
+    long writeKeyValue( KEY key, VALUE value, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
 
     /**
      * Free the given offloadId effectively deleting that entry from offload store.
@@ -85,8 +85,8 @@ public interface OffloadStore<KEY, VALUE>
      * @param offloadId id to free
      * @param stableGeneration current stable generation when id is freed.
      * @param unstableGeneration current unstable generation when id is freed.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @throws IOException if something went wrong when freeing id.
      */
-    void free( long offloadId, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer ) throws IOException;
+    void free( long offloadId, long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException;
 }

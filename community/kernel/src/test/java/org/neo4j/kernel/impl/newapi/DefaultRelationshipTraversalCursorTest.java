@@ -46,7 +46,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -410,7 +410,7 @@ class DefaultRelationshipTraversalCursorTest
     {
         TestRead( KernelTransactionImplementation ktx )
         {
-            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), PageCursorTracer.NULL, ktx, Config.defaults() );
+            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), CursorContext.NULL, ktx, Config.defaults() );
         }
 
         @Override
@@ -486,7 +486,7 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
-        public PageCursorTracer cursorTracer()
+        public CursorContext cursorContext()
         {
             return null;
         }

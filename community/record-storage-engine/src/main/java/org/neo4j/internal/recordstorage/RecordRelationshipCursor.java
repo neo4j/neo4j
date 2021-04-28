@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -35,13 +35,13 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
 {
     final RelationshipStore relationshipStore;
     RecordLoadOverride loadMode;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
-    RecordRelationshipCursor( RelationshipStore relationshipStore, PageCursorTracer cursorTracer )
+    RecordRelationshipCursor( RelationshipStore relationshipStore, CursorContext cursorContext )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.loadMode = RecordLoadOverride.none();
     }
 
@@ -102,7 +102,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
 
     PageCursor relationshipPage( long reference )
     {
-        return relationshipStore.openPageCursorForReading( reference, cursorTracer );
+        return relationshipStore.openPageCursorForReading( reference, cursorContext );
     }
 
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
@@ -124,7 +124,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
 
     long relationshipHighMark()
     {
-        return relationshipStore.getHighestPossibleIdInUse( cursorTracer );
+        return relationshipStore.getHighestPossibleIdInUse( cursorContext );
     }
 
     @Override

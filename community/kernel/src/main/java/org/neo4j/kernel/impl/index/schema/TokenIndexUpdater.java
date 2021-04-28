@@ -26,7 +26,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -75,7 +75,7 @@ class TokenIndexUpdater implements IndexUpdater
 
     /**
      * {@link Writer} acquired when acquiring this {@link TokenIndexUpdater},
-     * acquired from {@link GBPTree#writer(PageCursorTracer)}.
+     * acquired from {@link GBPTree#writer(CursorContext)}.
      */
     private Writer<TokenScanKey,TokenScanValue> writer;
 

@@ -48,7 +48,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.FlatRelationshipModifications.RelationshipData;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -120,10 +120,10 @@ class RelationshipModifierTest
     @BeforeEach
     void setUp()
     {
-        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), PageCursorTracer.NULL );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( new PropertyTraverser( PageCursorTracer.NULL ), PageCursorTracer.NULL );
+        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
+        PropertyDeleter propertyDeleter = new PropertyDeleter( new PropertyTraverser( CursorContext.NULL ), CursorContext.NULL );
         modifier = new RelationshipModifier( relationshipGroupGetter, propertyDeleter, DENSE_THRESHOLD - 1/*because the trigger happens on > */,
-                true, PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                true, CursorContext.NULL, EmptyMemoryTracker.INSTANCE );
         monitors = new Monitors( null, ( t, m ) ->
         {
             Exceptions.throwIfUnchecked( t );
@@ -493,7 +493,7 @@ class RelationshipModifierTest
     private static IdSequence idSequence()
     {
         AtomicLong nextId = new AtomicLong();
-        return cursorTracer -> nextId.getAndIncrement();
+        return cursorContext -> nextId.getAndIncrement();
     }
 
     private void applyModificationsToExpectedRelationships( RelationshipModifications modifications, List<RelationshipData> expectedRelationships )

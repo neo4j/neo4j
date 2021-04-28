@@ -46,6 +46,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -126,11 +128,12 @@ public class IndexingServiceIntegrationTest
         {
             var kernelTransaction = ((InternalTransaction) transaction).kernelTransaction();
             var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( testConstraint );
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIndexUpdatesApply" ) )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIndexUpdatesApply" ) ) )
             {
                 Iterable<IndexEntryUpdate<IndexDescriptor>> updates = List.of( add( 1, indexDescriptor, longValue( 4 ) ) );
-                indexingService.applyUpdates( updates, cursorTracer );
+                indexingService.applyUpdates( updates, cursorContext );
 
+                PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
                 assertEquals( 5L, cursorTracer.pins() );
                 assertEquals( 5L, cursorTracer.unpins() );
                 assertEquals( 2L, cursorTracer.hits() );

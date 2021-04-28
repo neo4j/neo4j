@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Reader of a token scan store containing token-->entities mappings.
@@ -28,39 +28,39 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 public interface TokenScanReader
 {
     /**
-     * Used as a marker to ignore the "fromId" in calls to {@link #entitiesWithAnyOfTokens(long, int[], PageCursorTracer)}.
+     * Used as a marker to ignore the "fromId" in calls to {@link #entitiesWithAnyOfTokens(long, int[], CursorContext)}.
      */
     long NO_ID = -1;
 
     /**
      * @param tokenId token id.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return entity ids with the given {@code tokenId}.
      */
-    PrimitiveLongResourceIterator entitiesWithToken( int tokenId, PageCursorTracer cursorTracer );
+    PrimitiveLongResourceIterator entitiesWithToken( int tokenId, CursorContext cursorContext );
 
     /**
      * Sets the client up for a token scan on <code>tokenId</code>
      *
      * @param tokenId token id
      */
-    TokenScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer );
+    TokenScan entityTokenScan( int tokenId, CursorContext cursorContext );
 
     /**
      * @param tokenIds token ids.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return entity ids with any of the given token ids.
      */
-    default PrimitiveLongResourceIterator entitiesWithAnyOfTokens( int[] tokenIds, PageCursorTracer cursorTracer )
+    default PrimitiveLongResourceIterator entitiesWithAnyOfTokens( int[] tokenIds, CursorContext cursorContext )
     {
-        return entitiesWithAnyOfTokens( NO_ID, tokenIds, cursorTracer );
+        return entitiesWithAnyOfTokens( NO_ID, tokenIds, cursorContext );
     }
 
     /**
      * @param fromId entity id to start at, exclusive, i.e. the given {@code fromId} will not be included in the result.
      * @param tokenIds token ids.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return entity ids with any of the given token ids.
      */
-    PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, PageCursorTracer cursorTracer );
+    PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, CursorContext cursorContext );
 }

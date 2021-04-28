@@ -32,12 +32,15 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
@@ -115,9 +118,9 @@ class CrashGenerationCleaner
     {
         return () ->
         {
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_CLEANER_TAG );
-                  PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, cursorTracer );
-                  PageCursor writeCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_CLEANER_TAG ) );
+                  PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, cursorContext );
+                  PageCursor writeCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
             {
                 long localNextId;
                 while ( ( localNextId = nextId.getAndAdd( batchSize )) < highTreeNodeId )

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -27,20 +27,20 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 /**
  * Represents a commitment that invoking {@link TransactionAppender#append(TransactionToApply, LogAppendEvent)}
  * means. As a transaction is carried through the {@link TransactionCommitProcess} this commitment is updated
- * when {@link #publishAsCommitted(PageCursorTracer)}  committed} (which happens when appending to log), but also
- * when {@link #publishAsClosed(PageCursorTracer)} closing}.
+ * when {@link #publishAsCommitted(CursorContext)}  committed} (which happens when appending to log), but also
+ * when {@link #publishAsClosed(CursorContext)} closing}.
  */
 public interface Commitment
 {
     Commitment NO_COMMITMENT = new Commitment()
     {
         @Override
-        public void publishAsCommitted( PageCursorTracer cursorTracer )
+        public void publishAsCommitted( CursorContext cursorContext )
         {
         }
 
         @Override
-        public void publishAsClosed( PageCursorTracer cursorTracer )
+        public void publishAsClosed( CursorContext cursorContext )
         {
         }
 
@@ -55,15 +55,15 @@ public interface Commitment
     /**
      * Marks the transaction as committed and makes this fact public.
      */
-    void publishAsCommitted( PageCursorTracer cursorTracer );
+    void publishAsCommitted( CursorContext cursorContext );
 
     /**
      * Marks the transaction as closed and makes this fact public.
      */
-    void publishAsClosed( PageCursorTracer cursorTracer );
+    void publishAsClosed( CursorContext cursorContext );
 
     /**
-     * @return whether or not {@link #publishAsCommitted(PageCursorTracer)} have been called.
+     * @return whether or not {@link #publishAsCommitted(CursorContext)} have been called.
      */
     boolean markedAsCommitted();
 }

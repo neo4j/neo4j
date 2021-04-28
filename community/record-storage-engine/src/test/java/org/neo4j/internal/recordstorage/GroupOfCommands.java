@@ -24,13 +24,13 @@ import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.common.Subject;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 public class GroupOfCommands implements CommandsToApply
 {
@@ -62,7 +62,7 @@ public class GroupOfCommands implements CommandsToApply
     }
 
     @Override
-    public PageCursorTracer cursorTracer()
+    public CursorContext cursorContext()
     {
         return NULL;
     }

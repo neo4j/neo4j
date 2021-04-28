@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.storageengine.api.ReadTracer;
@@ -54,10 +54,10 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     private boolean open;
 
     RecordRelationshipTraversalCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        super( relationshipStore, cursorTracer );
-        this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorTracer );
+        super( relationshipStore, cursorContext );
+        this.group = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext );
     }
 
     void init( RecordNodeCursor nodeCursor, RelationshipSelection selection )

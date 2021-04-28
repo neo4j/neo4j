@@ -82,7 +82,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     {
         if ( countsUpdater == null )
         {
-            countsUpdater = countsStore.apply( transaction.transactionId(), transaction.cursorTracer() );
+            countsUpdater = countsStore.apply( transaction.transactionId(), transaction.cursorContext() );
         }
         return countsUpdater;
     }
@@ -91,7 +91,7 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     {
         if ( degreesUpdater == null )
         {
-            degreesUpdater = groupDegreesStore.apply( transaction.transactionId(), transaction.cursorTracer() );
+            degreesUpdater = groupDegreesStore.apply( transaction.transactionId(), transaction.cursorContext() );
         }
         return degreesUpdater;
     }

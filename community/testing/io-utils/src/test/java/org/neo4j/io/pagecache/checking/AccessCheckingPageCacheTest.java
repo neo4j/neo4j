@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,7 +53,7 @@ class AccessCheckingPageCacheTest
         when( mockedPageCache.map( any( Path.class ), any(), anyInt(), any(), any(), any() ) ).thenReturn( mockedPagedFile );
         pageCache = new AccessCheckingPageCache( mockedPageCache );
         PagedFile file = pageCache.map( Path.of( "some file" ), 512, "database" );
-        cursor = file.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL );
+        cursor = file.io( 0, PagedFile.PF_SHARED_READ_LOCK, CursorContext.NULL );
     }
 
     @Test

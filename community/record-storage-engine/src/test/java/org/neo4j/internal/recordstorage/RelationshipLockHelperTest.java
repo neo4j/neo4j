@@ -43,7 +43,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.internal.recordstorage.RelationshipLockHelper.SortedLockList;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
@@ -194,7 +194,7 @@ class RelationshipLockHelperTest
         TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR ).withStrictAssertionsOn( ResourceTypes.RELATIONSHIP );
 
         //When
-        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), NULL_REFERENCE.longValue(), relRecords, locks, PageCursorTracer.NULL,
+        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), NULL_REFERENCE.longValue(), relRecords, locks, CursorContext.NULL,
                 EmptyMemoryTracker.INSTANCE );
 
         //Then
@@ -222,7 +222,7 @@ class RelationshipLockHelperTest
 
         TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR ).withStrictAssertionsOn( ResourceTypes.RELATIONSHIP );
 
-        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), 2, relRecords, locks, PageCursorTracer.NULL,
+        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), 2, relRecords, locks, CursorContext.NULL,
                 EmptyMemoryTracker.INSTANCE );
 
         List<ActiveLock> activeLocks = locks.activeLocks().collect( Collectors.toList() );
@@ -259,7 +259,7 @@ class RelationshipLockHelperTest
 
         //When
         RecordAccess.RecordProxy<RelationshipRecord,Void> entrypoint =
-                RelationshipLockHelper.findAndLockInsertionPoint( chain.get( 0 ).getId(), nodeId, relRecords, locks, LockTracer.NONE, PageCursorTracer.NULL );
+                RelationshipLockHelper.findAndLockInsertionPoint( chain.get( 0 ).getId(), nodeId, relRecords, locks, LockTracer.NONE, CursorContext.NULL );
 
         //Then
         long[] actualLocks = locks.getExclusiveLocks( ResourceTypes.RELATIONSHIP ).toArray();

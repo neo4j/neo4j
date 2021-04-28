@@ -39,7 +39,7 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
@@ -60,7 +60,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 
@@ -137,7 +136,7 @@ public class BatchInsertTokenIndexesTest
     private void assertTokenIndexContains( TokenIndexReader reader, int tokenId, Long... intityIds )
     {
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( tokenClient, unconstrained(), new TokenPredicate( tokenId ), PageCursorTracer.NULL );
+        reader.query( tokenClient, unconstrained(), new TokenPredicate( tokenId ), CursorContext.NULL );
 
         var found = new ArrayList<Long>();
         while ( tokenClient.next() )

@@ -25,7 +25,7 @@ import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
@@ -45,15 +45,15 @@ public final class RelationshipSelections
      * @param cursors A cursor factor used for allocating the needed cursors
      * @param node A node cursor positioned at the current node.
      * @param types The types of the relationship
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return A cursor that allows traversing the relationship chain.
      */
     public static RelationshipTraversalCursor outgoingCursor( CursorFactory cursors,
                                                               NodeCursor node,
                                                               int[] types,
-                                                              PageCursorTracer cursorTracer )
+                                                              CursorContext cursorContext )
     {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorTracer ), node, types, Direction.OUTGOING );
+        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorContext ), node, types, Direction.OUTGOING );
     }
 
     /**
@@ -90,15 +90,15 @@ public final class RelationshipSelections
      * @param cursors A cursor factor used for allocating the needed cursors
      * @param node A node cursor positioned at the current node.
      * @param types The types of the relationship
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return A cursor that allows traversing the relationship chain.
      */
     public static RelationshipTraversalCursor incomingCursor( CursorFactory cursors,
                                                               NodeCursor node,
                                                               int[] types,
-                                                              PageCursorTracer cursorTracer )
+                                                              CursorContext cursorContext )
     {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorTracer ), node, types, Direction.INCOMING );
+        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorContext ), node, types, Direction.INCOMING );
     }
 
     /**
@@ -107,15 +107,15 @@ public final class RelationshipSelections
      * @param cursors A cursor factor used for allocating the needed cursors
      * @param node A node cursor positioned at the current node.
      * @param types The types of the relationship
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return A cursor that allows traversing the relationship chain.
      */
     public static RelationshipTraversalCursor allCursor( CursorFactory cursors,
                                                          NodeCursor node,
                                                          int[] types,
-                                                         PageCursorTracer cursorTracer )
+                                                         CursorContext cursorContext )
     {
-        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorTracer ), node, types, Direction.BOTH );
+        return relationshipsCursor( cursors.allocateRelationshipTraversalCursor( cursorContext ), node, types, Direction.BOTH );
     }
 
     /**
@@ -155,16 +155,16 @@ public final class RelationshipSelections
      * @param node A node cursor positioned at the current node.
      * @param types The types of the relationship
      * @param factory factory for creating instance of generic type T
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return An iterator that allows traversing the relationship chain.
      */
     public static <T> ResourceIterator<T> outgoingIterator( CursorFactory cursors,
                                                             NodeCursor node,
                                                             int[] types,
                                                             RelationshipFactory<T> factory,
-                                                            PageCursorTracer cursorTracer )
+                                                            CursorContext cursorContext )
     {
-        return new RelationshipEntityIterator<>( outgoingCursor( cursors, node, types, cursorTracer ), factory );
+        return new RelationshipEntityIterator<>( outgoingCursor( cursors, node, types, cursorContext ), factory );
     }
 
     /**
@@ -174,16 +174,16 @@ public final class RelationshipSelections
      * @param node A node cursor positioned at the current node.
      * @param types The types of the relationship
      * @param factory factory for creating instance of generic type T
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return An iterator that allows traversing the relationship chain.
      */
     public static <T> ResourceIterator<T> incomingIterator( CursorFactory cursors,
                                                             NodeCursor node,
                                                             int[] types,
                                                             RelationshipFactory<T> factory,
-                                                            PageCursorTracer cursorTracer )
+                                                            CursorContext cursorContext )
     {
-        return new RelationshipEntityIterator<>( incomingCursor( cursors, node, types, cursorTracer ), factory );
+        return new RelationshipEntityIterator<>( incomingCursor( cursors, node, types, cursorContext ), factory );
     }
 
     /**
@@ -193,16 +193,16 @@ public final class RelationshipSelections
      * @param node A node cursor positioned at the current node.
      * @param types The types of the relationship
      * @param factory factory for creating instance of generic type T
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return An iterator that allows traversing the relationship chain.
      */
     public static <T> ResourceIterator<T> allIterator( CursorFactory cursors,
                                                        NodeCursor node,
                                                        int[] types,
                                                        RelationshipFactory<T> factory,
-                                                       PageCursorTracer cursorTracer )
+                                                       CursorContext cursorContext )
     {
-        return new RelationshipEntityIterator<>( allCursor( cursors, node, types, cursorTracer ), factory );
+        return new RelationshipEntityIterator<>( allCursor( cursors, node, types, cursorContext ), factory );
     }
 
     private static class RelationshipEntityIterator<T> extends PrefetchingResourceIterator<T>

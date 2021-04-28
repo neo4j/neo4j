@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -54,15 +54,15 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
+    public void setCurrentLogVersion( long version, CursorContext cursorContext )
     {
-        logVersionRepository.setCurrentLogVersion( version, cursorTracer );
+        logVersionRepository.setCurrentLogVersion( version, cursorContext );
     }
 
     @Override
-    public long incrementAndGetVersion( PageCursorTracer cursorTracer )
+    public long incrementAndGetVersion( CursorContext cursorContext )
     {
-        return logVersionRepository.incrementAndGetVersion( cursorTracer );
+        return logVersionRepository.incrementAndGetVersion( cursorContext );
     }
 
     @Override
@@ -72,15 +72,15 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer )
+    public void setCheckpointLogVersion( long version, CursorContext cursorContext )
     {
-        logVersionRepository.setCheckpointLogVersion( version, cursorTracer );
+        logVersionRepository.setCheckpointLogVersion( version, cursorContext );
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer )
+    public long incrementAndGetCheckpointLogVersion( CursorContext cursorContext )
     {
-        return logVersionRepository.incrementAndGetCheckpointLogVersion( cursorTracer );
+        return logVersionRepository.incrementAndGetCheckpointLogVersion( cursorContext );
     }
 
     @Override
@@ -108,9 +108,9 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, PageCursorTracer cursorTracer )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, CursorContext cursorContext )
     {
-        transactionIdStore.transactionCommitted( transactionId, checksum, commitTimestamp, cursorTracer );
+        transactionIdStore.transactionCommitted( transactionId, checksum, commitTimestamp, cursorContext );
     }
 
     @Override
@@ -145,27 +145,27 @@ public class SimpleMetaDataProvider implements MetadataProvider
 
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        transactionIdStore.setLastCommittedAndClosedTransactionId( transactionId, checksum, commitTimestamp, byteOffset, logVersion, cursorTracer );
+        transactionIdStore.setLastCommittedAndClosedTransactionId( transactionId, checksum, commitTimestamp, byteOffset, logVersion, cursorContext );
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, PageCursorTracer cursorTracer )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, CursorContext cursorContext )
     {
-        transactionIdStore.transactionClosed( transactionId, logVersion, byteOffset, cursorTracer );
+        transactionIdStore.transactionClosed( transactionId, logVersion, byteOffset, cursorContext );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, PageCursorTracer cursorTracer )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, CursorContext cursorContext )
     {
-        transactionIdStore.resetLastClosedTransaction( transactionId, logVersion, byteOffset, missingLogs, cursorTracer );
+        transactionIdStore.resetLastClosedTransaction( transactionId, logVersion, byteOffset, missingLogs, cursorContext );
     }
 
     @Override
-    public void flush( PageCursorTracer cursorTracer )
+    public void flush( CursorContext cursorContext )
     {
-        transactionIdStore.flush( cursorTracer );
+        transactionIdStore.flush( cursorContext );
     }
 
     @Override
@@ -175,7 +175,7 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void setDatabaseIdUuid( UUID uuid, PageCursorTracer cursorTracer )
+    public void setDatabaseIdUuid( UUID uuid, CursorContext cursorContext )
     {
         throw new IllegalStateException( "Not supported" );
     }

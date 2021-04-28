@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
@@ -36,10 +36,10 @@ public final class NativeIndexes
     private NativeIndexes()
     {}
 
-    public static InternalIndexState readState( PageCache pageCache, Path indexFile, String databaseName, PageCursorTracer cursorTracer ) throws IOException
+    public static InternalIndexState readState( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorTracer );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext );
         switch ( headerReader.state )
         {
         case BYTE_FAILED:
@@ -53,11 +53,11 @@ public final class NativeIndexes
         }
     }
 
-    static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, PageCursorTracer cursorTracer )
+    static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext )
             throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorTracer );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext );
         return headerReader.failureMessage;
     }
 }

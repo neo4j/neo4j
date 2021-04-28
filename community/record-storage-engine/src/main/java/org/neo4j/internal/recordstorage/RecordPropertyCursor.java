@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -59,7 +59,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     public static final int DEFAULT_PROPERTY_BUFFER_CAPACITY = 512;
 
     private final PropertyStore propertyStore;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private long next;
     private int block;
@@ -71,11 +71,11 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private boolean open;
     private RecordLoadOverride loadMode;
 
-    RecordPropertyCursor( PropertyStore propertyStore, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    RecordPropertyCursor( PropertyStore propertyStore, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         super( NO_ID );
         this.propertyStore = propertyStore;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
         loadMode = RecordLoadOverride.none();
     }
@@ -419,17 +419,17 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     private PageCursor propertyPage( long reference )
     {
-        return propertyStore.openPageCursorForReading( reference, cursorTracer );
+        return propertyStore.openPageCursorForReading( reference, cursorContext );
     }
 
     private PageCursor stringPage( long reference )
     {
-        return propertyStore.openStringPageCursor( reference, cursorTracer );
+        return propertyStore.openStringPageCursor( reference, cursorContext );
     }
 
     private PageCursor arrayPage( long reference )
     {
-        return propertyStore.openArrayPageCursor( reference, cursorTracer );
+        return propertyStore.openArrayPageCursor( reference, cursorContext );
     }
 
     private void property( PropertyRecord record, long reference, PageCursor pageCursor )

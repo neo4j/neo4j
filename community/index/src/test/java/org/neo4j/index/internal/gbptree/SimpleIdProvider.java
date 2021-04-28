@@ -30,7 +30,7 @@ import java.util.Queue;
 import java.util.function.Supplier;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 class SimpleIdProvider implements IdProvider
 {
@@ -45,7 +45,7 @@ class SimpleIdProvider implements IdProvider
     }
 
     @Override
-    public long acquireNewId( long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer )
+    public long acquireNewId( long stableGeneration, long unstableGeneration, CursorContext cursorContext )
     {
         if ( !releasedIds.isEmpty() )
         {
@@ -63,7 +63,7 @@ class SimpleIdProvider implements IdProvider
     }
 
     @Override
-    public void releaseId( long stableGeneration, long unstableGeneration, long id, PageCursorTracer cursorTracer )
+    public void releaseId( long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext )
     {
         releasedIds.add( Pair.of( unstableGeneration, id ) );
     }
@@ -76,7 +76,7 @@ class SimpleIdProvider implements IdProvider
     }
 
     @Override
-    public void visitFreelist( IdProviderVisitor visitor, PageCursorTracer cursorTracer )
+    public void visitFreelist( IdProviderVisitor visitor, CursorContext cursorContext )
     {
         int pos = 0;
         visitor.beginFreelistPage( 0 );

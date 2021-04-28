@@ -97,7 +97,7 @@ class NonUniqueIndexTest
                 KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
                 IndexDescriptor index = ktx.schemaRead().indexGetForName( INDEX_NAME );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-                try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+                try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
                 {
                     ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( 1, VALUE ) );
                     assertTrue( cursor.next() );

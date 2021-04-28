@@ -32,7 +32,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.impl.index.DroppableIndex;
 import org.neo4j.kernel.api.impl.index.DroppableLuceneIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -133,7 +133,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         String failure = indexStorage.getStoredIndexFailure();
@@ -159,7 +159,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext ) throws IllegalStateException
     {
         return defaultIfEmpty( getIndexStorage( descriptor.getId() ).getStoredIndexFailure(), StringUtils.EMPTY );
     }

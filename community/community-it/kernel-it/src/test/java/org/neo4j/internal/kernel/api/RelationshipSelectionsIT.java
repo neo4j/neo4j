@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -41,7 +42,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incom
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 @DbmsExtension
 public class RelationshipSelectionsIT
@@ -63,15 +64,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var cursor = outgoingCursor( cursors, nodeCursor, new int[]{typeId}, cursorTracer ) )
+                try ( var cursor = outgoingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
                 {
                     consumeCursor( cursor );
                 }
 
-                assertOneCursor( cursorTracer );
+                assertOneCursor( cursorContext );
             }
         }
     }
@@ -88,15 +89,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var cursor = incomingCursor( cursors, nodeCursor, new int[]{typeId}, cursorTracer ) )
+                try ( var cursor = incomingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
                 {
                     consumeCursor( cursor );
                 }
 
-                assertOneCursor( cursorTracer );
+                assertOneCursor( cursorContext );
             }
         }
     }
@@ -114,15 +115,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var cursor = allCursor( cursors, nodeCursor, new int[]{typeId}, cursorTracer ) )
+                try ( var cursor = allCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
                 {
                     consumeCursor( cursor );
                 }
 
-                assertOneCursor( cursorTracer );
+                assertOneCursor( cursorContext );
             }
         }
     }
@@ -140,15 +141,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var iterator = outgoingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorTracer ) )
+                try ( var iterator = outgoingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorContext ) )
                 {
                     assertEquals( 2, count( iterator ) );
                 }
 
-                assertOneCursor( cursorTracer );
+                assertOneCursor( cursorContext );
             }
         }
     }
@@ -166,15 +167,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var iterator = incomingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorTracer ) )
+                try ( var iterator = incomingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorContext ) )
                 {
                     assertEquals( 2, count( iterator ) );
                 }
 
-                assertOneCursor( cursorTracer );
+                assertOneCursor( cursorContext );
             }
         }
     }
@@ -192,15 +193,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var iterator = allIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorTracer ) )
+                try ( var iterator = allIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorContext ) )
                 {
                     assertEquals( 4, count( iterator ) );
                 }
 
-                assertOneCursor( cursorTracer );
+                assertOneCursor( cursorContext );
             }
         }
     }
@@ -217,15 +218,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var cursor = outgoingCursor( cursors, nodeCursor, new int[]{typeId}, cursorTracer ) )
+                try ( var cursor = outgoingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
                 {
                     consumeCursor( cursor );
                 }
 
-                assertTwoCursor( cursorTracer );
+                assertTwoCursor( cursorContext );
             }
         }
     }
@@ -242,15 +243,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var cursor = incomingCursor( cursors, nodeCursor, new int[]{typeId}, cursorTracer ) )
+                try ( var cursor = incomingCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
                 {
                     consumeCursor( cursor );
                 }
 
-                assertTwoCursor( cursorTracer );
+                assertTwoCursor( cursorContext );
             }
         }
     }
@@ -268,15 +269,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var cursor = allCursor( cursors, nodeCursor, new int[]{typeId}, cursorTracer ) )
+                try ( var cursor = allCursor( cursors, nodeCursor, new int[]{typeId}, cursorContext ) )
                 {
                     consumeCursor( cursor );
                 }
 
-                assertTwoCursor( cursorTracer );
+                assertTwoCursor( cursorContext );
             }
         }
     }
@@ -294,15 +295,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var iterator = outgoingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorTracer ) )
+                try ( var iterator = outgoingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorContext ) )
                 {
                     assertEquals( 2, count( iterator ) );
                 }
 
-                assertTwoCursor( cursorTracer );
+                assertTwoCursor( cursorContext );
             }
         }
     }
@@ -320,15 +321,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var iterator = incomingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorTracer ) )
+                try ( var iterator = incomingIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorContext ) )
                 {
                     assertEquals( 2, count( iterator ) );
                 }
 
-                assertTwoCursor( cursorTracer );
+                assertTwoCursor( cursorContext );
             }
         }
     }
@@ -346,15 +347,15 @@ public class RelationshipSelectionsIT
             try ( var nodeCursor = cursors.allocateNodeCursor( NULL ) )
             {
                 setNodeCursor( nodeId, kernelTransaction, nodeCursor );
-                var cursorTracer = kernelTransaction.pageCursorTracer();
-                assertZeroCursor( cursorTracer );
+                var cursorContext = kernelTransaction.cursorContext();
+                assertZeroCursor( cursorContext );
 
-                try ( var iterator = allIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorTracer ) )
+                try ( var iterator = allIterator( cursors, nodeCursor, new int[]{typeId}, ( id, startNodeId, typeId1, endNodeId ) -> id, cursorContext ) )
                 {
                     assertEquals( 4, count( iterator ) );
                 }
 
-                assertTwoCursor( cursorTracer );
+                assertTwoCursor( cursorContext );
             }
         }
     }
@@ -414,22 +415,25 @@ public class RelationshipSelectionsIT
         }
     }
 
-    private void assertTwoCursor( PageCursorTracer cursorTracer )
+    private void assertTwoCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isEqualTo( 2 );
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
     }
 
-    private void assertOneCursor( PageCursorTracer cursorTracer )
+    private void assertOneCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isOne();
         assertThat( cursorTracer.pins() ).isOne();
         assertThat( cursorTracer.unpins() ).isOne();
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();

@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -62,113 +62,113 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
-    public NodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
+    public NodeCursor allocateNodeCursor( CursorContext cursorContext )
     {
-        NodeCursor n = cursors.allocateNodeCursor( cursorTracer );
+        NodeCursor n = cursors.allocateNodeCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public NodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer )
+    public NodeCursor allocateFullAccessNodeCursor( CursorContext cursorContext )
     {
-        NodeCursor n = cursors.allocateFullAccessNodeCursor( cursorTracer );
+        NodeCursor n = cursors.allocateFullAccessNodeCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public RelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
+    public RelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
     {
-        RelationshipScanCursor n = cursors.allocateRelationshipScanCursor( cursorTracer );
+        RelationshipScanCursor n = cursors.allocateRelationshipScanCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer )
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor( CursorContext cursorContext )
     {
-        RelationshipScanCursor n = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer );
+        RelationshipScanCursor n = cursors.allocateFullAccessRelationshipScanCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    public RelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
     {
-        RelationshipTraversalCursor n = cursors.allocateRelationshipTraversalCursor( cursorTracer );
+        RelationshipTraversalCursor n = cursors.allocateRelationshipTraversalCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( CursorContext cursorContext )
     {
-        RelationshipTraversalCursor n = cursors.allocateFullAccessRelationshipTraversalCursor( cursorTracer );
+        RelationshipTraversalCursor n = cursors.allocateFullAccessRelationshipTraversalCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public PropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        PropertyCursor n = cursors.allocatePropertyCursor( cursorTracer, memoryTracker );
+        PropertyCursor n = cursors.allocatePropertyCursor( cursorContext, memoryTracker );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public PropertyCursor allocateFullAccessPropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        PropertyCursor n = cursors.allocateFullAccessPropertyCursor( cursorTracer, memoryTracker );
+        PropertyCursor n = cursors.allocateFullAccessPropertyCursor( cursorContext, memoryTracker );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public NodeValueIndexCursor allocateNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        NodeValueIndexCursor n = cursors.allocateNodeValueIndexCursor( cursorTracer, memoryTracker );
+        NodeValueIndexCursor n = cursors.allocateNodeValueIndexCursor( cursorContext, memoryTracker );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        NodeValueIndexCursor n = cursors.allocateFullAccessNodeValueIndexCursor( cursorTracer, memoryTracker );
+        NodeValueIndexCursor n = cursors.allocateFullAccessNodeValueIndexCursor( cursorContext, memoryTracker );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    public NodeLabelIndexCursor allocateNodeLabelIndexCursor( CursorContext cursorContext )
     {
-        NodeLabelIndexCursor n = cursors.allocateNodeLabelIndexCursor( cursorTracer );
+        NodeLabelIndexCursor n = cursors.allocateNodeLabelIndexCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( CursorContext cursorContext )
     {
-        NodeLabelIndexCursor n = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer );
+        NodeLabelIndexCursor n = cursors.allocateFullAccessNodeLabelIndexCursor( cursorContext );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        RelationshipValueIndexCursor n = cursors.allocateRelationshipValueIndexCursor( cursorTracer, memoryTracker );
+        RelationshipValueIndexCursor n = cursors.allocateRelationshipValueIndexCursor( cursorContext, memoryTracker );
         allCursors.add( n );
         return n;
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( CursorContext cursorContext )
     {
-        RelationshipTypeIndexCursor n = cursors.allocateRelationshipTypeIndexCursor( cursorTracer );
+        RelationshipTypeIndexCursor n = cursors.allocateRelationshipTypeIndexCursor( cursorContext );
         allCursors.add( n );
         return n;
     }

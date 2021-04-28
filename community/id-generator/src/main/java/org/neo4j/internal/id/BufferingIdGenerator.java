@@ -22,7 +22,7 @@ package org.neo4j.internal.id;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
@@ -39,9 +39,9 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     }
 
     @Override
-    public Marker marker( PageCursorTracer cursorTracer )
+    public Marker marker( CursorContext cursorContext )
     {
-        Marker actual = super.marker( cursorTracer );
+        Marker actual = super.marker( cursorContext );
         return new Marker()
         {
             @Override
@@ -74,21 +74,21 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     }
 
     @Override
-    public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
+    public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
     {
         // Check and potentially release ids onto the IdGenerator
-        buffer.maintenance( cursorTracer );
+        buffer.maintenance( cursorContext );
 
         // Do IdGenerator maintenance, typically ensure ID cache is full
-        super.maintenance( awaitOngoing, cursorTracer );
+        super.maintenance( awaitOngoing, cursorContext );
     }
 
     @Override
-    public void clearCache( PageCursorTracer cursorTracer )
+    public void clearCache( CursorContext cursorContext )
     {
         buffer.clear();
 
-        super.clearCache( cursorTracer );
+        super.clearCache( cursorContext );
     }
 
     void clear()
@@ -97,11 +97,11 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     }
 
     @Override
-    public void checkpoint( PageCursorTracer cursorTracer )
+    public void checkpoint( CursorContext cursorContext )
     {
         // Flush buffered data to consumer
-        buffer.maintenance( cursorTracer );
-        super.checkpoint( cursorTracer );
+        buffer.maintenance( cursorContext );
+        super.checkpoint( cursorContext );
     }
 
     @Override
@@ -118,9 +118,9 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     private class FreeIdChunkConsumer implements ChunkConsumer
     {
         @Override
-        public void consume( long[] freedIds, PageCursorTracer cursorTracer )
+        public void consume( long[] freedIds, CursorContext cursorContext )
         {
-            try ( Marker reuseMarker = BufferingIdGenerator.super.marker( cursorTracer ) )
+            try ( Marker reuseMarker = BufferingIdGenerator.super.marker( cursorContext ) )
             {
                 for ( long id : freedIds )
                 {

@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 class InternalTransactionCommitProcessTest
@@ -101,7 +101,7 @@ class InternalTransactionCommitProcessTest
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( PageCursorTracer.class ) );
+        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( CursorContext.class ) );
     }
 
     @Test

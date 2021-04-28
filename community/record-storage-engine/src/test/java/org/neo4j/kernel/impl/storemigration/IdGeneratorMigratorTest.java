@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -111,18 +111,18 @@ class IdGeneratorMigratorTest
     private void assertIdGeneratorContainsIds( Path idFilePath, IdType idType, int rounds, int numDeleted, int numCreated, long startingId ) throws IOException
     {
         try ( IdGenerator idGenerator = new IndexedIdGenerator( pageCache, idFilePath, immediate(), idType, false, () -> -1, Long.MAX_VALUE, writable(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, PageCursorTracer.NULL ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, CursorContext.NULL ) )
         {
             idGenerator.start( ignored ->
             {
                 throw new RuntimeException( "Should not ask for free ids" );
-            }, PageCursorTracer.NULL );
+            }, CursorContext.NULL );
             long nextExpectedId = startingId;
             for ( int i = 0; i < rounds; i++ )
             {
                 for ( int d = 0; d < numDeleted; d++ )
                 {
-                    assertEquals( nextExpectedId++, idGenerator.nextId( PageCursorTracer.NULL ) );
+                    assertEquals( nextExpectedId++, idGenerator.nextId( CursorContext.NULL ) );
                 }
                 nextExpectedId += numCreated;
             }
@@ -141,7 +141,7 @@ class IdGeneratorMigratorTest
             {
                 record.setId( id++ );
                 // we don't look at these id generators anyway during migration
-                store.updateRecord( record, IdUpdateListener.IGNORE, PageCursorTracer.NULL );
+                store.updateRecord( record, IdUpdateListener.IGNORE, CursorContext.NULL );
             }
         }
     }

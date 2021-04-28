@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -89,7 +89,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     }
 
     @Override
-    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
     {
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
@@ -100,7 +100,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom.initFromValue( i, propertyValues[i], NEUTRAL );
             treeKeyTo.initFromValue( i, propertyValues[i], NEUTRAL );
         }
-        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo, cursorTracer ) )
+        try ( Seeker<KEY,VALUE> seeker = tree.seek( treeKeyFrom, treeKeyTo, cursorContext ) )
         {
             long count = 0;
             while ( seeker.next() )
@@ -129,7 +129,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         initializeFromToKeys( treeKeyFrom, treeKeyTo );
 
         boolean needFilter = initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
-        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, constraints, needFilter, context.cursorTracer() );
+        startSeekForInitializedRange( cursor, treeKeyFrom, treeKeyTo, predicates, constraints, needFilter, context .cursorContext() );
     }
 
     void initializeFromToKeys( KEY treeKeyFrom, KEY treeKeyTo )
@@ -146,7 +146,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery[] predicates );
 
     void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery[] query,
-            IndexQueryConstraints constraints, boolean needFilter, PageCursorTracer cursorTracer )
+            IndexQueryConstraints constraints, boolean needFilter, CursorContext cursorContext )
     {
         if ( isEmptyRange( treeKeyFrom, treeKeyTo ) )
         {
@@ -155,7 +155,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
         try
         {
-            Seeker<KEY,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, constraints.order(), cursorTracer );
+            Seeker<KEY,VALUE> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, constraints.order(), cursorContext );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
             client.initialize( descriptor, hitProgressor, query, constraints, false );
         }
@@ -165,7 +165,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         }
     }
 
-    Seeker<KEY,VALUE> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo, IndexOrder indexOrder, PageCursorTracer cursorTracer ) throws IOException
+    Seeker<KEY,VALUE> makeIndexSeeker( KEY treeKeyFrom, KEY treeKeyTo, IndexOrder indexOrder, CursorContext cursorContext ) throws IOException
     {
         if ( indexOrder == IndexOrder.DESCENDING )
         {
@@ -173,7 +173,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom = treeKeyTo;
             treeKeyTo = tmpKey;
         }
-        return tree.seek( treeKeyFrom, treeKeyTo, cursorTracer );
+        return tree.seek( treeKeyFrom, treeKeyTo, cursorContext );
     }
 
     private IndexProgressor getIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,

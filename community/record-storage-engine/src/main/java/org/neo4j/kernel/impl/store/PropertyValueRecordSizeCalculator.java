@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.id.BatchingIdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
@@ -63,7 +63,7 @@ public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator
     }
 
     @Override
-    public int calculateSize( Value[] values, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public int calculateSize( Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         stringRecordIds.reset();
         arrayRecordIds.reset();
@@ -74,7 +74,7 @@ public class PropertyValueRecordSizeCalculator implements PropertySizeCalculator
         {
             PropertyBlock block = new PropertyBlock();
             PropertyStore.encodeValue( block, 0 /*doesn't matter*/, value, stringRecordCounter, arrayRecordCounter, true,
-                    cursorTracer, memoryTracker );
+                    cursorContext, memoryTracker );
             if ( block.getValueBlocks().length > freeBlocksInCurrentRecord )
             {
                 propertyRecordsUsed++;

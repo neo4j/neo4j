@@ -28,7 +28,7 @@ import org.neo4j.internal.batchimport.staging.PullingProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 
 import static org.neo4j.lock.LockWaitStrategies.INCREMENTAL_BACKOFF;
@@ -39,14 +39,14 @@ public class ReadEntityIdsStep extends PullingProducerStep
 
     private final StoreScan.ExternalUpdatesCheck externalUpdatesCheck;
     private final AtomicBoolean continueScanning;
-    private final Function<PageCursorTracer,EntityIdIterator> entityIdIteratorSupplier;
+    private final Function<CursorContext,EntityIdIterator> entityIdIteratorSupplier;
     private final PageCacheTracer pageCacheTracer;
     private volatile long position;
-    private PageCursorTracer cursorTracer;
+    private CursorContext cursorContext;
     private EntityIdIterator entityIdIterator;
     private long lastEntityId;
 
-    public ReadEntityIdsStep( StageControl control, Configuration configuration, Function<PageCursorTracer,EntityIdIterator> entityIdIteratorSupplier,
+    public ReadEntityIdsStep( StageControl control, Configuration configuration, Function<CursorContext,EntityIdIterator> entityIdIteratorSupplier,
             PageCacheTracer cacheTracer, StoreScan.ExternalUpdatesCheck externalUpdatesCheck, AtomicBoolean continueScanning )
     {
         super( control, configuration );
@@ -59,8 +59,8 @@ public class ReadEntityIdsStep extends PullingProducerStep
     @Override
     protected void process()
     {
-        cursorTracer = pageCacheTracer.createPageCursorTracer( CURSOR_TRACER_TAG );
-        entityIdIterator = entityIdIteratorSupplier.apply( cursorTracer );
+        cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CURSOR_TRACER_TAG ) );
+        entityIdIterator = entityIdIteratorSupplier.apply( cursorContext );
         super.process();
     }
 
@@ -104,7 +104,7 @@ public class ReadEntityIdsStep extends PullingProducerStep
     protected void done()
     {
         super.done();
-        IOUtils.closeAllUnchecked( entityIdIterator, cursorTracer );
+        IOUtils.closeAllUnchecked( entityIdIterator, cursorContext );
     }
 
     @Override

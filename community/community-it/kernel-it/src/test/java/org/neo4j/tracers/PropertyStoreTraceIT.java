@@ -27,6 +27,8 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -43,7 +45,7 @@ import org.neo4j.time.Clocks;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -84,14 +86,15 @@ class PropertyStoreTraceIT
         var propertyStore = storageEngine.testAccessNeoStores().getPropertyStore();
         prepareIdGenerator( propertyStore.getStringStore().getIdGenerator() );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnPropertyBlockIdGeneration" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnPropertyBlockIdGeneration" ) ) )
         {
             var propertyBlock = new PropertyBlock();
             var dynamicRecord = new DynamicRecord( 2 );
             dynamicRecord.setData( new byte[]{0, 1, 2, 3, 4, 5, 6, 7} );
             propertyBlock.addValueRecord( dynamicRecord );
-            propertyStore.encodeValue( propertyBlock, 1, stringValue( randomAlphabetic( (int) kibiBytes( 4 ) ) ), cursorTracer, INSTANCE );
+            propertyStore.encodeValue( propertyBlock, 1, stringValue( randomAlphabetic( (int) kibiBytes( 4 ) ) ), cursorContext, INSTANCE );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
             assertThat( cursorTracer.hits() ).isOne();

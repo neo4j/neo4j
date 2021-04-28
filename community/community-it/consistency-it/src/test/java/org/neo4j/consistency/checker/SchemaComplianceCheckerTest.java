@@ -31,7 +31,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -90,7 +90,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
         // when
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ),
-                PageCursorTracer.NULL, INSTANCE ) )
+                CursorContext.NULL, INSTANCE ) )
         {
             checker.checkContainsMandatoryProperties( new NodeRecord( nodeId ), labels, propertyValues, reporter::forNode );
         }
@@ -111,15 +111,15 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
             TextValue value = stringValue( "a" );
             // (N1) indexed w/ property A
             {
-                long propId = propertyStore.nextId( PageCursorTracer.NULL );
-                nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL );
+                nodeId = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId, value );
             }
             // (N2) indexed w/ property A
             {
-                long propId = propertyStore.nextId( PageCursorTracer.NULL );
-                long nodeId2 = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL );
+                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId2, value );
             }
@@ -142,8 +142,8 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (N1) w/ property A (NOT indexed)
-            long propId = propertyStore.nextId( PageCursorTracer.NULL );
-            nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
+            long propId = propertyStore.nextId( CursorContext.NULL );
+            nodeId = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
             property( propId, NULL, NULL, propertyValue( propertyKey1, stringValue( "a" ) ) );
         }
 
@@ -167,16 +167,16 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
             // (N1) w/ property
             {
-                long propId = propertyStore.nextId( PageCursorTracer.NULL );
-                nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL );
+                nodeId = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId, value );
             }
 
             // (N2) w/ property
             {
-                long propId = propertyStore.nextId( PageCursorTracer.NULL );
-                long nodeId2 = node( nodeStore.nextId( PageCursorTracer.NULL ), propId, NULL, label1 );
+                long propId = propertyStore.nextId( CursorContext.NULL );
+                long nodeId2 = node( nodeStore.nextId( CursorContext.NULL ), propId, NULL, label1 );
                 property( propId, NULL, NULL, propertyValue( propertyKey1, value ) );
                 indexValue( descriptor, indexId, nodeId2, value );
             }
@@ -193,7 +193,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
             throws IndexNotFoundKernelException, IndexEntryConflictException
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, PageCursorTracer.NULL ) )
+        try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, CursorContext.NULL ) )
         {
             indexUpdater.process( add( nodeId, descriptor, value ) );
         }
@@ -202,7 +202,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private void checkIndexed( long nodeId ) throws Exception
     {
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( NODE ), PageCursorTracer.NULL, INSTANCE ) )
+                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL, INSTANCE ) )
         {
             NodeRecord node = loadNode( nodeId );
             checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( nodeId ), reporter::forNode );
@@ -211,11 +211,11 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
     private MutableIntObjectMap<Value> readPropertyValues( long nodeId ) throws Exception
     {
-        try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), PageCursorTracer.NULL ) )
+        try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), CursorContext.NULL ) )
         {
             NodeRecord node = loadNode( nodeId );
             MutableIntObjectMap<Value> values = new IntObjectHashMap<>();
-            reader.read( values, node, reporter::forNode, PageCursorTracer.NULL );
+            reader.read( values, node, reporter::forNode, CursorContext.NULL );
             return values;
         }
     }

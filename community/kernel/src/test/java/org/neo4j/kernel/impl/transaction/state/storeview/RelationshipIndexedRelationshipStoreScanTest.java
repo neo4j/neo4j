@@ -31,7 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
@@ -75,7 +75,7 @@ class RelationshipIndexedRelationshipStoreScanTest
         mockIdsReturnedFromTokenQueries();
 
         RelationshipIndexedRelationshipStoreScan storeScan = getRelationshipTypeScanViewStoreScan( types );
-        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( PageCursorTracer.NULL );
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( CursorContext.NULL );
 
         // See that the idIterator asked about both types and was able to merge the results correctly.
         assertThat( idIterator.next() ).isEqualTo( 1L );

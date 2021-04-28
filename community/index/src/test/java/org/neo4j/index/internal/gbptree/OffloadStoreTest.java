@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 class OffloadStoreTest
 {
@@ -49,7 +49,7 @@ class OffloadStoreTest
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         idProvider = new SimpleIdProvider( cursor::duplicate );
-        pcFactory = ( id, flags, cursorTracer ) -> cursor.duplicate( id );
+        pcFactory = ( id, flags, cursorContext ) -> cursor.duplicate( id );
         idValidator = OffloadIdValidator.ALWAYS_TRUE;
     }
 

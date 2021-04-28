@@ -51,7 +51,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -77,7 +77,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
@@ -324,8 +324,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // THEN
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( PageCursorTracer.class ) );
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( CursorContext.class ) );
     }
 
     @Test
@@ -345,8 +345,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // THEN
-        verify( idUpdateListener, never() ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( PageCursorTracer.class ) );
-        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener, never() ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 5L ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( eq( IdType.NODE ), any(), eq( 10L ), any( CursorContext.class ) );
     }
 
     @Test
@@ -366,8 +366,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // then
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( PageCursorTracer.class ) );
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( CursorContext.class ) );
     }
 
     @Test
@@ -389,8 +389,8 @@ class NodeStoreTest
         nodeStore.updateRecord( record, idUpdateListener, NULL );
 
         // then
-        verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( PageCursorTracer.class ) );
-        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( PageCursorTracer.class ) );
+        verify( idUpdateListener, never() ).markIdAsUsed( eq( IdType.NODE ), any(), eq( primaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( eq( IdType.NODE ), any(), eq( secondaryUnitId ), any( CursorContext.class ) );
     }
 
     @Test
@@ -431,10 +431,10 @@ class NodeStoreTest
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                     Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-                    PageCursorTracer cursorTracer, String databaseName, ImmutableSet<OpenOption> openOptions )
+                    CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions )
             {
                 return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnlyChecker, config,
-                        cursorTracer, databaseName, openOptions ) );
+                        cursorContext, databaseName, openOptions ) );
             }
         } );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),

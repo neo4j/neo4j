@@ -24,7 +24,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 
 import java.util.Collection;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.memory.MemoryTracker;
@@ -70,22 +70,22 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext )
     {
         RecordProxy<RECORD, ADDITIONAL> result = recordChanges.get( key );
         if ( result == null )
         {
-            RECORD record = loader.load( key, additionalData, load, cursorTracer );
-            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorTracer );
+            RECORD record = loader.load( key, additionalData, load, cursorContext );
+            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorContext );
         }
         return result;
     }
 
     @Override
-    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext )
     {
         RecordChange<RECORD, ADDITIONAL> recordChange =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorTracer );
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorContext );
         recordChanges.put( key, recordChange );
         return recordChange;
     }
@@ -97,7 +97,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, CursorContext cursorContext )
     {
         if ( recordChanges.containsKey( key ) )
         {
@@ -106,7 +106,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
 
         RECORD record = loader.newUnused( key, additionalData );
         RecordChange<RECORD,ADDITIONAL> change =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, loadMonitor, cursorTracer );
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, loadMonitor, cursorContext );
         recordChanges.put( key, change );
         return change;
     }
@@ -125,7 +125,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
 
         private final ADDITIONAL additionalData;
         private final LoadMonitor loadMonitor;
-        private final PageCursorTracer cursorTracer;
+        private final CursorContext cursorContext;
         private final RECORD record;
         private final boolean created;
         private final long key;
@@ -135,7 +135,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
 
         public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, MutableInt changeCounter,
                 long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData, LoadMonitor loadMonitor,
-                PageCursorTracer cursorTracer )
+                CursorContext cursorContext )
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;
@@ -145,7 +145,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
             this.created = created;
             this.additionalData = additionalData;
             this.loadMonitor = loadMonitor;
-            this.cursorTracer = cursorTracer;
+            this.cursorContext = cursorContext;
         }
 
         @Override
@@ -169,7 +169,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         @Override
         public RECORD forChangingData()
         {
-            ensureHeavy( cursorTracer );
+            ensureHeavy( cursorContext );
             return prepareForChange();
         }
 
@@ -191,14 +191,14 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
             return this.record;
         }
 
-        private void ensureHeavy( PageCursorTracer cursorTracer )
+        private void ensureHeavy( CursorContext cursorContext )
         {
             if ( !created )
             {
-                loader.ensureHeavy( record, cursorTracer );
+                loader.ensureHeavy( record, cursorContext );
                 if ( before != null )
                 {
-                    loader.ensureHeavy( before, cursorTracer );
+                    loader.ensureHeavy( before, cursorContext );
                 }
             }
         }
@@ -212,7 +212,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         @Override
         public RECORD forReadingData()
         {
-            ensureHeavy( cursorTracer );
+            ensureHeavy( cursorContext );
             return this.record;
         }
 

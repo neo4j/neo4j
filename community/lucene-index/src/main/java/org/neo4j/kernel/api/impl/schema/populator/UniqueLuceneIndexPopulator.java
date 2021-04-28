@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -64,7 +64,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( final NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
+    public IndexUpdater newPopulatingUpdater( final NodePropertyAccessor accessor, CursorContext cursorContext )
     {
         return new UniqueLuceneIndexPopulatingUpdater( writer, propertyKeyIds, luceneIndex, accessor, sampler );
     }
@@ -76,7 +76,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex
     }
 
     @Override
-    public IndexSample sample( PageCursorTracer cursorTracer )
+    public IndexSample sample( CursorContext cursorContext )
     {
         return sampler.result();
     }

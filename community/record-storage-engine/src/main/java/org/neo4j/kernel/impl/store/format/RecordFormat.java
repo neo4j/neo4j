@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -83,7 +83,7 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param record to put read data into, replacing any existing data in that record object.
      * @param cursor {@link PageCursor} to read data from.
      * @param mode {@link RecordLoad} mode of reading.
-     * See {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, PageCursorTracer)} for more information.
+     * See {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)} for more information.
      * @param recordSize size of records of this format. This is passed in like this since not all formats
      * know the record size in advance, but may be read from store header when opening the store.
      * @throws IOException on error reading.
@@ -103,9 +103,9 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * into a command.
      * @param recordSize size of each record.
      * @param idSequence source of new ids if such are required be generated.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      */
-    void prepare( RECORD record, int recordSize, IdSequence idSequence, PageCursorTracer cursorTracer );
+    void prepare( RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext );
 
     /**
      * Writes record contents to the {@code cursor} in the format specified by this implementation.

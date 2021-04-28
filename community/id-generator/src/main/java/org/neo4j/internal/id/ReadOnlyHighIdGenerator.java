@@ -20,7 +20,7 @@
 package org.neo4j.internal.id;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * An {@link IdGenerator} that knows only about a highId and is read-only
@@ -65,7 +65,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public Marker marker( PageCursorTracer cursorTracer )
+    public Marker marker( CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
@@ -90,43 +90,43 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public void checkpoint( PageCursorTracer cursorTracer )
+    public void checkpoint( CursorContext cursorContext )
     {
         // no-op
     }
 
     @Override
-    public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
+    public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
 
     @Override
-    public void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer )
+    public void start( FreeIds freeIdsForRebuild, CursorContext cursorContext )
     {
         // no-op
     }
 
     @Override
-    public long nextId( PageCursorTracer ignored )
+    public long nextId( CursorContext ignored )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
 
     @Override
-    public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer ignored )
+    public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext ignored )
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
 
     @Override
-    public void clearCache( PageCursorTracer cursorTracer )
+    public void clearCache( CursorContext cursorContext )
     {
         // no-op
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
     {
         return true;
     }

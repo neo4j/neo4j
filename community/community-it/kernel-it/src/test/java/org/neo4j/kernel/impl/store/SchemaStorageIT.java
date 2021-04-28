@@ -73,7 +73,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
@@ -269,11 +269,11 @@ class SchemaStorageIT
                 "value.doubleArray", Values.doubleArray( new double[]{0.4, 0.6, 1.0} ),
                 "value.boolean", Values.booleanValue( true )
         ) );
-        var cursorTracer = NULL;
+        var cursorContext = NULL;
         SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) );
-        long id = schemaStore.nextId( cursorTracer );
+        long id = schemaStore.nextId( cursorContext );
         IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id ).withIndexConfig( expected );
-        storage.writeSchemaRule( storeIndexDescriptor, cursorTracer, INSTANCE );
+        storage.writeSchemaRule( storeIndexDescriptor, cursorContext, INSTANCE );
 
         // when
         IndexDescriptor schemaRule = (IndexDescriptor) storage.loadSingleSchemaRule( id, NULL );

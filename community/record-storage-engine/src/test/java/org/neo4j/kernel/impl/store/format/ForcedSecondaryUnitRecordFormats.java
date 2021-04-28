@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -43,8 +43,8 @@ import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.SECONDA
 
 /**
  * Wraps another {@link RecordFormats} and merely forces {@link AbstractBaseRecord#setSecondaryUnitIdOnLoad/Create(long)}
- * to be used, and in extension {@link IdSequence#nextId(PageCursorTracer)} to be called in
- * {@link RecordFormat#prepare(AbstractBaseRecord, int, IdSequence, PageCursorTracer)}. All {@link RecordFormat} instances
+ * to be used, and in extension {@link IdSequence#nextId(CursorContext)} to be called in
+ * {@link RecordFormat#prepare(AbstractBaseRecord, int, IdSequence, CursorContext)}. All {@link RecordFormat} instances
  * will also be wrapped. This is a utility to test behavior when there are secondary record units at play.
  */
 public class ForcedSecondaryUnitRecordFormats implements RecordFormats

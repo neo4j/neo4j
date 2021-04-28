@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -59,14 +60,14 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.trace_tx_sta
  * <ol>
  * <li>Construct {@link KernelStatement} when {@link KernelTransactionImplementation} is constructed</li>
  * <li>For every transaction...</li>
- * <li>Call {@link #initialize(Locks.Client, PageCursorTracer, long)} which makes this instance
+ * <li>Call {@link #initialize(Locks.Client, CursorContext, long)} which makes this instance
  * full available and ready to use. Call when the {@link KernelTransactionImplementation} is initialized.</li>
  * <li>Alternate {@link #acquire()} / {@link #close()} when acquiring / closing a statement for the transaction...
  * Temporarily asymmetric number of calls to {@link #acquire()} / {@link #close()} is supported, although in
  * the end an equal number of calls must have been issued.</li>
  * <li>To be safe call {@link #forceClose()} at the end of a transaction to force a close of the statement,
  * even if there are more than one current call to {@link #acquire()}. This instance is now again ready
- * to be {@link #initialize(Locks.Client, PageCursorTracer, long)}  initialized} and used for the transaction
+ * to be {@link #initialize(Locks.Client, CursorContext, long)}  initialized} and used for the transaction
  * instance again, when it's initialized.</li>
  * </ol>
  */
@@ -82,7 +83,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     private final boolean traceStatements;
     private final boolean trackStatementClose;
     private Locks.Client lockClient;
-    private PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
+    private CursorContext cursorContext = CursorContext.NULL;
     private int referenceCount;
     private volatile ExecutingQuery executingQuery;
     private final LockTracer systemLockTracer;
@@ -144,10 +145,10 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         } );
     }
 
-    public void initialize( Locks.Client lockClient, PageCursorTracer pageCursorCounters, long startTimeMillis )
+    public void initialize( Locks.Client lockClient, CursorContext cursorContext, long startTimeMillis )
     {
         this.lockClient = lockClient;
-        this.pageCursorTracer = pageCursorCounters;
+        this.cursorContext = cursorContext;
         this.clockContext.initializeTransaction( startTimeMillis );
     }
 
@@ -164,12 +165,12 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
 
     public long getHits()
     {
-        return isAcquired() ? subtractExact( pageCursorTracer.hits(), initialStatementHits ) : EMPTY_COUNTER;
+        return isAcquired() ? subtractExact( cursorContext.getCursorTracer().hits(), initialStatementHits ) : EMPTY_COUNTER;
     }
 
     public long getFaults()
     {
-        return isAcquired() ? subtractExact( pageCursorTracer.faults(), initialStatementFaults ) : EMPTY_COUNTER;
+        return isAcquired() ? subtractExact( cursorContext.getCursorTracer().faults(), initialStatementFaults ) : EMPTY_COUNTER;
     }
 
     public final void acquire()
@@ -177,8 +178,9 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         if ( referenceCount++ == 0 )
         {
             clockContext.initializeStatement();
-            this.initialStatementHits = pageCursorTracer.hits();
-            this.initialStatementFaults = pageCursorTracer.faults();
+            var cursorTracer = cursorContext.getCursorTracer();
+            this.initialStatementHits = cursorTracer.hits();
+            this.initialStatementFaults = cursorTracer.faults();
         }
         recordOpenCloseMethods();
     }

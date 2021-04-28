@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
@@ -117,7 +117,7 @@ class KernelTransactionTestBase
     {
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( storageEngine.newReader() ).thenReturn( storageReader );
-        when( storageEngine.newCommandCreationContext( any( PageCursorTracer.class ), any() ) ).thenReturn( commandCreationContext );
+        when( storageEngine.newCommandCreationContext( any( CursorContext.class ), any() ) ).thenReturn( commandCreationContext );
         when( storageEngine.metadataProvider() ).thenReturn( metadataProvider );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(
@@ -128,7 +128,7 @@ class KernelTransactionTestBase
                     any( ResourceLocker.class ),
                     any( LockTracer.class ),
                     anyLong(),
-                    any( TxStateVisitor.Decorator.class ), any( PageCursorTracer.class ), any( MemoryTracker.class ) );
+                    any( TxStateVisitor.Decorator.class ), any( CursorContext.class ), any( MemoryTracker.class ) );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

@@ -37,7 +37,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -78,7 +78,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intValue;
@@ -103,7 +103,7 @@ class MultipleIndexPopulatorTest
     {
         indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
-        when( indexStoreView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
+        when( indexStoreView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
         when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
         tokens = new InMemoryTokens();
@@ -388,7 +388,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1, flipper, failedIndexProxyFactory );
         addPopulator( indexPopulator2, 2, flipper, failedIndexProxyFactory );
 
-        when( indexPopulator1.sample( any( PageCursorTracer.class ) ) ).thenThrow( getSampleError() );
+        when( indexPopulator1.sample( any( CursorContext.class ) ) ).thenThrow( getSampleError() );
 
         multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
         multipleIndexPopulator.flipAfterStoreScan( false, NULL );
@@ -495,7 +495,7 @@ class MultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
         IndexPopulator indexPopulator = createIndexPopulator();
         addPopulator( indexPopulator, 1, flipper, failedIndexProxyFactory );
-        when( indexPopulator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
+        when( indexPopulator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
 
         // when
         multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
@@ -522,7 +522,7 @@ class MultipleIndexPopulatorTest
         int sampleSize = 120;
         int updates = 130;
         IndexSample sample = new IndexSample( indexSize, uniqueValues, sampleSize, updates );
-        when( indexPopulator.sample( any( PageCursorTracer.class ) ) ).thenReturn( sample );
+        when( indexPopulator.sample( any( CursorContext.class ) ) ).thenReturn( sample );
 
         multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
         multipleIndexPopulator.flipAfterStoreScan( false, NULL );
@@ -611,7 +611,7 @@ class MultipleIndexPopulatorTest
     private static IndexPopulator createIndexPopulator()
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
+        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         return populator;
     }
 

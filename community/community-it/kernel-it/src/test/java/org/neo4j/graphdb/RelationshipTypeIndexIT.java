@@ -42,7 +42,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -306,7 +306,7 @@ class RelationshipTypeIndexIT
         try ( TokenIndexReader reader = indexProxy.newTokenReader() )
         {
             SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-            reader.query( tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ), PageCursorTracer.NULL );
+            reader.query( tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ), CursorContext.NULL );
             while ( tokenClient.next() )
             {
                 actualIds.add( tokenClient.reference );
@@ -327,7 +327,7 @@ class RelationshipTypeIndexIT
             IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
             relationshipsInIndex = 0;
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "*" ) );
                 while ( cursor.next() )

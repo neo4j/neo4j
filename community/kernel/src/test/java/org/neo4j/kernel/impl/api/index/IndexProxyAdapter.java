@@ -28,7 +28,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -44,7 +44,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         return SwallowingIndexUpdater.INSTANCE;
     }
@@ -61,7 +61,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
     }
 
@@ -71,7 +71,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public void close( PageCursorTracer cursorTracer )
+    public void close( CursorContext cursorContext )
     {
     }
 

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
@@ -61,7 +61,7 @@ class FreeIdScanner implements Closeable
     private final IndexedIdGenerator.Monitor monitor;
     /**
      * State for whether or not there's an ongoing scan, and if so where it should begin from. This is used in
-     * {@link #findSomeIdsToCache(LinkedChunkLongArray, int, PageCursorTracer)} both to know where to initiate a scan from and to set it, if the cache got
+     * {@link #findSomeIdsToCache(LinkedChunkLongArray, int, CursorContext)} both to know where to initiate a scan from and to set it, if the cache got
      * full before scan completed, or set it to null of the scan ended. The actual {@link Seeker} itself is local to the scan method.
      */
     private Long ongoingScanRangeIndex;
@@ -83,7 +83,7 @@ class FreeIdScanner implements Closeable
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      */
-    boolean tryLoadFreeIdsIntoCache( boolean awaitOngoing, PageCursorTracer cursorTracer )
+    boolean tryLoadFreeIdsIntoCache( boolean awaitOngoing, CursorContext cursorContext )
     {
         if ( ongoingScanRangeIndex == null && !atLeastOneIdOnFreelist.get() )
         {
@@ -106,10 +106,10 @@ class FreeIdScanner implements Closeable
                 {
                     // Find items to cache
                     LinkedChunkLongArray pendingItemsToCache = new LinkedChunkLongArray( min( maxItemsToCache, max( 256, cache.capacity() / 10 ) ) );
-                    if ( findSomeIdsToCache( pendingItemsToCache, maxItemsToCache, cursorTracer ) )
+                    if ( findSomeIdsToCache( pendingItemsToCache, maxItemsToCache, cursorContext ) )
                     {
                         // Get a writer and mark the found ids as reserved
-                        markIdsAsReserved( pendingItemsToCache, cursorTracer );
+                        markIdsAsReserved( pendingItemsToCache, cursorContext );
 
                         // Place them in the cache so that allocation requests can see them
                         placeIdsInCache( pendingItemsToCache );
@@ -139,7 +139,7 @@ class FreeIdScanner implements Closeable
         return lock.tryLock();
     }
 
-    void clearCache( PageCursorTracer cursorTracer )
+    void clearCache( CursorContext cursorContext )
     {
         lock.lock();
         try
@@ -148,7 +148,7 @@ class FreeIdScanner implements Closeable
             ongoingScanRangeIndex = null;
 
             // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache revert that by marking them as free again
-            try ( ReservedMarker marker = markerProvider.getMarker( cursorTracer ) )
+            try ( ReservedMarker marker = markerProvider.getMarker( cursorContext ) )
             {
                 long id;
                 do
@@ -182,20 +182,20 @@ class FreeIdScanner implements Closeable
         } );
     }
 
-    private void markIdsAsReserved( LinkedChunkLongArray pendingItemsToCache, PageCursorTracer cursorTracer )
+    private void markIdsAsReserved( LinkedChunkLongArray pendingItemsToCache, CursorContext cursorContext )
     {
-        try ( ReservedMarker marker = markerProvider.getMarker( cursorTracer ) )
+        try ( ReservedMarker marker = markerProvider.getMarker( cursorContext ) )
         {
             pendingItemsToCache.accept( marker::markReserved );
         }
     }
 
-    private boolean findSomeIdsToCache( LinkedChunkLongArray pendingItemsToCache, int maxItemsToCache, PageCursorTracer cursorTracer ) throws IOException
+    private boolean findSomeIdsToCache( LinkedChunkLongArray pendingItemsToCache, int maxItemsToCache, CursorContext cursorContext ) throws IOException
     {
         boolean startedNow = ongoingScanRangeIndex == null;
         IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey( ongoingScanRangeIndex );
         boolean seekerExhausted = false;
-        try ( Seeker<IdRangeKey,IdRange> scanner = tree.seek( from, HIGH_KEY, cursorTracer ) )
+        try ( Seeker<IdRangeKey,IdRange> scanner = tree.seek( from, HIGH_KEY, cursorContext ) )
         {
             // Continue scanning until the cache is full or there's nothing more to scan
             while ( pendingItemsToCache.size() < maxItemsToCache )

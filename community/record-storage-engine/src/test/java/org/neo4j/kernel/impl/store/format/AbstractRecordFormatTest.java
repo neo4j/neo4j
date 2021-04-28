@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -234,7 +234,7 @@ public abstract class AbstractRecordFormatTest
     {
         if ( prepare && record.inUse() )
         {
-            format.prepare( record, recordSize, idSequence, PageCursorTracer.NULL );
+            format.prepare( record, recordSize, idSequence, CursorContext.NULL );
         }
 
         cursor.setOffset( 0 );

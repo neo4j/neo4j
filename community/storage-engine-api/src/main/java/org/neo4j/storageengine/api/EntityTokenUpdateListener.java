@@ -19,21 +19,21 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface EntityTokenUpdateListener
 {
     /**
      * Applies node label updates from changes in underlying storage.
      * @param labelUpdates stream of updates to apply.
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor events tracer.
      */
-    void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, PageCursorTracer cursorTracer );
+    void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, CursorContext cursorContext );
 
     class Adapter implements EntityTokenUpdateListener
     {
         @Override
-        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, PageCursorTracer cursorTracer )
+        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, CursorContext cursorContext )
         {
         }
     }

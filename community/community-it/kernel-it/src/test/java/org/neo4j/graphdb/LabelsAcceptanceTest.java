@@ -53,7 +53,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -710,8 +710,8 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor( PageCursorTracer.NULL );
-                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( PageCursorTracer.NULL, INSTANCE ) )
+            try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor( CursorContext.NULL );
+                  PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( CursorContext.NULL, INSTANCE ) )
             {
                 ktx.dataRead().singleNode( node.getId(), nodes );
                 while ( nodes.next() )
@@ -830,20 +830,20 @@ class LabelsAcceptanceTest
                 {
                     @Override
                     public IdGenerator open( PageCache pageCache, Path fileName, IdType idType, LongSupplier highId, long maxId,
-                            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
                             throws IOException
                     {
-                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnlyChecker, config, cursorTracer,
+                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnlyChecker, config, cursorContext,
                                 openOptions );
                     }
 
                     @Override
                     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
                             throws IOException
                     {
                         return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnlyChecker,
-                                config, cursorTracer, openOptions );
+                                config, cursorContext, openOptions );
                     }
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )

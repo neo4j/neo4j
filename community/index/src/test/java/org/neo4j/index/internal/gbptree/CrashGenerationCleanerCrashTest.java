@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -88,7 +88,7 @@ class CrashGenerationCleanerCrashTest
             AtomicBoolean first = new AtomicBoolean( true );
 
             @Override
-            public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
+            public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
             {
                 try
                 {
@@ -102,7 +102,7 @@ class CrashGenerationCleanerCrashTest
                 {
                     throw new IOException( message );
                 }
-                return super.io( pageId, pf_flags, tracer );
+                return super.io( pageId, pf_flags, context );
             }
         };
         return new CrashGenerationCleaner( pagedFile, new TreeNodeFixedSize<>( pageSize, SimpleLongLayout.longLayout().build() ), 0,

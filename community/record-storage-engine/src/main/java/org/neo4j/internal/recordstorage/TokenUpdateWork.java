@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.List;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.util.concurrent.Work;
@@ -31,12 +31,12 @@ import static org.neo4j.storageengine.api.EntityTokenUpdate.SORT_BY_ENTITY_ID;
 public class TokenUpdateWork implements Work<EntityTokenUpdateListener,TokenUpdateWork>
 {
     private final List<EntityTokenUpdate> tokenUpdates;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
-    TokenUpdateWork( List<EntityTokenUpdate> tokenUpdates, PageCursorTracer cursorTracer )
+    TokenUpdateWork( List<EntityTokenUpdate> tokenUpdates, CursorContext cursorContext )
     {
         this.tokenUpdates = tokenUpdates;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     @Override
@@ -50,6 +50,6 @@ public class TokenUpdateWork implements Work<EntityTokenUpdateListener,TokenUpda
     public void apply( EntityTokenUpdateListener listener )
     {
         tokenUpdates.sort( SORT_BY_ENTITY_ID );
-        listener.applyUpdates( tokenUpdates, cursorTracer );
+        listener.applyUpdates( tokenUpdates, cursorContext );
     }
 }

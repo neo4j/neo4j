@@ -25,7 +25,6 @@ import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.CursorException;
@@ -35,9 +34,9 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
@@ -85,7 +84,8 @@ public abstract class MuninnPageCursor extends PageCursor
     private long pointer;
     private int pageSize;
     private int filePageSize;
-    protected final VersionContextSupplier versionContextSupplier;
+    protected final VersionContext versionContext;
+    private CursorContext cursorContext;
     private int offset;
     private int mark;
     private boolean outOfBounds;
@@ -107,12 +107,13 @@ public abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    MuninnPageCursor( long victimPage, PageCursorTracer tracer, VersionContextSupplier versionContextSupplier )
+    MuninnPageCursor( long victimPage, CursorContext cursorContext )
     {
         this.victimPage = victimPage;
         this.pointer = victimPage;
-        this.tracer = tracer;
-        this.versionContextSupplier = versionContextSupplier;
+        this.tracer = cursorContext.getCursorTracer();
+        this.versionContext = cursorContext.getVersionContext();
+        this.cursorContext = cursorContext;
     }
 
     final void initialise( MuninnPagedFile pagedFile, long pageId, int pf_flags )
@@ -178,7 +179,6 @@ public abstract class MuninnPageCursor extends PageCursor
 
     void verifyContext()
     {
-        VersionContext versionContext = versionContextSupplier.getVersionContext();
         long lastClosedTransactionId = versionContext.lastClosedTransactionId();
         if ( lastClosedTransactionId == Long.MAX_VALUE )
         {
@@ -260,7 +260,7 @@ public abstract class MuninnPageCursor extends PageCursor
         }
         else
         {
-            linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags, tracer );
+            linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags, cursorContext );
         }
         return linkedCursor;
     }

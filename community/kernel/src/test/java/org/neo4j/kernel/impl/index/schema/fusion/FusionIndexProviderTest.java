@@ -34,7 +34,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.CATEGORY_OF;
@@ -196,7 +196,7 @@ abstract class FusionIndexProviderTest
     {
         for ( IndexProvider provider : aliveProviders )
         {
-            when( provider.getPopulationFailure( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( StringUtils.EMPTY );
+            when( provider.getPopulationFailure( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( StringUtils.EMPTY );
         }
 
         assertEquals( StringUtils.EMPTY, fusionIndexProvider.getPopulationFailure( AN_INDEX, NULL ) );
@@ -213,11 +213,11 @@ abstract class FusionIndexProviderTest
             {
                 if ( provider == failingProvider )
                 {
-                    when( provider.getPopulationFailure( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( failure );
+                    when( provider.getPopulationFailure( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( failure );
                 }
                 else
                 {
-                    when( provider.getPopulationFailure( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( StringUtils.EMPTY );
+                    when( provider.getPopulationFailure( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( StringUtils.EMPTY );
                 }
             }
 
@@ -235,7 +235,7 @@ abstract class FusionIndexProviderTest
         {
             String failureMessage = "FAILURE[" + aliveProvider + "]";
             failureMessages.add( failureMessage );
-            when( aliveProvider.getPopulationFailure( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( failureMessage );
+            when( aliveProvider.getPopulationFailure( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( failureMessage );
         }
 
         // then
@@ -309,7 +309,7 @@ abstract class FusionIndexProviderTest
 
     private static void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
-        when( mockedProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( state );
+        when( mockedProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( state );
     }
 
     private IndexProvider orLucene( IndexProvider provider )

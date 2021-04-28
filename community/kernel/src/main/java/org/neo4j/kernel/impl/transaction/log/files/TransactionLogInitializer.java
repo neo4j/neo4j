@@ -28,7 +28,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -104,12 +104,12 @@ public class TransactionLogInitializer
      */
     public void initializeEmptyLogFile( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason ) throws IOException
     {
-        try ( var cursorTracer = tracer.createPageCursorTracer( RESET_TRANSACTION_OFFSET_TAG ) )
+        try ( var cursorContext = new CursorContext( tracer.createPageCursorTracer( RESET_TRANSACTION_OFFSET_TAG ) ) )
         {
             // since we reset transaction log file, we can't trust old log file offset anymore from metadata store and we need to reset it before
             // log files will be started since on start we will try position writer on the last known good location
             store.resetLastClosedTransaction( store.getLastCommittedTransactionId(), store.getLastClosedTransactionId(), CURRENT_FORMAT_LOG_HEADER_SIZE, true,
-                    cursorTracer );
+                    cursorContext );
         }
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
@@ -172,10 +172,10 @@ public class TransactionLogInitializer
         int checksum = transactionLogWriter.append( emptyTx, BASE_TX_ID, BASE_TX_CHECKSUM );
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint( logFiles, reason, position );
-        try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( LOGS_UPGRADER_TRACER_TAG ) )
+        try ( CursorContext cursorContext = new CursorContext( tracer.createPageCursorTracer( LOGS_UPGRADER_TRACER_TAG ) ) )
         {
             store.setLastCommittedAndClosedTransactionId(
-                    transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion(), cursorTracer );
+                    transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion(), cursorContext );
         }
     }
 

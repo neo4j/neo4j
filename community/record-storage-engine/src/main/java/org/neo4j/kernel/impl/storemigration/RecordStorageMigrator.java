@@ -84,7 +84,7 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -197,11 +197,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         // Extract information about the last transaction from legacy neostore
         Path neoStore = directoryLayout.metadataStore();
-        try ( var cursorTracer = cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) ) )
         {
-            long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, directoryLayout.getDatabaseName(), cursorTracer );
-            TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, directoryLayout, cursorTracer );
-            LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId, cursorTracer );
+            long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, directoryLayout.getDatabaseName(), cursorContext );
+            TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, directoryLayout, cursorContext );
+            LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId, cursorContext );
             // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
             writeLastTxInformation( migrationLayout, lastTxInfo );
             writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
@@ -244,7 +244,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // update necessary neostore records
             LogPosition logPosition = readLastTxLogPosition( migrationLayout );
             updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition, requiresIdFilesMigration,
-                    cursorTracer );
+                    cursorContext );
 
             if ( requiresSchemaStoreMigration( oldFormat, newFormat ) || requiresPropertyMigration )
             {
@@ -262,12 +262,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         DatabaseFile.LABEL_TOKEN_NAMES_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
                 fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, !requiresIdFilesMigration,
                         ExistingTargetStrategy.SKIP );
-                migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorTracer, memoryTracker );
+                migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorContext, memoryTracker );
             }
 
             if ( requiresCountsStoreMigration( oldFormat, newFormat ) )
             {
-                migrateCountsStore( directoryLayout, migrationLayout, oldFormat, cursorTracer, memoryTracker );
+                migrateCountsStore( directoryLayout, migrationLayout, oldFormat, cursorContext, memoryTracker );
             }
         }
     }
@@ -278,7 +278,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * code lingering in the code base a rebuild is cleaner, but will require a longer migration time. Worth it?
      */
     private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
+            CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
     {
         // Just read from the old store (nodes, relationships, highLabelId, highRelationshipTypeId). This way we don't have to try and figure
         // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
@@ -289,8 +289,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, migrationLayout.getDatabaseName(),
                         config.get( counts_store_max_cached_entries ) ) )
         {
-            countsStore.start( cursorTracer, memoryTracker );
-            countsStore.checkpoint( cursorTracer );
+            countsStore.start( cursorContext, memoryTracker );
+            countsStore.checkpoint( cursorContext );
         }
     }
 
@@ -363,12 +363,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return migrationStructure.file( "lastxlogposition" );
     }
 
-    TransactionId extractTransactionIdInformation( Path neoStore, long lastTransactionId, DatabaseLayout directoryLayout, PageCursorTracer cursorTracer )
+    TransactionId extractTransactionIdInformation( Path neoStore, long lastTransactionId, DatabaseLayout directoryLayout, CursorContext cursorContext )
             throws IOException
     {
         String databaseName = directoryLayout.getDatabaseName();
-        int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseName, cursorTracer );
-        long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseName, cursorTracer );
+        int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseName, cursorContext );
+        long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseName, cursorContext );
         if ( checksum != FIELD_NOT_PRESENT && commitTimestamp != FIELD_NOT_PRESENT )
         {
             return new TransactionId( lastTransactionId, checksum, commitTimestamp );
@@ -401,11 +401,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     LogPosition extractTransactionLogPosition( Path neoStore, DatabaseLayout sourceDirectoryStructure, long lastTxId,
-            PageCursorTracer cursorTracer ) throws IOException
+            CursorContext cursorContext ) throws IOException
     {
         String databaseName = sourceDirectoryStructure.getDatabaseName();
-        long lastClosedTxLogVersion = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, databaseName, cursorTracer );
-        long lastClosedTxLogByteOffset = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, databaseName, cursorTracer );
+        long lastClosedTxLogVersion = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, databaseName, cursorContext );
+        long lastClosedTxLogByteOffset = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, databaseName, cursorContext );
         if ( lastClosedTxLogVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT &&
              lastClosedTxLogByteOffset != MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
@@ -612,8 +612,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                var cursorTracer = cacheTracer.createPageCursorTracer( RELATIONSHIP_CHUNK_MIGRATION_TAG );
-                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer, memoryTracker );
+                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RELATIONSHIP_CHUNK_MIGRATION_TAG ) );
+                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, memoryTracker );
             }
         };
     }
@@ -626,8 +626,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             @Override
             public InputChunk newChunk()
             {
-                var cursorTracer = cacheTracer.createPageCursorTracer( NODE_CHUNK_MIGRATION_TAG );
-                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorTracer, memoryTracker );
+                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( NODE_CHUNK_MIGRATION_TAG ) );
+                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, memoryTracker );
             }
         };
     }
@@ -656,16 +656,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
                     directoryLayout.relationshipGroupDegreesStore(), fileSystem, immediate(), GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD, writable(),
                     cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, directoryLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
-                    PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( "empty group degrees store rebuild" ) )
+                    CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "empty group degrees store rebuild" ) ) )
             {
-                groupDegreesStore.start( cursorTracer, memoryTracker );
-                groupDegreesStore.checkpoint( cursorTracer );
+                groupDegreesStore.start( cursorContext, memoryTracker );
+                groupDegreesStore.checkpoint( cursorContext );
             }
         }
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( DatabaseLayout migrationStructure, DatabaseLayout sourceDirectoryStructure,
-            String versionToMigrateTo, LogPosition lastClosedTxLogPosition, boolean requiresIdFilesMigration, PageCursorTracer cursorTracer ) throws IOException
+            String versionToMigrateTo, LogPosition lastClosedTxLogPosition, boolean requiresIdFilesMigration, CursorContext cursorContext ) throws IOException
     {
         final Path storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final Path migrationDirNeoStore = migrationStructure.metadataStore();
@@ -674,8 +674,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 !requiresIdFilesMigration, ExistingTargetStrategy.SKIP );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_ID,
-                MetaDataStore.getRecord( pageCache, storeDirNeoStore, LAST_TRANSACTION_ID, databaseName, cursorTracer ), databaseName, cursorTracer );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TIME, System.currentTimeMillis(), databaseName, cursorTracer );
+                MetaDataStore.getRecord( pageCache, storeDirNeoStore, LAST_TRANSACTION_ID, databaseName, cursorContext ), databaseName, cursorContext );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TIME, System.currentTimeMillis(), databaseName, cursorContext );
 
         // Store the checksum of the transaction id the upgrade is at right now. Store it both as
         // LAST_TRANSACTION_CHECKSUM and UPGRADE_TRANSACTION_CHECKSUM. Initially the last transaction and the
@@ -691,25 +691,26 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         //    problematic as long as we don't migrate and translate old logs.
         TransactionId lastTxInfo = readLastTxInformation( migrationStructure );
 
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), databaseName, cursorTracer );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), databaseName, cursorTracer );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), databaseName, cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), databaseName, cursorContext );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), databaseName, cursorContext );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), databaseName,
+                cursorContext );
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), databaseName,
-                cursorTracer );
+                cursorContext );
 
         // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migrated
         // NeoStore
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION,
-                lastClosedTxLogPosition.getLogVersion(), databaseName, cursorTracer );
+                lastClosedTxLogPosition.getLogVersion(), databaseName, cursorContext );
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                lastClosedTxLogPosition.getByteOffset(), databaseName, cursorTracer );
+                lastClosedTxLogPosition.getByteOffset(), databaseName, cursorContext );
 
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, MetaDataStore.versionStringToLong( versionToMigrateTo ), databaseName,
-                cursorTracer );
-        if ( MetaDataStore.getRecord( pageCache, sourceDirectoryStructure.metadataStore(), KERNEL_VERSION, databaseName, cursorTracer ) == FIELD_NOT_PRESENT )
+                cursorContext );
+        if ( MetaDataStore.getRecord( pageCache, sourceDirectoryStructure.metadataStore(), KERNEL_VERSION, databaseName, cursorContext ) == FIELD_NOT_PRESENT )
         {
-            MetaDataStore.setRecord( pageCache, migrationDirNeoStore, KERNEL_VERSION, KernelVersion.V4_2.version(), databaseName, cursorTracer );
+            MetaDataStore.setRecord( pageCache, migrationDirNeoStore, KERNEL_VERSION, KernelVersion.V4_2.version(), databaseName, cursorContext );
         }
     }
 
@@ -723,7 +724,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * Migration of the schema store is invoked if the old and new formats differ in their {@link RecordStorageCapability#FLEXIBLE_SCHEMA_STORE} capability.
      */
     private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException, KernelException
+            CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException, KernelException
     {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
@@ -745,29 +746,30 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
                   schemaStorageCreator )
             {
-                dstStore.start( cursorTracer );
+                dstStore.start( cursorContext );
                 TokenHolders srcTokenHolders = new TokenHolders(
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-                srcTokenHolders.setInitialTokens( allTokens( srcStore ), cursorTracer );
-                SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorTracer );
+                srcTokenHolders.setInitialTokens( allTokens( srcStore ), cursorContext );
+                SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
 
-                SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorTracer, memoryTracker );
+                SchemaRuleMigrationAccess dstAccess =
+                        RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext, memoryTracker );
 
-                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, cursorTracer );
+                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, cursorContext );
 
-                dstStore.flush( cursorTracer );
+                dstStore.flush( cursorContext );
             }
         }
     }
 
     static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess,
-            PageCursorTracer cursorTracer ) throws KernelException
+            CursorContext cursorContext ) throws KernelException
     {
         LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
 
-        schemaGenerateNames( srcAccess, srcTokenHolders, rules, cursorTracer );
+        schemaGenerateNames( srcAccess, srcTokenHolders, rules, cursorContext );
 
         // Once all rules have been processed, write them out.
         for ( SchemaRule rule : rules.values() )
@@ -777,12 +779,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     public static void schemaGenerateNames( SchemaStorage srcAccess, TokenHolders srcTokenHolders,
-            Map<Long,SchemaRule> rules, PageCursorTracer cursorTracer ) throws KernelException
+            Map<Long,SchemaRule> rules, CursorContext cursorContext ) throws KernelException
     {
         SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
         List<SchemaRule> namedRules = new ArrayList<>();
         List<SchemaRule> unnamedRules = new ArrayList<>();
-        srcAccess.getAll( cursorTracer ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+        srcAccess.getAll( cursorContext ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
         // Make sure that we process explicitly named schemas first.
         namedRules.forEach( r -> rules.put( r.getId(), r ) );
         unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
@@ -933,7 +935,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             private SchemaStore schemaStore;
 
             @Override
-            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, PageCursorTracer cursorTracer )
+            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext )
             {
                 schemaStore = store.getSchemaStore();
                 return new org.neo4j.internal.recordstorage.SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST, false );
@@ -962,7 +964,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             SchemaStore35 srcSchema;
 
             @Override
-            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, PageCursorTracer cursorTracer )
+            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext )
             {
                 srcSchema = new SchemaStore35(
                         directoryLayout.schemaStore(),
@@ -976,7 +978,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         readOnly(),
                         directoryLayout.getDatabaseName(),
                         immutable.empty() );
-                srcSchema.initialise( true, cursorTracer );
+                srcSchema.initialise( true, cursorContext );
                 return new SchemaStorage35( srcSchema );
             }
 
@@ -996,16 +998,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private interface SchemaStorageCreator extends Closeable
     {
-        SchemaStorage create( NeoStores store, TokenHolders tokenHolders, PageCursorTracer cursorTracer );
+        SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext );
 
         StoreType[] additionalStoresToOpen();
     }
 
     private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor>
     {
-        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
-            super( storageReader.allocateNodeCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer, memoryTracker );
+            super( storageReader.allocateNodeCursor( cursorContext ), storageReader, requiresPropertyMigration, cursorContext, memoryTracker );
         }
 
         @Override
@@ -1025,10 +1027,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static class RelationshipRecordChunk extends StoreScanChunk<StorageRelationshipScanCursor>
     {
-        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer,
+        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext,
                 MemoryTracker memoryTracker )
         {
-            super( storageReader.allocateRelationshipScanCursor( cursorTracer ), storageReader, requiresPropertyMigration, cursorTracer, memoryTracker );
+            super( storageReader.allocateRelationshipScanCursor( cursorContext ), storageReader, requiresPropertyMigration, cursorContext, memoryTracker );
         }
 
         @Override

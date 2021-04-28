@@ -27,7 +27,7 @@ import java.util.Comparator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static java.lang.Long.min;
@@ -76,7 +76,7 @@ class NativeTokenScanWriter implements TokenScanWriter
 
     /**
      * {@link Writer} acquired when acquiring this {@link NativeTokenScanWriter},
-     * acquired from {@link GBPTree#writer(PageCursorTracer)}.
+     * acquired from {@link GBPTree#writer(CursorContext)}.
      */
     private Writer<TokenScanKey,TokenScanValue> writer;
 

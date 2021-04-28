@@ -81,7 +81,7 @@ public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<Rela
     @Override
     protected RelationshipTypeIndexCursor getIndexCursor( KernelTransaction tx )
     {
-        return tx.cursors().allocateRelationshipTypeIndexCursor( tx.pageCursorTracer() );
+        return tx.cursors().allocateRelationshipTypeIndexCursor( tx.cursorContext() );
     }
 
     @Override

@@ -62,7 +62,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -87,7 +87,7 @@ import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 /**
@@ -525,12 +525,12 @@ public class ImportLogic implements Closeable
      */
     public void buildCountsStore()
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( IMPORT_COUNT_STORE_REBUILD_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( IMPORT_COUNT_STORE_REBUILD_TAG ) ) )
         {
             neoStore.buildCountsStore( new CountsBuilder()
             {
                 @Override
-                public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
                 {
                     MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
                     nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getNodeStore().getHighId(), neoStore.getLabelRepository().getHighId(),
@@ -551,7 +551,7 @@ public class ImportLogic implements Closeable
                 {
                     return neoStore.getLastCommittedTransactionId();
                 }
-            }, pageCacheTracer, cursorTracer, memoryTracker );
+            }, pageCacheTracer, cursorContext, memoryTracker );
         }
     }
 

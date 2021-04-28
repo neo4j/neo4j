@@ -59,7 +59,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 class TxStateTransactionDataViewTest
 {
@@ -77,7 +77,7 @@ class TxStateTransactionDataViewTest
         when( transaction.internalTransaction() ).thenReturn( internalTransaction );
         var kernelTransaction = mock( KernelTransaction.class );
         when( internalTransaction.kernelTransaction() ).thenReturn( kernelTransaction );
-        when( kernelTransaction.pageCursorTracer() ).thenReturn( NULL );
+        when( kernelTransaction.cursorContext() ).thenReturn( NULL );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
         {

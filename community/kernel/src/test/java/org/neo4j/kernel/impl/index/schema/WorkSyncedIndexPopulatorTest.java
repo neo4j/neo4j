@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Race;
@@ -46,7 +46,7 @@ class WorkSyncedIndexPopulatorTest
         var race = new Race();
         race.addContestants( 10, throwing( () ->
         {
-            populator.add( Collections.<IndexEntryUpdate<?>>singleton( Mockito.mock( IndexEntryUpdate.class ) ), PageCursorTracer.NULL );
+            populator.add( Collections.<IndexEntryUpdate<?>>singleton( Mockito.mock( IndexEntryUpdate.class ) ), CursorContext.NULL );
         } ) );
         race.go();
     }
@@ -56,7 +56,7 @@ class WorkSyncedIndexPopulatorTest
         private final AtomicBoolean flag = new AtomicBoolean();
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
         {
             assertTrue( flag.compareAndSet( false, true ), "Only one instance can flip flag at a time" );
             assertTrue( flag.compareAndSet( true, false ), "Only one instance can flip flag back at a time"  );

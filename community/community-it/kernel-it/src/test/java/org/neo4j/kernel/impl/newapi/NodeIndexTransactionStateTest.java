@@ -96,7 +96,7 @@ public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
     void assertEntityAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery, PropertyIndexQuery... queries ) throws Exception
     {
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
         {
             IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
             tx.dataRead().nodeIndexSeek( indexSession, nodes, unordered( needsValues ), queries );
@@ -109,7 +109,7 @@ public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
             Object anotherValueFoundByQuery ) throws Exception
     {
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+        try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
         {
             tx.dataRead().nodeIndexScan( indexSession, nodes, unordered( needsValues ) );
             assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new NodeCursorAdapter( nodes ) );

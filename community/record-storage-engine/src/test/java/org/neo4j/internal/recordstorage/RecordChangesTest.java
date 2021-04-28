@@ -22,12 +22,12 @@ package org.neo4j.internal.recordstorage;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RecordChangesTest
@@ -41,13 +41,13 @@ class RecordChangesTest
         }
 
         @Override
-        public NodeRecord load( long id, Object additional, RecordLoad load, PageCursorTracer cursorTracer )
+        public NodeRecord load( long id, Object additional, RecordLoad load, CursorContext cursorContext )
         {
             return new NodeRecord( id );
         }
 
         @Override
-        public void ensureHeavy( NodeRecord o, PageCursorTracer cursorTracer )
+        public void ensureHeavy( NodeRecord o, CursorContext cursorContext )
         {
 
         }

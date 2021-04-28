@@ -79,7 +79,7 @@ class ConstraintIndexConcurrencyTest
             int labelId = ktx.tokenRead().nodeLabel( label.name() );
             int propertyKeyId = ktx.tokenRead().propertyKey( propertyKey );
             Read read = ktx.dataRead();
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
                 IndexDescriptor index = ktx.schemaRead().indexGetForName( constraintName );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );

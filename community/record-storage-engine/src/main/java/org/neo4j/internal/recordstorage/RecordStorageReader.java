@@ -33,7 +33,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -47,7 +47,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.token.TokenHolders;
 
-import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
@@ -223,29 +222,29 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long countsForNode( int labelId, PageCursorTracer cursorTracer )
+    public long countsForNode( int labelId, CursorContext cursorContext )
     {
-        return counts.nodeCount( labelId, cursorTracer );
+        return counts.nodeCount( labelId, cursorContext );
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
     {
         if ( !(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL) )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-        return counts.relationshipCount( startLabelId, typeId, endLabelId, cursorTracer );
+        return counts.relationshipCount( startLabelId, typeId, endLabelId, cursorContext );
     }
 
     @Override
-    public long nodesGetCount( PageCursorTracer cursorTracer )
+    public long nodesGetCount( CursorContext cursorContext )
     {
         if ( counts != null )
         {
             try
             {
-                return counts.nodeCount( ANY_LABEL, cursorTracer );
+                return counts.nodeCount( ANY_LABEL, cursorContext );
             }
             catch ( IllegalStateException e )
             {
@@ -284,15 +283,15 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public boolean nodeExists( long id, PageCursorTracer cursorTracer )
+    public boolean nodeExists( long id, CursorContext cursorContext )
     {
-        return nodeStore.isInUse( id, cursorTracer );
+        return nodeStore.isInUse( id, cursorContext );
     }
 
     @Override
-    public boolean relationshipExists( long id, PageCursorTracer cursorTracer )
+    public boolean relationshipExists( long id, CursorContext cursorContext )
     {
-        return relationshipStore.isInUse( id, cursorTracer );
+        return relationshipStore.isInUse( id, cursorContext );
     }
 
     @Override
@@ -321,21 +320,21 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public RecordNodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
+    public RecordNodeCursor allocateNodeCursor( CursorContext cursorContext )
     {
-        return new RecordNodeCursor( nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorTracer );
+        return new RecordNodeCursor( nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext );
     }
 
     @Override
-    public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
     {
-        return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore, groupDegreesStore, cursorTracer );
+        return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext );
     }
 
     @Override
-    public RecordRelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
+    public RecordRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
     {
-        return new RecordRelationshipScanCursor( relationshipStore, cursorTracer );
+        return new RecordRelationshipScanCursor( relationshipStore, cursorContext );
     }
 
     @Override
@@ -351,8 +350,8 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        return new RecordPropertyCursor( propertyStore, cursorTracer, memoryTracker );
+        return new RecordPropertyCursor( propertyStore, cursorContext, memoryTracker );
     }
 }

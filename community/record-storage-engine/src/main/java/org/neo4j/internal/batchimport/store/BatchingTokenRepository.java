@@ -28,7 +28,7 @@ import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.store.TokenStore;
@@ -45,7 +45,7 @@ import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
 /**
  * Batching version of a {@link TokenStore} where tokens can be created and retrieved, but only persisted
- * to storage as part of {@link #flush(PageCursorTracer) flush}. Instances of this class are thread safe
+ * to storage as part of {@link #flush(CursorContext) flush}. Instances of this class are thread safe
  * to call {@link #getOrCreateId(String)} methods on.
  */
 public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implements ToIntFunction<Object>
@@ -185,35 +185,35 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         return highId;
     }
 
-    public void flush( PageCursorTracer cursorTracer )
+    public void flush( CursorContext cursorContext )
     {
         int highest = highestCreatedId;
         for ( Map.Entry<TokenId,String> tokenToCreate : sortCreatedTokensById( tokens ) )
         {
             if ( tokenToCreate.getKey().value > highestCreatedId )
             {
-                createToken( tokenToCreate.getValue(), tokenToCreate.getKey().value, tokenToCreate.getKey().internal, cursorTracer );
+                createToken( tokenToCreate.getValue(), tokenToCreate.getKey().value, tokenToCreate.getKey().internal, cursorContext );
                 highest = Math.max( highest, tokenToCreate.getKey().value );
             }
         }
 
         // Store them
-        int highestId = max( toIntExact( store.getHighestPossibleIdInUse( cursorTracer ) ), highest );
+        int highestId = max( toIntExact( store.getHighestPossibleIdInUse( cursorContext ) ), highest );
         store.setHighestPossibleIdInUse( highestId );
         highestCreatedId = highestId;
     }
 
-    private void createToken( String name, int tokenId, boolean internal, PageCursorTracer cursorTracer )
+    private void createToken( String name, int tokenId, boolean internal, CursorContext cursorContext )
     {
         RECORD record = recordInstantiator.apply( tokenId );
         record.setInUse( true );
         record.setCreated();
         record.setInternal( internal );
-        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorTracer, EmptyMemoryTracker.INSTANCE );
+        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorContext, EmptyMemoryTracker.INSTANCE );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
-        store.updateRecord( record, cursorTracer );
-        nameRecords.forEach( nameRecord -> store.getNameStore().updateRecord( nameRecord, cursorTracer ) );
+        store.updateRecord( record, cursorContext );
+        nameRecords.forEach( nameRecord -> store.getNameStore().updateRecord( nameRecord, cursorContext ) );
     }
 
     private Iterable<Map.Entry<TokenId,String>> sortCreatedTokensById( Map<String,TokenId> tokens )

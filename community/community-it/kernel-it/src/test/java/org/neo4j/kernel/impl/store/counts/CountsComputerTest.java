@@ -55,6 +55,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -73,7 +75,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
@@ -120,10 +122,11 @@ class CountsComputerTest
             GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             var countsStore = db.getDependencyResolver().resolveDependency( GBPTreeCountsStore.class );
             var pageCacheTracer = new DefaultPageCacheTracer();
-            var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" );
+            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" ) );
 
-            countsStore.start( cursorTracer, INSTANCE );
+            countsStore.start( cursorContext, INSTANCE );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             softly.assertThat( cursorTracer.pins() ).as( "Pins" ).isEqualTo( 1 );
             softly.assertThat( cursorTracer.unpins() ).as( "Unpins" ).isEqualTo( 1 );
             softly.assertThat( cursorTracer.hits() ).as( "hits" ).isEqualTo( 1 );

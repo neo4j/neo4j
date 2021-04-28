@@ -24,7 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -33,11 +33,11 @@ import org.neo4j.kernel.impl.store.record.Record;
 
 public class PropertyTraverser
 {
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
-    public PropertyTraverser( PageCursorTracer cursorTracer )
+    public PropertyTraverser( CursorContext cursorContext )
     {
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     /**
@@ -60,7 +60,7 @@ public class PropertyTraverser
         while ( !Record.NO_NEXT_PROPERTY.is( propertyRecordId ) )
         {
             PropertyRecord propertyRecord =
-                    propertyRecords.getOrLoad( propertyRecordId, primitive, cursorTracer ).forReadingLinkage();
+                    propertyRecords.getOrLoad( propertyRecordId, primitive, cursorContext ).forReadingLinkage();
             if ( propertyRecord.getPropertyBlock( propertyKey ) != null )
             {
                 return propertyRecordId;
@@ -83,7 +83,7 @@ public class PropertyTraverser
     {
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = propertyRecords.getOrLoad( nextProp, null, cursorTracer ).forReadingData();
+            PropertyRecord propRecord = propertyRecords.getOrLoad( nextProp, null, cursorContext ).forReadingData();
             for ( PropertyBlock propBlock : propRecord )
             {
                 collector.accept( propBlock );
@@ -99,7 +99,7 @@ public class PropertyTraverser
         long nextIdToFetch = primitive.getNextProp();
         while ( nextIdToFetch != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = propertyRecords.getOrLoad( nextIdToFetch, primitive, cursorTracer ).forReadingLinkage();
+            PropertyRecord propRecord = propertyRecords.getOrLoad( nextIdToFetch, primitive, cursorContext ).forReadingLinkage();
             toCheck.add( propRecord );
             assert propRecord.inUse() : primitive + "->"
                                         + Arrays.toString( toCheck.toArray() );

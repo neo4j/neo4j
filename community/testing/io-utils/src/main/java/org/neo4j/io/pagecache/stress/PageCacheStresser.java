@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.util.concurrent.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -119,8 +119,7 @@ public class PageCacheStresser
         {
             stresser.verifyCounts();
         }
-        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( PAGE_CACHE_STRESSER );
-              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK, CursorContext.NULL ) )
         {
             while ( cursor.next() )
             {

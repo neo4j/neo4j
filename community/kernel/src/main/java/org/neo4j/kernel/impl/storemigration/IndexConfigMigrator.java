@@ -33,7 +33,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.logging.Log;
@@ -85,13 +85,13 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     private void migrateIndexConfigs( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, String versionToMigrateTo )
             throws IOException, KernelException
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_CONFIG_MIGRATION_TAG );
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_CONFIG_MIGRATION_TAG ) );
                 var ruleAccess = storageEngineFactory.schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService,
-                versionToMigrateTo, pageCacheTracer, cursorTracer, memoryTracker ) )
+                versionToMigrateTo, pageCacheTracer, cursorContext, memoryTracker ) )
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {
-                SchemaRule upgraded = migrateIndexConfig( rule, directoryLayout, fs, pageCache, indexProviderMap, log, cursorTracer );
+                SchemaRule upgraded = migrateIndexConfig( rule, directoryLayout, fs, pageCache, indexProviderMap, log, cursorContext );
 
                 if ( upgraded != rule )
                 {
@@ -102,7 +102,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
     }
 
     public static SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout, FileSystemAbstraction fs, PageCache pageCache,
-            IndexProviderMap indexProviderMap, Log log, PageCursorTracer cursorTracer ) throws IOException
+            IndexProviderMap indexProviderMap, Log log, CursorContext cursorContext ) throws IOException
     {
         if ( rule instanceof IndexDescriptor )
         {
@@ -112,7 +112,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
             IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( provider.getKey(), provider.getVersion() );
 
-            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, cursorTracer, log );
+            IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, cursorContext, log );
 
             IndexDescriptor newIndexReference = old.withIndexConfig( indexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );

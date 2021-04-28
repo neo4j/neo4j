@@ -23,7 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.util.VisibleForTesting;
 
@@ -36,10 +36,10 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * @param forceConsecutiveAllocation if {@code true} the returned {@link IdRange} will guarantee that the allocation is a range of IDs
      * where all IDs are consecutive, i.e. an empty {@link IdRange#getDefragIds()}. If {@code false} there may be some of the allocated IDs
      * non-consecutive, i.e. returned as part of {@link IdRange#getDefragIds()}.
-     * @param cursorTracer for tracing page accesses.
+     * @param cursorContext for tracing page accesses.
      * @return an {@link IdRange} containing the allocated IDs.
      */
-    IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer cursorTracer );
+    IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext );
 
     /**
      * @param id the highest in use + 1
@@ -50,14 +50,14 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     long getHighestWritten();
     long getHighId();
     long getHighestPossibleIdInUse();
-    Marker marker( PageCursorTracer cursorTracer );
+    Marker marker( CursorContext cursorContext );
 
     @Override
     void close();
     long getNumberOfIdsInUse();
     long getDefragCount();
 
-    void checkpoint( PageCursorTracer cursorTracer );
+    void checkpoint( CursorContext cursorContext );
 
     /**
      * Does some maintenance. This operation isn't critical for the functionality of an IdGenerator, but may make it perform better.
@@ -65,23 +65,23 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * but letting a maintenance thread calling it may take some burden off of main request threads.
      *
      * @param awaitOngoing awaits any ongoing maintenance operation if another thread does such.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      */
-    void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer );
+    void maintenance( boolean awaitOngoing, CursorContext cursorContext );
 
     /**
      * Starts the id generator, signaling that the database has entered normal operations mode.
      * Updates to this id generator may have come in before this call and those operations must be treated
      * as recovery operations.
      * @param freeIdsForRebuild access to stream of ids from the store to use if this id generator needs to be rebuilt when started
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      */
-    void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer ) throws IOException;
+    void start( FreeIds freeIdsForRebuild, CursorContext cursorContext ) throws IOException;
 
     /**
      * Clears internal ID caches. This should only be used in specific scenarios where ID states have changed w/o the cache knowing about it.
      */
-    void clearCache( PageCursorTracer cursorTracer );
+    void clearCache( CursorContext cursorContext );
 
     interface Marker extends AutoCloseable
     {
@@ -102,15 +102,15 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public long nextId( PageCursorTracer cursorTracer )
+        public long nextId( CursorContext cursorContext )
         {
-            return delegate.nextId( cursorTracer );
+            return delegate.nextId( cursorContext );
         }
 
         @Override
-        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer cursorTracer )
+        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
         {
-            return delegate.nextIdBatch( size, forceConsecutiveAllocation, cursorTracer );
+            return delegate.nextIdBatch( size, forceConsecutiveAllocation, cursorContext );
         }
 
         @Override
@@ -144,9 +144,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public Marker marker( PageCursorTracer cursorTracer )
+        public Marker marker( CursorContext cursorContext )
         {
-            return delegate.marker( cursorTracer );
+            return delegate.marker( cursorContext );
         }
 
         @Override
@@ -168,33 +168,33 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public void checkpoint( PageCursorTracer cursorTracer )
+        public void checkpoint( CursorContext cursorContext )
         {
-            delegate.checkpoint( cursorTracer );
+            delegate.checkpoint( cursorContext );
         }
 
         @Override
-        public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
+        public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
         {
-            delegate.maintenance( awaitOngoing, cursorTracer );
+            delegate.maintenance( awaitOngoing, cursorContext );
         }
 
         @Override
-        public void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer ) throws IOException
+        public void start( FreeIds freeIdsForRebuild, CursorContext cursorContext ) throws IOException
         {
-            delegate.start( freeIdsForRebuild, cursorTracer );
+            delegate.start( freeIdsForRebuild, cursorContext );
         }
 
         @Override
-        public void clearCache( PageCursorTracer cursorTracer )
+        public void clearCache( CursorContext cursorContext )
         {
-            delegate.clearCache( cursorTracer );
+            delegate.clearCache( cursorContext );
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+        public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
         {
-            return delegate.consistencyCheck( reporterFactory, cursorTracer );
+            return delegate.consistencyCheck( reporterFactory, cursorContext );
         }
     }
 

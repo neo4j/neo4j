@@ -77,7 +77,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -140,7 +140,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -889,7 +889,7 @@ class BatchInsertTest
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
-        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
+        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
@@ -909,7 +909,7 @@ class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
         verify( populator ).create();
-        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ), any( PageCursorTracer.class ) );
+        verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ), any( CursorContext.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true, NULL );
         verify( provider ).stop();
@@ -928,7 +928,7 @@ class BatchInsertTest
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
-        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
+        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( accessor );
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
@@ -949,7 +949,7 @@ class BatchInsertTest
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ),
-                any( PageCursorTracer.class ) );
+                any( CursorContext.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true, NULL );
         verify( provider ).stop();
@@ -971,7 +971,7 @@ class BatchInsertTest
         when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
         when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
-        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
+        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( accessor );
 
@@ -989,7 +989,7 @@ class BatchInsertTest
         verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( c -> c.contains( add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ) ) &&
-                                               c.contains( add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ), any( PageCursorTracer.class ) );
+                                               c.contains( add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ), any( CursorContext.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
         verify( populator ).close( true, NULL );
         verify( provider ).stop();
@@ -1500,7 +1500,7 @@ class BatchInsertTest
                     new CountsBuilder()
                     {
                         @Override
-                        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                        public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
                         {
                             throw new UnsupportedOperationException( "Should not be required" );
                         }

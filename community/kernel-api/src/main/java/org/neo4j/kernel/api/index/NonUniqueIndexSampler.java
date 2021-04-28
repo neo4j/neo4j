@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Builds index sample.
@@ -37,9 +37,9 @@ public interface NonUniqueIndexSampler
 
     void exclude( String value, long decrement );
 
-    IndexSample sample( PageCursorTracer cursorTracer );
+    IndexSample sample( CursorContext cursorContext );
 
-    IndexSample sample( int numDocs, PageCursorTracer cursorTracer );
+    IndexSample sample( int numDocs, CursorContext cursorContext );
 
     abstract class Adapter implements NonUniqueIndexSampler
     {

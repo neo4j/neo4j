@@ -33,7 +33,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.AllEntriesTokenScanReader;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
@@ -70,7 +70,7 @@ class LegacyDynamicIndexStoreViewTest
     @BeforeEach
     void setUp()
     {
-        when( labelScanStore.allEntityTokenRanges( PageCursorTracer.NULL ) ).thenReturn( nodeLabelRanges );
+        when( labelScanStore.allEntityTokenRanges( CursorContext.NULL ) ).thenReturn( nodeLabelRanges );
     }
 
     @AfterEach

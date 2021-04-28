@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Seeks and allows read access to data in a {@link GBPTree}. The interaction is cursor-like, where the next item is visited
@@ -74,10 +74,10 @@ public interface Seeker<KEY,VALUE> extends Closeable
          *
          * @param fromInclusive lower bound of the range to seek (inclusive).
          * @param toExclusive higher bound of the range to seek (exclusive).
-         * @param cursorTracer underlying page cursor tracer
+         * @param cursorContext underlying page cursor context
          * @return a {@link Seeker} used to iterate over the hits within the specified key range.
          * @throws IOException on error reading from index.
          */
-        Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, PageCursorTracer cursorTracer ) throws IOException;
+        Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, CursorContext cursorContext ) throws IOException;
     }
 }

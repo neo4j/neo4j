@@ -30,7 +30,7 @@ import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -323,7 +323,7 @@ public class LockVerificationMonitor implements LoadMonitor
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
             PropertyRecord record = readRecord( id, propertyStore );
-            propertyStore.ensureHeavy( record, PageCursorTracer.NULL );
+            propertyStore.ensureHeavy( record, CursorContext.NULL );
             return record;
         }
 
@@ -332,7 +332,7 @@ public class LockVerificationMonitor implements LoadMonitor
         {
             try
             {
-                return schemaRuleAccess.loadSingleSchemaRule( id, PageCursorTracer.NULL );
+                return schemaRuleAccess.loadSingleSchemaRule( id, CursorContext.NULL );
             }
             catch ( MalformedSchemaRuleException e )
             {
@@ -348,7 +348,7 @@ public class LockVerificationMonitor implements LoadMonitor
 
         private <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )
         {
-            return store.getRecord( id, store.newRecord(), RecordLoad.ALWAYS, PageCursorTracer.NULL );
+            return store.getRecord( id, store.newRecord(), RecordLoad.ALWAYS, CursorContext.NULL );
         }
     }
 }

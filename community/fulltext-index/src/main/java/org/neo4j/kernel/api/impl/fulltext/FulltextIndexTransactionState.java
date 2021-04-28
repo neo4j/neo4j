@@ -39,7 +39,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -75,13 +75,13 @@ class FulltextIndexTransactionState implements Closeable
         txStateVisitor = new FulltextIndexTransactionStateVisitor( descriptor, propertyNames, modifiedEntityIdsInThisTransaction, writer );
     }
 
-    SearcherReference maybeUpdate( QueryContext context, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    SearcherReference maybeUpdate( QueryContext context, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         if ( currentSearcher == null || lastUpdateRevision != context.getTransactionStateOrNull().getDataRevision() )
         {
             try
             {
-                updateSearcher( context, cursorTracer, memoryTracker );
+                updateSearcher( context, cursorContext, memoryTracker );
             }
             catch ( Exception e )
             {
@@ -91,7 +91,7 @@ class FulltextIndexTransactionState implements Closeable
         return currentSearcher;
     }
 
-    private void updateSearcher( QueryContext context, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws Exception
+    private void updateSearcher( QueryContext context, CursorContext cursorContext, MemoryTracker memoryTracker ) throws Exception
     {
         Read read = context.getRead();
         CursorFactory cursors = context.cursors();
@@ -99,9 +99,9 @@ class FulltextIndexTransactionState implements Closeable
         modifiedEntityIdsInThisTransaction.clear(); // Clear this, so we don't filter out entities who have had their changes reversed since last time.
         writer.resetWriterState();
 
-        try ( NodeCursor nodeCursor = visitingNodes ? cursors.allocateFullAccessNodeCursor( cursorTracer ) : null;
-              RelationshipScanCursor relationshipCursor = visitingNodes ? null : cursors.allocateRelationshipScanCursor( cursorTracer );
-              PropertyCursor propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorTracer, memoryTracker ) )
+        try ( NodeCursor nodeCursor = visitingNodes ? cursors.allocateFullAccessNodeCursor( cursorContext ) : null;
+              RelationshipScanCursor relationshipCursor = visitingNodes ? null : cursors.allocateRelationshipScanCursor( cursorContext );
+              PropertyCursor propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorContext, memoryTracker ) )
         {
             state.accept( txStateVisitor.init( read, nodeCursor, relationshipCursor, propertyCursor ) );
         }

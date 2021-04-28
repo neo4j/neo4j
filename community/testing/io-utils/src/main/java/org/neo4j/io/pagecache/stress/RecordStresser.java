@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +37,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 public class RecordStresser implements Callable<Void>
 {
-    private static final String RECORD_STRESSER = "recordStresser";
     private final PagedFile pagedFile;
     private final Condition condition;
     private final int maxRecords;
@@ -70,8 +69,7 @@ public class RecordStresser implements Callable<Void>
         Random random = new Random();
         int recordsPerPage = format.getRecordsPerPage();
         int recordSize = format.getRecordSize();
-        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( RECORD_STRESSER );
-              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, CursorContext.NULL ) )
         {
             while ( !condition.fulfilled() )
             {
@@ -103,8 +101,7 @@ public class RecordStresser implements Callable<Void>
     public void verifyCounts() throws IOException
     {
         long actualSum = 0;
-        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( RECORD_STRESSER );
-              PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, CursorContext.NULL ) )
         {
             while ( cursor.next() )
             {

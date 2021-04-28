@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -83,18 +84,18 @@ public class CommitProcessTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCommandCreation" );
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCommandCreation" ) );
               var reader = storageEngine.newReader() )
         {
-            assertZeroCursor( cursorTracer );
-            var context = storageEngine.newCommandCreationContext( PageCursorTracer.NULL, INSTANCE );
+            assertZeroCursor( cursorContext );
+            var context = storageEngine.newCommandCreationContext( CursorContext.NULL, INSTANCE );
             List<StorageCommand> commands = new ArrayList<>();
             var txState = new TxState();
             txState.nodeDoAddLabel( 1, sourceId );
 
-            storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorTracer, INSTANCE );
+            storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorContext, INSTANCE );
 
-            assertCursor( cursorTracer, 1 );
+            assertCursor( cursorContext, 1 );
         }
     }
 
@@ -103,13 +104,13 @@ public class CommitProcessTracingIT
     {
         var transaction = new PhysicalTransactionRepresentation( emptyList(), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEmptyTransactionApply" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEmptyTransactionApply" ) ) )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            commitProcess.commit( new TransactionToApply( transaction, cursorTracer ), NULL, EXTERNAL );
+            commitProcess.commit( new TransactionToApply( transaction, cursorContext ), NULL, EXTERNAL );
 
-            assertCursor( cursorTracer, 2 );
+            assertCursor( cursorContext, 2 );
         }
     }
 
@@ -118,25 +119,27 @@ public class CommitProcessTracingIT
     {
         var transaction = new PhysicalTransactionRepresentation( List.of( new Command.NodeCountsCommand( 1, 2 ) ), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionApply" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionApply" ) ) )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            commitProcess.commit( new TransactionToApply( transaction, cursorTracer ), NULL, EXTERNAL );
+            commitProcess.commit( new TransactionToApply( transaction, cursorContext ), NULL, EXTERNAL );
 
-            assertCursor( cursorTracer, 3 );
+            assertCursor( cursorContext, 3 );
         }
     }
 
-    private void assertCursor( PageCursorTracer cursorTracer, int expected )
+    private void assertCursor( CursorContext cursorContext, int expected )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( expected );
         assertThat( cursorTracer.unpins() ).isEqualTo( expected );
         assertThat( cursorTracer.hits() ).isEqualTo( expected );
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();

@@ -26,7 +26,7 @@ import java.util.function.LongConsumer;
 import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -71,7 +71,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     private final TransactionRepresentation transactionRepresentation;
     private long transactionId;
     private final VersionContextSupplier versionContextSupplier;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private TransactionToApply nextTransactionInBatch;
 
     // These fields are provided by commit process, storage engine, or recovery process
@@ -82,32 +82,32 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
      */
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, PageCursorTracer cursorTracer )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, CursorContext cursorContext )
     {
-        this( transactionRepresentation, EmptyVersionContextSupplier.EMPTY, cursorTracer );
+        this( transactionRepresentation, EmptyVersionContextSupplier.EMPTY, cursorContext );
     }
 
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
      */
     public TransactionToApply( TransactionRepresentation transactionRepresentation, VersionContextSupplier versionContextSupplier,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, versionContextSupplier, cursorTracer );
+        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, versionContextSupplier, cursorContext );
     }
 
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, PageCursorTracer cursorTracer )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, CursorContext cursorContext )
     {
-        this( transactionRepresentation, transactionId, EmptyVersionContextSupplier.EMPTY, cursorTracer );
+        this( transactionRepresentation, transactionId, EmptyVersionContextSupplier.EMPTY, cursorContext );
     }
 
     public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, VersionContextSupplier versionContextSupplier,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         this.transactionRepresentation = transactionRepresentation;
         this.transactionId = transactionId;
         this.versionContextSupplier = versionContextSupplier;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     // These methods are called by the user when building a batch
@@ -118,14 +118,14 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
 
     public void publishAsCommitted()
     {
-        commitment.publishAsCommitted( cursorTracer );
+        commitment.publishAsCommitted( cursorContext );
     }
 
     public void publishAsClosed()
     {
         if ( commitment.markedAsCommitted() )
         {
-            commitment.publishAsClosed( cursorTracer );
+            commitment.publishAsClosed( cursorContext );
         }
     }
 
@@ -152,9 +152,9 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     }
 
     @Override
-    public PageCursorTracer cursorTracer()
+    public CursorContext cursorContext()
     {
-        return cursorTracer;
+        return cursorContext;
     }
 
     @Override

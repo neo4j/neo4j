@@ -28,7 +28,7 @@ import java.util.Objects;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.lang.Math.toIntExact;
 
@@ -42,7 +42,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     protected final MutableMap<RelationshipKey,MutableLong> relationshipCounts = UnifiedMap.newMap();
 
     @Override
-    public long nodeCount( int labelId, PageCursorTracer cursorTracer )
+    public long nodeCount( int labelId, CursorContext cursorContext )
     {
         return nodeCounts.getIfAbsent( labelId, DEFAULT_COUNT );
     }
@@ -57,7 +57,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     }
 
     @Override
-    public long relationshipCount( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
     {
         RelationshipKey relationshipKey = new RelationshipKey( startLabelId, typeId, endLabelId );
         MutableLong counts = relationshipCounts.get( relationshipKey );
@@ -81,7 +81,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     }
 
     @Override
-    public void accept( CountsVisitor visitor, PageCursorTracer cursorTracer )
+    public void accept( CountsVisitor visitor, CursorContext cursorContext )
     {
         nodeCounts.forEachKeyValue( ( id, count ) -> visitor.visitNodeCount( toIntExact( id ), count ) );
         relationshipCounts.forEachKeyValue( ( k, count ) -> visitor.visitRelationshipCount( k.startLabelId, k.typeId, k.endLabelId, count.longValue() ) );

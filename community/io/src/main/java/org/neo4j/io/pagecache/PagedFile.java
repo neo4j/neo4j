@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * The representation of a file that has been mapped into the associated page cache.
@@ -132,12 +132,12 @@ public interface PagedFile extends AutoCloseable
      * @param pf_flags A bitmap of <code>PF_*</code> constants composed with
      * the bitwise-OR operator, that expresses the desired
      * locking behaviour, and other hints.
-     * @param tracer underlying page cursor tracer
+     * @param context underlying page cursor context
      * @return A PageCursor in its initial unbound state.
      * Never <code>null</code>.
      * @throws IOException if there was an error accessing the underlying file.
      */
-    PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException;
+    PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException;
 
     /**
      * Get the size of the file-pages, in bytes.

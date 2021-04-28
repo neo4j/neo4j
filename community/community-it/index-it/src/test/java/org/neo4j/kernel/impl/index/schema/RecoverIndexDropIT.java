@@ -34,7 +34,7 @@ import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -70,7 +70,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 /**
  * Issue came up when observing that recovering an INDEX DROP command didn't actually call {@link IndexProxy#drop()},
  * and actually did nothing to that {@link IndexProxy} except removing it from its {@link IndexMap}.
- * This would have {@link IndexingService} forget about that index and at shutdown not call {@link IndexProxy#close(PageCursorTracer)},
+ * This would have {@link IndexingService} forget about that index and at shutdown not call {@link IndexProxy#close(CursorContext)},
  * resulting in open page cache files, for any page cache mapped native index files.
  *
  * This would be a problem if the INDEX DROP command was present in the transaction log, but the db had been killed

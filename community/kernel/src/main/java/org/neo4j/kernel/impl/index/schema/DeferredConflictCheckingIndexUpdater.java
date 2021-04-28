@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -65,16 +65,16 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     private final IndexUpdater actual;
     private final Supplier<ValueIndexReader> readerSupplier;
     private final IndexDescriptor indexDescriptor;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final Set<ValueTuple> touchedTuples = new HashSet<>();
 
     public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<ValueIndexReader> readerSupplier, IndexDescriptor indexDescriptor,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         this.actual = actual;
         this.readerSupplier = readerSupplier;
         this.indexDescriptor = indexDescriptor;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     @Override

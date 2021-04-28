@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -160,7 +160,7 @@ class LabelAndIndexUpdateBatchingIT
         TransactionToApply last = null;
         for ( TransactionRepresentation transactionRepresentation : transactions )
         {
-            TransactionToApply transaction = new TransactionToApply( transactionRepresentation, PageCursorTracer.NULL );
+            TransactionToApply transaction = new TransactionToApply( transactionRepresentation, CursorContext.NULL );
             if ( first == null )
             {
                 first = last = transaction;

@@ -28,7 +28,9 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -36,6 +38,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.OffloadIdValidator.ALWAYS_TRUE;
 import static org.neo4j.index.internal.gbptree.RawBytes.EMPTY_BYTES;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 @PageCacheExtension
 class OffloadStoreTracingTest
@@ -48,13 +51,13 @@ class OffloadStoreTracingTest
     private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout( false );
     private final DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
     private OffloadStoreImpl<RawBytes,RawBytes> offloadStore;
-    private PageCursorTracer cursorTracer;
+    private CursorContext cursorContext;
     private PagedFile pagedFile;
 
     @BeforeEach
     void setUp() throws IOException
     {
-        cursorTracer = pageCacheTracer.createPageCursorTracer( "testCursorTracer" );
+        cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "testCursorTracer" ) );
         pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize(), "neo4j" );
         OffloadPageCursorFactory pcFactory = pagedFile::io;
         var idProvider = new FreeListIdProvider( pagedFile, 10 );
@@ -73,10 +76,10 @@ class OffloadStoreTracingTest
     @Test
     void tracePageCacheAccessOnKeyWrite() throws IOException
     {
-        cursorTracer.reportEvents();
+        cursorContext.getCursorTracer().reportEvents();
         assertZeroCursor();
 
-        offloadStore.writeKey( EMPTY_BYTES, 0, 1, cursorTracer );
+        offloadStore.writeKey( EMPTY_BYTES, 0, 1, cursorContext );
 
         assertWriteCursorEvents();
     }
@@ -84,10 +87,10 @@ class OffloadStoreTracingTest
     @Test
     void tracePageCacheAccessOnKeyValueWrite() throws IOException
     {
-        cursorTracer.reportEvents();
+        cursorContext.getCursorTracer().reportEvents();
         assertZeroCursor();
 
-        offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 1, cursorTracer );
+        offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 1, cursorContext );
 
         assertWriteCursorEvents();
     }
@@ -95,10 +98,11 @@ class OffloadStoreTracingTest
     @Test
     void tracePageCacheAccessOnFree() throws IOException
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         cursorTracer.reportEvents();
         assertZeroCursor();
 
-        offloadStore.free( 1, 1, 1, cursorTracer );
+        offloadStore.free( 1, 1, 1, cursorContext );
 
         assertThat( cursorTracer.hits() ).isEqualTo( 0 );
         assertThat( cursorTracer.faults() ).isEqualTo( 1 );
@@ -109,11 +113,11 @@ class OffloadStoreTracingTest
     @Test
     void tracePageCacheAccessOnKeyRead() throws IOException
     {
-        long id = offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 2, cursorTracer );
-        cursorTracer.reportEvents();
+        long id = offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 2, cursorContext );
+        cursorContext.getCursorTracer().reportEvents();
         assertZeroCursor();
 
-        offloadStore.readKey( id, EMPTY_BYTES, cursorTracer );
+        offloadStore.readKey( id, EMPTY_BYTES, cursorContext );
 
         assertReadCursorEvents();
     }
@@ -121,11 +125,11 @@ class OffloadStoreTracingTest
     @Test
     void tracePageCacheAccessOnKeyValueRead() throws IOException
     {
-        long id = offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 2, cursorTracer );
-        cursorTracer.reportEvents();
+        long id = offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 2, cursorContext );
+        cursorContext.getCursorTracer().reportEvents();
         assertZeroCursor();
 
-        offloadStore.readKeyValue( id, EMPTY_BYTES, EMPTY_BYTES, cursorTracer );
+        offloadStore.readKeyValue( id, EMPTY_BYTES, EMPTY_BYTES, cursorContext );
 
         assertReadCursorEvents();
     }
@@ -133,17 +137,18 @@ class OffloadStoreTracingTest
     @Test
     void tracePageCacheAccessOnValueRead() throws IOException
     {
-        long id = offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 2, cursorTracer );
-        cursorTracer.reportEvents();
+        long id = offloadStore.writeKeyValue( EMPTY_BYTES, EMPTY_BYTES, 1, 2, cursorContext );
+        cursorContext.getCursorTracer().reportEvents();
         assertZeroCursor();
 
-        offloadStore.readValue( id, EMPTY_BYTES, cursorTracer );
+        offloadStore.readValue( id, EMPTY_BYTES, cursorContext );
 
         assertReadCursorEvents();
     }
 
     private void assertReadCursorEvents()
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         assertThat( cursorTracer.faults() ).isEqualTo( 0 );
         assertThat( cursorTracer.pins() ).isEqualTo( 1 );
@@ -152,6 +157,7 @@ class OffloadStoreTracingTest
 
     private void assertWriteCursorEvents()
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         assertThat( cursorTracer.faults() ).isEqualTo( 1 );
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
@@ -160,6 +166,7 @@ class OffloadStoreTracingTest
 
     private void assertZeroCursor()
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();

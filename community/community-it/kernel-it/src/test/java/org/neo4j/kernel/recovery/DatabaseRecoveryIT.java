@@ -65,7 +65,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -507,8 +507,8 @@ class DatabaseRecoveryIT
         RECORD record2 = store2.newRecord();
         for ( long id = store1.getNumberOfReservedLowIds(); id < maxHighId; id++ )
         {
-            store1.getRecord( id, record1, RecordLoad.CHECK, PageCursorTracer.NULL );
-            store2.getRecord( id, record2, RecordLoad.CHECK, PageCursorTracer.NULL );
+            store1.getRecord( id, record1, RecordLoad.CHECK, CursorContext.NULL );
+            store2.getRecord( id, record2, RecordLoad.CHECK, CursorContext.NULL );
             boolean deletedAndDynamicPropertyRecord = !record1.inUse() && store1 instanceof AbstractDynamicStore;
             if ( !deletedAndDynamicPropertyRecord )
             {
@@ -522,7 +522,7 @@ class DatabaseRecoveryIT
     private static void flush( GraphDatabaseService db ) throws IOException
     {
         var forceOperation = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class );
-        forceOperation.flushAndForce( PageCursorTracer.NULL );
+        forceOperation.flushAndForce( CursorContext.NULL );
     }
 
     private static void checkPoint( GraphDatabaseService db ) throws IOException
@@ -888,9 +888,9 @@ class DatabaseRecoveryIT
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
         {
-            return wrap( super.newUpdater( mode, cursorTracer ) );
+            return wrap( super.newUpdater( mode, cursorContext ) );
         }
 
         private IndexUpdater wrap( IndexUpdater actual )

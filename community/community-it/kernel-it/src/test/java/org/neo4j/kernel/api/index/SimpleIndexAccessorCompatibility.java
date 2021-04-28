@@ -47,6 +47,8 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
@@ -151,10 +153,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void tracePageCacheAccessOnConsistencyCheck()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
         {
-            accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), cursorTracer );
+            accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 2 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
             assertThat( cursorTracer.faults() ).isEqualTo( 2 );

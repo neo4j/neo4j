@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.util.Bits;
 
@@ -35,13 +35,13 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
     private boolean found;
     private final int label;
     private final DynamicArrayStore labelStore;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
-    HasLabelSubscriber( int label, DynamicArrayStore labelStore, PageCursorTracer cursorTracer )
+    HasLabelSubscriber( int label, DynamicArrayStore labelStore, CursorContext cursorContext )
     {
         this.label = label;
         this.labelStore = labelStore;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     boolean hasLabel()
@@ -56,7 +56,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
         {
             return true;
         }
-        labelStore.ensureHeavy( record, cursorTracer );
+        labelStore.ensureHeavy( record, cursorContext );
 
         if ( firstRecord )
         {

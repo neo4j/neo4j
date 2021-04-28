@@ -144,9 +144,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def writes() = transactionalContext.dataWrite
 
-  private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor( transactionalContext.kernelTransaction.pageCursorTracer() )
+  private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor( transactionalContext.kernelTransaction.cursorContext() )
 
-  private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor( transactionalContext.kernelTransaction.pageCursorTracer() )
+  private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor( transactionalContext.kernelTransaction.cursorContext() )
 
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
 
@@ -221,7 +221,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val cursor = allocateNodeCursor()
     val cursors = transactionalContext.cursors
-    val cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer()
+    val cursorContext = transactionalContext.kernelTransaction.cursorContext()
 
     try {
       val read = reads()
@@ -229,9 +229,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       if (!cursor.next()) ClosingIterator.empty
       else {
         val selectionCursor = dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types, cursorTracer)
-          case INCOMING => incomingCursor(cursors, cursor, types, cursorTracer)
-          case BOTH => allCursor(cursors, cursor, types, cursorTracer)
+          case OUTGOING => outgoingCursor(cursors, cursor, types, cursorContext)
+          case INCOMING => incomingCursor(cursors, cursor, types, cursorContext)
+          case BOTH => allCursor(cursors, cursor, types, cursorContext)
         }
         resources.trace(selectionCursor)
         new CursorIterator[RelationshipValue] {
@@ -259,14 +259,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       val read = reads()
       val cursors = transactionalContext.cursors
-      val cursorTracer = transactionalContext.kernelTransaction.pageCursorTracer()
+      val cursorContext = transactionalContext.kernelTransaction.cursorContext()
       read.singleNode(node, cursor)
       if (!cursor.next()) ClosingLongIterator.emptyClosingRelationshipIterator
       else {
         val selectionCursor = dir match {
-          case OUTGOING => outgoingCursor(cursors, cursor, types, cursorTracer)
-          case INCOMING => incomingCursor(cursors, cursor, types, cursorTracer)
-          case BOTH => allCursor(cursors, cursor, types, cursorTracer)
+          case OUTGOING => outgoingCursor(cursors, cursor, types, cursorContext)
+          case INCOMING => incomingCursor(cursors, cursor, types, cursorContext)
+          case BOTH => allCursor(cursors, cursor, types, cursorContext)
         }
         resources.trace(selectionCursor)
         new RelationshipCursorIterator(selectionCursor)
@@ -277,7 +277,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def getRelationshipsByType(session: TokenReadSession, relType: Int, indexOrder: IndexOrder): ClosingLongIterator = {
-    val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+    val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.cursorContext)
     resources.trace(cursor)
     val read = reads()
     read.relationshipTypeScan(session, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(relType))
@@ -288,16 +288,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def nodeCursor(): NodeCursor =
-    transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+    transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.cursorContext)
 
   override def relationshipScanCursor(): RelationshipScanCursor =
-    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+    transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
 
   override def propertyCursor(): PropertyCursor =
-    transactionalContext.cursors.allocatePropertyCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.tc.kernelTransaction().memoryTracker())
+    transactionalContext.cursors.allocatePropertyCursor(transactionalContext.kernelTransaction.cursorContext, transactionalContext.tc.kernelTransaction().memoryTracker())
 
   override def traversalCursor(): RelationshipTraversalCursor =
-    transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+    transactionalContext.cursors.allocateRelationshipTraversalCursor(transactionalContext.kernelTransaction.cursorContext)
 
   override def relationshipById(relationshipId: Long,
                                 startNodeId: Long,
@@ -453,7 +453,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def nodeLockingUniqueIndexSeek(index: IndexDescriptor,
                                           queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor = {
 
-    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.tc.kernelTransaction().memoryTracker())
+    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.cursorContext, transactionalContext.tc.kernelTransaction().memoryTracker())
     try {
       indexSearchMonitor.lockingUniqueIndexSeek(index, queries)
       if (queries.exists(q => q.value() eq Values.NO_VALUE)) {
@@ -1194,31 +1194,31 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   private def allocateAndTraceNodeCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+    val cursor = transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.cursorContext)
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceRelationshipScanCursor() = {
-    val cursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+    val cursor = transactionalContext.cursors.allocateRelationshipScanCursor(transactionalContext.kernelTransaction.cursorContext)
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceNodeValueIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.kernelTransaction.memoryTracker())
+    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.cursorContext, transactionalContext.kernelTransaction.memoryTracker())
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceRelationshipValueIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateRelationshipValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.kernelTransaction.memoryTracker())
+    val cursor = transactionalContext.cursors.allocateRelationshipValueIndexCursor(transactionalContext.kernelTransaction.cursorContext, transactionalContext.kernelTransaction.memoryTracker())
     resources.trace(cursor)
     cursor
   }
 
   private def allocateAndTraceNodeLabelIndexCursor() = {
-    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
+    val cursor = transactionalContext.cursors.allocateNodeLabelIndexCursor(transactionalContext.kernelTransaction.cursorContext)
     resources.trace(cursor)
     cursor
   }

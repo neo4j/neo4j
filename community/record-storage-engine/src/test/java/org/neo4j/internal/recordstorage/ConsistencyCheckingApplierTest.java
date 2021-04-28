@@ -29,7 +29,7 @@ import org.neo4j.internal.recordstorage.ConsistencyCheckingApplierFactory.Consis
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -80,11 +80,11 @@ class ConsistencyCheckingApplierTest
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME ), pageCache,
                 directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        checker = new ConsistencyCheckingApplier( relationshipStore, PageCursorTracer.NULL );
+        checker = new ConsistencyCheckingApplier( relationshipStore, CursorContext.NULL );
         BatchContext batchContext = mock( BatchContext.class );
         when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
         applier = new NeoStoreTransactionApplier( CommandVersion.AFTER, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, 0,
-                batchContext, PageCursorTracer.NULL );
+                batchContext, CursorContext.NULL );
         appliers = new TransactionApplier[]{checker, applier};
     }
 

@@ -49,7 +49,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
@@ -70,15 +71,16 @@ import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.
  * Additionally internal and leaf nodes on same level are linked both left and right (sibling pointers),
- * this to provide correct reading when concurrently {@link #writer(PageCursorTracer)}  modifying}
+ * this to provide correct reading when concurrently {@link #writer(CursorContext)}  modifying}
  * the tree.
  * <p>
- * Generation is incremented on {@link #checkpoint( PageCursorTracer)} check-pointing}.
- * Generation awareness allows for recovery from last {@link #checkpoint( PageCursorTracer)}, provided the same updates
+ * Generation is incremented on {@link #checkpoint(CursorContext)} check-pointing}.
+ * Generation awareness allows for recovery from last {@link #checkpoint(CursorContext)}, provided the same updates
  * will be replayed onto the index since that point in time.
  * <p>
  * Changes to tree nodes are made so that stable nodes (i.e. nodes that have survived at least one checkpoint)
@@ -108,9 +110,9 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * <p>
  * {@link GBPTree} is designed to be able to handle non-clean shutdown / crash, but needs external help
  * in order to do so.
- * {@link #writer(PageCursorTracer)}  Writes} happen to the tree and are made durable and
- * safe on next call to {@link #checkpoint( PageCursorTracer)}. Writes which happens after the last
- * {@link #checkpoint( PageCursorTracer)} are not safe if there's a {@link #close()} or JVM crash in between, i.e:
+ * {@link #writer(CursorContext)}  Writes} happen to the tree and are made durable and
+ * safe on next call to {@link #checkpoint(CursorContext)}. Writes which happens after the last
+ * {@link #checkpoint(CursorContext)} are not safe if there's a {@link #close()} or JVM crash in between, i.e:
  *
  * <pre>
  * w: write
@@ -275,8 +277,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
 
         /**
-         * Called when a {@link GBPTree#checkpoint( PageCursorTracer)} has been completed, but right before
-         * {@link GBPTree#writer(PageCursorTracer)} writers} are re-enabled.
+         * Called when a {@link GBPTree#checkpoint(CursorContext)} has been completed, but right before
+         * {@link GBPTree#writer(CursorContext)} writers} are re-enabled.
          */
         void checkpointCompleted();
 
@@ -387,9 +389,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final SingleWriter writer;
 
     /**
-     * Tells whether or not there have been made changes (using {@link #writer(PageCursorTracer)}) to this tree
-     * since last call to {@link #checkpoint( PageCursorTracer)}. This variable is set when calling {@link #writer(PageCursorTracer)}
-     * and cleared inside {@link #checkpoint( PageCursorTracer)}.
+     * Tells whether or not there have been made changes (using {@link #writer(CursorContext)}) to this tree
+     * since last call to {@link #checkpoint(CursorContext)}. This variable is set when calling {@link #writer(CursorContext)}
+     * and cleared inside {@link #checkpoint(CursorContext)}.
      */
     private volatile boolean changesSinceLastCheckpoint;
 
@@ -426,9 +428,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * Both stable and unstable generation are unsigned ints, i.e. 32 bits each.
      *
      * <ul>
-     * <li>stable generation, generation which has survived the last {@link #checkpoint( PageCursorTracer)}</li>
+     * <li>stable generation, generation which has survived the last {@link #checkpoint(CursorContext)}</li>
      * <li>unstable generation, current generation under evolution. This generation will be the
-     * {@link Generation#stableGeneration(long)} after the next {@link #checkpoint( PageCursorTracer)}</li>
+     * {@link Generation#stableGeneration(long)} after the next {@link #checkpoint(CursorContext)}</li>
      * </ul>
      */
     private volatile long generation;
@@ -566,7 +568,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
-     * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, PageCursorTracer)}
+     * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, CursorContext)}
      * or {@link #close()}
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
@@ -591,56 +593,53 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
 
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) ) )
         {
-            try
+            this.pagedFile = openOrCreate( pageCache, indexFile, cursorContext, databaseName, openOptions );
+            this.pageSize = pagedFile.pageSize();
+            closed = false;
+            TreeNodeSelector.Factory format;
+            if ( created )
             {
-                this.pagedFile = openOrCreate( pageCache, indexFile, cursorTracer, databaseName, openOptions );
-                this.pageSize = pagedFile.pageSize();
-                closed = false;
-                TreeNodeSelector.Factory format;
-                if ( created )
-                {
-                    format = TreeNodeSelector.selectByLayout( layout );
-                    writeMeta( layout, format, pagedFile, cursorTracer );
-                }
-                else
-                {
-                    Meta meta = readMeta( layout, pagedFile, cursorTracer );
-                    meta.verify( layout );
-                    format = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
-                }
-                this.freeList = new FreeListIdProvider( pagedFile, rootId );
-                OffloadStoreImpl<KEY,VALUE> offloadStore = buildOffload( layout, freeList, pagedFile, pageSize );
-                this.bTreeNode = format.create( pageSize, layout, offloadStore );
-                this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout, monitor ) );
+                format = TreeNodeSelector.selectByLayout( layout );
+                writeMeta( layout, format, pagedFile, cursorContext );
+            }
+            else
+            {
+                Meta meta = readMeta( layout, pagedFile, cursorContext );
+                meta.verify( layout );
+                format = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
+            }
+            this.freeList = new FreeListIdProvider( pagedFile, rootId );
+            OffloadStoreImpl<KEY,VALUE> offloadStore = buildOffload( layout, freeList, pagedFile, pageSize );
+            this.bTreeNode = format.create( pageSize, layout, offloadStore );
+            this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout, monitor ) );
 
-                // Create or load state
-                if ( created )
-                {
-                    initializeAfterCreation( headerWriter, cursorTracer );
-                }
-                else
-                {
-                    loadState( pagedFile, headerReader, cursorTracer );
-                }
-                this.monitor.startupState( clean );
+            // Create or load state
+            if ( created )
+            {
+                initializeAfterCreation( headerWriter, cursorContext );
+            }
+            else
+            {
+                loadState( pagedFile, headerReader, cursorContext );
+            }
+            this.monitor.startupState( clean );
 
-                // Prepare tree for action
-                dirtyOnStartup = !clean;
-                clean = false;
-                bumpUnstableGeneration();
-                forceState( cursorTracer );
-                cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup, name );
-            }
-            catch ( IOException e )
-            {
-                throw exitConstructor( new UncheckedIOException( e ) );
-            }
-            catch ( Throwable e )
-            {
-                throw exitConstructor( e );
-            }
+            // Prepare tree for action
+            dirtyOnStartup = !clean;
+            clean = false;
+            bumpUnstableGeneration();
+            forceState( cursorContext );
+            cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup, name );
+        }
+        catch ( IOException e )
+        {
+            throw exitConstructor( new UncheckedIOException( e ) );
+        }
+        catch ( Throwable e )
+        {
+            throw exitConstructor( e );
         }
     }
 
@@ -660,16 +659,16 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return new RuntimeException( throwable );
     }
 
-    private void initializeAfterCreation( Consumer<PageCursor> headerWriter, PageCursorTracer cursorTracer ) throws IOException
+    private void initializeAfterCreation( Consumer<PageCursor> headerWriter, CursorContext cursorContext ) throws IOException
     {
         // Initialize state
-        try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             TreeStatePair.initializeStatePages( cursor );
         }
 
         // Initialize index root node to a leaf node.
-        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             long stableGeneration = stableGeneration( generation );
             long unstableGeneration = unstableGeneration( generation );
@@ -678,21 +677,21 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
 
         // Initialize free-list
-        freeList.initializeAfterCreation( cursorTracer );
+        freeList.initializeAfterCreation( cursorContext );
         changesSinceLastCheckpoint = true;
 
         // Checkpoint to make the created root node stable. Forcing tree state also piggy-backs on this.
-        checkpoint( headerWriter, cursorTracer );
+        checkpoint( headerWriter, cursorContext );
         clean = true;
     }
 
-    private PagedFile openOrCreate( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer, String databaseName,
+    private PagedFile openOrCreate( PageCache pageCache, Path indexFile, CursorContext cursorContext, String databaseName,
             ImmutableSet<OpenOption> openOptions ) throws IOException, MetadataMismatchException
     {
         try
         {
             var pageCacheOptions = openOptions.newWithoutAll( asList( GBPTreeOpenOptions.values() ) );
-            return openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, pageCacheOptions );
+            return openExistingIndexFile( pageCache, indexFile, cursorContext, databaseName, pageCacheOptions );
         }
         catch ( NoSuchFileException e )
         {
@@ -708,7 +707,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private static PagedFile openExistingIndexFile( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer, String databaseName,
+    private static PagedFile openExistingIndexFile( PageCache pageCache, Path indexFile, CursorContext cursorContext, String databaseName,
             ImmutableSet<OpenOption> openOptions ) throws IOException, MetadataMismatchException
     {
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), databaseName, openOptions );
@@ -719,7 +718,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         try
         {
             // We're only interested in the page size really, so don't involve layout at this point
-            Meta meta = readMeta( null, pagedFile, cursorTracer );
+            Meta meta = readMeta( null, pagedFile, cursorContext );
             if ( meta.getPageSize() != pageCache.pageSize() )
             {
                 throw new MetadataMismatchException( format(
@@ -752,11 +751,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return pagedFile;
     }
 
-    private void loadState( PagedFile pagedFile, Header.Reader headerReader, PageCursorTracer cursorTracer ) throws IOException
+    private void loadState( PagedFile pagedFile, Header.Reader headerReader, CursorContext cursorContext ) throws IOException
     {
-        Pair<TreeState,TreeState> states = loadStatePages( pagedFile, cursorTracer );
+        Pair<TreeState,TreeState> states = loadStatePages( pagedFile, cursorContext );
         TreeState state = TreeStatePair.selectNewestValidState( states );
-        try ( PageCursor cursor = pagedFile.io( state.pageId(), PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( state.pageId(), PF_SHARED_READ_LOCK, cursorContext ) )
         {
             PageCursorUtil.goTo( cursor, "header data", state.pageId() );
             doReadHeader( headerReader, cursor );
@@ -779,20 +778,20 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link Path} containing the actual index
-     * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, PageCursorTracer)}
+     * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, CursorContext)}
      * or {@link #close()}
      * @param databaseName name of the database index file belongs to.
      * @throws IOException On page cache error
      * @throws MetadataMismatchException if some meta page is missing (tree not fully initialized)
      */
-    public static void readHeader( PageCache pageCache, Path indexFile, Header.Reader headerReader, String databaseName, PageCursorTracer cursorTracer )
+    public static void readHeader( PageCache pageCache, Path indexFile, Header.Reader headerReader, String databaseName, CursorContext cursorContext )
             throws IOException, MetadataMismatchException
     {
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, immutable.empty() ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorContext, databaseName, immutable.empty() ) )
         {
-            Pair<TreeState,TreeState> states = loadStatePages( pagedFile, cursorTracer );
+            Pair<TreeState,TreeState> states = loadStatePages( pagedFile, cursorContext );
             TreeState state = TreeStatePair.selectNewestValidState( states );
-            try ( PageCursor cursor = pagedFile.io( state.pageId(), PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( state.pageId(), PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 PageCursorUtil.goTo( cursor, "header data", state.pageId() );
                 doReadHeader( headerReader, cursor );
@@ -830,13 +829,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         headerReader.read( ByteBuffer.wrap( headerDataBytes ) );
     }
 
-    private void writeState( PagedFile pagedFile, Header.Writer headerWriter, PageCursorTracer cursorTracer ) throws IOException
+    private void writeState( PagedFile pagedFile, Header.Writer headerWriter, CursorContext cursorContext ) throws IOException
     {
-        Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorTracer );
+        Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorContext );
         TreeState oldestState = TreeStatePair.selectOldestOrInvalid( states );
         long pageToOverwrite = oldestState.pageId();
         Root root = this.root;
-        try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
             TreeState.write( cursor, stableGeneration( generation ), unstableGeneration( generation ),
@@ -844,21 +843,21 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                     freeList.lastId(), freeList.writePageId(), freeList.readPageId(),
                     freeList.writePos(), freeList.readPos(), clean );
 
-            writerHeader( pagedFile, headerWriter, other( states, oldestState ), cursor, cursorTracer );
+            writerHeader( pagedFile, headerWriter, other( states, oldestState ), cursor, cursorContext );
 
             checkOutOfBounds( cursor );
         }
     }
 
     private static void writerHeader( PagedFile pagedFile, Header.Writer headerWriter,
-            TreeState otherState, PageCursor cursor, PageCursorTracer cursorTracer ) throws IOException
+            TreeState otherState, PageCursor cursor, CursorContext cursorContext ) throws IOException
     {
         // Write/carry over header
         int headerOffset = cursor.getOffset();
         int headerDataOffset = getHeaderDataOffset( headerOffset );
         if ( otherState.isValid() || headerWriter != CARRY_OVER_PREVIOUS_HEADER )
         {
-            try ( PageCursor previousCursor = pagedFile.io( otherState.pageId(), PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor previousCursor = pagedFile.io( otherState.pageId(), PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
                 checkOutOfBounds( cursor );
@@ -887,15 +886,15 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     @VisibleForTesting
     public static void overwriteHeader( PageCache pageCache, Path indexFile, Consumer<PageCursor> headerWriter, String databaseName,
-            PageCursorTracer cursorTracer ) throws IOException
+            CursorContext cursorContext ) throws IOException
     {
         Header.Writer writer = replace( headerWriter );
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, immutable.empty() ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorContext, databaseName, immutable.empty() ) )
         {
-            Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorTracer );
+            Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorContext );
             TreeState newestValidState = TreeStatePair.selectNewestValidState( states );
             long pageToOverwrite = newestValidState.pageId();
-            try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
             {
                 PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
 
@@ -930,20 +929,20 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     /**
-     * Basically {@link #readStatePages(PagedFile, PageCursorTracer)} with some more checks, suitable for when first opening an index file,
+     * Basically {@link #readStatePages(PagedFile, CursorContext)} with some more checks, suitable for when first opening an index file,
      * not while running it and check pointing.
      *
      * @param pagedFile {@link PagedFile} to read the state pages from.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return both read state pages.
      * @throws MetadataMismatchException if state pages are missing (file is smaller than that) or if they are both empty.
      * @throws IOException on {@link PageCursor} error.
      */
-    private static Pair<TreeState,TreeState> loadStatePages( PagedFile pagedFile, PageCursorTracer cursorTracer ) throws MetadataMismatchException, IOException
+    private static Pair<TreeState,TreeState> loadStatePages( PagedFile pagedFile, CursorContext cursorContext ) throws MetadataMismatchException, IOException
     {
         try
         {
-            Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorTracer );
+            Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorContext );
             if ( states.getLeft().isEmpty() && states.getRight().isEmpty() )
             {
                 throw new MetadataMismatchException( "Index is not fully initialized since its state pages are empty" );
@@ -956,10 +955,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private static Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile, PageCursorTracer cursorTracer ) throws IOException
+    private static Pair<TreeState,TreeState> readStatePages( PagedFile pagedFile, CursorContext cursorContext ) throws IOException
     {
         Pair<TreeState,TreeState> states;
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             states = TreeStatePair.readStatePages(
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -967,74 +966,74 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return states;
     }
 
-    private static PageCursor openMetaPageCursor( PagedFile pagedFile, int pfFlags, PageCursorTracer pageCursorTracer ) throws IOException
+    private static PageCursor openMetaPageCursor( PagedFile pagedFile, int pfFlags, CursorContext cursorContext ) throws IOException
     {
-        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, pfFlags, pageCursorTracer );
+        PageCursor metaCursor = pagedFile.io( IdSpace.META_PAGE_ID, pfFlags, cursorContext );
         PageCursorUtil.goTo( metaCursor, "meta page", IdSpace.META_PAGE_ID );
         return metaCursor;
     }
 
-    private static <KEY,VALUE> Meta readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile, PageCursorTracer cursorTracer )
+    private static <KEY,VALUE> Meta readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile, CursorContext cursorContext )
             throws IOException
     {
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             return Meta.read( metaCursor, layout );
         }
     }
 
-    private void writeMeta( Layout<KEY,VALUE> layout, TreeNodeSelector.Factory format, PagedFile pagedFile, PageCursorTracer cursorTracer ) throws IOException
+    private void writeMeta( Layout<KEY,VALUE> layout, TreeNodeSelector.Factory format, PagedFile pagedFile, CursorContext cursorContext ) throws IOException
     {
         Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), pageSize, layout );
-        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             meta.write( metaCursor, layout );
         }
     }
 
     /**
-     * Utility for {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer) acquiring} a new {@link PageCursor},
+     * Utility for {@link PagedFile#io(long, int, CursorContext) acquiring} a new {@link PageCursor},
      * placed at the current root id and which have had its {@link PageCursor#next()} called-
      *
-     * @param pfFlags flags sent into {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)}.
-     * @return {@link PageCursor} result from call to {@link PagedFile#io(long, int, org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer)} after it has been
+     * @param pfFlags flags sent into {@link PagedFile#io(long, int, CursorContext)}.
+     * @return {@link PageCursor} result from call to {@link PagedFile#io(long, int, CursorContext)} after it has been
      * placed at the current root and has had {@link PageCursor#next()} called.
      * @throws IOException on {@link PageCursor} error.
      */
-    private PageCursor openRootCursor( int pfFlags, PageCursorTracer cursorTracer ) throws IOException
+    private PageCursor openRootCursor( int pfFlags, CursorContext cursorContext ) throws IOException
     {
-        PageCursor cursor = pagedFile.io( 0L /*Ignored*/, pfFlags, cursorTracer );
+        PageCursor cursor = pagedFile.io( 0L /*Ignored*/, pfFlags, cursorContext );
         root.goTo( cursor );
         return cursor;
     }
 
     @Override
-    public Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, PageCursorTracer cursorTracer ) throws IOException
+    public Seeker<KEY,VALUE> seek( KEY fromInclusive, KEY toExclusive, CursorContext cursorContext ) throws IOException
     {
-        return seekInternal( fromInclusive, toExclusive, cursorTracer, DEFAULT_MAX_READ_AHEAD, SeekCursor.NO_MONITOR, LEAF_LEVEL );
+        return seekInternal( fromInclusive, toExclusive, cursorContext, DEFAULT_MAX_READ_AHEAD, SeekCursor.NO_MONITOR, LEAF_LEVEL );
     }
 
-    private Seeker<KEY,VALUE> seekInternal( KEY fromInclusive, KEY toExclusive, PageCursorTracer cursorTracer, int readAheadLength, SeekCursor.Monitor monitor,
+    private Seeker<KEY,VALUE> seekInternal( KEY fromInclusive, KEY toExclusive, CursorContext cursorContext, int readAheadLength, SeekCursor.Monitor monitor,
             int searchLevel ) throws IOException
     {
         long generation = this.generation;
         long stableGeneration = stableGeneration( generation );
         long unstableGeneration = unstableGeneration( generation );
 
-        PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorTracer );
+        PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext );
         long rootGeneration = root.goTo( cursor );
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchupSupplier.get(), rootGeneration,
-                exceptionDecorator, readAheadLength, searchLevel, monitor, cursorTracer );
+                exceptionDecorator, readAheadLength, searchLevel, monitor, cursorContext );
     }
 
     /**
      * Partitions the provided key range into {@code numberOfPartitions} partitions and instantiates a {@link Seeker} for each.
      * Caller can seek through the partitions in parallel. Caller is responsible for closing the returned {@link Seeker seekers}.
      *
-     * See {@link #partitionedSeekInternal(Object, Object, int, Seeker.Factory, PageCursorTracer)} for details on implementation.
+     * See {@link #partitionedSeekInternal(Object, Object, int, Seeker.Factory, CursorContext)} for details on implementation.
      *
      * @param fromInclusive lower bound of the target range to seek (inclusive).
      * @param toExclusive higher bound of the target range to seek (exclusive).
@@ -1045,9 +1044,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @throws IOException on error reading from index.
      */
     public Collection<Seeker<KEY,VALUE>> partitionedSeek( KEY fromInclusive, KEY toExclusive, int numberOfPartitions,
-            PageCursorTracer cursorTracer ) throws IOException
+            CursorContext cursorContext ) throws IOException
     {
-        return partitionedSeekInternal( fromInclusive, toExclusive, numberOfPartitions, this, cursorTracer );
+        return partitionedSeekInternal( fromInclusive, toExclusive, numberOfPartitions, this, cursorContext );
     }
 
     /**
@@ -1087,13 +1086,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      *                           number of partitions may be returned. The number of partitions will never be higher than the provided
      *                           {@code numberOfPartitions}.
      * @param seekerFactory {@link Seeker.Factory} factory method that create the seekers for each partition.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return {@link Collection} of {@link Seeker seekers} placed on each partition. The number of partitions is given by the size of
      *         the collection.
      * @throws IOException on error accessing the index.
      */
     private Collection<Seeker<KEY,VALUE>> partitionedSeekInternal( KEY fromInclusive, KEY toExclusive, int numberOfPartitions,
-            Seeker.Factory<KEY,VALUE> seekerFactory, PageCursorTracer cursorTracer )
+            Seeker.Factory<KEY,VALUE> seekerFactory, CursorContext cursorContext )
             throws IOException
     {
         Preconditions.checkArgument( layout.compare( fromInclusive, toExclusive ) <= 0, "Partitioned seek only supports forward seeking for the time being" );
@@ -1107,7 +1106,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             SeekDepthMonitor depthMonitor = new SeekDepthMonitor();
             KEY localFrom = layout.copyKey( fromInclusive, layout.newKey() );
             KEY localTo = layout.copyKey( toExclusive, layout.newKey() );
-            try ( Seeker<KEY,VALUE> seek = seekInternal( localFrom, localTo, cursorTracer, DEFAULT_MAX_READ_AHEAD, depthMonitor, searchLevel ) )
+            try ( Seeker<KEY,VALUE> seek = seekInternal( localFrom, localTo, cursorContext, DEFAULT_MAX_READ_AHEAD, depthMonitor, searchLevel ) )
             {
                 if ( depthMonitor.reachedLeafLevel )
                 {
@@ -1136,7 +1135,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             for ( Pair<KEY,KEY> partition : partitioning.partition( splitterKeysInRange, fromInclusive, toExclusive, numberOfPartitions ) )
             {
-                seekers.add( seekerFactory.seek( partition.getLeft(), partition.getRight(), cursorTracer ) );
+                seekers.add( seekerFactory.seek( partition.getLeft(), partition.getRight(), cursorContext ) );
             }
             success = true;
         }
@@ -1154,11 +1153,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * Calculates an estimate of number of keys in this tree in O(log(n)) time. The number is only an estimate and may make its decision on a
      * concurrently changing tree, but should usually be correct within a couple of percents margin.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      *
      * @return an estimate of number of keys in the tree.
      */
-    public long estimateNumberOfEntriesInTree( PageCursorTracer cursorTracer ) throws IOException
+    public long estimateNumberOfEntriesInTree( CursorContext cursorContext ) throws IOException
     {
         KEY low = layout.newKey();
         layout.initializeAsLowest( low );
@@ -1171,7 +1170,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             monitor.clear();
             Seeker.Factory<KEY,VALUE> monitoredSeeks =
                     ( fromInclusive, toExclusive, tracer ) -> seekInternal( fromInclusive, toExclusive, tracer, 1, monitor, LEAF_LEVEL );
-            Collection<Seeker<KEY,VALUE>> seekers = partitionedSeekInternal( low, high, sampleSize, monitoredSeeks, cursorTracer );
+            Collection<Seeker<KEY,VALUE>> seekers = partitionedSeekInternal( low, high, sampleSize, monitoredSeeks, cursorContext );
             try
             {
                 for ( Seeker<KEY,VALUE> partition : seekers )
@@ -1191,7 +1190,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     /**
      * Checkpoints and flushes any pending changes to storage. After a successful call to this method
-     * the data is durable and safe. {@link #writer(PageCursorTracer)} Changes} made after this call and until crashing or
+     * the data is durable and safe. {@link #writer(CursorContext)} Changes} made after this call and until crashing or
      * otherwise non-clean shutdown (by omitting calling checkpoint before {@link #close()}) will need to be replayed
      * next time this tree is opened.
      * <p>
@@ -1199,14 +1198,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * header size.
      *
      * @param headerWriter hook for writing header data, must leave cursor at end of written header.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @throws UncheckedIOException on error flushing to storage.
      */
-    public void checkpoint( Consumer<PageCursor> headerWriter, PageCursorTracer cursorTracer )
+    public void checkpoint( Consumer<PageCursor> headerWriter, CursorContext cursorContext )
     {
         try
         {
-            checkpoint( replace( headerWriter ), cursorTracer );
+            checkpoint( replace( headerWriter ), cursorContext );
         }
         catch ( IOException e )
         {
@@ -1215,18 +1214,18 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     /**
-     * Performs a {@link #checkpoint( Consumer, PageCursorTracer)}  check point}, keeping any header information
+     * Performs a {@link #checkpoint( Consumer, CursorContext)}  check point}, keeping any header information
      * written in previous check point.
      *
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @throws UncheckedIOException on error flushing to storage.
-     * @see #checkpoint( Header.Writer, PageCursorTracer)
+     * @see #checkpoint( Header.Writer, CursorContext)
      */
-    public void checkpoint( PageCursorTracer cursorTracer )
+    public void checkpoint( CursorContext cursorContext )
     {
         try
         {
-            checkpoint( CARRY_OVER_PREVIOUS_HEADER, cursorTracer );
+            checkpoint( CARRY_OVER_PREVIOUS_HEADER, cursorContext );
         }
         catch ( IOException e )
         {
@@ -1234,7 +1233,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private void checkpoint( Header.Writer headerWriter, PageCursorTracer cursorTracer ) throws IOException
+    private void checkpoint( Header.Writer headerWriter, CursorContext cursorContext ) throws IOException
     {
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
@@ -1255,7 +1254,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
             long unstableGeneration = unstableGeneration( generation );
             generation = Generation.generation( unstableGeneration, unstableGeneration + 1 );
-            writeState( pagedFile, headerWriter, cursorTracer );
+            writeState( pagedFile, headerWriter, cursorContext );
 
             // Flush the state page.
             pagedFile.flushAndForce();
@@ -1293,13 +1292,13 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * Closes this tree and its associated resources.
      * <p>
-     * NOTE: No {@link #checkpoint( PageCursorTracer)} checkpoint} is performed.
+     * NOTE: No {@link #checkpoint(CursorContext)} checkpoint} is performed.
      * @throws IOException on error closing resources.
      */
     @Override
     public void close() throws IOException
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) ) )
         {
             if ( openOptions.contains( NO_FLUSH_ON_CLOSE ) )
             {
@@ -1315,7 +1314,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                     return;
                 }
 
-                maybeForceCleanState( cursorTracer );
+                maybeForceCleanState( cursorContext );
                 doClose();
             }
             catch ( IOException ioe )
@@ -1326,7 +1325,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                     {
                         pagedFile.flushAndForce();
                     }
-                    maybeForceCleanState( cursorTracer );
+                    maybeForceCleanState( cursorContext );
                     doClose();
                 }
                 catch ( IOException e )
@@ -1347,14 +1346,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         pagedFile.setDeleteOnClose( deleteOnClose );
     }
 
-    private void maybeForceCleanState( PageCursorTracer cursorTracer ) throws IOException
+    private void maybeForceCleanState( CursorContext cursorContext ) throws IOException
     {
         if ( cleaning != null && !changesSinceLastCheckpoint && !cleaning.needed() )
         {
             clean = true;
             if ( !pagedFile.isDeleteOnClose() )
             {
-                forceState( cursorTracer );
+                forceState( cursorContext );
             }
         }
     }
@@ -1371,12 +1370,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     /**
      * Use default value for ratioToKeepInLeftOnSplit
-     * @param cursorTracer underlying page cursor tracer
-     * @see GBPTree#writer(double, PageCursorTracer)
+     * @param cursorContext underlying page cursor context
+     * @see GBPTree#writer(double, CursorContext)
      */
-    public Writer<KEY,VALUE> writer( PageCursorTracer cursorTracer ) throws IOException
+    public Writer<KEY,VALUE> writer( CursorContext cursorContext ) throws IOException
     {
-        return writer( InternalTreeLogic.DEFAULT_SPLIT_RATIO, cursorTracer );
+        return writer( InternalTreeLogic.DEFAULT_SPLIT_RATIO, cursorContext );
     }
 
     /**
@@ -1384,27 +1383,27 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * After usage the returned writer must be closed, typically by using try-with-resource clause.
      *
      * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return the single {@link Writer} for this index. The returned writer must be
      * {@link Writer#close() closed} before another caller can acquire this writer.
      * @throws IOException on error accessing the index.
      * @throws IllegalStateException for calls made between a successful call to this method and closing the
      * returned writer.
      */
-    public Writer<KEY,VALUE> writer( double ratioToKeepInLeftOnSplit, PageCursorTracer cursorTracer ) throws IOException
+    public Writer<KEY,VALUE> writer( double ratioToKeepInLeftOnSplit, CursorContext cursorContext ) throws IOException
     {
         assertNotReadOnly( "Open tree writer." );
-        return unsafeWriter( ratioToKeepInLeftOnSplit, cursorTracer );
+        return unsafeWriter( ratioToKeepInLeftOnSplit, cursorContext );
     }
 
-    public Writer<KEY,VALUE> unsafeWriter(  PageCursorTracer cursorTracer ) throws IOException
+    public Writer<KEY,VALUE> unsafeWriter(  CursorContext cursorContext ) throws IOException
     {
-        return unsafeWriter( InternalTreeLogic.DEFAULT_SPLIT_RATIO, cursorTracer );
+        return unsafeWriter( InternalTreeLogic.DEFAULT_SPLIT_RATIO, cursorContext );
     }
 
-    public Writer<KEY,VALUE> unsafeWriter( double ratioToKeepInLeftOnSplit, PageCursorTracer cursorTracer ) throws IOException
+    public Writer<KEY,VALUE> unsafeWriter( double ratioToKeepInLeftOnSplit, CursorContext cursorContext ) throws IOException
     {
-        writer.initialize( ratioToKeepInLeftOnSplit, cursorTracer );
+        writer.initialize( ratioToKeepInLeftOnSplit, cursorContext );
         changesSinceLastCheckpoint = true;
         return writer;
     }
@@ -1424,7 +1423,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
     }
 
-    private void forceState( PageCursorTracer cursorTracer ) throws IOException
+    private void forceState( CursorContext cursorContext ) throws IOException
     {
         if ( changesSinceLastCheckpoint )
         {
@@ -1433,7 +1432,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                     "have been made" );
         }
 
-        writeState( pagedFile, CARRY_OVER_PREVIOUS_HEADER, cursorTracer );
+        writeState( pagedFile, CARRY_OVER_PREVIOUS_HEADER, cursorContext );
         pagedFile.flushAndForce();
     }
 
@@ -1466,21 +1465,21 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     @VisibleForTesting
-    public <VISITOR extends GBPTreeVisitor<KEY,VALUE>> VISITOR visit( VISITOR visitor, PageCursorTracer cursorTracer ) throws IOException
+    public <VISITOR extends GBPTreeVisitor<KEY,VALUE>> VISITOR visit( VISITOR visitor, CursorContext cursorContext ) throws IOException
     {
-        try ( PageCursor cursor = openRootCursor( PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = openRootCursor( PF_SHARED_READ_LOCK, cursorContext ) )
         {
             new GBPTreeStructure<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
-                    .visitTree( cursor, writer.cursor, visitor, cursorTracer );
-            freeList.visitFreelist( visitor, cursorTracer );
+                    .visitTree( cursor, writer.cursor, visitor, cursorContext );
+            freeList.visitFreelist( visitor, cursorContext );
         }
         return visitor;
     }
 
     @SuppressWarnings( "unused" )
-    public void printTree( PageCursorTracer cursorTracer ) throws IOException
+    public void printTree( CursorContext cursorContext ) throws IOException
     {
-        printTree( PrintConfig.defaults(), cursorTracer );
+        printTree( PrintConfig.defaults(), cursorContext );
     }
 
     // Utility method
@@ -1491,16 +1490,16 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @throws IOException on I/O error.
      */
     @SuppressWarnings( "SameParameterValue" )
-    void printTree( PrintConfig printConfig, PageCursorTracer cursorTracer ) throws IOException
+    void printTree( PrintConfig printConfig, CursorContext cursorContext ) throws IOException
     {
         PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( printConfig );
-        visit( printingVisitor, cursorTracer );
+        visit( printingVisitor, cursorContext );
     }
 
     // Utility method
-    public void printState( PageCursorTracer cursorTracer ) throws IOException
+    public void printState( CursorContext cursorContext ) throws IOException
     {
-        try ( PageCursor cursor = openRootCursor( PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = openRootCursor( PF_SHARED_READ_LOCK, cursorContext ) )
         {
             PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults().printState() );
             GBPTreeStructure.visitTreeState( cursor, printingVisitor );
@@ -1512,44 +1511,44 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * Print node with given id to System.out, if node with id exists.
      * @param id the page id of node to print
      */
-    void printNode( long id, PageCursorTracer cursorTracer ) throws IOException
+    void printNode( long id, CursorContext cursorContext ) throws IOException
     {
         if ( id <= freeList.lastId() )
         {
             // Use write lock to avoid adversary interference
-            try ( PageCursor cursor = pagedFile.io( id, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( id, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
             {
                 cursor.next();
                 byte nodeType = TreeNode.nodeType( cursor );
                 if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
                 {
-                    bTreeNode.printNode( cursor, false, true, stableGeneration( generation ), unstableGeneration( generation ), cursorTracer );
+                    bTreeNode.printNode( cursor, false, true, stableGeneration( generation ), unstableGeneration( generation ), cursorContext );
                 }
             }
         }
     }
 
-    public boolean consistencyCheck( PageCursorTracer cursorTracer ) throws IOException
+    public boolean consistencyCheck( CursorContext cursorContext ) throws IOException
     {
-        return consistencyCheck( true, cursorTracer );
+        return consistencyCheck( true, cursorContext );
     }
 
-    public boolean consistencyCheck( boolean reportDirty, PageCursorTracer cursorTracer ) throws IOException
+    public boolean consistencyCheck( boolean reportDirty, CursorContext cursorContext ) throws IOException
     {
         ThrowingConsistencyCheckVisitor<KEY> reporter = new ThrowingConsistencyCheckVisitor<>();
-        return consistencyCheck( reporter, reportDirty, cursorTracer );
+        return consistencyCheck( reporter, reportDirty, cursorContext );
     }
 
-    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, PageCursorTracer cursorTracer ) throws IOException
+    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, CursorContext cursorContext ) throws IOException
     {
-        return consistencyCheck( visitor, true, cursorTracer );
+        return consistencyCheck( visitor, true, cursorContext );
     }
 
     // Utility method
-    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportDirty, PageCursorTracer cursorTracer ) throws IOException
+    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor, boolean reportDirty, CursorContext cursorContext ) throws IOException
     {
         CleanTrackingConsistencyCheckVisitor<KEY> cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor<>( visitor );
-        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             long unstableGeneration = unstableGeneration( generation );
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
@@ -1559,7 +1558,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             {
                 cleanTrackingVisitor.dirtyOnStartup( indexFile );
             }
-            consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor, cursorTracer );
+            consistencyChecker.check( indexFile, cursor, root, cleanTrackingVisitor, cursorContext );
         }
         catch ( TreeInconsistencyException | MetadataMismatchException | CursorException e )
         {
@@ -1569,10 +1568,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     @VisibleForTesting
-    public void unsafe( GBPTreeUnsafe<KEY,VALUE> unsafe, PageCursorTracer cursorTracer ) throws IOException
+    public void unsafe( GBPTreeUnsafe<KEY,VALUE> unsafe, CursorContext cursorContext ) throws IOException
     {
         TreeState state;
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
             // todo find better way of getting TreeState?
             Pair<TreeState,TreeState> states = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -1616,7 +1615,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         private final InternalTreeLogic<KEY,VALUE> treeLogic;
         private final StructurePropagation<KEY> structurePropagation;
         private PageCursor cursor;
-        private PageCursorTracer cursorTracer;
+        private CursorContext cursorContext;
 
         // Writer can't live past a checkpoint because of the mutex with checkpoint,
         // therefore safe to locally cache these generation fields from the volatile generation in the tree
@@ -1648,9 +1647,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
          *
          * @throws IOException if fail to open {@link PageCursor}
          * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
-         * @param cursorTracer underlying page cursor tracer
+         * @param cursorContext underlying page cursor context
          */
-        void initialize( double ratioToKeepInLeftOnSplit, PageCursorTracer cursorTracer ) throws IOException
+        void initialize( double ratioToKeepInLeftOnSplit, CursorContext cursorContext ) throws IOException
         {
             if ( !writerTaken.compareAndSet( false, true ) )
             {
@@ -1665,8 +1664,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 // Block here until cleaning has completed, if cleaning was required
                 lock.writerAndCleanerLock();
                 assertRecoveryCleanSuccessful();
-                cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer );
-                this.cursorTracer = cursorTracer;
+                cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK, cursorContext );
+                this.cursorContext = cursorContext;
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
                 this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
@@ -1711,9 +1710,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             try
             {
                 treeLogic.insert( cursor, structurePropagation, key, value, valueMerger, createIfNotExists,
-                        stableGeneration, unstableGeneration, cursorTracer );
+                        stableGeneration, unstableGeneration, cursorContext );
 
-                handleStructureChanges( cursorTracer );
+                handleStructureChanges( cursorContext );
             }
             catch ( IOException e )
             {
@@ -1743,9 +1742,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             try
             {
                 result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
-                        stableGeneration, unstableGeneration, cursorTracer );
+                        stableGeneration, unstableGeneration, cursorContext );
 
-                handleStructureChanges( cursorTracer );
+                handleStructureChanges( cursorContext );
             }
             catch ( IOException e )
             {
@@ -1762,19 +1761,19 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             return result;
         }
 
-        private void handleStructureChanges( PageCursorTracer cursorTracer ) throws IOException
+        private void handleStructureChanges( CursorContext cursorContext ) throws IOException
         {
             if ( structurePropagation.hasRightKeyInsert )
             {
                 // New root
-                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration, cursorTracer );
+                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration, cursorContext );
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                 bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
                         stableGeneration, unstableGeneration );
                 bTreeNode.insertKeyAndRightChildAt( cursor, structurePropagation.rightKey, structurePropagation.rightChild, 0, 0,
-                        stableGeneration, unstableGeneration, cursorTracer );
+                        stableGeneration, unstableGeneration, cursorContext );
                 TreeNode.setKeyCount( cursor, 1 );
                 setRoot( newRootId );
                 monitor.treeGrowth();

@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -42,20 +42,20 @@ import org.neo4j.util.concurrent.WorkSync;
 public class LegacyBatchContext extends BatchContextImpl implements BatchContext
 {
     private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
     private List<EntityTokenUpdate> labelUpdates;
 
     public LegacyBatchContext( IndexUpdateListener indexUpdateListener,
             WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
-            RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, PageCursorTracer cursorTracer, MemoryTracker memoryTracker,
+            RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, CursorContext cursorContext, MemoryTracker memoryTracker,
             IdUpdateListener idUpdateListener )
     {
-        super( indexUpdateListener, indexUpdatesSync, nodeStore, propertyStore, recordStorageEngine, schemaCache, cursorTracer, memoryTracker,
+        super( indexUpdateListener, indexUpdatesSync, nodeStore, propertyStore, recordStorageEngine, schemaCache, cursorContext, memoryTracker,
                 idUpdateListener );
         this.labelScanStoreSync = labelScanStoreSync;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     @Override
@@ -66,7 +66,7 @@ public class LegacyBatchContext extends BatchContextImpl implements BatchContext
         {
             // Updates are sorted according to node id here, an artifact of node commands being sorted
             // by node id when extracting from TransactionRecordState.
-            labelUpdatesApply = labelScanStoreSync.applyAsync( new TokenUpdateWork( labelUpdates, cursorTracer ) );
+            labelUpdatesApply = labelScanStoreSync.applyAsync( new TokenUpdateWork( labelUpdates, cursorContext ) );
             labelUpdates = null;
         }
 

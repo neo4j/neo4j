@@ -24,7 +24,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -76,7 +76,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
     }
 
     @Override
-    protected void process( LongIterator idRange, BatchSender sender, PageCursorTracer cursorTracer )
+    protected void process( LongIterator idRange, BatchSender sender, CursorContext cursorContext )
     {
         if ( !idRange.hasNext() )
         {
@@ -88,7 +88,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         int i = 0;
         // Just use the first record in the batch here to satisfy the record cursor.
         // The truth is that we'll be using the read method which accepts an external record anyway so it doesn't matter.
-        try ( PageCursor cursor = store.openPageCursorForReading( id, cursorTracer ) )
+        try ( PageCursor cursor = store.openPageCursorForReading( id, cursorContext ) )
         {
             boolean hasNext = true;
             while ( hasNext )

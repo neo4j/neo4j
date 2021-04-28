@@ -42,7 +42,7 @@ import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -114,12 +114,12 @@ class RelationshipChecker implements Checker
         RelationshipCounter counter = observedCounts.instantiateRelationshipCounter();
         long[] typeHolder = new long[1];
         try ( RecordStorageReader reader = new RecordStorageReader( neoStores );
-              var cursorTracer = context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG );
-              RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorTracer );
+              var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG ) );
+              RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorContext );
               BoundedIterable<EntityTokenRange> relationshipTypeReader = getRelationshipTypeIndexReader( fromRelationshipId, toRelationshipId, last,
-                      cursorTracer );
-              SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
-              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorTracer,
+                      cursorContext );
+              SafePropertyChainReader property = new SafePropertyChainReader( context, cursorContext );
+              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorContext,
                       context.memoryTracker ) )
         {
             ProgressListener localProgress = progress.threadLocalReporter();
@@ -149,7 +149,7 @@ class RelationshipChecker implements Checker
                             ( relationship, node ) -> reporter.forRelationship( relationship ).sourceNodeDoesNotReferenceBack( node ),
                             ( relationship, node ) -> reporter.forNode( node ).relationshipNotFirstInSourceChain( relationship ),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).sourceNodeHasNoRelationships( node ),
-                            relationship -> reporter.forRelationship( relationship ).illegalSourceNode(), cursorTracer );
+                            relationship -> reporter.forRelationship( relationship ).illegalSourceNode(), cursorContext );
                 }
                 long endNode = relationshipCursor.getSecondNode();
                 boolean endNodeIsWithinRange = nodeIdRange.isWithinRangeExclusiveTo( endNode );
@@ -161,25 +161,25 @@ class RelationshipChecker implements Checker
                             ( relationship, node ) -> reporter.forRelationship( relationship ).targetNodeDoesNotReferenceBack( node ),
                             ( relationship, node ) -> reporter.forNode( node ).relationshipNotFirstInTargetChain( relationship ),
                             ( relationship, node ) -> reporter.forRelationship( relationship ).targetNodeHasNoRelationships( node ),
-                            relationship -> reporter.forRelationship( relationship ).illegalTargetNode(), cursorTracer );
+                            relationship -> reporter.forRelationship( relationship ).illegalTargetNode(), cursorContext );
                 }
 
                 if ( firstRound )
                 {
                     if ( startNode >= context.highNodeId )
                     {
-                        reporter.forRelationship( relationshipCursor ).sourceNodeNotInUse( context.recordLoader.node( startNode, cursorTracer ) );
+                        reporter.forRelationship( relationshipCursor ).sourceNodeNotInUse( context.recordLoader.node( startNode, cursorContext ) );
                     }
 
                     if ( endNode >= context.highNodeId )
                     {
-                        reporter.forRelationship( relationshipCursor ).targetNodeNotInUse( context.recordLoader.node( endNode, cursorTracer ) );
+                        reporter.forRelationship( relationshipCursor ).targetNodeNotInUse( context.recordLoader.node( endNode, cursorContext ) );
                     }
 
                     // Properties
                     typeHolder[0] = relationshipCursor.getType();
                     lightClear( propertyValues );
-                    boolean propertyChainIsOk = property.read( propertyValues, relationshipCursor, reporter::forRelationship, cursorTracer );
+                    boolean propertyChainIsOk = property.read( propertyValues, relationshipCursor, reporter::forRelationship, cursorContext );
                     if ( propertyChainIsOk )
                     {
                         schemaComplianceChecker.checkContainsMandatoryProperties( relationshipCursor, typeHolder, propertyValues, reporter::forRelationship );
@@ -195,14 +195,14 @@ class RelationshipChecker implements Checker
                     // Type and count
                     checkValidToken( relationshipCursor, relationshipCursor.type(), tokenHolders.relationshipTypeTokens(),
                             neoStores.getRelationshipTypeTokenStore(), ( rel, token ) -> reporter.forRelationship( rel ).illegalRelationshipType(),
-                            ( rel, token ) -> reporter.forRelationship( rel ).relationshipTypeNotInUse( token ), cursorTracer );
+                            ( rel, token ) -> reporter.forRelationship( rel ).relationshipTypeNotInUse( token ), cursorContext );
                     observedCounts.incrementRelationshipTypeCounts( counter, relationshipCursor );
 
                     // Relationship type index
                     if ( relationshipTypeReader.maxCount() != 0 )
                     {
                         checkRelationshipVsRelationshipTypeIndex( relationshipCursor, relationshipTypeRangeIterator, typeIndexState, relationshipId,
-                                relationshipCursor.type(), fromRelationshipId, cursorTracer );
+                                relationshipCursor.type(), fromRelationshipId, cursorContext );
                     }
                 }
                 observedCounts.incrementRelationshipNodeCounts( counter, relationshipCursor, startNodeIsWithinRange, endNodeIsWithinRange );
@@ -210,21 +210,21 @@ class RelationshipChecker implements Checker
             if ( !context.isCancelled() && relationshipTypeReader.maxCount() != 0 )
             {
                 reportRemainingRelationshipTypeIndexEntries( relationshipTypeRangeIterator, typeIndexState, last ? Long.MAX_VALUE : toRelationshipId,
-                        cursorTracer );
+                        cursorContext );
             }
             localProgress.done();
         }
     }
 
     private BoundedIterable<EntityTokenRange> getRelationshipTypeIndexReader( long fromRelationshipId, long toRelationshipId, boolean last,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         if ( context.useScanStoresAsTokenIndexes )
         {
             if ( context.relationshipTypeIndex != null )
             {
                 return context.relationshipTypeIndex.newAllEntriesTokenReader( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId,
-                        cursorTracer );
+                        cursorContext );
             }
         }
         return BoundedIterable.empty();
@@ -232,7 +232,7 @@ class RelationshipChecker implements Checker
 
     private void checkRelationshipVsRelationshipTypeIndex( RecordRelationshipScanCursor relationshipCursor,
             Iterator<EntityTokenRange> relationshipTypeRangeIterator, EntityTokenIndexCheckState relationshipTypeIndexState,
-            long relationshipId, int type, long fromRelationshipId, PageCursorTracer cursorTracer )
+            long relationshipId, int type, long fromRelationshipId, CursorContext cursorContext )
     {
         // Detect relationship-type combinations that exists in the relationship type index, but not in the store
         while ( relationshipTypeIndexState.needToMoveRangeForwardToReachEntity( relationshipId ) && !context.isCancelled() )
@@ -248,7 +248,7 @@ class RelationshipChecker implements Checker
                         if ( relationshipTypeIndexState.currentRange.tokens( relationshipIdMissingFromStore ).length > 0 )
                         {
                             reporter.forRelationshipTypeScan( new TokenScanDocument( relationshipTypeIndexState.currentRange ) )
-                                    .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorTracer ) );
+                                    .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorContext ) );
                         }
                     }
                 }
@@ -269,22 +269,22 @@ class RelationshipChecker implements Checker
                 if ( relationshipTypeIndexState.currentRange.tokens( relationshipIdMissingFromStore ).length > 0 )
                 {
                     reporter.forRelationshipTypeScan( new TokenScanDocument( relationshipTypeIndexState.currentRange ) )
-                            .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorTracer ) );
+                            .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorContext ) );
                 }
             }
             long[] relationshipTypesInTypeIndex = relationshipTypeIndexState.currentRange.tokens( relationshipId );
-            validateTypeIds( relationshipCursor, type, relationshipTypesInTypeIndex, relationshipTypeIndexState.currentRange, cursorTracer );
+            validateTypeIds( relationshipCursor, type, relationshipTypesInTypeIndex, relationshipTypeIndexState.currentRange, cursorContext );
             relationshipTypeIndexState.lastCheckedEntityId = relationshipId;
         }
         else
         {
             TokenScanDocument document = new TokenScanDocument( new EntityTokenRangeImpl( relationshipId / Long.SIZE, NO_TOKENS, RELATIONSHIP ) );
-            reporter.forRelationshipTypeScan( document ).relationshipTypeNotInIndex( recordLoader.relationship( relationshipId, cursorTracer ), type );
+            reporter.forRelationshipTypeScan( document ).relationshipTypeNotInIndex( recordLoader.relationship( relationshipId, cursorContext ), type );
         }
     }
 
     private void reportRemainingRelationshipTypeIndexEntries( Iterator<EntityTokenRange> relationshipTypeRangeIterator,
-            EntityTokenIndexCheckState relationshipTypeIndexState, long toRelationshipId, PageCursorTracer cursorTracer )
+            EntityTokenIndexCheckState relationshipTypeIndexState, long toRelationshipId, CursorContext cursorContext )
     {
         if ( relationshipTypeIndexState.currentRange == null && relationshipTypeRangeIterator.hasNext() )
         {
@@ -303,7 +303,7 @@ class RelationshipChecker implements Checker
                         relationshipTypeIndexState.currentRange.tokens( relationshipIdMissingFromStore ).length > 0 )
                 {
                     reporter.forRelationshipTypeScan( new TokenScanDocument( relationshipTypeIndexState.currentRange ) )
-                            .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorTracer ) );
+                            .relationshipNotInUse( recordLoader.relationship( relationshipIdMissingFromStore, cursorContext ) );
                 }
                 relationshipTypeIndexState.lastCheckedEntityId = relationshipIdMissingFromStore;
             }
@@ -312,14 +312,14 @@ class RelationshipChecker implements Checker
     }
 
     private void validateTypeIds( RecordRelationshipScanCursor relationshipCursor, int typeInStore, long[] relationshipTypesInTypeIndex,
-            EntityTokenRange entityTokenRange, PageCursorTracer cursorTracer )
+            EntityTokenRange entityTokenRange, CursorContext cursorContext )
     {
         compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, new long[]{typeInStore}, relationshipTypesInTypeIndex,
                 indexType -> reporter.forRelationshipTypeScan( new TokenScanDocument( entityTokenRange ) )
-                        .relationshipDoesNotHaveExpectedRelationshipType( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ),
+                        .relationshipDoesNotHaveExpectedRelationshipType( recordLoader.relationship( relationshipCursor.getId(), cursorContext ),
                                 indexType ),
                 storeType -> reporter.forRelationshipTypeScan( new TokenScanDocument( entityTokenRange ) )
-                        .relationshipTypeNotInIndex( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ), storeType )
+                        .relationshipTypeNotInIndex( recordLoader.relationship( relationshipCursor.getId(), cursorContext ), storeType )
         );
     }
 
@@ -328,12 +328,12 @@ class RelationshipChecker implements Checker
             BiConsumer<RelationshipRecord,NodeRecord> reportNodeDoesNotReferenceBack,
             BiConsumer<RelationshipRecord,NodeRecord> reportNodeNotFirstInChain,
             BiConsumer<RelationshipRecord,NodeRecord> reportNodeHasNoChain,
-            Consumer<RelationshipRecord> reportIllegalNode, PageCursorTracer cursorTracer )
+            Consumer<RelationshipRecord> reportIllegalNode, CursorContext cursorContext )
     {
         // Check validity of node reference
         if ( node < 0 )
         {
-            reportIllegalNode.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ) );
+            reportIllegalNode.accept( recordLoader.relationship( relationshipCursor.getId(), cursorContext ) );
             return;
         }
 
@@ -341,7 +341,7 @@ class RelationshipChecker implements Checker
         boolean nodeInUse = client.getBooleanFromCache( node, CacheSlots.NodeLink.SLOT_IN_USE );
         if ( !nodeInUse )
         {
-            reportNodeNotInUse.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ), recordLoader.node( node, cursorTracer ) );
+            reportNodeNotInUse.accept( recordLoader.relationship( relationshipCursor.getId(), cursorContext ), recordLoader.node( node, cursorContext ) );
             return;
         }
 
@@ -349,7 +349,7 @@ class RelationshipChecker implements Checker
         long nodeNextRel = client.getFromCache( node, CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID );
         if ( NULL_REFERENCE.is( nodeNextRel ) )
         {
-            reportNodeHasNoChain.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ), recordLoader.node( node, cursorTracer ) );
+            reportNodeHasNoChain.accept( recordLoader.relationship( relationshipCursor.getId(), cursorContext ), recordLoader.node( node, cursorContext ) );
             return;
         }
 
@@ -362,25 +362,25 @@ class RelationshipChecker implements Checker
                 if ( nodeNextRel != relationshipCursor.getId() )
                 {
                     // Report RELATIONSHIP -> NODE inconsistency
-                    reportNodeDoesNotReferenceBack.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ),
-                            recordLoader.node( node, cursorTracer ) );
+                    reportNodeDoesNotReferenceBack.accept( recordLoader.relationship( relationshipCursor.getId(), cursorContext ),
+                            recordLoader.node( node, cursorContext ) );
                     // Before marking this node as fully checked we should also check and report any NODE -> RELATIONSHIP inconsistency
-                    RelationshipRecord relationshipThatNodeActuallyReferences = recordLoader.relationship( nodeNextRel, cursorTracer );
+                    RelationshipRecord relationshipThatNodeActuallyReferences = recordLoader.relationship( nodeNextRel, cursorContext );
                     if ( !relationshipThatNodeActuallyReferences.inUse() )
                     {
-                        reporter.forNode( recordLoader.node( node, cursorTracer ) ).relationshipNotInUse( relationshipThatNodeActuallyReferences );
+                        reporter.forNode( recordLoader.node( node, cursorContext ) ).relationshipNotInUse( relationshipThatNodeActuallyReferences );
                     }
                     else if ( relationshipThatNodeActuallyReferences.getFirstNode() != node && relationshipThatNodeActuallyReferences.getSecondNode() != node )
                     {
-                        reporter.forNode( recordLoader.node( node,cursorTracer ) ).relationshipForOtherNode( relationshipThatNodeActuallyReferences );
+                        reporter.forNode( recordLoader.node( node, cursorContext ) ).relationshipForOtherNode( relationshipThatNodeActuallyReferences );
                     }
                 }
                 client.putToCacheSingle( node, CacheSlots.NodeLink.SLOT_CHECK_MARK, 0 );
             }
             if ( !firstInChain && nodeNextRel == relationshipCursor.getId() )
             {
-                reportNodeNotFirstInChain.accept( recordLoader.relationship( relationshipCursor.getId(), cursorTracer ),
-                        recordLoader.node( node, cursorTracer ) );
+                reportNodeNotFirstInChain.accept( recordLoader.relationship( relationshipCursor.getId(), cursorContext ),
+                        recordLoader.node( node, cursorContext ) );
             }
         }
     }
@@ -390,7 +390,7 @@ class RelationshipChecker implements Checker
         // Do this after we've done node.nextRel caching and checking of those. Checking also clears those values, so simply
         // go through the cache and see if there are any relationship ids left and report them
         CacheAccess.Client client = cacheAccess.client();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( UNUSED_RELATIONSHIP_CHECKER_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( UNUSED_RELATIONSHIP_CHECKER_TAG ) ) )
         {
             for ( long id = fromNodeId; id < toNodeId && !context.isCancelled(); id++ )
             {
@@ -407,8 +407,8 @@ class RelationshipChecker implements Checker
                         {
                             if ( !nodeIsDense )
                             {
-                                RelationshipRecord relationship = recordLoader.relationship( nodeNextRel, cursorTracer );
-                                NodeRecord node = recordLoader.node( id, cursorTracer );
+                                RelationshipRecord relationship = recordLoader.relationship( nodeNextRel, cursorContext );
+                                NodeRecord node = recordLoader.node( id, cursorContext );
                                 if ( !relationship.inUse() )
                                 {
                                     reporter.forNode( node ).relationshipNotInUse( relationship );
@@ -420,14 +420,14 @@ class RelationshipChecker implements Checker
                             }
                             else
                             {
-                                RelationshipGroupRecord group = recordLoader.relationshipGroup( nodeNextRel, cursorTracer );
+                                RelationshipGroupRecord group = recordLoader.relationshipGroup( nodeNextRel, cursorContext );
                                 if ( !group.inUse() )
                                 {
-                                    reporter.forNode( recordLoader.node( id, cursorTracer ) ).relationshipGroupNotInUse( group );
+                                    reporter.forNode( recordLoader.node( id, cursorContext ) ).relationshipGroupNotInUse( group );
                                 }
                                 else
                                 {
-                                    reporter.forNode( recordLoader.node( id, cursorTracer ) ).relationshipGroupHasOtherOwner( group );
+                                    reporter.forNode( recordLoader.node( id, cursorContext ) ).relationshipGroupHasOtherOwner( group );
                                 }
                             }
                         }

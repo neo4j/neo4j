@@ -33,6 +33,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -81,9 +83,10 @@ class NeoStoresIT
             }
         }
 
-        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnHighIdScan" );
-        propertyStore.scanForHighId( cursorTracer );
+        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnHighIdScan" ) );
+        propertyStore.scanForHighId( cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 1, cursorTracer.hits() );
         assertEquals( 1, cursorTracer.pins() );
         assertEquals( 1, cursorTracer.unpins() );
@@ -103,9 +106,10 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRawRecordData" );
-        propertyStore.getRawRecordData( 1L, cursorTracer );
+        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRawRecordData" ) );
+        propertyStore.getRawRecordData( 1L, cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 1, cursorTracer.hits() );
         assertEquals( 1, cursorTracer.pins() );
         assertEquals( 1, cursorTracer.unpins() );
@@ -125,9 +129,10 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnInUseCheck" );
-        propertyStore.isInUse( 1L, cursorTracer );
+        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnInUseCheck" ) );
+        propertyStore.isInUse( 1L, cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 1, cursorTracer.hits() );
         assertEquals( 1, cursorTracer.pins() );
         assertEquals( 1, cursorTracer.unpins() );
@@ -149,9 +154,10 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRecord" );
-        nodeStore.getRecord( nodeId, new NodeRecord( nodeId ), RecordLoad.NORMAL, cursorTracer );
+        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRecord" ) );
+        nodeStore.getRecord( nodeId, new NodeRecord( nodeId ), RecordLoad.NORMAL, cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 1, cursorTracer.hits() );
         assertEquals( 1, cursorTracer.pins() );
         assertEquals( 1, cursorTracer.unpins() );
@@ -173,9 +179,10 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnUpdateRecord" );
-        nodeStore.updateRecord( new NodeRecord( nodeId ), cursorTracer );
+        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnUpdateRecord" ) );
+        nodeStore.updateRecord( new NodeRecord( nodeId ), cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 5, cursorTracer.hits() );
         assertEquals( 6, cursorTracer.pins() );
         assertEquals( 6, cursorTracer.unpins() );
@@ -195,9 +202,10 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorTracer = new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnTokenReads" );
-        propertyKeys.getAllReadableTokens( cursorTracer );
+        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnTokenReads" ) );
+        propertyKeys.getAllReadableTokens( cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 22, cursorTracer.hits() );
         assertEquals( 22, cursorTracer.pins() );
         assertEquals( 22, cursorTracer.unpins() );

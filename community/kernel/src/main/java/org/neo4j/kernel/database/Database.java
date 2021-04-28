@@ -66,7 +66,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -590,7 +590,7 @@ public class Database extends LifecycleAdapter
             transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, time, storageEngine.metadataProvider().getLastClosedTransactionId(), time,
                     leaseService.newClient().leaseId(), AuthSubject.AUTH_DISABLED );
             TransactionToApply toApply =
-                    new TransactionToApply( transactionRepresentation, PageCursorTracer.NULL );
+                    new TransactionToApply( transactionRepresentation, CursorContext.NULL );
 
             TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
             commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
@@ -638,9 +638,9 @@ public class Database extends LifecycleAdapter
 
     private void checkStoreId( LogFiles logFiles, PageCacheTracer pageCacheTracer ) throws IOException
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_ID_VALIDATOR_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( STORE_ID_VALIDATOR_TAG ) ) )
         {
-            validateStoreId( logFiles, storageEngineFactory.storeId( databaseLayout, databasePageCache, cursorTracer ), databaseConfig );
+            validateStoreId( logFiles, storageEngineFactory.storeId( databaseLayout, databasePageCache, cursorContext ), databaseConfig );
         }
     }
 

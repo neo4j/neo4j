@@ -65,6 +65,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -97,7 +98,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.test.Race.throwing;
 
 @PageCacheExtension
@@ -655,10 +656,11 @@ class IndexedIdGeneratorTest
     void tracePageCacheAccessOnConsistencyCheck()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
         {
-            idGenerator.consistencyCheck( noopReporterFactory(), cursorTracer );
+            idGenerator.consistencyCheck( noopReporterFactory(), cursorContext );
 
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.hits() ).isEqualTo( 2 );
             assertThat( cursorTracer.pins() ).isEqualTo( 2 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
@@ -669,10 +671,11 @@ class IndexedIdGeneratorTest
     void noPageCacheActivityWithNoMaintenanceOnOnNextId()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) ) )
         {
-            idGenerator.nextId( cursorTracer );
+            idGenerator.nextId( cursorContext );
 
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.hits() ).isZero();
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
@@ -683,12 +686,13 @@ class IndexedIdGeneratorTest
     void tracePageCacheActivityOnOnNextId()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) ) )
         {
             idGenerator.marker( NULL ).markDeleted( 1 );
             idGenerator.clearCache( NULL );
-            idGenerator.nextId( cursorTracer );
+            idGenerator.nextId( cursorContext );
 
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.hits() ).isOne();
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -699,14 +703,15 @@ class IndexedIdGeneratorTest
     void tracePageCacheActivityWhenMark() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheActivityWhenMark" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheActivityWhenMark" ) ) )
         {
             idGenerator.start( NO_FREE_IDS, NULL );
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            try ( var marker = idGenerator.marker( cursorTracer ) )
+            try ( var marker = idGenerator.marker( cursorContext ) )
             {
                 assertThat( cursorTracer.pins() ).isOne();
                 assertThat( cursorTracer.hits() ).isOne();
@@ -724,14 +729,15 @@ class IndexedIdGeneratorTest
     void tracePageCacheOnIdGeneratorCacheClear()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCacheClear" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCacheClear" ) ) )
         {
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
             idGenerator.marker( NULL ).markDeleted( 1 );
-            idGenerator.clearCache( cursorTracer );
+            idGenerator.clearCache( cursorContext );
 
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -743,13 +749,14 @@ class IndexedIdGeneratorTest
     void tracePageCacheOnIdGeneratorMaintenance()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorMaintenance" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorMaintenance" ) ) )
         {
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.maintenance( false, cursorTracer );
+            idGenerator.maintenance( false, cursorContext );
 
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
@@ -757,7 +764,7 @@ class IndexedIdGeneratorTest
 
             idGenerator.marker( NULL ).markDeleted( 1 );
             idGenerator.clearCache( NULL );
-            idGenerator.maintenance( false, cursorTracer );
+            idGenerator.maintenance( false, cursorContext );
 
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -769,13 +776,14 @@ class IndexedIdGeneratorTest
     void tracePageCacheOnIdGeneratorCheckpoint()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCheckpoint" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorCheckpoint" ) ) )
         {
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.checkpoint( cursorTracer );
+            idGenerator.checkpoint( cursorContext );
 
             // 2 state pages involved into checkpoint (twice)
             assertThat( cursorTracer.pins() ).isEqualTo( 4 );
@@ -788,13 +796,14 @@ class IndexedIdGeneratorTest
     void tracePageCacheOnIdGeneratorStartWithRebuild() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithRebuild" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithRebuild" ) ) )
         {
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.start( NO_FREE_IDS, cursorTracer );
+            idGenerator.start( NO_FREE_IDS, cursorContext );
 
             // 2 state pages involved into checkpoint (twice) + one more pin/hit/unpin on maintenance + range marker writer
             assertThat( cursorTracer.pins() ).isEqualTo( 6 );
@@ -815,13 +824,14 @@ class IndexedIdGeneratorTest
                 DEFAULT_DATABASE_NAME, NULL ) )
         {
             var pageCacheTracer = new DefaultPageCacheTracer();
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithoutRebuild" ) )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithoutRebuild" ) ) )
             {
+                var cursorTracer = cursorContext.getCursorTracer();
                 assertThat( cursorTracer.pins() ).isZero();
                 assertThat( cursorTracer.unpins() ).isZero();
                 assertThat( cursorTracer.hits() ).isZero();
 
-                idGenerator.start( NO_FREE_IDS, cursorTracer );
+                idGenerator.start( NO_FREE_IDS, cursorContext );
 
                 // pin/hit/unpin on maintenance
                 assertThat( cursorTracer.pins() ).isOne();

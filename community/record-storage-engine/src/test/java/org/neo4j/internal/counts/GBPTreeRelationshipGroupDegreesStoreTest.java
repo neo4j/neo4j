@@ -34,7 +34,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.extension.Inject;
@@ -51,7 +51,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.degreeKey;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.keyToString;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -142,9 +142,9 @@ class GBPTreeRelationshipGroupDegreesStoreTest
         TestableCountsBuilder builder = new TestableCountsBuilder( rebuiltAtTransactionId )
         {
             @Override
-            public void rebuild( Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
             {
-                super.rebuild( updater, cursorTracer, memoryTracker );
+                super.rebuild( updater, cursorContext, memoryTracker );
                 updater.increment( groupId1, OUTGOING, 10 );
                 updater.increment( groupId2, INCOMING, 14 );
             }
@@ -245,7 +245,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
         }
 
         @Override
-        public void rebuild( Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
             rebuildCalled = true;
         }

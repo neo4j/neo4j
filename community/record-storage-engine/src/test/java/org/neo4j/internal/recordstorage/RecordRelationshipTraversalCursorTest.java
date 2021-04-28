@@ -40,7 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -306,9 +306,9 @@ public class RecordRelationshipTraversalCursorTest
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RelationshipRecord relationshipRecord = relationshipStore.getRecord( recordId, new RelationshipRecord( -1 ),
-                RecordLoad.FORCE, PageCursorTracer.NULL );
+                RecordLoad.FORCE, CursorContext.NULL );
         relationshipRecord.setInUse( false );
-        relationshipStore.updateRecord( relationshipRecord, PageCursorTracer.NULL );
+        relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
     }
 
     protected RelationshipGroupRecord createRelationshipGroup( long id, int type, long[] firstIds, long next )
@@ -325,7 +325,7 @@ public class RecordRelationshipTraversalCursorTest
             for ( int i = 0; i < relationshipSpecs.length; i++ )
             {
                 long nextRelationshipId = i == relationshipSpecs.length - 1 ? NULL : i + 1;
-                relationshipStore.updateRecord( createRelationship( i, nextRelationshipId, relationshipSpecs[i] ), PageCursorTracer.NULL );
+                relationshipStore.updateRecord( createRelationship( i, nextRelationshipId, relationshipSpecs[i] ), CursorContext.NULL );
             }
             return 0;
         }
@@ -345,7 +345,7 @@ public class RecordRelationshipTraversalCursorTest
                     if ( currentGroup != null )
                     {
                         relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId++, currentType, currentGroup, nextGroupId ),
-                                PageCursorTracer.NULL );
+                                CursorContext.NULL );
                     }
                     currentType = spec.type;
                     currentGroup = new long[]{NULL, NULL, NULL};
@@ -354,13 +354,13 @@ public class RecordRelationshipTraversalCursorTest
                 int relationshipOrdinal = relationshipSpecs[i].direction.ordinal();
                 long relationshipId = i;
                 long nextRelationshipId = i < relationshipSpecs.length - 1 && relationshipSpecs[i + 1].equals( spec ) ? i + 1 : NULL;
-                relationshipStore.updateRecord( createRelationship( relationshipId, nextRelationshipId, relationshipSpecs[i] ), PageCursorTracer.NULL );
+                relationshipStore.updateRecord( createRelationship( relationshipId, nextRelationshipId, relationshipSpecs[i] ), CursorContext.NULL );
                 if ( currentGroup[relationshipOrdinal] == NULL )
                 {
                     currentGroup[relationshipOrdinal] = relationshipId;
                 }
             }
-            relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId, currentType, currentGroup, NULL ), PageCursorTracer.NULL );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId, currentType, currentGroup, NULL ), CursorContext.NULL );
             return relationshipsReferenceWithDenseMarker( relationshipGroupStore.getNumberOfReservedLowIds(), true );
         }
     }
@@ -386,7 +386,7 @@ public class RecordRelationshipTraversalCursorTest
 
     protected RecordRelationshipTraversalCursor getNodeRelationshipCursor()
     {
-        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null, PageCursorTracer.NULL );
+        return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null, CursorContext.NULL );
     }
 
     protected RelationshipSpec[] homogenousRelationships( int count, int type, RelationshipDirection direction )

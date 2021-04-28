@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -97,9 +97,9 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
     {
-        try ( TokenIndexUpdater updater = singleUpdater.initialize( index.writer( cursorTracer ) ) )
+        try ( TokenIndexUpdater updater = singleUpdater.initialize( index.writer( cursorContext ) ) )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -119,11 +119,11 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
         try
         {
-            return singleUpdater.initialize( index.writer( cursorTracer ) );
+            return singleUpdater.initialize( index.writer( cursorContext ) );
         }
         catch ( IOException e )
         {
@@ -132,7 +132,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     }
 
     @Override
-    public synchronized void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+    public synchronized void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
     {
         Preconditions.checkState( !(populationCompletedSuccessfully && failureBytes != null),
                 "Can't mark index as online after it has been marked as failure" );
@@ -144,13 +144,13 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
             {
                 // Successful and completed population
                 assertTreeOpen();
-                flushTreeAndMarkAs( ONLINE, cursorTracer );
+                flushTreeAndMarkAs( ONLINE, cursorContext );
             }
             else if ( failureBytes != null )
             {
                 // Failed population
                 ensureTreeInstantiated();
-                markTreeAsFailed( cursorTracer );
+                markTreeAsFailed( cursorContext );
             }
             // else cancelled population. Here we simply close the tree w/o checkpointing it and it will look like POPULATING state on next open
         }
@@ -161,15 +161,15 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
         }
     }
 
-    private void flushTreeAndMarkAs( byte state, PageCursorTracer cursorTracer )
+    private void flushTreeAndMarkAs( byte state, CursorContext cursorContext )
     {
-        index.checkpoint( pageCursor -> pageCursor.putByte( state ), cursorTracer );
+        index.checkpoint( pageCursor -> pageCursor.putByte( state ), cursorContext );
     }
 
-    private void markTreeAsFailed( PageCursorTracer cursorTracer )
+    private void markTreeAsFailed( CursorContext cursorContext )
     {
         Preconditions.checkState( failureBytes != null, "markAsFailed hasn't been called, populator not actually failed?" );
-        index.checkpoint( new FailureHeaderWriter( failureBytes, FAILED ), cursorTracer );
+        index.checkpoint( new FailureHeaderWriter( failureBytes, FAILED ), cursorContext );
     }
 
     @Override
@@ -185,7 +185,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     }
 
     @Override
-    public IndexSample sample( PageCursorTracer cursorTracer )
+    public IndexSample sample( CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Token indexes does not support index sampling" );
     }

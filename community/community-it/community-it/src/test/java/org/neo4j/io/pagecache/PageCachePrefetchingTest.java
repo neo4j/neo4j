@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NoStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -56,14 +56,14 @@ class PageCachePrefetchingTest
     @Inject
     PageCache pageCache;
     private Path file;
-    private DefaultPageCursorTracer tracer;
+    private CursorContext cursorContext;
     private Consumer<PageCursor> scanner;
 
     @BeforeEach
     void setUp()
     {
         file = dir.createFile( "file" );
-        tracer = new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" );
+        cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
     }
 
     @Test
@@ -71,9 +71,9 @@ class PageCachePrefetchingTest
     {
         scanner = cursor -> cursor.putBytes( PageCache.PAGE_SIZE, (byte) 0xA7 ); // This is pretty fast.
 
-        runScan( file, tracer, "Warmup", PF_READ_AHEAD );
-        long faultsWithPreFetch = runScan( file, tracer, "Scanner With Prefetch", PF_READ_AHEAD );
-        long faultsWithoutPreFetch = runScan( file, tracer, "Scanner Without Prefetch", 0 );
+        runScan( file, cursorContext, "Warmup", PF_READ_AHEAD );
+        long faultsWithPreFetch = runScan( file, cursorContext, "Scanner With Prefetch", PF_READ_AHEAD );
+        long faultsWithoutPreFetch = runScan( file, cursorContext, "Scanner Without Prefetch", 0 );
 
         assertThat( faultsWithPreFetch ).as( "faults" ).isLessThan( faultsWithoutPreFetch );
     }
@@ -105,20 +105,20 @@ class PageCachePrefetchingTest
             }
         };
 
-        runScan( file, tracer, "Warmup", PF_READ_AHEAD );
-        long faultsWithPreFetch = runScan( file, tracer, "Scanner With Prefetch", PF_READ_AHEAD );
-        long faultsWithoutPreFetch = runScan( file, tracer, "Scanner Without Prefetch", 0 );
+        runScan( file, cursorContext, "Warmup", PF_READ_AHEAD );
+        long faultsWithPreFetch = runScan( file, cursorContext, "Scanner With Prefetch", PF_READ_AHEAD );
+        long faultsWithoutPreFetch = runScan( file, cursorContext, "Scanner Without Prefetch", 0 );
 
         assertThat( faultsWithPreFetch ).as( "faults" ).isLessThan( faultsWithoutPreFetch );
     }
 
-    private long runScan( Path file, DefaultPageCursorTracer tracer, String threadName, int additionalPfFlags ) throws InterruptedException
+    private long runScan( Path file, CursorContext cursorContext, String threadName, int additionalPfFlags ) throws InterruptedException
     {
         long faultsWith;
         RunnerThread thread = new RunnerThread( threadName );
         thread.additionalPfFlags = additionalPfFlags;
         thread.file = file;
-        thread.tracer = tracer;
+        thread.cursorContext = cursorContext;
         thread.start();
         thread.join();
         faultsWith = thread.faults;
@@ -129,7 +129,7 @@ class PageCachePrefetchingTest
     {
         private int additionalPfFlags;
         private Path file;
-        private DefaultPageCursorTracer tracer;
+        private CursorContext cursorContext;
         private long faults;
 
         RunnerThread( String name )
@@ -142,9 +142,9 @@ class PageCachePrefetchingTest
         {
             try
             {
-                tracer.reportEvents();
-                writeToFile( file, tracer, additionalPfFlags );
-                faults = tracer.faults();
+                cursorContext.getCursorTracer().reportEvents();
+                writeToFile( file, cursorContext, additionalPfFlags );
+                faults = cursorContext.getCursorTracer().faults();
             }
             catch ( IOException e )
             {
@@ -153,21 +153,21 @@ class PageCachePrefetchingTest
         }
     }
 
-    private void writeToFile( Path file, DefaultPageCursorTracer tracer, int additionalPfFlags ) throws IOException
+    private void writeToFile( Path file, CursorContext cursorContext, int additionalPfFlags ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME,
                 immutable.of( StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE ) ) )
         {
             for ( int i = 0; i < 5; i++ )
             {
-                writeToFile( pagedFile, tracer, additionalPfFlags );
+                writeToFile( pagedFile, cursorContext, additionalPfFlags );
             }
         }
     }
 
-    private void writeToFile( PagedFile pagedFile, PageCursorTracer tracer, int additionalPfFlags ) throws IOException
+    private void writeToFile( PagedFile pagedFile, CursorContext cursorContext, int additionalPfFlags ) throws IOException
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK | additionalPfFlags, tracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK | additionalPfFlags, cursorContext ) )
         {
             for ( int i = 0; i < 6_000; i++ )
             {

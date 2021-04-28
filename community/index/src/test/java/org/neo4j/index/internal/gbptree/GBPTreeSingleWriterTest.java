@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -39,7 +40,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 @EphemeralTestDirectoryExtension
 class GBPTreeSingleWriterTest
@@ -112,14 +114,15 @@ class GBPTreeSingleWriterTest
     void trackPageCacheAccessOnMerge() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnMerge" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnMerge" ) );
 
-        assertZeroCursor( cursorTracer );
+        assertZeroCursor( cursorContext );
 
         try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorTracer ) )
+              var treeWriter = gbpTree.writer( 0, cursorContext ) )
         {
             treeWriter.merge( new MutableLong( 0 ), new MutableLong( 1 ), ValueMergers.overwrite() );
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
             assertThat( cursorTracer.pins() ).isEqualTo( 5 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
@@ -132,14 +135,15 @@ class GBPTreeSingleWriterTest
     void trackPageCacheAccessOnPut() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnPut" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnPut" ) );
 
-        assertZeroCursor( cursorTracer );
+        assertZeroCursor( cursorContext );
 
         try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorTracer ) )
+              var treeWriter = gbpTree.writer( 0, cursorContext ) )
         {
             treeWriter.put( new MutableLong( 0 ), new MutableLong( 1 ) );
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
 
             assertThat( cursorTracer.pins() ).isEqualTo( 5 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
@@ -152,24 +156,26 @@ class GBPTreeSingleWriterTest
     void trackPageCacheAccessOnRemove() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnRemove" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnRemove" ) );
 
         try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorTracer ) )
+              var treeWriter = gbpTree.writer( 0, cursorContext ) )
         {
             treeWriter.put( new MutableLong( 0 ), new MutableLong( 0 ) );
+            var cursorTracer = cursorContext.getCursorTracer();
+
             assertThat( cursorTracer.pins() ).isEqualTo( 5 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
             assertThat( cursorTracer.hits() ).isEqualTo( 4 );
             assertThat( cursorTracer.faults() ).isEqualTo( 1 );
 
             cursorTracer.reportEvents();
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             // we are on the same page and we do not expect any cursor events to be registered
             treeWriter.remove( new MutableLong( 0 ) );
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
         }
     }
 
@@ -177,15 +183,15 @@ class GBPTreeSingleWriterTest
     void trackPageCacheAccessOnRemoveWhenNothingToRemove() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnRemoveWhenNothingToRemove" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnRemoveWhenNothingToRemove" ) );
 
-        assertZeroCursor( cursorTracer );
+        assertZeroCursor( cursorContext );
 
         try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorTracer ) )
+              var treeWriter = gbpTree.writer( 0, cursorContext ) )
         {
             treeWriter.remove( new MutableLong( 0 ) );
-
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 1 );
             assertThat( cursorTracer.hits() ).isEqualTo( 1 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 0 );
@@ -197,24 +203,26 @@ class GBPTreeSingleWriterTest
     void trackPageCacheAccessOnClose() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnClose" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnClose" ) );
 
-        assertZeroCursor( cursorTracer );
+        assertZeroCursor( cursorContext );
 
         try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
-              var treeWriter = gbpTree.writer( 0, cursorTracer ) )
+              var treeWriter = gbpTree.writer( 0, cursorContext ) )
         {
             // empty, we check that closing everything register unpins event
         }
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 1 );
         assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
         assertThat( cursorTracer.faults() ).isEqualTo( 0 );
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();

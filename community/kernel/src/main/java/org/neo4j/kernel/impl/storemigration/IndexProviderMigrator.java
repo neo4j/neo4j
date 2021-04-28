@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -76,9 +77,9 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
 
     private void migrateIndexProviders( DatabaseLayout migrationLayout, String versionToMigrateTo ) throws IOException, KernelException
     {
-        try ( var cursorTracer = cacheTracer.createPageCursorTracer( INDEX_PROVIDER_MIGRATION_TAG );
-                SchemaRuleMigrationAccess ruleAccess = storageEngineFactory
-                .schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService, versionToMigrateTo, cacheTracer, cursorTracer, memoryTracker ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( INDEX_PROVIDER_MIGRATION_TAG ) );
+                SchemaRuleMigrationAccess ruleAccess = storageEngineFactory.schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService,
+                        versionToMigrateTo, cacheTracer, cursorContext, memoryTracker ) )
         {
             for ( SchemaRule rule : ruleAccess.getAll() )
             {

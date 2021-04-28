@@ -44,7 +44,7 @@ import org.neo4j.test.rule.RandomRule;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )

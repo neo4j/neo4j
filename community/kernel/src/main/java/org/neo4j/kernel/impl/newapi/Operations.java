@@ -77,7 +77,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -152,7 +152,7 @@ public class Operations implements Write, SchemaWrite
     private final ConstraintSemantics constraintSemantics;
     private final IndexingProvidersService indexProviders;
     private final Config config;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean relationshipPropertyIndexesEnabled;
@@ -165,7 +165,7 @@ public class Operations implements Write, SchemaWrite
 
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config, PageCursorTracer cursorTracer,
+            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config, CursorContext cursorContext,
             MemoryTracker memoryTracker )
     {
         this.storageReader = storageReader;
@@ -179,7 +179,7 @@ public class Operations implements Write, SchemaWrite
         this.constraintSemantics = constraintSemantics;
         this.indexProviders = indexProviders;
         this.config = config;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
         additionLockVerification = config.get( additional_lock_verification );
         relationshipPropertyIndexesEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes );
@@ -188,11 +188,11 @@ public class Operations implements Write, SchemaWrite
 
     public void initialize()
     {
-        this.nodeCursor = cursors.allocateFullAccessNodeCursor( cursorTracer );
-        this.propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorTracer, memoryTracker );
-        this.relationshipCursor = cursors.allocateRelationshipScanCursor( cursorTracer );
-        this.restrictedNodeCursor = cursors.allocateNodeCursor( cursorTracer );
-        this.restrictedPropertyCursor = cursors.allocatePropertyCursor( cursorTracer, memoryTracker );
+        this.nodeCursor = cursors.allocateFullAccessNodeCursor( cursorContext );
+        this.propertyCursor = cursors.allocateFullAccessPropertyCursor( cursorContext, memoryTracker );
+        this.relationshipCursor = cursors.allocateRelationshipScanCursor( cursorContext );
+        this.restrictedNodeCursor = cursors.allocateNodeCursor( cursorContext );
+        this.restrictedPropertyCursor = cursors.allocatePropertyCursor( cursorContext, memoryTracker );
     }
 
     @Override
@@ -266,7 +266,7 @@ public class Operations implements Write, SchemaWrite
         int deletedRelationships = 0;
         if ( nodeCursor.next() )
         {
-            try ( var rels = RelationshipSelections.allCursor( ktx.cursors(), nodeCursor, null, cursorTracer ) )
+            try ( var rels = RelationshipSelections.allCursor( ktx.cursors(), nodeCursor, null, cursorContext ) )
             {
                 while ( rels.next() )
                 {
@@ -559,7 +559,7 @@ public class Operations implements Write, SchemaWrite
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
         IndexDescriptor index = allStoreHolder.indexGetForName( constraint.getName() );
-        try ( FullAccessNodeValueIndexCursor valueCursor = cursors.allocateFullAccessNodeValueIndexCursor( cursorTracer, memoryTracker );
+        try ( FullAccessNodeValueIndexCursor valueCursor = cursors.allocateFullAccessNodeValueIndexCursor( cursorContext, memoryTracker );
               IndexReaders indexReaders = new IndexReaders( index, allStoreHolder ) )
         {
             assertIndexOnline( index );
@@ -1299,7 +1299,7 @@ public class Operations implements Write, SchemaWrite
             IndexDescriptor index = allStoreHolder.findUsableTokenIndex( NODE );
             if ( index != IndexDescriptor.NO_INDEX )
             {
-                try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+                try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorContext ) )
                 {
                     var session = allStoreHolder.tokenReadSession( index );
                     allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ) );
@@ -1308,7 +1308,7 @@ public class Operations implements Write, SchemaWrite
             }
             else
             {
-                try ( var cursor = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
+                try ( var cursor = cursors.allocateFullAccessNodeCursor( cursorContext ) )
                 {
                     allStoreHolder.allNodesScan( cursor );
                     constraintSemantics.validateNodeKeyConstraint( new FilteringNodeCursorWrapper( cursor, CursorPredicates.hasLabel( schema.getLabelId() ) ),
@@ -1318,7 +1318,7 @@ public class Operations implements Write, SchemaWrite
         }
         else
         {
-            try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+            try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorContext ) )
             {
                 allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
                 constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
@@ -1346,7 +1346,7 @@ public class Operations implements Write, SchemaWrite
             IndexDescriptor index = allStoreHolder.findUsableTokenIndex( NODE );
             if ( index != IndexDescriptor.NO_INDEX )
             {
-                try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+                try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorContext ) )
                 {
                     var session = allStoreHolder.tokenReadSession( index );
                     allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ) );
@@ -1355,7 +1355,7 @@ public class Operations implements Write, SchemaWrite
             }
             else
             {
-                try ( var cursor = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
+                try ( var cursor = cursors.allocateFullAccessNodeCursor( cursorContext ) )
                 {
                     allStoreHolder.allNodesScan( cursor );
                     constraintSemantics.validateNodePropertyExistenceConstraint(
@@ -1366,7 +1366,7 @@ public class Operations implements Write, SchemaWrite
         }
         else
         {
-            try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+            try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorContext ) )
             {
                 allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
                 constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema, token );
@@ -1395,7 +1395,7 @@ public class Operations implements Write, SchemaWrite
             if ( index != IndexDescriptor.NO_INDEX )
             {
                 try ( var fullAccessIndexCursor = cursors.allocateFullAccessRelationshipTypeIndexCursor();
-                      var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
+                      var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorContext ) )
                 {
                     var session = allStoreHolder.tokenReadSession( index );
                     allStoreHolder.relationshipTypeScan( session, fullAccessIndexCursor, unconstrained(), new TokenPredicate( schema.getRelTypeId() ) );
@@ -1407,7 +1407,7 @@ public class Operations implements Write, SchemaWrite
         }
 
         // keep this part as fallback to all relationship scan when removing scanStoreAsTokenIndexEnabled flag
-        try ( var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
+        try ( var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorContext ) )
         {
             allStoreHolder.allRelationshipsScan( fullAccessCursor );
             constraintSemantics.validateRelationshipPropertyExistenceConstraint(

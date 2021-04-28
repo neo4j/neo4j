@@ -29,7 +29,7 @@ import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
@@ -82,7 +82,7 @@ class LabelViewNodeStoreScanTest
         when( labelScanReader.entitiesWithAnyOfTokens( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
 
         LegacyLabelViewNodeStoreScan storeScan = getLabelScanViewStoreScan( labelIds );
-        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( PageCursorTracer.NULL );
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( CursorContext.NULL );
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
         assertThat( idIterator.next() ).isEqualTo( 2L );

@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.StepStats;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -347,7 +347,7 @@ class ForkedProcessorStepTest
             add( new ProcessorStep<Long>( control(), "Yeah", config, 3, NULL )
             {
                 @Override
-                protected void process( Long batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
+                protected void process( Long batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
                 {
                     Thread.sleep( 1 );
                     sender.send( batch );

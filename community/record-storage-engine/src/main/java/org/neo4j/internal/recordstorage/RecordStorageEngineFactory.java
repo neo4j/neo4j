@@ -45,7 +45,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -168,16 +168,16 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCache pageCache,
-            PageCursorTracer cursorTracer ) throws IOException
+            CursorContext cursorContext ) throws IOException
     {
-        return new ReadOnlyTransactionIdStore( fileSystem, pageCache, databaseLayout, cursorTracer );
+        return new ReadOnlyTransactionIdStore( fileSystem, pageCache, databaseLayout, cursorContext );
     }
 
     @Override
-    public LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer )
+    public LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
             throws IOException
     {
-        return new ReadOnlyLogVersionRepository( pageCache, databaseLayout, cursorTracer );
+        return new ReadOnlyLogVersionRepository( pageCache, databaseLayout, cursorContext );
     }
 
     @Override
@@ -193,14 +193,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException
+    public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException
     {
-        return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorTracer );
+        return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
     }
 
     @Override
     public SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            LogService logService, String recordFormats, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         RecordFormats formats = selectForVersion( recordFormats );
         StoreFactory factory =
@@ -209,28 +209,28 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         try
         {
-            stores.start( cursorTracer );
+            stores.start( cursorContext );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
-        return createMigrationTargetSchemaRuleAccess( stores, cursorTracer, memoryTracker );
+        return createMigrationTargetSchemaRuleAccess( stores, cursorContext, memoryTracker );
     }
 
     @Override
     public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
                         NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, readOnly() );
         try ( NeoStores stores = factory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
         {
-            stores.start( cursorTracer );
-            TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), cursorTracer );
+            stores.start( cursorContext );
+            TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), cursorContext );
             List<SchemaRule> rules = new ArrayList<>();
-            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST, false ).getAll( cursorTracer ).forEach( rules::add );
+            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST, false ).getAll( cursorContext ).forEach( rules::add );
             return rules;
         }
         catch ( IOException e )
@@ -270,7 +270,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return StorageFilesState.recoveredState();
     }
 
-    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, PageCursorTracer cursorTracer,
+    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext,
             MemoryTracker memoryTracker )
     {
         SchemaStore dstSchema = stores.getSchemaStore();
@@ -280,33 +280,33 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             DynamicStringStore nameStore = keyTokenStore.getNameStore();
             byte[] bytes = PropertyStore.encodeString( name );
             List<DynamicRecord> nameRecords = new ArrayList<>();
-            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorTracer, memoryTracker );
-            nameRecords.forEach( record -> nameStore.prepareForCommit( record, cursorTracer ) );
-            nameRecords.forEach( record -> nameStore.updateRecord( record, cursorTracer ) );
+            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorContext, memoryTracker );
+            nameRecords.forEach( record -> nameStore.prepareForCommit( record, cursorContext ) );
+            nameRecords.forEach( record -> nameStore.updateRecord( record, cursorContext ) );
             nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
             int nameId = Iterables.first( nameRecords ).getIntId();
             PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
-            long tokenId = keyTokenStore.nextId( cursorTracer );
+            long tokenId = keyTokenStore.nextId( cursorContext );
             keyTokenRecord.setId( tokenId );
             keyTokenRecord.initialize( true, nameId );
             keyTokenRecord.setInternal( internal );
             keyTokenRecord.setCreated();
-            keyTokenStore.prepareForCommit( keyTokenRecord, cursorTracer );
-            keyTokenStore.updateRecord( keyTokenRecord, cursorTracer );
+            keyTokenStore.prepareForCommit( keyTokenRecord, cursorContext );
+            keyTokenStore.updateRecord( keyTokenRecord, cursorContext );
             keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
             return Math.toIntExact( tokenId );
         };
-        TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, cursorTracer );
+        TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, cursorContext );
         return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST, false ),
-                cursorTracer, memoryTracker );
+                cursorContext, memoryTracker );
     }
 
-    private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, PageCursorTracer cursorTracer )
+    private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, CursorContext cursorContext )
     {
         TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
         TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens( cursorTracer ) );
+        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens( cursorContext ) );
         return dstTokenHolders;
     }
 }

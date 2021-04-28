@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -58,27 +58,27 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     }
 
     @Override
-    public Updater apply( long txId, PageCursorTracer cursorTracer )
+    public Updater apply( long txId, CursorContext cursorContext )
     {
-        CountUpdater updater = updater( txId, cursorTracer );
+        CountUpdater updater = updater( txId, cursorContext );
         return updater != null ? new DegreeUpdater( updater ) : NO_OP_UPDATER;
     }
 
-    public Updater directApply( PageCursorTracer cursorTracer ) throws IOException
+    public Updater directApply( CursorContext cursorContext ) throws IOException
     {
-        return new DegreeUpdater( directUpdater( true, cursorTracer ) );
+        return new DegreeUpdater( directUpdater( true, cursorContext ) );
     }
 
     @Override
-    public long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer )
+    public long degree( long groupId, RelationshipDirection direction, CursorContext cursorContext )
     {
-        return read( degreeKey( groupId, direction ), cursorTracer );
+        return read( degreeKey( groupId, direction ), cursorContext );
     }
 
     @Override
-    public void accept( GroupDegreeVisitor visitor, PageCursorTracer cursorTracer )
+    public void accept( GroupDegreeVisitor visitor, CursorContext cursorContext )
     {
-        visitAllCounts( ( key, count ) -> visitor.degree( groupIdOf( key ), directionOf( key ), count ), cursorTracer );
+        visitAllCounts( ( key, count ) -> visitor.degree( groupIdOf( key ), directionOf( key ), count ), cursorContext );
     }
 
     private static class DegreeUpdater implements Updater, AutoCloseable
@@ -142,9 +142,9 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         return key.first >> 2;
     }
 
-    public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
+    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContext cursorContext ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorTracer, GBPTreeRelationshipGroupDegreesStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorContext, GBPTreeRelationshipGroupDegreesStore::keyToString );
     }
 
     private static final Updater NO_OP_UPDATER = new Updater()
@@ -162,7 +162,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public interface DegreesRebuilder
     {
-        void rebuild( Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+        void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker );
 
         long lastCommittedTxId();
     }
@@ -170,7 +170,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     public static final DegreesRebuilder EMPTY_REBUILD = new DegreesRebuilder()
     {
         @Override
-        public void rebuild( Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
         }
 
@@ -191,9 +191,9 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         }
 
         @Override
-        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
-            rebuilder.rebuild( new DegreeUpdater( updater ), cursorTracer, memoryTracker );
+            rebuilder.rebuild( new DegreeUpdater( updater ), cursorContext, memoryTracker );
         }
 
         @Override

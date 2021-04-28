@@ -44,7 +44,7 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -62,7 +62,7 @@ public class FullCheck
     private final ProgressMonitorFactory progressFactory;
     private final IndexSamplingConfig samplingConfig;
     private final int threads;
-    private ConsistencyFlags flags;
+    private final ConsistencyFlags flags;
 
     public FullCheck( ProgressMonitorFactory progressFactory, int threads,
                       ConsistencyFlags consistencyFlags, Config config, boolean verbose, NodeBasedMemoryLimiter.Factory memoryLimit )
@@ -168,7 +168,7 @@ public class FullCheck
 
     private ConsistencyCheckable getRelationshipTypeIndex( DirectStoreAccess directStoreAccess, IndexAccessors indexes )
     {
-        ConsistencyCheckable result = ( reporterFactory, cursorTracer ) -> true;
+        ConsistencyCheckable result = ( reporterFactory, cursorContext ) -> true;
         if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
         {
             ConsistencyCheckable relationshipTypeIndex = indexes.relationshipTypeIndex();
@@ -188,7 +188,7 @@ public class FullCheck
             labelScanStore = indexes.nodeLabelIndex();
             if ( labelScanStore == null )
             {
-                labelScanStore = ( reporterFactory, cursorTracer ) -> true;
+                labelScanStore = ( reporterFactory, cursorContext ) -> true;
             }
         }
         else
@@ -210,7 +210,7 @@ public class FullCheck
             CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, IndexAccessors indexes,
             List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory, PageCacheTracer pageCacheTracer )
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) ) )
         {
             final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
             long additionalCount = 1 /*LabelScanStore*/ + 1 /*RelationshipTypeScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
@@ -224,8 +224,8 @@ public class FullCheck
             listener.started();
 
             consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, relationshipTypeScanStore, indexStatisticsStore, countsStore, groupDegreesStore,
-                    idGenerators, cursorTracer );
-            consistencyCheckSchemaIndexes( indexes, report, listener, cursorTracer );
+                    idGenerators, cursorContext );
+            consistencyCheckSchemaIndexes( indexes, report, listener, cursorContext );
             listener.done();
         }
     }
@@ -233,38 +233,38 @@ public class FullCheck
     private static void consistencyCheckNonSchemaIndexes( InconsistencyReport report, ProgressListener listener,
             ConsistencyCheckable labelScanStore, ConsistencyCheckable relationshipTypeScanStore,
             IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, List<IdGenerator> idGenerators,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT, cursorTracer );
-        consistencyCheckSingleCheckable( report, listener, relationshipTypeScanStore, RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorTracer );
-        consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS, cursorTracer );
-        consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS, cursorTracer );
+        consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT, cursorContext );
+        consistencyCheckSingleCheckable( report, listener, relationshipTypeScanStore, RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorContext );
+        consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS, cursorContext );
+        consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS, cursorContext );
         if ( hasGroupDegreesStore( groupDegreesStore ) )
         {
             // The relationship group degrees store has no "NULL_STORE" because it's otherwise not needed and it's not
             // checked in the other parts of the consistency checker since degrees in general aren't checked (due to performance implications).
             // This is why we use null instead for this particular store.
-            consistencyCheckSingleCheckable( report, listener, groupDegreesStore, RecordType.RELATIONSHIP_GROUP, cursorTracer );
+            consistencyCheckSingleCheckable( report, listener, groupDegreesStore, RecordType.RELATIONSHIP_GROUP, cursorContext );
         }
         for ( IdGenerator idGenerator : idGenerators )
         {
-            consistencyCheckSingleCheckable( report, listener, idGenerator, RecordType.ID_STORE, cursorTracer );
+            consistencyCheckSingleCheckable( report, listener, idGenerator, RecordType.ID_STORE, cursorContext );
         }
     }
 
     private static void consistencyCheckSingleCheckable( InconsistencyReport report, ProgressListener listener, ConsistencyCheckable checkable,
-            RecordType recordType, PageCursorTracer cursorTracer )
+            RecordType recordType, CursorContext cursorContext )
     {
         ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, recordType );
         ReporterFactory proxyFactory = new ReporterFactory( handler );
 
-        checkable.consistencyCheck( proxyFactory, cursorTracer );
+        checkable.consistencyCheck( proxyFactory, cursorContext );
         handler.updateSummary();
         listener.add( 1 );
     }
 
     private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, InconsistencyReport report, ProgressListener listener,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         List<IndexDescriptor> rulesToRemove = new ArrayList<>();
         for ( IndexDescriptor onlineRule : indexes.onlineRules() )
@@ -272,7 +272,7 @@ public class FullCheck
             ConsistencyReporter.FormattingDocumentedHandler handler = ConsistencyReporter.formattingHandler( report, RecordType.INDEX );
             ReporterFactory reporterFactory = new ReporterFactory( handler );
             IndexAccessor accessor = indexes.accessorFor( onlineRule );
-            if ( !accessor.consistencyCheck( reporterFactory, cursorTracer ) )
+            if ( !accessor.consistencyCheck( reporterFactory, cursorContext ) )
             {
                 rulesToRemove.add( onlineRule );
             }

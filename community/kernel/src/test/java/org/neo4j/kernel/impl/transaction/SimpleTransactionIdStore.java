@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.transaction;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
 
@@ -75,7 +75,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public synchronized void transactionCommitted( long transactionId, int checksum, long commitTimestamp, PageCursorTracer cursorTracer )
+    public synchronized void transactionCommitted( long transactionId, int checksum, long commitTimestamp, CursorContext cursorContext )
     {
         TransactionId current = committedTransactionId.get();
         if ( current == null || transactionId > current.transactionId() )
@@ -116,7 +116,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
 
     @Override
     public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp,
-            long byteOffset, long logVersion, PageCursorTracer cursorTracer )
+            long byteOffset, long logVersion, CursorContext cursorContext )
     {
         committingTransactionId.set( transactionId );
         committedTransactionId.set( new TransactionId( transactionId, checksum, commitTimestamp ) );
@@ -124,19 +124,19 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, PageCursorTracer cursorTracer )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, CursorContext cursorContext )
     {
         closedTransactionId.offer( transactionId, new long[]{logVersion, byteOffset} );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long byteOffset, long logVersion, boolean missingLogs, PageCursorTracer cursorTracer )
+    public void resetLastClosedTransaction( long transactionId, long byteOffset, long logVersion, boolean missingLogs, CursorContext cursorContext )
     {
         closedTransactionId.set( transactionId, new long[]{logVersion, byteOffset} );
     }
 
     @Override
-    public void flush( PageCursorTracer cursorTracer )
+    public void flush( CursorContext cursorContext )
     {
     }
 }

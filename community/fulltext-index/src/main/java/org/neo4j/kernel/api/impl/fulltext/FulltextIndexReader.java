@@ -50,7 +50,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
@@ -162,7 +162,7 @@ public class FulltextIndexReader implements ValueIndexReader
             }
         }
         Query query = queryBuilder.build();
-        ValuesIterator itr = searchLucene( query, constraints, context, context.cursorTracer(), context.memoryTracker() );
+        ValuesIterator itr = searchLucene( query, constraints, context, context.cursorContext(), context.memoryTracker() );
         IndexProgressor progressor = new FulltextIndexProgressor( itr, client, constraints );
         client.initialize( index, progressor, queries, constraints, true );
     }
@@ -174,7 +174,7 @@ public class FulltextIndexReader implements ValueIndexReader
      * {@link LuceneFulltextDocumentStructure#newCountEntityEntriesQuery} for more details.
      */
     @Override
-    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
     {
         long count = 0;
         for ( SearcherReference searcher : searchers )
@@ -215,7 +215,7 @@ public class FulltextIndexReader implements ValueIndexReader
         return multiFieldQueryParser.parse( query );
     }
 
-    private ValuesIterator searchLucene( Query query, IndexQueryConstraints constraints, QueryContext context, PageCursorTracer cursorTracer,
+    private ValuesIterator searchLucene( Query query, IndexQueryConstraints constraints, QueryContext context, CursorContext cursorContext,
             MemoryTracker memoryTracker )
     {
         try
@@ -238,7 +238,7 @@ public class FulltextIndexReader implements ValueIndexReader
             }
             if ( includeTransactionState )
             {
-                SearcherReference reference = transactionState.maybeUpdate( context, cursorTracer, memoryTracker );
+                SearcherReference reference = transactionState.maybeUpdate( context, cursorContext, memoryTracker );
                 searches.add( new PreparedSearch( reference.getIndexSearcher(), ALWAYS_FALSE ) );
             }
 

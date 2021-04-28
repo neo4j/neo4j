@@ -28,7 +28,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -41,15 +41,15 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 public class TokenIndexScanIdIterator implements EntityIdIterator
 {
     private final TokenIndexReader tokenIndexReader;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
     private final int[] tokenIds;
 
-    TokenIndexScanIdIterator( TokenIndexReader tokenIndexReader, int[] tokenIds, PageCursorTracer cursorTracer )
+    TokenIndexScanIdIterator( TokenIndexReader tokenIndexReader, int[] tokenIds, CursorContext cursorContext )
     {
         this.tokenIndexReader = tokenIndexReader;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.tokenIds = tokenIds;
         this.idIterator = createIdIterator( EntityRange.FULL, tokenIds );
     }
@@ -94,7 +94,7 @@ public class TokenIndexScanIdIterator implements EntityIdIterator
         QueryResultIterator( EntityRange entityRange, int tokenId )
         {
             this.client = new SimpleProgressorClient();
-            tokenIndexReader.query( client, unconstrained(), new TokenPredicate( tokenId ), entityRange, cursorTracer );
+            tokenIndexReader.query( client, unconstrained(), new TokenPredicate( tokenId ), entityRange, cursorContext );
         }
 
         @Override

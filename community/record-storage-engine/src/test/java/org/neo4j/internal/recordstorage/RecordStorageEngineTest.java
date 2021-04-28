@@ -70,7 +70,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
 @EphemeralPageCacheExtension
@@ -189,7 +189,7 @@ class RecordStorageEngineTest
                 .transactionApplierTransformer( applier::wrapAroundActualApplier )
                 .build();
         CommandsToApply commandsToApply = mock( CommandsToApply.class );
-        when( commandsToApply.cursorTracer() ).thenReturn( NULL );
+        when( commandsToApply.cursorContext() ).thenReturn( NULL );
         when( commandsToApply.accept( any() ) ).thenAnswer( invocationOnMock ->
         {
             // Visit one node command

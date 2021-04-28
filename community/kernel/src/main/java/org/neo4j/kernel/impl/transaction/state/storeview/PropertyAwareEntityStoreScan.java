@@ -28,7 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -45,7 +45,7 @@ import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superv
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 /**
- * Scan store with the view given by iterator created by {@link #getEntityIdIterator(PageCursorTracer)}. This might be a full scan of the store
+ * Scan store with the view given by iterator created by {@link #getEntityIdIterator(CursorContext)}. This might be a full scan of the store
  * or a partial scan backed by {@link LabelScanStore}.
  *
  * @param <CURSOR> the type of cursor used to read the records.
@@ -134,9 +134,9 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.phaseTracker = phaseTracker;
     }
 
-    public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
+    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
     {
-        return new CursorEntityIdIterator<>( cursorBehaviour.allocateEntityScanCursor( cursorTracer ) );
+        return new CursorEntityIdIterator<>( cursorBehaviour.allocateEntityScanCursor( cursorContext ) );
     }
 
     static class CursorEntityIdIterator<CURSOR extends StorageEntityScanCursor<?>> extends AbstractPrimitiveLongBaseResourceIterator

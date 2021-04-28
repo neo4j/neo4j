@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.Objects;
 
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -70,7 +70,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
     {
         assert updatesForCorrectIndex( updates );
 
@@ -91,7 +91,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+    public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
     {
         try
         {

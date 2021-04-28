@@ -25,11 +25,12 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implements LongArray
 {
@@ -45,8 +46,8 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG );
-              PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG ) );
+              PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             cursor.next();
             long result;
@@ -69,8 +70,8 @@ public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG );
-            PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( PAGE_CACHE_LONG_ARRAY_WORKER_TAG ) );
+            PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorContext ) )
         {
             cursor.next();
             cursor.putLong( offset, value );

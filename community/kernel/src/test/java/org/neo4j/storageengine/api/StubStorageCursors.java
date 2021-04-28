@@ -38,7 +38,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.api.TokenHolder;
@@ -264,19 +264,19 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public long countsForNode( int labelId, PageCursorTracer cursorTracer )
+    public long countsForNode( int labelId, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public long nodesGetCount( PageCursorTracer cursorTracer )
+    public long nodesGetCount( CursorContext cursorContext )
     {
         return nodeData.size();
     }
@@ -306,13 +306,13 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public boolean nodeExists( long id, PageCursorTracer cursorTracer )
+    public boolean nodeExists( long id, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public boolean relationshipExists( long id, PageCursorTracer cursorTracer )
+    public boolean relationshipExists( long id, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
@@ -336,25 +336,25 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public StorageNodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
+    public StorageNodeCursor allocateNodeCursor( CursorContext cursorContext )
     {
         return new StubStorageNodeCursor();
     }
 
     @Override
-    public StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return new StubStoragePropertyCursor();
     }
 
     @Override
-    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public StorageRelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
+    public StorageRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
     {
         return new StubStorageRelationshipScanCursor();
     }

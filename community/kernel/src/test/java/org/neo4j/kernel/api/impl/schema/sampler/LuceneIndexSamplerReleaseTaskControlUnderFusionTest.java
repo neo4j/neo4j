@@ -35,7 +35,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
@@ -100,7 +100,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
      * <p>
      * A fusion index has multiple {@link IndexSampler index samplers} that are called sequentially. If one fails, then the other will never be invoked.
      * This was a problem for {@link LuceneIndexSampler}. It owns a {@link TaskCoordinator.Task} that it will try to release in try-finally
-     * in {@link LuceneIndexSampler#sampleIndex(PageCursorTracer)}. But it never gets here because a prior {@link IndexSampler} fails.
+     * in {@link LuceneIndexSampler#sampleIndex(CursorContext)}. But it never gets here because a prior {@link IndexSampler} fails.
      * <p>
      * Because the {@link TaskCoordinator.Task} was never released the lucene accessor would block forever, waiting for
      * {@link TaskCoordinator#awaitCompletion()}.
@@ -139,7 +139,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
     private void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
     {
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
-              IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, PageCursorTracer.NULL ) )
+              IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
         {
             updater.process( IndexEntryUpdate.add( 1, descriptor, Values.of( "some string" ) ) );
         }
@@ -209,7 +209,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
                     }
 
                     @Override
-                    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+                    public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
                     {
                         return 0;
                     }
@@ -217,7 +217,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
                     @Override
                     public IndexSampler createSampler()
                     {
-                        return cursorTracer ->
+                        return cursorContext ->
                         {
                             throw sampleException;
                         };

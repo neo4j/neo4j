@@ -24,7 +24,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import java.util.function.LongConsumer;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -44,13 +44,13 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private final StorageRelationshipScanCursor relationshipCursor;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
-            ReadableTransactionState txState, CountsDelta counts, PageCursorTracer cursorTracer )
+            ReadableTransactionState txState, CountsDelta counts, CursorContext cursorContext )
     {
         super( next );
         this.txState = txState;
         this.counts = counts;
-        this.nodeCursor = storageReader.allocateNodeCursor( cursorTracer );
-        this.relationshipCursor = storageReader.allocateRelationshipScanCursor( cursorTracer );
+        this.nodeCursor = storageReader.allocateNodeCursor( cursorContext );
+        this.relationshipCursor = storageReader.allocateRelationshipScanCursor( cursorContext );
     }
 
     @Override

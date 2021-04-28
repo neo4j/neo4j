@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
@@ -37,7 +37,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
 
     private PageCursor page;
@@ -46,13 +46,13 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     RecordLoadOverride loadMode;
 
     RecordRelationshipGroupCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
-            RecordLoadOverride loadMode, PageCursorTracer cursorTracer )
+            RecordLoadOverride loadMode, CursorContext cursorContext )
     {
         super( NO_ID );
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
         this.groupDegreesStore = groupDegreesStore;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.loadMode = loadMode;
     }
 
@@ -123,11 +123,11 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         }
         if ( hasExternal )
         {
-            return Numbers.safeCastLongToInt( groupDegreesStore.degree( getId(), direction, cursorTracer ) );
+            return Numbers.safeCastLongToInt( groupDegreesStore.degree( getId(), direction, cursorContext ) );
         }
         if ( edgePage == null )
         {
-            edgePage = relationshipStore.openPageCursorForReading( reference, cursorTracer );
+            edgePage = relationshipStore.openPageCursorForReading( reference, cursorContext );
         }
         relationshipStore.getRecordByCursor( reference, edge, loadMode.orElse( ALWAYS ), edgePage );
         return (int) edge.getPrevRel( getOwningNode() );
@@ -194,7 +194,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
 
     private PageCursor groupPage( long reference )
     {
-        return groupStore.openPageCursorForReading( reference, cursorTracer );
+        return groupStore.openPageCursorForReading( reference, cursorContext );
     }
 
     private void group( RelationshipGroupRecord record, long reference, PageCursor page )

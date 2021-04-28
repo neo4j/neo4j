@@ -43,7 +43,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.memory.ByteBufferFactory.Allocator;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -180,7 +180,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
     {
         if ( !updates.isEmpty() )
         {
@@ -226,7 +226,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, PageCursorTracer cursorTracer )
+    public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, CursorContext cursorContext )
             throws IndexEntryConflictException
     {
         if ( !markMergeStarted() )
@@ -261,25 +261,25 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                   var indexKeyStorage = new IndexKeyStorage<>( fileSystem, duplicatesFile, allocator, readBufferSize, layout, memoryTracker ) )
             {
                 RecordingConflictDetector<KEY,VALUE> recordingConflictDetector = new RecordingConflictDetector<>( !descriptor.isUnique(), indexKeyStorage );
-                nonUniqueIndexSample = writeScanUpdatesToTree( populationWorkScheduler, recordingConflictDetector, allocator, readBufferSize, cursorTracer );
+                nonUniqueIndexSample = writeScanUpdatesToTree( populationWorkScheduler, recordingConflictDetector, allocator, readBufferSize, cursorContext );
 
                 // Apply the external updates
                 phaseTracker.enterPhase( PhaseTracker.Phase.APPLY_EXTERNAL );
-                writeExternalUpdatesToTree( recordingConflictDetector, cursorTracer );
+                writeExternalUpdatesToTree( recordingConflictDetector, cursorContext );
 
                 // Verify uniqueness
                 if ( descriptor.isUnique() )
                 {
                     try ( IndexKeyStorage.KeyEntryCursor<KEY> allConflictingKeys = recordingConflictDetector.allConflicts() )
                     {
-                        verifyUniqueKeys( allConflictingKeys, cursorTracer );
+                        verifyUniqueKeys( allConflictingKeys, cursorContext );
                     }
                 }
             }
 
             // Flush the tree here, but keep its state as populating. This is done so that the "actual" flush-and-mark-online during flip
             // becomes way faster and so the flip lock time is reduced.
-            flushTreeAndMarkAs( BYTE_POPULATING, cursorTracer );
+            flushTreeAndMarkAs( BYTE_POPULATING, cursorContext );
         }
         catch ( IOException e )
         {
@@ -334,10 +334,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      * @throws IOException If something goes wrong while reading from index.
      * @throws IndexEntryConflictException If a duplicate is found.
      */
-    private void writeExternalUpdatesToTree( RecordingConflictDetector<KEY,VALUE> recordingConflictDetector, PageCursorTracer cursorTracer )
+    private void writeExternalUpdatesToTree( RecordingConflictDetector<KEY,VALUE> recordingConflictDetector, CursorContext cursorContext )
             throws IOException, IndexEntryConflictException
     {
-        try ( Writer<KEY,VALUE> writer = tree.writer( cursorTracer );
+        try ( Writer<KEY,VALUE> writer = tree.writer( cursorContext );
               IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
         {
             while ( updates.next() && !cancellation.cancelled() )
@@ -363,14 +363,14 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void verifyUniqueKeys( IndexKeyStorage.KeyEntryCursor<KEY> allConflictingKeys, PageCursorTracer cursorTracer )
+    private void verifyUniqueKeys( IndexKeyStorage.KeyEntryCursor<KEY> allConflictingKeys, CursorContext cursorContext )
             throws IOException, IndexEntryConflictException
     {
         while ( allConflictingKeys.next() && !cancellation.cancelled() )
         {
             KEY key = allConflictingKeys.key();
             key.setCompareId( false );
-            try ( var seeker = tree.seek( key, key, cursorTracer ) )
+            try ( var seeker = tree.seek( key, key, cursorContext ) )
             {
                 verifyUniqueSeek( seeker );
             }
@@ -395,7 +395,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     private IndexSample writeScanUpdatesToTree( PopulationWorkScheduler populationWorkScheduler, RecordingConflictDetector<KEY,VALUE> recordingConflictDetector,
-            Allocator allocator, int bufferSize, PageCursorTracer cursorTracer ) throws IOException, IndexEntryConflictException
+            Allocator allocator, int bufferSize, CursorContext cursorContext ) throws IOException, IndexEntryConflictException
     {
         if ( allScanUpdates.isEmpty() )
         {
@@ -425,7 +425,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             Comparator<KEY> samplingComparator = descriptor.isUnique() ? null : layout::compareValue;
             try ( var merger = new PartMerger<>( populationWorkScheduler, parts, layout, samplingComparator, cancellation, PartMerger.DEFAULT_BATCH_SIZE );
                   var allEntries = merger.startMerge();
-                  var writer = tree.writer( 1, cursorTracer ) )
+                  var writer = tree.writer( 1, cursorContext ) )
             {
                 while ( allEntries.next() && !cancellation.cancelled() )
                 {
@@ -438,12 +438,12 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PageCursorTracer cursorTracer )
+    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
         if ( scanCompleted )
         {
             // Will need the reader from newReader, which a sub-class of this class implements
-            return new DelegatingIndexUpdater( super.newPopulatingUpdater( cursorTracer ) )
+            return new DelegatingIndexUpdater( super.newPopulatingUpdater( cursorContext ) )
             {
                 @Override
                 public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
@@ -510,11 +510,11 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public synchronized void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+    public synchronized void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
     {
         runAll( "Failed while trying to close index",
                 this::closeBlockStorage /* Close internal resources */,
-                () -> super.close( populationCompletedSuccessfully, cursorTracer ) /* Super close will close inherited resources */
+                () -> super.close( populationCompletedSuccessfully, cursorContext ) /* Super close will close inherited resources */
         );
     }
 
@@ -632,7 +632,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    IndexSample buildNonUniqueIndexSample( PageCursorTracer cursorTracer )
+    IndexSample buildNonUniqueIndexSample( CursorContext cursorContext )
     {
         return new IndexSample(
                 nonUniqueIndexSample.indexSize(),

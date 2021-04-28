@@ -37,7 +37,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -193,9 +193,9 @@ public class CachingExpandInto extends DefaultCloseListenable
             long fromNode,
             int[] types,
             long toNode,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor( cursorTracer ), fromNode, types, toNode );
+        return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor( cursorContext ), fromNode, types, toNode );
     }
 
     private int calculateTotalDegreeIfCheap( Read read, long node, NodeCursor nodeCursor, Direction direction,

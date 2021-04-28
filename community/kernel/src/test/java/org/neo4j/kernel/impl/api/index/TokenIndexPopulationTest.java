@@ -39,7 +39,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -108,7 +108,7 @@ class TokenIndexPopulationTest
             batch.addRecord( 3, new long[]{111} );
         } );
 
-        multipleIndexPopulator.create( PageCursorTracer.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( tokenIndexPopulator ).add( indexUpdates.capture(), any() );
@@ -143,7 +143,7 @@ class TokenIndexPopulationTest
         // is driven only by TokenIndexEntryUpdates and ignores EntityUpdates
         mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
 
-        multipleIndexPopulator.create( PageCursorTracer.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( tokenIndexPopulator, never() ).add( indexUpdates.capture(), any() );
@@ -157,7 +157,7 @@ class TokenIndexPopulationTest
 
         mockTokenStore( batch -> batch.addRecord( 1, new long[]{123} ) );
 
-        multipleIndexPopulator.create( PageCursorTracer.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( storeView ).visitNodes( any(), any(), isNull(), any(), anyBoolean(), anyBoolean(), any(), any() );
@@ -170,7 +170,7 @@ class TokenIndexPopulationTest
 
         mockPropertyStore( batch -> batch.addRecord( 1, new long[]{1}, Map.of(1, Values.stringValue( "Hello" )) ) );
 
-        multipleIndexPopulator.create( PageCursorTracer.NULL );
+        multipleIndexPopulator.create( CursorContext.NULL );
         multipleIndexPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
         verify( storeView ).visitNodes( any(), any(), any(), isNull(), anyBoolean(), anyBoolean(), any(), any() );

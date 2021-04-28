@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public class StandardDynamicRecordAllocator implements DynamicRecordAllocator
@@ -41,9 +41,9 @@ public class StandardDynamicRecordAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public DynamicRecord nextRecord( PageCursorTracer cursorTracer )
+    public DynamicRecord nextRecord( CursorContext cursorContext )
     {
-        return allocateRecord( idGenerator.nextId( cursorTracer ) );
+        return allocateRecord( idGenerator.nextId( cursorContext ) );
     }
 
     public static DynamicRecord allocateRecord( long id )

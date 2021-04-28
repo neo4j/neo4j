@@ -30,7 +30,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
@@ -58,7 +58,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         if ( luceneIndex.isReadOnly() )
         {
@@ -80,7 +80,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
         try
         {
@@ -158,7 +158,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     public abstract void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException;
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
     {
         final LuceneIndexConsistencyCheckVisitor visitor = reporterFactory.getClass( LuceneIndexConsistencyCheckVisitor.class );
         final boolean isConsistent = luceneIndex.isValid();
@@ -170,7 +170,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public long estimateNumberOfEntries( PageCursorTracer ignored )
+    public long estimateNumberOfEntries( CursorContext ignored )
     {
         return luceneIndex.allDocumentsReader().maxCount();
     }

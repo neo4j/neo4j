@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface LogVersionRepository
 {
@@ -36,15 +36,15 @@ public interface LogVersionRepository
      * Set current log version
      * @param version new current log version
      */
-    void setCurrentLogVersion( long version, PageCursorTracer cursorTracer );
+    void setCurrentLogVersion( long version, CursorContext cursorContext );
 
     /**
      * Increments (making sure it is persisted on disk) and returns the latest log version for this repository.
      * It does so atomically and can potentially block.
-     * @param cursorTracer underlying page cursor tracer.
+     * @param cursorContext underlying page cursor context.
      * @return the latest log version for this repository.
      */
-    long incrementAndGetVersion( PageCursorTracer cursorTracer );
+    long incrementAndGetVersion( CursorContext cursorContext );
 
     /*
      * Returns the current checkpoint log version.
@@ -55,13 +55,13 @@ public interface LogVersionRepository
      * Set checkpoint log version
      * @param version new current log version
      */
-    void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer );
+    void setCheckpointLogVersion( long version, CursorContext cursorContext );
 
     /**
      * Increments (making sure it is persisted on disk) and returns the latest checkpoint log version for this repository.
      * It does so atomically and can potentially block.
-     * @param cursorTracer underlying page cursor tracer.
+     * @param cursorContext underlying page cursor context.
      * @return the latest checkpoint log version for this repository.
      */
-    long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer );
+    long incrementAndGetCheckpointLogVersion( CursorContext cursorContext );
 }

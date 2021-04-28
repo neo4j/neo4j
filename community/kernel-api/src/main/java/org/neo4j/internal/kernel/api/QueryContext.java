@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -55,7 +55,7 @@ public interface QueryContext
         }
 
         @Override
-        public PageCursorTracer cursorTracer()
+        public CursorContext cursorContext()
         {
             return NULL;
         }
@@ -89,7 +89,7 @@ public interface QueryContext
     /**
      * @return underlying transaction page cursor tracer
      */
-    PageCursorTracer cursorTracer();
+    CursorContext cursorContext();
 
     /**
      * @return underlying transactional memory tracker

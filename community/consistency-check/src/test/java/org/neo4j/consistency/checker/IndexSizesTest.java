@@ -32,7 +32,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,7 +62,7 @@ class IndexSizesTest
         when( indexAccessors.accessorFor( any() ) ).then( invocation ->
         {
             IndexAccessor mock = mock( IndexAccessor.class );
-            when( mock.estimateNumberOfEntries( any( PageCursorTracer.class ) ) ).thenReturn( invocation.getArgument( 0, IndexDescriptor.class ).getId() );
+            when( mock.estimateNumberOfEntries( any( CursorContext.class ) ) ).thenReturn( invocation.getArgument( 0, IndexDescriptor.class ).getId() );
             return mock;
         } );
 

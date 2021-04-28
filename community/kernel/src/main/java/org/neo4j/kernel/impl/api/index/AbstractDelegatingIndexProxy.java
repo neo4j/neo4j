@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -57,9 +57,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
-        return getDelegate().newUpdater( mode, cursorTracer );
+        return getDelegate().newUpdater( mode, cursorContext );
     }
 
     @Override
@@ -81,9 +81,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer ) throws IOException
+    public void force( CursorContext cursorContext ) throws IOException
     {
-        getDelegate().force( cursorTracer );
+        getDelegate().force( cursorContext );
     }
 
     @Override
@@ -93,9 +93,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void close( PageCursorTracer cursorTracer ) throws IOException
+    public void close( CursorContext cursorContext ) throws IOException
     {
-        getDelegate().close( cursorTracer );
+        getDelegate().close( cursorContext );
     }
 
     @Override

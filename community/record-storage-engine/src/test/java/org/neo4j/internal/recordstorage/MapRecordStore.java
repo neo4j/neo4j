@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -161,13 +161,13 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader
             }
 
             @Override
-            public T load( long key, R additionalData, RecordLoad load, PageCursorTracer cursorTracer )
+            public T load( long key, R additionalData, RecordLoad load, CursorContext cursorContext )
             {
                 return loadRecord( key, store, monitor );
             }
 
             @Override
-            public void ensureHeavy( T record, PageCursorTracer cursorTracer )
+            public void ensureHeavy( T record, CursorContext cursorContext )
             {
                 // ignore
             }

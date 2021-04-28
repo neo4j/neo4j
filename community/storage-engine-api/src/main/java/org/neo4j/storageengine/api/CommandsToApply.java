@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.common.Subject;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Group of commands to apply onto {@link StorageEngine}, as well as reference to {@link #next()} group of commands.
@@ -44,7 +44,7 @@ public interface CommandsToApply extends CommandStream
      * Page cursor tracer to trace access to underlying page cache
      * @return underlying page cursor tracer
      */
-    PageCursorTracer cursorTracer();
+    CursorContext cursorContext();
 
     /**
      * @return next group of commands in this batch.

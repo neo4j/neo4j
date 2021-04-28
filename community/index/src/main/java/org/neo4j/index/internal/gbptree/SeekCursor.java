@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -182,7 +182,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     /**
      * underlying page cursor tracer
      */
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
     /**
      * Key instances to use for reading keys from current node.
@@ -371,7 +371,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     private long pointerGeneration;
 
     /**
-     * Result from {@link KeySearch#search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, PageCursorTracer)}.
+     * Result from {@link KeySearch#search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, CursorContext)}.
      */
     private int searchResult;
 
@@ -443,10 +443,10 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
             RootCatchup rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator, int maxReadAhead, int searchLevel,
-            Monitor monitor, PageCursorTracer cursorTracer ) throws IOException
+            Monitor monitor, CursorContext cursorContext ) throws IOException
     {
         this.cursor = cursor;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
@@ -691,7 +691,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             if ( verifyExpectedFirstAfterGoToNext )
             {
                 pos = seekForward ? 0 : keyCount - 1;
-                bTreeNode.keyAt( cursor, firstKeyInNode, pos, isInternal ? INTERNAL : LEAF, cursorTracer );
+                bTreeNode.keyAt( cursor, firstKeyInNode, pos, isInternal ? INTERNAL : LEAF, cursorContext );
             }
 
             if ( concurrentWriteHappened )
@@ -731,11 +731,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 }
                 if ( !isInternal )
                 {
-                    bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorTracer );
+                    bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorContext );
                 }
                 else
                 {
-                    bTreeNode.keyAt( cursor, mutableKeys[cachedLength], readPos, INTERNAL, cursorTracer );
+                    bTreeNode.keyAt( cursor, mutableKeys[cachedLength], readPos, INTERNAL, cursorContext );
                 }
 
                 if ( insideEndRange( exactMatch, cachedLength ) )
@@ -935,7 +935,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private int searchKey( KEY key, TreeNode.Type type )
     {
-        return KeySearch.search( cursor, bTreeNode, type, key, mutableKeys[0], keyCount, cursorTracer );
+        return KeySearch.search( cursor, bTreeNode, type, key, mutableKeys[0], keyCount, cursorContext );
     }
 
     private int positionOf( int searchResult, boolean lookingForChildPosition )
@@ -1071,7 +1071,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 if ( keyCountIsSane( keyCount ) )
                 {
                     int firstPos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos, LEAF, cursorTracer );
+                    bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos, LEAF, cursorContext );
                 }
             }
 

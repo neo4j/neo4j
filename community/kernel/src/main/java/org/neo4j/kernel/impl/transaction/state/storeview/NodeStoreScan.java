@@ -23,7 +23,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
@@ -58,9 +58,9 @@ public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCurso
 
     private static long getNodeCount( StorageReader storageReader, PageCacheTracer cacheTracer )
     {
-        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( TRACER_TAG ) )
+        try ( CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( TRACER_TAG ) ) )
         {
-            return storageReader.nodesGetCount( cursorTracer );
+            return storageReader.nodesGetCount( cursorContext );
         }
     }
 }

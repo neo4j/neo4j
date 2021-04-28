@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface SchemaStorage
 {
-    Iterable<SchemaRule> getAll( PageCursorTracer cursorTracer );
+    Iterable<SchemaRule> getAll( CursorContext cursorContext );
 }

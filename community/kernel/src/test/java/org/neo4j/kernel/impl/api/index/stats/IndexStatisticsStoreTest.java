@@ -34,6 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -100,15 +101,16 @@ class IndexStatisticsStoreTest
         var cacheTracer = new DefaultPageCacheTracer();
 
         var store = openStore( cacheTracer, "consistencyCheck" );
-        try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
         {
             for ( int i = 0; i < 100; i++ )
             {
                 store.replaceStats( i, new IndexSample() );
             }
-            store.checkpoint( PageCursorTracer.NULL );
-            store.consistencyCheck( noopReporterFactory(), cursorTracer );
+            store.checkpoint( CursorContext.NULL );
+            store.consistencyCheck( noopReporterFactory(), cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 16 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 16 );
             assertThat( cursorTracer.hits() ).isEqualTo( 16 );
@@ -140,14 +142,15 @@ class IndexStatisticsStoreTest
 
         var store = openStore( cacheTracer, "checkpoint" );
 
-        try ( var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckpoint" ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckpoint" ) ) )
         {
             for ( int i = 0; i < 100; i++ )
             {
                 store.replaceStats( i, new IndexSample() );
             }
 
-            store.checkpoint( cursorTracer );
+            store.checkpoint( cursorContext );
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 43 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 43 );
             assertThat( cursorTracer.hits() ).isEqualTo( 35 );
@@ -204,7 +207,7 @@ class IndexStatisticsStoreTest
 
     private void restartStore() throws IOException
     {
-        store.checkpoint( PageCursorTracer.NULL );
+        store.checkpoint( CursorContext.NULL );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
         store = openStore( pageCacheTracer, "stats" );
@@ -244,7 +247,7 @@ class IndexStatisticsStoreTest
             for ( int i = 0; i < 20; i++ )
             {
                 Thread.sleep( 5 );
-                store.checkpoint( PageCursorTracer.NULL );
+                store.checkpoint( CursorContext.NULL );
             }
             checkpointDone.set( true );
         } ) );

@@ -28,7 +28,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -46,20 +46,20 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     }
 
     @Override
-    public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, PageCursorTracer tracer )
+    public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, CursorContext cursorContext )
     {
-        query( client, constraints, query, EntityRange.FULL, tracer );
+        query( client, constraints, query, EntityRange.FULL, cursorContext );
     }
 
     @Override
     public void query(
-            IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, PageCursorTracer tracer )
+            IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, CursorContext cursorContext )
     {
         try
         {
             final int tokenId = query.tokenId();
             final IndexOrder order = constraints.order();
-            Seeker<TokenScanKey,TokenScanValue> seeker = seekerForToken( range, tokenId, order, tracer );
+            Seeker<TokenScanKey,TokenScanValue> seeker = seekerForToken( range, tokenId, order, cursorContext );
             IndexProgressor progressor = new TokenScanValueIndexProgressor( seeker, client, order, range );
             client.initialize( progressor, tokenId, order );
         }
@@ -70,7 +70,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     }
 
     private Seeker<TokenScanKey,TokenScanValue> seekerForToken(
-            EntityRange range, int tokenId, IndexOrder indexOrder, PageCursorTracer cursorTracer ) throws IOException
+            EntityRange range, int tokenId, IndexOrder indexOrder, CursorContext cursorContext ) throws IOException
     {
         long rangeFrom = range.fromInclusive;
         long rangeTo = range.toExclusive;
@@ -84,7 +84,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader
 
         TokenScanKey fromKey = new TokenScanKey( tokenId, rangeOf( rangeFrom ) );
         TokenScanKey toKey = new TokenScanKey( tokenId, rangeOf( rangeTo ) );
-        return index.seek( fromKey, toKey, cursorTracer );
+        return index.seek( fromKey, toKey, cursorContext );
     }
 
     @Override

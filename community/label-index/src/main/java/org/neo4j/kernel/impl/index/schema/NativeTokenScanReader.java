@@ -32,8 +32,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.EntityRange;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.util.VisibleForTesting;
 
@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 /**
  * {@link TokenScanReader} for reading data from {@link NativeTokenScanStore}.
  * Each {@link LongIterator} returned from each of the methods has a {@link Seeker}
- * directly from {@link GBPTree#seek(Object, Object, PageCursorTracer)} backing it.
+ * directly from {@link GBPTree#seek(Object, Object, CursorContext)} backing it.
  */
 class NativeTokenScanReader implements TokenScanReader
 {
@@ -58,25 +58,25 @@ class NativeTokenScanReader implements TokenScanReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator entitiesWithToken( int tokenId, PageCursorTracer cursorTracer )
+    public PrimitiveLongResourceIterator entitiesWithToken( int tokenId, CursorContext cursorContext )
     {
-        return new TokenScanValueIterator( seekerForToken( 0, tokenId, cursorTracer ), TokenScanReader.NO_ID );
+        return new TokenScanValueIterator( seekerForToken( 0, tokenId, cursorContext ), TokenScanReader.NO_ID );
     }
 
     @Override
-    public PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, PageCursorTracer cursorTracer )
+    public PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, CursorContext cursorContext )
     {
         return tokenIds.length == 1
-               ? new TokenScanValueIterator( seekerForToken( fromId, tokenIds[0], cursorTracer ), fromId )
-               : new CompositeTokenScanValueIterator( iteratorsForTokens( fromId, cursorTracer, tokenIds ), false );
+               ? new TokenScanValueIterator( seekerForToken( fromId, tokenIds[0], cursorContext ), fromId )
+               : new CompositeTokenScanValueIterator( iteratorsForTokens( fromId, cursorContext, tokenIds ), false );
     }
 
     @Override
-    public TokenScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer )
+    public TokenScan entityTokenScan( int tokenId, CursorContext cursorContext )
     {
         try
         {
-            long highestEntityIdForToken = highestEntityIdForToken( tokenId, cursorTracer );
+            long highestEntityIdForToken = highestEntityIdForToken( tokenId, cursorContext );
             return new NativeTokenScan( tokenId, highestEntityIdForToken );
         }
         catch ( IOException e )
@@ -85,16 +85,16 @@ class NativeTokenScanReader implements TokenScanReader
         }
     }
 
-    private long highestEntityIdForToken( int tokenId, PageCursorTracer cursorTracer ) throws IOException
+    private long highestEntityIdForToken( int tokenId, CursorContext cursorContext ) throws IOException
     {
         try ( Seeker<TokenScanKey,TokenScanValue> seeker = index.seek( new TokenScanKey( tokenId, Long.MAX_VALUE ),
-                new TokenScanKey( tokenId, Long.MIN_VALUE ), cursorTracer ) )
+                new TokenScanKey( tokenId, Long.MIN_VALUE ), cursorContext ) )
         {
             return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
         }
     }
 
-    private List<PrimitiveLongResourceIterator> iteratorsForTokens( long fromId, PageCursorTracer cursorTracer, int[] tokenIds )
+    private List<PrimitiveLongResourceIterator> iteratorsForTokens( long fromId, CursorContext cursorContext, int[] tokenIds )
     {
         List<PrimitiveLongResourceIterator> iterators = new ArrayList<>();
         boolean successful = false;
@@ -102,7 +102,7 @@ class NativeTokenScanReader implements TokenScanReader
         {
             for ( int tokenId : tokenIds )
             {
-                Seeker<TokenScanKey,TokenScanValue> cursor = seekerForToken( fromId, tokenId, cursorTracer );
+                Seeker<TokenScanKey,TokenScanValue> cursor = seekerForToken( fromId, tokenId, cursorContext );
                 iterators.add( new TokenScanValueIterator( cursor, fromId ) );
             }
             successful = true;
@@ -117,11 +117,11 @@ class NativeTokenScanReader implements TokenScanReader
         return iterators;
     }
 
-    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, int tokenId, PageCursorTracer cursorTracer )
+    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, int tokenId, CursorContext cursorContext )
     {
         try
         {
-            return seekerForToken( startId, Long.MAX_VALUE, tokenId, IndexOrder.NONE, cursorTracer );
+            return seekerForToken( startId, Long.MAX_VALUE, tokenId, IndexOrder.NONE, cursorContext );
         }
         catch ( IOException e )
         {
@@ -129,7 +129,7 @@ class NativeTokenScanReader implements TokenScanReader
         }
     }
 
-    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, long stopId, int tokenId, IndexOrder indexOrder, PageCursorTracer cursorTracer )
+    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( long startId, long stopId, int tokenId, IndexOrder indexOrder, CursorContext cursorContext )
             throws IOException
     {
         long rangeFrom;
@@ -147,7 +147,7 @@ class NativeTokenScanReader implements TokenScanReader
 
         TokenScanKey fromKey = new TokenScanKey( tokenId, rangeOf( rangeFrom ) );
         TokenScanKey toKey = new TokenScanKey( tokenId, rangeOf( rangeTo ) );
-        return index.seek( fromKey, toKey, cursorTracer );
+        return index.seek( fromKey, toKey, cursorContext );
     }
 
     @VisibleForTesting
@@ -170,13 +170,13 @@ class NativeTokenScanReader implements TokenScanReader
         }
 
         @Override
-        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, PageCursorTracer cursorTracer )
+        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, CursorContext cursorContext )
         {
-            return init( client, Long.MIN_VALUE, Long.MAX_VALUE, indexOrder, cursorTracer );
+            return init( client, Long.MIN_VALUE, Long.MAX_VALUE, indexOrder, cursorContext );
         }
 
         @Override
-        public IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, PageCursorTracer cursorTracer )
+        public IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, CursorContext cursorContext )
         {
             if ( sizeHint == 0 )
             {
@@ -189,15 +189,15 @@ class NativeTokenScanReader implements TokenScanReader
             {
                 return IndexProgressor.EMPTY;
             }
-            return init( client, start, stop, IndexOrder.NONE, cursorTracer );
+            return init( client, start, stop, IndexOrder.NONE, cursorContext );
         }
 
-        private IndexProgressor init( IndexProgressor.EntityTokenClient client, long start, long stop, IndexOrder indexOrder, PageCursorTracer cursorTracer )
+        private IndexProgressor init( IndexProgressor.EntityTokenClient client, long start, long stop, IndexOrder indexOrder, CursorContext cursorContext )
         {
             Seeker<TokenScanKey,TokenScanValue> cursor;
             try
             {
-                cursor = seekerForToken( start, stop, tokenId, indexOrder, cursorTracer );
+                cursor = seekerForToken( start, stop, tokenId, indexOrder, cursorContext );
             }
             catch ( IOException e )
             {

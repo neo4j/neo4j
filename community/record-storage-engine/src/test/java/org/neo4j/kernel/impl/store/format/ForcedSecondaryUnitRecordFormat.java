@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -68,12 +68,12 @@ public class ForcedSecondaryUnitRecordFormat<RECORD extends AbstractBaseRecord> 
     }
 
     @Override
-    public void prepare( RECORD record, int recordSize, IdSequence idSequence, PageCursorTracer cursorTracer )
+    public void prepare( RECORD record, int recordSize, IdSequence idSequence, CursorContext cursorContext )
     {
-        actual.prepare( record, recordSize, idSequence, cursorTracer );
+        actual.prepare( record, recordSize, idSequence, cursorContext );
         if ( !record.hasSecondaryUnitId() )
         {
-            record.setSecondaryUnitIdOnCreate( idSequence.nextId( cursorTracer ) );
+            record.setSecondaryUnitIdOnCreate( idSequence.nextId( cursorContext ) );
         }
     }
 

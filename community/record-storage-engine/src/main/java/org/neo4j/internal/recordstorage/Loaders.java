@@ -23,7 +23,7 @@ import org.neo4j.internal.recordstorage.RecordAccess.Loader;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -53,7 +53,7 @@ public class Loaders implements AutoCloseable
     private final RecordLoader<LabelTokenRecord,Void> labelTokenLoader;
     private final RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
 
-    public Loaders( NeoStores neoStores, PageCursorTracer cursorTracer )
+    public Loaders( NeoStores neoStores, CursorContext cursorContext )
     {
         this(
                 neoStores.getNodeStore(),
@@ -64,7 +64,7 @@ public class Loaders implements AutoCloseable
                 neoStores.getRelationshipTypeTokenStore(),
                 neoStores.getLabelTokenStore(),
                 neoStores.getSchemaStore(),
-                cursorTracer );
+                cursorContext );
     }
 
     public Loaders(
@@ -76,16 +76,16 @@ public class Loaders implements AutoCloseable
             RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore,
             RecordStore<LabelTokenRecord> labelTokenStore,
             SchemaStore schemaStore,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        nodeLoader = nodeLoader( nodeStore, cursorTracer );
-        propertyLoader = propertyLoader( propertyStore, cursorTracer );
-        relationshipLoader = relationshipLoader( relationshipStore, cursorTracer );
-        relationshipGroupLoader = relationshipGroupLoader( relationshipGroupStore, cursorTracer );
-        schemaRuleLoader = schemaRuleLoader( schemaStore, cursorTracer );
-        propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore, cursorTracer );
-        labelTokenLoader = labelTokenLoader( labelTokenStore, cursorTracer );
-        relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore, cursorTracer );
+        nodeLoader = nodeLoader( nodeStore, cursorContext );
+        propertyLoader = propertyLoader( propertyStore, cursorContext );
+        relationshipLoader = relationshipLoader( relationshipStore, cursorContext );
+        relationshipGroupLoader = relationshipGroupLoader( relationshipGroupStore, cursorContext );
+        schemaRuleLoader = schemaRuleLoader( schemaStore, cursorContext );
+        propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore, cursorContext );
+        labelTokenLoader = labelTokenLoader( labelTokenStore, cursorContext );
+        relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore, cursorContext );
     }
 
     @Override
@@ -135,9 +135,9 @@ public class Loaders implements AutoCloseable
         return relationshipTypeTokenLoader;
     }
 
-    public static RecordLoader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store, PageCursorTracer cursorTracer )
+    public static RecordLoader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store, CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public NodeRecord newUnused( long key, Void additionalData )
@@ -153,9 +153,9 @@ public class Loaders implements AutoCloseable
         };
     }
 
-    public static RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store, PageCursorTracer cursorTracer )
+    public static RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store, CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
@@ -174,9 +174,9 @@ public class Loaders implements AutoCloseable
             }
 
             @Override
-            public PropertyRecord load( long key, PrimitiveRecord additionalData, RecordLoad load, PageCursorTracer cursorTracer )
+            public PropertyRecord load( long key, PrimitiveRecord additionalData, RecordLoad load, CursorContext cursorContext )
             {
-                PropertyRecord record = super.load( key, additionalData, load, cursorTracer );
+                PropertyRecord record = super.load( key, additionalData, load, cursorContext );
                 setOwner( record, additionalData );
                 return record;
             }
@@ -189,9 +189,9 @@ public class Loaders implements AutoCloseable
         };
     }
 
-    public static RecordLoader<RelationshipRecord,Void> relationshipLoader( final RecordStore<RelationshipRecord> store, PageCursorTracer cursorTracer )
+    public static RecordLoader<RelationshipRecord,Void> relationshipLoader( final RecordStore<RelationshipRecord> store, CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public RelationshipRecord newUnused( long key, Void additionalData )
@@ -208,9 +208,9 @@ public class Loaders implements AutoCloseable
     }
 
     public static RecordLoader<RelationshipGroupRecord,Integer> relationshipGroupLoader( final RecordStore<RelationshipGroupRecord> store,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public RelationshipGroupRecord newUnused( long key, Integer type )
@@ -228,9 +228,9 @@ public class Loaders implements AutoCloseable
         };
     }
 
-    private static RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store, PageCursorTracer cursorTracer )
+    private static RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store, CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public SchemaRecord newUnused( long key, SchemaRule additionalData )
@@ -247,9 +247,9 @@ public class Loaders implements AutoCloseable
     }
 
     public static RecordLoader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader( final RecordStore<PropertyKeyTokenRecord> store,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public PropertyKeyTokenRecord newUnused( long key, Void additionalData )
@@ -265,9 +265,9 @@ public class Loaders implements AutoCloseable
         };
     }
 
-    public static RecordLoader<LabelTokenRecord,Void> labelTokenLoader( final RecordStore<LabelTokenRecord> store, PageCursorTracer cursorTracer )
+    public static RecordLoader<LabelTokenRecord,Void> labelTokenLoader( final RecordStore<LabelTokenRecord> store, CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public LabelTokenRecord newUnused( long key, Void additionalData )
@@ -284,9 +284,9 @@ public class Loaders implements AutoCloseable
     }
 
     public static RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader( final RecordStore<RelationshipTypeTokenRecord> store,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
-        return new RecordLoader<>( store, cursorTracer )
+        return new RecordLoader<>( store, cursorContext )
         {
             @Override
             public RelationshipTypeTokenRecord newUnused( long key, Void additionalData )
@@ -313,20 +313,20 @@ public class Loaders implements AutoCloseable
         private final RecordStore<R> store;
         private final PageCursor cursor;
 
-        RecordLoader( RecordStore<R> store, PageCursorTracer cursorTracer )
+        RecordLoader( RecordStore<R> store, CursorContext cursorContext )
         {
             this.store = store;
-            this.cursor = store.openPageCursorForReading( 0, cursorTracer );
+            this.cursor = store.openPageCursorForReading( 0, cursorContext );
         }
 
         @Override
-        public void ensureHeavy( R record, PageCursorTracer cursorTracer )
+        public void ensureHeavy( R record, CursorContext cursorContext )
         {
-            store.ensureHeavy( record, cursorTracer );
+            store.ensureHeavy( record, cursorContext );
         }
 
         @Override
-        public R load( long key, A additionalData, RecordLoad load, PageCursorTracer cursorTracer )
+        public R load( long key, A additionalData, RecordLoad load, CursorContext cursorContext )
         {
             R record = store.newRecord();
             store.getRecordByCursor( key, record, load, cursor );

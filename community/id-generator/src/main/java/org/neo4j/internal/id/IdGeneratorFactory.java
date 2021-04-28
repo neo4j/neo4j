@@ -31,21 +31,21 @@ import java.util.function.LongSupplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface IdGeneratorFactory
 {
     IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException;
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException;
 
     IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException;
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException;
 
     IdGenerator get( IdType idType );
 
     void visit( Consumer<IdGenerator> visitor );
 
-    void clearCache( PageCursorTracer cursorTracer );
+    void clearCache( CursorContext cursorContext );
 
     Collection<Path> listIdFiles();
 }

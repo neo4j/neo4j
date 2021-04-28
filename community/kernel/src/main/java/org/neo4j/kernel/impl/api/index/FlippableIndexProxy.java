@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -92,14 +92,14 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         // Making use of reentrant locks to ensure that the delegate's constructor is called under lock protection
         // while still retaining the lock until a call to close on the returned IndexUpdater
         lock.readLock().lock();
         try
         {
-            return new LockingIndexUpdater( delegate.newUpdater( mode, cursorTracer ) );
+            return new LockingIndexUpdater( delegate.newUpdater( mode, cursorContext ) );
         }
         finally
         {
@@ -134,12 +134,12 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
      * we don't care about waiting threads, only about whether the exclusive lock is held or not.
      */
     @Override
-    public void force( PageCursorTracer cursorTracer ) throws IOException
+    public void force( CursorContext cursorContext ) throws IOException
     {
         barge( lock.readLock() ); // see javadoc of this method (above) for rationale on why we use barge(...) here
         try
         {
-            delegate.force( cursorTracer );
+            delegate.force( cursorContext );
         }
         finally
         {
@@ -248,13 +248,13 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public void close( PageCursorTracer cursorTracer ) throws IOException
+    public void close( CursorContext cursorContext ) throws IOException
     {
         lock.readLock().lock();
         try
         {
             closed = true;
-            delegate.close( cursorTracer );
+            delegate.close( cursorContext );
         }
         finally
         {

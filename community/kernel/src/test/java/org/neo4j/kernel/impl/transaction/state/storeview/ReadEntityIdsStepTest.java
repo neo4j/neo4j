@@ -34,7 +34,7 @@ import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
@@ -94,7 +94,7 @@ class ReadEntityIdsStepTest
             {
                 {
                     add( new ReadEntityIdsStep( control(), configuration,
-                            cursorTracer -> new LegacyTokenScanViewIdIterator( scanStore.newReader(), new int[]{TOKEN_ID}, PageCursorTracer.NULL ), NULL,
+                            cursorContext -> new LegacyTokenScanViewIdIterator( scanStore.newReader(), new int[]{TOKEN_ID}, CursorContext.NULL ), NULL,
                             externalUpdatesCheck, new AtomicBoolean( true ) ) );
                     add( new CollectEntityIdsStep( control(), configuration, seenEntityIds ) );
                 }
@@ -110,7 +110,7 @@ class ReadEntityIdsStepTest
 
     private void populateScanStore( TokenScanStore scanStore, BitSet entityIds, long count ) throws IOException
     {
-        try ( TokenScanWriter writer = scanStore.newWriter( PageCursorTracer.NULL ) )
+        try ( TokenScanWriter writer = scanStore.newWriter( CursorContext.NULL ) )
         {
             long id = 0;
             for ( int i = 0; i < count; i++ )
@@ -149,7 +149,7 @@ class ReadEntityIdsStepTest
         {
             // Apply some changes right in front of this point
             int numIds = random.nextInt( 5, 50 );
-            try ( TokenScanWriter writer = scanStore.newWriter( PageCursorTracer.NULL ) )
+            try ( TokenScanWriter writer = scanStore.newWriter( CursorContext.NULL ) )
             {
                 for ( int i = 0; i < numIds; i++ )
                 {
@@ -179,7 +179,7 @@ class ReadEntityIdsStepTest
         }
 
         @Override
-        protected void process( long[] entityIds, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
+        protected void process( long[] entityIds, BatchSender sender, CursorContext cursorContext ) throws Throwable
         {
             for ( long entityId : entityIds )
             {

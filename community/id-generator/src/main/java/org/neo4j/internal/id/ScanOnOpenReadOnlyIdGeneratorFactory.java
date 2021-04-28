@@ -32,11 +32,11 @@ import java.util.function.LongSupplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in
- * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, DatabaseReadOnlyChecker, Config, PageCursorTracer, ImmutableSet)},
+ * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, DatabaseReadOnlyChecker, Config, CursorContext, ImmutableSet)},
  * instantiating {@link IdGenerator} that will return that highId and do nothing else.
  * This is of great convenience when migrating between id file formats.
  */
@@ -46,7 +46,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
     {
         long highId = highIdScanner.getAsLong();
         ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator( highId );
@@ -56,9 +56,9 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
     {
-        return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorTracer, openOptions );
+        return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorContext, openOptions );
     }
 
     @Override
@@ -79,9 +79,9 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void clearCache( PageCursorTracer cursorTracer )
+    public void clearCache( CursorContext cursorContext )
     {
-        idGenerators.values().forEach( idGenerator -> idGenerator.clearCache( cursorTracer ) );
+        idGenerators.values().forEach( idGenerator -> idGenerator.clearCache( cursorContext ) );
     }
 
     @Override

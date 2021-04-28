@@ -21,7 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
@@ -41,10 +41,10 @@ public class DefaultForceOperation implements CheckPointerImpl.ForceOperation
     }
 
     @Override
-    public void flushAndForce( PageCursorTracer cursorTracer ) throws IOException
+    public void flushAndForce( CursorContext cursorContext ) throws IOException
     {
-        indexingService.forceAll( cursorTracer );
-        labelScanStore.force( cursorTracer );
-        storageEngine.flushAndForce( cursorTracer );
+        indexingService.forceAll( cursorContext );
+        labelScanStore.force( cursorContext );
+        storageEngine.flushAndForce( cursorContext );
     }
 }

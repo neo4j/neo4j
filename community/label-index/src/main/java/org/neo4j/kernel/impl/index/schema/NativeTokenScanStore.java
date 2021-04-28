@@ -51,13 +51,14 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
@@ -78,7 +79,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  * </li>
  * </ul>
  * <p>
- * {@link #force(IOController, PageCursorTracer)} is vital for allowing this store to be recoverable, and must be called
+ * {@link #force(IOController, CursorContext)} is vital for allowing this store to be recoverable, and must be called
  * whenever Neo4j performs a checkpoint.
  * <p>
  * This store is backed by a single store file, "neostore.labelscanstore.db" for {@link LabelScanStore}.
@@ -234,18 +235,18 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      * Returns {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * Only a single writer is allowed at any given point in time.
      *
-     * @param cursorTracer underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor events tracer.
      * @return {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
      * called {@link TokenScanWriter#close()}.
      */
     @Override
-    public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
+    public TokenScanWriter newWriter( CursorContext cursorContext )
     {
 
         try
         {
-            return writer( cursorTracer );
+            return writer( cursorContext );
         }
         catch ( IOException e )
         {
@@ -254,20 +255,20 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     }
 
     /**
-     * Returns a {@link TokenScanWriter} like that from {@link #newWriter(PageCursorTracer)}, but is specialized in bulk-writing new data.
+     * Returns a {@link TokenScanWriter} like that from {@link #newWriter(CursorContext)}, but is specialized in bulk-writing new data.
      *
      * @return {@link TokenScanWriter} capable of making changes to this {@link TokenScanStore}.
      * @throws IllegalStateException if someone else has already acquired a writer and hasn't yet
      * called {@link TokenScanWriter#close()}.
      */
     @Override
-    public TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer )
+    public TokenScanWriter newBulkAppendWriter( CursorContext cursorContext )
     {
         assertWritable();
 
         try
         {
-            return new BulkAppendNativeTokenScanWriter( index.writer( cursorTracer ) );
+            return new BulkAppendNativeTokenScanWriter( index.writer( cursorContext ) );
         }
         catch ( IOException e )
         {
@@ -284,9 +285,9 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     }
 
     @Override
-    public void applyUpdates( Iterable<EntityTokenUpdate> tokenUpdates, PageCursorTracer cursorTracer )
+    public void applyUpdates( Iterable<EntityTokenUpdate> tokenUpdates, CursorContext cursorContext )
     {
-        try ( TokenScanWriter writer = newWriter( cursorTracer ) )
+        try ( TokenScanWriter writer = newWriter( cursorContext ) )
         {
             for ( EntityTokenUpdate update : tokenUpdates )
             {
@@ -306,20 +307,20 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      *
      */
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
-        index.checkpoint( cursorTracer );
+        index.checkpoint( cursorContext );
         writeMonitor.force();
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges( PageCursorTracer cursorTracer )
+    public AllEntriesTokenScanReader allEntityTokenRanges( CursorContext cursorContext )
     {
-        return allEntityTokenRanges( 0, Long.MAX_VALUE, cursorTracer );
+        return allEntityTokenRanges( 0, Long.MAX_VALUE, cursorContext );
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
+    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, CursorContext cursorContext )
     {
         IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
         {
@@ -327,7 +328,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             {
                 return index.seek(
                         new TokenScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
-                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), cursorTracer );
+                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), cursorContext );
             }
             catch ( IOException e )
             {
@@ -338,7 +339,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         int highestTokenId = -1;
         try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
                 new TokenScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
-                new TokenScanKey().set( 0, -1 ), cursorTracer ) )
+                new TokenScanKey().set( 0, -1 ), cursorContext ) )
         {
             if ( cursor.next() )
             {
@@ -480,30 +481,32 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             monitor.rebuilding();
             long numberOfEntities;
 
-            final PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( TOKEN_SCAN_REBUILD_TAG );
-            try ( TokenScanWriter writer = newBulkAppendWriter( cursorTracer ) )
+            try ( CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( TOKEN_SCAN_REBUILD_TAG ) ) )
             {
-                numberOfEntities = fullStoreChangeStream.applyTo( writer, cacheTracer, memoryTracker );
-            }
+                try ( TokenScanWriter writer = newBulkAppendWriter( cursorContext ) )
+                {
+                    numberOfEntities = fullStoreChangeStream.applyTo( writer, cacheTracer, memoryTracker );
+                }
 
-            index.checkpoint( writeClean, cursorTracer );
+                index.checkpoint( writeClean, cursorContext );
+            }
 
             monitor.rebuilt( numberOfEntities );
             needsRebuild = false;
         }
     }
 
-    private NativeTokenScanWriter writer( PageCursorTracer cursorTracer ) throws IOException
+    private NativeTokenScanWriter writer( CursorContext cursorContext ) throws IOException
     {
-        return singleWriter.initialize( index.unsafeWriter( cursorTracer ) );
+        return singleWriter.initialize( index.unsafeWriter( cursorContext ) );
     }
 
     @Override
-    public boolean isEmpty( PageCursorTracer cursorTracer ) throws IOException
+    public boolean isEmpty( CursorContext cursorContext ) throws IOException
     {
         try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
                 new TokenScanKey( 0, 0 ),
-                new TokenScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ), cursorTracer ) )
+                new TokenScanKey( Integer.MAX_VALUE, Long.MAX_VALUE ), cursorContext ) )
         {
             return !cursor.next();
         }
@@ -531,17 +534,17 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
     {
         //noinspection unchecked
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorContext );
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<TokenScanKey> visitor, PageCursorTracer cursorTracer )
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<TokenScanKey> visitor, CursorContext cursorContext )
     {
         try
         {
-            return index.consistencyCheck( visitor, cursorTracer );
+            return index.consistencyCheck( visitor, cursorContext );
         }
         catch ( IOException e )
         {

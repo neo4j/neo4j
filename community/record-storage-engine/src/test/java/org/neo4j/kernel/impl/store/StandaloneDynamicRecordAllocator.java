@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
@@ -33,7 +33,7 @@ public class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public DynamicRecord nextRecord( PageCursorTracer cursorTracer )
+    public DynamicRecord nextRecord( CursorContext cursorContext )
     {
         return new DynamicRecord( next++ );
     }

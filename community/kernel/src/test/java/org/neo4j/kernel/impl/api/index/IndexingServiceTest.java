@@ -65,7 +65,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -142,7 +142,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildAll;
@@ -191,10 +191,10 @@ class IndexingServiceTest
     @BeforeEach
     void setUp() throws IndexNotFoundKernelException
     {
-        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
+        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample() );
         when( storeViewFactory.createTokenIndexStoreView( any() )).thenReturn( storeView );
-        when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( propertyAccessor );
+        when( storeView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( propertyAccessor );
         ValueIndexReader indexReader = mock( ValueIndexReader.class );
         IndexSampler indexSampler = mock( IndexSampler.class );
         when( indexSampler.sampleIndex( any() ) ).thenReturn( new IndexSample() );
@@ -222,7 +222,7 @@ class IndexingServiceTest
     void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -254,7 +254,7 @@ class IndexingServiceTest
     void indexCreationShouldBeIdempotent() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -329,9 +329,9 @@ class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( PageCursorTracer.class ) );
+        order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( CursorContext.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( IndexPopulator.PopulationWorkScheduler.class ),
-                any( PageCursorTracer.class ) );
+                any( CursorContext.class ) );
         order.verify( populator ).newPopulatingUpdater( propertyAccessor, NULL );
         order.verify( populator ).includeSample( any() );
         order.verify( updater ).process( any() );
@@ -348,7 +348,7 @@ class IndexingServiceTest
     void shouldStillReportInternalIndexStateAsPopulatingWhenConstraintIndexIsDonePopulating() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
         ValueIndexReader indexReader = mock( ValueIndexReader.class );
         when( accessor.newValueReader() ).thenReturn( indexReader );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( index ) ).when( indexReader ).query( any(), any(), any(), any() );
@@ -698,7 +698,7 @@ class IndexingServiceTest
     void applicationOfUpdatesShouldFlush() throws Exception
     {
         // Given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
 
@@ -734,11 +734,11 @@ class IndexingServiceTest
 
         IndexAccessor accessor1 = mock( IndexAccessor.class );
         IndexUpdater updater1 = mock( IndexUpdater.class );
-        when( accessor1.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater1 );
+        when( accessor1.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater1 );
 
         IndexAccessor accessor2 = mock( IndexAccessor.class );
         IndexUpdater updater2 = mock( IndexUpdater.class );
-        when( accessor2.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater2 );
+        when( accessor2.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater2 );
 
         when( indexProvider.getOnlineAccessor( eq( index1 ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor1 );
         when( indexProvider.getOnlineAccessor( eq( index2 ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor2 );
@@ -839,7 +839,7 @@ class IndexingServiceTest
         // and WHEN starting, i.e. completing recovery
         life.start();
 
-        verify( accessor ).newUpdater( eq( RECOVERY ), any( PageCursorTracer.class ) );
+        verify( accessor ).newUpdater( eq( RECOVERY ), any( CursorContext.class ) );
     }
 
     @Test
@@ -1230,7 +1230,7 @@ class IndexingServiceTest
                 return indexMap;
             } );
             throw new RuntimeException( "Index deleted." );
-        } ).when( deletedIndexProxy ).force( any( PageCursorTracer.class ) );
+        } ).when( deletedIndexProxy ).force( any( CursorContext.class ) );
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
@@ -1247,7 +1247,7 @@ class IndexingServiceTest
         IndexMapReference indexMapReference = new IndexMapReference();
         IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
         doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy )
-                .force( any( PageCursorTracer.class ) );
+                .force( any( CursorContext.class ) );
         indexMapReference.modify( indexMap ->
         {
             IndexProxy validIndex = createIndexProxyMock( 0 );
@@ -1275,7 +1275,7 @@ class IndexingServiceTest
         IndexAccessor accessor = mock( IndexAccessor.class );
         IndexUpdater updater = mock( IndexUpdater.class );
         when( accessor.newValueReader() ).thenReturn( ValueIndexReader.EMPTY );
-        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
+        when( accessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( updater );
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor );
 
@@ -1414,13 +1414,13 @@ class IndexingServiceTest
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, PageCursorTracer cursorTracer )
+        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext )
         {
             latch.waitForAllToStart();
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
         {
             latch.finish();
         }
@@ -1469,7 +1469,7 @@ class IndexingServiceTest
     private IndexingService newIndexingServiceWithMockedDependencies(
             IndexPopulator populator, IndexAccessor accessor, DataUpdates data, IndexingService.Monitor monitor, IndexDescriptor... rules ) throws IOException
     {
-        when( indexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( ONLINE );
         when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( indexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
@@ -1577,7 +1577,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+        public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
         {
             return updater;
         }
@@ -1589,7 +1589,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+        public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
         {
             throw new UnsupportedOperationException( "Not required" );
         }

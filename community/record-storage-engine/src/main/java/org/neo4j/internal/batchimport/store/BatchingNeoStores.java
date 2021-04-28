@@ -53,7 +53,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -267,19 +267,19 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 new DelegatingTokenHolder( ( key, internal ) -> propertyKeyRepository.getOrCreateId( key, internal ), TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( ( key, internal ) -> labelRepository.getOrCreateId( key, internal ), TYPE_LABEL ),
                 new DelegatingTokenHolder( ( key, internal ) -> relationshipTypeRepository.getOrCreateId( key, internal ), TYPE_RELATIONSHIP_TYPE ) );
-        tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( PageCursorTracer.NULL ) );
+        tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( CursorContext.NULL ) );
 
         temporaryNeoStores = instantiateTempStores();
         instantiateExtensions();
 
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( BATCHING_STORE_CREATION_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BATCHING_STORE_CREATION_TAG ) ) )
         {
-            neoStores.start( cursorTracer );
-            temporaryNeoStores.start( cursorTracer );
+            neoStores.start( cursorContext );
+            temporaryNeoStores.start( cursorContext );
             neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
                     initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
                     BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
-                    initialIds.lastCommittedTransactionLogVersion(), cursorTracer );
+                    initialIds.lastCommittedTransactionLogVersion(), cursorContext );
         }
     }
 
@@ -394,7 +394,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getRelationshipGroupStore();
     }
 
-    public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         try
         {
@@ -408,8 +408,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 RecoveryCleanupWorkCollector.immediate(), builder, writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName,
                 neo4jConfig.get( counts_store_max_cached_entries ) ) )
         {
-            countsStore.start( cursorTracer, memoryTracker );
-            countsStore.checkpoint( cursorTracer );
+            countsStore.start( cursorContext, memoryTracker );
+            countsStore.checkpoint( cursorContext );
         }
         catch ( IOException e )
         {
@@ -427,9 +427,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             stopFlushingPageCache();
         }
 
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( BATCHING_STORE_SHUTDOWN_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BATCHING_STORE_SHUTDOWN_TAG ) ) )
         {
-            flushAndForce( cursorTracer );
+            flushAndForce( cursorContext );
         }
 
         // Close the neo store
@@ -522,31 +522,31 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return pageCache;
     }
 
-    public void flushAndForce( PageCursorTracer cursorTracer ) throws IOException
+    public void flushAndForce( CursorContext cursorContext ) throws IOException
     {
         if ( propertyKeyRepository != null )
         {
-            propertyKeyRepository.flush( cursorTracer );
+            propertyKeyRepository.flush( cursorContext );
         }
         if ( labelRepository != null )
         {
-            labelRepository.flush( cursorTracer );
+            labelRepository.flush( cursorContext );
         }
         if ( relationshipTypeRepository != null )
         {
-            relationshipTypeRepository.flush( cursorTracer );
+            relationshipTypeRepository.flush( cursorContext );
         }
         if ( neoStores != null )
         {
-            neoStores.flush( cursorTracer );
+            neoStores.flush( cursorContext );
         }
         if ( temporaryNeoStores != null )
         {
-            temporaryNeoStores.flush( cursorTracer );
+            temporaryNeoStores.flush( cursorContext );
         }
         if ( labelScanStore != null )
         {
-            labelScanStore.force( cursorTracer );
+            labelScanStore.force( cursorContext );
         }
     }
 

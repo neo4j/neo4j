@@ -26,6 +26,8 @@ import java.io.IOException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -43,9 +45,10 @@ class ReadOnlyLogVersionRepositoryIT
     void tracePageCacheAccessOnReadOnlyLogRepoConstruction() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnReadOnlyLogRepoConstruction" );
-        new ReadOnlyLogVersionRepository( pageCache, databaseLayout, cursorTracer );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnReadOnlyLogRepoConstruction" ) );
+        new ReadOnlyLogVersionRepository( pageCache, databaseLayout, cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
         assertThat( cursorTracer.hits() ).isEqualTo( 2 );

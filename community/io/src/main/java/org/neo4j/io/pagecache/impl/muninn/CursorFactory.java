@@ -19,37 +19,34 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 final class CursorFactory
 {
     private final MuninnPagedFile pagedFile;
     private final long victimPage;
-    private final VersionContextSupplier versionContextSupplier;
 
     /**
      * Cursor factory construction
      * @param pagedFile paged file for which cursor is created
-     * @param versionContextSupplier version context supplier
      */
-    CursorFactory( MuninnPagedFile pagedFile, VersionContextSupplier versionContextSupplier )
+    CursorFactory( MuninnPagedFile pagedFile )
     {
         this.pagedFile = pagedFile;
         this.victimPage = pagedFile.pageCache.victimPage;
-        this.versionContextSupplier = versionContextSupplier;
     }
 
-    MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags, PageCursorTracer pageCursorTracer )
+    MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags, CursorContext cursorContext )
     {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( victimPage, pageCursorTracer, versionContextSupplier );
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( victimPage, cursorContext );
         cursor.initialise( pagedFile, pageId, pf_flags );
         return cursor;
     }
 
-    MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags, PageCursorTracer pageCursorTracer )
+    MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags, CursorContext cursorContext )
     {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( victimPage, pageCursorTracer, versionContextSupplier );
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( victimPage, cursorContext );
         cursor.initialise( pagedFile, pageId, pf_flags );
         return cursor;
     }

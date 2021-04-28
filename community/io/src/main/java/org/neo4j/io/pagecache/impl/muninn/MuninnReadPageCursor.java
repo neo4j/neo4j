@@ -22,17 +22,16 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
     private long lockStamp;
 
-    MuninnReadPageCursor( long victimPage, PageCursorTracer pageCursorTracer,
-            VersionContextSupplier versionContextSupplier )
+    MuninnReadPageCursor( long victimPage, CursorContext cursorContext )
     {
-        super( victimPage, pageCursorTracer, versionContextSupplier );
+        super( victimPage, cursorContext );
     }
 
     @Override

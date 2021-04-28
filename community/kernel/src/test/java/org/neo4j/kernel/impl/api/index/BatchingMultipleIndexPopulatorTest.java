@@ -37,7 +37,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -161,8 +161,8 @@ public class BatchingMultipleIndexPopulatorTest
 
         batchingPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
-        verify( populator1 ).add( forUpdates( index1, update1, update2, update3 ), PageCursorTracer.NULL );
-        verify( populator42 ).add( forUpdates( index42, update42 ), PageCursorTracer.NULL );
+        verify( populator1 ).add( forUpdates( index1, update1, update2, update3 ), CursorContext.NULL );
+        verify( populator42 ).add( forUpdates( index42, update42 ), CursorContext.NULL );
     }
 
     @Test
@@ -186,7 +186,7 @@ public class BatchingMultipleIndexPopulatorTest
 
             populator = addPopulator( batchingPopulator, index1 );
             List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
-            doThrow( batchFlushError ).when( populator ).add( expected, PageCursorTracer.NULL );
+            doThrow( batchFlushError ).when( populator ).add( expected, CursorContext.NULL );
 
             batchingPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
         }
@@ -246,7 +246,7 @@ public class BatchingMultipleIndexPopulatorTest
             PropertyScanConsumer consumerArg = invocation.getArgument( 2 );
             return new IndexEntryUpdateScan( updates, consumerArg );
         } );
-        when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
+        when( storeView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
         return storeView;
     }
 

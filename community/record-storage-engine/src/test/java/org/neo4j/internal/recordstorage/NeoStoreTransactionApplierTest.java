@@ -40,7 +40,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
@@ -89,7 +89,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -142,7 +142,7 @@ class NeoStoreTransactionApplierTest
         when( lockService.acquireRelationshipLock( anyLong(), any() ) )
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
-        when( transactionToApply.cursorTracer() ).thenReturn( NULL );
+        when( transactionToApply.cursorContext() ).thenReturn( NULL );
         when( transactionToApply.subject() ).thenReturn( AUTH_DISABLED );
     }
 
@@ -471,7 +471,7 @@ class NeoStoreTransactionApplierTest
         Command.RelationshipTypeTokenCommand command =
                 new Command.RelationshipTypeTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( relationshipTypeTokenStore.getToken( eq( command.tokenId() ), any( PageCursorTracer.class ) ) ).thenReturn( token );
+        when( relationshipTypeTokenStore.getToken( eq( command.tokenId() ), any( CursorContext.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -518,7 +518,7 @@ class NeoStoreTransactionApplierTest
         Command.LabelTokenCommand command =
                 new Command.LabelTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( labelTokenStore.getToken( eq( command.tokenId() ), any( PageCursorTracer.class ) ) ).thenReturn( token );
+        when( labelTokenStore.getToken( eq( command.tokenId() ), any( CursorContext.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -566,7 +566,7 @@ class NeoStoreTransactionApplierTest
         Command.PropertyKeyTokenCommand command =
                 new Command.PropertyKeyTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( propertyKeyTokenStore.getToken( eq( command.tokenId() ), any( PageCursorTracer.class ) ) ).thenReturn( token );
+        when( propertyKeyTokenStore.getToken( eq( command.tokenId() ), any( CursorContext.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );

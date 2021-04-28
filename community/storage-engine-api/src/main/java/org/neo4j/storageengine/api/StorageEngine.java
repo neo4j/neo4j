@@ -26,7 +26,7 @@ import java.util.List;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.LockTracer;
@@ -44,10 +44,10 @@ public interface StorageEngine extends Lifecycle
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
      * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
-     * TxStateVisitor.Decorator, PageCursorTracer, MemoryTracker)}.
+     * TxStateVisitor.Decorator, CursorContext, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
-    CommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    CommandCreationContext newCommandCreationContext( CursorContext cursorContext, MemoryTracker memoryTracker );
 
     /**
      * Adds an {@link IndexUpdateListener} which will receive streams of index updates from changes that gets
@@ -84,7 +84,7 @@ public interface StorageEngine extends Lifecycle
      * @param lastTransactionIdWhenStarted transaction id which was seen as last committed when this
      * transaction started, i.e. before any changes were made and before any data was read.
      * @param additionalTxStateVisitor any additional tx state visitor decoration.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @param memoryTracker to report allocations to
      * @throws KernelException on known errors while creating commands.
      */
@@ -97,7 +97,7 @@ public interface StorageEngine extends Lifecycle
             LockTracer lockTracer,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
-            PageCursorTracer cursorTracer,
+            CursorContext cursorContext,
             MemoryTracker memoryTracker )
             throws KernelException;
 
@@ -122,10 +122,10 @@ public interface StorageEngine extends Lifecycle
      * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
      * all changes applied to this storage engine will be durable.
      *
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @throws IOException on I/O error.
      */
-    void flushAndForce( PageCursorTracer cursorTracer ) throws IOException;
+    void flushAndForce( CursorContext cursorContext ) throws IOException;
 
     /**
      * Dump diagnostics about the storage.

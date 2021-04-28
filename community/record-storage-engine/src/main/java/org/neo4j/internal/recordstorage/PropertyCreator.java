@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -43,24 +43,24 @@ public class PropertyCreator
     private final IdSequence propertyRecordIdGenerator;
     private final PropertyTraverser traverser;
     private final boolean allowStorePointsAndTemporal;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
 
-    public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser, propertyStore.allowStorePointsAndTemporal(),
-                cursorTracer, memoryTracker );
+                cursorContext, memoryTracker );
     }
 
     PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator, IdSequence propertyRecordIdGenerator,
-            PropertyTraverser traverser, boolean allowStorePointsAndTemporal, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            PropertyTraverser traverser, boolean allowStorePointsAndTemporal, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         this.stringRecordAllocator = stringRecordAllocator;
         this.arrayRecordAllocator = arrayRecordAllocator;
         this.propertyRecordIdGenerator = propertyRecordIdGenerator;
         this.traverser = traverser;
         this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
     }
 
@@ -85,7 +85,7 @@ public class PropertyCreator
         long prop = primitive.getNextProp();
         while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (4)
         {
-            RecordProxy<PropertyRecord, PrimitiveRecord> proxy = propertyRecords.getOrLoad( prop, primitive, cursorTracer );
+            RecordProxy<PropertyRecord, PrimitiveRecord> proxy = propertyRecords.getOrLoad( prop, primitive, cursorContext );
             PropertyRecord propRecord = proxy.forReadingLinkage();
             assert propRecord.inUse() : propRecord;
 
@@ -145,13 +145,13 @@ public class PropertyCreator
         if ( freeHostProxy == null )
         {
             // We couldn't find free space along the way, so create a new host record
-            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), primitive, cursorTracer ).forChangingData();
+            freeHost = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorContext ), primitive, cursorContext ).forChangingData();
             freeHost.setInUse( true );
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 // This isn't the first property record for the entity, re-shuffle the first one so that
                 // the new one becomes the first
-                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(), primitive, cursorTracer ).forChangingLinkage();
+                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(), primitive, cursorContext ).forChangingLinkage();
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( freeHost.getId() );
                 freeHost.setNextProp( prevProp.getId() );
@@ -191,7 +191,7 @@ public class PropertyCreator
 
     public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Value value )
     {
-        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal, cursorTracer,
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator, allowStorePointsAndTemporal, cursorContext,
                 memoryTracker );
         return block;
     }
@@ -209,7 +209,7 @@ public class PropertyCreator
         {
             return Record.NO_NEXT_PROPERTY.intValue();
         }
-        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorTracer ), owner, cursorTracer ).forChangingData();
+        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId( cursorContext ), owner, cursorContext ).forChangingData();
         createdPropertyRecords.accept( currentRecord );
         currentRecord.setInUse( true );
         currentRecord.setCreated();
@@ -222,8 +222,8 @@ public class PropertyCreator
                 // Here it means the current block is done for
                 PropertyRecord prevRecord = currentRecord;
                 // Create new record
-                long propertyId = propertyRecordIdGenerator.nextId( cursorTracer );
-                currentRecord = propertyRecords.create( propertyId, owner, cursorTracer ).forChangingData();
+                long propertyId = propertyRecordIdGenerator.nextId( cursorContext );
+                currentRecord = propertyRecords.create( propertyId, owner, cursorContext ).forChangingData();
                 createdPropertyRecords.accept( currentRecord );
                 currentRecord.setInUse( true );
                 currentRecord.setCreated();

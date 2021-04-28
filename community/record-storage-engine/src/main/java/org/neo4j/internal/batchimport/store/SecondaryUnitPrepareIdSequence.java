@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.store;
 import java.util.function.LongFunction;
 
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Assumes that records have been allocated such that there will be a free record, right after a given record,
@@ -50,7 +50,7 @@ public class SecondaryUnitPrepareIdSequence implements PrepareIdSequence
         }
 
         @Override
-        public long nextId( PageCursorTracer cursorTracer )
+        public long nextId( CursorContext cursorContext )
         {
             try
             {

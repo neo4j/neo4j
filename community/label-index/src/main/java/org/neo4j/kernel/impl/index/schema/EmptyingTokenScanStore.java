@@ -34,7 +34,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
@@ -82,30 +82,30 @@ public class EmptyingTokenScanStore implements TokenScanStore
     }
 
     @Override
-    public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
+    public TokenScanWriter newWriter( CursorContext cursorContext )
     {
         return TokenScanWriter.EMPTY_WRITER;
     }
 
     @Override
-    public TokenScanWriter newBulkAppendWriter( PageCursorTracer cursorTracer )
+    public TokenScanWriter newBulkAppendWriter( CursorContext cursorContext )
     {
         return TokenScanWriter.EMPTY_WRITER;
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {   // no-op
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges( PageCursorTracer cursorTracer )
+    public AllEntriesTokenScanReader allEntityTokenRanges( CursorContext cursorContext )
     {
         return EmptyAllEntriesTokenScanReader.INSTANCE;
     }
 
     @Override
-    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
+    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, CursorContext cursorContext )
     {
         return EmptyAllEntriesTokenScanReader.INSTANCE;
     }
@@ -123,7 +123,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
     }
 
     @Override
-    public boolean isEmpty( PageCursorTracer cursorTracer )
+    public boolean isEmpty( CursorContext cursorContext )
     {
         return true;
     }
@@ -155,7 +155,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
     {
         return true;
     }
@@ -165,7 +165,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
         static final EntityTokenUpdateListener INSTANCE = new EmptyEntityTokenUpdateListener();
 
         @Override
-        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, PageCursorTracer cursorTracer )
+        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, CursorContext cursorContext )
         {   // no-op
         }
     }
@@ -197,19 +197,19 @@ public class EmptyingTokenScanStore implements TokenScanStore
         static final TokenScanReader INSTANCE = new EmptyTokenScanReader();
 
         @Override
-        public PrimitiveLongResourceIterator entitiesWithToken( int tokenId, PageCursorTracer cursorTracer )
+        public PrimitiveLongResourceIterator entitiesWithToken( int tokenId, CursorContext cursorContext )
         {
             return PrimitiveLongResourceCollections.emptyIterator();
         }
 
         @Override
-        public TokenScan entityTokenScan( int tokenId, PageCursorTracer cursorTracer )
+        public TokenScan entityTokenScan( int tokenId, CursorContext cursorContext )
         {
             return EmptyTokenScan.INSTANCE;
         }
 
         @Override
-        public PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, PageCursorTracer cursorTracer )
+        public PrimitiveLongResourceIterator entitiesWithAnyOfTokens( long fromId, int[] tokenIds, CursorContext cursorContext )
         {
             return PrimitiveLongResourceCollections.emptyIterator();
         }
@@ -220,13 +220,13 @@ public class EmptyingTokenScanStore implements TokenScanStore
         static final TokenScan INSTANCE = new EmptyTokenScan();
 
         @Override
-        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, PageCursorTracer cursorTracer )
+        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, CursorContext cursorContext )
         {
             return IndexProgressor.EMPTY;
         }
 
         @Override
-        public IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, PageCursorTracer cursorTracer )
+        public IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, CursorContext cursorContext )
         {
             return IndexProgressor.EMPTY;
         }

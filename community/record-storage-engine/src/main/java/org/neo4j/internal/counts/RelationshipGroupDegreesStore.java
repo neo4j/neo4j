@@ -20,7 +20,7 @@
 package org.neo4j.internal.counts;
 
 import org.neo4j.counts.CountsStorage;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
 /**
@@ -30,25 +30,25 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
 {
     /**
      * @param txId for which transaction ID the changes will be made.
-     * @param cursorTracer tracer for page cache access.
+     * @param cursorContext tracer for page cache access.
      * @return an {@link Updater} which is able to make counts updates.
      */
-    Updater apply( long txId, PageCursorTracer cursorTracer );
+    Updater apply( long txId, CursorContext cursorContext );
 
     /**
      * @param groupId the relationship group ID to look for.
      * @param direction the direction to look for.
-     * @param cursorTracer tracer for page cache access.
+     * @param cursorContext tracer for page cache access.
      * @return the degree for the given groupId and direction, or {@code 0} if it wasn't found.
      */
-    long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer );
+    long degree( long groupId, RelationshipDirection direction, CursorContext cursorContext );
 
     /**
      * Accepts a visitor observing all entries in this store.
      * @param visitor to receive the entries.
-     * @param cursorTracer tracer for page cache access.
+     * @param cursorContext tracer for page cache access.
      */
-    void accept( GroupDegreeVisitor visitor, PageCursorTracer cursorTracer );
+    void accept( GroupDegreeVisitor visitor, CursorContext cursorContext );
 
     interface Updater extends AutoCloseable
     {

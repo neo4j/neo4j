@@ -50,6 +50,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.KernelVersion;
@@ -76,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
@@ -114,9 +115,9 @@ class MetaDataStoreTest
                 return new DelegatingPagedFile( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController ) )
                 {
                     @Override
-                    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
+                    public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
                     {
-                        return new DelegatingPageCursor( super.io( pageId, pf_flags, tracer ) )
+                        return new DelegatingPageCursor( super.io( pageId, pf_flags, context ) )
                         {
                             @Override
                             public boolean checkAndClearBoundsFlag()
@@ -794,12 +795,13 @@ class MetaDataStoreTest
     void tracePageCacheAccessOnSetRecord() throws IOException
     {
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnSetRecord" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnSetRecord" ) );
         try ( var metaDataStore = newMetaDataStore() )
         {
             MetaDataStore.setRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, 3, databaseLayout.getDatabaseName(),
-                    cursorTracer );
+                    cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
             assertThat( cursorTracer.hits() ).isOne();
@@ -810,12 +812,13 @@ class MetaDataStoreTest
     void tracePageCacheAccessOnGetRecord() throws IOException
     {
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnGetRecord" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnGetRecord" ) );
         try ( var metaDataStore = newMetaDataStore() )
         {
             MetaDataStore.getRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, databaseLayout.getDatabaseName(),
-                    cursorTracer );
+                    cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
             assertThat( cursorTracer.hits() ).isOne();
@@ -826,11 +829,12 @@ class MetaDataStoreTest
     void tracePageCacheAssessOnGetStoreId() throws IOException
     {
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnGetStoreId" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnGetStoreId" ) );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            MetaDataStore.getStoreId( pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), cursorTracer );
+            MetaDataStore.getStoreId( pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 5 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
             assertThat( cursorTracer.hits() ).isEqualTo( 5 );
@@ -841,12 +845,13 @@ class MetaDataStoreTest
     void tracePageCacheAssessOnSetStoreId() throws IOException
     {
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnSetStoreId" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnSetStoreId" ) );
         try ( var metaDataStore = newMetaDataStore() )
         {
             var storeId = new StoreId( 1, 2, 3, 4, 5 );
-            MetaDataStore.setStoreId( pageCache, metaDataStore.getStorageFile(), storeId, 6, 7, databaseLayout.getDatabaseName(), cursorTracer );
+            MetaDataStore.setStoreId( pageCache, metaDataStore.getStorageFile(), storeId, 6, 7, databaseLayout.getDatabaseName(), cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 7 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 7 );
             assertThat( cursorTracer.hits() ).isEqualTo( 7 );
@@ -857,14 +862,14 @@ class MetaDataStoreTest
     void tracePageCacheAssessOnUpgradeTransactionSet()
     {
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnUpgradeTransactionSet" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnUpgradeTransactionSet" ) );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            metaDataStore.setUpgradeTransaction( 1, 2, 3, cursorTracer );
+            metaDataStore.setUpgradeTransaction( 1, 2, 3, cursorContext );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1 );
         }
     }
 
@@ -872,11 +877,12 @@ class MetaDataStoreTest
     void tracePageCacheAssessOnIncrementAndGetVersion()
     {
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnIncrementAndGetVersion" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnIncrementAndGetVersion" ) );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            metaDataStore.incrementAndGetVersion( cursorTracer );
+            metaDataStore.incrementAndGetVersion( cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 1 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             assertThat( cursorTracer.hits() ).isEqualTo( 1 );

@@ -91,7 +91,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                     GenericKey treeKeyTo = layout.newKey();
                     initializeFromToKeys( treeKeyFrom, treeKeyTo );
                     boolean needFiltering = initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, crs, range );
-                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, constraints, needFiltering, context.cursorTracer() );
+                    startSeekForInitializedRange( multiProgressor, treeKeyFrom, treeKeyTo, query, constraints, needFiltering, context .cursorContext() );
                 }
             }
             catch ( IllegalArgumentException e )

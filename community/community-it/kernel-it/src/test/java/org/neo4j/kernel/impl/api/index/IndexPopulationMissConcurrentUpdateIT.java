@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -195,7 +195,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                     return new IndexPopulator.Adapter()
                     {
                         @Override
-                        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+                        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
                         {
                             for ( IndexEntryUpdate<?> update : updates )
                             {
@@ -210,7 +210,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                         }
 
                         @Override
-                        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
+                        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
                         {
                             return new IndexUpdater()
                             {
@@ -229,7 +229,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                         }
 
                         @Override
-                        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+                        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
                         {
                             assertTrue( populationCompletedSuccessfully );
                         }
@@ -249,7 +249,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                 }
 
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
                 {
                     return POPULATING;
                 }

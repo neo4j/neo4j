@@ -38,7 +38,7 @@ import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -99,7 +99,7 @@ public class IndexChecker implements Checker
 
         cacheAccess.setCacheSlotSizesAndClear( TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE, TOTAL_SIZE ); //can hold up to 5 indexes
         List<IndexContext> indexesToCheck = new ArrayList<>();
-        try ( var indexChecker = context.pageCacheTracer.createPageCursorTracer( INDEX_CHECKER_TAG ) )
+        try ( var indexChecker = new CursorContext( context.pageCacheTracer.createPageCursorTracer( INDEX_CHECKER_TAG ) ) )
         {
             for ( int i = 0; i < indexes.size() && !context.isCancelled(); i++ )
             {
@@ -124,10 +124,10 @@ public class IndexChecker implements Checker
         return flags.isCheckIndexes();
     }
 
-    private void cacheIndex( IndexContext index, LongRange nodeIdRange, boolean firstRange, PageCursorTracer cursorTracer ) throws Exception
+    private void cacheIndex( IndexContext index, LongRange nodeIdRange, boolean firstRange, CursorContext cursorContext ) throws Exception
     {
         IndexAccessor accessor = indexAccessors.accessorFor( index.descriptor );
-        IndexEntriesReader[] partitions = accessor.newAllEntriesValueReader( context.execution.getNumberOfThreads(), cursorTracer );
+        IndexEntriesReader[] partitions = accessor.newAllEntriesValueReader( context.execution.getNumberOfThreads(), cursorContext );
         try
         {
             Value[][] firstValues = new Value[partitions.length][];
@@ -145,17 +145,17 @@ public class IndexChecker implements Checker
                     int progressPart = 0;
                     ProgressListener localCacheProgress = cacheProgress.threadLocalReporter();
                     var client = cacheAccess.client();
-                    try ( var tracer = context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_CACHER_TAG ) )
+                    try ( var context = new CursorContext( this.context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_CACHER_TAG ) ) )
                     {
-                        while ( partition.hasNext() && !context.isCancelled() )
+                        while ( partition.hasNext() && !this.context.isCancelled() )
                         {
                             long entityId = partition.next();
                             if ( !nodeIdRange.isWithinRangeExclusiveTo( entityId ) )
                             {
-                                if ( firstRange && entityId >= context.highNodeId )
+                                if ( firstRange && entityId >= this.context.highNodeId )
                                 {
-                                    reporter.forIndexEntry( new IndexEntry( index.descriptor, context.tokenNameLookup, entityId ) )
-                                            .nodeNotInUse( context.recordLoader.node( entityId, tracer ) );
+                                    reporter.forIndexEntry( new IndexEntry( index.descriptor, this.context.tokenNameLookup, entityId ) )
+                                            .nodeNotInUse( this.context.recordLoader.node( entityId, context ) );
                                 }
                                 continue;
                             }
@@ -182,7 +182,7 @@ public class IndexChecker implements Checker
                                         {
                                             if ( Arrays.equals( lastValues[slot], indexedValues ) )
                                             {
-                                                reporter.forNode( context.recordLoader.node( entityId, tracer ) )
+                                                reporter.forNode( this.context.recordLoader.node( entityId, context ) )
                                                         .uniqueIndexNotUnique( index.descriptor, indexedValues, lastEntityIds[slot] );
                                             }
                                         }
@@ -218,7 +218,7 @@ public class IndexChecker implements Checker
                     {
                         long leftEntityId = lastEntityIds[i];
                         long rightEntityId = firstEntityIds[i + 1];
-                        reporter.forNode( context.recordLoader.node( leftEntityId, cursorTracer ) ).uniqueIndexNotUnique( index.descriptor, left,
+                        reporter.forNode( context.recordLoader.node( leftEntityId, cursorContext ) ).uniqueIndexNotUnique( index.descriptor, left,
                                 rightEntityId );
                     }
                 }
@@ -242,10 +242,10 @@ public class IndexChecker implements Checker
         // This is one thread
         CheckerContext noReportingContext = context.withoutReporting();
         try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
-              var cursorTracer = context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ENTITY_CHECK_TAG );
-              RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
-              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
-              SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext, cursorTracer ) )
+              var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ENTITY_CHECK_TAG ) );
+              RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorContext );
+              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorContext );
+              SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext, cursorContext ) )
         {
             ProgressListener localScanProgress = scanProgress.threadLocalReporter();
             IntObjectHashMap<Value> allValues = new IntObjectHashMap<>();
@@ -256,10 +256,10 @@ public class IndexChecker implements Checker
                 nodeCursor.single( entityId );
                 if ( nodeCursor.next() )
                 {
-                    long[] entityTokens = safeGetNodeLabels( noReportingContext, nodeCursor.getId(), nodeCursor.getLabelField(), labelReader, cursorTracer );
+                    long[] entityTokens = safeGetNodeLabels( noReportingContext, nodeCursor.getId(), nodeCursor.getLabelField(), labelReader, cursorContext );
                     lightClear( allValues );
                     boolean propertyChainRead =
-                            entityTokens != null && propertyReader.read( allValues, nodeCursor, noReportingContext.reporter::forNode, cursorTracer );
+                            entityTokens != null && propertyReader.read( allValues, nodeCursor, noReportingContext.reporter::forNode, cursorContext );
                     if ( propertyChainRead )
                     {
                         for ( int i = 0; i < numberOfIndexes; i++ )
@@ -275,7 +275,7 @@ public class IndexChecker implements Checker
                                 if ( !nodeIsInIndex )
                                 {
                                     // It wasn't, report it
-                                    getReporter( context.recordLoader.node( entityId, cursorTracer ) ).notIndexed( descriptor, Values.asObjects( values ) );
+                                    getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor, Values.asObjects( values ) );
                                 }
                                 else if ( index.hasValues )
                                 {
@@ -283,7 +283,8 @@ public class IndexChecker implements Checker
                                     int actualChecksum = checksum( values );
                                     if ( cachedChecksum != actualChecksum )
                                     {
-                                        getReporter( context.recordLoader.node( entityId, cursorTracer ) ).notIndexed( descriptor, Values.asObjects( values ) );
+                                        getReporter( context.recordLoader.node( entityId, cursorContext ) ).notIndexed( descriptor,
+                                                Values.asObjects( values ) );
                                     }
                                 }
                             }
@@ -292,7 +293,7 @@ public class IndexChecker implements Checker
                                 if ( nodeIsInIndex )
                                 {
                                     reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                            context.recordLoader.node( entityId, cursorTracer ) );
+                                            context.recordLoader.node( entityId, cursorContext ) );
                                 }
                             }
                         }
@@ -307,7 +308,7 @@ public class IndexChecker implements Checker
                         if ( isInIndex )
                         {
                             reporter.forIndexEntry( new IndexEntry( indexes.get( i ).descriptor, context.tokenNameLookup, entityId ) ).nodeNotInUse(
-                                    context.recordLoader.node( entityId, cursorTracer ) );
+                                    context.recordLoader.node( entityId, cursorContext ) );
                         }
                     }
                 }

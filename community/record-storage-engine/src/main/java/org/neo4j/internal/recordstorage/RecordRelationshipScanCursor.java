@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
@@ -38,9 +38,9 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     private boolean open;
     private boolean batched;
 
-    RecordRelationshipScanCursor( RelationshipStore relationshipStore, PageCursorTracer cursorTracer )
+    RecordRelationshipScanCursor( RelationshipStore relationshipStore, CursorContext cursorContext )
     {
-        super( relationshipStore, cursorTracer );
+        super( relationshipStore, cursorContext );
     }
 
     @Override

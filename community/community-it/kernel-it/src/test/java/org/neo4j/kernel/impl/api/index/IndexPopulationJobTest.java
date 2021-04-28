@@ -50,7 +50,6 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -59,7 +58,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -421,7 +420,7 @@ class IndexPopulationJobTest
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
-        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any( Collection.class ), any( PageCursorTracer.class ) );
+        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any( Collection.class ), any( CursorContext.class ) );
 
         FlippableIndexProxy index = new FlippableIndexProxy();
 
@@ -448,7 +447,7 @@ class IndexPopulationJobTest
                 ArgumentMatchers.any(),
                 ArgumentMatchers.any(), anyBoolean(), anyBoolean(), any(), any() ) )
                 .thenReturn(storeScan );
-        when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
+        when( storeView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
         final IndexPopulationJob job =
                 newIndexPopulationJob( populator, index, storeView, NullLogProvider.getInstance(), EntityType.NODE, indexPrototype( FIRST, name, false ) );
@@ -475,7 +474,7 @@ class IndexPopulationJobTest
         }
 
         // THEN
-        verify( populator ).close( false, PageCursorTracer.NULL );
+        verify( populator ).close( false, CursorContext.NULL );
         verify( index, never() ).flip( any(), any() );
         verify( jobHandle ).cancel();
     }
@@ -504,7 +503,7 @@ class IndexPopulationJobTest
         }
         finally
         {
-            populator.close( true, PageCursorTracer.NULL );
+            populator.close( true, CursorContext.NULL );
         }
     }
 
@@ -532,7 +531,7 @@ class IndexPopulationJobTest
         }
         finally
         {
-            populator.close( true, PageCursorTracer.NULL );
+            populator.close( true, CursorContext.NULL );
         }
     }
 
@@ -569,7 +568,7 @@ class IndexPopulationJobTest
                         EntityType.NODE, indexPrototype( FIRST, name, false ), NULL );
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
-        doThrow( failure ).when( populator ).close( true, PageCursorTracer.NULL );
+        doThrow( failure ).when( populator ).close( true, CursorContext.NULL );
 
         // When
         job.run();
@@ -701,7 +700,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -719,7 +718,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
         {
             return new IndexUpdater()
             {
@@ -773,7 +772,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -791,7 +790,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, PageCursorTracer cursorTracer )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
         {
             return new IndexUpdater()
             {
@@ -970,17 +969,17 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
         {
             adds.add( updates );
-            super.add( updates, cursorTracer );
+            super.add( updates, cursorContext );
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
         {
             closeCall = populationCompletedSuccessfully;
-            super.close( populationCompletedSuccessfully, cursorTracer );
+            super.close( populationCompletedSuccessfully, cursorContext );
         }
 
         @Override
@@ -991,10 +990,10 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexSample sample( PageCursorTracer cursorTracer )
+        public IndexSample sample( CursorContext cursorContext )
         {
             resultSampled = true;
-            return super.sample( cursorTracer );
+            return super.sample( cursorContext );
         }
     }
 }

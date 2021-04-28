@@ -30,7 +30,7 @@ import java.util.Map;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.PropertyKeyValue;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -110,7 +110,7 @@ class EntityValueUpdatesTest
     @Test
     void useProvidedCursorForPropertiesOnNodesLoad()
     {
-        var cursorTracer = mock( PageCursorTracer.class );
+        var cursorContext = mock( CursorContext.class );
         var nodeCursor = mock( StorageNodeCursor.class );
         var storageReader = mock( StorageReader.class, RETURNS_MOCKS );
         when( nodeCursor.hasProperties() ).thenReturn( true );
@@ -118,16 +118,16 @@ class EntityValueUpdatesTest
         when( storageReader.allocateNodeCursor( any() ) ).thenReturn( nodeCursor );
 
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( EMPTY ).withTokensAfter( TOKEN ).build();
-        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.NODE, cursorTracer, INSTANCE );
+        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.NODE, cursorContext, INSTANCE );
 
-        verify( storageReader ).allocateNodeCursor( cursorTracer );
-        verify( storageReader ).allocatePropertyCursor( cursorTracer, INSTANCE );
+        verify( storageReader ).allocateNodeCursor( cursorContext );
+        verify( storageReader ).allocatePropertyCursor( cursorContext, INSTANCE );
     }
 
     @Test
     void useProvidedCursorForPropertiesOnRelationshipLoad()
     {
-        var cursorTracer = mock( PageCursorTracer.class );
+        var cursorContext = mock( CursorContext.class );
         var relationshipCursor = mock( StorageRelationshipScanCursor.class );
         var storageReader = mock( StorageReader.class, RETURNS_MOCKS );
         when( relationshipCursor.hasProperties() ).thenReturn( true );
@@ -135,10 +135,10 @@ class EntityValueUpdatesTest
         when( storageReader.allocateRelationshipScanCursor( any() ) ).thenReturn( relationshipCursor );
 
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( EMPTY ).withTokensAfter( TOKEN ).build();
-        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.RELATIONSHIP, cursorTracer, INSTANCE );
+        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.RELATIONSHIP, cursorContext, INSTANCE );
 
-        verify( storageReader ).allocateRelationshipScanCursor( cursorTracer );
-        verify( storageReader ).allocatePropertyCursor( cursorTracer, INSTANCE );
+        verify( storageReader ).allocateRelationshipScanCursor( cursorContext );
+        verify( storageReader ).allocatePropertyCursor( cursorContext, INSTANCE );
     }
 
     @ParameterizedTest

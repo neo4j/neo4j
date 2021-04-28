@@ -51,7 +51,7 @@ public class NeoStoreTransactionApplierFactory implements TransactionApplierFact
     public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
     {
         return new NeoStoreTransactionApplier( version, neoStores, cacheAccess, lockService, transaction.transactionId(), batchContext,
-                transaction.cursorTracer() );
+                transaction.cursorContext() );
     }
 
 }

@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -62,7 +62,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( final IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext )
     {
         switch ( mode )
         {
@@ -107,7 +107,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
         // Ignored... this isn't called from the outside while we're populating the index.
     }
@@ -119,9 +119,9 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void close( PageCursorTracer cursorTracer )
+    public void close( CursorContext cursorContext )
     {
-        job.stop( indexPopulation, cursorTracer );
+        job.stop( indexPopulation, cursorContext );
     }
 
     @Override

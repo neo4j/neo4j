@@ -30,7 +30,7 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -51,7 +51,7 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
     private final GenerateIndexUpdatesStep<CURSOR> generatorStep;
     private WriteUpdatesStep writeStep;
 
-    public StoreScanStage( Config dbConfig, Configuration config, Function<PageCursorTracer,EntityIdIterator> entityIdIteratorSupplier,
+    public StoreScanStage( Config dbConfig, Configuration config, Function<CursorContext,EntityIdIterator> entityIdIteratorSupplier,
             StoreScan.ExternalUpdatesCheck externalUpdatesCheck,
             AtomicBoolean continueScanning, StorageReader storageReader, int[] entityTokenIdFilter, IntPredicate propertyKeyIdFilter,
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer,

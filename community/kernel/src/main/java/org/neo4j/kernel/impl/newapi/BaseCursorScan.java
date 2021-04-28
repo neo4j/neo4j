@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.lang.Math.min;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -39,18 +39,18 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
     final S storageScan;
     final Read read;
     final boolean hasChanges;
-    final PageCursorTracer cursorTracer;
+    final CursorContext cursorContext;
     private volatile boolean addedItemsConsumed;
     private final long[] addedItemsArray;
     private final AtomicInteger addedChunk = new AtomicInteger( 0 );
 
-    BaseCursorScan( S storageScan, Read read, Supplier<long[]> addedInTransaction, PageCursorTracer cursorTracer )
+    BaseCursorScan( S storageScan, Read read, Supplier<long[]> addedInTransaction, CursorContext cursorContext )
     {
         this.storageScan = storageScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
         this.addedItemsArray = hasChanges ? addedInTransaction.get() : EMPTY_LONG_ARRAY;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.addedItemsConsumed = addedItemsArray.length == 0;
     }
 

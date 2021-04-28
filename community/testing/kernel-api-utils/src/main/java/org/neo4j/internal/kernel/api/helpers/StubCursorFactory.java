@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 public class StubCursorFactory implements CursorFactory
@@ -66,85 +66,85 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
-    public NodeCursor allocateNodeCursor( PageCursorTracer cursorTracer )
+    public NodeCursor allocateNodeCursor( CursorContext cursorContext )
     {
         return poll( nodeCursors );
     }
 
     @Override
-    public NodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer )
+    public NodeCursor allocateFullAccessNodeCursor( CursorContext cursorContext )
     {
         return poll( fullNodeCursors );
     }
 
     @Override
-    public RelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer )
+    public RelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
     {
         return poll( relationshipScanCursors );
     }
 
     @Override
-    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer )
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor( CursorContext cursorContext )
     {
         return poll( fullRelationshipScanCursors );
     }
 
     @Override
-    public RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    public RelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
     {
         return poll( relationshipTraversalCursors );
     }
 
     @Override
-    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer )
+    public RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( CursorContext cursorContext )
     {
         return poll( fullRelationshipTraversalCursors );
     }
 
     @Override
-    public PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public PropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return poll( propertyCursors );
     }
 
     @Override
-    public PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public PropertyCursor allocateFullAccessPropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return poll( fullPropertyCursors );
     }
 
     @Override
-    public NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public NodeValueIndexCursor allocateNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return poll( nodeValueIndexCursors );
     }
 
     @Override
-    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return poll( fullNodeValueIndexCursors );
     }
 
     @Override
-    public NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    public NodeLabelIndexCursor allocateNodeLabelIndexCursor( CursorContext cursorContext )
     {
         return poll( nodeLabelIndexCursors );
     }
 
     @Override
-    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer )
+    public NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( CursorContext cursorContext )
     {
         return poll( fullNodeLabelIndexCursors );
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         return poll( relationshipValueIndexCursors );
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( PageCursorTracer cursorTracer )
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( CursorContext cursorContext )
     {
         return poll( relationshipTypeIndexCursors );
     }

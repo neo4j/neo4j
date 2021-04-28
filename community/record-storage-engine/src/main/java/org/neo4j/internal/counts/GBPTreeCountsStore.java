@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
@@ -41,8 +41,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 
 /**
  * Counts store build on top of the {@link GBPTree}.
- * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(PageCursorTracer)}.
- * Multiple {@link #apply(long, PageCursorTracer)} appliers} can run concurrently in a lock-free manner.
+ * Changes between checkpoints are kept in memory and written out to the tree in {@link #checkpoint(CursorContext)}.
+ * Multiple {@link #apply(long, CursorContext)} appliers} can run concurrently in a lock-free manner.
  * Checkpoint will acquire a write lock, wait for currently active appliers to close while at the same time blocking new appliers to start,
  * but doesn't wait for appliers that haven't even started yet, i.e. it doesn't require a gap-free transaction sequence to be completed.
  */
@@ -98,26 +98,26 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     }
 
     @Override
-    public CountsAccessor.Updater apply( long txId, PageCursorTracer cursorTracer )
+    public CountsAccessor.Updater apply( long txId, CursorContext cursorContext )
     {
-        CountUpdater updater = updater( txId, cursorTracer );
+        CountUpdater updater = updater( txId, cursorContext );
         return updater != null ? new Incrementer( updater ) : NO_OP_UPDATER;
     }
 
     @Override
-    public long nodeCount( int labelId, PageCursorTracer cursorTracer )
+    public long nodeCount( int labelId, CursorContext cursorContext )
     {
-        return read( nodeKey( labelId ), cursorTracer );
+        return read( nodeKey( labelId ), cursorContext );
     }
 
     @Override
-    public long relationshipCount( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
     {
-        return read( relationshipKey( startLabelId, typeId, endLabelId ), cursorTracer );
+        return read( relationshipKey( startLabelId, typeId, endLabelId ), cursorContext );
     }
 
     @Override
-    public void accept( CountsVisitor visitor, PageCursorTracer cursorTracer )
+    public void accept( CountsVisitor visitor, CursorContext cursorContext )
     {
         visitAllCounts( ( key, count ) ->
         {
@@ -133,7 +133,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
             {
                 throw new IllegalArgumentException( "Unknown key type " + key.type );
             }
-        }, cursorTracer );
+        }, cursorContext );
     }
 
     public static String keyToString( CountsKey key )
@@ -149,9 +149,9 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         throw new IllegalArgumentException( "Unknown type " + key.type );
     }
 
-    public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
+    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContext cursorContext ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorTracer, GBPTreeCountsStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorContext, GBPTreeCountsStore::keyToString );
     }
 
     private static class Incrementer implements CountsAccessor.Updater
@@ -198,9 +198,9 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         }
 
         @Override
-        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
-            initialCountsBuilder.initialize( new Incrementer( updater ), cursorTracer, memoryTracker );
+            initialCountsBuilder.initialize( new Incrementer( updater ), cursorContext, memoryTracker );
         }
     }
 }

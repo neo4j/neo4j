@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
@@ -115,7 +115,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    KEY keyAt( PageCursor cursor, KEY into, int pos, Type type, PageCursorTracer cursorTracer )
+    KEY keyAt( PageCursor cursor, KEY into, int pos, Type type, CursorContext cursorContext )
     {
         cursor.setOffset( keyOffset( pos ) );
         layout.readKey( cursor, into, FIXED_SIZE_KEY );
@@ -123,15 +123,15 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, PageCursorTracer cursorTracer )
+    void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos, CursorContext cursorContext )
     {
-        keyAt( cursor, intoKey, pos, LEAF, cursorTracer );
-        valueAt( cursor, intoValue, pos, cursorTracer );
+        keyAt( cursor, intoKey, pos, LEAF, cursorContext );
+        valueAt( cursor, intoValue, pos, cursorContext );
     }
 
     @Override
     void insertKeyAndRightChildAt( PageCursor cursor, KEY key, long child, int pos, int keyCount, long stableGeneration,
-            long unstableGeneration, PageCursorTracer cursorTracer )
+            long unstableGeneration, CursorContext cursorContext )
     {
         insertKeyAt( cursor, key, pos, keyCount );
         insertChildAt( cursor, child, pos + 1, keyCount, stableGeneration, unstableGeneration );
@@ -139,28 +139,28 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void insertKeyValueAt( PageCursor cursor, KEY key, VALUE value, int pos, int keyCount, long stableGeneration, long unstableGeneration,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         insertKeyAt( cursor, key, pos, keyCount );
         insertValueAt( cursor, value, pos, keyCount );
     }
 
     @Override
-    void removeKeyValueAt( PageCursor cursor, int pos, int keyCount, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer )
+    void removeKeyValueAt( PageCursor cursor, int pos, int keyCount, long stableGeneration, long unstableGeneration, CursorContext cursorContext )
     {
         removeKeyAt( cursor, pos, keyCount );
         removeValueAt( cursor, pos, keyCount );
     }
 
     @Override
-    void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer )
+    void removeKeyAndLeftChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration, CursorContext cursorContext )
     {
         removeKeyAt( cursor, keyPos, keyCount );
         removeChildAt( cursor, keyPos, keyCount );
     }
 
     @Override
-    void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer )
+    void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount, long stableGeneration, long unstableGeneration, CursorContext cursorContext )
     {
         removeKeyAt( cursor, keyPos, keyCount );
         removeChildAt( cursor, keyPos + 1, keyCount );
@@ -175,7 +175,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    VALUE valueAt( PageCursor cursor, VALUE value, int pos, PageCursorTracer cursorTracer )
+    VALUE valueAt( PageCursor cursor, VALUE value, int pos, CursorContext cursorContext )
     {
         cursor.setOffset( valueOffset( pos ) );
         layout.readValue( cursor, value, FIXED_SIZE_VALUE );
@@ -370,7 +370,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            VALUE newValue, KEY newSplitter, double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration, PageCursorTracer cursorTracer )
+            VALUE newValue, KEY newSplitter, double ratioToKeepInLeftOnSplit, long stableGeneration, long unstableGeneration, CursorContext cursorContext )
     {
         int keyCountAfterInsert = leftKeyCount + 1;
         int splitPos = splitPos( keyCountAfterInsert, ratioToKeepInLeftOnSplit );
@@ -381,7 +381,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, LEAF, cursorTracer );
+            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, LEAF, cursorContext );
         }
         int rightKeyCount = keyCountAfterInsert - splitPos;
 
@@ -392,7 +392,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
             // insert _,_,_,X,_,_,_,_,_,_,_
             // split            ^
             copyKeysAndValues( leftCursor, splitPos - 1, rightCursor, 0, rightKeyCount );
-            insertKeyValueAt( leftCursor, newKey, newValue, insertPos, splitPos - 1, stableGeneration, unstableGeneration, cursorTracer );
+            insertKeyValueAt( leftCursor, newKey, newValue, insertPos, splitPos - 1, stableGeneration, unstableGeneration, cursorContext );
         }
         else
         {
@@ -407,7 +407,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
                 // first copy
                 copyKeysAndValues( leftCursor, splitPos, rightCursor, 0, countBeforePos );
             }
-            insertKeyValueAt( rightCursor, newKey, newValue, countBeforePos, countBeforePos, stableGeneration, unstableGeneration, cursorTracer );
+            insertKeyValueAt( rightCursor, newKey, newValue, countBeforePos, countBeforePos, stableGeneration, unstableGeneration, cursorContext );
             int countAfterPos = leftKeyCount - insertPos;
             if ( countAfterPos > 0 )
             {
@@ -459,7 +459,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey, long newRightChild, long stableGeneration,
-            long unstableGeneration, KEY newSplitter, double ratioToKeepInLeftOnSplit, PageCursorTracer cursorTracer )
+            long unstableGeneration, KEY newSplitter, double ratioToKeepInLeftOnSplit, CursorContext cursorContext )
     {
         int keyCountAfterInsert = leftKeyCount + 1;
         int splitPos = splitPos( keyCountAfterInsert, ratioToKeepInLeftOnSplit );
@@ -470,7 +470,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, INTERNAL, cursorTracer );
+            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, INTERNAL, cursorContext );
         }
         int rightKeyCount = keyCountAfterInsert - splitPos - 1; // -1 because don't keep prim key in internal
 
@@ -579,12 +579,12 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     @Override
     void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         PrintingGBPTreeVisitor<KEY,VALUE> visitor = new PrintingGBPTreeVisitor<>( PrintConfig.defaults() );
         try
         {
-            new GBPTreeStructure<>( this, layout, stableGeneration, unstableGeneration ).visitTreeNode( cursor, visitor, cursorTracer );
+            new GBPTreeStructure<>( this, layout, stableGeneration, unstableGeneration ).visitTreeNode( cursor, visitor, cursorContext );
         }
         catch ( IOException e )
         {

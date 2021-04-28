@@ -95,7 +95,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
 
             var session = getTokenReadSession( tx );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
@@ -164,7 +164,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
 
             var session = getTokenReadSession( tx );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 

@@ -64,6 +64,7 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -88,7 +89,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -139,10 +140,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         long initialFlushes = defaultPageCacheTracer.flushes();
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, defaultPageCacheTracer ) )
         {
-            try ( var cursorTracer = defaultPageCacheTracer.createPageCursorTracer( "shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped" );
+            try ( var cursorContext = new CursorContext(
+                    defaultPageCacheTracer.createPageCursorTracer( "shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped" ) );
                     PagedFile pagedFile = map( pageCache, fileForDeletion, 8 ) )
             {
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
                 {
                     assertTrue( cursor.next() );
                     cursor.putLong( 0L );
@@ -159,15 +161,15 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
-        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( tracer, "ableToEvictAllPageInAPageCache" );
+        RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "ableToEvictAllPageInAPageCache" );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, new CursorContext( cursorContext ) ) )
             {
                 assertTrue( cursor.next() );
             }
-            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_READ_LOCK, new CursorContext( cursorContext ) ) )
             {
                 assertTrue( cursor.next() );
             }
@@ -180,18 +182,18 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
-        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( tracer, "mustEvictCleanPageWithoutFlushing" );
+        RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustEvictCleanPageWithoutFlushing" );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, new CursorContext( cursorContext ) ) )
             {
                 assertTrue( cursor.next() );
             }
-            cursorTracer.reportEvents();
-            assertNotNull( cursorTracer.observe( Fault.class ) );
-            assertEquals( 1, cursorTracer.faults() );
+            cursorContext.reportEvents();
+            assertNotNull( cursorContext.observe( Fault.class ) );
+            assertEquals( 1, cursorContext.faults() );
             assertEquals( 1, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 1, 1, tracer.beginPageEvictions( 1 ) );
@@ -205,20 +207,20 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
-        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingFirstPage" );
+        RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingFirstPage" );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
 
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, new CursorContext( cursorContext ) ) )
             {
                 assertTrue( cursor.next() );
                 cursor.putLong( 0L );
             }
-            cursorTracer.reportEvents();
-            assertNotNull( cursorTracer.observe( Fault.class ) );
-            assertEquals( 1, cursorTracer.faults() );
+            cursorContext.reportEvents();
+            assertNotNull( cursorContext.observe( Fault.class ) );
+            assertEquals( 1, cursorContext.faults() );
             assertEquals( 1, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
@@ -236,19 +238,19 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
-        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingLastPage" );
+        RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingLastPage" );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_WRITE_LOCK, new CursorContext( cursorContext ) ) )
             {
                 assertTrue( cursor.next() );
                 cursor.putLong( 0L );
             }
-            cursorTracer.reportEvents();
-            assertNotNull( cursorTracer.observe( Fault.class ) );
-            assertEquals( 1, cursorTracer.faults() );
+            cursorContext.reportEvents();
+            assertNotNull( cursorContext.observe( Fault.class ) );
+            assertEquals( 1, cursorContext.faults() );
             assertEquals( 1, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
@@ -266,12 +268,12 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file( "a" ) );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
-        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingAllPages", Fault.class );
+        RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "mustFlushDirtyPagesOnEvictingAllPages", Fault.class );
 
         try ( MuninnPageCache pageCache = createPageCache( fs, 4, blockCacheFlush( tracer ) );
                 PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW, new CursorContext( cursorContext ) ) )
             {
                 assertTrue( cursor.next() );
                 cursor.putLong( 0L );
@@ -279,10 +281,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 cursor.putLong( 0L );
                 assertFalse( cursor.next() );
             }
-            cursorTracer.reportEvents();
-            assertNotNull( cursorTracer.observe( Fault.class ) );
-            assertNotNull( cursorTracer.observe( Fault.class ) );
-            assertEquals( 2, cursorTracer.faults() );
+            cursorContext.reportEvents();
+            assertNotNull( cursorContext.observe( Fault.class ) );
+            assertNotNull( cursorContext.observe( Fault.class ) );
+            assertEquals( 2, cursorContext.faults() );
             assertEquals( 2, tracer.faults() );
 
             long clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
@@ -330,7 +332,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         {
             for ( int pageId = 0; pageId < 5; pageId++ )
             {
-                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, pageCacheTracer.createPageCursorTracer( "test" ) ) )
+                CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "test" ) );
+                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorContext ) )
                 {
                     assertTrue( cursor.next() );
                     cursor.putLong( 1 );

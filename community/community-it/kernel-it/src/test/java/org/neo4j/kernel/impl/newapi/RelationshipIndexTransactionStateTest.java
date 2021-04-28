@@ -114,7 +114,7 @@ public class RelationshipIndexTransactionStateTest extends IndexTransactionState
     void assertEntityAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery, PropertyIndexQuery... queries ) throws Exception
     {
-        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
         {
             IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
             tx.dataRead().relationshipIndexSeek( indexSession, relationships, unordered( needsValues ), queries );
@@ -127,7 +127,7 @@ public class RelationshipIndexTransactionStateTest extends IndexTransactionState
             Object anotherValueFoundByQuery ) throws Exception
     {
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+        try ( RelationshipValueIndexCursor relationships = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ) )
         {
             tx.dataRead().relationshipIndexScan( indexSession, relationships, unordered( needsValues ) );
             assertEntityAndValue( expected, tx, needsValues, anotherValueFoundByQuery, new RelationshipCursorAdapter( relationships ) );

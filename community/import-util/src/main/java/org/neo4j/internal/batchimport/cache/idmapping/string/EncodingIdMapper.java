@@ -44,6 +44,8 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.max;
@@ -51,6 +53,7 @@ import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
@@ -501,7 +504,7 @@ public class EncodingIdMapper implements IdMapper
         collisionNodeIdCache = cacheFactory.newByteArray( pessimisticNumberOfCollisions, new byte[COLLISION_ENTRY_SIZE], memoryTracker );
         collisionTrackerCache = trackerFactory.create( cacheFactory, pessimisticNumberOfCollisions );
         collisionValues = collisionValuesFactory.apply( pessimisticNumberOfCollisions );
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( IMPORT_COLLISION_INFO_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( IMPORT_COLLISION_INFO_TAG ) ) )
         {
             for ( long nodeId = 0; nodeId <= highestSetIndex; nodeId++ )
             {
@@ -510,7 +513,7 @@ public class EncodingIdMapper implements IdMapper
                 {
                     // Store this collision input id for matching later in get()
                     long collisionIndex = numberOfCollisions++;
-                    Object id = inputIdLookup.lookupProperty( nodeId, cursorTracer );
+                    Object id = inputIdLookup.lookupProperty( nodeId, cursorContext );
                     long eIdFromInputId = encode( id );
                     long eIdWithoutCollisionBit = clearCollision( eId );
                     assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +

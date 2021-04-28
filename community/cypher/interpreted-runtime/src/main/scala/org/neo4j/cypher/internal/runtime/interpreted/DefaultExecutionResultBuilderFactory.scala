@@ -93,7 +93,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
   case class InterpretedExecutionResultBuilder(queryContext: QueryContext) extends BaseExecutionResultBuilder {
     override def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber, doProfile: Boolean): QueryState = {
       val transactionMemoryTracker = queryContext.transactionalContext.transaction.memoryTracker()
-      val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors, queryContext.transactionalContext.transaction.pageCursorTracer(), transactionMemoryTracker)
+      val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors, queryContext.transactionalContext.transaction.cursorContext(), transactionMemoryTracker)
       queryContext.resources.trace(cursors)
 
       new QueryState(queryContext,

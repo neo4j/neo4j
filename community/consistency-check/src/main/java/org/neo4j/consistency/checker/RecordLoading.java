@@ -36,7 +36,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -77,7 +77,7 @@ class RecordLoading
     }
 
     static long[] safeGetNodeLabels( CheckerContext context, long nodeId, long labelField, RecordReader<DynamicRecord> labelReader,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         if ( !NodeLabelsField.fieldPointsToDynamicRecordOfLabels( labelField ) )
         {
@@ -92,14 +92,14 @@ class RecordLoading
         int nodeLabelBlockSize = context.neoStores.getNodeStore().getDynamicLabelStore().getRecordDataSize();
         if ( safeLoadDynamicRecordChain( record -> records.add( record.copy() ), labelReader, seenRecordIds,
                 NodeLabelsField.firstDynamicLabelRecordId( labelField ), nodeLabelBlockSize,
-                ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId, cursorTracer ) ).dynamicRecordChainCycle( labelRecord ),
-                ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId, cursorTracer ) ).dynamicLabelRecordNotInUse( labelRecord ),
-                ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId, cursorTracer ) ).dynamicLabelRecordNotInUse( labelRecord ),
+                ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId, cursorContext ) ).dynamicRecordChainCycle( labelRecord ),
+                ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId, cursorContext ) ).dynamicLabelRecordNotInUse( labelRecord ),
+                ( id, labelRecord ) -> reporter.forNode( recordLoader.node( nodeId, cursorContext ) ).dynamicLabelRecordNotInUse( labelRecord ),
                 ( id, labelRecord ) -> reporter.forDynamicBlock( RecordType.NODE_DYNAMIC_LABEL, labelRecord ).emptyBlock(),
                 labelRecord -> reporter.forDynamicBlock( RecordType.NODE_DYNAMIC_LABEL, labelRecord ).recordNotFullReferencesNext(),
                 labelRecord -> reporter.forDynamicBlock( RecordType.NODE_DYNAMIC_LABEL, labelRecord ).invalidLength() ) )
         {
-            return DynamicNodeLabels.getDynamicLabelsArray( records, labelReader.store(), cursorTracer );
+            return DynamicNodeLabels.getDynamicLabelsArray( records, labelReader.store(), cursorContext );
         }
         return null;
     }
@@ -152,55 +152,55 @@ class RecordLoading
         return valueArray;
     }
 
-    <T extends PrimitiveRecord> T entity( T entityCursor, PageCursorTracer cursorTracer )
+    <T extends PrimitiveRecord> T entity( T entityCursor, CursorContext cursorContext )
     {
         if ( entityCursor instanceof NodeRecord )
         {
-            return (T) node( entityCursor.getId(), cursorTracer );
+            return (T) node( entityCursor.getId(), cursorContext );
         }
         else if ( entityCursor instanceof RelationshipRecord )
         {
-            return (T) relationship( entityCursor.getId(), cursorTracer );
+            return (T) relationship( entityCursor.getId(), cursorContext );
         }
         throw new IllegalArgumentException( "Was expecting either node cursor or relationship cursor, got " + entityCursor );
     }
 
-    NodeRecord node( long id, PageCursorTracer cursorTracer )
+    NodeRecord node( long id, CursorContext cursorContext )
     {
-        return loadRecord( neoStores.getNodeStore(), id, cursorTracer );
+        return loadRecord( neoStores.getNodeStore(), id, cursorContext );
     }
 
-    PropertyRecord property( long id, PageCursorTracer cursorTracer )
+    PropertyRecord property( long id, CursorContext cursorContext )
     {
-        return loadRecord( neoStores.getPropertyStore(), id, cursorTracer );
+        return loadRecord( neoStores.getPropertyStore(), id, cursorContext );
     }
 
-    RelationshipRecord relationship( long id, PageCursorTracer cursorTracer )
+    RelationshipRecord relationship( long id, CursorContext cursorContext )
     {
-        return loadRecord( neoStores.getRelationshipStore(), id, cursorTracer );
+        return loadRecord( neoStores.getRelationshipStore(), id, cursorContext );
     }
 
-    RelationshipRecord relationship( RelationshipRecord into, long id, PageCursorTracer cursorTracer )
+    RelationshipRecord relationship( RelationshipRecord into, long id, CursorContext cursorContext )
     {
-        return loadRecord( neoStores.getRelationshipStore(), into, id, cursorTracer );
+        return loadRecord( neoStores.getRelationshipStore(), into, id, cursorContext );
     }
 
-    RelationshipGroupRecord relationshipGroup( long id, PageCursorTracer cursorTracer )
+    RelationshipGroupRecord relationshipGroup( long id, CursorContext cursorContext )
     {
-        return loadRecord( neoStores.getRelationshipGroupStore(), id, cursorTracer );
+        return loadRecord( neoStores.getRelationshipGroupStore(), id, cursorContext );
     }
 
-    <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, long id, PageCursorTracer cursorTracer )
+    <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, long id, CursorContext cursorContext )
     {
-        return loadRecord( store, store.newRecord(), id, cursorTracer );
+        return loadRecord( store, store.newRecord(), id, cursorContext );
     }
 
-    <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, RECORD record, long id, PageCursorTracer cursorTracer )
+    <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, RECORD record, long id, CursorContext cursorContext )
     {
-        return store.getRecord( id, record, RecordLoad.FORCE, cursorTracer );
+        return store.getRecord( id, record, RecordLoad.FORCE, cursorContext );
     }
 
-    static <RECORD extends TokenRecord> List<NamedToken> safeLoadTokens( TokenStore<RECORD> tokenStore, PageCursorTracer cursorTracer )
+    static <RECORD extends TokenRecord> List<NamedToken> safeLoadTokens( TokenStore<RECORD> tokenStore, CursorContext cursorContext )
     {
         long highId = tokenStore.getHighId();
         List<NamedToken> tokens = new ArrayList<>();
@@ -208,8 +208,8 @@ class RecordLoading
         List<DynamicRecord> nameRecords = new ArrayList<>();
         MutableLongSet seenRecordIds = new LongHashSet();
         int nameBlockSize = nameStore.getRecordDataSize();
-        try ( RecordReader<RECORD> tokenReader = new RecordReader<>( tokenStore, cursorTracer );
-              RecordReader<DynamicRecord> nameReader = new RecordReader<>( nameStore, cursorTracer ) )
+        try ( RecordReader<RECORD> tokenReader = new RecordReader<>( tokenStore, cursorContext );
+              RecordReader<DynamicRecord> nameReader = new RecordReader<>( nameStore, cursorContext ) )
         {
             for ( long id = 0; id < highId; id++ )
             {
@@ -222,7 +222,7 @@ class RecordLoading
                             nameReader, seenRecordIds, record.getNameId(), nameBlockSize ) )
                     {
                         record.addNameRecords( nameRecords );
-                        name = tokenStore.getStringFor( record, cursorTracer );
+                        name = tokenStore.getStringFor( record, cursorContext );
                     }
                     else
                     {
@@ -296,21 +296,21 @@ class RecordLoading
 
     static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidInternalToken(
             RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
-            BiConsumer<RECORD,TOKEN> unusedReporter, PageCursorTracer cursorTracer )
+            BiConsumer<RECORD,TOKEN> unusedReporter, CursorContext cursorContext )
     {
-        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getInternalTokenById, cursorTracer );
+        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getInternalTokenById, cursorContext );
     }
 
     static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidToken(
             RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
-            BiConsumer<RECORD,TOKEN> unusedReporter, PageCursorTracer cursorTracer )
+            BiConsumer<RECORD,TOKEN> unusedReporter, CursorContext cursorContext )
     {
-        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getTokenById, cursorTracer );
+        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getTokenById, cursorContext );
     }
 
     private static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidToken(
             RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
-            BiConsumer<RECORD,TOKEN> unusedReporter, ThrowingIntFunction<NamedToken,TokenNotFoundException> tokenGetter, PageCursorTracer cursorTracer )
+            BiConsumer<RECORD,TOKEN> unusedReporter, ThrowingIntFunction<NamedToken,TokenNotFoundException> tokenGetter, CursorContext cursorContext )
     {
         if ( token < 0 )
         {
@@ -326,7 +326,7 @@ class RecordLoading
             }
             catch ( TokenNotFoundException tnfe )
             {
-                TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE, cursorTracer );
+                TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE, cursorContext );
                 unusedReporter.accept( entity, tokenRecord );
                 return false;
             }

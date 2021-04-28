@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -67,11 +67,11 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     @Override
-    public Optional<String> storeVersion( PageCursorTracer cursorTracer )
+    public Optional<String> storeVersion( CursorContext cursorContext )
     {
         try
         {
-            String version = readVersion( cursorTracer );
+            String version = readVersion( cursorContext );
             return Optional.of( version );
         }
         catch ( IOException e )
@@ -86,9 +86,9 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
         return MetaDataStore.versionLongToString( storeVersion );
     }
 
-    private String readVersion( PageCursorTracer cursorTracer ) throws IOException
+    private String readVersion( CursorContext cursorContext ) throws IOException
     {
-        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, databaseName, cursorTracer );
+        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, databaseName, cursorContext );
         if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
             throw new IllegalStateException( "Uninitialized version field in " + metaDataFile );
@@ -116,12 +116,12 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     @Override
-    public Result checkUpgrade( String desiredVersion, PageCursorTracer cursorTracer )
+    public Result checkUpgrade( String desiredVersion, CursorContext cursorContext )
     {
         String version;
         try
         {
-            version = readVersion( cursorTracer );
+            version = readVersion( cursorContext );
         }
         catch ( IllegalStateException e )
         {

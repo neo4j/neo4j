@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.lock.LockTracer;
@@ -84,8 +84,8 @@ public class RecordStorageEngineTestUtils
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         storageEngine.createCommands( commands, txState, storageEngine.newReader(),
-                storageEngine.newCommandCreationContext( PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE ), ResourceLocker.IGNORE, LockTracer.NONE,
-                metaDataStore.getLastCommittedTransactionId(), t -> t, PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                storageEngine.newCommandCreationContext( CursorContext.NULL, EmptyMemoryTracker.INSTANCE ), ResourceLocker.IGNORE, LockTracer.NONE,
+                metaDataStore.getLastCommittedTransactionId(), t -> t, CursorContext.NULL, EmptyMemoryTracker.INSTANCE );
         storageEngine.apply( new GroupOfCommands( metaDataStore.nextCommittingTransactionId(), commands.toArray( new StorageCommand[0] ) ),
                 TransactionApplicationMode.EXTERNAL );
     }

@@ -27,7 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
@@ -71,14 +71,14 @@ class TestGrowingFileMemoryMapping
 
         // when
         int iterations = 2 * NUMBER_OF_RECORDS;
-        long startingId = nodeStore.nextId( PageCursorTracer.NULL );
+        long startingId = nodeStore.nextId( CursorContext.NULL );
         long nodeId = startingId;
         for ( int i = 0; i < iterations; i++ )
         {
             NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
             record.setInUse( true );
-            nodeStore.updateRecord( record, PageCursorTracer.NULL );
-            nodeId = nodeStore.nextId( PageCursorTracer.NULL );
+            nodeStore.updateRecord( record, CursorContext.NULL );
+            nodeId = nodeStore.nextId( CursorContext.NULL );
         }
 
         // then
@@ -86,7 +86,7 @@ class TestGrowingFileMemoryMapping
         for ( int i = 0; i < iterations; i++ )
         {
             record.setId( startingId + i );
-            nodeStore.getRecord( i, record, NORMAL, PageCursorTracer.NULL );
+            nodeStore.getRecord( i, record, NORMAL, CursorContext.NULL );
             assertTrue( record.inUse(), "record[" + i + "] should be in use" );
             assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( i );
         }

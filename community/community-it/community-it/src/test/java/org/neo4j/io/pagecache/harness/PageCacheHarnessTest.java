@@ -55,7 +55,7 @@ import static org.neo4j.io.pagecache.randomharness.Command.ReadRecord;
 import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @TestDirectoryExtension

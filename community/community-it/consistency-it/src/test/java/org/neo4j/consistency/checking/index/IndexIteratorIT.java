@@ -30,7 +30,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -93,11 +93,11 @@ class IndexIteratorIT
     {
         var descriptors = indexAccessors.onlineRules();
         assertThat( descriptors ).hasSize( 1 );
-        try ( PageCursorTracer tracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIteration" ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIteration" ) ) )
         {
             for ( IndexDescriptor descriptor : descriptors )
             {
-                try ( BoundedIterable<Long> indexIterator = indexAccessors.accessorFor( descriptor ).newAllEntriesValueReader( tracer ) )
+                try ( BoundedIterable<Long> indexIterator = indexAccessors.accessorFor( descriptor ).newAllEntriesValueReader( cursorContext ) )
                 {
                     assertEquals( 1, count( indexIterator.iterator() ) );
                 }

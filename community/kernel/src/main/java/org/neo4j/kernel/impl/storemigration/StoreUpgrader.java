@@ -37,7 +37,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -136,7 +136,7 @@ public class StoreUpgrader
             return;
         }
 
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_UPGRADE_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( STORE_UPGRADE_TAG ) ) )
         {
             DatabaseLayout migrationStructure = DatabaseLayout.ofFlat( layout.file( MIGRATION_DIRECTORY ) );
 
@@ -144,7 +144,7 @@ public class StoreUpgrader
 
             Path migrationStateFile = migrationStructure.file( MIGRATION_STATUS_FILE );
             // if migration directory exists than we might have failed to move files into the store dir so do it again
-            if ( hasCurrentVersion( storeVersionCheck, cursorTracer ) && !fileSystem.fileExists( migrationStateFile ) )
+            if ( hasCurrentVersion( storeVersionCheck, cursorContext ) && !fileSystem.fileExists( migrationStateFile ) )
             {
                 // No migration needed
                 return;
@@ -152,11 +152,11 @@ public class StoreUpgrader
 
             if ( isUpgradeAllowed() || forceUpgrade )
             {
-                migrate( layout, migrationStructure, migrationStateFile, cursorTracer );
+                migrate( layout, migrationStructure, migrationStateFile, cursorContext );
             }
             else
             {
-                Optional<String> storeVersion = storeVersionCheck.storeVersion( cursorTracer );
+                Optional<String> storeVersion = storeVersionCheck.storeVersion( cursorContext );
                 if ( storeVersion.isPresent() )
                 {
                     StoreVersion version = storeVersionCheck.versionInformation( storeVersion.get() );
@@ -177,10 +177,10 @@ public class StoreUpgrader
         }
     }
 
-    private static boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck, PageCursorTracer cursorTracer )
+    private static boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck, CursorContext cursorContext )
     {
         String configuredVersion = storeVersionCheck.configuredVersion();
-        StoreVersionCheck.Result versionResult = storeVersionCheck.checkUpgrade( configuredVersion, cursorTracer );
+        StoreVersionCheck.Result versionResult = storeVersionCheck.checkUpgrade( configuredVersion, cursorContext );
         if ( versionResult.outcome == StoreVersionCheck.Outcome.missingStoreFile )
         {
             // New store so will be of the current version
@@ -189,7 +189,7 @@ public class StoreUpgrader
         return versionResult.outcome.isSuccessful() && versionResult.actualVersion.equals( configuredVersion );
     }
 
-    private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, Path migrationStateFile, PageCursorTracer cursorTracer )
+    private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, Path migrationStateFile, CursorContext cursorContext )
     {
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );
@@ -200,7 +200,7 @@ public class StoreUpgrader
         // and it's just a matter of moving over the files to the storeDir.
         if ( MigrationStatus.migrating.isNeededFor( migrationStatus ) )
         {
-            StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion(), cursorTracer );
+            StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion(), cursorContext );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
             logsUpgrader.assertCleanlyShutDown( dbDirectoryLayout );
             cleanMigrationDirectory( migrationLayout.databaseDirectory() );

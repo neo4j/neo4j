@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -43,13 +43,13 @@ class EnqueuingIdUpdateListener implements IdUpdateListener
     }
 
     @Override
-    public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
+    public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
     {
         idUpdates.computeIfAbsent( idType, k -> new ChangedIds() ).addUsedId( id );
     }
 
     @Override
-    public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
+    public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
     {
         idUpdates.computeIfAbsent( idType, k -> new ChangedIds() ).addUnusedId( id );
     }

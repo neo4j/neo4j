@@ -31,6 +31,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -47,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -86,11 +88,12 @@ class RecordStoreVersionCheckTest
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckUpgradable" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCheckUpgradable" ) );
 
-        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion, cursorTracer );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion, cursorContext );
 
         assertTrue( result.outcome.isSuccessful() );
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
         assertThat( cursorTracer.unpins() ).isOne();
         assertThat( cursorTracer.faults() ).isOne();
@@ -115,7 +118,7 @@ class RecordStoreVersionCheckTest
     void tracePageCacheAccessOnStoreVersionAccessConstruction() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnStoreVersionAccessConstruction" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnStoreVersionAccessConstruction" ) );
 
         Path neoStore = emptyFile( fileSystem );
         String storeVersion = "V1";
@@ -123,8 +126,9 @@ class RecordStoreVersionCheckTest
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1, databaseLayout.getDatabaseName(), NULL );
 
         var versionCheck = newStoreVersionCheck();
-        assertEquals( storeVersion, versionCheck.storeVersion( cursorTracer ).get() );
+        assertEquals( storeVersion, versionCheck.storeVersion( cursorContext ).get() );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
         assertThat( cursorTracer.unpins() ).isOne();
         assertThat( cursorTracer.faults() ).isOne();

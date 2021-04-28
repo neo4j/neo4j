@@ -32,7 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -81,28 +81,28 @@ class DirectRecordStoreMigrator
                         new DefaultIdGeneratorFactory( fs, immediate(), toDirectoryStructure.getDatabaseName() ), pageCache, fs, toFormat,
                         NullLogProvider.getInstance(), cacheTracer, writable(), immutable.empty() )
                         .openNeoStores( true, storesToOpen );
-                var cursorTracer = cacheTracer.createPageCursorTracer( DIRECT_STORE_MIGRATOR_TAG ) )
+                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( DIRECT_STORE_MIGRATOR_TAG ) ) )
         {
-            toStores.start( cursorTracer );
+            toStores.start( cursorContext );
             for ( StoreType type : types )
             {
                 // This condition will exclude counts store first and foremost.
-                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), cursorTracer );
+                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), cursorContext );
                 progressReporter.progress( 1 );
             }
         }
     }
 
-    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, PageCursorTracer cursorTracer )
+    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, CursorContext cursorContext )
     {
-        to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse( cursorTracer ) );
+        to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse( cursorContext ) );
 
         from.scanAllRecords( record ->
         {
-            to.prepareForCommit( record, cursorTracer );
-            to.updateRecord( record, cursorTracer );
+            to.prepareForCommit( record, cursorContext );
+            to.updateRecord( record, cursorContext );
             return false;
-        }, cursorTracer );
+        }, cursorContext );
     }
 
     /**

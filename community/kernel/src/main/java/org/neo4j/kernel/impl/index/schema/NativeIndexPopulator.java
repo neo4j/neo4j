@@ -28,7 +28,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -115,9 +115,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
     {
-        processUpdates( updates, mainConflictDetector, cursorTracer );
+        processUpdates( updates, mainConflictDetector, cursorContext );
     }
 
     @Override
@@ -127,25 +127,25 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
-        return newPopulatingUpdater( cursorTracer );
+        return newPopulatingUpdater( cursorContext );
     }
 
-    IndexUpdater newPopulatingUpdater( PageCursorTracer cursorTracer )
+    IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
-        IndexUpdater updater = new CollectingIndexUpdater( updates -> processUpdates( updates, updatesConflictDetector, cursorTracer ) );
+        IndexUpdater updater = new CollectingIndexUpdater( updates -> processUpdates( updates, updatesConflictDetector, cursorContext ) );
         if ( descriptor.isUnique() )
         {
             // The index population detects conflicts on the fly, however for updates coming in we're in a position
             // where we cannot detect conflicts while applying, but instead afterwards.
-            updater = new DeferredConflictCheckingIndexUpdater( updater, this::newReader, descriptor, cursorTracer );
+            updater = new DeferredConflictCheckingIndexUpdater( updater, this::newReader, descriptor, cursorContext );
         }
         return updater;
     }
 
     @Override
-    public synchronized void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+    public synchronized void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
     {
         if ( populationCompletedSuccessfully && failureBytes != null )
         {
@@ -159,13 +159,13 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
             {
                 // Successful and completed population
                 assertPopulatorOpen();
-                flushTreeAndMarkAs( BYTE_ONLINE, cursorTracer );
+                flushTreeAndMarkAs( BYTE_ONLINE, cursorContext );
             }
             else if ( failureBytes != null )
             {
                 // Failed population
                 ensureTreeInstantiated();
-                markTreeAsFailed( cursorTracer );
+                markTreeAsFailed( cursorContext );
             }
             // else cancelled population. Here we simply close the tree w/o checkpointing it and it will look like POPULATING state on next open
         }
@@ -193,35 +193,35 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public IndexSample sample( PageCursorTracer cursorTracer )
+    public IndexSample sample( CursorContext cursorContext )
     {
         if ( descriptor.isUnique() )
         {
             return uniqueSampler.result();
         }
-        return buildNonUniqueIndexSample( cursorTracer );
+        return buildNonUniqueIndexSample( cursorContext );
     }
 
-    void flushTreeAndMarkAs( byte state, PageCursorTracer cursorTracer )
+    void flushTreeAndMarkAs( byte state, CursorContext cursorContext )
     {
-        tree.checkpoint( new NativeIndexHeaderWriter( state ), cursorTracer );
+        tree.checkpoint( new NativeIndexHeaderWriter( state ), cursorContext );
     }
 
-    IndexSample buildNonUniqueIndexSample( PageCursorTracer cursorTracer )
+    IndexSample buildNonUniqueIndexSample( CursorContext cursorContext )
     {
-        return new FullScanNonUniqueIndexSampler<>( tree, layout ).sample( cursorTracer );
+        return new FullScanNonUniqueIndexSampler<>( tree, layout ).sample( cursorContext );
     }
 
-    private void markTreeAsFailed( PageCursorTracer cursorTracer )
+    private void markTreeAsFailed( CursorContext cursorContext )
     {
         Preconditions.checkState( failureBytes != null, "markAsFailed hasn't been called, populator not actually failed?" );
-        tree.checkpoint( new FailureHeaderWriter( failureBytes ), cursorTracer );
+        tree.checkpoint( new FailureHeaderWriter( failureBytes ), cursorContext );
     }
 
     private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetector,
-            PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+            CursorContext cursorContext ) throws IndexEntryConflictException
     {
-        try ( Writer<KEY,VALUE> writer = tree.writer( cursorTracer ) )
+        try ( Writer<KEY,VALUE> writer = tree.writer( cursorContext ) )
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {

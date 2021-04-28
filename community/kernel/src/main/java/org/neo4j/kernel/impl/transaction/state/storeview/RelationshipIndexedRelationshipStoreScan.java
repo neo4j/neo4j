@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
@@ -53,8 +53,8 @@ public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreS
     }
 
     @Override
-    public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
+    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
     {
-        return new TokenIndexScanIdIterator( tokenIndexReader, entityTokenIdFilter, cursorTracer );
+        return new TokenIndexScanIdIterator( tokenIndexReader, entityTokenIdFilter, cursorContext );
     }
 }

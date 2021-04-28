@@ -24,12 +24,12 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 class AggregatingIndexSamplerTest
 {
@@ -59,7 +59,7 @@ class AggregatingIndexSamplerTest
         }
 
         @Override
-        public IndexSample sampleIndex( PageCursorTracer cursorTracer )
+        public IndexSample sampleIndex( CursorContext cursorContext )
         {
             return new IndexSample( value, value, value * 2 );
         }

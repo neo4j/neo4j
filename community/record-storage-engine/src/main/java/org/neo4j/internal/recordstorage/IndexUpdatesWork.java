@@ -28,7 +28,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.NestingIterator;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.util.concurrent.Work;
@@ -39,11 +39,11 @@ import org.neo4j.util.concurrent.Work;
 public class IndexUpdatesWork implements Work<IndexUpdateListener,IndexUpdatesWork>
 {
     private final List<IndexUpdates> updates = new ArrayList<>();
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
-    public IndexUpdatesWork( IndexUpdates updates, PageCursorTracer cursorTracer )
+    public IndexUpdatesWork( IndexUpdates updates, CursorContext cursorContext )
     {
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.updates.add( updates );
     }
 
@@ -59,7 +59,7 @@ public class IndexUpdatesWork implements Work<IndexUpdateListener,IndexUpdatesWo
     {
         try
         {
-            material.applyUpdates( combinedUpdates(), cursorTracer );
+            material.applyUpdates( combinedUpdates(), cursorContext );
         }
         catch ( IOException | KernelException e )
         {

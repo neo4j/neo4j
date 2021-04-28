@@ -27,6 +27,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -46,9 +48,10 @@ class ReadOnlyTransactionIdStoreIT
     void testPageCacheAccessOnTransactionIdStoreConstruction() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "testPageCacheAccessOnTransactionIdStoreConstruction" );
-        new ReadOnlyTransactionIdStore( fs, pageCache, databaseLayout, cursorTracer );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "testPageCacheAccessOnTransactionIdStoreConstruction" ) );
+        new ReadOnlyTransactionIdStore( fs, pageCache, databaseLayout, cursorContext );
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 4 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
         assertThat( cursorTracer.hits() ).isEqualTo( 4 );

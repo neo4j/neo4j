@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
@@ -28,7 +28,7 @@ import org.neo4j.storageengine.api.StorageEntityScanCursor;
  */
 interface EntityScanCursorBehaviour<CURSOR extends StorageEntityScanCursor<?>>
 {
-    CURSOR allocateEntityScanCursor( PageCursorTracer cursorTracer );
+    CURSOR allocateEntityScanCursor( CursorContext cursorContext );
 
     long[] readTokens( CURSOR cursor );
 }

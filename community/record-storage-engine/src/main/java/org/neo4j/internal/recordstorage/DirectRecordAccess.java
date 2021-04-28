@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -52,14 +52,14 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext )
     {
         DirectRecordProxy loaded = batch.get( key );
         if ( loaded != null )
         {
             return loaded;
         }
-        return proxy( key, loader.load( key, additionalData, load, cursorTracer ), additionalData, false, cursorTracer );
+        return proxy( key, loader.load( key, additionalData, load, cursorContext ), additionalData, false, cursorContext );
     }
 
     private RecordProxy<RECORD, ADDITIONAL> putInBatch( long key, DirectRecordProxy proxy )
@@ -70,9 +70,9 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, CursorContext cursorContext )
     {
-        return proxy( key, loader.newUnused( key, additionalData ), additionalData, true, cursorTracer );
+        return proxy( key, loader.newUnused( key, additionalData ), additionalData, true, cursorContext );
     }
 
     @Override
@@ -82,7 +82,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     }
 
     @Override
-    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Not supported" );
     }
@@ -99,9 +99,9 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         return batch.values();
     }
 
-    private DirectRecordProxy proxy( final long key, final RECORD record, final ADDITIONAL additionalData, boolean created, PageCursorTracer cursorTracer )
+    private DirectRecordProxy proxy( final long key, final RECORD record, final ADDITIONAL additionalData, boolean created, CursorContext cursorContext )
     {
-        return new DirectRecordProxy( key, record, additionalData, created, cursorTracer );
+        return new DirectRecordProxy( key, record, additionalData, created, cursorContext );
     }
 
     private class DirectRecordProxy implements RecordProxy<RECORD,ADDITIONAL>
@@ -109,16 +109,16 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         private final long key;
         private final RECORD record;
         private final ADDITIONAL additionalData;
-        private final PageCursorTracer cursorTracer;
+        private final CursorContext cursorContext;
         private boolean changed;
         private final boolean created;
 
-        DirectRecordProxy( long key, RECORD record, ADDITIONAL additionalData, boolean created, PageCursorTracer cursorTracer )
+        DirectRecordProxy( long key, RECORD record, ADDITIONAL additionalData, boolean created, CursorContext cursorContext )
         {
             this.key = key;
             this.record = record;
             this.additionalData = additionalData;
-            this.cursorTracer = cursorTracer;
+            this.cursorContext = cursorContext;
             if ( created )
             {
                 prepareChange();
@@ -152,7 +152,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD forChangingData()
         {
-            loader.ensureHeavy( record, cursorTracer );
+            loader.ensureHeavy( record, cursorContext );
             prepareChange();
             return record;
         }
@@ -166,7 +166,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD forReadingData()
         {
-            loader.ensureHeavy( record, cursorTracer );
+            loader.ensureHeavy( record, cursorContext );
             return record;
         }
 
@@ -179,7 +179,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD getBefore()
         {
-            return loader.load( key, additionalData, RecordLoad.NORMAL, cursorTracer );
+            return loader.load( key, additionalData, RecordLoad.NORMAL, cursorContext );
         }
 
         @Override
@@ -192,7 +192,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         {
             if ( changed )
             {
-                store.updateRecord( record, IdUpdateListener.IGNORE, cursorTracer );
+                store.updateRecord( record, IdUpdateListener.IGNORE, cursorContext );
             }
         }
 

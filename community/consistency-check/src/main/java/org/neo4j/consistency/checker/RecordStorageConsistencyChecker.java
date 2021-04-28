@@ -41,6 +41,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -134,9 +135,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             SchemaChecker schemaChecker = new SchemaChecker( context );
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties = new IntObjectHashMap<>();
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties = new IntObjectHashMap<>();
-            try ( var cursorTracer = cacheTracer.createPageCursorTracer( SCHEMA_CONSISTENCY_CHECKER_TAG ) )
+            try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CONSISTENCY_CHECKER_TAG ) ) )
             {
-                schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorTracer );
+                schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext );
             }
 
             // Some pieces of check logic are extracted from this main class to reduce the size of this class. Instantiate those here first
@@ -216,20 +217,20 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         {
             // Report unexpected counts from existing counts store --> counts collected in this consistency check
             try ( CountsState.CountsChecker checker = observedCounts.checker( reporter );
-                  var cursorTracer = cacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) )
+                  var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( COUNT_STORE_CONSISTENCY_CHECKER_TAG ) ) )
             {
-                counts.accept( checker, cursorTracer );
+                counts.accept( checker, cursorContext );
             } // Here when closing we report counts that we've seen, but the counts store doesn't have
         }
     }
 
     private void safeLoadTokens( NeoStores neoStores )
     {
-        try ( var cursorTracer = cacheTracer.createPageCursorTracer( CONSISTENCY_CHECKER_TOKEN_LOADER_TAG ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( CONSISTENCY_CHECKER_TOKEN_LOADER_TAG ) ) )
         {
-            tokenHolders.relationshipTypeTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getRelationshipTypeTokenStore(), cursorTracer ) );
-            tokenHolders.labelTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getLabelTokenStore(), cursorTracer ) );
-            tokenHolders.propertyKeyTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getPropertyKeyTokenStore(), cursorTracer ) );
+            tokenHolders.relationshipTypeTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getRelationshipTypeTokenStore(), cursorContext ) );
+            tokenHolders.labelTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getLabelTokenStore(), cursorContext ) );
+            tokenHolders.propertyKeyTokens().setInitialTokens( RecordLoading.safeLoadTokens( neoStores.getPropertyKeyTokenStore(), cursorContext ) );
         }
     }
 

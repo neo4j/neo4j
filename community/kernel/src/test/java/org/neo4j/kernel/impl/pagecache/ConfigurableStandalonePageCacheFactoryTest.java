@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -56,7 +56,7 @@ class ConfigurableStandalonePageCacheFactoryTest
 
             try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL );
                     PagedFile pf = cache.map( file, 4096, DEFAULT_DATABASE_NAME );
-                    PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
+                    PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL ) )
             {
                 // The default size is currently 8MBs.
                 // It should be possible to write more than that.

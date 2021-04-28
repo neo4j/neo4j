@@ -32,7 +32,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.populator.DefaultNonUniqueIndexSampler;
@@ -58,7 +58,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex( PageCursorTracer cursorTracer ) throws IndexNotFoundKernelException
+    public IndexSample sampleIndex( CursorContext cursorContext ) throws IndexNotFoundKernelException
     {
         try ( TaskCoordinator.Task task = newTask() )
         {
@@ -90,7 +90,7 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
                 }
             }
 
-            return sampler.sample( indexReader.numDocs(), cursorTracer );
+            return sampler.sample( indexReader.numDocs(), cursorContext );
         }
     }
 

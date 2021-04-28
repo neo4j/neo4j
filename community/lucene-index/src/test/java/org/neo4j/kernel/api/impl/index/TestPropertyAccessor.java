@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.util.List;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -35,7 +35,7 @@ public class TestPropertyAccessor implements NodePropertyAccessor
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId, PageCursorTracer cursorTracer )
+    public Value getNodePropertyValue( long nodeId, int propertyKeyId, CursorContext cursorContext )
     {
         return propertyValues.get( (int)nodeId );
     }

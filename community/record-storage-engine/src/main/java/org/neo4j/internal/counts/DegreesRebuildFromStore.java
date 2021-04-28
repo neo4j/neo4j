@@ -21,7 +21,7 @@ package org.neo4j.internal.counts;
 
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -54,7 +54,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
     }
 
     @Override
-    public void rebuild( RelationshipGroupDegreesStore.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         // === sketch of a more performant version
         // - Read all groups and for every group make a mark in a memory-structure like so:
@@ -69,8 +69,8 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
 
         RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
         try ( RecordStorageReader storageReader = new RecordStorageReader( neoStores );
-                StorageRelationshipTraversalCursor traversalCursor = storageReader.allocateRelationshipTraversalCursor( cursorTracer );
-                PageCursor groupCursor = groupStore.openPageCursorForReadingWithPrefetching( 0, cursorTracer ) )
+                StorageRelationshipTraversalCursor traversalCursor = storageReader.allocateRelationshipTraversalCursor( cursorContext );
+                PageCursor groupCursor = groupStore.openPageCursorForReadingWithPrefetching( 0, cursorContext ) )
         {
             RelationshipGroupRecord groupRecord = groupStore.newRecord();
             long highGroupId = groupStore.getHighId();

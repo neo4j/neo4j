@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -34,10 +34,10 @@ import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
 
 /**
- * Delegating populator that turns multi-threaded calls to {@link IndexPopulator#add(Collection, PageCursorTracer)} into single-threaded stack work
+ * Delegating populator that turns multi-threaded calls to {@link IndexPopulator#add(Collection, CursorContext)} into single-threaded stack work
  * by passing them through {@link WorkSync}.
  *
- * Used to wrap {@link IndexPopulator}s that are not thread-safe in terms of {@link IndexPopulator#add(Collection, PageCursorTracer)} operation.
+ * Used to wrap {@link IndexPopulator}s that are not thread-safe in terms of {@link IndexPopulator#add(Collection, CursorContext)} operation.
  */
 public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
 {
@@ -49,7 +49,7 @@ public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
     {
         if ( updates.isEmpty() )
         {
@@ -58,7 +58,7 @@ public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
 
         try
         {
-            workSync.apply( new IndexUpdateWork( updates, cursorTracer ) );
+            workSync.apply( new IndexUpdateWork( updates, cursorContext ) );
         }
         catch ( ExecutionException e )
         {
@@ -77,21 +77,21 @@ public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
 
     private class IndexUpdateApply
     {
-        void process( Collection<? extends IndexEntryUpdate<?>> indexEntryUpdates, PageCursorTracer cursorTracer ) throws Exception
+        void process( Collection<? extends IndexEntryUpdate<?>> indexEntryUpdates, CursorContext cursorContext ) throws Exception
         {
-            WorkSyncedIndexPopulator.super.add( indexEntryUpdates, cursorTracer );
+            WorkSyncedIndexPopulator.super.add( indexEntryUpdates, cursorContext );
         }
     }
 
     private class IndexUpdateWork implements Work<IndexUpdateApply,IndexUpdateWork>
     {
         private final Collection<? extends IndexEntryUpdate<?>> updates;
-        private final PageCursorTracer cursorTracer;
+        private final CursorContext cursorContext;
 
-        IndexUpdateWork( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+        IndexUpdateWork( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
         {
             this.updates = updates;
-            this.cursorTracer = cursorTracer;
+            this.cursorContext = cursorContext;
         }
 
         @Override
@@ -99,13 +99,13 @@ public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
         {
             ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
             combined.addAll( work.updates );
-            return new IndexUpdateWork( combined, cursorTracer );
+            return new IndexUpdateWork( combined, cursorContext );
         }
 
         @Override
         public void apply( IndexUpdateApply indexUpdateApply ) throws Exception
         {
-            indexUpdateApply.process( updates, cursorTracer );
+            indexUpdateApply.process( updates, cursorContext );
         }
     }
 }

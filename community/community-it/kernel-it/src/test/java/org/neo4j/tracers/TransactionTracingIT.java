@@ -31,7 +31,7 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -77,14 +77,14 @@ class TransactionTracingIT
 
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
-            var cursorTracer = transaction.kernelTransaction().pageCursorTracer();
-            assertZeroCursor( cursorTracer );
+            var cursorContext = transaction.kernelTransaction().cursorContext();
+            assertZeroCursor( cursorContext );
 
             assertEquals( ENTITY_COUNT, Iterables.count( transaction.getAllNodes() ) );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
         }
     }
 
@@ -93,16 +93,16 @@ class TransactionTracingIT
     {
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
-            var cursorTracer = transaction.kernelTransaction().pageCursorTracer();
+            var cursorContext = transaction.kernelTransaction().cursorContext();
 
-            var commitCursorChecker = new CommitCursorChecker( cursorTracer );
+            var commitCursorChecker = new CommitCursorChecker( cursorContext );
             managementService.registerTransactionEventListener( database.databaseName(), commitCursorChecker );
 
             for ( int i = 0; i < ENTITY_COUNT; i++ )
             {
                 transaction.createNode();
             }
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             transaction.commit();
             assertTrue( commitCursorChecker.isInvoked() );
@@ -124,14 +124,14 @@ class TransactionTracingIT
 
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
-            var cursorTracer = transaction.kernelTransaction().pageCursorTracer();
-            assertZeroCursor( cursorTracer );
+            var cursorContext = transaction.kernelTransaction().cursorContext();
+            assertZeroCursor( cursorContext );
 
             assertEquals( ENTITY_COUNT, Iterables.count( transaction.getAllRelationships() ) );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 5 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 5 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 5 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 5 );
         }
     }
 
@@ -152,14 +152,14 @@ class TransactionTracingIT
 
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
-            var cursorTracer = transaction.kernelTransaction().pageCursorTracer();
-            assertZeroCursor( cursorTracer );
+            var cursorContext = transaction.kernelTransaction().cursorContext();
+            assertZeroCursor( cursorContext );
 
             assertEquals( ENTITY_COUNT, Iterators.count( transaction.findNodes( marker ) ) );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
         }
     }
 
@@ -181,15 +181,15 @@ class TransactionTracingIT
 
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
-            var cursorTracer = transaction.kernelTransaction().pageCursorTracer();
-            assertZeroCursor( cursorTracer );
+            var cursorContext = transaction.kernelTransaction().cursorContext();
+            assertZeroCursor( cursorContext );
 
             assertEquals( ENTITY_COUNT, Iterators.count( transaction.findRelationships( type ) ) );
 
             // 1 while setting up TokenScan, and 1 for scanning the index
-            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
         }
     }
 
@@ -211,33 +211,33 @@ class TransactionTracingIT
 
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
-            var cursorTracer = transaction.kernelTransaction().pageCursorTracer();
-            assertZeroCursor( cursorTracer );
+            var cursorContext = transaction.kernelTransaction().cursorContext();
+            assertZeroCursor( cursorContext );
 
             transaction.kernelTransaction().dataWrite().nodeDetachDelete( sourceId );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 14 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 11 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 14 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 14 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 11 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 14 );
         }
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.faults() ).isZero();
+        assertThat( cursorContext.getCursorTracer().pins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().unpins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().hits() ).isZero();
+        assertThat( cursorContext.getCursorTracer().faults() ).isZero();
     }
 
     private static class CommitCursorChecker extends TransactionEventListenerAdapter<Object>
     {
-        private final PageCursorTracer cursorTracer;
+        private final CursorContext cursorContext;
         private volatile boolean invoked;
 
-        CommitCursorChecker( PageCursorTracer cursorTracer )
+        CommitCursorChecker( CursorContext cursorContext )
         {
-            this.cursorTracer = cursorTracer;
+            this.cursorContext = cursorContext;
         }
 
         public boolean isInvoked()
@@ -248,10 +248,10 @@ class TransactionTracingIT
         @Override
         public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
-            assertThat( cursorTracer.pins() ).isEqualTo( 1003 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 1003 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 1001 );
-            assertThat( cursorTracer.faults() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1003 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1003 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1001 );
+            assertThat( cursorContext.getCursorTracer().faults() ).isEqualTo( 2 );
             invoked = true;
         }
     }

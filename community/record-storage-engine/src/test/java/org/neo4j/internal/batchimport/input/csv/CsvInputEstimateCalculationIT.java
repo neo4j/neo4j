@@ -56,7 +56,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -248,7 +248,7 @@ class CsvInputEstimateCalculationIT
     {
         long count = 0;
         PropertyRecord record = stores.getPropertyStore().newRecord();
-        try ( PageCursor cursor = stores.getPropertyStore().openPageCursorForReading( 0, PageCursorTracer.NULL ) )
+        try ( PageCursor cursor = stores.getPropertyStore().openPageCursorForReading( 0, CursorContext.NULL ) )
         {
             long highId = stores.getPropertyStore().getHighId();
             for ( long id = 0; id < highId; id++ )

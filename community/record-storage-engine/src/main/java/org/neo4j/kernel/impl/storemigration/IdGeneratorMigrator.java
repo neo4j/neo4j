@@ -45,7 +45,7 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -86,15 +86,15 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
         if ( requiresIdFilesMigration( oldFormat, newFormat ) )
         {
-            try ( var cursorTracer = cacheTracer.createPageCursorTracer( ID_GENERATOR_MIGRATION_TAG ) )
+            try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( ID_GENERATOR_MIGRATION_TAG ) ) )
             {
-                migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat, progress, cursorTracer );
+                migrateIdFiles( directoryLayout, migrationLayout, oldFormat, newFormat, progress, cursorContext );
             }
         }
     }
 
     private void migrateIdFiles( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat,
-            ProgressReporter progress, PageCursorTracer cursorTracer ) throws IOException
+            ProgressReporter progress, CursorContext cursorContext ) throws IOException
     {
         // The store .id files needs to be migrated. At this point some of them have been sort-of-migrated, i.e. merely ported
         // to the new format, but just got the highId and nothing else. Regardless we want to do a proper migration here,
@@ -121,21 +121,21 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         {
             @Override
             public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
-                    DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer,
+                    DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext,
                     ImmutableSet<OpenOption> openOptions ) throws IOException
             {
                 Path redirectedFilename = migrationLayout.databaseDirectory().resolve( filename.getFileName().toString() );
-                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorTracer, openOptions );
+                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorContext, openOptions );
             }
 
             @Override
             public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                    DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                    DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
             {
                 throw new IllegalStateException( "The store file should exist and therefore all calls should be to open, not create" );
             }
         };
-        startAndTriggerRebuild( directoryLayout, oldFormat, rebuiltIdGeneratorsFromOldStore, storesInDbDirectory, progress, cursorTracer );
+        startAndTriggerRebuild( directoryLayout, oldFormat, rebuiltIdGeneratorsFromOldStore, storesInDbDirectory, progress, cursorContext );
 
         // Build the ones from the migration directory, those stores that have been migrated
         // Before doing this we will have to create empty stores for those that are missing, otherwise some of the stores
@@ -144,7 +144,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         // We'll remove them after we have built the id files
         IdGeneratorFactory rebuiltIdGeneratorsFromNewStore = new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationLayout.getDatabaseName() );
         Set<Path> placeHolderStoreFiles = createEmptyPlaceHolderStoreFiles( migrationLayout, newFormat );
-        startAndTriggerRebuild( migrationLayout, newFormat, rebuiltIdGeneratorsFromNewStore, storesInMigrationDirectory, progress, cursorTracer );
+        startAndTriggerRebuild( migrationLayout, newFormat, rebuiltIdGeneratorsFromNewStore, storesInMigrationDirectory, progress, cursorContext );
         for ( Path emptyPlaceHolderStoreFile : placeHolderStoreFiles )
         {
             fileSystem.deleteFile( emptyPlaceHolderStoreFile );
@@ -152,12 +152,12 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void startAndTriggerRebuild( DatabaseLayout layout, RecordFormats format, IdGeneratorFactory idGeneratorFactory, List<StoreType> storeTypes,
-            ProgressReporter progress, PageCursorTracer cursorTracer ) throws IOException
+            ProgressReporter progress, CursorContext cursorContext ) throws IOException
     {
         try ( NeoStores stores = createStoreFactory( layout, format, idGeneratorFactory ).openNeoStores( storeTypes.toArray( StoreType[]::new ) ) )
         {
             // full rebuild of ID files that doesn't yet exist will happen in here
-            stores.start( store -> progress.progress( 1 ), cursorTracer );
+            stores.start( store -> progress.progress( 1 ), cursorContext );
         }
     }
 

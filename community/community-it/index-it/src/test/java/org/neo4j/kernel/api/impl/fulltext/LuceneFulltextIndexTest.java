@@ -37,6 +37,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -82,14 +83,14 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.getNodeById( nodeId ).removeLabel( label2 );
             KernelTransaction ktx = kernelTransaction( tx );
 
-            var cursorTracer = ktx.pageCursorTracer();
-            cursorTracer.reportEvents();
-            assertZeroTracer( cursorTracer );
+            var cursorContext = ktx.cursorContext();
+            cursorContext.getCursorTracer().reportEvents();
+            assertZeroTracer( cursorContext );
 
             assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "b", nodeId );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
         }
     }
 
@@ -740,8 +741,9 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
     }
 
-    private void assertZeroTracer( PageCursorTracer cursorTracer )
+    private void assertZeroTracer( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();

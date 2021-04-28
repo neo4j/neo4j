@@ -39,7 +39,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.internal.NullLogService;
@@ -145,14 +145,14 @@ public class StoreInfoCommand extends AbstractCommand
         {
             var storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, Config.defaults(), pageCache,
                     NullLogService.getInstance(), PageCacheTracer.NULL );
-            var storeVersion = storeVersionCheck.storeVersion( PageCursorTracer.NULL )
+            var storeVersion = storeVersionCheck.storeVersion( CursorContext.NULL )
                     .orElseThrow( () ->
                             new CommandFailedException( format( "Could not find version metadata in store '%s'", databaseLayout.databaseDirectory() ) ) );
 
             var versionInformation = storageEngineFactory.versionInformation( storeVersion );
 
             var recoveryRequired = checkRecoveryState( fs, databaseLayout, config, memoryTracker );
-            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( fs, databaseLayout, pageCache, PageCursorTracer.NULL );
+            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( fs, databaseLayout, pageCache, CursorContext.NULL );
             var lastTxId = txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be behind if recovery is required.
             var successorString = versionInformation.successor().map( StoreVersion::introductionNeo4jVersion ).orElse( null );
 

@@ -28,7 +28,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
@@ -66,16 +66,16 @@ public class Scanner
         private final PageCursor cursor;
         private final R record;
         private final Predicate<? super R>[] filters;
-        private final PageCursorTracer cursorTracer;
+        private final CursorContext cursorContext;
 
         @SafeVarargs
         Scan( RecordStore<R> store, boolean forward, PageCacheTracer pageCacheTracer, final Predicate<? super R>... filters )
         {
             this.filters = filters;
-            this.cursorTracer = pageCacheTracer.createPageCursorTracer( RECORD_STORE_SCANNER_TAG );
-            this.ids = new StoreIdIterator( store, forward, cursorTracer );
+            this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RECORD_STORE_SCANNER_TAG ) );
+            this.ids = new StoreIdIterator( store, forward, cursorContext );
             this.store = store;
-            this.cursor = store.openPageCursorForReading( 0, cursorTracer );
+            this.cursor = store.openPageCursorForReading( 0, cursorContext );
             this.record = store.newRecord();
         }
 
@@ -113,7 +113,7 @@ public class Scanner
         public void close()
         {
             cursor.close();
-            cursorTracer.close();
+            cursorContext.close();
         }
     }
 }

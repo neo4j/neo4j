@@ -25,7 +25,7 @@ import java.nio.file.Path;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -39,12 +39,12 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     private final FixedLogVersion logVersion;
     private final FixedLogVersion checkpointLogVersion;
 
-    public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout, PageCursorTracer cursorTracer ) throws IOException
+    public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout, CursorContext cursorContext ) throws IOException
     {
-        this.logVersion =
-                new FixedLogVersion( readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, LOG_VERSION, databaseLayout.getDatabaseName() ) );
+        this.logVersion = new FixedLogVersion(
+                readLogVersion( pageCache, databaseLayout.metadataStore(), cursorContext, LOG_VERSION, databaseLayout.getDatabaseName() ) );
         this.checkpointLogVersion = new FixedLogVersion(
-                readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, CHECKPOINT_LOG_VERSION, databaseLayout.getDatabaseName() ) );
+                readLogVersion( pageCache, databaseLayout.metadataStore(), cursorContext, CHECKPOINT_LOG_VERSION, databaseLayout.getDatabaseName() ) );
     }
 
     @Override
@@ -54,13 +54,13 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public void setCurrentLogVersion( long version, PageCursorTracer cursorTracer )
+    public void setCurrentLogVersion( long version, CursorContext cursorContext )
     {
         setCurrentVersionAttempt();
     }
 
     @Override
-    public long incrementAndGetVersion( PageCursorTracer cursorTracer )
+    public long incrementAndGetVersion( CursorContext cursorContext )
     {
         return incrementAndGetVersion( logVersion );
     }
@@ -72,13 +72,13 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public void setCheckpointLogVersion( long version, PageCursorTracer cursorTracer )
+    public void setCheckpointLogVersion( long version, CursorContext cursorContext )
     {
         setCurrentVersionAttempt();
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion( PageCursorTracer cursorTracer )
+    public long incrementAndGetCheckpointLogVersion( CursorContext cursorContext )
     {
         return incrementAndGetVersion( checkpointLogVersion );
     }
@@ -112,12 +112,12 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
         return version.getValue();
     }
 
-    private static long readLogVersion( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer, MetaDataStore.Position position,
+    private static long readLogVersion( PageCache pageCache, Path neoStore, CursorContext cursorContext, MetaDataStore.Position position,
             String databaseName ) throws IOException
     {
         try
         {
-            long logVersion = MetaDataStore.getRecord( pageCache, neoStore, position, databaseName, cursorTracer );
+            long logVersion = MetaDataStore.getRecord( pageCache, neoStore, position, databaseName, cursorContext );
             return logVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT ? logVersion : NOT_EXISTING_VERSION;
         }
         catch ( NoSuchFileException ignore )

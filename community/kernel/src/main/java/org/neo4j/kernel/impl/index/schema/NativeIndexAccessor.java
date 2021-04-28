@@ -27,7 +27,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -60,12 +60,12 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public NativeIndexUpdater<KEY, VALUE> newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public NativeIndexUpdater<KEY, VALUE> newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer( cursorTracer ) );
+            return singleUpdater.initialize( tree.writer( cursorContext ) );
         }
         catch ( IOException e )
         {
@@ -74,9 +74,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
-        tree.checkpoint( cursorTracer );
+        tree.checkpoint( cursorContext );
     }
 
     @Override
@@ -95,9 +95,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     public abstract ValueIndexReader newValueReader();
 
     @Override
-    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
     {
-        return new NativeAllEntriesReader<>( tree, layout, fromIdInclusive, toIdExclusive, cursorTracer );
+        return new NativeAllEntriesReader<>( tree, layout, fromIdInclusive, toIdExclusive, cursorContext );
     }
 
     @Override
@@ -112,11 +112,11 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     }
 
     @Override
-    public long estimateNumberOfEntries( PageCursorTracer cursorTracer )
+    public long estimateNumberOfEntries( CursorContext cursorContext )
     {
         try
         {
-            return tree.estimateNumberOfEntriesInTree( cursorTracer );
+            return tree.estimateNumberOfEntriesInTree( cursorContext );
         }
         catch ( IOException e )
         {

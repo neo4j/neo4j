@@ -31,7 +31,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.Lock;
@@ -82,11 +82,11 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     }
 
     @Override
-    protected void process( long[] entityIds, BatchSender sender, PageCursorTracer cursorTracer ) throws Exception
+    protected void process( long[] entityIds, BatchSender sender, CursorContext cursorContext ) throws Exception
     {
         GeneratedIndexUpdates updates = new GeneratedIndexUpdates( gatherPropertyUpdates, gatherTokenUpdates );
-        try ( CURSOR nodeCursor = entityCursorBehaviour.allocateEntityScanCursor( cursorTracer );
-              StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorTracer, memoryTracker ) )
+        try ( CURSOR nodeCursor = entityCursorBehaviour.allocateEntityScanCursor( cursorContext );
+              StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorContext, memoryTracker ) )
         {
             for ( long entityId : entityIds )
             {

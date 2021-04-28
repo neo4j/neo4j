@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -89,34 +90,36 @@ public class TransactionCountingStateVisitorTraceIT
         {
             var internalTransaction = (InternalTransaction) transaction;
             KernelTransactionImplementation kernelTransaction = (KernelTransactionImplementation) internalTransaction.kernelTransaction();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
 
             transactionalOperation.accept( transaction );
 
-            cursorTracer.reportEvents();
-            assertZeroCursor( cursorTracer );
+            cursorContext.getCursorTracer().reportEvents();
+            assertZeroCursor( cursorContext );
             var transactionState = kernelTransaction.txState();
             var counts = new CountsDelta();
 
             try ( StorageReader storageReader = kernelTransaction.newStorageReader();
-                    var stateVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, transactionState, counts, cursorTracer ) )
+                    var stateVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, transactionState, counts, cursorContext ) )
             {
                 transactionState.accept( stateVisitor );
             }
 
-            assertTwoCursor( cursorTracer );
+            assertTwoCursor( cursorContext );
         }
     }
 
-    private void assertTwoCursor( PageCursorTracer cursorTracer )
+    private void assertTwoCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
         assertThat( cursorTracer.hits() ).isEqualTo( 2 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();

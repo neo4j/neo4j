@@ -32,7 +32,7 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
@@ -64,14 +64,14 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     }
 
     @Override
-    protected void process( T[] batch, BatchSender sender, PageCursorTracer cursorTracer )
+    protected void process( T[] batch, BatchSender sender, CursorContext cursorContext )
     {
         RecordProcessor<T> processor = threadProcessors.get();
         for ( T item : batch )
         {
             if ( item != null && item.inUse() )
             {
-                if ( !processor.process( item, cursorTracer ) )
+                if ( !processor.process( item, cursorContext ) )
                 {
                     // No change for this record
                     item.setInUse( false );

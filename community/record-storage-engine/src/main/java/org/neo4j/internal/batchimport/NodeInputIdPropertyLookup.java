@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
@@ -46,13 +46,13 @@ class NodeInputIdPropertyLookup implements PropertyValueLookup
     }
 
     @Override
-    public Object lookupProperty( long nodeId, PageCursorTracer cursorTracer )
+    public Object lookupProperty( long nodeId, CursorContext cursorContext )
     {
-        propertyStore.getRecord( nodeId, propertyRecord, CHECK, cursorTracer );
+        propertyStore.getRecord( nodeId, propertyRecord, CHECK, cursorContext );
         if ( !propertyRecord.inUse() )
         {
             return null;
         }
-        return propertyRecord.iterator().next().newPropertyValue( propertyStore, cursorTracer ).asObject();
+        return propertyRecord.iterator().next().newPropertyValue( propertyStore, cursorContext ).asObject();
     }
 }

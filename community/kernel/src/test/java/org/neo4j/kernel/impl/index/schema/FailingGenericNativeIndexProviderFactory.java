@@ -27,7 +27,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -106,7 +106,7 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
                     return new IndexPopulator.Delegating( actualPopulator )
                     {
                         @Override
-                        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+                        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
                         {
                             throw new RuntimeException( POPULATION_FAILURE_MESSAGE );
                         }
@@ -123,9 +123,9 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
                 return new IndexAccessor.Delegating( actualAccessor )
                 {
                     @Override
-                    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+                    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
                     {
-                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode, cursorTracer );
+                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode, cursorContext );
                         return new DelegatingIndexUpdater( actualUpdater )
                         {
                             @Override
@@ -142,17 +142,17 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             }
 
             @Override
-            public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+            public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE
-                                                                          : actualProvider.getPopulationFailure( descriptor, cursorTracer );
+                                                                          : actualProvider.getPopulationFailure( descriptor, cursorContext );
             }
 
             @Override
-            public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+            public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED
-                                                                          : actualProvider.getInitialState( descriptor, cursorTracer );
+                                                                          : actualProvider.getInitialState( descriptor, cursorContext );
             }
         };
     }

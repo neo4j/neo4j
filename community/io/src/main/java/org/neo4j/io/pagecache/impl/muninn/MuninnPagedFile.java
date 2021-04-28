@@ -40,7 +40,7 @@ import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static java.util.Arrays.fill;
@@ -130,8 +130,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param filePageSize file page size
      * @param swapperFactory page cache swapper factory
      * @param pageCacheTracer global page cache tracer
-     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
-     * access to thread local version context
      * @param createIfNotExists should create file if it does not exists
      * @param truncateExisting should truncate file if it exists
      * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
@@ -140,13 +138,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
-            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, String databaseName,
+            boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, String databaseName,
             int faultLockStriping, IOController ioController ) throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorFactory = new CursorFactory( this, versionContextSupplier );
+        this.cursorFactory = new CursorFactory( this );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap( faultLockStriping );
         this.bufferFactory = pageCache.getBufferFactory();
@@ -196,17 +194,17 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer )
+    public PageCursor io( long pageId, int pf_flags, CursorContext context )
     {
         int lockFlags = pf_flags & PF_LOCK_MASK;
         MuninnPageCursor cursor;
         if ( lockFlags == PF_SHARED_READ_LOCK )
         {
-            cursor = cursorFactory.takeReadCursor( pageId, pf_flags, tracer );
+            cursor = cursorFactory.takeReadCursor( pageId, pf_flags, context );
         }
         else if ( lockFlags == PF_SHARED_WRITE_LOCK )
         {
-            cursor = cursorFactory.takeWriteCursor( pageId, pf_flags, tracer );
+            cursor = cursorFactory.takeWriteCursor( pageId, pf_flags, context );
         }
         else
         {

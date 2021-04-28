@@ -30,7 +30,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -86,10 +86,10 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * Returns number of stored nodes labeled with the label represented by {@code labelId}.
      *
      * @param labelId label id to match.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return number of stored nodes with this label.
      */
-    long countsForNode( int labelId, PageCursorTracer cursorTracer );
+    long countsForNode( int labelId, CursorContext cursorContext );
 
     /**
      * Returns number of stored relationships of a certain {@code typeId} whose start/end nodes are labeled
@@ -98,12 +98,12 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
      * @param startLabelId label id of start nodes to match.
      * @param typeId relationship type id to match.
      * @param endLabelId label id of end nodes to match.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return number of stored relationships matching these criteria.
      */
-    long countsForRelationship( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer );
+    long countsForRelationship( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext );
 
-    long nodesGetCount( PageCursorTracer cursorTracer );
+    long nodesGetCount( CursorContext cursorContext );
 
     long relationshipsGetCount();
 
@@ -113,9 +113,9 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
 
     int relationshipTypeCount();
 
-    boolean nodeExists( long id, PageCursorTracer cursorTracer );
+    boolean nodeExists( long id, CursorContext cursorContext );
 
-    boolean relationshipExists( long id, PageCursorTracer cursorTracer );
+    boolean relationshipExists( long id, CursorContext cursorContext );
 
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
@@ -134,22 +134,22 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     /**
      * @return a new {@link StorageNodeCursor} capable of reading node data from the underlying storage.
      */
-    StorageNodeCursor allocateNodeCursor( PageCursorTracer cursorTracer );
+    StorageNodeCursor allocateNodeCursor( CursorContext cursorContext );
 
     /**
      * @return a new {@link StoragePropertyCursor} capable of reading property data from the underlying storage.
      */
-    StoragePropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
     /**
      * @return a new {@link StorageRelationshipTraversalCursor} capable of traversing relationships from the underlying storage.
      */
-    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer );
+    StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext );
 
     /**
      * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
      */
-    StorageRelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer );
+    StorageRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext );
 
     /**
      * Get a lock-free snapshot of the current schema, for inspecting the current schema when no mutations are intended.

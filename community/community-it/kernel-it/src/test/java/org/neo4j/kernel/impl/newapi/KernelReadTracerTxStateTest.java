@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
@@ -72,7 +72,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeCursor cursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
+              NodeCursor cursor = tx.cursors().allocateNodeCursor( tx.cursorContext() ) )
         {
             tx.dataWrite().nodeCreate();
             tx.dataWrite().nodeCreate();
@@ -173,7 +173,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( tx.pageCursorTracer() ) )
+              RelationshipScanCursor cursor = tx.cursors().allocateRelationshipScanCursor( tx.cursorContext() ) )
         {
             long n1 = tx.dataWrite().nodeCreate();
             long n2 = tx.dataWrite().nodeCreate();
@@ -202,8 +202,8 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
-              RelationshipTraversalCursor cursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() ) )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.cursorContext() );
+              RelationshipTraversalCursor cursor = tx.cursors().allocateRelationshipTraversalCursor( tx.cursorContext() ) )
         {
             long n1 = tx.dataWrite().nodeCreate();
             long n2 = tx.dataWrite().nodeCreate();
@@ -230,8 +230,8 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
-              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor( tx.cursorContext() );
+              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( tx.cursorContext(), tx.memoryTracker() ) )
         {
             long n = tx.dataWrite().nodeCreate();
             int name = tx.token().propertyKey( "name" );

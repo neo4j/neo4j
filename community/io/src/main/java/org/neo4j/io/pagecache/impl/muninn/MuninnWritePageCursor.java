@@ -23,15 +23,14 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
-    MuninnWritePageCursor( long victimPage, PageCursorTracer pageCursorTracer,
-            VersionContextSupplier versionContextSupplier )
+    MuninnWritePageCursor( long victimPage, CursorContext cursorContext )
     {
-        super( victimPage, pageCursorTracer, versionContextSupplier );
+        super( victimPage, cursorContext );
     }
 
     @Override
@@ -127,7 +126,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // be closed and the page lock will be released.
         assertPagedFileStillMappedAndGetIdOfLastPage();
         pagedFile.incrementUsage( pageRef );
-        pagedFile.setLastModifiedTxId( pageRef, versionContextSupplier.getVersionContext().committingTransactionId() );
+        pagedFile.setLastModifiedTxId( pageRef, versionContext.committingTransactionId() );
     }
 
     @Override

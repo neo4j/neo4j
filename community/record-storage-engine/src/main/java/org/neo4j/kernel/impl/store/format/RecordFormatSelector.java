@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
@@ -155,9 +156,9 @@ public class RecordFormatSelector
         Path neoStoreFile = databaseLayout.metadataStore();
         if ( fs.fileExists( neoStoreFile ) )
         {
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) ) )
             {
-                long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION, databaseLayout.getDatabaseName(), cursorTracer );
+                long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION, databaseLayout.getDatabaseName(), cursorContext );
                 if ( value != MetaDataRecordFormat.FIELD_NOT_PRESENT )
                 {
                     String storeVersion = MetaDataStore.versionLongToString( value );

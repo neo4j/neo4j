@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Wraps {@link IdGenerator} so that ids can be freed using reuse marker at safe points in time, after all transactions
@@ -61,20 +61,20 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
-        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorTracer, openOptions );
+        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorContext, openOptions );
         return wrapAndKeep( idType, generator );
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         IdGenerator idGenerator = delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnlyChecker, config,
-                cursorTracer, openOptions );
+                cursorContext, openOptions );
         return wrapAndKeep( idType, idGenerator );
     }
 
@@ -92,9 +92,9 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void clearCache( PageCursorTracer cursorTracer )
+    public void clearCache( CursorContext cursorContext )
     {
-        delegate.clearCache( cursorTracer );
+        delegate.clearCache( cursorContext );
     }
 
     @Override
@@ -111,13 +111,13 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
         return bufferingGenerator;
     }
 
-    public void maintenance( boolean awaitOngoing, PageCursorTracer pageCursorTracer )
+    public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
     {
         for ( BufferingIdGenerator generator : overriddenIdGenerators )
         {
             if ( generator != null )
             {
-                generator.maintenance( awaitOngoing, pageCursorTracer );
+                generator.maintenance( awaitOngoing, cursorContext );
             }
         }
     }

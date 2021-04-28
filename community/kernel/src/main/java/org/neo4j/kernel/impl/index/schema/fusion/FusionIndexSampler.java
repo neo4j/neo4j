@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
@@ -43,7 +43,7 @@ public class FusionIndexSampler implements IndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex( PageCursorTracer cursorTracer ) throws IndexNotFoundKernelException
+    public IndexSample sampleIndex( CursorContext cursorContext ) throws IndexNotFoundKernelException
     {
         List<IndexSample> samples = new ArrayList<>();
         Exception exception = null;
@@ -51,7 +51,7 @@ public class FusionIndexSampler implements IndexSampler
         {
             try
             {
-                samples.add( sampler.sampleIndex( cursorTracer ) );
+                samples.add( sampler.sampleIndex( cursorContext ) );
             }
             catch ( IndexNotFoundKernelException | RuntimeException e )
             {

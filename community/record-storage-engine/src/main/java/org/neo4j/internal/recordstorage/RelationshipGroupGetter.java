@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.store.record.Record.isNull;
 public class RelationshipGroupGetter
 {
     private final IdSequence idGenerator;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
     interface RelationshipGroupMonitor
     {
@@ -43,10 +43,10 @@ public class RelationshipGroupGetter
         RelationshipGroupMonitor EMPTY = g -> {};
     }
 
-    public RelationshipGroupGetter( IdSequence idGenerator, PageCursorTracer cursorTracer )
+    public RelationshipGroupGetter( IdSequence idGenerator, CursorContext cursorContext )
     {
         this.idGenerator = idGenerator;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     public RelationshipGroupPosition getRelationshipGroup( NodeRecord node, int type, RecordAccess<RelationshipGroupRecord,Integer> relGroupRecords,
@@ -68,7 +68,7 @@ public class RelationshipGroupGetter
         RecordProxy<RelationshipGroupRecord, Integer> current;
         while ( !isNull( groupId ) )
         {
-            current = relGroupRecords.getOrLoad( groupId, null, cursorTracer );
+            current = relGroupRecords.getOrLoad( groupId, null, cursorContext );
             RelationshipGroupRecord record = current.forReadingData();
             monitor.visit( record );
             record.setPrev( previousGroupId ); // not persistent so not a "change"
@@ -104,8 +104,8 @@ public class RelationshipGroupGetter
         {
             NodeRecord node = nodeChange.forReadingLinkage();
             assert node.isDense() : "Node " + node + " should have been dense at this point";
-            long id = idGenerator.nextId( cursorTracer );
-            change = relGroupRecords.create( id, type, cursorTracer );
+            long id = idGenerator.nextId( cursorContext );
+            change = relGroupRecords.create( id, type, cursorContext );
             RelationshipGroupRecord record = change.forChangingData();
             record.setInUse( true );
             record.setCreated();
@@ -120,7 +120,7 @@ public class RelationshipGroupGetter
                 // if there's' a group after the found insertion point we need to set its prev to this new group
                 if ( !isNull( closestPrevious.getNext() ) )
                 {
-                    relGroupRecords.getOrLoad( closestPrevious.getNext(), null, cursorTracer ).forChangingLinkage().setPrev( id );
+                    relGroupRecords.getOrLoad( closestPrevious.getNext(), null, cursorContext ).forChangingLinkage().setPrev( id );
                 }
 
                 record.setNext( closestPrevious.getNext() );
@@ -133,7 +133,7 @@ public class RelationshipGroupGetter
                 long firstGroupId = node.getNextRel();
                 if ( !isNull( firstGroupId ) )
                 {   // There are others, make way for this new group
-                    RelationshipGroupRecord previousFirstRecord = relGroupRecords.getOrLoad( firstGroupId, type, cursorTracer ).forReadingData();
+                    RelationshipGroupRecord previousFirstRecord = relGroupRecords.getOrLoad( firstGroupId, type, cursorContext ).forReadingData();
                     record.setNext( previousFirstRecord.getId() );
                     previousFirstRecord.setPrev( id );
                 }
@@ -226,18 +226,18 @@ public class RelationshipGroupGetter
     static class DirectGroupLookup implements GroupLookup
     {
         final RecordAccessSet recordChanges;
-        final PageCursorTracer cursorTracer;
+        final CursorContext cursorContext;
 
-        DirectGroupLookup( RecordAccessSet recordChanges, PageCursorTracer cursorTracer )
+        DirectGroupLookup( RecordAccessSet recordChanges, CursorContext cursorContext )
         {
             this.recordChanges = recordChanges;
-            this.cursorTracer = cursorTracer;
+            this.cursorContext = cursorContext;
         }
 
         @Override
         public RecordProxy<RelationshipGroupRecord,Integer> group( long groupId )
         {
-            return recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorTracer );
+            return recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorContext );
         }
     }
 }

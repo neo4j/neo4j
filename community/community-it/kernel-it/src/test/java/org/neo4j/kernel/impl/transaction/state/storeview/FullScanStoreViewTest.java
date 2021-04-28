@@ -39,7 +39,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -123,7 +123,7 @@ class FullScanStoreViewTest
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
         storeView = new FullScanStoreView( locks, storageEngine::newReader, Config.defaults(), jobScheduler );
-        propertyAccessor = storeView.newPropertyAccessor( PageCursorTracer.NULL, INSTANCE );
+        propertyAccessor = storeView.newPropertyAccessor( CursorContext.NULL, INSTANCE );
         reader = storageEngine.newReader();
     }
 
@@ -254,7 +254,7 @@ class FullScanStoreViewTest
     @Test
     void shouldReadProperties() throws EntityNotFoundException
     {
-        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId, PageCursorTracer.NULL );
+        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId, CursorContext.NULL );
         assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 

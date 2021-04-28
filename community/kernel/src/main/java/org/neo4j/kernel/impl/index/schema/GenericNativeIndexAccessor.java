@@ -32,7 +32,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -77,10 +77,10 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
         // This accessor needs to use the header writer here because coordinate reference systems may have changed since last checkpoint.
-        tree.checkpoint( headerWriter, cursorTracer );
+        tree.checkpoint( headerWriter, cursorContext );
     }
 
     @Override
@@ -92,7 +92,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     }
 
     @Override
-    public IndexEntriesReader[] newAllEntriesValueReader( int partitions, PageCursorTracer cursorTracer )
+    public IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
     {
         GenericKey lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
@@ -102,7 +102,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
         highest.initValuesAsHighest();
         try
         {
-            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, cursorTracer );
+            Collection<Seeker<GenericKey,NativeIndexValue>> seekers = tree.partitionedSeek( lowest, highest, partitions, cursorContext );
             Collection<IndexEntriesReader> readers = new ArrayList<>();
             for ( Seeker<GenericKey,NativeIndexValue> seeker : seekers )
             {

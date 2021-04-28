@@ -62,7 +62,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -262,7 +262,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         validateDefaultProviderExisting();
 
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INIT_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INIT_TAG ) ) )
         {
             indexMapRef.modify( indexMap ->
             {
@@ -282,7 +282,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
                     IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
                     IndexProvider provider = providerMap.lookup( providerDescriptor );
-                    InternalIndexState initialState = provider.getInitialState( descriptor, cursorTracer );
+                    InternalIndexState initialState = provider.getInitialState( descriptor, cursorContext );
 
                     indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( descriptor ) );
 
@@ -300,7 +300,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                         break;
                     case FAILED:
                         monitor.initialState( descriptor, FAILED );
-                        IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor, cursorTracer ) );
+                        IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor, cursorContext ) );
                         indexProxy = indexProxyCreator.createFailedIndexProxy( descriptor, failure );
                         break;
                     default:
@@ -573,17 +573,17 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * @throws KernelException potentially thrown from index updating.
      */
     @Override
-    public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, PageCursorTracer cursorTracer ) throws KernelException
+    public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext ) throws KernelException
     {
         if ( state == State.NOT_STARTED )
         {
             // We're in recovery, which means we'll be telling indexes to apply with additional care for making
             // idempotent changes.
-            apply( updates, IndexUpdateMode.RECOVERY, cursorTracer );
+            apply( updates, IndexUpdateMode.RECOVERY, cursorContext );
         }
         else if ( state == State.RUNNING || state == State.STARTING )
         {
-            apply( updates, IndexUpdateMode.ONLINE, cursorTracer );
+            apply( updates, IndexUpdateMode.ONLINE, cursorContext );
         }
         else
         {
@@ -592,13 +592,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
     }
 
-    private void apply( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, IndexUpdateMode updateMode, PageCursorTracer cursorTracer ) throws KernelException
+    private void apply( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, IndexUpdateMode updateMode, CursorContext cursorContext ) throws KernelException
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
             for ( IndexEntryUpdate<IndexDescriptor> indexUpdate : updates )
             {
-                processUpdate( updaterMap, indexUpdate, cursorTracer );
+                processUpdate( updaterMap, indexUpdate, cursorContext );
             }
         }
     }
@@ -692,9 +692,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate,
-            PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+            CursorContext cursorContext ) throws IndexEntryConflictException
     {
-        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey(), cursorTracer );
+        IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey(), cursorContext );
         if ( updater != null )
         {
             updater.process( indexUpdate );
@@ -725,9 +725,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 {
                     // This is OK to get during recovery because the underlying index can be in any unknown state
                     // while we're recovering. Let's just move on to closing it instead.
-                    try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
+                    try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) ) )
                     {
-                        index.close( cursorTracer );
+                        index.close( cursorContext );
                     }
                     catch ( IOException closeException )
                     {
@@ -803,10 +803,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         indexMapRef.getIndexProxy( indexId ).validate();
     }
 
-    public void forceAll( PageCursorTracer cursorTracer ) throws IOException
+    public void forceAll( CursorContext cursorContext ) throws IOException
     {
-        indexStatisticsStore.checkpoint( cursorTracer );
-        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force( cursorTracer ) ) );
+        indexStatisticsStore.checkpoint( cursorContext );
+        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force( cursorContext ) ) );
     }
 
     private LongObjectProcedure<IndexProxy> indexProxyOperation( String name, ThrowingConsumer<IndexProxy, Exception> operation )
@@ -834,7 +834,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private void closeAllIndexes()
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_SERVICE_INDEX_CLOSING_TAG ) ) )
         {
             indexMapRef.modify( indexMap ->
             {
@@ -843,7 +843,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 {
                     try
                     {
-                        index.close( cursorTracer );
+                        index.close( cursorContext );
                     }
                     catch ( Exception e )
                     {

@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
@@ -92,7 +92,7 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         if ( IndexUpdateMode.ONLINE == mode )
         {
@@ -100,7 +100,7 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
             {
                 try
                 {
-                    return new DelegatingIndexUpdater( super.newUpdater( mode, cursorTracer ) )
+                    return new DelegatingIndexUpdater( super.newUpdater( mode, cursorContext ) )
                     {
                         @Override
                         public void close() throws IndexEntryConflictException
@@ -126,18 +126,18 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
         else
         {
-            return super.newUpdater( mode, cursorTracer );
+            return super.newUpdater( mode, cursorContext );
         }
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer ) throws IOException
+    public void force( CursorContext cursorContext ) throws IOException
     {
         if ( tryOpenCall() )
         {
             try
             {
-                super.force( cursorTracer );
+                super.force( cursorContext );
             }
             finally
             {
@@ -171,11 +171,11 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void close( PageCursorTracer cursorTracer ) throws IOException
+    public void close( CursorContext cursorContext ) throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
         {
-            super.close( cursorTracer );
+            super.close( cursorContext );
             return;
         }
 
@@ -187,7 +187,7 @@ class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             waitOpenCallsToClose();
-            super.close( cursorTracer );
+            super.close( cursorContext );
             return;
         }
 

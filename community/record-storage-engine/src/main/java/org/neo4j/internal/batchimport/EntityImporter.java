@@ -28,7 +28,7 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -67,11 +67,11 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private long propertyId;
     private final DynamicRecordAllocator dynamicStringRecordAllocator;
     private final DynamicRecordAllocator dynamicArrayRecordAllocator;
-    protected final PageCursorTracer cursorTracer;
+    protected final CursorContext cursorContext;
 
     EntityImporter( BatchingNeoStores stores, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        this.cursorTracer = pageCacheTracer.createPageCursorTracer( ENTITY_IMPORTER_TAG );
+        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( ENTITY_IMPORTER_TAG ) );
         this.propertyStore = stores.getPropertyStore();
         this.propertyKeyTokenRepository = stores.getPropertyKeyRepository();
         this.monitor = monitor;
@@ -86,7 +86,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator( stringPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
         this.arrayPropertyIds = new BatchingIdGetter( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordsPerPage() );
         this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator( arrayPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
-        this.propertyUpdateCursor = propertyStore.openPageCursorForWriting( 0, cursorTracer );
+        this.propertyUpdateCursor = propertyStore.openPageCursorForWriting( 0, cursorContext );
     }
 
     @Override
@@ -140,10 +140,10 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     {
         Value value = property instanceof Value ? (Value) property : Values.of( property );
         PropertyStore.encodeValue( block, key, value, dynamicStringRecordAllocator, dynamicArrayRecordAllocator, propertyStore.allowStorePointsAndTemporal(),
-                cursorTracer, memoryTracker );
+                cursorContext, memoryTracker );
     }
 
-    long createAndWritePropertyChain( PageCursorTracer cursorTracer )
+    long createAndWritePropertyChain( CursorContext cursorContext )
     {
         if ( hasPropertyId )
         {
@@ -155,7 +155,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
             return Record.NO_NEXT_PROPERTY.longValue();
         }
 
-        PropertyRecord currentRecord = propertyRecord( propertyIds.nextId( cursorTracer ) );
+        PropertyRecord currentRecord = propertyRecord( propertyIds.nextId( cursorContext ) );
         long firstRecordId = currentRecord.getId();
         for ( int i = 0; i < propertyBlocksCursor; i++ )
         {
@@ -163,10 +163,10 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
             if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
             {
                 // This record is full or couldn't fit this block, write it to property store
-                long nextPropertyId = propertyIds.nextId( cursorTracer );
+                long nextPropertyId = propertyIds.nextId( cursorContext );
                 long prevId = currentRecord.getId();
                 currentRecord.setNextProp( nextPropertyId );
-                propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorTracer );
+                propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext );
                 currentRecord = propertyRecord( nextPropertyId );
                 currentRecord.setPrevProp( prevId );
             }
@@ -177,7 +177,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
         if ( currentRecord.size() > 0 )
         {
-            propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorTracer );
+            propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext );
         }
 
         return firstRecordId;
@@ -204,17 +204,17 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
     void freeUnusedIds()
     {
-        freeUnusedIds( propertyStore, propertyIds, cursorTracer );
-        freeUnusedIds( propertyStore.getStringStore(), stringPropertyIds, cursorTracer );
-        freeUnusedIds( propertyStore.getArrayStore(), arrayPropertyIds, cursorTracer );
+        freeUnusedIds( propertyStore, propertyIds, cursorContext );
+        freeUnusedIds( propertyStore.getStringStore(), stringPropertyIds, cursorContext );
+        freeUnusedIds( propertyStore.getArrayStore(), arrayPropertyIds, cursorContext );
     }
 
-    static void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch, PageCursorTracer cursorTracer )
+    static void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch, CursorContext cursorContext )
     {
         // Free unused property ids still in the last pre-allocated batch
-        try ( Marker marker = store.getIdGenerator().marker( cursorTracer ) )
+        try ( Marker marker = store.getIdGenerator().marker( cursorContext ) )
         {
-            idBatch.visitUnused( marker::markDeleted, cursorTracer );
+            idBatch.visitUnused( marker::markDeleted, cursorContext );
         }
     }
 }

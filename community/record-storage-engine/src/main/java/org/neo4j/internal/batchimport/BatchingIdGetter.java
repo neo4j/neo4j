@@ -28,7 +28,7 @@ import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdRangeIterator;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -38,8 +38,8 @@ import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
 /**
  * Exposes batches of ids from a {@link RecordStore} as a {@link LongIterator}.
- * It makes use of {@link IdGenerator#nextIdBatch(int, boolean, PageCursorTracer)} (with default batch size the number of records per page)
- * and caches that batch, exhausting it in {@link #nextId(PageCursorTracer)} before getting next batch.
+ * It makes use of {@link IdGenerator#nextIdBatch(int, boolean, CursorContext)} (with default batch size the number of records per page)
+ * and caches that batch, exhausting it in {@link #nextId(CursorContext)} before getting next batch.
  */
 public class BatchingIdGetter implements IdSequence
 {
@@ -62,19 +62,19 @@ public class BatchingIdGetter implements IdSequence
     }
 
     @Override
-    public long nextId( PageCursorTracer cursorTracer )
+    public long nextId( CursorContext cursorContext )
     {
         long id;
-        if ( batch == null || (id = batch.nextId( cursorTracer )) == VALUE_REPRESENTING_NULL )
+        if ( batch == null || (id = batch.nextId( cursorContext )) == VALUE_REPRESENTING_NULL )
         {
             idExpectation = NO_ID_EXPECTATION;
-            IdRange idRange = source.nextIdBatch( batchSize, true, cursorTracer );
+            IdRange idRange = source.nextIdBatch( batchSize, true, cursorContext );
             while ( IdValidator.hasReservedIdInRange( idRange.getRangeStart(), idRange.getRangeStart() + idRange.getRangeLength() ) )
             {
-                idRange = source.nextIdBatch( batchSize, true, cursorTracer );
+                idRange = source.nextIdBatch( batchSize, true, cursorContext );
             }
             batch = new IdRangeIterator( idRange );
-            id = batch.nextId( cursorTracer );
+            id = batch.nextId( cursorContext );
         }
         if ( idExpectation != NO_ID_EXPECTATION )
         {
@@ -88,12 +88,12 @@ public class BatchingIdGetter implements IdSequence
         return id;
     }
 
-    void visitUnused( LongConsumer visitor, PageCursorTracer cursorTracer )
+    void visitUnused( LongConsumer visitor, CursorContext cursorContext )
     {
         if ( batch != null )
         {
             long unusedId;
-            while ( (unusedId = batch.nextId( cursorTracer )) != VALUE_REPRESENTING_NULL )
+            while ( (unusedId = batch.nextId( cursorContext )) != VALUE_REPRESENTING_NULL )
             {
                 visitor.accept( unusedId );
             }

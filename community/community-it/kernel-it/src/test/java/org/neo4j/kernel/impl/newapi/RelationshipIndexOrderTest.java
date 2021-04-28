@@ -91,7 +91,7 @@ public class RelationshipIndexOrderTest extends IndexOrderTestBase<RelationshipV
     @Override
     protected RelationshipValueIndexCursor getEntityValueIndexCursor( KernelTransaction tx )
     {
-        return tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
+        return tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
     }
 
     @Override

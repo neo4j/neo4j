@@ -50,7 +50,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.OtherThreadExecutor;
@@ -85,7 +85,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.EMPTY_REBUILD;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.OtherThreadExecutor.command;
@@ -156,45 +156,45 @@ class GBPTreeGenericCountsStoreTest
     void tracePageCacheAccessOnNodeCount()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeCount" );
-        assertZeroTracer( cursorTracer );
-        assertEquals( 0, countsStore.read( nodeKey( 0 ), cursorTracer ) );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeCount" ) );
+        assertZeroTracer( cursorContext );
+        assertEquals( 0, countsStore.read( nodeKey( 0 ), cursorContext ) );
 
-        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1 );
     }
 
     @Test
     void tracePageCacheAccessOnRelationshipCount()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipCount" );
-        assertZeroTracer( cursorTracer );
-        assertEquals( 0, countsStore.read( relationshipKey( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL ), cursorTracer ) );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRelationshipCount" ) );
+        assertZeroTracer( cursorContext );
+        assertEquals( 0, countsStore.read( relationshipKey( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL ), cursorContext ) );
 
-        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1 );
     }
 
     @Test
     void tracePageCacheAccessOnApply()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnApply" );
-        assertZeroTracer( cursorTracer );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnApply" ) );
+        assertZeroTracer( cursorContext );
 
-        try ( CountUpdater updater = countsStore.updater( 1 + BASE_TX_ID, cursorTracer ) )
+        try ( CountUpdater updater = countsStore.updater( 1 + BASE_TX_ID, cursorContext ) )
         {
             updater.increment( nodeKey( LABEL_ID_1 ), 10 );
             updater.increment( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ), 3 );
             updater.increment( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ), 7 );
         }
 
-        assertThat( cursorTracer.pins() ).isEqualTo( 3 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 3 );
+        assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 3 );
+        assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 3 );
+        assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 3 );
     }
 
     @Test
@@ -358,9 +358,9 @@ class GBPTreeGenericCountsStoreTest
         TestableCountsBuilder builder = new TestableCountsBuilder( rebuiltAtTransactionId )
         {
             @Override
-            public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
             {
-                super.rebuild( updater, cursorTracer, memoryTracker );
+                super.rebuild( updater, cursorContext, memoryTracker );
                 updater.increment( nodeKey( labelId ), 10 );
                 updater.increment( relationshipKey( labelId, relationshipTypeId, labelId2 ), 14 );
             }
@@ -400,7 +400,7 @@ class GBPTreeGenericCountsStoreTest
         instantiateCountsStore( new Rebuilder()
         {
             @Override
-            public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
             {
                 updater.increment( nodeKey( labelId ), 2 );
             }
@@ -777,12 +777,13 @@ class GBPTreeGenericCountsStoreTest
         assertThat( pageCacheTracer.hits() ).isZero();
     }
 
-    private void assertZeroTracer( PageCursorTracer pageCacheTracer )
+    private void assertZeroTracer( CursorContext cursorContext )
     {
-        assertThat( pageCacheTracer.faults() ).isZero();
-        assertThat( pageCacheTracer.pins() ).isZero();
-        assertThat( pageCacheTracer.unpins() ).isZero();
-        assertThat( pageCacheTracer.hits() ).isZero();
+        var cursorTracer = cursorContext.getCursorTracer();
+        assertThat( cursorTracer.faults() ).isZero();
+        assertThat( cursorTracer.pins() ).isZero();
+        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorTracer.hits() ).isZero();
     }
 
     private static class TestableCountsBuilder implements Rebuilder
@@ -797,7 +798,7 @@ class GBPTreeGenericCountsStoreTest
         }
 
         @Override
-        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
             rebuildCalled = true;
         }

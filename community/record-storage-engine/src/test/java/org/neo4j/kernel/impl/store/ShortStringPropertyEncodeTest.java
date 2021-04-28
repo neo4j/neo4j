@@ -28,7 +28,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
@@ -199,9 +199,9 @@ class ShortStringPropertyEncodeTest
     {
         PropertyBlock block = new PropertyBlock();
         TextValue expectedValue = Values.stringValue( string );
-        propertyStore.encodeValue( block, KEY_ID, expectedValue, PageCursorTracer.NULL, INSTANCE );
+        propertyStore.encodeValue( block, KEY_ID, expectedValue, CursorContext.NULL, INSTANCE );
         assertEquals( 0, block.getValueRecords().size() );
-        Value readValue = block.getType().value( block, propertyStore, PageCursorTracer.NULL );
+        Value readValue = block.getType().value( block, propertyStore, CursorContext.NULL );
         assertEquals( expectedValue, readValue );
     }
 }

@@ -25,7 +25,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOController;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -172,7 +172,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     {
         var databaseTracer = tracers.getDatabaseTracer();
         var pageCacheTracer = tracers.getPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG );
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG ) );
               LogCheckPointEvent event = databaseTracer.beginCheckPoint() )
         {
             long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
@@ -191,7 +191,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              */
             msgLog.info( checkpointReason + " checkpoint started..." );
             Stopwatch startTime = Stopwatch.start();
-            forceOperation.flushAndForce( cursorTracer );
+            forceOperation.flushAndForce( cursorContext );
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
@@ -231,6 +231,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @FunctionalInterface
     public interface ForceOperation
     {
-        void flushAndForce( PageCursorTracer cursorTracer ) throws IOException;
+        void flushAndForce( CursorContext cursorContext ) throws IOException;
     }
 }

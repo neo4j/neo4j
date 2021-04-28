@@ -37,7 +37,7 @@ import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -61,18 +61,18 @@ class SchemaComplianceChecker implements AutoCloseable
     private final MutableIntSet reportedMissingMandatoryPropertyKeys = new IntHashSet();
     private final IndexAccessors.IndexReaders indexReaders;
     private final Iterable<IndexDescriptor> indexes;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final DefaultNodePropertyAccessor propertyAccessor;
 
     SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         this.context = context;
         this.mandatoryProperties = mandatoryProperties;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
-        this.cursorTracer = cursorTracer;
-        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorTracer, memoryTracker );
+        this.cursorContext = cursorContext;
+        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorContext, memoryTracker );
     }
 
     <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties( ENTITY entity, long[] entityTokens, IntObjectMap<Value> values,
@@ -102,7 +102,7 @@ class SchemaComplianceChecker implements AutoCloseable
             }
             else
             {
-                long count = reader.countIndexedEntities( entity.getId(), cursorTracer, schema.getPropertyIds(), valueArray );
+                long count = reader.countIndexedEntities( entity.getId(), cursorContext, schema.getPropertyIds(), valueArray );
                 reportIncorrectIndexCount( entity, valueArray, indexRule, count, reportSupplier );
             }
         }
@@ -172,12 +172,12 @@ class SchemaComplianceChecker implements AutoCloseable
             // Fulltext indexes only index text values, so if the entity only have non-string properties it is correct to not find it in the index.
             if ( !(indexRule.getIndexType() == IndexType.FULLTEXT && !valuesContainTextProperty( propertyValues ) ) )
             {
-                reportSupplier.apply( context.recordLoader.entity( entity, cursorTracer ) ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
+                reportSupplier.apply( context.recordLoader.entity( entity, cursorContext ) ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
             }
         }
         else if ( count != 1 )
         {
-            reportSupplier.apply( context.recordLoader.entity( entity, cursorTracer ) )
+            reportSupplier.apply( context.recordLoader.entity( entity, cursorContext ) )
                     .indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
         }
     }

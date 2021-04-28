@@ -30,7 +30,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -107,13 +107,13 @@ class KernelStatementTest
         var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
         try ( var statement = createStatement( transaction ) )
         {
-            var cursorTracer = new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" );
-            statement.initialize( Mockito.mock( Locks.Client.class ), cursorTracer, 100 );
+            var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+            statement.initialize( Mockito.mock( Locks.Client.class ), cursorContext, 100 );
             statement.acquire();
 
-            cursorTracer.beginPin( false, 1, null ).hit();
-            cursorTracer.beginPin( false, 1, null ).hit();
-            cursorTracer.beginPin( false, 1, null ).beginPageFault( 1, 2 ).done();
+            cursorContext.getCursorTracer().beginPin( false, 1, null ).hit();
+            cursorContext.getCursorTracer().beginPin( false, 1, null ).hit();
+            cursorContext.getCursorTracer().beginPin( false, 1, null ).beginPageFault( 1, 2 ).done();
             assertEquals( 2, statement.getHits() );
             assertEquals( 1, statement.getFaults() );
 
@@ -130,7 +130,7 @@ class KernelStatementTest
         var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
         var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
         var statement = createStatement( transaction );
-        statement.initialize( mock( Locks.Client.class ), PageCursorTracer.NULL, 100 );
+        statement.initialize( mock( Locks.Client.class ), CursorContext.NULL, 100 );
 
         var query1 = queryFactory.createForStatement( statement, "test1", MapValue.EMPTY );
         var query2 = queryFactory.createForStatement( statement, "test2", MapValue.EMPTY );

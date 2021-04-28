@@ -24,7 +24,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates>
 {
@@ -34,7 +34,7 @@ public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep<?>.
     }
 
     @Override
-    protected void process( GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates updates, BatchSender sender, PageCursorTracer cursorTracer )
+    protected void process( GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates updates, BatchSender sender, CursorContext cursorContext )
     {
         updates.completeBatch();
     }

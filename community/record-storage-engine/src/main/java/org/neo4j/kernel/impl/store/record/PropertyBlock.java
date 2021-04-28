@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;
@@ -227,7 +227,7 @@ public class PropertyBlock
                 result.append( ",firstDynamic=" ).append( getSingleValueLong() );
                 break;
             default:
-                Object value = type.value( this, null, PageCursorTracer.NULL ).asObject();
+                Object value = type.value( this, null, CursorContext.NULL ).asObject();
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );
@@ -275,15 +275,15 @@ public class PropertyBlock
         return Arrays.equals( valueBlocks, other.valueBlocks );
     }
 
-    public Value newPropertyValue( PropertyStore propertyStore, PageCursorTracer cursorTracer )
+    public Value newPropertyValue( PropertyStore propertyStore, CursorContext cursorContext )
     {
-        return getType().value( this, propertyStore, cursorTracer );
+        return getType().value( this, propertyStore, cursorContext );
     }
 
-    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore, PageCursorTracer cursorTracer )
+    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore, CursorContext cursorContext )
     {
         int propertyKeyId = getKeyIndexId();
-        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore, cursorTracer ) );
+        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore, cursorContext ) );
     }
 
     public static int keyIndexId( long valueBlock )

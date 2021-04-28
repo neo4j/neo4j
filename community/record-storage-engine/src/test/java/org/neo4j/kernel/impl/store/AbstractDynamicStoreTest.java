@@ -38,7 +38,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -88,15 +88,15 @@ class AbstractDynamicStoreTest
     void tracePageCacheAccessOnNextRecord()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNextRecord" );
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNextRecord" ) );
               var store = newTestableDynamicStore() )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
             prepareDirtyGenerator( store );
 
-            store.nextRecord( cursorTracer );
+            store.nextRecord( cursorContext );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -104,14 +104,15 @@ class AbstractDynamicStoreTest
     void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext" );
+        try ( var cursorContext = new CursorContext(
+                pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext" ) );
               var store = newTestableDynamicStore() )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            store.nextRecord( cursorTracer );
+            store.nextRecord( cursorContext );
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
         }
     }
 
@@ -119,15 +120,15 @@ class AbstractDynamicStoreTest
     void tracePageCacheAccessOnRecordsAllocation()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRecordsAllocation" );
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRecordsAllocation" ) );
               var store = newTestableDynamicStore() )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
             prepareDirtyGenerator( store );
 
-            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer, INSTANCE );
+            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorContext, INSTANCE );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -135,14 +136,14 @@ class AbstractDynamicStoreTest
     void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree" );
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree" ) );
               var store = newTestableDynamicStore() )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorTracer, INSTANCE );
+            store.allocateRecordsFromBytes( new ArrayList<>(), new byte[]{0, 1, 2, 3, 4}, cursorContext, INSTANCE );
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
         }
     }
 
@@ -211,18 +212,18 @@ class AbstractDynamicStoreTest
         idGenerator.clearCache( NULL );
     }
 
-    private void assertOneCursor( PageCursorTracer cursorTracer )
+    private void assertOneCursor( CursorContext cursorContext )
     {
-        assertThat( cursorTracer.hits() ).isOne();
-        assertThat( cursorTracer.pins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
+        assertThat( cursorContext.getCursorTracer().hits() ).isOne();
+        assertThat( cursorContext.getCursorTracer().pins() ).isOne();
+        assertThat( cursorContext.getCursorTracer().unpins() ).isOne();
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().hits() ).isZero();
+        assertThat( cursorContext.getCursorTracer().pins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().unpins() ).isZero();
     }
 
     private DynamicRecord createDynamicRecord( long id, AbstractDynamicStore store, int dataSize )

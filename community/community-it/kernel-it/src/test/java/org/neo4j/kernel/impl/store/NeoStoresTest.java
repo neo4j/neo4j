@@ -61,6 +61,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -120,7 +121,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -606,9 +607,10 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             var cacheTracer = new DefaultPageCacheTracer();
-            var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCloseCall" );
-            store.transactionClosed( 0, 6666, 15, cursorTracer );
+            var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCloseCall" ) );
+            store.transactionClosed( 0, 6666, 15, cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertEquals( 1, cursorTracer.pins() );
             assertEquals( 1, cursorTracer.hits() );
             assertEquals( 1, cursorTracer.unpins() );
@@ -624,9 +626,10 @@ public class NeoStoresTest
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             var cacheTracer = new DefaultPageCacheTracer();
-            var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCommittedCall" );
-            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, cursorTracer );
+            var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCommittedCall" ) );
+            store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, cursorContext );
 
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertEquals( 1, cursorTracer.pins() );
             assertEquals( 1, cursorTracer.hits() );
             assertEquals( 1, cursorTracer.unpins() );
@@ -868,13 +871,13 @@ public class NeoStoresTest
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                 Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-                PageCursorTracer cursorTracer, String databaseName, ImmutableSet<OpenOption> openOptions )
+                CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions )
         {
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
                 return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnlyChecker, config,
-                        databaseName, cursorTracer )
+                        databaseName, cursorContext )
                 {
                     @Override
                     public synchronized void close()
@@ -885,7 +888,7 @@ public class NeoStoresTest
                 };
             }
             return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnlyChecker, config,
-                    cursorTracer, databaseName, openOptions );
+                    cursorContext, databaseName, openOptions );
         }
     }
 }

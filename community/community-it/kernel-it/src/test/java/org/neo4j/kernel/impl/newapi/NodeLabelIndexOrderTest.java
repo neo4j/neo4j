@@ -30,7 +30,7 @@ public class NodeLabelIndexOrderTest extends TokenIndexOrderTestBase<NodeLabelIn
     @Override
     protected NodeLabelIndexCursor getIndexCursor( KernelTransaction tx )
     {
-        return tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() );
+        return tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() );
     }
 
     @Override

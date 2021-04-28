@@ -85,7 +85,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         this.transaction = transaction;
         this.internalTransaction = transaction.internalTransaction();
         this.memoryTracker = transaction.memoryTracker();
-        this.relationship = storageReader.allocateRelationshipScanCursor( transaction.pageCursorTracer() );
+        this.relationship = storageReader.allocateRelationshipScanCursor( transaction.cursorContext() );
         this.relationshipsReadFromStore = newLongObjectMap( memoryTracker );
         this.removedLabels = newArrayList( memoryTracker );
         this.removedRelationshipProperties = newArrayList( memoryTracker );
@@ -198,9 +198,9 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
 
     private void takeSnapshot( MemoryTracker memoryTracker )
     {
-        var cursorTracer = transaction.pageCursorTracer();
-        try ( StorageNodeCursor node = store.allocateNodeCursor( cursorTracer );
-              StoragePropertyCursor properties = store.allocatePropertyCursor( cursorTracer, memoryTracker ) )
+        var cursorContext = transaction.cursorContext();
+        try ( StorageNodeCursor node = store.allocateNodeCursor( cursorContext );
+              StoragePropertyCursor properties = store.allocatePropertyCursor( cursorContext, memoryTracker ) )
         {
             TokenRead tokenRead = transaction.tokenRead();
             snapshotRemovedNodes( memoryTracker, node, properties, tokenRead );

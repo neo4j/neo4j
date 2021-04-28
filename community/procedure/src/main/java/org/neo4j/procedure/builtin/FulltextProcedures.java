@@ -226,7 +226,7 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for nodes." );
         }
-        NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
+        NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
         IndexQueryConstraints constraints = queryConstraints( options );
         tx.dataRead().nodeIndexSeek( indexSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );
@@ -293,7 +293,7 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for relationships." );
         }
-        RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
+        RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
         IndexReadSession indexReadSession = tx.dataRead().indexReadSession( indexReference );
         IndexQueryConstraints constraints = queryConstraints( options );
         tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, constraints, PropertyIndexQuery.fulltextSearch( query ) );

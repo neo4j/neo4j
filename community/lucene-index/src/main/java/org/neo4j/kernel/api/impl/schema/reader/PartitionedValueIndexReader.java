@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
@@ -108,10 +108,10 @@ public class PartitionedValueIndexReader extends AbstractValueIndexReader
     }
 
     @Override
-    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+    public long countIndexedEntities( long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues )
     {
         return indexReaders.parallelStream()
-                .mapToLong( reader -> reader.countIndexedEntities( entityId, cursorTracer, propertyKeyIds, propertyValues ) )
+                .mapToLong( reader -> reader.countIndexedEntities( entityId, cursorContext, propertyKeyIds, propertyValues ) )
                 .sum();
     }
 

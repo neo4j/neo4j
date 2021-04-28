@@ -41,7 +41,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -179,9 +179,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public synchronized Path rotate() throws IOException
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( TRANSACTION_LOG_FILE_ROTATION_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_LOG_FILE_ROTATION_TAG ) ) )
         {
-            channel = rotate( channel, cursorTracer );
+            channel = rotate( channel, cursorContext );
             writer.setChannel( channel );
             return channel.getPath();
         }
@@ -438,7 +438,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      *
      * Steps during rotation are:
      * <ol>
-     * <li>1: Increment log version, {@link LogVersionRepository#incrementAndGetVersion(PageCursorTracer)} (also flushes the store)</li>
+     * <li>1: Increment log version, {@link LogVersionRepository#incrementAndGetVersion(CursorContext)} (also flushes the store)</li>
      * <li>2: Flush current log</li>
      * <li>3: Create new log file</li>
      * <li>4: Write header</li>
@@ -469,17 +469,17 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      * </ol>
      *
      * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
-     * @param cursorTracer underlying page cursor tracer.
+     * @param cursorContext underlying page cursor context.
      * @return the channel of the newly opened/created log file.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
-    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, PageCursorTracer cursorTracer ) throws IOException
+    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, CursorContext cursorContext ) throws IOException
     {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
          */
-        long newLogVersion = logVersionRepository.incrementAndGetVersion( cursorTracer );
+        long newLogVersion = logVersionRepository.incrementAndGetVersion( cursorContext );
         /*
          * Rotation can happen at any point, although not concurrently with an append,
          * although an append may have (most likely actually) left at least some bytes left

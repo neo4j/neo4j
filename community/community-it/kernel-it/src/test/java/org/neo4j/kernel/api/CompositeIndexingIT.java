@@ -442,7 +442,7 @@ class CompositeIndexingIT
                     {
                         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                         Set<Long> result = new HashSet<>();
-                        try ( var cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+                        try ( var cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
                         {
                             ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), exactQuery( index ) );
                             while ( cursor.next() )
@@ -503,7 +503,7 @@ class CompositeIndexingIT
                     {
                         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                         Set<Long> result = new HashSet<>();
-                        try ( var cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+                        try ( var cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
                         {
                             ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), exactQuery( index ) );
                             while ( cursor.next() )

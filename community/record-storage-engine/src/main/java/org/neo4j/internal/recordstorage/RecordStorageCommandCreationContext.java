@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
@@ -48,31 +48,31 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     // kernel transaction object and so will be reused between transactions. The relaxed locking feature may change from tx to tx
     // and so it will need to be queried per tx commit.
     private final BooleanSupplier relaxedLockingForDenseNodes;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final RelationshipGroupGetter relationshipGroupGetter;
 
     RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, BooleanSupplier relaxedLockingForDenseNodes,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         this.denseNodeThreshold = denseNodeThreshold;
         this.relaxedLockingForDenseNodes = relaxedLockingForDenseNodes;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.neoStores = neoStores;
         this.memoryTracker = memoryTracker;
-        this.loaders = new Loaders( neoStores, cursorTracer );
-        this.relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorTracer );
-        PropertyTraverser propertyTraverser = new PropertyTraverser( cursorTracer );
-        this.propertyDeleter = new PropertyDeleter( propertyTraverser, cursorTracer );
+        this.loaders = new Loaders( neoStores, cursorContext );
+        this.relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorContext );
+        PropertyTraverser propertyTraverser = new PropertyTraverser( cursorContext );
+        this.propertyDeleter = new PropertyDeleter( propertyTraverser, cursorContext );
         PropertyStore propertyStore = neoStores.getPropertyStore();
         this.propertyCreator =
                 new PropertyCreator( new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
                         new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,
-                        propertyTraverser, propertyStore.allowStorePointsAndTemporal(), cursorTracer, memoryTracker );
+                        propertyTraverser, propertyStore.allowStorePointsAndTemporal(), cursorContext, memoryTracker );
     }
 
     private long nextId( StoreType storeType )
     {
-        return neoStores.getRecordStore( storeType ).nextId( cursorTracer );
+        return neoStores.getRecordStore( storeType ).nextId( cursorContext );
     }
 
     @Override
@@ -96,19 +96,19 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     @Override
     public int reserveRelationshipTypeTokenId()
     {
-        return toIntExact( neoStores.getRelationshipTypeTokenStore().nextId( cursorTracer ) );
+        return toIntExact( neoStores.getRelationshipTypeTokenStore().nextId( cursorContext ) );
     }
 
     @Override
     public int reservePropertyKeyTokenId()
     {
-        return toIntExact( neoStores.getPropertyKeyTokenStore().nextId( cursorTracer ) );
+        return toIntExact( neoStores.getPropertyKeyTokenStore().nextId( cursorContext ) );
     }
 
     @Override
     public int reserveLabelTokenId()
     {
-        return toIntExact( neoStores.getLabelTokenStore().nextId( cursorTracer ) );
+        return toIntExact( neoStores.getLabelTokenStore().nextId( cursorContext ) );
     }
 
     @Override
@@ -123,8 +123,8 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
         RecordChangeSet recordChangeSet = new RecordChangeSet( loaders, memoryTracker, monitor );
         RelationshipModifier relationshipModifier =
                 new RelationshipModifier( relationshipGroupGetter, propertyDeleter, denseNodeThreshold, relaxedLockingForDenseNodes.getAsBoolean(),
-                        cursorTracer, memoryTracker );
+                        cursorContext, memoryTracker );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, lastTransactionIdWhenStarted, locks, lockTracer,
-                relationshipModifier, propertyCreator, propertyDeleter, cursorTracer, memoryTracker, commandSerialization );
+                relationshipModifier, propertyCreator, propertyDeleter, cursorContext, memoryTracker, commandSerialization );
     }
 }

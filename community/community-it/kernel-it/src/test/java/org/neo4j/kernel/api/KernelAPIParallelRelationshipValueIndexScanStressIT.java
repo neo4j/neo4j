@@ -109,7 +109,7 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
 
         KernelAPIParallelStress.parallelStressInTx( kernel,
                                                     N_THREADS,
-                                                    tx -> tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ),
+                                                    tx -> tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() ),
                                                     ( read, cursor ) -> indexSeek( read,
                                                                                    cursor,
                                                                                    indexes[random.nextInt( indexes.length )] ));

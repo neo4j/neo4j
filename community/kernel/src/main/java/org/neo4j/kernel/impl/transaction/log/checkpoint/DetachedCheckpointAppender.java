@@ -26,7 +26,7 @@ import java.time.Instant;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
@@ -140,17 +140,17 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
     public Path rotate() throws IOException
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CHECKPOINT_LOG_FILE_ROTATION_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CHECKPOINT_LOG_FILE_ROTATION_TAG ) ) )
         {
-            channel = rotateChannel( channel, cursorTracer );
+            channel = rotateChannel( channel, cursorContext );
             writer.setChannel( channel );
             return channel.getPath();
         }
     }
 
-    private PhysicalLogVersionedStoreChannel rotateChannel( PhysicalLogVersionedStoreChannel channel, PageCursorTracer cursorTracer ) throws IOException
+    private PhysicalLogVersionedStoreChannel rotateChannel( PhysicalLogVersionedStoreChannel channel, CursorContext cursorContext ) throws IOException
     {
-        long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion( cursorTracer );
+        long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion( cursorContext );
         writer.prepareForFlush().flush();
         var newChannel = channelAllocator.createLogChannel( newLogVersion, context::committingTransactionId );
         channel.close();

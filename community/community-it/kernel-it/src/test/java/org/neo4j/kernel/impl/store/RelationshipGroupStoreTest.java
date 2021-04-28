@@ -40,7 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -227,10 +227,10 @@ class RelationshipGroupStoreTest
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL, CursorContext.NULL );
         long group = nodeRecord.getNextRel();
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
-        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL, CursorContext.NULL );
         assertEquals( -1, groupRecord.getNext() );
         assertEquals( -1, groupRecord.getPrev() );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel4.getId() );
@@ -264,16 +264,16 @@ class RelationshipGroupStoreTest
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL, CursorContext.NULL );
         long group = nodeRecord.getNextRel();
 
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
-        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL, CursorContext.NULL );
         assertNotEquals( groupRecord.getNext(), -1 );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(),
                 rel2.getId(), rel3.getId() );
 
-        RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext(), groupStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext(), groupStore.newRecord(), NORMAL, CursorContext.NULL );
         assertEquals( -1, otherGroupRecord.getNext() );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(),
                 rel5.getId(), rel6.getId() );
@@ -298,14 +298,14 @@ class RelationshipGroupStoreTest
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL, CursorContext.NULL );
         long group = nodeRecord.getNextRel();
 
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
-        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL, CursorContext.NULL );
         assertNotEquals( groupRecord.getNext(), -1 );
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext(), groupStore.newRecord(),
-                NORMAL, PageCursorTracer.NULL );
+                NORMAL, CursorContext.NULL );
         assertEquals( -1, otherGroupRecord.getNext() );
 
         // TODO Delete all relationships of one type and see to that the correct group is deleted.
@@ -324,10 +324,10 @@ class RelationshipGroupStoreTest
                 RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
                 RelationshipGroupRecord record = new RelationshipGroupRecord( 1 ).initialize( true, 2, 3, 4, 5, 6,
                         Record.NO_NEXT_RELATIONSHIP.intValue() );
-                relationshipGroupStore.updateRecord( record, PageCursorTracer.NULL );
+                relationshipGroupStore.updateRecord( record, CursorContext.NULL );
                 nextReadIsInconsistent.set( true );
                 // Now the following should not throw any RecordNotInUse exceptions
-                RelationshipGroupRecord readBack = relationshipGroupStore.getRecord( 1, relationshipGroupStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+                RelationshipGroupRecord readBack = relationshipGroupStore.getRecord( 1, relationshipGroupStore.newRecord(), NORMAL, CursorContext.NULL );
                 assertThat( readBack.toString() ).isEqualTo( record.toString() );
             }
         }
@@ -336,7 +336,7 @@ class RelationshipGroupStoreTest
     private static void assertRelationshipChain( RelationshipStore relationshipStore, Node node, long firstId, long... chainedIds )
     {
         long nodeId = node.getId();
-        RelationshipRecord record = relationshipStore.getRecord( firstId, relationshipStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+        RelationshipRecord record = relationshipStore.getRecord( firstId, relationshipStore.newRecord(), NORMAL, CursorContext.NULL );
         Set<Long> readChain = new HashSet<>();
         readChain.add( firstId );
         while ( true )
@@ -350,7 +350,7 @@ class RelationshipGroupStoreTest
             }
 
             readChain.add( nextId );
-            relationshipStore.getRecord( nextId, record, NORMAL, PageCursorTracer.NULL );
+            relationshipStore.getRecord( nextId, record, NORMAL, CursorContext.NULL );
         }
 
         Set<Long> expectedChain = new HashSet<>( Collections.singletonList( firstId ) );

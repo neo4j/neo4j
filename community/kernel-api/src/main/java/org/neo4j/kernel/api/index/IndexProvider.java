@@ -34,7 +34,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
@@ -70,10 +70,10 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  *
  * Once population is done, the index needs to be "flipped" to an online mode of operation.
  *
- * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean, PageCursorTracer)}
+ * The index will be notified, through the {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean, CursorContext)}
  * method, that population is done, and that the index should turn it's state to {@link InternalIndexState#ONLINE} or
  * {@link InternalIndexState#FAILED} depending on the value given to the
- * {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean, PageCursorTracer)}  close method}.
+ * {@link org.neo4j.kernel.api.index.IndexPopulator#close(boolean, CursorContext)}  close method}.
  *
  * If the index is persisted to disk, this is a <i>vital</i> part of the index lifecycle.
  * For a persisted index, the index MUST NOT store the state as online unless it first guarantees that the entire index
@@ -150,7 +150,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
                 {
                     return InternalIndexState.ONLINE;
                 }
@@ -163,7 +163,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+                public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
                 {
                     return StringUtils.EMPTY;
                 }
@@ -205,20 +205,20 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      *
      * Implementations are expected to persist this failure
      * @param descriptor {@link IndexDescriptor} of the index.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return failure, in the form of a stack trace, that happened during population or empty string if there is no failure
      */
-    public abstract String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer );
+    public abstract String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext );
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor, PageCursorTracer)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor, CursorContext)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      * @param descriptor to get initial state for.
-     * @param cursorTracer underlying page cursor tracer.
+     * @param cursorContext underlying page cursor context.
      */
-    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer );
+    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext );
 
     /**
      * @return a description of this index provider
@@ -306,13 +306,13 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
         {
             return StringUtils.EMPTY;
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
         {
             return null;
         }
@@ -361,15 +361,15 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
         {
-            return provider.getPopulationFailure( descriptor, cursorTracer );
+            return provider.getPopulationFailure( descriptor, cursorContext );
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
         {
-            return provider.getInitialState( descriptor, cursorTracer );
+            return provider.getInitialState( descriptor, cursorContext );
         }
 
         @Override

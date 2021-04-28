@@ -36,7 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -101,7 +101,7 @@ class GBPTreeBootstrapperTest
 
         try ( GBPTree<MutableLong,MutableLong> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
-            tree.checkpoint( PageCursorTracer.NULL );
+            tree.checkpoint( CursorContext.NULL );
         }
         ZipUtils.zip( dir.getFileSystem(), storeFile, zipFile );
         fail( String.format( "Zip file created with store. Copy to correct resource using:%nmv \"%s\" \"%s\"",
@@ -125,7 +125,7 @@ class GBPTreeBootstrapperTest
             assertTrue( bootstrap.isTree() );
             try ( GBPTree<?,?> tree = bootstrap.getTree() )
             {
-                assertTrue( tree.consistencyCheck( PageCursorTracer.NULL ) );
+                assertTrue( tree.consistencyCheck( CursorContext.NULL ) );
             }
         }
     }

@@ -27,16 +27,17 @@ import org.neo4j.internal.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.internal.batchimport.executor.TaskExecutor;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.util.concurrent.AsyncApply;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
  * Supports an arbitrary number of threads to execute batches in parallel.
- * Subclasses implement {@link #process(Object, BatchSender, PageCursorTracer)} receiving the batch to process
+ * Subclasses implement {@link #process(Object, BatchSender, CursorContext)} receiving the batch to process
  * and an {@link BatchSender} for sending the modified batch, or other batches downstream.
  */
 public abstract class ProcessorStep<T> extends AbstractStep<T>
@@ -78,10 +79,10 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         {
             assertHealthy();
             sender.initialize( ticket );
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( cursorTracerName ) )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( cursorTracerName ) ) )
             {
                 long startTime = nanoTime();
-                process( batch, sender, cursorTracer );
+                process( batch, sender, cursorContext );
                 if ( downstream == null )
                 {
                     // No batches were emitted so we couldn't track done batches in that way.
@@ -138,9 +139,9 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
      *
      * @param batch batch to process.
      * @param sender {@link BatchSender} for sending zero or more batches downstream.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      */
-    protected abstract void process( T batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable;
+    protected abstract void process( T batch, BatchSender sender, CursorContext cursorContext ) throws Throwable;
 
     @Override
     public void close() throws Exception

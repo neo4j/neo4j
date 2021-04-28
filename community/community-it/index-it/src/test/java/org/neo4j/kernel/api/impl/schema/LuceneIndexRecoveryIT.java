@@ -38,7 +38,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -365,7 +365,7 @@ class LuceneIndexRecoveryIT
                     new Monitors(), dependencies.getConfig(), dependencies.readOnlyChecker() )
             {
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
                 {
                     return InternalIndexState.POPULATING;
                 }

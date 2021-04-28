@@ -35,7 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -292,7 +292,7 @@ class TransactionStatusResultTest
                 public Statistics getStatistics()
                 {
                     TestStatistics statistics = new TestStatistics( this, new AtomicReference<>( new CountingCpuClock() ) );
-                    statistics.init( Thread.currentThread().getId(), PageCursorTracer.NULL );
+                    statistics.init( Thread.currentThread().getId(), CursorContext.NULL );
                     return statistics;
                 }
             };
@@ -321,9 +321,9 @@ class TransactionStatusResultTest
     private static class TestStatistics extends KernelTransactionImplementation.Statistics
     {
         @Override
-        protected void init( long threadId, PageCursorTracer pageCursorTracer )
+        protected void init( long threadId, CursorContext cursorContext )
         {
-            super.init( threadId, pageCursorTracer );
+            super.init( threadId, cursorContext );
         }
 
         TestStatistics( KernelTransactionImplementation transaction, AtomicReference<CpuClock> cpuClockRef )

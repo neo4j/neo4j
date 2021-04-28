@@ -37,7 +37,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -96,7 +96,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     }
 
     public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src, DynamicRecordAllocator dynamicRecordAllocator,
-            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         requireNonNull( src );
 
@@ -115,7 +115,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
 
         memoryTracker.allocateHeap( totalSize );
 
-        DynamicRecord nextRecord = dynamicRecordAllocator.nextRecord( cursorTracer );
+        DynamicRecord nextRecord = dynamicRecordAllocator.nextRecord( cursorContext );
         int srcOffset = 0;
         do
         {
@@ -126,7 +126,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
                 byte[] data = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
                 record.setData( data );
-                nextRecord = dynamicRecordAllocator.nextRecord( cursorTracer );
+                nextRecord = dynamicRecordAllocator.nextRecord( cursorContext );
                 record.setNextBlock( nextRecord.getId() );
                 srcOffset += dataSize;
             }
@@ -208,14 +208,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     }
 
     @Override
-    public DynamicRecord nextRecord( PageCursorTracer cursorTracer )
+    public DynamicRecord nextRecord( CursorContext cursorContext )
     {
-        return StandardDynamicRecordAllocator.allocateRecord( nextId( cursorTracer ) );
+        return StandardDynamicRecordAllocator.allocateRecord( nextId( cursorContext ) );
     }
 
-    void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        allocateRecordsFromBytes( target, src, this, cursorTracer, memoryTracker );
+        allocateRecordsFromBytes( target, src, this, cursorContext, memoryTracker );
     }
 
     @Override
@@ -226,11 +226,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     }
 
     Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/> readFullByteArray( Iterable<DynamicRecord> records, PropertyType propertyType,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         for ( DynamicRecord record : records )
         {
-            ensureHeavy( record, cursorTracer );
+            ensureHeavy( record, cursorContext );
         }
 
         return readFullByteArrayFromHeavyRecords( records, propertyType );

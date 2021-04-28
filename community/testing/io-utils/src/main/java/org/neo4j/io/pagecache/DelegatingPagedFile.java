@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public class DelegatingPagedFile implements PagedFile
 {
@@ -34,9 +34,9 @@ public class DelegatingPagedFile implements PagedFile
     }
 
     @Override
-    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
+    public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
     {
-        return delegate.io( pageId, pf_flags, tracer );
+        return delegate.io( pageId, pf_flags, context );
     }
 
     @Override

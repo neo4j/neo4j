@@ -28,7 +28,7 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -47,19 +47,19 @@ public class SchemaStorage35 implements SchemaStorage
         this.schemaStore = schemaStore;
     }
 
-    public Iterable<SchemaRule> getAll( PageCursorTracer cursorTracer )
+    public Iterable<SchemaRule> getAll( CursorContext cursorContext )
     {
-        return () -> loadAllSchemaRules( cursorTracer );
+        return () -> loadAllSchemaRules( cursorContext );
     }
 
-    public Iterator<IndexDescriptor> indexesGetAll( PageCursorTracer cursorTracer )
+    public Iterator<IndexDescriptor> indexesGetAll( CursorContext cursorContext )
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor.class, cursorTracer );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor.class, cursorContext );
     }
 
-    public IndexDescriptor indexGetForName( String indexName, PageCursorTracer cursorTracer )
+    public IndexDescriptor indexGetForName( String indexName, CursorContext cursorContext )
     {
-        Iterator<IndexDescriptor> itr = indexesGetAll( cursorTracer );
+        Iterator<IndexDescriptor> itr = indexesGetAll( cursorContext );
         while ( itr.hasNext() )
         {
             IndexDescriptor sid = itr.next();
@@ -71,9 +71,9 @@ public class SchemaStorage35 implements SchemaStorage
         return null;
     }
 
-    private Iterator<SchemaRule> loadAllSchemaRules( PageCursorTracer cursorTracer )
+    private Iterator<SchemaRule> loadAllSchemaRules( CursorContext cursorContext )
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, cursorTracer );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, cursorContext );
     }
 
     /**
@@ -85,11 +85,11 @@ public class SchemaStorage35 implements SchemaStorage
      * @return {@link Iterator} of the loaded schema rules, lazily loaded when advancing the iterator.
      */
     private <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules( final Predicate<ReturnType> predicate, final Class<ReturnType> returnType,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         return new PrefetchingIterator<>()
         {
-            private final long highestId = schemaStore.getHighestPossibleIdInUse( cursorTracer );
+            private final long highestId = schemaStore.getHighestPossibleIdInUse( cursorContext );
             private long currentId = 1; /*record 0 contains the block size*/
             private final byte[] scratchData = newRecordBuffer();
             private final DynamicRecord record = schemaStore.newRecord();
@@ -100,12 +100,12 @@ public class SchemaStorage35 implements SchemaStorage
                 while ( currentId <= highestId )
                 {
                     long id = currentId++;
-                    schemaStore.getRecord( id, record, RecordLoad.LENIENT_CHECK, cursorTracer );
+                    schemaStore.getRecord( id, record, RecordLoad.LENIENT_CHECK, cursorContext );
                     if ( !record.inUse() )
                     {
                         continue;
                     }
-                    schemaStore.getRecord( id, record, RecordLoad.NORMAL, cursorTracer );
+                    schemaStore.getRecord( id, record, RecordLoad.NORMAL, cursorContext );
                     if ( record.isStartRecord() )
                     {
                         // It may be that concurrently to our reading there's a transaction dropping the schema rule
@@ -115,7 +115,7 @@ public class SchemaStorage35 implements SchemaStorage
                             Collection<DynamicRecord> records;
                             try
                             {
-                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, cursorTracer );
+                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, cursorContext );
                             }
                             catch ( InvalidRecordException e )
                             {

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
@@ -121,7 +121,7 @@ class StageTest
         }
 
         @Override
-        protected void process( Object batch, BatchSender sender, PageCursorTracer cursorTracer )
+        protected void process( Object batch, BatchSender sender, CursorContext cursorContext )
         {
             try
             {

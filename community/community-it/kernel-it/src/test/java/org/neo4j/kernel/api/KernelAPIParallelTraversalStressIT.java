@@ -121,8 +121,8 @@ class KernelAPIParallelTraversalStressIT
 
         NodeAndTraverseCursors( KernelTransaction tx )
         {
-            nodeCursor = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() );
-            traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.pageCursorTracer() );
+            nodeCursor = tx.cursors().allocateNodeCursor( tx.cursorContext() );
+            traversalCursor = tx.cursors().allocateRelationshipTraversalCursor( tx.cursorContext() );
         }
 
         @Override

@@ -50,7 +50,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -229,7 +229,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         String versionToMigrateTo = check.configuredVersion();
-        StoreVersionCheck.Result upgradeResult = check.checkUpgrade( check.configuredVersion(), PageCursorTracer.NULL );
+        StoreVersionCheck.Result upgradeResult = check.checkUpgrade( check.configuredVersion(), CursorContext.NULL );
         assertTrue( upgradeResult.outcome.isSuccessful() );
         String versionToMigrateFrom = upgradeResult.actualVersion;
 

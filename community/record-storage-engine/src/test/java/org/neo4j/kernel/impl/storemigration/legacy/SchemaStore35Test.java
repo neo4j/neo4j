@@ -42,7 +42,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
@@ -63,7 +63,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -257,12 +257,12 @@ class SchemaStore35Test
         return ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ).withName( "constraint_" + ruleId ).withId( ruleId );
     }
 
-    public List<DynamicRecord> allocateFrom( SchemaRule rule, PageCursorTracer cursorTracer )
+    public List<DynamicRecord> allocateFrom( SchemaRule rule, CursorContext cursorContext )
     {
         List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = store.getRecord( rule.getId(), store.newRecord(), CHECK, cursorTracer );
+        DynamicRecord record = store.getRecord( rule.getId(), store.newRecord(), CHECK, cursorContext );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), store );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorTracer, INSTANCE );
+        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorContext, INSTANCE );
         return records;
     }
 }

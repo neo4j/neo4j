@@ -32,7 +32,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
@@ -47,14 +47,14 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
@@ -72,7 +72,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public void clearCache( PageCursorTracer cursorTracer )
+    public void clearCache( CursorContext cursorContext )
     {
         // nothing
     }
@@ -93,7 +93,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer cursorTracer )
+        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
         {
             return new IdRange( EMPTY_LONG_ARRAY, EMPTY_ID, EMPTY_ID );
         }
@@ -129,7 +129,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public Marker marker( PageCursorTracer cursorTracer )
+        public Marker marker( CursorContext cursorContext )
         {
             return NOOP_MARKER;
         }
@@ -153,37 +153,37 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void checkpoint( PageCursorTracer cursorTracer )
+        public void checkpoint( CursorContext cursorContext )
         {
             // nothing
         }
 
         @Override
-        public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
+        public void maintenance( boolean awaitOngoing, CursorContext cursorContext )
         {
             // nothing
         }
 
         @Override
-        public void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer ) throws IOException
+        public void start( FreeIds freeIdsForRebuild, CursorContext cursorContext ) throws IOException
         {
             // nothing
         }
 
         @Override
-        public void clearCache( PageCursorTracer cursorTracer )
+        public void clearCache( CursorContext cursorContext )
         {
             // nothing
         }
 
         @Override
-        public long nextId( PageCursorTracer cursorTracer )
+        public long nextId( CursorContext cursorContext )
         {
             return EMPTY_ID;
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+        public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
         {
             return true;
         }

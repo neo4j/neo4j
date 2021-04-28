@@ -57,7 +57,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -104,7 +104,7 @@ import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -546,9 +546,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
+        public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
         {
-            EntityIdIterator originalIterator = delegate.getEntityIdIterator( cursorTracer );
+            EntityIdIterator originalIterator = delegate.getEntityIdIterator( cursorContext );
             return new DelegatingEntityIdIterator( originalIterator, customAction );
         }
     }

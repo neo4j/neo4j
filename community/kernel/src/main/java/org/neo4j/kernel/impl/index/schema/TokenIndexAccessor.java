@@ -32,7 +32,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -59,12 +59,12 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         assertTreeOpen();
         try
         {
-            return singleUpdater.initialize( index.writer( cursorTracer ) );
+            return singleUpdater.initialize( index.writer( cursorContext ) );
         }
         catch ( IOException e )
         {
@@ -73,9 +73,9 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
-        index.checkpoint( cursorTracer );
+        index.checkpoint( cursorContext );
         writeMonitor.force();
     }
 
@@ -105,7 +105,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public BoundedIterable<EntityTokenRange> newAllEntriesTokenReader( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
+    public BoundedIterable<EntityTokenRange> newAllEntriesTokenReader( long fromEntityId, long toEntityId, CursorContext cursorContext )
     {
         IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
         {
@@ -113,7 +113,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
             {
                 return index.seek(
                         new TokenScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
-                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), cursorTracer );
+                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), cursorContext );
             }
             catch ( IOException e )
             {
@@ -124,7 +124,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
         int highestTokenId = -1;
         try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
                 new TokenScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
-                new TokenScanKey().set( 0, -1 ), cursorTracer ) )
+                new TokenScanKey().set( 0, -1 ), cursorContext ) )
         {
             if ( cursor.next() )
             {
@@ -139,7 +139,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
     {
         //This is just used for consistency checker and token indexes are not consistency checked the same way (not yet anyway).
         throw new UnsupportedOperationException( "Not applicable for token indexes" );
@@ -158,7 +158,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public long estimateNumberOfEntries( PageCursorTracer cursorTracer )
+    public long estimateNumberOfEntries( CursorContext cursorContext )
     {
         //This is just used for consistency checker and token indexes are not consistency checked the same way (not yet anyway).
         throw new UnsupportedOperationException( "Not applicable for token indexes" );

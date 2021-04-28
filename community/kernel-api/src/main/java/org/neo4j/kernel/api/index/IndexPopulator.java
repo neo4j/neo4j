@@ -28,7 +28,7 @@ import java.util.concurrent.Callable;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
@@ -64,13 +64,13 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * @param updates batch of index updates (entity property updates or entity token updates) that needs to be inserted.
      * Depending on the type of index the updates will be  {@link ValueIndexEntryUpdate property value index updates}
      * or {@link TokenIndexEntryUpdate token index updates}.
-     * @param cursorTracer underlying page cache events tracer
+     * @param cursorContext underlying page cache events tracer
      * @throws IndexEntryConflictException if this is a uniqueness index and any of the updates are detected
      * to violate that constraint. Implementations may choose to not detect in this call, but instead do one efficient
      * pass over the index in {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
      * @throws UncheckedIOException on I/O error.
      */
-    void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException;
+    void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException;
 
     /**
      * Verifies that each value in this index is unique.
@@ -92,7 +92,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * Simultaneously as population progresses there might be incoming updates
      * from committing transactions, which needs to be applied as well. This populator will only receive updates
      * for entities that it already has seen. Updates coming in here must be applied idempotently as the same data
-     * may have been {@link #add(Collection, PageCursorTracer) added previously }.
+     * may have been {@link #add(Collection, CursorContext) added previously }.
      * Updates can come in three different {@link IndexEntryUpdate#updateMode()} modes}.
      * <ol>
      *   <li>{@link UpdateMode#ADDED} means that there's an added property/label/type to an entity already seen by this
@@ -106,33 +106,33 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * </ol>
      *
      * @param accessor accesses property data if implementation needs to be able look up property values while populating.
-     * @param cursorTracer underlying page cache events tracer
+     * @param cursorContext underlying page cache events tracer
      * @return an {@link IndexUpdater} which will funnel changes that happen concurrently with index population
      * into the population and incorporating them as part of the index population.
      */
-    IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer );
+    IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext );
 
     /**
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link IndexProvider#getInitialState(IndexDescriptor, PageCursorTracer)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link IndexProvider#getInitialState(IndexDescriptor, CursorContext)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
      * be marked as {@link InternalIndexState#ONLINE}. Supplying {@code false} can have two meanings:
      * <ul>
      *     <li>if {@link #markAsFailed(String)} have been called the end state should be {@link InternalIndexState#FAILED}.
      *     This method call should also make sure that the failure message gets stored for retrieval the next open, and made available for later requests
-     *     via {@link IndexProvider#getPopulationFailure(IndexDescriptor, PageCursorTracer)}.</li>
+     *     via {@link IndexProvider#getPopulationFailure(IndexDescriptor, CursorContext)}.</li>
      *     <li>if {@link #markAsFailed(String)} have NOT been called the end state should be {@link InternalIndexState#POPULATING}</li>
      * </ul>
-     * @param cursorTracer underlying page cache events tracer
+     * @param cursorContext underlying page cache events tracer
      */
-    void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer );
+    void close( boolean populationCompletedSuccessfully, CursorContext cursorContext );
 
     /**
      * Called when a population failed. The failure string should be stored for future retrieval by
-     * {@link IndexProvider#getPopulationFailure(IndexDescriptor, PageCursorTracer)}. Called before {@link #close(boolean, PageCursorTracer)}
+     * {@link IndexProvider#getPopulationFailure(IndexDescriptor, CursorContext)}. Called before {@link #close(boolean, CursorContext)}
      * if there was a failure during population.
      *
      * @param failure the description of the failure.
@@ -150,7 +150,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
     /**
      * @return {@link IndexSample} from samples collected by {@link #includeSample(IndexEntryUpdate)} calls.
      */
-    IndexSample sample( PageCursorTracer cursorTracer );
+    IndexSample sample( CursorContext cursorContext );
 
     /**
      * Returns actual population progress, given the progress of the scan. This is for when a populator needs to do
@@ -163,7 +163,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
         return scanProgress;
     }
 
-    default void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, PageCursorTracer cursorTracer )
+    default void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, CursorContext cursorContext )
             throws IndexEntryConflictException
     {   // no-op by default
     }
@@ -206,23 +206,23 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer )
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext )
         {
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
         {
             return SwallowingIndexUpdater.INSTANCE;
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, PageCursorTracer cursorTracer )
+        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext )
         {
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
         {
         }
 
@@ -237,7 +237,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public IndexSample sample( PageCursorTracer cursorTracer )
+        public IndexSample sample( CursorContext cursorContext )
         {
             return new IndexSample();
         }
@@ -270,9 +270,9 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
         {
-            delegate.add( updates, cursorTracer );
+            delegate.add( updates, cursorContext );
         }
 
         @Override
@@ -282,15 +282,15 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
         {
-            return delegate.newPopulatingUpdater( accessor, cursorTracer );
+            return delegate.newPopulatingUpdater( accessor, cursorContext );
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+        public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
         {
-            delegate.close( populationCompletedSuccessfully, cursorTracer );
+            delegate.close( populationCompletedSuccessfully, cursorContext );
         }
 
         @Override
@@ -306,9 +306,9 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public IndexSample sample( PageCursorTracer cursorTracer )
+        public IndexSample sample( CursorContext cursorContext )
         {
-            return delegate.sample( cursorTracer );
+            return delegate.sample( cursorContext );
         }
 
         @Override
@@ -318,10 +318,10 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, PageCursorTracer cursorTracer )
+        public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler jobScheduler, CursorContext cursorContext )
                 throws IndexEntryConflictException
         {
-            delegate.scanCompleted( phaseTracker, jobScheduler, cursorTracer );
+            delegate.scanCompleted( phaseTracker, jobScheduler, cursorContext );
         }
 
         @Override

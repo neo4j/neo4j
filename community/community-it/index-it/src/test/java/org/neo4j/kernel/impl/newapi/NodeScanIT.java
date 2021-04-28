@@ -44,13 +44,13 @@ class NodeScanIT
         var testLabel = Label.label( "testLabel" );
         try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, read() ) )
         {
-            var cursorTracer = tx.pageCursorTracer();
-            assertThat( cursorTracer.pins() ).isZero();
+            var cursorContext = tx.cursorContext();
+            assertThat( cursorContext.getCursorTracer().pins() ).isZero();
 
             var labelId = tx.tokenRead().nodeLabel( testLabel.name() );
             tx.dataRead().nodeLabelScan( labelId );
 
-            assertThat( cursorTracer.pins() ).isNotZero();
+            assertThat( cursorContext.getCursorTracer().pins() ).isNotZero();
         }
     }
 }

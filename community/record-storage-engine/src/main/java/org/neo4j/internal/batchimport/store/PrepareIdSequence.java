@@ -23,13 +23,13 @@ import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
  * Exists to allow {@link IdSequence} with specific behaviour relevant to import to be injected into
- * {@link CommonAbstractStore#prepareForCommit(AbstractBaseRecord, IdSequence, PageCursorTracer)}.
+ * {@link CommonAbstractStore#prepareForCommit(AbstractBaseRecord, IdSequence, CursorContext)}.
  */
 public interface PrepareIdSequence extends Function<IdSequence,LongFunction<IdSequence>>
 {

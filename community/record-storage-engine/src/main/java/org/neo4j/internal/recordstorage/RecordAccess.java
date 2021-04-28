@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
@@ -30,9 +30,9 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
  */
 public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
 {
-    default RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer )
+    default RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, CursorContext cursorContext )
     {
-        return getOrLoad( key, additionalData, RecordLoad.NORMAL, cursorTracer );
+        return getOrLoad( key, additionalData, RecordLoad.NORMAL, cursorContext );
     }
 
     /**
@@ -45,11 +45,11 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, PageCursorTracer cursorTracer );
+    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext );
 
     RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
 
-    RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+    RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext );
 
     /**
      * Creates a new record with the given {@code key}. Any {@code additionalData} is set in the
@@ -59,7 +59,7 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, PageCursorTracer cursorTracer );
+    RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, CursorContext cursorContext );
 
     int changeSize();
 
@@ -97,9 +97,9 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     {
         RECORD newUnused( long key, ADDITIONAL additionalData );
 
-        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load, PageCursorTracer cursorTracer );
+        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext );
 
-        void ensureHeavy( RECORD record, PageCursorTracer cursorTracer );
+        void ensureHeavy( RECORD record, CursorContext cursorContext );
 
         RECORD copy( RECORD record );
     }

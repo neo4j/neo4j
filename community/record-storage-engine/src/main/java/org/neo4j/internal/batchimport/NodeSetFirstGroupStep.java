@@ -26,7 +26,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -43,7 +43,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     private final ByteArray cache;
     private final NodeStore nodeStore;
     private final PageCursor nodeCursor;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
     private NodeRecord[] current;
     private int cursor;
@@ -54,8 +54,8 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
         this.cache = cache;
         this.batchSize = config.batchSize();
         this.nodeStore = nodeStore;
-        this.cursorTracer = pageCacheTracer.createPageCursorTracer( SET_FIRST_GROUP_STEP_TAG );
-        this.nodeCursor = nodeStore.openPageCursorForReading( 0, cursorTracer );
+        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( SET_FIRST_GROUP_STEP_TAG ) );
+        this.nodeCursor = nodeStore.openPageCursorForReading( 0, cursorContext );
         newBatch();
     }
 
@@ -72,7 +72,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, PageCursorTracer cursorTracer )
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext )
     {
         for ( RelationshipGroupRecord group : batch )
         {
@@ -113,7 +113,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     @Override
     public void close() throws Exception
     {
-        IOUtils.closeAll( nodeCursor, cursorTracer );
+        IOUtils.closeAll( nodeCursor, cursorContext );
         super.close();
     }
 }

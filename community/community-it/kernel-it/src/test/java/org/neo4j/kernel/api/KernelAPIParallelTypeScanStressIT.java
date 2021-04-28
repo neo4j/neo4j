@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -100,7 +100,7 @@ class KernelAPIParallelTypeScanStressIT
 
         KernelAPIParallelStress.parallelStressInTx( kernel,
                                                     N_THREADS,
-                                                    tx -> tx.cursors().allocateRelationshipTypeIndexCursor( PageCursorTracer.NULL ),
+                                                    tx -> tx.cursors().allocateRelationshipTypeIndexCursor( CursorContext.NULL ),
                                                     ( read, cursor ) -> typeScan( read,
                                                                                   cursor,
                                                                                   types[random.nextInt( types.length )] ) );

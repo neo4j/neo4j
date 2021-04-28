@@ -466,7 +466,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         KernelTransaction ktx = kernelTransaction();
         return () ->
         {
-            NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
             ktx.dataRead().allNodesScan( cursor );
             return new CursorIterator<>( cursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
         };
@@ -574,7 +574,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         KernelTransaction ktx = kernelTransaction();
         return () ->
         {
-            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
+            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
             ktx.dataRead().allRelationshipsScan( cursor );
             return new CursorIterator<>( cursor, RelationshipScanCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference(),
                     c.sourceNodeReference(), c.type(), c.targetNodeReference() ), coreApiResourceTracker );
@@ -789,7 +789,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             // Ha! We found an index - let's use it to find matching nodes
             try
             {
-                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.cursorContext(), transaction.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );
 
@@ -819,7 +819,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             // Ha! We found an index - let's use it to find matching relationships
             try
             {
-                var cursor = transaction.cursors().allocateRelationshipValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
+                var cursor = transaction.cursors().allocateRelationshipValueIndexCursor( transaction.cursorContext(), transaction.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.relationshipIndexSeek( indexSession, cursor, unconstrained(), query );
 
@@ -866,11 +866,11 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 try
                 {
                     var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
+                    var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
                     ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
 
-                    var nodeCursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
-                    var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.pageCursorTracer(), ktx.memoryTracker() );
+                    var nodeCursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
+                    var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
 
                     return new NodeLabelPropertyIterator( ktx.dataRead(),
                             cursor,
@@ -888,9 +888,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return getNodesByLabelAndPropertyViaAllNodesScan( ktx, labelId, queries );
         }
 
-        NodeLabelIndexCursor nodeLabelCursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
-        NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
-        PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.pageCursorTracer(), ktx.memoryTracker() );
+        NodeLabelIndexCursor nodeLabelCursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
+        NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
+        PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
 
         ktx.dataRead().nodeLabelScan( labelId, nodeLabelCursor, IndexOrder.NONE );
 
@@ -906,10 +906,10 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private CursorIterator<FilteringNodeCursorWrapper,Node> getNodesByLabelAndPropertyViaAllNodesScan( KernelTransaction ktx, int labelId,
             PropertyIndexQuery[] queries )
     {
-        var nodeCursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
+        var nodeCursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
         var labelFilteredCursor = new FilteringNodeCursorWrapper( nodeCursor, CursorPredicates.hasLabel( labelId ) );
 
-        var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.pageCursorTracer(), ktx.memoryTracker() );
+        var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
         var propertyFilteredCursor = new FilteringNodeCursorWrapper( labelFilteredCursor, nodeMatchProperties( queries, propertyCursor ),
                 List.of( propertyCursor ) );
 
@@ -929,11 +929,11 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 try
                 {
                     var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.pageCursorTracer() );
+                    var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
                     ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
 
-                    var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
-                    var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.pageCursorTracer(), ktx.memoryTracker() );
+                    var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
+                    var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
 
                     return new RelationshipTypePropertyIterator( ktx.dataRead(),
                             cursor,
@@ -956,10 +956,10 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyViaAllRelsScan( KernelTransaction ktx, int typeId,
             PropertyIndexQuery[] queries )
     {
-        var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
+        var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
         var typeFiltered = new FilteringRelationshipScanCursorWrapper( relationshipScanCursor, CursorPredicates.hasType( typeId ) );
 
-        var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.pageCursorTracer(), ktx.memoryTracker() );
+        var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
         var propertyFilteredCursor = new FilteringRelationshipScanCursorWrapper( typeFiltered, relationshipMatchProperties( queries, propertyCursor ),
                 List.of( propertyCursor ) );
 
@@ -985,7 +985,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             try
             {
-                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.cursorContext(), transaction.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
                 return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
@@ -1035,7 +1035,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 try
                 {
                     var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
+                    var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
                     ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
                     return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
                 }
@@ -1048,14 +1048,14 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return allNodesByLabelWithoutIndex( ktx, labelId );
         }
 
-        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
+        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
         ktx.dataRead().nodeLabelScan( labelId, cursor, IndexOrder.NONE );
         return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
     }
 
     private ResourceIterator<Node> allNodesByLabelWithoutIndex( KernelTransaction ktx, int labelId )
     {
-        NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
+        NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
         ktx.dataRead().allNodesScan( cursor );
         var filetredCursor = new FilteringNodeCursorWrapper( cursor, CursorPredicates.hasLabel( labelId ) );
         return new CursorIterator<>( filetredCursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
@@ -1080,7 +1080,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 try
                 {
                     var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.pageCursorTracer() );
+                    var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
                     ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
                     return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference,
                             c -> newRelationshipEntity( c.relationshipReference() ), coreApiResourceTracker );
@@ -1097,7 +1097,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     private ResourceIterator<Relationship> allRelationshipsByTypeWithoutIndex( KernelTransaction ktx, int typeId )
     {
-        var cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
+        var cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
         ktx.dataRead().allRelationshipsScan( cursor );
         var filteredCursor = new FilteringRelationshipScanCursorWrapper( cursor, CursorPredicates.hasType( typeId ) );
         return new CursorIterator<>( filteredCursor, RelationshipScanCursor::relationshipReference,
@@ -1121,7 +1121,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             try
             {
-                RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
+                RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.relationshipIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
                 return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference() ),

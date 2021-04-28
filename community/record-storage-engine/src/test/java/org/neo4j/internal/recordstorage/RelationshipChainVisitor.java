@@ -23,7 +23,7 @@ import java.io.PrintStream;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -74,7 +74,7 @@ public class RelationshipChainVisitor
 
     private static <R extends AbstractBaseRecord> LongFunction<R> recordLoader( RecordStore<R> store )
     {
-        return id -> store.getRecord( id, store.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
+        return id -> store.getRecord( id, store.newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
     }
 
     public void visit( long nodeId, Visitor visitor )

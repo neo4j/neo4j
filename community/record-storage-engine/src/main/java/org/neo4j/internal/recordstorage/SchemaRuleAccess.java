@@ -29,7 +29,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.KernelVersionRepository;
@@ -49,15 +49,15 @@ public interface SchemaRuleAccess
         return new SchemaStorage( store, tokenHolders, versionRepository, tokenIndexFeatureOn );
     }
 
-    long newRuleId( PageCursorTracer cursorTracer );
+    long newRuleId( CursorContext cursorContext );
 
-    Iterable<SchemaRule> getAll( PageCursorTracer cursorTracer );
+    Iterable<SchemaRule> getAll( CursorContext cursorContext );
 
-    SchemaRule loadSingleSchemaRule( long ruleId, PageCursorTracer cursorTracer ) throws MalformedSchemaRuleException;
+    SchemaRule loadSingleSchemaRule( long ruleId, CursorContext cursorContext ) throws MalformedSchemaRuleException;
 
-    Iterator<IndexDescriptor> indexesGetAll( PageCursorTracer cursorTracer );
+    Iterator<IndexDescriptor> indexesGetAll( CursorContext cursorContext );
 
-    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( PageCursorTracer cursorTracer );
+    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( CursorContext cursorContext );
 
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
@@ -65,7 +65,7 @@ public interface SchemaRuleAccess
      * @return an array of all the matching index rules. Empty array if none found.
      * @param index the target {@link IndexDescriptor}
      */
-    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index, PageCursorTracer cursorTracer );
+    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index, CursorContext cursorContext );
 
     /**
      * Find the IndexRule that has the given user supplied name.
@@ -73,7 +73,7 @@ public interface SchemaRuleAccess
      * @param indexName the user supplied index name to look for.
      * @return the matching IndexRule, or null if no matching index rule was found.
      */
-    IndexDescriptor indexGetForName( String indexName, PageCursorTracer cursorTracer );
+    IndexDescriptor indexGetForName( String indexName, CursorContext cursorContext );
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor
@@ -82,10 +82,10 @@ public interface SchemaRuleAccess
      * @throws SchemaRuleNotFoundException if no ConstraintDescriptor matches the given descriptor
      * @throws DuplicateSchemaRuleException if two or more ConstraintDescriptors match the given descriptor
      */
-    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor, PageCursorTracer cursorTracer )
+    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor, CursorContext cursorContext )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
-    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed( PageCursorTracer cursorTracer );
+    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed( CursorContext cursorContext );
 
     SchemaRecordChangeTranslator getSchemaRecordChangeTranslator();
 
@@ -93,12 +93,12 @@ public interface SchemaRuleAccess
      * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.
      * This is a non-transactional operation that is used during schema store migration.
      */
-    void writeSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws KernelException;
+    void writeSchemaRule( SchemaRule rule, CursorContext cursorContext, MemoryTracker memoryTracker ) throws KernelException;
 
     /**
      * Deletes the schema rule at the location given by the persistent id of the schema rule given as an argument.
      * This is a non-transactional operation that is primarily used for testing.
      */
     @VisibleForTesting
-    void deleteSchemaRule( SchemaRule rule, PageCursorTracer cursorTracer );
+    void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext );
 }

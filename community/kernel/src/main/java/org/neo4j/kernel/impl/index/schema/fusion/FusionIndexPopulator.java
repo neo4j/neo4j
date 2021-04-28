@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -71,7 +71,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
     {
         LazyInstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector = new LazyInstanceSelector<>( slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
@@ -85,7 +85,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
             Collection<IndexEntryUpdate<?>> batch = batchSelector.getIfInstantiated( slot );
             if ( batch != null )
             {
-                this.instanceSelector.select( slot ).add( batch, cursorTracer );
+                this.instanceSelector.select( slot ).add( batch, cursorContext );
             }
         }
     }
@@ -101,17 +101,17 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
+    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
         LazyInstanceSelector<IndexUpdater> updaterSelector =
-                new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor, cursorTracer ) );
+                new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor, cursorContext ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
+    public void close( boolean populationCompletedSuccessfully, CursorContext cursorContext )
     {
-        instanceSelector.close( populator -> populator.close( populationCompletedSuccessfully, cursorTracer ) );
+        instanceSelector.close( populator -> populator.close( populationCompletedSuccessfully, cursorContext ) );
     }
 
     @Override
@@ -127,16 +127,16 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public IndexSample sample( PageCursorTracer cursorTracer )
+    public IndexSample sample( CursorContext cursorContext )
     {
-        return combineSamples( instanceSelector.transform( ( IndexPopulator populator ) -> populator.sample( cursorTracer ) ) );
+        return combineSamples( instanceSelector.transform( ( IndexPopulator populator ) -> populator.sample( cursorContext ) ) );
     }
 
     @Override
-    public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, PageCursorTracer cursorTracer )
+    public void scanCompleted( PhaseTracker phaseTracker, PopulationWorkScheduler populationWorkScheduler, CursorContext cursorContext )
             throws IndexEntryConflictException
     {
-        instanceSelector.throwingForAll( ip -> ip.scanCompleted( phaseTracker, populationWorkScheduler, cursorTracer ) );
+        instanceSelector.throwingForAll( ip -> ip.scanCompleted( phaseTracker, populationWorkScheduler, cursorContext ) );
     }
 
     @Override

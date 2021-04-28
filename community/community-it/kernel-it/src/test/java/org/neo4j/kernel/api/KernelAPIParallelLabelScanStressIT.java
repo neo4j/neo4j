@@ -87,7 +87,7 @@ class KernelAPIParallelLabelScanStressIT
 
         KernelAPIParallelStress.parallelStressInTx( kernel,
                 N_THREADS,
-                tx -> tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ),
+                tx -> tx.cursors().allocateNodeLabelIndexCursor( tx.cursorContext() ),
                 ( read, cursor ) -> labelScan( read,
                         cursor,
                         nodeLabelIndex,

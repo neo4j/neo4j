@@ -25,14 +25,14 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 @PageCacheExtension
 public class FreeListIdProviderTracersTest
@@ -47,62 +47,63 @@ public class FreeListIdProviderTracersTest
     @Test
     void trackPageCacheAccessOnInitialize() throws IOException
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnInitialize" );
-        assertZeroCursor( cursorTracer );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnInitialize" ) );
+        assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "init" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
-            listIdProvider.initializeAfterCreation( cursorTracer );
+            listIdProvider.initializeAfterCreation( cursorContext );
         }
 
-        assertOneCursor( cursorTracer );
+        assertOneCursor( cursorContext );
     }
 
     @Test
     void trackPageCacheAccessOnNewIdGeneration() throws IOException
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnNewIdGeneration" );
-        assertZeroCursor( cursorTracer );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnNewIdGeneration" ) );
+        assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "newId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
-            listIdProvider.acquireNewId( 1, 1, cursorTracer );
+            listIdProvider.acquireNewId( 1, 1, cursorContext );
         }
 
-        assertOneCursor( cursorTracer );
+        assertOneCursor( cursorContext );
     }
 
     @Test
     void trackPageCacheAccessOnIdReleaseOnTheSamePage() throws IOException
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnTheSamePage" );
-        assertZeroCursor( cursorTracer );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnTheSamePage" ) );
+        assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "releaseId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
-            listIdProvider.releaseId( 1, 1,42,  cursorTracer );
+            listIdProvider.releaseId( 1, 1,42,  cursorContext );
         }
 
-        assertOneCursor( cursorTracer );
+        assertOneCursor( cursorContext );
     }
 
     @Test
     void trackPageCacheAccessOnIdReleaseOnDifferentPage() throws IOException
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnDifferentPage" );
-        assertZeroCursor( cursorTracer );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnDifferentPage" ) );
+        assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "differentReleaseId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 0, 1, 0, listIdProvider.entriesPerPage() - 1, 0 );
-            listIdProvider.releaseId( 1, 1,42,  cursorTracer );
+            listIdProvider.releaseId( 1, 1,42,  cursorContext );
             assertEquals( 0, listIdProvider.writePos() );
         }
 
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 3 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
         assertThat( cursorTracer.hits() ).isEqualTo( 1 );
@@ -112,8 +113,8 @@ public class FreeListIdProviderTracersTest
     @Test
     void trackPageCacheAccessOnFreeListTraversal() throws IOException
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnFreeListTraversal" );
-        assertZeroCursor( cursorTracer );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnFreeListTraversal" ) );
+        assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "traversal" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
@@ -122,23 +123,26 @@ public class FreeListIdProviderTracersTest
             listIdProvider.releaseId( 1, 1,42,  NULL );
             assertEquals( 0, listIdProvider.writePos() );
 
-            listIdProvider.visitFreelist( new IdProvider.IdProviderVisitor.Adaptor(), cursorTracer );
+            listIdProvider.visitFreelist( new IdProvider.IdProviderVisitor.Adaptor(), cursorContext );
         }
 
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 3 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
         assertThat( cursorTracer.hits() ).isEqualTo( 3 );
     }
 
-    private void assertOneCursor( PageCursorTracer cursorTracer )
+    private void assertOneCursor( CursorContext cursorContext )
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
         assertThat( cursorTracer.unpins() ).isOne();
         assertThat( cursorTracer.faults() ).isOne();
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -47,7 +47,7 @@ public class BatchContextImpl implements BatchContext
     private final PropertyStore propertyStore;
     private final StorageEngine storageEngine;
     private final SchemaCache schemaCache;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final IdUpdateListener idUpdateListener;
 
@@ -57,7 +57,7 @@ public class BatchContextImpl implements BatchContext
 
     public BatchContextImpl( IndexUpdateListener indexUpdateListener,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
-            RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, PageCursorTracer cursorTracer, MemoryTracker memoryTracker,
+            RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, CursorContext cursorContext, MemoryTracker memoryTracker,
             IdUpdateListener idUpdateListener )
     {
         this.indexActivator = new IndexActivator( indexUpdateListener );
@@ -66,7 +66,7 @@ public class BatchContextImpl implements BatchContext
         this.propertyStore = propertyStore;
         this.storageEngine = recordStorageEngine;
         this.schemaCache = schemaCache;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
         this.idUpdateListener = idUpdateListener;
         this.lockGroup = new LockGroup();
@@ -99,7 +99,7 @@ public class BatchContextImpl implements BatchContext
         {
             try
             {
-                indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates, cursorTracer ) );
+                indexUpdatesSync.apply( new IndexUpdatesWork( indexUpdates, cursorContext ) );
             }
             catch ( ExecutionException e )
             {
@@ -114,8 +114,8 @@ public class BatchContextImpl implements BatchContext
     {
         if ( indexUpdates == null )
         {
-            indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, cursorTracer ),
-                    storageEngine.newReader(), cursorTracer, memoryTracker );
+            indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, cursorContext ),
+                    storageEngine.newReader(), cursorContext, memoryTracker );
         }
         return indexUpdates;
     }

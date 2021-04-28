@@ -60,7 +60,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -258,10 +258,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 private final Log log = logProvider.getLog( MetaDataStore.class );
 
                 @Override
-                public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+                public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
                 {
                     log.warn( "Missing counts store, rebuilding it." );
-                    new CountsComputer( neoStores, pageCache, pageCacheTracer, layout, memoryTracker, log ).initialize( updater, cursorTracer, memoryTracker );
+                    new CountsComputer( neoStores, pageCache, pageCacheTracer, layout, memoryTracker, log ).initialize( updater, cursorContext, memoryTracker );
                     log.warn( "Counts store rebuild completed." );
                 }
 
@@ -301,9 +301,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public RecordStorageCommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public RecordStorageCommandCreationContext newCommandCreationContext( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, this::relaxedLockingForDenseNodes, cursorTracer, memoryTracker );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, this::relaxedLockingForDenseNodes, cursorContext, memoryTracker );
     }
 
     @Override
@@ -342,7 +342,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LockTracer lockTracer,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
-            PageCursorTracer cursorTracer,
+            CursorContext cursorContext,
             MemoryTracker transactionMemoryTracker )
             throws KernelException
     {
@@ -363,10 +363,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
-                    schemaRuleAccess, constraintSemantics, cursorTracer );
+                    schemaRuleAccess, constraintSemantics, cursorContext );
             CountsRecordState countsRecordState = new CountsRecordState( serialization );
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
-            txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorTracer );
+            txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorContext );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );
@@ -441,11 +441,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         if ( usingTokenIndexes )
         {
             return new BatchContextImpl( indexUpdateListener, indexUpdatesSync, neoStores.getNodeStore(), neoStores.getPropertyStore(),
-                    this, schemaCache, initialBatch.cursorTracer(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get() );
+                    this, schemaCache, initialBatch.cursorContext(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get() );
         }
 
         return new LegacyBatchContext( indexUpdateListener, labelScanStoreSync, indexUpdatesSync, neoStores.getNodeStore(),
-                neoStores.getPropertyStore(), this, schemaCache, initialBatch.cursorTracer(), otherMemoryTracker,
+                neoStores.getPropertyStore(), this, schemaCache, initialBatch.cursorContext(), otherMemoryTracker,
                 batchApplier.getIdUpdateListenerSupplier().get() );
     }
 
@@ -473,11 +473,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void start() throws Exception
     {
-        try ( var cursor = cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) ) )
         {
-            neoStores.start( cursor );
-            countsStore.start( cursor, otherMemoryTracker );
-            groupDegreesStore.start( cursor, otherMemoryTracker );
+            neoStores.start( cursorContext );
+            countsStore.start( cursorContext, otherMemoryTracker );
+            groupDegreesStore.start( cursorContext, otherMemoryTracker );
             idController.start();
         }
     }
@@ -485,9 +485,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @VisibleForTesting
     public void loadSchemaCache()
     {
-        try ( var cursor = cacheTracer.createPageCursorTracer( SCHEMA_CACHE_START_TAG ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CACHE_START_TAG ) ) )
         {
-            schemaCache.load( schemaRuleAccess.getAll( cursor ) );
+            schemaCache.load( schemaRuleAccess.getAll( cursorContext ) );
         }
     }
 
@@ -504,11 +504,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void flushAndForce( PageCursorTracer cursorTracer ) throws IOException
+    public void flushAndForce( CursorContext cursorContext ) throws IOException
     {
-        countsStore.checkpoint( cursorTracer );
-        groupDegreesStore.checkpoint( cursorTracer );
-        neoStores.flush( cursorTracer );
+        countsStore.checkpoint( cursorContext );
+        groupDegreesStore.checkpoint( cursorContext );
+        neoStores.flush( cursorContext );
     }
 
     @Override
@@ -585,9 +585,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             @Override
             public void init()
             {
-                try ( var cursorTracer = cacheTracer.createPageCursorTracer( TOKENS_INIT_TAG ) )
+                try ( var cursorContext = new CursorContext(  cacheTracer.createPageCursorTracer( TOKENS_INIT_TAG ) ) )
                 {
-                    tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), cursorTracer );
+                    tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), cursorContext );
                 }
                 loadSchemaCache();
             }

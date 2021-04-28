@@ -40,6 +40,7 @@ import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -83,12 +84,12 @@ public class IndexAccessors implements Closeable
             KernelVersionRepository versionProvider )
             throws IOException
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) ) )
         {
-            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, cursorTracer );
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, cursorContext );
             Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, versionProvider, config.get(
                     RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
-                    .indexesGetAll( cursorTracer );
+                    .indexesGetAll( cursorContext );
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null ? accessorLookup
                                                     : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
@@ -108,7 +109,7 @@ public class IndexAccessors implements Closeable
                         }
                         else
                         {
-                            if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorTracer ) )
+                            if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorContext ) )
                             {
                                 long indexId = indexDescriptor.getId();
                                 try

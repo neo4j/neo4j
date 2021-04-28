@@ -28,7 +28,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements BoundedIterable<Long>
 {
@@ -36,16 +36,16 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
     private final Layout<KEY,VALUE> layout;
     private final long fromIdInclusive;
     private final long toIdExclusive;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private Seeker<KEY,VALUE> seeker;
 
-    NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+    NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
     {
         this.tree = tree;
         this.layout = layout;
         this.fromIdInclusive = fromIdInclusive;
         this.toIdExclusive = toIdExclusive;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
         try
         {
             closeSeeker();
-            seeker = tree.seek( from, to, cursorTracer );
+            seeker = tree.seek( from, to, cursorContext );
             return new PrefetchingIterator<>()
             {
                 @Override

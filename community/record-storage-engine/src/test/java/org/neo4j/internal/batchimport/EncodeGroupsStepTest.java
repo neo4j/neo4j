@@ -32,7 +32,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -44,7 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 class EncodeGroupsStepTest
 {
@@ -62,7 +62,7 @@ class EncodeGroupsStepTest
             // our own way of marking that this has record been prepared (firstOut=1)
             invocation.<RelationshipGroupRecord>getArgument( 0 ).setFirstOut( 1 );
             return null;
-        } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ), any( PageCursorTracer.class ) );
+        } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ), any( CursorContext.class ) );
         Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
         EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, PageCacheTracer.NULL );
 
@@ -90,28 +90,28 @@ class EncodeGroupsStepTest
     @Test
     void tracePageCacheAccessOnEncode() throws Exception
     {
-        when( store.nextId( any( PageCursorTracer.class ) ) ).thenAnswer( invocation -> {
-            PageCursorTracer cursorTracer = invocation.getArgument( 0 );
-            var event = cursorTracer.beginPin( false, 1, null );
+        when( store.nextId( any( CursorContext.class ) ) ).thenAnswer( invocation -> {
+            CursorContext cursorContext = invocation.getArgument( 0 );
+            var event = cursorContext.getCursorTracer().beginPin( false, 1, null );
             event.hit();
             event.done();
             return 1L;
         } );
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEncode" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEncode" ) );
         Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
         try ( EncodeGroupsStep encoder = new EncodeGroupsStep( control, config, store, PageCacheTracer.NULL ) )
         {
             encoder.start( Step.ORDER_SEND_DOWNSTREAM );
             Catcher catcher = new Catcher();
-            encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher, cursorTracer );
+            encoder.process( batch( new Group( 1, 3 ), new Group( 2, 3 ), new Group( 3, 4 ) ), catcher, cursorContext );
             encoder.endOfUpstream();
             encoder.awaitCompleted();
         }
 
-        assertThat( cursorTracer.pins() ).isEqualTo( 10 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 10 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 10 );
+        assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 10 );
+        assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 10 );
+        assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 10 );
     }
 
     private void assertBatch( RelationshipGroupRecord[] batch, long lastOwningNodeLastBatch )

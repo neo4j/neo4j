@@ -23,7 +23,7 @@ import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -49,7 +49,7 @@ class ConsistencyCheckingApplierFactory implements TransactionApplierFactory
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
     {
-        return new ConsistencyCheckingApplier( relationshipStore, transaction.cursorTracer() );
+        return new ConsistencyCheckingApplier( relationshipStore, transaction.cursorContext() );
     }
 
     static class ConsistencyCheckingApplier extends TransactionApplier.Adapter
@@ -58,10 +58,10 @@ class ConsistencyCheckingApplierFactory implements TransactionApplierFactory
         private final RecordRelationshipScanCursor cursor;
         private final RecordRelationshipScanCursor otherCursor;
 
-        ConsistencyCheckingApplier( RelationshipStore relationshipStore, PageCursorTracer cursorTracer )
+        ConsistencyCheckingApplier( RelationshipStore relationshipStore, CursorContext cursorContext )
         {
-            cursor = new RecordRelationshipScanCursor( relationshipStore, cursorTracer );
-            otherCursor = new RecordRelationshipScanCursor( relationshipStore, cursorTracer );
+            cursor = new RecordRelationshipScanCursor( relationshipStore, cursorContext );
+            otherCursor = new RecordRelationshipScanCursor( relationshipStore, cursorContext );
         }
 
         @Override

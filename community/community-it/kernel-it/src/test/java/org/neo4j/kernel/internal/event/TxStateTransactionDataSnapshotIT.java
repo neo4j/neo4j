@@ -27,6 +27,7 @@ import java.util.List;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -244,12 +245,12 @@ class TxStateTransactionDataSnapshotIT
         {
             var kernelTransaction = getKernelTransaction( transaction );
             var transactionState = kernelTransaction.txState();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
             try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
             {
                 // empty
             }
-            assertZeroTracer( cursorTracer );
+            assertZeroTracer( cursorContext );
         }
     }
 
@@ -275,7 +276,8 @@ class TxStateTransactionDataSnapshotIT
 
             var kernelTransaction = getKernelTransaction( transaction );
             var transactionState = kernelTransaction.txState();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             cursorTracer.reportEvents();
 
             try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )
@@ -293,8 +295,9 @@ class TxStateTransactionDataSnapshotIT
         return (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
     }
 
-    private void assertZeroTracer( PageCursorTracer cursorTracer )
+    private void assertZeroTracer( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();

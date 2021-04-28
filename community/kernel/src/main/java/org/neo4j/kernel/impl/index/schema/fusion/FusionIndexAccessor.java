@@ -30,7 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
@@ -66,17 +66,17 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         LazyInstanceSelector<IndexUpdater> updaterSelector = new LazyInstanceSelector<>( slot ->
-                instanceSelector.select( slot ).newUpdater( mode, cursorTracer ) );
+                instanceSelector.select( slot ).newUpdater( mode, cursorContext ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
     @Override
-    public void force( PageCursorTracer cursorTracer )
+    public void force( CursorContext cursorContext )
     {
-        instanceSelector.forAll( accessor -> accessor.force( cursorTracer ) );
+        instanceSelector.forAll( accessor -> accessor.force( cursorContext ) );
     }
 
     @Override
@@ -99,10 +99,10 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, CursorContext cursorContext )
     {
         Iterable<BoundedIterable<Long>> entries =
-                instanceSelector.transform( indexAccessor -> indexAccessor.newAllEntriesValueReader( fromIdInclusive, toIdExclusive, cursorTracer ) );
+                instanceSelector.transform( indexAccessor -> indexAccessor.newAllEntriesValueReader( fromIdInclusive, toIdExclusive, cursorContext ) );
         return new BoundedIterable<>()
         {
             @Override
@@ -165,15 +165,15 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
     {
-        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporterFactory, cursorTracer );
+        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values(), reporterFactory, cursorContext );
     }
 
     @Override
-    public long estimateNumberOfEntries( PageCursorTracer cursorTracer )
+    public long estimateNumberOfEntries( CursorContext cursorContext )
     {
-        List<Long> counts = instanceSelector.transform( accessor -> accessor.estimateNumberOfEntries( cursorTracer ) );
+        List<Long> counts = instanceSelector.transform( accessor -> accessor.estimateNumberOfEntries( cursorContext ) );
         return counts.stream().anyMatch( count -> count == UNKNOWN_NUMBER_OF_ENTRIES )
                ? UNKNOWN_NUMBER_OF_ENTRIES
                : counts.stream().mapToLong( Long::longValue ).sum();

@@ -42,7 +42,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.rule.PageCacheRule;
@@ -289,7 +289,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         ImmutableSet<OpenOption> openOptions = create ? immutable.of( WRITE, CREATE) : immutable.of( WRITE );
         try ( PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
               PagedFile pagedFile = pageCache.map( storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions );
-              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL ) )
         {
             cursor.next();
             cursorConsumer.accept( cursor );

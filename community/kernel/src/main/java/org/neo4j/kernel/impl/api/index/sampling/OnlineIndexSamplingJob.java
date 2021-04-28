@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -76,10 +77,10 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             try
             {
                 try ( var reader = indexProxy.newValueReader();
-                      var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG );
+                      var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG ) );
                       IndexSampler sampler = reader.createSampler() )
                 {
-                    IndexSample sample = sampler.sampleIndex( cursorTracer );
+                    IndexSample sample = sampler.sampleIndex( cursorContext );
 
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )

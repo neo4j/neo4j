@@ -44,7 +44,7 @@ import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
@@ -119,31 +119,31 @@ class NodeChecker implements Checker
         return flags.isCheckGraph() || flags.isCheckIndexes() && !smallIndexes.isEmpty();
     }
 
-    private BoundedIterable<EntityTokenRange> getLabelIndexReader( long fromNodeId, long toNodeId, boolean last, PageCursorTracer cursorTracer )
+    private BoundedIterable<EntityTokenRange> getLabelIndexReader( long fromNodeId, long toNodeId, boolean last, CursorContext cursorContext )
     {
         if ( context.useScanStoresAsTokenIndexes )
         {
             if ( context.nodeLabelIndex != null )
             {
                 return context.nodeLabelIndex.newAllEntriesTokenReader( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
-                        cursorTracer );
+                        cursorContext );
             }
             return BoundedIterable.empty();
         }
         return context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
-                cursorTracer );
+                cursorContext );
     }
 
     private void check( long fromNodeId, long toNodeId, boolean last ) throws Exception
     {
         long usedNodes = 0;
         try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
-              var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG );
-              RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
-              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
-              BoundedIterable<EntityTokenRange> labelIndexReader = getLabelIndexReader( fromNodeId, toNodeId, last, cursorTracer );
-              SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
-              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer,
+              var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG ) );
+              RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorContext );
+              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorContext );
+              BoundedIterable<EntityTokenRange> labelIndexReader = getLabelIndexReader( fromNodeId, toNodeId, last, cursorContext );
+              SafePropertyChainReader property = new SafePropertyChainReader( context, cursorContext );
+              SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorContext,
                       context.memoryTracker ) )
         {
             ProgressListener localProgress = nodeProgress.threadLocalReporter();
@@ -175,8 +175,9 @@ class NodeChecker implements Checker
                 usedNodes++;
 
                 // Labels
-                long[] unverifiedLabels = RecordLoading.safeGetNodeLabels( context, nodeCursor.getId(), nodeCursor.getLabelField(), labelReader, cursorTracer );
-                long[] labels = checkNodeLabels( nodeCursor, unverifiedLabels, cursorTracer );
+                long[] unverifiedLabels =
+                        RecordLoading.safeGetNodeLabels( context, nodeCursor.getId(), nodeCursor.getLabelField(), labelReader, cursorContext );
+                long[] labels = checkNodeLabels( nodeCursor, unverifiedLabels, cursorContext );
                 // Cache the label field, so that if it contains inlined labels then it's free.
                 // Otherwise cache the dynamic labels in another data structure and point into it.
                 long labelField = nodeCursor.getLabelField();
@@ -199,12 +200,12 @@ class NodeChecker implements Checker
 
                 // Properties
                 lightClear( propertyValues );
-                boolean propertyChainIsOk = property.read( propertyValues, nodeCursor, reporter::forNode, cursorTracer );
+                boolean propertyChainIsOk = property.read( propertyValues, nodeCursor, reporter::forNode, cursorContext );
 
                 // Label index
                 if ( labelIndexReader.maxCount() != 0 )
                 {
-                    checkNodeVsLabelIndex( nodeCursor, nodeLabelRangeIterator, labelIndexState, nodeId, labels, fromNodeId, cursorTracer );
+                    checkNodeVsLabelIndex( nodeCursor, nodeLabelRangeIterator, labelIndexState, nodeId, labels, fromNodeId, cursorContext );
                 }
                 client.putToCache( nodeId, nextRelCacheFields );
 
@@ -223,14 +224,14 @@ class NodeChecker implements Checker
             }
             if ( !context.isCancelled() && labelIndexReader.maxCount() != 0 )
             {
-                reportRemainingLabelIndexEntries( nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, cursorTracer );
+                reportRemainingLabelIndexEntries( nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, cursorContext );
             }
             localProgress.done();
         }
         observedCounts.incrementNodeLabel( ANY_LABEL, usedNodes );
     }
 
-    private long[] checkNodeLabels( RecordNodeCursor nodeCursor, long[] labels, PageCursorTracer cursorTracer )
+    private long[] checkNodeLabels( RecordNodeCursor nodeCursor, long[] labels, CursorContext cursorContext )
     {
         if ( labels == null )
         {
@@ -246,7 +247,7 @@ class NodeChecker implements Checker
             long longLabel = labels[i];
             if ( longLabel > Integer.MAX_VALUE )
             {
-                reporter.forNode( recordLoader.node( nodeCursor.getId(), cursorTracer ) ).illegalLabel();
+                reporter.forNode( recordLoader.node( nodeCursor.getId(), cursorContext ) ).illegalLabel();
                 allGood = false;
                 valid = false;
                 break;
@@ -255,8 +256,8 @@ class NodeChecker implements Checker
             {
                 int label = toIntExact( longLabel );
                 checkValidToken( nodeCursor, label, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(),
-                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId(), cursorTracer ) ).illegalLabel(),
-                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId(), cursorTracer ) ).labelNotInUse( token ), cursorTracer );
+                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId(), cursorContext ) ).illegalLabel(),
+                        ( node, token ) -> reporter.forNode( recordLoader.node( node.getId(), cursorContext ) ).labelNotInUse( token ), cursorContext );
                 if ( prevLabel != label )
                 {
                     observedCounts.incrementNodeLabel( label, 1 );
@@ -289,7 +290,7 @@ class NodeChecker implements Checker
     }
 
     private void checkNodeVsLabelIndex( RecordNodeCursor nodeCursor, Iterator<EntityTokenRange> nodeLabelRangeIterator,
-            EntityTokenIndexCheckState labelIndexState, long nodeId, long[] labels, long fromNodeId, PageCursorTracer cursorTracer )
+            EntityTokenIndexCheckState labelIndexState, long nodeId, long[] labels, long fromNodeId, CursorContext cursorContext )
     {
         // Detect node-label combinations that exist in the label index, but not in the store
         while ( labelIndexState.needToMoveRangeForwardToReachEntity( nodeId ) && !context.isCancelled() )
@@ -304,7 +305,7 @@ class NodeChecker implements Checker
                         if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                         {
                             reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) ).nodeNotInUse(
-                                    recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
+                                    recordLoader.node( nodeIdMissingFromStore, cursorContext ) );
                         }
                     }
                 }
@@ -324,14 +325,14 @@ class NodeChecker implements Checker
                 if ( labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                 {
                     reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) )
-                            .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
+                            .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorContext ) );
                 }
             }
             long[] labelsInLabelIndex = labelIndexState.currentRange.tokens( nodeId );
             if ( labels != null )
             {
                 validateLabelIds( nodeCursor, labels, sortAndDeduplicate( labelsInLabelIndex ) /* TODO remove when fixed */, labelIndexState.currentRange,
-                        cursorTracer );
+                        cursorContext );
             }
             labelIndexState.lastCheckedEntityId = nodeId;
         }
@@ -340,13 +341,13 @@ class NodeChecker implements Checker
             for ( long label : labels )
             {
                 reporter.forNodeLabelScan( new TokenScanDocument( new EntityTokenRangeImpl( nodeId / Long.SIZE, EntityTokenRangeImpl.NO_TOKENS, NODE ) ) )
-                        .nodeLabelNotInIndex( recordLoader.node( nodeId, cursorTracer ), label );
+                        .nodeLabelNotInIndex( recordLoader.node( nodeId, cursorContext ), label );
             }
         }
     }
 
     private void reportRemainingLabelIndexEntries( Iterator<EntityTokenRange> nodeLabelRangeIterator, EntityTokenIndexCheckState labelIndexState, long toNodeId,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         if ( labelIndexState.currentRange == null && nodeLabelRangeIterator.hasNext() )
         {
@@ -363,7 +364,7 @@ class NodeChecker implements Checker
                 if ( labelIndexState.currentRange.covers( nodeIdMissingFromStore ) && labelIndexState.currentRange.tokens( nodeIdMissingFromStore ).length > 0 )
                 {
                     reporter.forNodeLabelScan( new TokenScanDocument( labelIndexState.currentRange ) )
-                            .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorTracer ) );
+                            .nodeNotInUse( recordLoader.node( nodeIdMissingFromStore, cursorContext ) );
                 }
                 labelIndexState.lastCheckedEntityId = nodeIdMissingFromStore;
             }
@@ -372,13 +373,13 @@ class NodeChecker implements Checker
     }
 
     private void validateLabelIds( NodeRecord node, long[] labelsInStore, long[] labelsInIndex, EntityTokenRange entityTokenRange,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         compareTwoSortedLongArrays( PropertySchemaType.COMPLETE_ALL_TOKENS, labelsInStore, labelsInIndex,
                 indexLabel -> reporter.forNodeLabelScan( new TokenScanDocument( entityTokenRange ) )
-                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( node.getId(), cursorTracer ), indexLabel ),
+                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( node.getId(), cursorContext ), indexLabel ),
                 storeLabel -> reporter.forNodeLabelScan( new TokenScanDocument( entityTokenRange ) )
-                        .nodeLabelNotInIndex( recordLoader.node( node.getId(), cursorTracer ), storeLabel ) );
+                        .nodeLabelNotInIndex( recordLoader.node( node.getId(), cursorContext ), storeLabel ) );
     }
 
     static void compareTwoSortedLongArrays( PropertySchemaType propertySchemaType, long[] a, long[] b,
@@ -449,8 +450,8 @@ class NodeChecker implements Checker
         PropertySchemaType propertySchemaType = schema.propertySchemaType();
         long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
         indexEntityTokenIds = sortAndDeduplicate( indexEntityTokenIds );
-        try ( var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_INDEXES_CHECKER_TAG );
-              var allEntriesReader = accessor.newAllEntriesValueReader( range.from(), lastRange ? Long.MAX_VALUE : range.to(), cursorTracer ) )
+        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( NODE_INDEXES_CHECKER_TAG ) );
+              var allEntriesReader = accessor.newAllEntriesValueReader( range.from(), lastRange ? Long.MAX_VALUE : range.to(), cursorContext ) )
         {
             for ( long entityId : allEntriesReader )
             {
@@ -460,14 +461,14 @@ class NodeChecker implements Checker
                     if ( !entityExists )
                     {
                         reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
-                                .nodeNotInUse( recordLoader.node( entityId, cursorTracer ) );
+                                .nodeNotInUse( recordLoader.node( entityId, cursorContext ) );
                     }
                     else
                     {
                         long[] entityTokenIds = nodeLabelsLookup.nodeLabels( entityId );
                         compareTwoSortedLongArrays( propertySchemaType, entityTokenIds, indexEntityTokenIds,
                                 indexLabel -> reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
-                                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( entityId, cursorTracer ), indexLabel ),
+                                        .nodeDoesNotHaveExpectedLabel( recordLoader.node( entityId, cursorContext ), indexLabel ),
                                 storeLabel -> {/*here we're only interested in what the the index has that the store doesn't have*/} );
                     }
                 }
@@ -475,7 +476,7 @@ class NodeChecker implements Checker
                 {
                     // OK so apparently the index has a node way outside node highId
                     reporter.forIndexEntry( new IndexEntry( descriptor, context.tokenNameLookup, entityId ) )
-                            .nodeNotInUse( recordLoader.node( entityId, cursorTracer ) );
+                            .nodeNotInUse( recordLoader.node( entityId, cursorContext ) );
                 }
             }
         }

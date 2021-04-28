@@ -24,7 +24,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -58,7 +58,7 @@ class NodeCheckerSSTITest extends NodeCheckerTest
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), PageCursorTracer.NULL );
+                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), CursorContext.NULL );
         // The Node Label Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         IndexDescriptor nli = indexDescriptors[0];
@@ -71,7 +71,7 @@ class NodeCheckerSSTITest extends NodeCheckerTest
         {
             throw new RuntimeException( e );
         }
-        IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, PageCursorTracer.NULL );
+        IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
         return new TokenScanWriter()
         {
             @Override

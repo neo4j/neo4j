@@ -20,7 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -36,11 +36,11 @@ class RecordReader<RECORD extends AbstractBaseRecord> implements AutoCloseable
     private final RECORD record;
     private final PageCursor cursor;
 
-    RecordReader( CommonAbstractStore<RECORD,?> store, PageCursorTracer cursorTracer )
+    RecordReader( CommonAbstractStore<RECORD,?> store, CursorContext cursorContext )
     {
         this.store = store;
         this.record = store.newRecord();
-        this.cursor = store.openPageCursorForReading( 0, cursorTracer );
+        this.cursor = store.openPageCursorForReading( 0, cursorContext );
     }
 
     RECORD read( long id )

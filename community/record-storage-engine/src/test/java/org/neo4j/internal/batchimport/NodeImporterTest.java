@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -95,8 +95,8 @@ class NodeImporterTest
 
             // then
             NodeStore nodeStore = stores.getNodeStore();
-            NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
-            long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, PageCursorTracer.NULL );
+            NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
+            long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, CursorContext.NULL );
             assertEquals( numberOfLabels, labels.length );
         }
     }
@@ -131,8 +131,8 @@ class NodeImporterTest
             }
 
             NodeStore nodeStore = stores.getNodeStore();
-            NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
-            long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, PageCursorTracer.NULL );
+            NodeRecord record = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
+            long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, CursorContext.NULL );
             assertEquals( numberOfLabels, labels.length );
 
             assertThat( cacheTracer.faults() ).isEqualTo( 2 );

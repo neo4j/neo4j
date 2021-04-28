@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface IndexStatisticsVisitor
 {
     interface Visitable
     {
-        void visit( IndexStatisticsVisitor visitor, PageCursorTracer cursorTracer );
+        void visit( IndexStatisticsVisitor visitor, CursorContext cursorContext );
     }
 
     void visitIndexStatistics( long indexId, long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize );

@@ -73,7 +73,7 @@ public class NodeIndexOrderTest extends IndexOrderTestBase<NodeValueIndexCursor>
     @Override
     protected NodeValueIndexCursor getEntityValueIndexCursor( KernelTransaction tx )
     {
-        return tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
+        return tx.cursors().allocateNodeValueIndexCursor( tx.cursorContext(), tx.memoryTracker() );
     }
 
     @Override

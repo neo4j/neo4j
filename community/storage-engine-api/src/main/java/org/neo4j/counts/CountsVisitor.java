@@ -19,14 +19,14 @@
  */
 package org.neo4j.counts;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface CountsVisitor
 {
     @FunctionalInterface
     interface Visitable
     {
-        void accept( CountsVisitor visitor, PageCursorTracer cursorTracer );
+        void accept( CountsVisitor visitor, CursorContext cursorContext );
     }
 
     void visitNodeCount( int labelId, long count );

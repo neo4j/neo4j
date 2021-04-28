@@ -24,7 +24,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -48,7 +48,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private final NodeStore read;
     private final RelationshipGroupDegreesStore groupDegreesStore;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
     private PageCursor pageCursor;
@@ -63,12 +63,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private RecordLoadOverride loadMode;
 
     RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         super( NO_ID );
         this.read = read;
         this.groupDegreesStore = groupDegreesStore;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
         this.loadMode = RecordLoadOverride.none();
@@ -156,13 +156,13 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public long[] labels()
     {
-        return NodeLabelsField.get( this, read, cursorTracer );
+        return NodeLabelsField.get( this, read, cursorContext );
     }
 
     @Override
     public boolean hasLabel( int label )
     {
-        return NodeLabelsField.hasLabel( this, read, cursorTracer, label );
+        return NodeLabelsField.hasLabel( this, read, cursorContext, label );
     }
 
     @Override
@@ -209,7 +209,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( groupCursor == null )
             {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorTracer );
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext );
             }
             groupCursor.init( entityReference(), getNextRel(), true );
             while ( groupCursor.next() )
@@ -224,7 +224,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     {
         if ( relationshipCursor == null )
         {
-            relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, groupDegreesStore, cursorTracer );
+            relationshipCursor = new RecordRelationshipTraversalCursor( relationshipStore, groupStore, groupDegreesStore, cursorContext );
         }
     }
 
@@ -232,7 +232,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     {
         if ( relationshipScanCursor == null )
         {
-            relationshipScanCursor = new RecordRelationshipScanCursor( relationshipStore, cursorTracer );
+            relationshipScanCursor = new RecordRelationshipScanCursor( relationshipStore, cursorContext );
         }
     }
 
@@ -291,7 +291,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             if ( groupCursor == null )
             {
-                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorTracer );
+                groupCursor = new RecordRelationshipGroupCursor( relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext );
             }
             groupCursor.init( entityReference(), getNextRel(), isDense() );
             int criteriaMet = 0;
@@ -478,12 +478,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
     private PageCursor nodePage( long reference )
     {
-        return read.openPageCursorForReading( reference, cursorTracer );
+        return read.openPageCursorForReading( reference, cursorContext );
     }
 
     private long nodeHighMark()
     {
-        return read.getHighestPossibleIdInUse( cursorTracer );
+        return read.getHighestPossibleIdInUse( cursorContext );
     }
 
     private void node( NodeRecord record, long reference, PageCursor pageCursor )

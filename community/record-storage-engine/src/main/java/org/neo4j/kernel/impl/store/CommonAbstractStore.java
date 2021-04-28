@@ -46,7 +46,7 @@ import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -107,7 +107,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * validation the <CODE>initStorage</CODE> method is called.
      * <p>
      * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>.
-     * If a problem was found when opening the store the {@link #start(PageCursorTracer)}
+     * If a problem was found when opening the store the {@link #start(CursorContext)}
      * must be invoked.
      * <p>
      * throws IOException if the unable to open the storage or if the
@@ -147,14 +147,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.log = logProvider.getLog( getClass() );
     }
 
-    protected void initialise( boolean createIfNotExists, PageCursorTracer cursorTracer )
+    protected void initialise( boolean createIfNotExists, CursorContext cursorContext )
     {
         try
         {
-            boolean created = checkAndLoadStorage( createIfNotExists, cursorTracer );
+            boolean created = checkAndLoadStorage( createIfNotExists, cursorContext );
             if ( !created )
             {
-                openIdGenerator( cursorTracer );
+                openIdGenerator( cursorContext );
             }
         }
         catch ( Exception e )
@@ -190,7 +190,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * this method will instead throw an exception in that situation.
      * @return {@code true} if the store was created as part of this call, otherwise {@code false} if it already existed.
      */
-    private boolean checkAndLoadStorage( boolean createIfNotExists, PageCursorTracer cursorTracer )
+    private boolean checkAndLoadStorage( boolean createIfNotExists, CursorContext cursorContext )
     {
         try
         {
@@ -201,7 +201,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
                 HEADER defaultHeader = storeHeaderFormat.generateHeader();
                 pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( ANY_PAGE_SIZE ) );
-                HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile, cursorTracer );
+                HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile, cursorContext );
                 if ( !defaultHeader.equals( readHeader ) )
                 {
                     // The header that we read was different from the default one so unmap
@@ -233,11 +233,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
                     // Create the id generator, and also open it because some stores may need the id generator when initializing their store
                     idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
-                            readOnlyChecker, configuration, cursorTracer, openOptions );
+                            readOnlyChecker, configuration, cursorContext, openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( CREATE ) );
-                    initialiseNewStoreFile( cursorTracer );
+                    initialiseNewStoreFile( cursorContext );
                     return true; // <-- successfully created and initialized
                 }
                 catch ( IOException e1 )
@@ -258,11 +258,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return false;
     }
 
-    protected void initialiseNewStoreFile( PageCursorTracer cursorTracer ) throws IOException
+    protected void initialiseNewStoreFile( CursorContext cursorContext ) throws IOException
     {
         if ( getNumberOfReservedLowIds() > 0 )
         {
-            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH, cursorTracer ) )
+            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_EAGER_FLUSH, cursorContext ) )
             {
                 if ( pageCursor.next() )
                 {
@@ -283,9 +283,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         recordSize = determineRecordSize();
     }
 
-    private HEADER readStoreHeaderAndDetermineRecordSize( PagedFile pagedFile, PageCursorTracer cursorTracer ) throws IOException
+    private HEADER readStoreHeaderAndDetermineRecordSize( PagedFile pagedFile, CursorContext cursorContext ) throws IOException
     {
-        try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             HEADER readHeader;
             if ( pageCursor.next() )
@@ -335,12 +335,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * Read raw record data. Should <strong>ONLY</strong> be used in tests or tools.
      */
-    public byte[] getRawRecordData( long id, PageCursorTracer cursorTracer ) throws IOException
+    public byte[] getRawRecordData( long id, CursorContext cursorContext ) throws IOException
     {
         byte[] data = new byte[recordSize];
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
         {
             if ( cursor.next() )
             {
@@ -383,12 +383,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         recordsEndOffset = recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
     }
 
-    public boolean isInUse( long id, PageCursorTracer cursorTracer )
+    public boolean isInUse( long id, CursorContext cursorContext )
     {
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
 
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             boolean recordIsInUse = false;
             if ( cursor.next() )
@@ -418,26 +418,26 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * The opened cursor will make use of the {@link PagedFile#PF_READ_AHEAD} flag for optimal scanning performance.
      */
     @Override
-    public PageCursor openPageCursorForReadingWithPrefetching( long id, PageCursorTracer cursorTracer )
+    public PageCursor openPageCursorForReadingWithPrefetching( long id, CursorContext cursorContext )
     {
-        return openPageCursorForReading( 0, PF_READ_AHEAD, cursorTracer );
+        return openPageCursorForReading( 0, PF_READ_AHEAD, cursorContext );
     }
 
     /**
      * DANGER: make sure to always close this cursor.
      */
     @Override
-    public PageCursor openPageCursorForReading( long id, PageCursorTracer cursorTracer )
+    public PageCursor openPageCursorForReading( long id, CursorContext cursorContext )
     {
-        return openPageCursorForReading( id, 0, cursorTracer );
+        return openPageCursorForReading( id, 0, cursorContext );
     }
 
-    private PageCursor openPageCursorForReading( long id, int additionalCursorFlags, PageCursorTracer cursorTracer )
+    private PageCursor openPageCursorForReading( long id, int additionalCursorFlags, CursorContext cursorContext )
     {
         try
         {
             long pageId = pageIdForRecord( id );
-            return pagedFile.io( pageId, PF_SHARED_READ_LOCK | additionalCursorFlags, cursorTracer );
+            return pagedFile.io( pageId, PF_SHARED_READ_LOCK | additionalCursorFlags, cursorContext );
         }
         catch ( IOException e )
         {
@@ -446,12 +446,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public PageCursor openPageCursorForWriting( long id, PageCursorTracer cursorTracer )
+    public PageCursor openPageCursorForWriting( long id, CursorContext cursorContext )
     {
         try
         {
             long pageId = pageIdForRecord( id );
-            return pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorTracer );
+            return pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorContext );
         }
         catch ( IOException e )
         {
@@ -494,10 +494,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * @return The next free id
      */
     @Override
-    public long nextId( PageCursorTracer cursorTracer )
+    public long nextId( CursorContext cursorContext )
     {
         assertIdGeneratorInitialized();
-        return idGenerator.nextId( cursorTracer );
+        return idGenerator.nextId( cursorContext );
     }
 
     private void assertIdGeneratorInitialized()
@@ -510,7 +510,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     /**
      * Return the highest id in use. If this store is not OK yet, the high id is calculated from the highest
-     * in use record on the store, using {@link #scanForHighId(PageCursorTracer)}.
+     * in use record on the store, using {@link #scanForHighId(CursorContext)}.
      *
      * @return The high id, i.e. highest id in use + 1.
      */
@@ -538,27 +538,27 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * </ul>
      * So when this method is called the store is in a good state and from this point the database enters normal operations mode.
      */
-    void start( PageCursorTracer cursorTracer ) throws IOException
+    void start( CursorContext cursorContext ) throws IOException
     {
         if ( !storeOk )
         {
             storeOk = true;
             causeOfStoreNotOk = null;
         }
-        idGenerator.start( freeIds( cursorTracer ), cursorTracer );
+        idGenerator.start( freeIds( cursorContext ), cursorContext );
     }
 
-    private FreeIds freeIds( PageCursorTracer cursorTracer )
+    private FreeIds freeIds( CursorContext cursorContext )
     {
         return visitor ->
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorContext ) )
             {
                 int numberOfReservedLowIds = getNumberOfReservedLowIds();
                 int startingId = numberOfReservedLowIds;
                 int recordsPerPage = getRecordsPerPage();
                 int blockSize = getRecordSize();
-                long foundHighId = scanForHighId( cursorTracer );
+                long foundHighId = scanForHighId( cursorContext );
                 long[] foundIds = new long[recordsPerPage];
                 int foundIdsCursor;
 
@@ -619,23 +619,23 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    private void openIdGenerator( PageCursorTracer cursorTracer ) throws IOException
+    private void openIdGenerator( CursorContext cursorContext ) throws IOException
     {
-        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorTracer ), recordFormat.getMaxId(), readOnlyChecker,
-                configuration, cursorTracer, openOptions );
+        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorContext ), recordFormat.getMaxId(), readOnlyChecker,
+                configuration, cursorContext, openOptions );
     }
 
     /**
      * Starts from the end of the file and scans backwards to find the highest in use record.
-     * Can be used even if {@link #start(PageCursorTracer)} hasn't been called. Basically this method should be used
-     * over {@link #getHighestPossibleIdInUse(PageCursorTracer)} and {@link #getHighId()} in cases where a store has been opened
+     * Can be used even if {@link #start(CursorContext)} hasn't been called. Basically this method should be used
+     * over {@link #getHighestPossibleIdInUse(CursorContext)} and {@link #getHighId()} in cases where a store has been opened
      * but is in a scenario where recovery isn't possible, like some tooling or migration.
      *
      * @return the id of the highest in use record + 1, i.e. highId.
      */
-    protected long scanForHighId( PageCursorTracer cursorTracer )
+    protected long scanForHighId( CursorContext cursorContext )
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_READ_AHEAD, cursorContext ) )
         {
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
@@ -705,12 +705,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void flush( PageCursorTracer cursorTracer )
+    public void flush( CursorContext cursorContext )
     {
         try
         {
             pagedFile.flushAndForce();
-            idGenerator.checkpoint( cursorTracer );
+            idGenerator.checkpoint( cursorContext );
         }
         catch ( IOException e )
         {
@@ -763,9 +763,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     /** @return The highest possible id in use, -1 if no id in use. */
     @Override
-    public long getHighestPossibleIdInUse( PageCursorTracer cursorTracer )
+    public long getHighestPossibleIdInUse( CursorContext cursorContext )
     {
-        return idGenerator != null ? idGenerator.getHighestPossibleIdInUse() : scanForHighId( cursorTracer ) - 1;
+        return idGenerator != null ? idGenerator.getHighestPossibleIdInUse() : scanForHighId( cursorContext ) - 1;
     }
 
     /**
@@ -806,10 +806,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         logger.log( String.format( "%s[%s] %s", getTypeDescriptor(), getStorageFile().getFileName(), storeVersion ) );
     }
 
-    void logIdUsage( DiagnosticsLogger logger, PageCursorTracer cursorTracer )
+    void logIdUsage( DiagnosticsLogger logger, CursorContext cursorContext )
     {
         logger.log( format( "%s[%s]: used=%s high=%s", getTypeDescriptor(), getStorageFile().getFileName(), getNumberOfIdsInUse(),
-                getHighestPossibleIdInUse( cursorTracer ) ) );
+                getHighestPossibleIdInUse( cursorContext ) ) );
     }
 
     @Override
@@ -835,9 +835,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * if not in use.
      */
     @Override
-    public RECORD getRecord( long id, RECORD record, RecordLoad mode, PageCursorTracer cursorTracer )
+    public RECORD getRecord( long id, RECORD record, RecordLoad mode, CursorContext cursorContext )
     {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
         {
             readIntoRecord( id, record, mode, cursor );
             return record;
@@ -923,7 +923,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, PageCursorTracer cursorTracer )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext )
     {
         long id = record.getId();
         IdValidator.assertValidId( getIdType(), id, recordFormat.getMaxId() );
@@ -939,25 +939,25 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
-                    idUpdateListener.markIdAsUnused( idType, idGenerator, id, cursorTracer );
+                    idUpdateListener.markIdAsUnused( idType, idGenerator, id, cursorContext );
                 }
                 else if ( record.isCreated() )
                 {
-                    idUpdateListener.markIdAsUsed( idType, idGenerator, id, cursorTracer );
+                    idUpdateListener.markIdAsUsed( idType, idGenerator, id, cursorContext );
                 }
 
                 if ( (!record.inUse() || !record.requiresSecondaryUnit()) && record.hasSecondaryUnitId() )
                 {
                     // If record was just now deleted, or if the record used a secondary unit, but not anymore
                     // then free the id of that secondary unit.
-                    idUpdateListener.markIdAsUnused( idType, idGenerator, record.getSecondaryUnitId(), cursorTracer );
+                    idUpdateListener.markIdAsUnused( idType, idGenerator, record.getSecondaryUnitId(), cursorContext );
                 }
                 if ( record.inUse() && record.isSecondaryUnitCreated() )
                 {
                     // Triggers on:
                     // - (a) record got created right now and has a secondary unit, or
                     // - (b) it already existed and just now grew into a secondary unit then mark the secondary unit as used
-                    idUpdateListener.markIdAsUsed( idType, idGenerator, record.getSecondaryUnitId(), cursorTracer );
+                    idUpdateListener.markIdAsUsed( idType, idGenerator, record.getSecondaryUnitId(), cursorContext );
                 }
             }
         }
@@ -968,24 +968,24 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void prepareForCommit( RECORD record, PageCursorTracer cursorTracer )
+    public void prepareForCommit( RECORD record, CursorContext cursorContext )
     {
-        prepareForCommit( record, this, cursorTracer );
+        prepareForCommit( record, this, cursorContext );
     }
 
     @Override
-    public void prepareForCommit( RECORD record, IdSequence idSequence, PageCursorTracer cursorTracer )
+    public void prepareForCommit( RECORD record, IdSequence idSequence, CursorContext cursorContext )
     {
         if ( record.inUse() )
         {
-            recordFormat.prepare( record, recordSize, idSequence, cursorTracer );
+            recordFormat.prepare( record, recordSize, idSequence, cursorContext );
         }
     }
 
     @Override
-    public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, PageCursorTracer cursorTracer ) throws EXCEPTION
+    public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, CursorContext cursorContext ) throws EXCEPTION
     {
-        try ( PageCursor cursor = openPageCursorForReading( 0, cursorTracer ) )
+        try ( PageCursor cursor = openPageCursorForReading( 0, cursorContext ) )
         {
             RECORD record = newRecord();
             long highId = getHighId();
@@ -1001,15 +1001,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer )
+    public List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, CursorContext cursorContext )
     {
         ArrayList<RECORD> list = new ArrayList<>();
-        streamRecords( firstId, mode, guardForCycles, cursorTracer, list::add );
+        streamRecords( firstId, mode, guardForCycles, cursorContext, list::add );
         return list;
     }
 
     @Override
-    public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursorTracer cursorTracer, RecordSubscriber<RECORD> subscriber )
+    public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, CursorContext cursorContext, RecordSubscriber<RECORD> subscriber )
     {
         if ( Record.NULL_REFERENCE.is( firstId ) )
         {
@@ -1018,7 +1018,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
 
         long id = firstId;
-        try ( PageCursor cursor = openPageCursorForReading( firstId, cursorTracer ) )
+        try ( PageCursor cursor = openPageCursorForReading( firstId, cursorContext ) )
         {
             RECORD record;
             do
@@ -1111,7 +1111,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void ensureHeavy( RECORD record, PageCursorTracer cursorTracer )
+    public void ensureHeavy( RECORD record, CursorContext cursorContext )
     {
         // Do nothing by default. Some record stores have this.
     }

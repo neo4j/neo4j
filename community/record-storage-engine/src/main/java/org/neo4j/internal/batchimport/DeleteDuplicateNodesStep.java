@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -63,9 +64,9 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( DELETE_DUPLICATE_IMPORT_STEP_TAG );
-              PageCursor cursor = nodeStore.openPageCursorForReading( 0, cursorTracer );
-              PageCursor propertyCursor = propertyStore.openPageCursorForReading( 0, cursorTracer ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( DELETE_DUPLICATE_IMPORT_STEP_TAG ) );
+              PageCursor cursor = nodeStore.openPageCursorForReading( 0, cursorContext );
+              PageCursor propertyCursor = propertyStore.openPageCursorForReading( 0, cursorContext ) )
         {
             while ( nodeIds.hasNext() )
             {
@@ -73,7 +74,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, cursor );
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
-                nodeStore.ensureHeavy( nodeRecord, cursorTracer );
+                nodeStore.ensureHeavy( nodeRecord, cursorContext );
 
                 // Delete property records
                 long nextProp = nodeRecord.getNextProp();
@@ -81,11 +82,11 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 {
                     propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, propertyCursor );
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
-                    propertyStore.ensureHeavy( propertyRecord, cursorTracer );
+                    propertyStore.ensureHeavy( propertyRecord, cursorContext );
                     propertiesRemoved += propertyRecord.numberOfProperties();
                     nextProp = propertyRecord.getNextProp();
                     deletePropertyRecordIncludingValueRecords( propertyRecord );
-                    propertyStore.updateRecord( propertyRecord, cursorTracer );
+                    propertyStore.updateRecord( propertyRecord, cursorContext );
                 }
 
                 // Delete node (and dynamic label records, if any)
@@ -94,7 +95,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 {
                     labelRecord.setInUse( false );
                 }
-                nodeStore.updateRecord( nodeRecord, cursorTracer );
+                nodeStore.updateRecord( nodeRecord, cursorContext );
                 nodesRemoved++;
             }
         }

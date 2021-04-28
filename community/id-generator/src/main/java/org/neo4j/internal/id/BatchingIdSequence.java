@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.
@@ -41,7 +41,7 @@ public class BatchingIdSequence implements IdSequence
     }
 
     @Override
-    public long nextId( PageCursorTracer ignored )
+    public long nextId( CursorContext ignored )
     {
         long result = peek();
         nextId++;

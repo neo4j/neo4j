@@ -39,7 +39,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -106,9 +106,9 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
             throw new IllegalStateException(
                     "Index statistics store file could not be found, most likely this database needs to be recovered, file:" + path, e );
         }
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INIT_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INIT_TAG ) ) )
         {
-            scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorTracer );
+            scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorContext );
         }
     }
 
@@ -135,12 +135,12 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     }
 
     @Override
-    public void visit( IndexStatisticsVisitor visitor, PageCursorTracer cursorTracer )
+    public void visit( IndexStatisticsVisitor visitor, CursorContext cursorContext )
     {
         try
         {
             scanTree( ( key, value ) -> visitor.visitIndexStatistics( key.getIndexId(),
-                    value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize() ), cursorTracer );
+                    value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize() ), cursorContext );
         }
         catch ( IOException e )
         {
@@ -148,25 +148,25 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
     }
 
-    public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
+    public void checkpoint( CursorContext cursorContext ) throws IOException
     {
         // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
-        clearTree( cursorTracer );
-        writeCacheContentsIntoTree( cursorTracer );
-        tree.checkpoint( cursorTracer );
+        clearTree( cursorContext );
+        writeCacheContentsIntoTree( cursorContext );
+        tree.checkpoint( cursorContext );
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
     {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorContext );
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<IndexStatisticsKey> visitor, PageCursorTracer cursorTracer )
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<IndexStatisticsKey> visitor, CursorContext cursorContext )
     {
         try
         {
-            return tree.consistencyCheck( visitor, cursorTracer );
+            return tree.consistencyCheck( visitor, cursorContext );
         }
         catch ( IOException e )
         {
@@ -174,9 +174,9 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
     }
 
-    private void scanTree( BiConsumer<IndexStatisticsKey,IndexStatisticsValue> consumer, PageCursorTracer cursorTracer ) throws IOException
+    private void scanTree( BiConsumer<IndexStatisticsKey,IndexStatisticsValue> consumer, CursorContext cursorContext ) throws IOException
     {
-        try ( Seeker<IndexStatisticsKey,IndexStatisticsValue> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY, cursorTracer ) )
+        try ( Seeker<IndexStatisticsKey,IndexStatisticsValue> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY, cursorContext ) )
         {
             while ( seek.next() )
             {
@@ -187,14 +187,14 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
     }
 
-    private void clearTree( PageCursorTracer cursorTracer ) throws IOException
+    private void clearTree( CursorContext cursorContext ) throws IOException
     {
         // Read all keys from the tree, we can't do this while having a writer since it will grab write lock on pages
         List<IndexStatisticsKey> keys = new ArrayList<>( cache.size() );
-        scanTree( ( key, value ) -> keys.add( key ), cursorTracer );
+        scanTree( ( key, value ) -> keys.add( key ), cursorContext );
 
         // Remove all those read keys
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorTracer ) )
+        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorContext ) )
         {
             for ( IndexStatisticsKey key : keys )
             {
@@ -204,9 +204,9 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
     }
 
-    private void writeCacheContentsIntoTree( PageCursorTracer cursorTracer ) throws IOException
+    private void writeCacheContentsIntoTree( CursorContext cursorContext ) throws IOException
     {
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorTracer ) )
+        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorContext ) )
         {
             for ( Map.Entry<Long,ImmutableIndexStatistics> entry : cache.entrySet() )
             {

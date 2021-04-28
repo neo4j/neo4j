@@ -510,7 +510,7 @@ public class MuninnPageCache implements PageCache
                 this,
                 filePageSize,
                 swapperFactory,
-                pageCacheTracer, versionContextSupplier,
+                pageCacheTracer,
                 createIfNotExists,
                 truncateExisting, useDirectIO,
                 databaseName,

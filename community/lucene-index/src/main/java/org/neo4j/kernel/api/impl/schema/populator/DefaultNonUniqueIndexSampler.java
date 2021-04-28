@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
@@ -84,13 +84,13 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
     }
 
     @Override
-    public IndexSample sample( PageCursorTracer cursorTracer )
+    public IndexSample sample( CursorContext cursorContext )
     {
-        return sample( -1, cursorTracer );
+        return sample( -1, cursorContext );
     }
 
     @Override
-    public IndexSample sample( int numDocs, PageCursorTracer cursorTracer )
+    public IndexSample sample( int numDocs, CursorContext cursorContext )
     {
         if ( !values.isEmpty() )
         {

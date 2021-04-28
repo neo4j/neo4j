@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 
 /**
@@ -30,16 +30,16 @@ class LegacyTokenScanViewIdIterator implements EntityIdIterator
 {
     private final int[] tokenIds;
     private final TokenScanReader tokenScanReader;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
 
-    LegacyTokenScanViewIdIterator( TokenScanReader tokenScanReader, int[] tokenIds, PageCursorTracer cursorTracer )
+    LegacyTokenScanViewIdIterator( TokenScanReader tokenScanReader, int[] tokenIds, CursorContext cursorContext )
     {
         this.tokenScanReader = tokenScanReader;
-        this.cursorTracer = cursorTracer;
-        this.idIterator = tokenScanReader.entitiesWithAnyOfTokens( tokenIds, cursorTracer );
+        this.cursorContext = cursorContext;
+        this.idIterator = tokenScanReader.entitiesWithAnyOfTokens( tokenIds, cursorContext );
         this.tokenIds = tokenIds;
     }
 
@@ -67,6 +67,6 @@ class LegacyTokenScanViewIdIterator implements EntityIdIterator
     public void invalidateCache()
     {
         this.idIterator.close();
-        this.idIterator = tokenScanReader.entitiesWithAnyOfTokens( lastReturnedId, tokenIds, cursorTracer );
+        this.idIterator = tokenScanReader.entitiesWithAnyOfTokens( lastReturnedId, tokenIds, cursorContext );
     }
 }

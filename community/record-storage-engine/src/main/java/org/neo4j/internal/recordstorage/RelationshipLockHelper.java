@@ -28,7 +28,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockTracer;
@@ -65,16 +65,16 @@ final class RelationshipLockHelper
      *                             stored there. Will be {@link Record#NULL_REFERENCE} for external degrees.
      */
     static void lockRelationshipsInOrder( RelationshipModifications.RelationshipBatch idsToLock, long optionalFirstInChain,
-            RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         int size = idsToLock.size();
         if ( size == 1 )
         {
-            lockSingleRelationship( idsToLock.first(), optionalFirstInChain, relRecords, locks, cursorTracer );
+            lockSingleRelationship( idsToLock.first(), optionalFirstInChain, relRecords, locks, cursorContext );
         }
         else if ( size > 1 )
         {
-            lockMultipleRelationships( idsToLock, optionalFirstInChain, relRecords, locks, cursorTracer, memoryTracker );
+            lockMultipleRelationships( idsToLock, optionalFirstInChain, relRecords, locks, cursorContext, memoryTracker );
         }
     }
 
@@ -87,11 +87,11 @@ final class RelationshipLockHelper
      * @param relRecords for coordinate changes in.
      * @param locks used to try and lock the relationships.
      * @param lockTracer to go with the locks.
-     * @param cursorTracer for tracing page cache access.
+     * @param cursorContext for tracing page cache access.
      * @return the insertion point, if found. Otherwise {@code null}.
      */
     static RecordAccess.RecordProxy<RelationshipRecord,Void> findAndLockInsertionPoint( long firstInChain, long nodeId,
-            RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, LockTracer lockTracer, PageCursorTracer cursorTracer )
+            RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, LockTracer lockTracer, CursorContext cursorContext )
     {
         long nextRel = firstInChain;
         RecordAccess.RecordProxy<RelationshipRecord,Void> rBefore = null;
@@ -102,7 +102,7 @@ final class RelationshipLockHelper
             while ( !isNull( nextRel ) )
             {
                 boolean r1Locked = locks.tryExclusiveLock( RELATIONSHIP, nextRel );
-                RecordAccess.RecordProxy<RelationshipRecord,Void> r1 = relRecords.getOrLoad( nextRel, null, ALWAYS, cursorTracer );
+                RecordAccess.RecordProxy<RelationshipRecord,Void> r1 = relRecords.getOrLoad( nextRel, null, ALWAYS, cursorContext );
                 RelationshipRecord r1Record = r1.forReadingLinkage();
                 if ( !r1Locked || !r1Record.inUse() )
                 {
@@ -118,7 +118,7 @@ final class RelationshipLockHelper
                 if ( !isNull( r2Id ) )
                 {
                     boolean r2Locked = locks.tryExclusiveLock( RELATIONSHIP, r2Id );
-                    RecordAccess.RecordProxy<RelationshipRecord,Void> r2 = relRecords.getOrLoad( r2Id, null, ALWAYS, cursorTracer );
+                    RecordAccess.RecordProxy<RelationshipRecord,Void> r2 = relRecords.getOrLoad( r2Id, null, ALWAYS, cursorContext );
                     RelationshipRecord r2Record = r2.forReadingLinkage();
                     if ( !r2Locked || !r2Record.inUse() )
                     {
@@ -141,7 +141,7 @@ final class RelationshipLockHelper
             {
                 // Group is minimum read locked, so no need to re-read
                 locks.acquireExclusive( lockTracer, RELATIONSHIP, firstInChain );
-                RecordAccess.RecordProxy<RelationshipRecord,Void> firstProxy = relRecords.getOrLoad( firstInChain, null, ALWAYS, cursorTracer );
+                RecordAccess.RecordProxy<RelationshipRecord,Void> firstProxy = relRecords.getOrLoad( firstInChain, null, ALWAYS, cursorContext );
                 long secondRel = firstProxy.forReadingLinkage().getNextRel( nodeId );
                 if ( !isNull( secondRel ) )
                 {
@@ -154,7 +154,7 @@ final class RelationshipLockHelper
     }
 
     private static void lockMultipleRelationships( RelationshipModifications.RelationshipBatch ids, long optionalFirstInChain,
-            RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         /*
          * The idea here is to take all locks in sorted order to avoid deadlocks
@@ -175,7 +175,7 @@ final class RelationshipLockHelper
             lockList.add( optionalFirstInChain ); //The locklist does not accept NULL(-1) values, so we don't need to care about that
             ids.forEach( ( id, type, startNode, endNode ) ->
             {
-                RelationshipRecord relationship = relRecords.getOrLoad( id, null, cursorTracer ).forReadingLinkage();
+                RelationshipRecord relationship = relRecords.getOrLoad( id, null, cursorContext ).forReadingLinkage();
                 optimistic.put( id, relationship );
                 lockList.add( relationship.getId() );
                 lockList.add( START_NEXT.get( relationship ) );
@@ -195,7 +195,7 @@ final class RelationshipLockHelper
                 {
                     //This is a relationship we we're deleting
                     //No when it is locked we can check if the optimistic read is stable
-                    RelationshipRecord actual = relRecords.getOrLoad( id, null, cursorTracer ).forReadingLinkage();
+                    RelationshipRecord actual = relRecords.getOrLoad( id, null, cursorContext ).forReadingLinkage();
                     if ( recordHasLinkageChanges( old, actual ) )
                     {
                         //Something changed, so we need to retry, by unlocking and trying again
@@ -263,12 +263,12 @@ final class RelationshipLockHelper
     }
 
     private static void lockSingleRelationship( long relId, long optionalFirstInChain, RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks,
-            PageCursorTracer cursorTracer )
+            CursorContext cursorContext )
     {
         //The naive and simple solution when we're only locking one relationship
         boolean retry;
         //Optimistically read the relationship
-        RelationshipRecord optimistic = relRecords.getOrLoad( relId, null, cursorTracer ).forReadingLinkage();
+        RelationshipRecord optimistic = relRecords.getOrLoad( relId, null, cursorContext ).forReadingLinkage();
         assert optimistic.inUse() : optimistic.toString();
         final long[] neighbours = new long[6]; //The relationship itself, all 4 neighbours and potentially the first in chain (if needed for degrees update)
         do
@@ -284,7 +284,7 @@ final class RelationshipLockHelper
             Arrays.sort( neighbours );
             lockRelationshipsExclusively( locks, neighbours );
 
-            RelationshipRecord actual = relRecords.getOrLoad( relId, null, cursorTracer ).forReadingLinkage();
+            RelationshipRecord actual = relRecords.getOrLoad( relId, null, cursorContext ).forReadingLinkage();
             assert actual.inUse();
             if ( recordHasLinkageChanges( optimistic, actual ) )
             {

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.test.Race;
 
@@ -61,7 +61,7 @@ class RecordProcessorStepTest
                     batch[r] = new NodeRecord( startId + r );
                     batch[r].setInUse( true );
                 }
-                step.process( batch, null, PageCursorTracer.NULL );
+                step.process( batch, null, CursorContext.NULL );
             }, batchesPerThread );
             race.goUnchecked();
 
@@ -92,7 +92,7 @@ class RecordProcessorStepTest
         }
 
         @Override
-        public boolean process( NodeRecord item, PageCursorTracer cursorTracer )
+        public boolean process( NodeRecord item, CursorContext cursorContext )
         {
             counter++;
             return false;

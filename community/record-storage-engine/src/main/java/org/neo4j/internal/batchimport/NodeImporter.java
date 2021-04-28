@@ -76,8 +76,8 @@ public class NodeImporter extends EntityImporter
         this.nodeIds = new BatchingIdGetter( nodeStore );
         this.idPropertyStore = stores.getTemporaryPropertyStore();
         this.idPropertyRecord = idPropertyStore.newRecord();
-        this.nodeUpdateCursor = nodeStore.openPageCursorForWriting( 0, cursorTracer );
-        this.idPropertyUpdateCursor = idPropertyStore.openPageCursorForWriting( 0, cursorTracer );
+        this.nodeUpdateCursor = nodeStore.openPageCursorForWriting( 0, cursorContext );
+        this.idPropertyUpdateCursor = idPropertyStore.openPageCursorForWriting( 0, cursorContext );
         nodeRecord.setInUse( true );
     }
 
@@ -92,18 +92,18 @@ public class NodeImporter extends EntityImporter
     @Override
     public boolean id( Object id, Group group )
     {
-        long nodeId = nodeIds.nextId( cursorTracer );
+        long nodeId = nodeIds.nextId( cursorContext );
         nodeRecord.setId( nodeId );
         idMapper.put( id, nodeId, group );
 
         // also store this id as property in temp property store
         if ( id != null )
         {
-            idPropertyStore.encodeValue( idPropertyBlock, 0, Values.of( id ), cursorTracer, memoryTracker );
+            idPropertyStore.encodeValue( idPropertyBlock, 0, Values.of( id ), cursorContext, memoryTracker );
             idPropertyRecord.addPropertyBlock( idPropertyBlock );
             idPropertyRecord.setId( nodeId ); // yes nodeId
             idPropertyRecord.setInUse( true );
-            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorTracer );
+            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorContext );
             idPropertyRecord.clear();
         }
         return true;
@@ -137,21 +137,21 @@ public class NodeImporter extends EntityImporter
         // Make sure we have an ID
         if ( nodeRecord.getId() == NULL_REFERENCE.longValue() )
         {
-            nodeRecord.setId( nodeIds.nextId( cursorTracer ) );
+            nodeRecord.setId( nodeIds.nextId( cursorContext ) );
         }
 
         // Compose the labels
         if ( !hasLabelField )
         {
             long[] labelIds = labelTokenRepository.getOrCreateIds( labels, labelsCursor );
-            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), cursorTracer, memoryTracker );
+            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), cursorContext, memoryTracker );
         }
         labelsCursor = 0;
 
         // Write data to stores
-        nodeRecord.setNextProp( createAndWritePropertyChain( cursorTracer ) );
+        nodeRecord.setNextProp( createAndWritePropertyChain( cursorContext ) );
         nodeRecord.setInUse( true );
-        nodeStore.updateRecord( nodeRecord, IGNORE, nodeUpdateCursor, cursorTracer );
+        nodeStore.updateRecord( nodeRecord, IGNORE, nodeUpdateCursor, cursorContext );
         nodeCount++;
         nodeRecord.clear();
         nodeRecord.setId( NULL_REFERENCE.longValue() );
@@ -173,13 +173,13 @@ public class NodeImporter extends EntityImporter
         nodeStore.setHighestPossibleIdInUse( highestId ); // for the case of #id(long)
         nodeUpdateCursor.close();
         idPropertyUpdateCursor.close();
-        cursorTracer.close();
+        cursorContext.close();
     }
 
     @Override
     void freeUnusedIds()
     {
         super.freeUnusedIds();
-        freeUnusedIds( nodeStore, nodeIds, cursorTracer );
+        freeUnusedIds( nodeStore, nodeIds, cursorContext );
     }
 }

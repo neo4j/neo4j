@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -30,9 +30,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  */
 public interface NodePropertyAccessor extends AutoCloseable
 {
-    NodePropertyAccessor EMPTY = ( nodeId, propertyKeyId, cursorTracer ) -> NO_VALUE;
+    NodePropertyAccessor EMPTY = ( nodeId, propertyKeyId, cursorContext ) -> NO_VALUE;
 
-    Value getNodePropertyValue( long nodeId, int propertyKeyId, PageCursorTracer cursorTracer ) throws EntityNotFoundException;
+    Value getNodePropertyValue( long nodeId, int propertyKeyId, CursorContext cursorContext ) throws EntityNotFoundException;
 
     @Override
     default void close()

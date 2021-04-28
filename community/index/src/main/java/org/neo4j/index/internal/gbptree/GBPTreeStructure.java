@@ -28,7 +28,7 @@ import java.nio.file.StandardOpenOption;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -65,12 +65,12 @@ public class GBPTreeStructure<KEY, VALUE>
      * @param databaseName name of the database file belongs to
      * @throws IOException on I/O error.
      */
-    public static void visitMeta( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, PageCursorTracer cursorTracer )
+    public static void visitMeta( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, CursorContext cursorContext )
             throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, immutable.of( StandardOpenOption.READ ) ) )
         {
-            try ( PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 visitMeta( cursor, visitor );
             }
@@ -86,12 +86,12 @@ public class GBPTreeStructure<KEY, VALUE>
      * @param databaseName name of the database file belongs to
      * @throws IOException on I/O error.
      */
-    public static void visitState( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, PageCursorTracer cursorTracer )
+    public static void visitState( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, CursorContext cursorContext )
             throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, immutable.of( StandardOpenOption.READ ) ) )
         {
-            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
+            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 visitTreeState( cursor, visitor );
             }
@@ -118,10 +118,10 @@ public class GBPTreeStructure<KEY, VALUE>
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
      * @param writeCursor Currently active {@link PageCursor write cursor} in tree.
      * @param visitor {@link GBPTreeVisitor} that should visit the tree.
-     * @param cursorTracer underlying page cursor tracer.
+     * @param cursorContext underlying page cursor context.
      * @throws IOException on page cache access error.
      */
-    void visitTree( PageCursor cursor, PageCursor writeCursor, GBPTreeVisitor<KEY,VALUE> visitor, PageCursorTracer cursorTracer ) throws IOException
+    void visitTree( PageCursor cursor, PageCursor writeCursor, GBPTreeVisitor<KEY,VALUE> visitor, CursorContext cursorContext ) throws IOException
     {
         // TreeState
         long currentPage = cursor.getCurrentPageId();
@@ -141,7 +141,7 @@ public class GBPTreeStructure<KEY, VALUE>
             long leftmostSibling = cursor.getCurrentPageId();
 
             // Go right through all siblings
-            visitLevel( cursor, writeCursor, visitor, cursorTracer );
+            visitLevel( cursor, writeCursor, visitor, cursorContext );
 
             visitor.endLevel( level );
             level++;
@@ -178,7 +178,7 @@ public class GBPTreeStructure<KEY, VALUE>
         }
     }
 
-    void visitTreeNode( PageCursor cursor, GBPTreeVisitor<KEY,VALUE> visitor, PageCursorTracer cursorTracer ) throws IOException
+    void visitTreeNode( PageCursor cursor, GBPTreeVisitor<KEY,VALUE> visitor, CursorContext cursorContext ) throws IOException
     {
         //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]))
         boolean isLeaf;
@@ -207,10 +207,10 @@ public class GBPTreeStructure<KEY, VALUE>
             {
                 TreeNode.Type type = isLeaf ? LEAF : INTERNAL;
                 offloadId = node.offloadIdAt( cursor, i, type );
-                node.keyAt( cursor, key, i, type, cursorTracer );
+                node.keyAt( cursor, key, i, type, cursorContext );
                 if ( isLeaf )
                 {
-                    node.valueAt( cursor, value, i, cursorTracer );
+                    node.valueAt( cursor, value, i, cursorContext );
                 }
                 else
                 {
@@ -267,14 +267,14 @@ public class GBPTreeStructure<KEY, VALUE>
         return isInternal;
     }
 
-    private void visitLevel( PageCursor readCursor, PageCursor writeCursor, GBPTreeVisitor<KEY,VALUE> visitor, PageCursorTracer cursorTracer )
+    private void visitLevel( PageCursor readCursor, PageCursor writeCursor, GBPTreeVisitor<KEY,VALUE> visitor, CursorContext cursorContext )
             throws IOException
     {
         long rightSibling;
         do
         {
             PageCursor cursor = select( readCursor, writeCursor );
-            visitTreeNode( cursor, visitor, cursorTracer );
+            visitTreeNode( cursor, visitor, cursorContext );
 
             do
             {

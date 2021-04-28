@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.id;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface IdSequence
 {
-    long nextId( PageCursorTracer cursorTracer );
+    long nextId( CursorContext cursorContext );
 }

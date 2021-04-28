@@ -234,8 +234,8 @@ public abstract class KernelIntegrationTest
 
     static Value relationshipGetProperty( KernelTransaction transaction, long relationship, int property )
     {
-        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor( transaction.pageCursorTracer() );
-              PropertyCursor properties = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer(), transaction.memoryTracker() ) )
+        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor( transaction.cursorContext() );
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor( transaction.cursorContext(), transaction.memoryTracker() ) )
         {
             transaction.dataRead().singleRelationship( relationship, cursor );
             if ( !cursor.next() )
@@ -257,7 +257,7 @@ public abstract class KernelIntegrationTest
 
     static Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction, int[] types )
     {
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor( transaction.pageCursorTracer() ) )
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor( transaction.cursorContext() ) )
         {
             transaction.dataRead().singleNode( node, cursor );
             if ( !cursor.next() )
@@ -269,13 +269,13 @@ public abstract class KernelIntegrationTest
             {
             case OUTGOING:
                 return outgoingIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId ) -> id,  transaction.pageCursorTracer()  );
+                        ( id, startNodeId, typeId, endNodeId ) -> id,  transaction.cursorContext()  );
             case INCOMING:
                 return incomingIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId ) -> id, transaction.pageCursorTracer()  );
+                        ( id, startNodeId, typeId, endNodeId ) -> id, transaction.cursorContext()  );
             case BOTH:
                 return allIterator( transaction.cursors(), cursor, types,
-                        ( id, startNodeId, typeId, endNodeId ) -> id, transaction.pageCursorTracer() );
+                        ( id, startNodeId, typeId, endNodeId ) -> id, transaction.cursorContext() );
             default:
                 throw new IllegalStateException( direction + " is not a valid direction" );
             }
@@ -285,7 +285,7 @@ public abstract class KernelIntegrationTest
     protected static int countNodes( KernelTransaction transaction )
     {
         int result = 0;
-        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor( transaction.pageCursorTracer() ) )
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor( transaction.cursorContext() ) )
         {
             transaction.dataRead().allNodesScan( cursor );
             while ( cursor.next() )
@@ -299,7 +299,7 @@ public abstract class KernelIntegrationTest
     public static int countRelationships( KernelTransaction transaction )
     {
         int result = 0;
-        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor( transaction.pageCursorTracer() ) )
+        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor( transaction.cursorContext() ) )
         {
             transaction.dataRead().allRelationshipsScan( cursor );
             while ( cursor.next() )

@@ -33,7 +33,7 @@ import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -200,10 +200,10 @@ class ProcessorStepTest
                 failingProcessor = new BlockingProcessorStep<>( stage.control(), configuration, 1, latch )
                 {
                     @Override
-                    protected void process( Integer batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
+                    protected void process( Integer batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
                     {
                         // Block until the latch is released below
-                        super.process( batch, sender, cursorTracer );
+                        super.process( batch, sender, cursorContext );
                         // Then immediately throw exception so that a panic will be issued
                         throw new RuntimeException( exceptionMessage );
                     }
@@ -263,7 +263,7 @@ class ProcessorStepTest
         return new ProcessorStep<>( stage.control(), "processor", configuration, 1, NULL )
         {
             @Override
-            protected void process( Integer batch, BatchSender sender, PageCursorTracer cursorTracer )
+            protected void process( Integer batch, BatchSender sender, CursorContext cursorContext )
             {
                 sender.send( batch );
             }
@@ -282,7 +282,7 @@ class ProcessorStepTest
         }
 
         @Override
-        protected void process( T batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
+        protected void process( T batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
         {
             latch.await();
         }
@@ -303,9 +303,9 @@ class ProcessorStepTest
         }
 
         @Override
-        protected void process( Integer batch, BatchSender sender, PageCursorTracer cursorTracer )
+        protected void process( Integer batch, BatchSender sender, CursorContext cursorContext )
         {
-            var pinEvent = cursorTracer.beginPin( false, 1, null );
+            var pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, null );
             pinEvent.hit();
             pinEvent.done();
             nextExpected.incrementAndGet();

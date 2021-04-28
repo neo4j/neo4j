@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 @FunctionalInterface
 public interface PropertyValueLookup
 {
-    Object lookupProperty( long nodeId, PageCursorTracer cursorTracer );
+    Object lookupProperty( long nodeId, CursorContext cursorContext );
 }

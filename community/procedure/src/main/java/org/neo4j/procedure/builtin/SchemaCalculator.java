@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.api.NamedToken;
@@ -55,7 +55,7 @@ public class SchemaCalculator
     private final Read dataRead;
     private final TokenRead tokenRead;
     private final CursorFactory cursors;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
 
     SchemaCalculator( KernelTransaction ktx )
@@ -63,7 +63,7 @@ public class SchemaCalculator
         this.dataRead = ktx.dataRead();
         this.tokenRead = ktx.tokenRead();
         this.cursors = ktx.cursors();
-        this.cursorTracer = ktx.pageCursorTracer();
+        this.cursorContext = ktx.cursorContext();
         this.memoryTracker = ktx.memoryTracker();
 
         // the only one that is common for both nodes and rels so thats why we can do it here
@@ -87,7 +87,7 @@ public class SchemaCalculator
     public Stream<NodePropertySchemaInfoResult> calculateTabularResultStreamForNodes()
     {
         NodeMappings nodeMappings = initializeMappingsForNodes();
-        scanEverythingBelongingToNodes( nodeMappings, cursorTracer, memoryTracker );
+        scanEverythingBelongingToNodes( nodeMappings, cursorContext, memoryTracker );
 
         // go through all labels to get actual names
         addNamesToCollection( tokenRead.labelsGetAllTokens(), nodeMappings.labelIdToLabelName );
@@ -98,7 +98,7 @@ public class SchemaCalculator
     public Stream<RelationshipPropertySchemaInfoResult> calculateTabularResultStreamForRels()
     {
         RelationshipMappings relMappings = initializeMappingsForRels();
-        scanEverythingBelongingToRelationships( relMappings, cursorTracer, memoryTracker );
+        scanEverythingBelongingToRelationships( relMappings, cursorContext, memoryTracker );
 
         // go through all relationshipTypes to get actual names
         addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relMappings.relationshipTypIdToRelationshipName );
@@ -191,10 +191,10 @@ public class SchemaCalculator
         return results;
     }
 
-    private void scanEverythingBelongingToRelationships( RelationshipMappings relMappings, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    private void scanEverythingBelongingToRelationships( RelationshipMappings relMappings, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        try ( RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor( cursorTracer );
-                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorTracer, memoryTracker ) )
+        try ( RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor( cursorContext );
+                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorContext, memoryTracker ) )
         {
             dataRead.allRelationshipsScan( relationshipScanCursor );
             while ( relationshipScanCursor.next() )
@@ -249,10 +249,10 @@ public class SchemaCalculator
         }
     }
 
-    private void scanEverythingBelongingToNodes( NodeMappings nodeMappings, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    private void scanEverythingBelongingToNodes( NodeMappings nodeMappings, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( cursorTracer );
-                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorTracer, memoryTracker ) )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( cursorContext );
+                PropertyCursor propertyCursor = cursors.allocatePropertyCursor( cursorContext, memoryTracker ) )
         {
             dataRead.allNodesScan( nodeCursor );
             while ( nodeCursor.next() )

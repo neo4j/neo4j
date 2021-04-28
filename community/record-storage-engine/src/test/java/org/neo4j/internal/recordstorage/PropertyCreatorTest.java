@@ -31,7 +31,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -74,7 +74,7 @@ class PropertyCreatorTest
     private PropertyStore propertyStore;
     private PropertyCreator creator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> records;
-    private PageCursorTracer cursorTracer;
+    private CursorContext cursorContext;
 
     @BeforeEach
     void startStore()
@@ -86,8 +86,8 @@ class PropertyCreatorTest
         propertyStore = neoStores.getPropertyStore();
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, NULL ) );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        cursorTracer = pageCacheTracer.createPageCursorTracer( "propertyStore" );
-        creator = new PropertyCreator( propertyStore, new PropertyTraverser( NULL ), cursorTracer, INSTANCE );
+        cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "propertyStore" ) );
+        creator = new PropertyCreator( propertyStore, new PropertyTraverser( NULL ), cursorContext, INSTANCE );
     }
 
     @AfterEach
@@ -361,16 +361,16 @@ class PropertyCreatorTest
 
     private void assertZeroCursor()
     {
-        assertThat( cursorTracer.hits() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().hits() ).isZero();
+        assertThat( cursorContext.getCursorTracer().pins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().unpins() ).isZero();
     }
 
     private void assertOneCursor()
     {
-        assertThat( cursorTracer.hits() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
-        assertThat( cursorTracer.unpins() ).isOne();
+        assertThat( cursorContext.getCursorTracer().hits() ).isOne();
+        assertThat( cursorContext.getCursorTracer().pins() ).isOne();
+        assertThat( cursorContext.getCursorTracer().unpins() ).isOne();
     }
 
     private void existingChain( ExpectedRecord... initialRecords )
@@ -378,7 +378,7 @@ class PropertyCreatorTest
         PropertyRecord prev = null;
         for ( ExpectedRecord initialRecord : initialRecords )
         {
-            PropertyRecord record = this.records.create( propertyStore.nextId( cursorTracer ), primitive.record, NULL ).forChangingData();
+            PropertyRecord record = this.records.create( propertyStore.nextId( cursorContext ), primitive.record, NULL ).forChangingData();
             record.setInUse( true );
             existingRecord( record, initialRecord );
 
@@ -403,7 +403,7 @@ class PropertyCreatorTest
         for ( ExpectedProperty initialProperty : initialRecord.properties )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, cursorTracer, INSTANCE );
+            propertyStore.encodeValue( block, initialProperty.key, initialProperty.value, cursorContext, INSTANCE );
             record.addPropertyBlock( block );
         }
         assertTrue( record.size() <= PropertyType.getPayloadSize() );

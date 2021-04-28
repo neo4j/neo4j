@@ -35,7 +35,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -82,22 +82,22 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         return nameStore;
     }
 
-    public List<NamedToken> getTokens( PageCursorTracer cursorTracer )
+    public List<NamedToken> getTokens( CursorContext cursorContext )
     {
-        return readAllTokens( false, cursorTracer );
+        return readAllTokens( false, cursorContext );
     }
 
     /**
-     * Same as {@link #getTokens(PageCursorTracer)}, except tokens that cannot be read due to inconsistencies will just be ignored,
-     * while {@link #getTokens(PageCursorTracer)} would throw an exception in such cases.
+     * Same as {@link #getTokens(CursorContext)}, except tokens that cannot be read due to inconsistencies will just be ignored,
+     * while {@link #getTokens(CursorContext)} would throw an exception in such cases.
      * @return All tokens that could be read without any apparent problems.
      */
-    public List<NamedToken> getAllReadableTokens( PageCursorTracer cursorTracer )
+    public List<NamedToken> getAllReadableTokens( CursorContext cursorContext )
     {
-        return readAllTokens( true, cursorTracer );
+        return readAllTokens( true, cursorContext );
     }
 
-    private List<NamedToken> readAllTokens( boolean ignoreInconsistentTokens, PageCursorTracer cursorTracer )
+    private List<NamedToken> readAllTokens( boolean ignoreInconsistentTokens, CursorContext cursorContext )
     {
         long highId = getHighId();
         ArrayList<NamedToken> records = new ArrayList<>();
@@ -105,7 +105,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         RECORD record = newRecord();
         for ( int i = 0; i < highId; i++ )
         {
-            if ( !getRecord( i, record, RecordLoad.LENIENT_CHECK, cursorTracer ).inUse() )
+            if ( !getRecord( i, record, RecordLoad.LENIENT_CHECK, cursorContext ).inUse() )
             {
                 continue;
             }
@@ -114,7 +114,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             {
                 try
                 {
-                    String name = getStringFor( record, cursorTracer );
+                    String name = getStringFor( record, cursorContext );
                     records.add( new NamedToken( name, i, record.isInternal() ) );
                 }
                 catch ( Exception e )
@@ -129,34 +129,34 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         return records;
     }
 
-    public NamedToken getToken( int id, PageCursorTracer cursorTracer )
+    public NamedToken getToken( int id, CursorContext cursorContext )
     {
-        RECORD record = getRecord( id, newRecord(), NORMAL, cursorTracer );
-        return new NamedToken( getStringFor( record, cursorTracer ), record.getIntId(), record.isInternal() );
+        RECORD record = getRecord( id, newRecord(), NORMAL, cursorContext );
+        return new NamedToken( getStringFor( record, cursorContext ), record.getIntId(), record.isInternal() );
     }
 
-    public Collection<DynamicRecord> allocateNameRecords( byte[] chars, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public Collection<DynamicRecord> allocateNameRecords( byte[] chars, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         Collection<DynamicRecord> records = HeapTrackingCollections.newArrayList( memoryTracker );
-        nameStore.allocateRecordsFromBytes( records, chars, cursorTracer, memoryTracker );
+        nameStore.allocateRecordsFromBytes( records, chars, cursorContext, memoryTracker );
         return records;
     }
 
     @Override
-    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, PageCursorTracer cursorTracer )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext )
     {
-        super.updateRecord( record, idUpdateListener, cursor, cursorTracer );
+        super.updateRecord( record, idUpdateListener, cursor, cursorContext );
         if ( !record.isLight() )
         {
             for ( DynamicRecord keyRecord : record.getNameRecords() )
             {
-                nameStore.updateRecord( keyRecord, idUpdateListener, cursorTracer );
+                nameStore.updateRecord( keyRecord, idUpdateListener, cursorContext );
             }
         }
     }
 
     @Override
-    public void ensureHeavy( RECORD record, PageCursorTracer cursorTracer )
+    public void ensureHeavy( RECORD record, CursorContext cursorContext )
     {
         if ( !record.isLight() )
         {
@@ -165,12 +165,12 @@ public abstract class TokenStore<RECORD extends TokenRecord>
 
         // Guard for cycles in the name chain, since this might be called by the consistency checker on an inconsistent store.
         // This will throw an exception if there's a cycle, and we'll just ignore those tokens at this point.
-        record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true, cursorTracer ) );
+        record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true, cursorContext ) );
     }
 
-    public String getStringFor( RECORD nameRecord, PageCursorTracer cursorTracer )
+    public String getStringFor( RECORD nameRecord, CursorContext cursorContext )
     {
-        ensureHeavy( nameRecord, cursorTracer );
+        ensureHeavy( nameRecord, cursorContext );
         int recordToFind = nameRecord.getNameId();
         Iterator<DynamicRecord> records = nameRecord.getNameRecords().iterator();
         Collection<DynamicRecord> relevantRecords = new ArrayList<>();
@@ -184,6 +184,6 @@ public abstract class TokenStore<RECORD extends TokenRecord>
                 records = nameRecord.getNameRecords().iterator();
             }
         }
-        return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING, cursorTracer ).other() );
+        return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING, cursorContext ).other() );
     }
 }

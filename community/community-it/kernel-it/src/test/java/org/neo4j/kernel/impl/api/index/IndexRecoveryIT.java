@@ -47,7 +47,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -164,7 +164,7 @@ class IndexRecoveryIT
 
         killFuture.get();
 
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( InternalIndexState.POPULATING );
         Semaphore recoverySemaphore = new Semaphore( 0 );
         try
         {
@@ -221,7 +221,7 @@ class IndexRecoveryIT
         }
 
         // When
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( InternalIndexState.POPULATING );
         populationSemaphore = new Semaphore( 1 );
         try
         {
@@ -257,9 +257,9 @@ class IndexRecoveryIT
         when( mockedIndexProvider
                 .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
                 .thenReturn( populator );
-        when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
+        when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
-        when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
+        when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ), any( CursorContext.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
         when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
@@ -270,7 +270,7 @@ class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( ONLINE );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( writer );
@@ -309,7 +309,7 @@ class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( PageCursorTracer.class ) ) ).thenReturn( InternalIndexState.FAILED );
+        when( mockedIndexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) ).thenReturn( InternalIndexState.FAILED );
 
         // When
         startDb();
@@ -454,7 +454,7 @@ class IndexRecoveryIT
         private final Set<IndexEntryUpdate<?>> batchedUpdates = new HashSet<>();
 
         @Override
-        public IndexUpdater newUpdater( final IndexUpdateMode mode, PageCursorTracer cursorTracer )
+        public IndexUpdater newUpdater( final IndexUpdateMode mode, CursorContext cursorContext )
         {
             return new CollectingIndexUpdater( updates ->
             {

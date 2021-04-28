@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
 {
@@ -56,7 +56,7 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
         }
 
         @Override
-        public TransactionEvent beginTransaction( PageCursorTracer cursorTracer )
+        public TransactionEvent beginTransaction( CursorContext cursorContext )
         {
             return TransactionEvent.NULL;
         }

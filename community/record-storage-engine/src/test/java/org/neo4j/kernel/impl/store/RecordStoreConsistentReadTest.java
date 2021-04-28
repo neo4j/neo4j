@@ -32,7 +32,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
@@ -85,7 +85,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     protected S initialiseStore( NeoStores neoStores )
     {
         S store = getStore( neoStores );
-        store.updateRecord( createExistingRecord( false ), PageCursorTracer.NULL );
+        store.updateRecord( createExistingRecord( false ), CursorContext.NULL );
         return store;
     }
 
@@ -101,14 +101,14 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
 
     protected R getHeavy( S store, long id )
     {
-        R record = store.getRecord( id, store.newRecord(), NORMAL, PageCursorTracer.NULL );
-        store.ensureHeavy( record, PageCursorTracer.NULL );
+        R record = store.getRecord( id, store.newRecord(), NORMAL, CursorContext.NULL );
+        store.ensureHeavy( record, CursorContext.NULL );
         return record;
     }
 
     R getForce( S store, int id )
     {
-        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE, PageCursorTracer.NULL );
+        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE, CursorContext.NULL );
     }
 
     @Test

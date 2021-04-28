@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -44,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
@@ -96,23 +97,25 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
         buildTree( values );
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorTracer = pageCacheTracer.createPageCursorTracer( "testTracer" );
+        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "testTracer" ) );
 
-        assertZeroCursor( cursorTracer );
+        assertZeroCursor( cursorContext );
 
         try ( GBPTree<GenericKey,NativeIndexValue> gbpTree = getTree() )
         {
             FullScanNonUniqueIndexSampler<GenericKey,NativeIndexValue> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
-            sampler.sample( cursorTracer );
+            sampler.sample( cursorContext );
         }
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 1 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
         assertThat( cursorTracer.faults() ).isEqualTo( 1 );
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.faults() ).isZero();

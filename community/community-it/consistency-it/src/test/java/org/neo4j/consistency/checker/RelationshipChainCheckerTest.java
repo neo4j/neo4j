@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.LongRange;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -192,9 +192,9 @@ class RelationshipChainCheckerTest extends CheckerTestBase
         RelationshipStore relationshipStore = context( numberOfThreads() ).neoStores.getRelationshipStore();
         RelationshipRecord arbitraryRelationship =
                 relationshipStore.getRecord( relationshipIds[relationshipIds.length / 2], relationshipStore.newRecord(), NORMAL,
-                        PageCursorTracer.NULL );
+                        CursorContext.NULL );
         vandal.accept( arbitraryRelationship );
-        relationshipStore.updateRecord( arbitraryRelationship, PageCursorTracer.NULL );
+        relationshipStore.updateRecord( arbitraryRelationship, CursorContext.NULL );
 
         // when
         check();
@@ -227,11 +227,11 @@ class RelationshipChainCheckerTest extends CheckerTestBase
 
         try ( var tx = tx() )
         {
-            RelationshipRecord first = relationshipStore.getRecord( firstRelationshipId, relationshipStore.newRecord(), NORMAL, PageCursorTracer.NULL );
-            RelationshipRecord second = relationshipStore.getRecord( secondRelationshipId, relationshipStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+            RelationshipRecord first = relationshipStore.getRecord( firstRelationshipId, relationshipStore.newRecord(), NORMAL, CursorContext.NULL );
+            RelationshipRecord second = relationshipStore.getRecord( secondRelationshipId, relationshipStore.newRecord(), NORMAL, CursorContext.NULL );
             vandal.accept( first, second );
-            relationshipStore.updateRecord( first, PageCursorTracer.NULL );
-            relationshipStore.updateRecord( second, PageCursorTracer.NULL );
+            relationshipStore.updateRecord( first, CursorContext.NULL );
+            relationshipStore.updateRecord( second, CursorContext.NULL );
         }
 
         // when

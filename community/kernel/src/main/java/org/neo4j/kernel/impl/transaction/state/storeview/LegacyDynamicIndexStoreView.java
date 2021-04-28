@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -96,9 +96,9 @@ public class LegacyDynamicIndexStoreView implements IndexStoreView
 
     private boolean useAllNodeStoreScan( int[] labelIds, PageCacheTracer cacheTracer )
     {
-        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( ALL_NODE_STORE_SCAN_TAG ) )
+        try ( CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( ALL_NODE_STORE_SCAN_TAG ) ) )
         {
-            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore( cursorTracer );
+            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore( cursorContext );
         }
         catch ( Exception e )
         {
@@ -107,14 +107,14 @@ public class LegacyDynamicIndexStoreView implements IndexStoreView
         }
     }
 
-    private boolean isEmptyLabelScanStore( PageCursorTracer cursorTracer ) throws Exception
+    private boolean isEmptyLabelScanStore( CursorContext cursorContext ) throws Exception
     {
-        return labelScanStore.isEmpty( cursorTracer );
+        return labelScanStore.isEmpty( cursorContext );
     }
 
     @Override
-    public NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        return fullScanStoreView.newPropertyAccessor( cursorTracer, memoryTracker );
+        return fullScanStoreView.newPropertyAccessor( cursorContext, memoryTracker );
     }
 }

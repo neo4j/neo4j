@@ -42,7 +42,7 @@ import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
@@ -64,7 +64,7 @@ object QueryStateHelper extends MockitoSugar {
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: Array[AnyValue] = Array.empty,
-                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE),
+                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], CursorContext.NULL, EmptyMemoryTracker.INSTANCE),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 nodeTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
                 relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
@@ -89,7 +89,7 @@ object QueryStateHelper extends MockitoSugar {
     emptyWith(db = db,
       query = queryContext,
       params = params,
-      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.pageCursorTracer(), transactionalContext.transaction.memoryTracker()),
+      expressionCursors = new ExpressionCursors(transactionalContext.cursors, transactionalContext.transaction.cursorContext(), transactionalContext.transaction.memoryTracker()),
       subscriber = subscriber)
   }
 

@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -48,14 +48,14 @@ public class StubTokenIndexReader implements TokenIndexReader
     }
 
     @Override
-    public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, PageCursorTracer cursorTracer )
+    public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, CursorContext cursorContext )
     {
         index.forEach( ( token, entities ) -> client.initialize( new StubIndexProgressor( client, entities ), token.intValue(), IndexOrder.NONE ) );
     }
 
     @Override
     public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, EntityRange range,
-                       PageCursorTracer cursorTracer )
+                       CursorContext cursorContext )
     {
         index.forEach( ( token, entities ) -> client.initialize( new StubIndexProgressor( client, entities ), token.intValue(), IndexOrder.NONE ) );
     }

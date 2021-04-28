@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
@@ -118,7 +118,7 @@ public class IndexPopulationJob implements Runnable
     @Override
     public void run()
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_POPULATION_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_POPULATION_TAG ) ) )
         {
             if ( !multiPopulator.hasPopulators() )
             {
@@ -131,23 +131,23 @@ public class IndexPopulationJob implements Runnable
 
             try
             {
-                multiPopulator.create( cursorTracer );
-                multiPopulator.resetIndexCounts( cursorTracer );
+                multiPopulator.create( cursorContext );
+                multiPopulator.resetIndexCounts( cursorContext );
 
                 monitor.indexPopulationScanStarting();
                 indexAllEntities( pageCacheTracer );
                 monitor.indexPopulationScanComplete();
                 if ( stopped )
                 {
-                    multiPopulator.stop( cursorTracer );
+                    multiPopulator.stop( cursorContext );
                     // We remain in POPULATING state
                     return;
                 }
-                multiPopulator.flipAfterStoreScan( verifyBeforeFlipping, cursorTracer );
+                multiPopulator.flipAfterStoreScan( verifyBeforeFlipping, cursorContext );
             }
             catch ( Throwable t )
             {
-                multiPopulator.cancel( t, cursorTracer );
+                multiPopulator.cancel( t, cursorContext );
             }
         }
         finally
@@ -199,9 +199,9 @@ public class IndexPopulationJob implements Runnable
      * Stop population of specific index. Index will remain in {@link InternalIndexState#POPULATING populating state} to be rebuilt on next db start up.
      * @param population {@link MultipleIndexPopulator.IndexPopulation} to be stopped.
      */
-    void stop( MultipleIndexPopulator.IndexPopulation population, PageCursorTracer cursorTracer )
+    void stop( MultipleIndexPopulator.IndexPopulation population, CursorContext cursorContext )
     {
-        multiPopulator.stop( population, cursorTracer );
+        multiPopulator.stop( population, cursorContext );
     }
 
     /**

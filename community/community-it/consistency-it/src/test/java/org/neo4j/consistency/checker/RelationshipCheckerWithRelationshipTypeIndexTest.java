@@ -40,7 +40,7 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -78,7 +78,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ), PageCursorTracer.NULL );
+                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ), CursorContext.NULL );
         // The Relationship Type Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         rtiDescriptor = indexDescriptors[0];
@@ -389,9 +389,9 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
 
     private long createStoreEntry( int type )
     {
-        long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
-        long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
-        long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
+        long relationship = relationshipStore.nextId( CursorContext.NULL );
+        long node1 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
+        long node2 = nodePlusCached( nodeStore.nextId( CursorContext.NULL ), NULL, relationship );
         relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
         return relationship;
     }
@@ -399,9 +399,9 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     private void notInUse( long relationshipId )
     {
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.NORMAL, PageCursorTracer.NULL );
+        relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.NORMAL, CursorContext.NULL );
         relationshipRecord.setInUse( false );
-        relationshipStore.updateRecord( relationshipRecord, PageCursorTracer.NULL );
+        relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
     }
 
     private void check() throws Exception
@@ -416,7 +416,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
 
     private IndexUpdater relationshipTypeIndexWriter()
     {
-        return rtiProxy.newUpdater( IndexUpdateMode.ONLINE, PageCursorTracer.NULL );
+        return rtiProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
     }
 
     private enum Density

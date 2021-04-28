@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckStrategy.Buck
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 public class DuplicateCheckingCollector extends SimpleCollector
 {

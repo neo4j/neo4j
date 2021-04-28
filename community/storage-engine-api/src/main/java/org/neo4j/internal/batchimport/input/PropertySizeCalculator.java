@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
 public interface PropertySizeCalculator
 {
-    int calculateSize( Value[] values, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    int calculateSize( Value[] values, CursorContext cursorContext, MemoryTracker memoryTracker );
 }

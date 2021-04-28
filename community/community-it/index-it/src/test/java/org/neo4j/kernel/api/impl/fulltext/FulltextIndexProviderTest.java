@@ -73,7 +73,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -532,13 +532,13 @@ class FulltextIndexProviderTest
 
                 StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(),
                         cacheTracer, writable() );
-                var cursorTracer = PageCursorTracer.NULL;
+                var cursorContext = CursorContext.NULL;
                 try ( NeoStores neoStores = factory.openAllNeoStores( false ) )
                 {
-                    TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores, PageCursorTracer.NULL );
+                    TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores, CursorContext.NULL );
                     SchemaStore schemaStore = neoStores.getSchemaStore();
                     SchemaStorage storage = new SchemaStorage( schemaStore, tokens, () -> KernelVersion.LATEST, false );
-                    IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule( indexId, PageCursorTracer.NULL );
+                    IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule( indexId, CursorContext.NULL );
                     Map<String,Value> indexConfigMap = new HashMap<>( index.getIndexConfig().asMap() );
                     for ( Map.Entry<String,Value> entry : indexConfigMap.entrySet() )
                     {
@@ -548,8 +548,8 @@ class FulltextIndexProviderTest
                         }
                     }
                     index = index.withIndexConfig( IndexConfig.with( indexConfigMap ) );
-                    storage.writeSchemaRule( index, cursorTracer, INSTANCE );
-                    schemaStore.flush( cursorTracer );
+                    storage.writeSchemaRule( index, cursorContext, INSTANCE );
+                    schemaStore.flush( cursorContext );
                 }
             }
             catch ( Exception e )
@@ -1170,7 +1170,7 @@ class FulltextIndexProviderTest
     {
         List<Long> expectedResult = Arrays.asList( expectedResultArray );
         IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( NAME ) );
-        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
         {
             List<Long> actualResult = new ArrayList<>();
             ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), query );
@@ -1298,7 +1298,7 @@ class FulltextIndexProviderTest
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "fulltext" ) );
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().nodeIndexSeek( index, cursor, unconstrained(), fulltextSearch( "value" ) );
                 assertTrue( cursor.next() );
@@ -1331,7 +1331,7 @@ class FulltextIndexProviderTest
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
             IndexDescriptor index = ktx.schemaRead().indexGetForName( "fulltext" );
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "valuuu" ) );
                 assertTrue( cursor.next() );

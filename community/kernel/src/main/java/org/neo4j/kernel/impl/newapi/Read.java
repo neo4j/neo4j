@@ -45,7 +45,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -78,16 +78,16 @@ abstract class Read implements TxStateHolder,
 {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
-    protected final PageCursorTracer cursorTracer;
+    protected final CursorContext cursorContext;
     final KernelTransactionImplementation ktx;
     private final boolean scanStoreAsTokenIndexEnabled;
 
-    Read( StorageReader storageReader, DefaultPooledCursors cursors, PageCursorTracer cursorTracer,
+    Read( StorageReader storageReader, DefaultPooledCursors cursors, CursorContext cursorContext,
             KernelTransactionImplementation ktx, Config config )
     {
         this.storageReader = storageReader;
         this.cursors = cursors;
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
         this.ktx = ktx;
         this.scanStoreAsTokenIndexEnabled = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
@@ -222,8 +222,8 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
-        IndexProgressor progressor = labelScan.initialize( indexCursor, order, cursorTracer );
+        TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorContext );
+        IndexProgressor progressor = labelScan.initialize( indexCursor, order, cursorContext );
         indexCursor.initialize( progressor, label, order );
     }
 
@@ -231,7 +231,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
-        return new NodeLabelIndexCursorScan( this, label, labelScanReader().entityTokenScan( label, cursorTracer ), cursorTracer );
+        return new NodeLabelIndexCursorScan( this, label, labelScanReader().entityTokenScan( label, cursorContext ), cursorContext );
     }
 
     @Override
@@ -255,7 +255,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( indexCursor, constraints, query, cursorTracer );
+        tokenSession.reader.query( indexCursor, constraints, query, cursorContext );
     }
 
     @Override
@@ -269,7 +269,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeCursor> allNodesScan()
     {
         ktx.assertOpen();
-        return new NodeCursorScan( storageReader.allNodeScan(), this, cursorTracer );
+        return new NodeCursorScan( storageReader.allNodeScan(), this, cursorContext );
     }
 
     @Override
@@ -297,7 +297,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<RelationshipScanCursor> allRelationshipsScan()
     {
         ktx.assertOpen();
-        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this, cursorTracer );
+        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this, cursorContext );
     }
 
     @Override
@@ -322,7 +322,7 @@ abstract class Read implements TxStateHolder,
 
         var indexCursor = (DefaultRelationshipTypeIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( indexCursor, constraints, query, cursorTracer );
+        tokenSession.reader.query( indexCursor, constraints, query, cursorContext );
     }
 
     @Override

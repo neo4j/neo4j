@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 @FunctionalInterface
 public interface MarkerProvider
 {
-    IndexedIdGenerator.ReservedMarker getMarker( PageCursorTracer cursorTracer );
+    IndexedIdGenerator.ReservedMarker getMarker( CursorContext cursorContext );
 }

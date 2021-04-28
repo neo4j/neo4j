@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -59,7 +59,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -137,7 +137,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
             IndexEntryUpdate<SchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
             p.add( singletonList( update ), NULL );
             // ...is the same as update using updater
-            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorTracer ) -> propertyValue, NULL ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorContext ) -> propertyValue, NULL ) )
             {
                 updater.process( update );
             }
@@ -310,7 +310,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
         }
     }
 
-    private Value valueSet1Lookup( long nodeId, @SuppressWarnings( "unused" ) int propertyId, PageCursorTracer cursorTracer )
+    private Value valueSet1Lookup( long nodeId, @SuppressWarnings( "unused" ) int propertyId, CursorContext cursorContext )
     {
         for ( NodeAndValue x : valueSet1 )
         {

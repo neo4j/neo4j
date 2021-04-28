@@ -48,7 +48,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -93,10 +93,10 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <ol>
  * <li>Instantiation.</li>
  * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy, FailedIndexProxyFactory)}.</li>
- * <li>Call to {@link #create(PageCursorTracer)} to create data structures and files to start accepting updates.</li>
+ * <li>Call to {@link #create(CursorContext)} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #createStoreScan(PageCacheTracer)} and {@link StoreScan#run(StoreScan.ExternalUpdatesCheck)}(blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
- * <li>Call to {@link #flipAfterStoreScan(boolean, PageCursorTracer)} after successful population, or {@link #cancel(Throwable, PageCursorTracer)} if not</li>
+ * <li>Call to {@link #flipAfterStoreScan(boolean, CursorContext)} after successful population, or {@link #cancel(Throwable, CursorContext)} if not</li>
  * </ol>
  * <p>
  * It is possible for concurrent updates from transactions to arrive while index population is in progress. Such
@@ -104,7 +104,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * queue size has reached {@link #queueThreshold} then it drains all batched updates and waits for all job scheduler
  * tasks to complete and flushes updates from the queue using {@link MultipleIndexUpdater}. If queue size never reaches
  * {@link #queueThreshold} than all queued concurrent updates are flushed after the store scan in
- * {@link MultipleIndexPopulator#flipAfterStoreScan(boolean, PageCursorTracer)}.
+ * {@link MultipleIndexPopulator#flipAfterStoreScan(boolean, CursorContext)}.
  * <p>
  */
 public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
@@ -136,7 +136,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     private final SchemaState schemaState;
     private final PhaseTracker phaseTracker;
     private final JobScheduler jobScheduler;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final TokenNameLookup tokenNameLookup;
     private final PageCacheTracer cacheTracer;
@@ -148,9 +148,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             MemoryTracker memoryTracker, String databaseName, Subject subject, Config config )
     {
         this.storeView = storeView;
-        this.cursorTracer = cacheTracer.createPageCursorTracer( MULTIPLE_INDEX_POPULATOR_TAG );
+        this.cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( MULTIPLE_INDEX_POPULATOR_TAG ) );
         this.memoryTracker = memoryTracker;
-        this.propertyAccessor = storeView.newPropertyAccessor( cursorTracer, memoryTracker );
+        this.propertyAccessor = storeView.newPropertyAccessor( cursorContext, memoryTracker );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
@@ -186,13 +186,13 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         return !populations.isEmpty();
     }
 
-    public void create( PageCursorTracer cursorTracer )
+    public void create( CursorContext cursorContext )
     {
         forEachPopulation( population ->
         {
             log.info( "Index population started: [%s]", population.userDescription( tokenNameLookup ) );
             population.create();
-        }, cursorTracer );
+        }, cursorContext );
     }
 
     StoreScan createStoreScan( PageCacheTracer cacheTracer )
@@ -248,11 +248,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
      *
      * @param failure the cause.
      */
-    public void cancel( Throwable failure, PageCursorTracer cursorTracer )
+    public void cancel( Throwable failure, CursorContext cursorContext )
     {
         for ( IndexPopulation population : populations )
         {
-            cancel( population, failure, cursorTracer );
+            cancel( population, failure, cursorContext );
         }
     }
 
@@ -263,7 +263,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
      * @param population Index population to cancel.
      * @param failure the cause.
      */
-    protected void cancel( IndexPopulation population, Throwable failure, PageCursorTracer cursorTracer )
+    protected void cancel( IndexPopulation population, Throwable failure, CursorContext cursorContext )
     {
         if ( !removeFromOngoingPopulations( population ) )
         {
@@ -294,7 +294,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         try
         {
             population.populator.markAsFailed( indexPopulationFailure.asString() );
-            population.populator.close( false, cursorTracer );
+            population.populator.close( false, cursorContext );
         }
         catch ( Throwable e )
         {
@@ -303,15 +303,15 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     }
 
     @VisibleForTesting
-    MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, PageCursorTracer cursorTracer )
+    MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
         Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
         forEachPopulation( population ->
         {
-            IndexUpdater updater = population.populator.newPopulatingUpdater( accessor, cursorTracer );
+            IndexUpdater updater = population.populator.newPopulatingUpdater( accessor, cursorContext );
             updaters.put( population.schema(), Pair.of( population, updater ) );
-        }, cursorTracer );
-        return new MultipleIndexUpdater( this, updaters, logProvider, cursorTracer );
+        }, cursorContext );
+        return new MultipleIndexUpdater( this, updaters, logProvider, cursorContext );
     }
 
     /**
@@ -319,19 +319,19 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
      * This means population job has finished, successfully or unsuccessfully and resources can be released.
      *
      * Note that {@link IndexPopulation index populations} cannot be closed. Instead, the underlying
-     * {@link IndexPopulator index populator} is closed by {@link #flipAfterStoreScan(boolean, PageCursorTracer)},
-     * {@link #cancel(IndexPopulation, Throwable, PageCursorTracer)} or {@link #stop(IndexPopulation, PageCursorTracer)}.
+     * {@link IndexPopulator index populator} is closed by {@link #flipAfterStoreScan(boolean, CursorContext)},
+     * {@link #cancel(IndexPopulation, Throwable, CursorContext)} or {@link #stop(IndexPopulation, CursorContext)}.
      */
     public void close()
     {
         phaseTracker.stop();
         propertyAccessor.close();
-        cursorTracer.close();
+        cursorContext.close();
     }
 
-    void resetIndexCounts( PageCursorTracer cursorTracer )
+    void resetIndexCounts( CursorContext cursorContext )
     {
-        forEachPopulation( this::resetIndexCountsForPopulation, cursorTracer );
+        forEachPopulation( this::resetIndexCountsForPopulation, cursorContext );
     }
 
     private void resetIndexCountsForPopulation( IndexPopulation indexPopulation )
@@ -352,18 +352,18 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
      *
      * @param verifyBeforeFlipping Whether to verify deferred constraints before flipping index proxy. This is used by batch inserter.
      */
-    void flipAfterStoreScan( boolean verifyBeforeFlipping, PageCursorTracer cursorTracer )
+    void flipAfterStoreScan( boolean verifyBeforeFlipping, CursorContext cursorContext )
     {
         for ( IndexPopulation population : populations )
         {
             try
             {
-                population.scanCompleted( cursorTracer );
-                population.flip( verifyBeforeFlipping, cursorTracer );
+                population.scanCompleted( cursorContext );
+                population.flip( verifyBeforeFlipping, cursorContext );
             }
             catch ( Throwable t )
             {
-                cancel( population, t, cursorTracer );
+                cancel( population, t, cursorContext );
             }
         }
     }
@@ -387,9 +387,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
      * Stop all {@link IndexPopulation index populations}, closing backing {@link IndexPopulator index populators},
      * keeping them in {@link InternalIndexState#POPULATING populating state}.
      */
-    public void stop( PageCursorTracer cursorTracer )
+    public void stop( CursorContext cursorContext )
     {
-        forEachPopulation( population -> this.stop( population, cursorTracer ), cursorTracer );
+        forEachPopulation( population -> this.stop( population, cursorContext ), cursorContext );
     }
 
     /**
@@ -397,9 +397,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
      * keeping it in {@link InternalIndexState#POPULATING populating state}.
      * @param indexPopulation {@link IndexPopulation} to stop.
      */
-    void stop( IndexPopulation indexPopulation, PageCursorTracer cursorTracer )
+    void stop( IndexPopulation indexPopulation, CursorContext cursorContext )
     {
-        indexPopulation.disconnectAndStop( cursorTracer );
+        indexPopulation.disconnectAndStop( cursorContext );
     }
 
     /**
@@ -437,7 +437,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         }
 
         long updateByteSizeDrained = 0;
-        try ( MultipleIndexUpdater updater = newPopulatingUpdater( propertyAccessor, cursorTracer ) )
+        try ( MultipleIndexUpdater updater = newPopulatingUpdater( propertyAccessor, cursorContext ) )
         {
             do
             {
@@ -469,7 +469,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         }
     }
 
-    private void forEachPopulation( ThrowingConsumer<IndexPopulation,Exception> action, PageCursorTracer cursorTracer )
+    private void forEachPopulation( ThrowingConsumer<IndexPopulation,Exception> action, CursorContext cursorContext )
     {
         for ( IndexPopulation population : populations )
         {
@@ -479,7 +479,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             }
             catch ( Throwable failure )
             {
-                cancel( population, failure, cursorTracer );
+                cancel( population, failure, cursorContext );
             }
         }
     }
@@ -521,15 +521,15 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         private final Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
         private final Log log;
-        private final PageCursorTracer cursorTracer;
+        private final CursorContext cursorContext;
 
         MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
-                Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider, PageCursorTracer cursorTracer )
+                Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider, CursorContext cursorContext )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;
             this.log = logProvider.getLog( getClass() );
-            this.cursorTracer = cursorTracer;
+            this.cursorContext = cursorContext;
         }
 
         @Override
@@ -557,7 +557,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                         log.error( format( "Failed to close index updater: [%s]", updater ), ce );
                     }
                     populationsWithUpdaters.remove( update.indexKey().schema() );
-                    multipleIndexPopulator.cancel( population, t, cursorTracer );
+                    multipleIndexPopulator.cancel( population, t, cursorContext );
                 }
             }
         }
@@ -576,7 +576,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                 }
                 catch ( Throwable t )
                 {
-                    multipleIndexPopulator.cancel( population, t, cursorTracer );
+                    multipleIndexPopulator.cancel( population, t, cursorContext );
                 }
             }
             populationsWithUpdaters.clear();
@@ -626,9 +626,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
          * Disconnect this single {@link IndexPopulation index population} from ongoing multiple index population
          * and close {@link IndexPopulator index populator}, leaving it in {@link InternalIndexState#POPULATING populating state}.
          */
-        void disconnectAndStop( PageCursorTracer cursorTracer )
+        void disconnectAndStop( CursorContext cursorContext )
         {
-            disconnect( () -> populator.close( false, cursorTracer ) );
+            disconnect( () -> populator.close( false, cursorContext ) );
         }
 
         /**
@@ -661,7 +661,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             }
         }
 
-        void flip( boolean verifyBeforeFlipping, PageCursorTracer cursorTracer ) throws FlipFailedKernelException
+        void flip( boolean verifyBeforeFlipping, CursorContext cursorContext ) throws FlipFailedKernelException
         {
             phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
             flipper.flip( () ->
@@ -680,10 +680,10 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                             }
                             if ( indexProxyStrategy.getIndexDescriptor().getIndexType() != IndexType.LOOKUP )
                             {
-                                IndexSample sample = populator.sample( cursorTracer );
+                                IndexSample sample = populator.sample( cursorContext );
                                 indexProxyStrategy.replaceStatisticsForIndex( sample );
                             }
-                            populator.close( true, cursorTracer );
+                            populator.close( true, cursorContext );
                             schemaState.clear();
                             return true;
                         }
@@ -717,7 +717,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             return indexProxyStrategy.getIndexUserDescription();
         }
 
-        void scanCompleted( PageCursorTracer cursorTracer ) throws IndexEntryConflictException
+        void scanCompleted( CursorContext cursorContext ) throws IndexEntryConflictException
         {
             IndexPopulator.PopulationWorkScheduler populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
             {
@@ -730,7 +730,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                 }
             };
 
-            populator.scanCompleted( phaseTracker, populationWorkScheduler, cursorTracer );
+            populator.scanCompleted( phaseTracker, populationWorkScheduler, cursorContext );
         }
 
         PopulationProgress progress( PopulationProgress storeScanProgress )
@@ -760,9 +760,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                 @Override
                 public void process()
                 {
-                    try ( var cursorTracer = cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) )
+                    try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) ) )
                     {
-                        addFromScan( updates, cursorTracer );
+                        addFromScan( updates, cursorContext );
                     }
 
                     if ( printDebug )
@@ -781,7 +781,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             };
         }
 
-        private void addFromScan( List<EntityUpdates> entityUpdates, PageCursorTracer cursorTracer )
+        private void addFromScan( List<EntityUpdates> entityUpdates, CursorContext cursorContext )
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
             // EntityUpdates object. Therefore no additional properties need to be loaded.
@@ -799,11 +799,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             {
                 try
                 {
-                    entry.getKey().populator.add( entry.getValue(), cursorTracer );
+                    entry.getKey().populator.add( entry.getValue(), cursorContext );
                 }
                 catch ( Throwable e )
                 {
-                    cancel( entry.getKey(), e, cursorTracer );
+                    cancel( entry.getKey(), e, cursorContext );
                 }
             }
         }
@@ -836,11 +836,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                 {
                     try
                     {
-                        population.populator.add( updates, cursorTracer );
+                        population.populator.add( updates, cursorContext );
                     }
                     catch ( Throwable e )
                     {
-                        cancel( population, e, cursorTracer );
+                        cancel( population, e, cursorContext );
                     }
                 }
             };

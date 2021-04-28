@@ -22,13 +22,13 @@ package org.neo4j.counts;
 import java.io.IOException;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 /**
  * Store and accessor of entity counts. Counts changes revolves around one or a combination of multiple tokens and are applied as deltas.
  * This makes it necessary to tie all changes to transaction ids so that this store can tell whether or not to re-apply any given
- * set of changes during recovery. Changes are applied by making calls to {@link CountsAccessor.Updater} from {@link #apply(long, PageCursorTracer)}.
+ * set of changes during recovery. Changes are applied by making calls to {@link CountsAccessor.Updater} from {@link #apply(long, CursorContext)}.
  */
 public interface CountsStore extends CountsStorage, CountsAccessor
 {
@@ -36,15 +36,15 @@ public interface CountsStore extends CountsStorage, CountsAccessor
 
     /**
      * @param txId id of the transaction that produces the changes that are being applied.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @return an updater where count deltas are being applied onto.
      */
-    CountsAccessor.Updater apply( long txId, PageCursorTracer cursorTracer );
+    CountsAccessor.Updater apply( long txId, CursorContext cursorContext );
 
     class NullCountsStore implements CountsStore
     {
         @Override
-        public Updater apply( long txId, PageCursorTracer cursorTracer )
+        public Updater apply( long txId, CursorContext cursorContext )
         {
             return CountsAccessor.NO_OP_UPDATER;
         }
@@ -55,34 +55,34 @@ public interface CountsStore extends CountsStorage, CountsAccessor
         }
 
         @Override
-        public void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
+        public void start( CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
         {   // no-op
         }
 
         @Override
-        public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
+        public void checkpoint( CursorContext cursorContext ) throws IOException
         {   // no-op
         }
 
         @Override
-        public long nodeCount( int labelId, PageCursorTracer cursorTracer )
+        public long nodeCount( int labelId, CursorContext cursorContext )
         {
             return 0;
         }
 
         @Override
-        public long relationshipCount( int startLabelId, int typeId, int endLabelId, PageCursorTracer cursorTracer )
+        public long relationshipCount( int startLabelId, int typeId, int endLabelId, CursorContext cursorContext )
         {
             return 0;
         }
 
         @Override
-        public void accept( CountsVisitor visitor, PageCursorTracer cursorTracer )
+        public void accept( CountsVisitor visitor, CursorContext cursorContext )
         {   // no-op
         }
 
         @Override
-        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+        public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
         {
             return true;
         }

@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -49,7 +49,7 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable
     private final IdGeneratorFactory idGeneratorFactory;
     private final Loaders loaders;
 
-    public DirectRecordAccessSet( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory, PageCursorTracer cursorTracer )
+    public DirectRecordAccessSet( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory, CursorContext cursorContext )
     {
         RecordStore<NodeRecord> nodeStore = neoStores.getNodeStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
@@ -58,7 +58,7 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable
         RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         RecordStore<LabelTokenRecord> labelTokenStore = neoStores.getLabelTokenStore();
-        loaders = new Loaders( neoStores, cursorTracer );
+        loaders = new Loaders( neoStores, cursorContext );
         nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
         propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
         relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );

@@ -38,7 +38,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
@@ -103,8 +103,8 @@ class ReadEntityIdsStepUsingTokenIndexTest
                 {
                     add( new ReadEntityIdsStep( control(),
                                                 configuration,
-                                                cursorTracer -> new TokenIndexScanIdIterator(
-                                                        indexAccessor.newTokenReader(), new int[]{TOKEN_ID}, PageCursorTracer.NULL ),
+                                                cursorContext -> new TokenIndexScanIdIterator(
+                                                        indexAccessor.newTokenReader(), new int[]{TOKEN_ID}, CursorContext.NULL ),
                                                 NULL,
                                                 new ControlledUpdatesCheck( indexAccessor, expectedEntityIds ),
                                                 new AtomicBoolean( true ) ) );
@@ -122,7 +122,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
 
     private void populateTokenIndex( TokenIndexAccessor indexAccessor, BitSet entityIds, long count ) throws Exception
     {
-        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, PageCursorTracer.NULL ) )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL ) )
         {
             long id = 0;
             for ( int i = 0; i < count; i++ )
@@ -156,7 +156,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
         {
             // Apply some changes right in front of this point
             int numIds = random.nextInt( 5, 50 );
-            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, PageCursorTracer.NULL ) )
+            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, CursorContext.NULL ) )
             {
                 for ( int i = 0; i < numIds; i++ )
                 {
@@ -186,7 +186,7 @@ class ReadEntityIdsStepUsingTokenIndexTest
         }
 
         @Override
-        protected void process( long[] entityIds, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
+        protected void process( long[] entityIds, BatchSender sender, CursorContext cursorContext ) throws Throwable
         {
             for ( long entityId : entityIds )
             {

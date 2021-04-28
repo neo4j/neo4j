@@ -29,7 +29,7 @@ import org.neo4j.internal.batchimport.staging.ProducerStep;
 import org.neo4j.internal.batchimport.staging.RecordDataAssembler;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -59,8 +59,8 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
     @Override
     protected void process()
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( READ_RELATIONSHIP_GROUPS_STEP_TAG );
-              NodeVisitor visitor = new NodeVisitor( cursorTracer ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( READ_RELATIONSHIP_GROUPS_STEP_TAG ) );
+              NodeVisitor visitor = new NodeVisitor( cursorContext ) )
         {
             cache.visitChangedNodes( visitor, NodeType.NODE_TYPE_DENSE );
         }
@@ -70,14 +70,14 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
     {
         private final RecordDataAssembler<RelationshipGroupRecord> assembler = new RecordDataAssembler<>( store::newRecord,
                 false /*In this scenario we know exactly which node IDs we're visiting, so we can be a bit more strict*/ );
-        private final PageCursorTracer cursorTracer;
+        private final CursorContext cursorContext;
         private RelationshipGroupRecord[] batch = get();
         private int cursor;
         private long time = nanoTime();
 
-        NodeVisitor( PageCursorTracer cursorTracer )
+        NodeVisitor( CursorContext cursorContext )
         {
-            this.cursorTracer = cursorTracer;
+            this.cursorContext = cursorContext;
         }
 
         @Override
@@ -89,7 +89,7 @@ public class ReadGroupRecordsByCacheStep extends ProducerStep
         @Override
         public long visit( long nodeId, int typeId, long out, long in, long loop )
         {
-            long id = store.nextId( cursorTracer );
+            long id = store.nextId( cursorContext );
             RelationshipGroupRecord record = batch[cursor++];
             record.setId( id );
             record.initialize( true, typeId, out, in, loop, nodeId, loop );

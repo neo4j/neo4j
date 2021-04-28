@@ -33,7 +33,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -68,9 +68,9 @@ public class SchemaStore35 extends AbstractDynamicStore
 
     @VisibleForTesting
     @Override
-    public void initialise( boolean createIfNotExists, PageCursorTracer pageCursorTracer )
+    public void initialise( boolean createIfNotExists, CursorContext cursorContext )
     {
-        super.initialise( createIfNotExists, pageCursorTracer );
+        super.initialise( createIfNotExists, cursorContext );
     }
 
     static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer ) throws MalformedSchemaRuleException

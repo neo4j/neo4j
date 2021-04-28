@@ -34,6 +34,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -45,6 +47,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.igno
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 public class GBPTreeBootstrapper implements Closeable
 {
@@ -110,9 +113,9 @@ public class GBPTreeBootstrapper implements Closeable
     private MetaVisitor<?,?> visitMeta( Path file ) throws IOException
     {
         MetaVisitor<?,?> metaVisitor = new MetaVisitor();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) ) )
         {
-            GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, file.getFileName().toString(), cursorTracer );
+            GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, file.getFileName().toString(), cursorContext );
         }
         return metaVisitor;
     }
@@ -120,9 +123,9 @@ public class GBPTreeBootstrapper implements Closeable
     private StateVisitor<?,?> visitState( Path file ) throws IOException
     {
         StateVisitor<?,?> stateVisitor = new StateVisitor();
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) ) )
         {
-            GBPTreeStructure.visitState( pageCache, file, stateVisitor, file.getFileName().toString(), cursorTracer );
+            GBPTreeStructure.visitState( pageCache, file, stateVisitor, file.getFileName().toString(), cursorContext );
         }
         return stateVisitor;
     }

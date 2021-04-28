@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -33,9 +33,9 @@ public class NodeCursorBehaviour implements EntityScanCursorBehaviour<StorageNod
     }
 
     @Override
-    public StorageNodeCursor allocateEntityScanCursor( PageCursorTracer cursorTracer )
+    public StorageNodeCursor allocateEntityScanCursor( CursorContext cursorContext )
     {
-        return storageReader.allocateNodeCursor( cursorTracer );
+        return storageReader.allocateNodeCursor( cursorContext );
     }
 
     @Override

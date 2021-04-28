@@ -76,8 +76,8 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -104,7 +104,8 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -1687,14 +1688,14 @@ class GBPTreeTest
 
         List<Long> trace = new ArrayList<>();
         MutableBoolean onOffSwitch = new MutableBoolean( true );
-        PageCursorTracer pageCursorTracer = trackingPageCursorTracer( trace, onOffSwitch );
+        CursorContext cursorContext = new CursorContext( trackingPageCursorTracer( trace, onOffSwitch ) );
 
         // Build a tree with root and two children.
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
         {
             // Insert data until we have a split in root
-            treeWithRootSplit( trace, tree, pageCursorTracer );
+            treeWithRootSplit( trace, tree, cursorContext );
             long corruptChild = trace.get( 1 );
 
             // We are not interested in further trace tracking
@@ -1706,7 +1707,7 @@ class GBPTreeTest
             assertThatThrownBy( () ->
                         {
                             // when seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
-                            try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), pageCursorTracer ) )
+                            try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), cursorContext ) )
                             {
                                 seek.next();
                             }
@@ -1722,14 +1723,14 @@ class GBPTreeTest
     {
         List<Long> trace = new ArrayList<>();
         MutableBoolean onOffSwitch = new MutableBoolean( true );
-        PageCursorTracer pageCursorTracer = trackingPageCursorTracer( trace, onOffSwitch );
+        CursorContext cursorContext = new CursorContext( trackingPageCursorTracer( trace, onOffSwitch ) );
 
         // Build a tree with root and two children.
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
         {
             // Insert data until we have a split in root
-            treeWithRootSplit( trace, tree, pageCursorTracer );
+            treeWithRootSplit( trace, tree, cursorContext );
             long leftChild = trace.get( 1 );
             long rightChild = trace.get( 2 );
 
@@ -1836,12 +1837,13 @@ class GBPTreeTest
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 var tree = index( pageCache ).with( pageCacheTracer ).build() )
         {
-            var traverseCursor = pageCacheTracer.createPageCursorTracer( "traverseTree" );
-            tree.visit( new GBPTreeVisitor.Adaptor<>(), traverseCursor );
+            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "traverseTree" ) );
+            tree.visit( new GBPTreeVisitor.Adaptor<>(), cursorContext );
 
-            assertThat( traverseCursor.pins() ).isEqualTo( 5 );
-            assertThat( traverseCursor.unpins() ).isEqualTo( 5 );
-            assertThat( traverseCursor.hits() ).isEqualTo( 5 );
+            var cursorTracer = cursorContext.getCursorTracer();
+            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 5 );
         }
     }
 
@@ -1857,15 +1859,16 @@ class GBPTreeTest
                 insert( tree, i, 1 );
             }
 
-            var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" );
+            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" ) );
 
-            try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( Integer.MAX_VALUE ), cursorTracer ) )
+            try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( Integer.MAX_VALUE ), cursorContext ) )
             {
                 while ( seeker.next() )
                 {
                     // just scroll over the results
                 }
             }
+            var cursorTracer = cursorContext.getCursorTracer();
 
             assertThat( cursorTracer.hits() ).isEqualTo( 8 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 8 );
@@ -1881,14 +1884,15 @@ class GBPTreeTest
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 var tree = index( pageCache ).with( pageCacheTracer ).build() )
         {
-            var cursorTracer = pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" );
-            try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( 1000 ), cursorTracer ) )
+            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" ) );
+            try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( 1000 ), cursorContext ) )
             {
                 while ( seeker.next() )
                 {
                     // just scroll over the results
                 }
             }
+            var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.hits() ).isEqualTo( 1 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             assertThat( cursorTracer.pins() ).isEqualTo( 1 );
@@ -1901,27 +1905,27 @@ class GBPTreeTest
     {
         var config = Config.defaults();
         var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
-        var cursorTracer = NULL;
+        var cursorContext = NULL;
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 var tree = index( pageCache ).with( readOnlyChecker ).build() )
         {
-            try ( var writer = tree.writer( cursorTracer ) )
+            try ( var writer = tree.writer( cursorContext ) )
             {
                 writer.put( new MutableLong( 1 ), new MutableLong( 42 ) );
             }
             config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
 
-            assertThatThrownBy( () -> tree.writer( cursorTracer ) ).isInstanceOf( Exception.class );
+            assertThatThrownBy( () -> tree.writer( cursorContext ) ).isInstanceOf( Exception.class );
 
-            tree.checkpoint( cursorTracer );
+            tree.checkpoint( cursorContext );
         }
 
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 var reopenedTree = index( pageCache ).with( readOnlyChecker ).build() )
         {
-            assertThatThrownBy( () -> reopenedTree.writer( cursorTracer ) ).isInstanceOf( Exception.class );
+            assertThatThrownBy( () -> reopenedTree.writer( cursorContext ) ).isInstanceOf( Exception.class );
 
-            try ( Seeker<MutableLong,MutableLong> seeker = reopenedTree.seek( new MutableLong( 0 ), new MutableLong( 77 ), cursorTracer ) )
+            try ( Seeker<MutableLong,MutableLong> seeker = reopenedTree.seek( new MutableLong( 0 ), new MutableLong( 77 ), cursorContext ) )
             {
                 assertTrue( seeker.next() );
                 assertEquals( 1, seeker.key().longValue() );
@@ -1986,18 +1990,18 @@ class GBPTreeTest
      * trace.get( 1 ) - leftChild
      * trace.get( 2 ) - rightChild
      */
-    private void treeWithRootSplit( List<Long> trace, GBPTree<MutableLong,MutableLong> tree, PageCursorTracer cursorTracer ) throws IOException
+    private void treeWithRootSplit( List<Long> trace, GBPTree<MutableLong,MutableLong> tree, CursorContext cursorContext ) throws IOException
     {
         long count = 0;
         do
         {
-            try ( Writer<MutableLong,MutableLong> writer = tree.writer( cursorTracer ) )
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer( cursorContext ) )
             {
                 writer.put( new MutableLong( count ), new MutableLong( count ) );
                 count++;
             }
             trace.clear();
-            try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), cursorTracer ) )
+            try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ), cursorContext ) )
             {
                 seek.next();
             }
@@ -2005,7 +2009,7 @@ class GBPTreeTest
         while ( trace.size() <= 1 );
 
         trace.clear();
-        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ), cursorTracer ) )
+        try ( Seeker<MutableLong,MutableLong> seek = tree.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ), cursorContext ) )
         {
             //noinspection StatementWithEmptyBody
             while ( seek.next() )
@@ -2070,10 +2074,10 @@ class GBPTreeTest
                 return new DelegatingPagedFile( super.map( path, pageSize, databaseName, openOptions ) )
                 {
                     @Override
-                    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
+                    public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
                     {
                         maybeThrow();
-                        return super.io( pageId, pf_flags, tracer );
+                        return super.io( pageId, pf_flags, context );
                     }
 
                     @Override
@@ -2107,10 +2111,10 @@ class GBPTreeTest
                 return new DelegatingPagedFile( super.map( path, pageSize, databaseName, openOptions ) )
                 {
                     @Override
-                    public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
+                    public PageCursor io( long pageId, int pf_flags, CursorContext context ) throws IOException
                     {
                         maybeBlock();
-                        return super.io( pageId, pf_flags, tracer );
+                        return super.io( pageId, pf_flags, context );
                     }
 
                     private void maybeBlock()

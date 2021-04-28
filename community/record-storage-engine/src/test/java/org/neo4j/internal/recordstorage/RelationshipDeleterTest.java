@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -53,10 +53,10 @@ class RelationshipDeleterTest
     @BeforeEach
     void setUp()
     {
-        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), PageCursorTracer.NULL );
-        PropertyTraverser propertyTraverser = new PropertyTraverser( PageCursorTracer.NULL );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, PageCursorTracer.NULL );
-        deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, PageCursorTracer.NULL );
+        RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
+        PropertyTraverser propertyTraverser = new PropertyTraverser( CursorContext.NULL );
+        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, CursorContext.NULL );
+        deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, CursorContext.NULL );
         store = new MapRecordStore();
         recordChanges = store.newRecordChanges( NULL_MONITOR, MapRecordStore.Monitor.NULL );
     }
@@ -112,7 +112,7 @@ class RelationshipDeleterTest
         store.write( new RelationshipRecord( relC ).initialize( true, NULL, node, node, type, relB, NULL, relB, NULL, false, false ) );
         MappedNodeDataLookup groupLookup = mock( MappedNodeDataLookup.class );
         when( groupLookup.group( node, type, false ) ).thenAnswer(
-                invocationOnMock -> recordChanges.getRelGroupRecords().getOrLoad( groupH, null, PageCursorTracer.NULL ) );
+                invocationOnMock -> recordChanges.getRelGroupRecords().getOrLoad( groupH, null, CursorContext.NULL ) );
 
         // when deleting relB
         deleter.relationshipDelete( singleDelete( relB, type, node, node ).deletions(), recordChanges, mock( RelationshipGroupDegreesStore.Updater.class ),
@@ -128,6 +128,6 @@ class RelationshipDeleterTest
     private static IdSequence idSequence()
     {
         AtomicLong nextId = new AtomicLong();
-        return cursorTracer -> nextId.getAndIncrement();
+        return cursorContext -> nextId.getAndIncrement();
     }
 }

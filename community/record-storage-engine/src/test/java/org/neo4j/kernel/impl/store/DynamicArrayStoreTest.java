@@ -38,7 +38,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
@@ -52,7 +52,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
@@ -95,14 +95,14 @@ class DynamicArrayStoreTest
 
     private void tracePageCacheAccessOnAllocation( DynamicArrayStore store, DefaultPageCacheTracer pageCacheTracer, Object array )
     {
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnAllocation" ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnAllocation" ) ) )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
             prepareDirtyGenerator( store );
 
-            store.allocateRecords( new ArrayList<>(), array, cursorTracer, INSTANCE );
+            store.allocateRecords( new ArrayList<>(), array, cursorContext, INSTANCE );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -114,15 +114,17 @@ class DynamicArrayStoreTest
         idGenerator.clearCache( NULL );
     }
 
-    private void assertOneCursor( PageCursorTracer cursorTracer )
+    private void assertOneCursor( CursorContext cursorContext )
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isOne();
         assertThat( cursorTracer.pins() ).isOne();
         assertThat( cursorTracer.unpins() ).isOne();
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();

@@ -58,7 +58,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -178,7 +178,7 @@ class CheckerTestBase
 
     TokenScanWriter labelIndexWriter()
     {
-        return labelIndex.newWriter( PageCursorTracer.NULL );
+        return labelIndex.newWriter( CursorContext.NULL );
     }
 
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -352,26 +352,26 @@ class CheckerTestBase
     PropertyBlock propertyValue( int propertyKey, Value value )
     {
         PropertyBlock propertyBlock = new PropertyBlock();
-        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value, PageCursorTracer.NULL, INSTANCE );
+        neoStores.getPropertyStore().encodeValue( propertyBlock, propertyKey, value, CursorContext.NULL, INSTANCE );
         return propertyBlock;
     }
 
     long[] nodeLabels( NodeRecord node )
     {
-        return NodeLabelsField.get( node, neoStores.getNodeStore(), PageCursorTracer.NULL );
+        return NodeLabelsField.get( node, neoStores.getNodeStore(), CursorContext.NULL );
     }
 
     NodeRecord loadNode( long id )
     {
-        return neoStores.getNodeStore().getRecord( id, neoStores.getNodeStore().newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
+        return neoStores.getNodeStore().getRecord( id, neoStores.getNodeStore().newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
     }
 
     long node( long id, long nextProp, long nextRel, int... labels )
     {
         NodeRecord node = new NodeRecord( id ).initialize( true, nextProp, false, NULL, 0 );
         long[] labelIds = toLongs( labels );
-        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, PageCursorTracer.NULL, INSTANCE );
-        nodeStore.updateRecord( node, PageCursorTracer.NULL );
+        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, CursorContext.NULL, INSTANCE );
+        nodeStore.updateRecord( node, CursorContext.NULL );
         return id;
     }
 
@@ -380,14 +380,14 @@ class CheckerTestBase
     {
         RelationshipRecord relationship = new RelationshipRecord( id ).initialize( true, NULL, startNode, endNode, type, startPrev, startNext, endPrev,
                 endNext, firstInStart, firstInEnd );
-        relationshipStore.updateRecord( relationship, PageCursorTracer.NULL );
+        relationshipStore.updateRecord( relationship, CursorContext.NULL );
         return id;
     }
 
     long relationshipGroup( long id, long next, long owningNode, int type, long firstOut, long firstIn, long firstLoop )
     {
         RelationshipGroupRecord group = new RelationshipGroupRecord( id ).initialize( true, type, firstOut, firstIn, firstLoop, owningNode, next );
-        relationshipGroupStore.updateRecord( group, PageCursorTracer.NULL );
+        relationshipGroupStore.updateRecord( group, CursorContext.NULL );
         return id;
     }
 
@@ -417,6 +417,6 @@ class CheckerTestBase
         {
             prop.addPropertyBlock( property );
         }
-        propertyStore.updateRecord( prop, PageCursorTracer.NULL );
+        propertyStore.updateRecord( prop, CursorContext.NULL );
     }
 }

@@ -23,7 +23,7 @@ import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
@@ -43,7 +43,7 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, PageCursorTracer cursorTracer )
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext )
     {
         int groupStartIndex = 0;
         for ( int i = 0; i < batch.length; i++ )
@@ -55,10 +55,10 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
             long count = group.getNext();
             boolean lastInChain = count == 0;
 
-            group.setId( nextId == -1 ? nextId = store.nextId( cursorTracer ) : nextId );
+            group.setId( nextId == -1 ? nextId = store.nextId( cursorContext ) : nextId );
             if ( !lastInChain )
             {
-                group.setNext( nextId = store.nextId( cursorTracer ) );
+                group.setNext( nextId = store.nextId( cursorContext ) );
             }
             else
             {
@@ -69,7 +69,7 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
                 // secondary units ends up very close by.
                 for ( int j = groupStartIndex; j <= i; j++ )
                 {
-                    store.prepareForCommit( batch[j], cursorTracer );
+                    store.prepareForCommit( batch[j], cursorContext );
                 }
 
                 groupStartIndex = i + 1;

@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface IdUpdateListener extends AutoCloseable
 {
-    void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer );
+    void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext );
 
-    void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer );
+    void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext );
 
     IdUpdateListener DIRECT = new IdUpdateListener()
     {
@@ -39,18 +39,18 @@ public interface IdUpdateListener extends AutoCloseable
         }
 
         @Override
-        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
+        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
         {
-            try ( Marker marker = idGenerator.marker( cursorTracer ) )
+            try ( Marker marker = idGenerator.marker( cursorContext ) )
             {
                 marker.markUsed( id );
             }
         }
 
         @Override
-        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
+        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
         {
-            try ( Marker marker = idGenerator.marker( cursorTracer ) )
+            try ( Marker marker = idGenerator.marker( cursorContext ) )
             {
                 marker.markDeleted( id );
             }
@@ -66,12 +66,12 @@ public interface IdUpdateListener extends AutoCloseable
         }
 
         @Override
-        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
+        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
         {   // no-op
         }
 
         @Override
-        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, PageCursorTracer cursorTracer )
+        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id, CursorContext cursorContext )
         {   // no-op
         }
     };

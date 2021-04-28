@@ -124,7 +124,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         try ( KernelTransaction tx = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
-            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.pageCursorTracer() ) )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor( tx.cursorContext() ) )
             {
                 tx.dataRead().allNodesScan( node );
                 while ( node.next() )

@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -76,13 +76,13 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
+    public IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext )
     {
         switch ( mode )
         {
             case ONLINE:
                 return new DelegatingIndexUpdater( new DeferredConflictCheckingIndexUpdater(
-                        target.accessor.newUpdater( mode, cursorTracer ), target::newValueReader, target.getDescriptor(), cursorTracer ) )
+                        target.accessor.newUpdater( mode, cursorContext ), target::newValueReader, target.getDescriptor(), cursorContext ) )
                 {
                     @Override
                     public void process( IndexEntryUpdate<?> update )
@@ -112,7 +112,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 };
 
             case RECOVERY:
-                return super.newUpdater( mode, cursorTracer );
+                return super.newUpdater( mode, cursorContext );
 
             default:
                 throw new IllegalArgumentException( "Unsupported update mode: " + mode );

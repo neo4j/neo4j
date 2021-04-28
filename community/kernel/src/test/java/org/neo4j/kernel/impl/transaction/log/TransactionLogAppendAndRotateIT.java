@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -121,7 +121,7 @@ class TransactionLogAppendAndRotateIT
                 {
                     try
                     {
-                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ), PageCursorTracer.NULL ), LogAppendEvent.NULL );
+                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ), CursorContext.NULL ), LogAppendEvent.NULL );
                     }
                     catch ( Exception e )
                     {

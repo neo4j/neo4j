@@ -27,12 +27,14 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * An adaptive page pre-fetcher for sequential scans, for either forwards (increasing page id order) or backwards (decreasing page id order) scans.
@@ -123,8 +125,8 @@ class PreFetcher implements Runnable, CancelListener
         // The initial value don't matter so much. Just same as offset, so we initially fetch one page.
         long jump = offset;
 
-        try ( PageCursorTracer cursorTracer = tracer.createPageCursorTracer( TRACER_PRE_FETCHER_TAG );
-              PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, cursorTracer ) )
+        try ( var tracer = this.tracer.createPageCursorTracer( TRACER_PRE_FETCHER_TAG );
+                PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, new CursorContext( tracer ) ) )
         {
             currentPageId = getCurrentObservedPageId();
             while ( currentPageId != UNBOUND_PAGE_ID )

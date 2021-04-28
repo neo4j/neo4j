@@ -150,7 +150,7 @@ public class LuceneFulltextTestSupport
         MutableLongSet set = LongSets.mutable.of( ids );
         if ( nodes )
         {
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
@@ -162,7 +162,7 @@ public class LuceneFulltextTestSupport
         }
         else
         {
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
             {
                 ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
@@ -186,7 +186,7 @@ public class LuceneFulltextTestSupport
 
         IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
         {
             int num = 0;
             float score = Float.MAX_VALUE;

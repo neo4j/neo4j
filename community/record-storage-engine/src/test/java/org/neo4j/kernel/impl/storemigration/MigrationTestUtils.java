@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.legacystore.v34.Legacy34Store;
@@ -90,10 +90,10 @@ public final class MigrationTestUtils
     public static boolean checkNeoStoreHasFormatVersion( StoreVersionCheck check, RecordFormats expectedFormat )
     {
         String expectedVersion = expectedFormat.storeVersion();
-        boolean successful = check.checkUpgrade( expectedVersion, PageCursorTracer.NULL ).outcome.isSuccessful();
+        boolean successful = check.checkUpgrade( expectedVersion, CursorContext.NULL ).outcome.isSuccessful();
         if ( successful )
         {
-            String storeVersion = check.storeVersion( PageCursorTracer.NULL )
+            String storeVersion = check.storeVersion( CursorContext.NULL )
                     .orElseThrow( () -> new RuntimeException( "Expected store to have a store version." ) );
             return expectedVersion.equals( storeVersion );
         }

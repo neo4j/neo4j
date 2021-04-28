@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class RelationshipParams implements EntityParams<RelationshipValueIndexCursor>

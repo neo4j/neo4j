@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -30,39 +30,39 @@ public interface CursorFactory
 {
     // entities
 
-    NodeCursor allocateNodeCursor( PageCursorTracer cursorTracer );
+    NodeCursor allocateNodeCursor( CursorContext cursorContext );
 
-    NodeCursor allocateFullAccessNodeCursor( PageCursorTracer cursorTracer );
+    NodeCursor allocateFullAccessNodeCursor( CursorContext cursorContext );
 
-    RelationshipScanCursor allocateRelationshipScanCursor( PageCursorTracer cursorTracer );
+    RelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext );
 
-    RelationshipScanCursor allocateFullAccessRelationshipScanCursor( PageCursorTracer cursorTracer );
+    RelationshipScanCursor allocateFullAccessRelationshipScanCursor( CursorContext cursorContext );
 
     // traversal
 
-    RelationshipTraversalCursor allocateRelationshipTraversalCursor( PageCursorTracer cursorTracer );
+    RelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext );
 
-    RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( PageCursorTracer cursorTracer );
+    RelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( CursorContext cursorContext );
 
     // properties
 
-    PropertyCursor allocatePropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    PropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
-    PropertyCursor allocateFullAccessPropertyCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    PropertyCursor allocateFullAccessPropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
     // schema indexes
 
-    NodeValueIndexCursor allocateNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    NodeValueIndexCursor allocateNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
-    NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    NodeValueIndexCursor allocateFullAccessNodeValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
-    NodeLabelIndexCursor allocateNodeLabelIndexCursor( PageCursorTracer cursorTracer );
+    NodeLabelIndexCursor allocateNodeLabelIndexCursor( CursorContext cursorContext );
 
-    NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( PageCursorTracer cursorTracer );
+    NodeLabelIndexCursor allocateFullAccessNodeLabelIndexCursor( CursorContext cursorContext );
 
-    RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( CursorContext cursorContext, MemoryTracker memoryTracker );
 
-    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( PageCursorTracer cursorTracer );
+    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( CursorContext cursorContext );
 
     RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor();
 

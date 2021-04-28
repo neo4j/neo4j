@@ -21,13 +21,13 @@ package org.neo4j.token.api;
 
 import java.util.List;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface TokensLoader
 {
-    List<NamedToken> getPropertyKeyTokens( PageCursorTracer cursorTracer );
+    List<NamedToken> getPropertyKeyTokens( CursorContext cursorContext );
 
-    List<NamedToken> getLabelTokens( PageCursorTracer cursorTracer );
+    List<NamedToken> getLabelTokens( CursorContext cursorContext );
 
-    List<NamedToken> getRelationshipTypeTokens( PageCursorTracer cursorTracer );
+    List<NamedToken> getRelationshipTypeTokens( CursorContext cursorContext );
 }

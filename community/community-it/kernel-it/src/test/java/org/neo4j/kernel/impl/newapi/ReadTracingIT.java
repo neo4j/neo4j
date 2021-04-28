@@ -27,6 +27,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -66,13 +67,13 @@ class ReadTracingIT
             var kernelTransaction = transaction.kernelTransaction();
             var dataRead = kernelTransaction.dataRead();
             var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( indexName );
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
             int propertyId = kernelTransaction.tokenRead().propertyKey( property );
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             var indexSession = dataRead.indexReadSession( indexDescriptor );
-            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer(),
+            try ( var cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.cursorContext(),
                                                                                          kernelTransaction.memoryTracker() ) )
             {
                 dataRead.nodeIndexSeek( indexSession, cursor, unconstrained(), stringContains( propertyId, stringValue( testPropertyValue ) ) );
@@ -80,8 +81,8 @@ class ReadTracingIT
                 consumeCursor( cursor );
             }
 
-            assertOneCursor( cursorTracer );
-            assertThat( cursorTracer.faults() ).isZero();
+            assertOneCursor( cursorContext );
+            assertThat( cursorContext.getCursorTracer().faults() ).isZero();
         }
     }
 
@@ -104,11 +105,11 @@ class ReadTracingIT
             var dataRead = kernelTransaction.dataRead();
             var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( indexName );
             IndexReadSession indexReadSession = kernelTransaction.dataRead().indexReadSession( indexDescriptor );
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            try ( var cursor = kernelTransaction.cursors().allocateRelationshipValueIndexCursor( kernelTransaction.pageCursorTracer(),
+            try ( var cursor = kernelTransaction.cursors().allocateRelationshipValueIndexCursor( kernelTransaction.cursorContext(),
                     kernelTransaction.memoryTracker() ) )
             {
                 dataRead.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( testPropertyValue ) );
@@ -116,7 +117,7 @@ class ReadTracingIT
                 consumeCursor( cursor );
             }
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
         }
     }
 
@@ -131,21 +132,21 @@ class ReadTracingIT
             var kernelTransaction = transaction.kernelTransaction();
             var dataRead = kernelTransaction.dataRead();
             var indexDescriptor = kernelTransaction.schemaRead().indexGetForName( indexName );
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             var indexSession = dataRead.indexReadSession( indexDescriptor );
             try ( var cursor = kernelTransaction.cursors()
-                                                .allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer(), kernelTransaction.memoryTracker() ) )
+                                                .allocateNodeValueIndexCursor( kernelTransaction.cursorContext(), kernelTransaction.memoryTracker() ) )
             {
                 dataRead.nodeIndexScan( indexSession, cursor, unconstrained() );
 
                 consumeCursor( cursor );
             }
 
-            assertOneCursor( cursorTracer );
-            assertThat( cursorTracer.faults() ).isZero();
+            assertOneCursor( cursorContext );
+            assertThat( cursorContext.getCursorTracer().faults() ).isZero();
         }
     }
 
@@ -155,14 +156,14 @@ class ReadTracingIT
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
             var kernelTransaction = transaction.kernelTransaction();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
             var dataRead = kernelTransaction.dataRead();
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             dataRead.countsForNodeWithoutTxState( 0 );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -172,14 +173,14 @@ class ReadTracingIT
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
             var kernelTransaction = transaction.kernelTransaction();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
             var dataRead = kernelTransaction.dataRead();
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             dataRead.countsForNode( 0 );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -189,14 +190,14 @@ class ReadTracingIT
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
             var kernelTransaction = transaction.kernelTransaction();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
             var dataRead = kernelTransaction.dataRead();
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             assertEquals( 0, dataRead.nodesGetCount() );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -206,14 +207,14 @@ class ReadTracingIT
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
             var kernelTransaction = transaction.kernelTransaction();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
             var dataRead = kernelTransaction.dataRead();
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             dataRead.countsForRelationshipWithoutTxState( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -223,14 +224,14 @@ class ReadTracingIT
         try ( InternalTransaction transaction = (InternalTransaction) database.beginTx() )
         {
             var kernelTransaction = transaction.kernelTransaction();
-            var cursorTracer = kernelTransaction.pageCursorTracer();
+            var cursorContext = kernelTransaction.cursorContext();
             var dataRead = kernelTransaction.dataRead();
 
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
             dataRead.countsForRelationship( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
 
-            assertOneCursor( cursorTracer );
+            assertOneCursor( cursorContext );
         }
     }
 
@@ -274,15 +275,17 @@ class ReadTracingIT
         }
     }
 
-    private void assertOneCursor( PageCursorTracer cursorTracer )
+    private void assertOneCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
         assertThat( cursorTracer.unpins() ).isOne();
         assertThat( cursorTracer.hits() ).isOne();
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.hits() ).isZero();

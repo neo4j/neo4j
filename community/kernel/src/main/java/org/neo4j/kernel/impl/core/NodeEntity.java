@@ -755,16 +755,16 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
 
-        var cursorTracer = transaction.pageCursorTracer();
+        var cursorContext = transaction.cursorContext();
         var cursors = transaction.cursors();
         switch ( direction )
         {
         case OUTGOING:
-            return outgoingIterator( cursors, node, typeIds, this, cursorTracer );
+            return outgoingIterator( cursors, node, typeIds, this, cursorContext );
         case INCOMING:
-            return incomingIterator( cursors, node, typeIds, this, cursorTracer );
+            return incomingIterator( cursors, node, typeIds, this, cursorContext );
         case BOTH:
-            return allIterator( cursors, node, typeIds, this, cursorTracer );
+            return allIterator( cursors, node, typeIds, this, cursorContext );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }

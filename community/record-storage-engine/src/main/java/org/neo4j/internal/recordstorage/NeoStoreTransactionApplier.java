@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
@@ -54,10 +54,10 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
     private final IdUpdateListener idUpdateListener;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
 
     public NeoStoreTransactionApplier( CommandVersion version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
-            long transactionId, BatchContext batchContext, PageCursorTracer cursorTracer )
+            long transactionId, BatchContext batchContext, CursorContext cursorContext )
     {
         this.version = version;
         this.lockGroup = batchContext.getLockGroup();
@@ -66,7 +66,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
         this.idUpdateListener = batchContext.getIdUpdateListener();
-        this.cursorTracer = cursorTracer;
+        this.cursorContext = cursorContext;
     }
 
     @Override
@@ -159,7 +159,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         if ( command.getAfter().getId() == MetaDataStore.Position.KERNEL_VERSION.id() )
         {
             KernelVersion kernelVersion = KernelVersion.getForVersion( Numbers.safeCastLongToByte( command.getAfter().getValue() ) );
-            neoStores.getMetaDataStore().setKernelVersion( kernelVersion, cursorTracer );
+            neoStores.getMetaDataStore().setKernelVersion( kernelVersion, cursorContext );
         }
         else
         {
@@ -176,7 +176,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
             {
             case UPDATE:
             case CREATE:
-                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId, cursorTracer );
+                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId, cursorContext );
                 break;
             case DELETE:
                 break;
@@ -197,7 +197,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
 
     private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command )
     {
-        store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener, cursorTracer );
+        store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener, cursorContext );
     }
 
     private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion( BaseCommand<RECORD> command )

@@ -25,7 +25,7 @@ import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -35,16 +35,16 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     final StoragePropertyCursor storePropertyCursor;
     protected final T cursor;
     private final boolean requiresPropertyMigration;
-    private final PageCursorTracer cursorTracer;
+    private final CursorContext cursorContext;
     private long id;
     private long endId;
 
-    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         this.cursor = cursor;
         this.requiresPropertyMigration = requiresPropertyMigration;
-        this.storePropertyCursor = storageReader.allocatePropertyCursor( cursorTracer, memoryTracker );
-        this.cursorTracer = cursorTracer;
+        this.storePropertyCursor = storageReader.allocatePropertyCursor( cursorContext, memoryTracker );
+        this.cursorContext = cursorContext;
     }
 
     void visitProperties( T record, InputEntityVisitor visitor )
@@ -68,7 +68,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     @Override
     public void close()
     {
-        IOUtils.closeAllUnchecked( storePropertyCursor, cursorTracer );
+        IOUtils.closeAllUnchecked( storePropertyCursor, cursorContext );
     }
 
     @Override

@@ -83,7 +83,7 @@ public class RelationshipImporter extends EntityImporter
         this.relationshipIds = new BatchingIdGetter( relationshipStore );
         this.typeCounts = typeDistribution.newClient();
         this.prepareIdSequence = PrepareIdSequence.of( doubleRecordUnits ).apply( stores.getRelationshipStore() );
-        this.relationshipUpdateCursor = relationshipStore.openPageCursorForWriting( 0, cursorTracer );
+        this.relationshipUpdateCursor = relationshipStore.openPageCursorForWriting( 0, cursorContext );
         relationshipRecord.setInUse( true );
     }
 
@@ -164,20 +164,20 @@ public class RelationshipImporter extends EntityImporter
                 relationshipRecord.getSecondNode() != IdMapper.ID_NOT_FOUND &&
                 relationshipRecord.getType() != -1 )
         {
-            relationshipRecord.setId( relationshipIds.nextId( cursorTracer ) );
+            relationshipRecord.setId( relationshipIds.nextId( cursorContext ) );
             if ( doubleRecordUnits )
             {
                 // simply reserve one id for this relationship to grow during linking stage
-                relationshipIds.nextId( cursorTracer );
+                relationshipIds.nextId( cursorContext );
             }
-            relationshipRecord.setNextProp( createAndWritePropertyChain( cursorTracer ) );
+            relationshipRecord.setNextProp( createAndWritePropertyChain( cursorContext ) );
             relationshipRecord.setFirstInFirstChain( false );
             relationshipRecord.setFirstInSecondChain( false );
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
 
-            relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ), cursorTracer );
-            relationshipStore.updateRecord( relationshipRecord, IGNORE, relationshipUpdateCursor, cursorTracer );
+            relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ), cursorContext );
+            relationshipStore.updateRecord( relationshipRecord, IGNORE, relationshipUpdateCursor, cursorContext );
             relationshipCount++;
             typeCounts.increment( relationshipRecord.getType() );
         }
@@ -235,13 +235,13 @@ public class RelationshipImporter extends EntityImporter
         typeCounts.close();
         monitor.relationshipsImported( relationshipCount );
         relationshipUpdateCursor.close();
-        cursorTracer.close();
+        cursorContext.close();
     }
 
     @Override
     void freeUnusedIds()
     {
         super.freeUnusedIds();
-        freeUnusedIds( relationshipStore, relationshipIds, cursorTracer );
+        freeUnusedIds( relationshipStore, relationshipIds, cursorContext );
     }
 }

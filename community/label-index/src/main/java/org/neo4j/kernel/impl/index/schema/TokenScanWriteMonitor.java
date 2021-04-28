@@ -45,7 +45,7 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -371,7 +371,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
      *  │ │ │   └─────────────────── id of transaction making this particular change
      *  │ │ └─────────────────────── addition, a minus means removal
      *  │ └───────────────────────── flush, local to each write session, incremented when a batch of changes is flushed internally in a writer session
-     *  └─────────────────────────── write session, incremented for each {@link TokenScanStore#newWriter(PageCursorTracer)}
+     *  └─────────────────────────── write session, incremented for each {@link TokenScanStore#newWriter(CursorContext)}
      * </pre>
      * How to interpret a message like:
      * <pre>

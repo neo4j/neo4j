@@ -42,6 +42,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
@@ -86,10 +87,11 @@ public class NodeEntityTest extends EntityTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            var cursorTracer = ((InternalTransaction) tx).kernelTransaction().pageCursorTracer();
+            var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             var source = tx.getNodeById( sourceId );
             cursorTracer.reportEvents();
-            assertZeroTracer( cursorTracer );
+            assertZeroTracer( cursorContext );
 
             source.getDegree( Direction.INCOMING );
 
@@ -114,10 +116,11 @@ public class NodeEntityTest extends EntityTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            var cursorTracer = ((InternalTransaction) tx).kernelTransaction().pageCursorTracer();
+            var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             var source = tx.getNodeById( sourceId );
             cursorTracer.reportEvents();
-            assertZeroTracer( cursorTracer );
+            assertZeroTracer( cursorContext );
 
             source.getDegree( relationshipType, Direction.INCOMING );
 
@@ -145,10 +148,11 @@ public class NodeEntityTest extends EntityTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            var cursorTracer = ((InternalTransaction) tx).kernelTransaction().pageCursorTracer();
+            var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
+            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             var source = tx.getNodeById( targetId );
             cursorTracer.reportEvents();
-            assertZeroTracer( cursorTracer );
+            assertZeroTracer( cursorContext );
 
             assertThat( count( source.getRelationships( Direction.INCOMING, relationshipType ) ) ).isGreaterThan( 0 );
 
@@ -508,8 +512,9 @@ public class NodeEntityTest extends EntityTest
         }
     }
 
-    private void assertZeroTracer( PageCursorTracer cursorTracer )
+    private void assertZeroTracer( CursorContext cursorContext )
     {
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isZero();
         assertThat( cursorTracer.unpins() ).isZero();
         assertThat( cursorTracer.pins() ).isZero();

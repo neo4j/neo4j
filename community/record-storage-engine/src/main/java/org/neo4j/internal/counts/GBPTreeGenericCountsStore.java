@@ -51,7 +51,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -72,9 +72,9 @@ import static org.neo4j.util.Preconditions.checkState;
  * A "counts store" backed by {@link GBPTree}. It solves the problem of incrementing/decrementing counts for arbitrary keys, while at the same time
  * being persistent and minimizing contention from concurrent writers.
  *
- * Updates that are {@link #updater(long, PageCursorTracer) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
+ * Updates that are {@link #updater(long, CursorContext) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
  * Multiple transactions can update counts concurrently where counts are CAS:ed to minimize contention.
- * Updates between {@link #checkpoint(PageCursorTracer) checkpoints} are kept in an internal {@link CountsChanges} map and only written
+ * Updates between {@link #checkpoint(CursorContext) checkpoints} are kept in an internal {@link CountsChanges} map and only written
  * as part of a checkpoint. Checkpoint has a very short critical section where it switches over to a new {@link CountsChanges} instance
  * and also snapshots data about which transactions have applied before letting updaters continue to make changes while the checkpointing thread
  * writes the changes to the backing tree concurrently.
@@ -133,9 +133,9 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
         this.tree = instantiatedTree;
         boolean successful = false;
-        try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( OPEN_COUNT_STORE_TAG ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( OPEN_COUNT_STORE_TAG ) ) )
         {
-            this.txIdInformation = readTxIdInformation( header.highestGapFreeTxId(), cursorTracer );
+            this.txIdInformation = readTxIdInformation( header.highestGapFreeTxId(), cursorContext );
             // Recreate the tx id state as it was from last checkpoint (or base if empty)
             this.idSequence = new ArrayQueueOutOfOrderSequence( txIdInformation.highestGapFreeTxId, 200, EMPTY_LONG_ARRAY );
             this.txIdInformation.strayTxIds.forEach( txId -> idSequence.offer( txId, EMPTY_LONG_ARRAY ) );
@@ -171,15 +171,15 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     // === Life cycle ===
 
     @Override
-    public void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
+    public void start( CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( rebuilder != null )
         {
             checkState( !readOnlyChecker.isReadOnly(), "Counts store needs rebuilding, most likely this database needs to be recovered." );
-            try ( CountUpdater updater = directUpdater( false, cursorTracer ) )
+            try ( CountUpdater updater = directUpdater( false, cursorContext ) )
             {
-                rebuilder.rebuild( updater, cursorTracer, memoryTracker );
+                rebuilder.rebuild( updater, cursorContext, memoryTracker );
             }
             finally
             {
@@ -197,13 +197,13 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     // === Writes ===
 
-    protected CountUpdater updater( long txId, PageCursorTracer cursorTracer )
+    protected CountUpdater updater( long txId, CursorContext cursorContext )
     {
         // In order to keep the cache limited then check if we need to flush to the tree
         if ( txId % 10 == 0 )
         {
             // Although it's somewhat costly to check map size so only do it every N transaction.
-            checkCacheSizeAndPotentiallyFlush( cursorTracer );
+            checkCacheSizeAndPotentiallyFlush( cursorContext );
         }
 
         Lock lock = lock( this.lock.readLock() );
@@ -230,7 +230,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
             monitor.ignoredTransaction( txId );
             return null;
         }
-        return new CountUpdater( new MapWriter( key -> readCountFromTree( key, cursorTracer ), changes, idSequence, txId ), lock );
+        return new CountUpdater( new MapWriter( key -> readCountFromTree( key, cursorContext ), changes, idSequence, txId ), lock );
     }
 
     /**
@@ -240,7 +240,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param applyDeltas if {@code true} the writer will apply the changes as deltas, which means reading from the tree.
      * If {@code false} all changes will be written as-is, i.e. as if they are absolute counts.
      */
-    protected CountUpdater directUpdater( boolean applyDeltas, PageCursorTracer cursorTracer ) throws IOException
+    protected CountUpdater directUpdater( boolean applyDeltas, CursorContext cursorContext ) throws IOException
     {
         boolean success = false;
         Lock lock = this.lock.writeLock();
@@ -248,8 +248,8 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         try
         {
             CountUpdater.CountWriter writer = applyDeltas
-                    ? new DeltaTreeWriter( () -> tree.writer( cursorTracer ), key -> readCountFromTree( key, cursorTracer ), layout, maxCacheSize )
-                    : new TreeWriter( tree.writer( cursorTracer ) );
+                    ? new DeltaTreeWriter( () -> tree.writer( cursorContext ), key -> readCountFromTree( key, cursorContext ), layout, maxCacheSize )
+                    : new TreeWriter( tree.writer( cursorContext ) );
             CountUpdater updater = new CountUpdater( writer, lock );
             success = true;
             return updater;
@@ -264,22 +264,22 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     }
 
     @Override
-    public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
+    public void checkpoint( CursorContext cursorContext ) throws IOException
     {
         try ( CriticalSection criticalSection = new CriticalSection( lock ) )
         {
             criticalSection.acquireExclusive();
             // Take a snapshot of applied transactions while in the exclusive critical section (but write it later, no need to write it under the lock)
             OutOfOrderSequence.Snapshot txIdSnapshot = idSequence.snapshot();
-            writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorTracer );
+            writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorContext );
 
             // Write transaction information to the tree and checkpoint while still in the shared critical section
-            updateTxIdInformationInTree( txIdSnapshot, cursorTracer );
-            tree.checkpoint( new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorTracer );
+            updateTxIdInformationInTree( txIdSnapshot, cursorContext );
+            tree.checkpoint( new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorContext );
         }
     }
 
-    private void checkCacheSizeAndPotentiallyFlush( PageCursorTracer cursorTracer )
+    private void checkCacheSizeAndPotentiallyFlush( CursorContext cursorContext )
     {
         int cacheSize = changes.size();
         if ( cacheSize > highMarkCacheSize )
@@ -300,7 +300,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
                 {
                     try
                     {
-                        writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorTracer );
+                        writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorContext );
                     }
                     catch ( IOException e )
                     {
@@ -311,7 +311,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
     }
 
-    private void writeChangesToTreeAndSwitchToSharedCriticalSection( CriticalSection criticalSection, PageCursorTracer cursorTracer ) throws IOException
+    private void writeChangesToTreeAndSwitchToSharedCriticalSection( CriticalSection criticalSection, CursorContext cursorContext ) throws IOException
     {
         criticalSection.acquireShared();
         CountsChanges changesToWrite;
@@ -328,25 +328,25 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
 
         // Now write all the things to the tree in the shared critical section
-        writeCountsChanges( changesToWrite, cursorTracer );
+        writeCountsChanges( changesToWrite, cursorContext );
         changes.clearPreviousChanges();
     }
 
-    private void writeCountsChanges( CountsChanges changes, PageCursorTracer cursorTracer ) throws IOException
+    private void writeCountsChanges( CountsChanges changes, CursorContext cursorContext ) throws IOException
     {
-        try ( TreeWriter writer = new TreeWriter( tree.unsafeWriter( cursorTracer ) ) )
+        try ( TreeWriter writer = new TreeWriter( tree.unsafeWriter( cursorContext ) ) )
         {
             // Sort the entries in the natural tree order to get more performance in the writer
             changes.sortedChanges( layout ).forEach( entry -> writer.write( entry.getKey(), entry.getValue().get() ) );
         }
     }
 
-    private void updateTxIdInformationInTree( OutOfOrderSequence.Snapshot txIdSnapshot, PageCursorTracer cursorTracer ) throws IOException
+    private void updateTxIdInformationInTree( OutOfOrderSequence.Snapshot txIdSnapshot, CursorContext cursorContext ) throws IOException
     {
         PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
-        visitStrayTxIdsInTree( strayIds::enqueue, cursorTracer );
+        visitStrayTxIdsInTree( strayIds::enqueue, cursorContext );
 
-        try ( Writer<CountsKey,CountsValue> writer = tree.unsafeWriter( cursorTracer ) )
+        try ( Writer<CountsKey,CountsValue> writer = tree.unsafeWriter( cursorContext ) )
         {
             // First clear all the stray ids from the previous checkpoint
             CountsValue value = new CountsValue();
@@ -374,13 +374,13 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         return idSequence.getHighestGapFreeNumber();
     }
 
-    protected long read( CountsKey key, PageCursorTracer cursorTracer )
+    protected long read( CountsKey key, CursorContext cursorContext )
     {
         long changedCount = changes.get( key );
-        return changedCount != ABSENT ? changedCount : readCountFromTree( key, cursorTracer );
+        return changedCount != ABSENT ? changedCount : readCountFromTree( key, cursorContext );
     }
 
-    public void visitAllCounts( CountVisitor visitor, PageCursorTracer cursorTracer )
+    public void visitAllCounts( CountVisitor visitor, CursorContext cursorContext )
     {
         // First visit the changes that we haven't check-pointed yet
         for ( Map.Entry<CountsKey,AtomicLong> changedEntry : changes.sortedChanges( layout ) )
@@ -393,7 +393,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
 
         // Then visit the remaining stored changes from the last check-point
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT, cursorTracer ) )
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT, cursorContext ) )
         {
             while ( seek.next() )
             {
@@ -417,9 +417,9 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param key count value to read from the tree.
      * @return AtomicLong with the read count, or initialized to 0 if the count didn't exist in the tree.
      */
-    private long readCountFromTree( CountsKey key, PageCursorTracer cursorTracer )
+    private long readCountFromTree( CountsKey key, CursorContext cursorContext )
     {
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( key, key, cursorTracer ) )
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( key, key, cursorContext ) )
         {
             return seek.next() ? seek.value().count : 0;
         }
@@ -429,9 +429,9 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
     }
 
-    private void visitStrayTxIdsInTree( LongConsumer visitor, PageCursorTracer cursorTracer ) throws IOException
+    private void visitStrayTxIdsInTree( LongConsumer visitor, CursorContext cursorContext ) throws IOException
     {
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( MIN_STRAY_TX_ID, MAX_STRAY_TX_ID, cursorTracer ) )
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( MIN_STRAY_TX_ID, MAX_STRAY_TX_ID, cursorContext ) )
         {
             while ( seek.next() )
             {
@@ -440,10 +440,10 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
     }
 
-    private TxIdInformation readTxIdInformation( long highestGapFreeTxId, PageCursorTracer cursorTracer ) throws IOException
+    private TxIdInformation readTxIdInformation( long highestGapFreeTxId, CursorContext cursorContext ) throws IOException
     {
         MutableLongSet strayTxIds = new LongHashSet();
-        visitStrayTxIdsInTree( strayTxIds::add, cursorTracer );
+        visitStrayTxIdsInTree( strayTxIds::add, cursorContext );
         return new TxIdInformation( highestGapFreeTxId, strayTxIds );
     }
 
@@ -454,16 +454,16 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     }
 
     @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+    public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )
     {
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
+        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorContext );
     }
 
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<CountsKey> visitor, PageCursorTracer cursorTracer )
+    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<CountsKey> visitor, CursorContext cursorContext )
     {
         try
         {
-            return tree.consistencyCheck( visitor, cursorTracer );
+            return tree.consistencyCheck( visitor, cursorContext );
         }
         catch ( IOException e )
         {
@@ -479,16 +479,16 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param out to print to.
      * @param databaseName name of the database tree belongs to.
      * @param name of the {@link GBPTree}.
-     * @param cursorTracer tracer for page cache access.
+     * @param cursorContext tracer for page cache access.
      * @param keyToString function for generating proper descriptions of the keys.
      * @throws IOException on missing file or I/O error.
      */
-    protected static void dump( PageCache pageCache, Path file, PrintStream out, String databaseName, String name, PageCursorTracer cursorTracer,
+    protected static void dump( PageCache pageCache, Path file, PrintStream out, String databaseName, String name, CursorContext cursorContext,
             Function<CountsKey,String> keyToString ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );
-        GBPTree.readHeader( pageCache, file, header, databaseName, cursorTracer );
+        GBPTree.readHeader( pageCache, file, header, databaseName, cursorContext );
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
@@ -510,7 +510,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
                 {
                     out.printf( "%s = %d%n", keyToString.apply( key ), value.count );
                 }
-            }, cursorTracer );
+            }, cursorContext );
         }
     }
 
@@ -526,7 +526,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         /**
          * @param updater the updater to write the counts into. Note: the updater will write all counts as absolute.
          */
-        void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+        void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker );
     }
 
     public interface CountVisitor
@@ -543,7 +543,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
 
         @Override
-        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
         }
     };

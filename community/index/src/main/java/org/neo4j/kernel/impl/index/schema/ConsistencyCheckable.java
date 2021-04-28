@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface ConsistencyCheckable
 {
     /**
      * @return {@code true} if consistent, otherwise {@code false} and one or more issues reported to {@code reporterFactory}.
      */
-    boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer );
+    boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext );
 }

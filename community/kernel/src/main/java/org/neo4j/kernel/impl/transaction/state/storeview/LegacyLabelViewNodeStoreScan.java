@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
@@ -54,8 +54,8 @@ public class LegacyLabelViewNodeStoreScan extends NodeStoreScan
     }
 
     @Override
-    public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
+    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
     {
-        return new LegacyTokenScanViewIdIterator( labelScanStore.newReader(), entityTokenIdFilter, cursorTracer );
+        return new LegacyTokenScanViewIdIterator( labelScanStore.newReader(), entityTokenIdFilter, cursorContext );
     }
 }

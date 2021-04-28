@@ -21,7 +21,7 @@ package org.neo4j.internal.id;
 
 import java.util.Arrays;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public class IdRangeIterator implements IdSequence
 {
@@ -39,7 +39,7 @@ public class IdRangeIterator implements IdSequence
     }
 
     @Override
-    public long nextId( PageCursorTracer ignored )
+    public long nextId( CursorContext ignored )
     {
         try
         {

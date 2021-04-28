@@ -23,7 +23,7 @@ package org.neo4j.kernel.impl.store.allocator;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
@@ -56,8 +56,8 @@ public class ReusableRecordsCompositeAllocator implements DynamicRecordAllocator
     }
 
     @Override
-    public DynamicRecord nextRecord( PageCursorTracer cursorTracer )
+    public DynamicRecord nextRecord( CursorContext cursorContext )
     {
-        return reusableRecordsAllocator.hasNext() ? reusableRecordsAllocator.nextRecord( cursorTracer ) : recordAllocator.nextRecord( cursorTracer );
+        return reusableRecordsAllocator.hasNext() ? reusableRecordsAllocator.nextRecord( cursorContext ) : recordAllocator.nextRecord( cursorContext );
     }
 }

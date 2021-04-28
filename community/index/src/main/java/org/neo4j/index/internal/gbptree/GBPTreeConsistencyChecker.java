@@ -34,7 +34,7 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -87,10 +87,10 @@ class GBPTreeConsistencyChecker<KEY>
      * @param cursor {@link PageCursor} to use for reading.
      * @param root {@link Root} the root of the gbptree.
      * @param visitor {@link GBPTreeConsistencyCheckVisitor} visitor to report inconsistencies to.
-     * @param cursorTracer underlying page cursor tracer
+     * @param cursorContext underlying page cursor context
      * @throws IOException on {@link PageCursor} error.
      */
-    public void check( Path file, PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor<KEY> visitor, PageCursorTracer cursorTracer ) throws IOException
+    public void check( Path file, PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor<KEY> visitor, CursorContext cursorContext ) throws IOException
     {
         // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
         long highId = lastId + 1;
@@ -98,12 +98,12 @@ class GBPTreeConsistencyChecker<KEY>
 
         // Log ids in freelist together with ids occupied by freelist pages.
         IdProvider.IdProviderVisitor freelistSeenIdsVisitor = new FreelistSeenIdsVisitor<>( file, seenIds, lastId, visitor );
-        idProvider.visitFreelist( freelistSeenIdsVisitor, cursorTracer );
+        idProvider.visitFreelist( freelistSeenIdsVisitor, cursorContext );
 
         // Check structure of GBPTree
         long rootGeneration = root.goTo( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( -1, -1, comparator, null, null, layout, null );
-        checkSubtree( file, cursor, openRange, -1, rootGeneration, GBPTreePointerType.noPointer(), 0, visitor, seenIds, cursorTracer );
+        checkSubtree( file, cursor, openRange, -1, rootGeneration, GBPTreePointerType.noPointer(), 0, visitor, seenIds, cursorContext );
 
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach( rightmost -> rightmost.assertLast( visitor ) );
@@ -147,7 +147,7 @@ class GBPTreeConsistencyChecker<KEY>
 
     private void checkSubtree( Path file, PageCursor cursor, KeyRange<KEY> range, long parentNode, long pointerGeneration,
             GBPTreePointerType parentPointerType, int level, GBPTreeConsistencyCheckVisitor<KEY> visitor, BitSet seenIds,
-            PageCursorTracer cursorTracer ) throws IOException
+            CursorContext cursorContext ) throws IOException
     {
         long pageId = cursor.getCurrentPageId();
         addToSeenList( file, seenIds, pageId, lastId, visitor );
@@ -217,7 +217,7 @@ class GBPTreeConsistencyChecker<KEY>
         else
 
         {
-            assertKeyOrder( file, cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, offloadIds, visitor, cursorTracer );
+            assertKeyOrder( file, cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, offloadIds, visitor, cursorContext );
         }
         offloadIds.forEach( id -> addToSeenList( file, seenIds, id, lastId, visitor ) );
 
@@ -243,7 +243,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         if ( isInternal && reasonableKeyCount && consistentNodeMeta )
         {
-            assertSubtrees( file, cursor, range, keyCount, level, visitor, seenIds, cursorTracer );
+            assertSubtrees( file, cursor, range, keyCount, level, visitor, seenIds, cursorContext );
         }
     }
 
@@ -281,7 +281,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     private void assertSubtrees( Path file, PageCursor cursor, KeyRange<KEY> range, int keyCount, int level,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor, BitSet seenIds, PageCursorTracer cursorTracer ) throws IOException
+            GBPTreeConsistencyCheckVisitor<KEY> visitor, BitSet seenIds, CursorContext cursorContext ) throws IOException
     {
         long pageId = cursor.getCurrentPageId();
         KEY prev = null;
@@ -300,7 +300,7 @@ class GBPTreeConsistencyChecker<KEY>
             {
                 child = childAt( cursor, pos, generationTarget );
                 childGeneration = generationTarget.generation;
-                node.keyAt( cursor, readKey, pos, INTERNAL, cursorTracer );
+                node.keyAt( cursor, readKey, pos, INTERNAL, cursorContext );
             }
             while ( cursor.shouldRetry() );
             checkAfterShouldRetry( cursor );
@@ -312,7 +312,7 @@ class GBPTreeConsistencyChecker<KEY>
             }
 
             TreeNode.goTo( cursor, "child at pos " + pos, child );
-            checkSubtree( file, cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor, seenIds, cursorTracer );
+            checkSubtree( file, cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor, seenIds, cursorContext );
 
             TreeNode.goTo( cursor, "parent", pageId );
 
@@ -339,7 +339,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         TreeNode.goTo( cursor, "child at pos " + pos, child );
         childRange = range.newSubRange( level, pageId ).restrictLeft( prev );
-        checkSubtree( file, cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor, seenIds, cursorTracer );
+        checkSubtree( file, cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor, seenIds, cursorContext );
         TreeNode.goTo( cursor, "parent", pageId );
     }
 
@@ -355,7 +355,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     private void assertKeyOrder( Path file, PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type,
-            MutableLongList offloadIds, GBPTreeConsistencyCheckVisitor<KEY> visitor, PageCursorTracer cursorTracer ) throws IOException
+            MutableLongList offloadIds, GBPTreeConsistencyCheckVisitor<KEY> visitor, CursorContext cursorContext ) throws IOException
     {
         DelayedVisitor<KEY> delayedVisitor = new DelayedVisitor<>( file );
         do
@@ -367,7 +367,7 @@ class GBPTreeConsistencyChecker<KEY>
             boolean first = true;
             for ( int pos = 0; pos < keyCount; pos++ )
             {
-                node.keyAt( cursor, readKey, pos, type, cursorTracer );
+                node.keyAt( cursor, readKey, pos, type, cursorContext );
                 if ( !range.inRange( readKey ) )
                 {
                     KEY keyCopy = layout.newKey();

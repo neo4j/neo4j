@@ -35,7 +35,7 @@ import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -63,20 +63,20 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     }
 
     @Override
-    protected void process( RECORD[] batch, BatchSender sender, PageCursorTracer cursorTracer )
+    protected void process( RECORD[] batch, BatchSender sender, CursorContext cursorContext )
     {
         LongFunction<IdSequence> idSequence = prepareIdSequence.apply( store );
         int recordsUpdatedInThisBatch = 0;
-        try ( PageCursor cursor = store.openPageCursorForWriting( 0, cursorTracer ) )
+        try ( PageCursor cursor = store.openPageCursorForWriting( 0, cursorContext ) )
         {
             for ( RECORD record : batch )
             {
                 if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
                 {
-                    store.prepareForCommit( record, idSequence.apply( record.getId() ), cursorTracer );
+                    store.prepareForCommit( record, idSequence.apply( record.getId() ), cursorContext );
                     // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
                     // instead just note the highId. It will be mostly correct in the end.
-                    store.updateRecord( record, IGNORE, cursor, cursorTracer );
+                    store.updateRecord( record, IGNORE, cursor, cursorContext );
                     recordsUpdatedInThisBatch++;
                 }
             }

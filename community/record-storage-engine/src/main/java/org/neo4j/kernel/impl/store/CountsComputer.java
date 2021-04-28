@@ -31,7 +31,7 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
@@ -87,19 +87,19 @@ public class CountsComputer implements CountsBuilder
     }
 
     @Override
-    public void initialize( CountsAccessor.Updater countsUpdater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    public void initialize( CountsAccessor.Updater countsUpdater, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        if ( hasNotEmptyNodesOrRelationshipsStores( cursorTracer ) )
+        if ( hasNotEmptyNodesOrRelationshipsStores( cursorContext ) )
         {
-            progressMonitor.start( nodes.getHighestPossibleIdInUse( cursorTracer ) + relationships.getHighestPossibleIdInUse( cursorTracer ) );
+            progressMonitor.start( nodes.getHighestPossibleIdInUse( cursorContext ) + relationships.getHighestPossibleIdInUse( cursorContext ) );
             populateCountStore( countsUpdater );
         }
         progressMonitor.completed();
     }
 
-    private boolean hasNotEmptyNodesOrRelationshipsStores( PageCursorTracer cursorTracer )
+    private boolean hasNotEmptyNodesOrRelationshipsStores( CursorContext cursorContext )
     {
-        return (nodes.getHighestPossibleIdInUse( cursorTracer ) != -1) || (relationships.getHighestPossibleIdInUse( cursorTracer ) != -1);
+        return (nodes.getHighestPossibleIdInUse( cursorContext ) != -1) || (relationships.getHighestPossibleIdInUse( cursorContext ) != -1);
     }
 
     private void populateCountStore( CountsAccessor.Updater countsUpdater )

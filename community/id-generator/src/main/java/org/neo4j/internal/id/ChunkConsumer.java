@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Delayed buffer chunk consumer
@@ -28,5 +28,5 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 @FunctionalInterface
 interface ChunkConsumer
 {
-    void consume( long[] chunk, PageCursorTracer cursorTracer );
+    void consume( long[] chunk, CursorContext cursorContext );
 }

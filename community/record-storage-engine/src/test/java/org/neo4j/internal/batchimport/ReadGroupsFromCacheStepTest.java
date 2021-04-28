@@ -32,7 +32,7 @@ import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -110,7 +110,7 @@ class ReadGroupsFromCacheStepTest
         }
 
         @Override
-        protected void process( RelationshipGroupRecord[] batch, BatchSender sender, PageCursorTracer cursorTracer )
+        protected void process( RelationshipGroupRecord[] batch, BatchSender sender, CursorContext cursorContext )
         {
             long lastOwningNode = lastBatchLastOwningNode;
             for ( RelationshipGroupRecord record : batch )

@@ -36,6 +36,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
@@ -62,7 +63,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -113,12 +114,13 @@ class LabelScanStoreIT
     @Test
     void tracePageCacheAccessOnWrite() throws IOException
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnWrite" );
-        try ( var scanWriter = store.newWriter( cursorTracer ) )
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnWrite" ) );
+        try ( var scanWriter = store.newWriter( cursorContext ) )
         {
             scanWriter.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
 
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 5 );
         assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
         assertThat( cursorTracer.hits() ).isEqualTo( 4 );
@@ -128,46 +130,46 @@ class LabelScanStoreIT
     @Test
     void tracePageAccessOnEmptyCheck() throws IOException
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageAccessOnEmptyCheck" );
-        store.isEmpty( cursorTracer );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageAccessOnEmptyCheck" ) );
+        store.isEmpty( cursorContext );
 
-        assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
+        assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1 );
     }
 
     @Test
     void tracePageAccessOnAllEntityTokenRange() throws Exception
     {
-        var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageAccessOnAllEntityTokenRange" );
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageAccessOnAllEntityTokenRange" ) );
         try ( var scanWriter = store.newWriter( NULL ) )
         {
             scanWriter.write( EntityTokenUpdate.tokenChanges( 0, EMPTY_LONG_ARRAY, new long[]{0, 1} ) );
         }
 
-        try ( var tokenRanges = store.allEntityTokenRanges( cursorTracer ) )
+        try ( var tokenRanges = store.allEntityTokenRanges( cursorContext ) )
         {
             tokenRanges.forEach( range -> assertThat( range.tokens( 0 ) ).containsExactly( 0, 1 ) );
         }
 
-        assertThat( cursorTracer.pins() ).isEqualTo( 3 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 3 );
+        assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 3 );
+        assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 3 );
+        assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 3 );
     }
 
     @Test
     void tracePageCacheAccessOnConsistencyCheck()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            store.consistencyCheck( noopReporterFactory(), cursorTracer );
+            store.consistencyCheck( noopReporterFactory(), cursorContext );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
         }
     }
 
@@ -180,19 +182,19 @@ class LabelScanStoreIT
         }
         var labelScanReader = store.newReader();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNdoesWithLabelRead" ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNdoesWithLabelRead" ) ) )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            var resourceIterator = labelScanReader.entitiesWithToken( 0, cursorTracer );
+            var resourceIterator = labelScanReader.entitiesWithToken( 0, cursorContext );
             while ( resourceIterator.hasNext() )
             {
                 resourceIterator.next();
             }
 
-            assertThat( cursorTracer.pins() ).isOne();
-            assertThat( cursorTracer.unpins() ).isOne();
-            assertThat( cursorTracer.hits() ).isOne();
+            assertThat( cursorContext.getCursorTracer().pins() ).isOne();
+            assertThat( cursorContext.getCursorTracer().unpins() ).isOne();
+            assertThat( cursorContext.getCursorTracer().hits() ).isOne();
         }
     }
 
@@ -205,27 +207,27 @@ class LabelScanStoreIT
         }
         var labelScanReader = store.newReader();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodesWithAnyLabelRead" ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodesWithAnyLabelRead" ) ) )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            var resourceIterator = labelScanReader.entitiesWithAnyOfTokens( new int[]{0, 1}, cursorTracer );
+            var resourceIterator = labelScanReader.entitiesWithAnyOfTokens( new int[]{0, 1}, cursorContext );
             while ( resourceIterator.hasNext() )
             {
                 resourceIterator.next();
             }
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 2 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
         }
     }
 
-    private void assertZeroCursor( PageCursorTracer cursorTracer )
+    private void assertZeroCursor( CursorContext cursorContext )
     {
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
+        assertThat( cursorContext.getCursorTracer().pins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().unpins() ).isZero();
+        assertThat( cursorContext.getCursorTracer().hits() ).isZero();
     }
 
     @Test
@@ -237,15 +239,15 @@ class LabelScanStoreIT
         }
         var labelScanReader = store.newReader();
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeLabelScan" ) )
+        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNodeLabelScan" ) ) )
         {
-            assertZeroCursor( cursorTracer );
+            assertZeroCursor( cursorContext );
 
-            labelScanReader.entityTokenScan( 0, cursorTracer );
+            labelScanReader.entityTokenScan( 0, cursorContext );
 
-            assertThat( cursorTracer.pins() ).isOne();
-            assertThat( cursorTracer.unpins() ).isOne();
-            assertThat( cursorTracer.hits() ).isOne();
+            assertThat( cursorContext.getCursorTracer().pins() ).isOne();
+            assertThat( cursorContext.getCursorTracer().unpins() ).isOne();
+            assertThat( cursorContext.getCursorTracer().hits() ).isOne();
         }
     }
 

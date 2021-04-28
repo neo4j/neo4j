@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -70,10 +71,10 @@ class IndexSizes
         List<IndexDescriptor> indexes = indexAccessors.onlineRules( entityType );
         execution.run( "Estimate index sizes", indexes.stream().map( index -> (ThrowingRunnable) () ->
         {
-            try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( SIZE_CALCULATOR_TAG ) )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( SIZE_CALCULATOR_TAG ) ) )
             {
                 IndexAccessor accessor = indexAccessors.accessorFor( index );
-                indexSizes.put( index, accessor.estimateNumberOfEntries( cursorTracer ) );
+                indexSizes.put( index, accessor.estimateNumberOfEntries( cursorContext ) );
             }
         } ).toArray( ThrowingRunnable[]::new ) );
     }

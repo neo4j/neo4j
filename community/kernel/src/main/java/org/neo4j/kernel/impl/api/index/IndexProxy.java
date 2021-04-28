@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -64,12 +64,12 @@ public interface IndexProxy extends MinimalIndexAccessor
 {
     void start();
 
-    IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer );
+    IndexUpdater newUpdater( IndexUpdateMode mode, CursorContext cursorContext );
 
     /**
      * Close this index context.
      */
-    void close( PageCursorTracer cursorTracer ) throws IOException;
+    void close( CursorContext cursorContext ) throws IOException;
 
     IndexDescriptor getDescriptor();
 
@@ -91,7 +91,7 @@ public interface IndexProxy extends MinimalIndexAccessor
 
     PopulationProgress getIndexPopulationProgress();
 
-    void force( PageCursorTracer cursorTracer ) throws IOException;
+    void force( CursorContext cursorContext ) throws IOException;
 
     void refresh() throws IOException;
 

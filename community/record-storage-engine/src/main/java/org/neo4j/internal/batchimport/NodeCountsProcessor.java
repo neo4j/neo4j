@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -57,9 +57,9 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
     }
 
     @Override
-    public boolean process( NodeRecord node, PageCursorTracer cursorTracer )
+    public boolean process( NodeRecord node, CursorContext cursorContext )
     {
-        long[] labels = NodeLabelsField.get( node, nodeStore, cursorTracer );
+        long[] labels = NodeLabelsField.get( node, nodeStore, cursorContext );
         if ( labels.length > 0 )
         {
             for ( long labelId : labels )

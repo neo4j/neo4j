@@ -21,16 +21,16 @@ package org.neo4j.storageengine.api;
 
 import java.util.Optional;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 public interface StoreVersionCheck
 {
     /**
      * Store version of an existing store (this instance knows which store it's about).
-     * @param cursorTracer underlying page cursor tracer.
+     * @param cursorContext underlying page cursor context.
      * @return store version of the existing store.
      */
-    Optional<String> storeVersion( PageCursorTracer cursorTracer );
+    Optional<String> storeVersion( CursorContext cursorContext );
 
     /**
      * Convert the a store version to String form.
@@ -54,13 +54,13 @@ public interface StoreVersionCheck
     StoreVersion versionInformation( String storeVersion );
 
     /**
-     * Should only be called if {@link #storeVersion(PageCursorTracer)} and {@link #configuredVersion()} aren't equal.
+     * Should only be called if {@link #storeVersion(CursorContext)} and {@link #configuredVersion()} aren't equal.
      * Checks whether or not the store version can be upgraded to the desired (i.e. from configured) version.
      * @param desiredVersion store version to check whether or not the existing store is upgradable to.
-     * @param cursorTracer underlying page cursor tracer.
+     * @param cursorContext underlying page cursor context.
      * @return Result of the check.
      */
-    Result checkUpgrade( String desiredVersion, PageCursorTracer cursorTracer );
+    Result checkUpgrade( String desiredVersion, CursorContext cursorContext );
 
     class Result
     {

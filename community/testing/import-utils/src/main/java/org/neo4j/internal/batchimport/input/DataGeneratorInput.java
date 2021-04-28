@@ -33,7 +33,7 @@ import org.neo4j.internal.batchimport.input.csv.Type;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.internal.batchimport.input.csv.CsvInput.idExtractor;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**

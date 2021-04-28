@@ -46,7 +46,7 @@ import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RandomRule;
 
@@ -64,7 +64,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @RunWith( Parameterized.class )
@@ -99,7 +99,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
-        PropertyValueLookup inputIdLookup = ( id, cursorTracer ) -> String.valueOf( id );
+        PropertyValueLookup inputIdLookup = ( id, cursorContext ) -> String.valueOf( id );
         int count = 300_000;
 
         // WHEN
@@ -250,9 +250,9 @@ public class EncodingIdMapperTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         IdMapper mapper = mapper( encoder, Radix.STRING, monitor, pageCacheTracer );
 
-        PropertyValueLookup ids = ( nodeId, cursorTracer ) ->
+        PropertyValueLookup ids = ( nodeId, cursorContext ) ->
         {
-            cursorTracer.beginPin( false, 1, null ).done();
+            cursorContext.getCursorTracer().beginPin( false, 1, null ).done();
             return nodeId + "";
         };
         int expectedCollisions = 2;
@@ -418,7 +418,7 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
                                   numberOfCollisions -> new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE ) );
         final AtomicReference<Group> group = new AtomicReference<>();
-        PropertyValueLookup ids = ( nodeId, cursorTracer ) ->
+        PropertyValueLookup ids = ( nodeId, cursorContext ) ->
         {
             int groupId = toIntExact( nodeId / idsPerGroup );
             if ( groupId == groupCount )
@@ -555,7 +555,7 @@ public class EncodingIdMapperTest
         AtomicLong highNodeId = new AtomicLong();
         int batchSize = 1234;
         Race race = new Race();
-        PropertyValueLookup inputIdLookup = ( id, cursorTracer ) -> String.valueOf( id );
+        PropertyValueLookup inputIdLookup = ( id, cursorContext ) -> String.valueOf( id );
         int countPerThread = 30_000;
         race.addContestants( processors, () ->
         {
@@ -648,7 +648,7 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public Object lookupProperty( long nodeId, PageCursorTracer cursorTracer )
+        public Object lookupProperty( long nodeId, CursorContext cursorContext )
         {
             while ( true )
             {

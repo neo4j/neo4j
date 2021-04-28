@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 
 /**
  * Defines interfaces and common implementations of header reader/writer for {@link GBPTree}.
@@ -41,7 +41,7 @@ public class Header
 
     /**
      * Writes a header into a {@link GBPTree} state page during
-     * {@link GBPTree#checkpoint(IOController, PageCursorTracer)}.
+     * {@link GBPTree#checkpoint(IOController, CursorContext)}.
      */
     public interface Writer
     {

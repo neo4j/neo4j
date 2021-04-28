@@ -24,7 +24,7 @@ import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 
@@ -71,7 +71,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     }
 
     @Override
-    public boolean process( RelationshipRecord record, PageCursorTracer cursorTracer )
+    public boolean process( RelationshipRecord record, CursorContext cursorContext )
     {
         counter.process( record );
         return false;
