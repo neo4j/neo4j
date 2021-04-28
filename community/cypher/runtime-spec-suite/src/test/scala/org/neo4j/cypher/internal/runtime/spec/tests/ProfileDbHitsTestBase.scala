@@ -28,7 +28,11 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.delete
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -48,10 +52,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val costOfSetProperty: Long, // the reported dbHits for setting a property token
                                                                  costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
                                                                  val costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
-                                                                 costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
+                                                                 val costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
                                                                  costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
                                                                  costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
-                                                                 costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
+                                                                 val costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
                                                                  val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
                                                                  cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
                                                                  canFuseOverPipelines: Boolean,
@@ -1209,33 +1213,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     createProfile.dbHits() shouldBe (createNodesHits + createLabelsHits + createPropKeyHits + setPropertyHits)
   }
 
-  test("should profile rows and dbhits of merge correctly") {
-    // given
-    given {
-      bipartiteGraph(sizeHint, "A", "B", "R")
-    }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .merge(nodes = Seq(createNode("x")), onMatch = Seq(setNodeProperty("x", "prop", "42")))
-      .nodeByLabelScan("x", "A")
-      .build(readOnly = false)
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    val produceResultProfile = queryProfile.operatorProfile(0)
-    val mergeProfile = queryProfile.operatorProfile(1)
-
-    mergeProfile.rows() shouldBe sizeHint
-    mergeProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ +  sizeHint * costOfProperty
-    produceResultProfile.rows() shouldBe sizeHint
-    produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
-  }
-
-  test("should profile rows and dbhits of foreach correctly") {
+  test("should profile rows and dbhits of foreach + setNodeProperty correctly") {
     // given
     given {
       bipartiteGraph(sizeHint, "A", "B", "R")
@@ -1244,8 +1222,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .foreach("i", "[1, 2, 3]",
-        Seq(
-          setNodeProperty("x", "prop", "i")))
+        Seq(setNodeProperty("x", "prop", "i")))
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -1261,6 +1238,105 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     foreachProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ +  3 * sizeHint * costOfProperty
     produceResultProfile.rows() shouldBe sizeHint
     produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
+  }
+
+  test("should profile rows and dbhits of foreach + create") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]",
+        Seq(createPattern(
+          nodes = Seq(createNode("n"), createNode("m")),
+          relationships = Seq(createRelationship("r", "x", "R", "x"))
+        )))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val foreachProfile = queryProfile.operatorProfile(1)
+
+    foreachProfile.rows() shouldBe sizeHint
+    foreachProfile.dbHits() shouldBe 3 * (2 /*nodes*/ + 1 /*relationship*/ + costOfRelationshipTypeLookup) * sizeHint
+  }
+
+  test("should profile rows and dbhits of foreach + set label correctly") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]",
+        Seq(setLabel("x", "L")))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val foreachProfile = queryProfile.operatorProfile(1)
+
+    foreachProfile.rows() shouldBe sizeHint
+    foreachProfile.dbHits() shouldBe costOfLabelLookup + 3 * sizeHint
+  }
+
+  test("should profile rows and dbhits of foreach + remove label correctly") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]",
+        Seq(removeLabel("x", "A")))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val foreachProfile = queryProfile.operatorProfile(1)
+
+    foreachProfile.rows() shouldBe sizeHint
+    foreachProfile.dbHits() shouldBe costOfLabelLookup + 3 * sizeHint
+  }
+
+  test("should profile rows and dbhits of foreach + delete correctly") {
+    // given
+    given {
+      bipartiteGraph(sizeHint, "A", "B", "R")
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("n", "[x]",
+        Seq(delete("n")))
+      .nodeByLabelScan("x", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    val foreachProfile = queryProfile.operatorProfile(1)
+
+    foreachProfile.rows() shouldBe sizeHint
+    foreachProfile.dbHits() shouldBe sizeHint
   }
 
   protected def propertiesString(properties: Map[String, Any]): String = {
