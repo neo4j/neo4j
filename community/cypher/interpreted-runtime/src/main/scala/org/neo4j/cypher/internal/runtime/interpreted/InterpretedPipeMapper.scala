@@ -453,7 +453,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         case SetPropertiesFromMapPattern(entityExpression, expression, removeOtherProps) =>
           Seq(SetPropertyFromMapOperation(buildExpression(entityExpression), buildExpression(expression), removeOtherProps))
 
-          case other => throw new IllegalStateException(s"Cannot compile $other")
+        case other => throw new IllegalStateException(s"Cannot compile $other")
       }
     }
 

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
- * Foreach is side-effect that item in the provided list performs the provided side-effects
+ * Foreach is an operator that performs the provided side-effects for each item in the provided list.
  */
 case class Foreach(source: LogicalPlan,
                    variable: String,
