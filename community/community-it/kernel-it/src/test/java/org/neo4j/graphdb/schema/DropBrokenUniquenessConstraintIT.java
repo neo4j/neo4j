@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.assertj.core.util.Streams;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
@@ -31,7 +34,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -47,20 +50,44 @@ class DropBrokenUniquenessConstraintIT
     private GraphDatabaseAPI db;
     @Inject
     private RecordStorageEngine storageEngine;
+    private long initialConstraintCount;
+    private long initialIndexCount;
+
+    @BeforeEach
+    void getInitialCounts()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            initialConstraintCount = Streams.stream( tx.schema().getConstraints() ).count();
+            initialIndexCount = Streams.stream( tx.schema().getIndexes() ).count();
+        }
+    }
+
+    @AfterEach
+    void assertNoAdditionalConstraintsOrIndexes()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertEquals( initialConstraintCount, Streams.stream( tx.schema().getConstraints() ).count() );
+            assertEquals( initialIndexCount, Streams.stream( tx.schema().getIndexes() ).count() );
+        }
+    }
 
     @Test
     void shouldDropUniquenessConstraintWithBackingIndexNotInUse()
     {
         // given
+        String backingIndexName;
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
+            backingIndexName = single( tx.schema().getIndexes( label ).iterator() ).getName();
             tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.indexesGetAll( NULL ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL ) );
+        schemaRules.deleteSchemaRule( schemaRules.indexGetForName( backingIndexName, NULL ), NULL );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
@@ -70,11 +97,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
-            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
-        }
+        // AfterEach
     }
 
     @Test
@@ -99,11 +122,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
-            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
-        }
+        // AfterEach
     }
 
     @Test
@@ -131,11 +150,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
-            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
-        }
+        // AfterEach
     }
 
     @Test
@@ -164,11 +179,7 @@ class DropBrokenUniquenessConstraintIT
         }
 
         // then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertFalse( tx.schema().getConstraints().iterator().hasNext() );
-            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
-        }
+        // AfterEach
     }
 
     private void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules ) throws KernelException
