@@ -45,13 +45,13 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
         this.throwables = new ArrayList<>( 1 );
     }
 
-    public ShiroAuthenticationInfo( Object principal, String realmName, AuthenticationResult authenticationResult )
+    public ShiroAuthenticationInfo( Neo4jPrincipal principal, String realmName, AuthenticationResult authenticationResult )
     {
         super( principal, null, realmName );
         this.authenticationResult = authenticationResult;
     }
 
-    public ShiroAuthenticationInfo( Object principal, Object hashedCredentials, ByteSource credentialsSalt,
+    public ShiroAuthenticationInfo( Neo4jPrincipal principal, Object hashedCredentials, ByteSource credentialsSalt,
             String realmName, AuthenticationResult authenticationResult )
     {
         super( principal, hashedCredentials, credentialsSalt, realmName );
