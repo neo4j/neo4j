@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +73,15 @@ class SchemaRecoveryIT
         Label label = label( "User" );
         String property = "email";
         startDb();
+
+        long initialConstraintCount;
+        long initialIndexCount;
+        try ( Transaction tx = db.beginTx() )
+        {
+            initialConstraintCount = Streams.stream(tx.schema().getConstraints()).count();
+            initialIndexCount = Streams.stream(tx.schema().getIndexes()).count();
+        }
+
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
@@ -93,8 +103,8 @@ class SchemaRecoveryIT
         startDb();
 
         // then
-        assertEquals( 1, constraints( db ).size() );
-        assertEquals( 1, indexes( db ).size() );
+        assertEquals( initialConstraintCount + 1, constraints( db ).size() );
+        assertEquals( initialIndexCount + 1, indexes( db ).size() );
     }
 
     @Test
@@ -104,6 +114,15 @@ class SchemaRecoveryIT
         Label label = label( "User" );
         String property = "email";
         startDb();
+
+        long initialConstraintCount;
+        long initialIndexCount;
+        try ( Transaction tx = db.beginTx() )
+        {
+            initialConstraintCount = Streams.stream(tx.schema().getConstraints()).count();
+            initialIndexCount = Streams.stream(tx.schema().getIndexes()).count();
+        }
+
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
@@ -120,8 +139,8 @@ class SchemaRecoveryIT
         startDb();
 
         // then assert that we can still read the schema correctly.
-        assertEquals( 1, constraints( db ).size() );
-        assertEquals( 1, indexes( db ).size() );
+        assertEquals( initialConstraintCount + 1, constraints( db ).size() );
+        assertEquals( initialIndexCount + 1, indexes( db ).size() );
     }
 
     private void startDb()
@@ -131,11 +150,15 @@ class SchemaRecoveryIT
             managementService.shutdown();
         }
 
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setFileSystem( fs )
-                .impermanent()
-                .build();
+        managementService = configure( new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
+                                               .setFileSystem( fs )
+                                               .impermanent() ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        return builder;
     }
 
     private void killDb()
