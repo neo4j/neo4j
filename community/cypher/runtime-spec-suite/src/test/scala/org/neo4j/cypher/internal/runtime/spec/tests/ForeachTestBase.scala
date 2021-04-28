@@ -269,6 +269,30 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("foreach should + set label should handle null" ) {
+    val nodes = given(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]",
+        Seq(setLabel("node", "A", "B", "C")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(labelsAdded = 3 * sizeHint)
+    tx.getAllNodes.asScala.foreach {n =>
+      n.hasLabel(Label.label("A")) shouldBe true
+      n.hasLabel(Label.label("B")) shouldBe true
+      n.hasLabel(Label.label("C")) shouldBe true
+    }
+  }
+
   test("foreach should set node property" ) {
     val nodes = given(nodeGraph(sizeHint))
     // when
@@ -291,6 +315,28 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("foreach + set node property should handle null" ) {
+    val nodes = given(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[null, n]",
+        Seq(setNodeProperty("node", "prop", "42")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(propertiesSet = sizeHint)
+    tx.getAllNodes.asScala.foreach {n =>
+      n.getProperty("prop") should equal(42)
+    }
+  }
+
   test("foreach should set node properties from map" ) {
     val nodes = given(nodeGraph(sizeHint))
     // when
@@ -310,6 +356,28 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(propertiesSet = 3 * sizeHint)
     tx.getAllNodes.asScala.foreach {n =>
       n.getProperty("prop") should equal(3)
+    }
+  }
+
+  test("foreach + set node properties from map should handle null" ) {
+    val nodes = given(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]",
+        Seq(setNodePropertiesFromMap("node", "{prop : 42}")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(propertiesSet = sizeHint)
+    tx.getAllNodes.asScala.foreach {n =>
+      n.getProperty("prop") should equal(42)
     }
   }
 
@@ -336,6 +404,29 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("foreach + set relationship property should handle null" ) {
+    val (_, rels) = given(circleGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .foreach("rel", "[null, r]",
+        Seq(setRelationshipProperty("rel", "prop", "42")))
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("r")
+      .withRows(singleColumn(rels))
+      .withStatistics(propertiesSet = sizeHint)
+    tx.getAllRelationships.asScala.foreach {r =>
+      r.getProperty("prop") should equal(42)
+    }
+  }
+
   test("foreach should set relationship properties from map" ) {
     val (_, rels) = given(circleGraph(sizeHint))
     // when
@@ -359,6 +450,30 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("foreach + set relationship properties from map should handle null" ) {
+    val (_, rels) = given(circleGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .foreach("i", "[r, null]",
+        Seq(setRelationshipPropertiesFromMap("i", "{prop : 42}")))
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("r")
+      .withRows(singleColumn(rels))
+      .withStatistics(propertiesSet = sizeHint)
+    tx.getAllRelationships.asScala.foreach {r =>
+      r.getProperty("prop") should equal(42)
+    }
+  }
+
+
   test("foreach should set property" ) {
     val nodes = given(nodeGraph(sizeHint))
     // when
@@ -378,6 +493,28 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(propertiesSet = 3 * sizeHint)
     tx.getAllNodes.asScala.foreach {n =>
       n.getProperty("prop") should equal(3)
+    }
+  }
+
+  test("foreach + set property should handle null" ) {
+    val nodes = given(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]",
+        Seq(setProperty("node", "prop", "42")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(propertiesSet = sizeHint)
+    tx.getAllNodes.asScala.foreach {n =>
+      n.getProperty("prop") should equal(42)
     }
   }
 
@@ -405,13 +542,35 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("foreach + set property from map should handle null" ) {
+    val nodes = given(nodeGraph(sizeHint))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .foreach("node", "[n, null]",
+        Seq(setPropertyFromMap("node", "{prop: 42}", removeOtherProps = false)))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withRows(singleColumn(nodes))
+      .withStatistics(propertiesSet = sizeHint)
+    tx.getAllNodes.asScala.foreach {n =>
+      n.getProperty("prop") should equal(42)
+    }
+  }
+
   test("foreach + remove label" ) {
     val nodes = given(nodeGraph(sizeHint, "A", "B", "C"))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .foreach("node", "[n, null]",
-        Seq(removeLabel("n", "A", "B")))
+        Seq(removeLabel("node", "A", "B")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -435,7 +594,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .foreach("node", "[n, null]",
-        Seq(delete("n")))
+        Seq(delete("node")))
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -455,7 +614,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .foreach("node", "[n, null]",
-        Seq(delete("n", forced = true)))
+        Seq(delete("node", forced = true)))
       .allNodeScan("n")
       .build(readOnly = false)
 
