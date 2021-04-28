@@ -159,14 +159,14 @@ public class IndexWorkSyncTransactionApplicationStressIT
             this.index = index;
             NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
-            this.commandCreationContext = storageEngine.newCommandCreationContext( NULL, INSTANCE );
+            this.commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
         }
 
         @Override
         public void run()
         {
             try ( StorageReader reader = storageEngine.newReader();
-                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( NULL, INSTANCE ) )
+                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
             {
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {

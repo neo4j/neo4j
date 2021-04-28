@@ -47,7 +47,7 @@ public interface StorageEngine extends Lifecycle
      * TxStateVisitor.Decorator, CursorContext, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
-    CommandCreationContext newCommandCreationContext( CursorContext cursorContext, MemoryTracker memoryTracker );
+    CommandCreationContext newCommandCreationContext( MemoryTracker memoryTracker );
 
     /**
      * Adds an {@link IndexUpdateListener} which will receive streams of index updates from changes that gets

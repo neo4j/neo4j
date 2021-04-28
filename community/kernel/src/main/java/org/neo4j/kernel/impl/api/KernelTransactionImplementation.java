@@ -65,6 +65,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -154,6 +155,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
+    private final PageCacheTracer pageCacheTracer;
     private final Pool<KernelTransactionImplementation> pool;
 
     // For committing
@@ -168,7 +170,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ClockContext clocks;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
-    private final CursorContext cursorContext;
+    private CursorContext cursorContext;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
@@ -230,9 +232,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor )
     {
-        //TODO: we need to do this per tx and not on construction
-        this.cursorContext =
-                new CursorContext( tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.getVersionContext() );
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
@@ -245,12 +244,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.storageReader = storageEngine.newReader();
-        this.commandCreationContext = storageEngine.newCommandCreationContext( cursorContext, memoryTracker );
+        this.commandCreationContext = storageEngine.newCommandCreationContext( memoryTracker );
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
         this.clocks = new ClockContext( clock );
         this.transactionTracer = tracers.getDatabaseTracer();
+        this.pageCacheTracer = tracers.getPageCacheTracer();
         this.versionContextSupplier = versionContextSupplier;
         this.leaseService = leaseService;
         this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId, config );
@@ -287,6 +287,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Locks.Client lockClient, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
+        this.cursorContext =
+                new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.getVersionContext() );
         this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
@@ -311,6 +313,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
         this.statistics.init( currentThread().getId(), cursorContext );
+        this.commandCreationContext.initialize( cursorContext );
         this.currentStatement.initialize( lockClient, cursorContext, startTimeMillis );
         this.operations.initialize( cursorContext );
         this.initializationTrace = traceProvider.getTraceInfo();

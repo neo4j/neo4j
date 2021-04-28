@@ -89,7 +89,7 @@ public class CommandCreationContextIT
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReservation" ) ) )
         {
             prepareIdGenerator( storeProvider.apply( neoStores ).getIdGenerator() );
-            try ( var creationContext = storageEngine.newCommandCreationContext( cursorContext, INSTANCE ) )
+            try ( var creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
             {
                 idReservation.applyAsLong( creationContext );
                 assertCursorOne( cursorContext );
@@ -102,7 +102,7 @@ public class CommandCreationContextIT
     void trackMemoryAllocationInCommandCreationContext( BiConsumer<TransactionRecordState, ContextHolder> operation )
     {
         var memoryTracker = new LocalMemoryTracker();
-        try ( var commandCreationContext = storageEngine.newCommandCreationContext( NULL, memoryTracker ) )
+        try ( var commandCreationContext = storageEngine.newCommandCreationContext( memoryTracker ) )
         {
             var integrityValidator = mock( IntegrityValidator.class );
             var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE, LockTracer.NONE,

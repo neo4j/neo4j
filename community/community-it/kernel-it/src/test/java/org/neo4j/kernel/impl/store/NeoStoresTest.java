@@ -755,7 +755,7 @@ public class NeoStoresTest
 
     private void commitTx() throws Exception
     {
-        try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( NULL, INSTANCE ) )
+        try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
         {
             List<StorageCommand> commands = new ArrayList<>();
             storageEngine.createCommands( commands, transactionState, storageReader, commandCreationContext, IGNORE, NONE,

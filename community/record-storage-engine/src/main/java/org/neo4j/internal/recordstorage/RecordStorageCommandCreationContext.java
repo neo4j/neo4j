@@ -39,31 +39,38 @@ import static java.lang.Math.toIntExact;
 class RecordStorageCommandCreationContext extends CommandCreationLocking implements CommandCreationContext
 {
     private final NeoStores neoStores;
-    private final Loaders loaders;
     private final MemoryTracker memoryTracker;
-    private final PropertyCreator propertyCreator;
-    private final PropertyDeleter propertyDeleter;
+    private final PropertyStore propertyStore;
     private final int denseNodeThreshold;
     // The setting for relaxed dense node locking is a supplier since the command creation context instances are created once per
     // kernel transaction object and so will be reused between transactions. The relaxed locking feature may change from tx to tx
     // and so it will need to be queried per tx commit.
     private final BooleanSupplier relaxedLockingForDenseNodes;
-    private final CursorContext cursorContext;
-    private final RelationshipGroupGetter relationshipGroupGetter;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, BooleanSupplier relaxedLockingForDenseNodes,
-            CursorContext cursorContext, MemoryTracker memoryTracker )
+    private PropertyCreator propertyCreator;
+    private PropertyDeleter propertyDeleter;
+    private RelationshipGroupGetter relationshipGroupGetter;
+    private Loaders loaders;
+    private CursorContext cursorContext;
+
+    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, BooleanSupplier relaxedLockingForDenseNodes, MemoryTracker memoryTracker )
     {
         this.denseNodeThreshold = denseNodeThreshold;
         this.relaxedLockingForDenseNodes = relaxedLockingForDenseNodes;
-        this.cursorContext = cursorContext;
         this.neoStores = neoStores;
         this.memoryTracker = memoryTracker;
+        this.propertyStore = neoStores.getPropertyStore();
+    }
+
+    @Override
+    public void initialize( CursorContext cursorContext )
+    {
+        //TODO: close things as well now
+        this.cursorContext = cursorContext;
         this.loaders = new Loaders( neoStores, cursorContext );
         this.relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorContext );
         PropertyTraverser propertyTraverser = new PropertyTraverser( cursorContext );
         this.propertyDeleter = new PropertyDeleter( propertyTraverser, cursorContext );
-        PropertyStore propertyStore = neoStores.getPropertyStore();
         this.propertyCreator =
                 new PropertyCreator( new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
                         new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,

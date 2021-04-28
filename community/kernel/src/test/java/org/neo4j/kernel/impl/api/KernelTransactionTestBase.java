@@ -117,7 +117,7 @@ class KernelTransactionTestBase
     {
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( storageEngine.newReader() ).thenReturn( storageReader );
-        when( storageEngine.newCommandCreationContext( any( CursorContext.class ), any() ) ).thenReturn( commandCreationContext );
+        when( storageEngine.newCommandCreationContext( any() ) ).thenReturn( commandCreationContext );
         when( storageEngine.metadataProvider() ).thenReturn( metadataProvider );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(

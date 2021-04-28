@@ -110,7 +110,7 @@ public abstract class RecordStorageReaderTestBase
         this.storageEngine = builder.build();
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
-        this.commitContext = storageEngine.newCommandCreationContext( NULL, INSTANCE );
+        this.commitContext = storageEngine.newCommandCreationContext( INSTANCE );
         storageEngineRule.before();
     }
 

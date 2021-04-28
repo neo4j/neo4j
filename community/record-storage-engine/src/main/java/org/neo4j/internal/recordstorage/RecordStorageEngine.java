@@ -301,9 +301,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public RecordStorageCommandCreationContext newCommandCreationContext( CursorContext cursorContext, MemoryTracker memoryTracker )
+    public RecordStorageCommandCreationContext newCommandCreationContext( MemoryTracker memoryTracker )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, this::relaxedLockingForDenseNodes, cursorContext, memoryTracker );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, this::relaxedLockingForDenseNodes, memoryTracker );
     }
 
     @Override

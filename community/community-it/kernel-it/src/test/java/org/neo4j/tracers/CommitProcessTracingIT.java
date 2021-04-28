@@ -88,7 +88,7 @@ public class CommitProcessTracingIT
               var reader = storageEngine.newReader() )
         {
             assertZeroCursor( cursorContext );
-            var context = storageEngine.newCommandCreationContext( CursorContext.NULL, INSTANCE );
+            var context = storageEngine.newCommandCreationContext( INSTANCE );
             List<StorageCommand> commands = new ArrayList<>();
             var txState = new TxState();
             txState.nodeDoAddLabel( 1, sourceId );
