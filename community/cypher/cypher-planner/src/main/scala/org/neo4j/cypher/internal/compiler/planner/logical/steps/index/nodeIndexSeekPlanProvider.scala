@@ -35,9 +35,14 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider with 
     createSolutions(Set(indexMatch), hints, argumentIds, restrictions, context).nonEmpty
   }
 
+  // This is a temporary hack to get rid of some plans that we did not produce in the old implementation
+  private def hasNoImplicitPredicates(indexMatch: IndexMatch): Boolean =
+    !indexMatch.propertyPredicates.exists(_.isImplicit)
+
   private def createSolutions(indexMatches: Set[IndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[Solution] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch, restrictions)
+    if hasNoImplicitPredicates(indexMatch)
     solution <- createSolution(indexMatch, hints, argumentIds, context)
   } yield solution
 

@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexP
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.IndexMatch
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.MultipleExactPredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.NonSeekablePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.NotExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.PredicatesForIndex
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.SingleExactPredicate
@@ -183,16 +184,16 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty)  =>
         Set(IndexCompatiblePredicate(scannable.ident, scannable.property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate), dependencies = Set.empty))
+          solvedPredicate = Some(scannable.expr), dependencies = Set.empty))
 
       // n.prop ENDS WITH 'substring'
       case predicate@EndsWith(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
-        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
+        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
           solvedPredicate = Some(predicate), dependencies = expr.dependencies))
 
       // n.prop CONTAINS 'substring'
       case predicate@Contains(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
-        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
+        Set(IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
           solvedPredicate = Some(predicate), dependencies = expr.dependencies))
 
       case _ =>
@@ -209,7 +210,7 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
         // Don't add implicit predicates if we already have them explicitly
         if !compatiblePredicates.exists(_.predicate == predicate)
       } yield IndexCompatiblePredicate(variable, property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
-        solvedPredicate = None, dependencies = Set.empty)
+        solvedPredicate = None, dependencies = Set.empty, isImplicit = true)
 
       case _ =>
         Set.empty[IndexCompatiblePredicate]
@@ -380,6 +381,7 @@ object NodeIndexPlanner {
     predicateExactness: PredicateExactness,
     solvedPredicate: Option[Expression],
     dependencies: Set[LogicalVariable],
+    isImplicit: Boolean = false,
   ) {
     def name: String = variable.name
 
@@ -429,10 +431,11 @@ object NodeIndexPlanner {
    */
   case class IndexCandidateHasLabelsPredicate(name: String, hasLabels: HasLabels)
 
-  sealed abstract class PredicateExactness(val isExact: Boolean)
-  case object SingleExactPredicate extends PredicateExactness(true)
-  case object MultipleExactPredicate extends PredicateExactness(true)
-  case object NotExactPredicate extends PredicateExactness(false)
+  sealed abstract class PredicateExactness(val isExact: Boolean, val isSeekable: Boolean)
+  case object SingleExactPredicate extends PredicateExactness(true, true)
+  case object MultipleExactPredicate extends PredicateExactness(true, true)
+  case object NotExactPredicate extends PredicateExactness(false, true)
+  case object NonSeekablePredicate extends PredicateExactness(false, false)
 
   /**
    * Represents a match between a set of predicates and an existing index
@@ -473,6 +476,9 @@ object NodeIndexPlanner {
         case (behavior, _)                                                      => behavior
       }
     }
+
+    def hasImplicitPredicates: Boolean =
+      propertyPredicates.exists(_.isImplicit)
   }
 
   /**

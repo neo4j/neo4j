@@ -109,8 +109,8 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
     val (exactPrefix, rest) = propertyPredicates.span(_.predicateExactness.isExact)
 
     val (seekablePrefix, nonSeekableSuffix) = rest match {
-      case Seq()              => (exactPrefix, rest)
-      case Seq(next, tail@_*) => (exactPrefix :+ next, tail)
+      case Seq(next, tail@_*) if next.predicateExactness.isSeekable => (exactPrefix :+ next, tail)
+      case _                                                        => (exactPrefix, rest)
     }
 
     seekablePrefix ++ nonSeekableSuffix.map(_.convertToScannable)

@@ -76,6 +76,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val lit6: Expression = literalInt(6)
 
   private val nPropInLit42 = in(nProp, listOf(lit42))
+  private val nPropEndsWithLitText = endsWith(nProp, literalString("Text"))
+  private val nPropContainsLitText = contains(nProp, literalString("Text"))
+  private val nFooEqualsLit42 = equals(nFoo, lit42)
   private val nFooExists = exists(nFoo)
   private val nPropLessThanLit42 = AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit42)))
 
@@ -941,6 +944,57 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                                        .filter(_ == Set(nPropInLit42, hasLabel("Awesome")))
 
       implicitExistsSolutions shouldEqual Seq.empty
+    }
+  }
+
+  test("should plan seek with ENDS WITH as existence after equality") {
+
+    new given {
+      indexOn("Awesome", "foo", "prop")
+
+      qg = queryGraph(nFooEqualsLit42, nPropEndsWithLitText, hasLabel("Awesome"))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+      }
+    }
+  }
+
+  test("should plan seek with CONTAINS as existence after equality") {
+
+    new given {
+      indexOn("Awesome", "foo", "prop")
+
+      qg = queryGraph(nFooEqualsLit42, nPropContainsLitText, hasLabel("Awesome"))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+      }
+    }
+  }
+
+  test("should plan seek with Regex as existence after equality") {
+
+    new given {
+      indexOn("Awesome", "foo", "prop")
+
+      qg = queryGraph(nFooEqualsLit42, regex(nProp, literalString("Text")), hasLabel("Awesome"))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
+      }
     }
   }
 
