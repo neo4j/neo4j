@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -52,7 +53,19 @@ class ConstraintCreationIT
     private IndexProviderMap indexProviderMap;
 
     private static final Label LABEL = Label.label( "label1" );
-    private static final long indexId = 1;
+    private long indexId;
+    private long nbrIndexesOnStart;
+
+    @BeforeEach
+    void setUp()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            nbrIndexesOnStart = Iterables.count( tx.schema().getIndexes() );
+            // The id the index belonging to the constraint should get
+            indexId = nbrIndexesOnStart + 1;
+        }
+    }
 
     @ExtensionCallback
     void configureLuceneSubProvider( TestDatabaseManagementServiceBuilder builder )
@@ -114,7 +127,7 @@ class ConstraintCreationIT
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 0, Iterables.count( tx.schema().getIndexes() ) );
+            assertEquals( nbrIndexesOnStart, Iterables.count( tx.schema().getIndexes() ) );
         }
     }
 }
