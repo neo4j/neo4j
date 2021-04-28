@@ -40,9 +40,8 @@ abstract class NestedPipeExpression(pipe: Pipe,
                                     state: QueryState): ClosingIterator[CypherRow] = {
     val initialContext: CypherRow = createInitialContext(row, state)
     val innerState =
-      state
-        .withInitialContext(initialContext)
-        .withDecorator(state.decorator.innerDecorator(owningPlanId))
+      state.withInitialContextAndDecorator(initialContext,
+                                           state.decorator.innerDecorator(owningPlanId))
 
     pipe.createResults(innerState)
   }

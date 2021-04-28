@@ -92,6 +92,10 @@ class QueryState(val query: QueryContext,
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
+  def withInitialContextAndDecorator(initialContext: CypherRow, newDecorator: PipeDecorator) =
+    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+      expressionVariables, subscriber, memoryTracker, newDecorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
+
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
       expressionVariables, subscriber, memoryTracker, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
