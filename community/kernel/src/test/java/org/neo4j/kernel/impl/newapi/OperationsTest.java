@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import org.junit.platform.commons.util.BlacklistedExceptions;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.opentest4j.AssertionFailedError;
@@ -102,6 +101,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.platform.commons.util.UnrecoverableExceptions.rethrowIfUnrecoverable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -195,8 +195,8 @@ class OperationsTest
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
                  transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
-                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), NULL, INSTANCE );
-        operations.initialize();
+                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE );
+        operations.initialize( NULL );
 
         this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext );
     }
@@ -1045,7 +1045,7 @@ class OperationsTest
         when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), NULL, INSTANCE );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE );
 
         // when
         operations.nodeCreate();
@@ -1074,8 +1074,8 @@ class OperationsTest
         when( sctx.mode()).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), NULL, INSTANCE );
-        operations.initialize();
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE );
+        operations.initialize( NULL );
 
         // when
         operations.nodeCreateWithLabels( new int[]{1} );
@@ -1105,7 +1105,7 @@ class OperationsTest
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                                                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
                                                 mock( ConstraintIndexCreator.class ),
-                                                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), NULL,
+                                                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(),
                                                 INSTANCE );
 
         // when
@@ -1135,7 +1135,7 @@ class OperationsTest
         when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), NULL, INSTANCE );
+                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE );
 
         // when
         operations.indexCreate( IndexPrototype.forSchema( schema ).withName( "name" ) );
@@ -1359,7 +1359,7 @@ class OperationsTest
         }
         catch ( Throwable t )
         {
-            BlacklistedExceptions.rethrowIfBlacklisted( t );
+            rethrowIfUnrecoverable( t );
             throw new AssertionFailedError( "Unexpected exception thrown: " + t.getMessage(), t );
         }
     }

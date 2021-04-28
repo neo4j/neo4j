@@ -273,7 +273,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         constraintIndexCreator,
                         constraintSemantics,
                         indexingService,
-                        config, cursorContext, memoryTracker );
+                        config, memoryTracker );
         traceProvider = getTraceProvider( config );
         transactionHeapBytesLimit = config.get( memory_transaction_max_size );
         registerConfigChangeListeners( config );
@@ -312,7 +312,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clientInfo = clientInfo;
         this.statistics.init( currentThread().getId(), cursorContext );
         this.currentStatement.initialize( lockClient, cursorContext, startTimeMillis );
-        this.operations.initialize();
+        this.operations.initialize( cursorContext );
         this.initializationTrace = traceProvider.getTraceInfo();
         this.memoryTracker.setLimit( transactionHeapBytesLimit );
         return this;
