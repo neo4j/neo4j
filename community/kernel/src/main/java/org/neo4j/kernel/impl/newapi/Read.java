@@ -78,16 +78,13 @@ abstract class Read implements TxStateHolder,
 {
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
-    protected final CursorContext cursorContext;
     final KernelTransactionImplementation ktx;
     private final boolean scanStoreAsTokenIndexEnabled;
 
-    Read( StorageReader storageReader, DefaultPooledCursors cursors, CursorContext cursorContext,
-            KernelTransactionImplementation ktx, Config config )
+    Read( StorageReader storageReader, DefaultPooledCursors cursors, KernelTransactionImplementation ktx, Config config )
     {
         this.storageReader = storageReader;
         this.cursors = cursors;
-        this.cursorContext = cursorContext;
         this.ktx = ktx;
         this.scanStoreAsTokenIndexEnabled = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
@@ -222,6 +219,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
+        CursorContext cursorContext = ktx.cursorContext();
         TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorContext );
         IndexProgressor progressor = labelScan.initialize( indexCursor, order, cursorContext );
         indexCursor.initialize( progressor, label, order );
@@ -231,6 +229,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
+        CursorContext cursorContext = ktx.cursorContext();
         return new NodeLabelIndexCursorScan( this, label, labelScanReader().entityTokenScan( label, cursorContext ), cursorContext );
     }
 
@@ -255,7 +254,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( indexCursor, constraints, query, cursorContext );
+        tokenSession.reader.query( indexCursor, constraints, query, ktx.cursorContext() );
     }
 
     @Override
@@ -269,7 +268,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeCursor> allNodesScan()
     {
         ktx.assertOpen();
-        return new NodeCursorScan( storageReader.allNodeScan(), this, cursorContext );
+        return new NodeCursorScan( storageReader.allNodeScan(), this, ktx.cursorContext() );
     }
 
     @Override
@@ -297,7 +296,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<RelationshipScanCursor> allRelationshipsScan()
     {
         ktx.assertOpen();
-        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this, cursorContext );
+        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this, ktx.cursorContext() );
     }
 
     @Override
@@ -322,7 +321,7 @@ abstract class Read implements TxStateHolder,
 
         var indexCursor = (DefaultRelationshipTypeIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( indexCursor, constraints, query, cursorContext );
+        tokenSession.reader.query( indexCursor, constraints, query, ktx.cursorContext() );
     }
 
     @Override

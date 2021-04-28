@@ -107,10 +107,10 @@ public class AllStoreHolder extends Read
 
     public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultPooledCursors cursors, GlobalProcedures globalProcedures,
                            SchemaState schemaState, IndexingService indexingService, LabelScanStore labelScanStore,
-                           IndexStatisticsStore indexStatisticsStore, CursorContext cursorContext, Dependencies databaseDependencies, Config config,
+                           IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, Config config,
                            MemoryTracker memoryTracker )
     {
-        super( storageReader, cursors, cursorContext, ktx, config );
+        super( storageReader, cursors, ktx, config );
         this.globalProcedures = globalProcedures;
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>( index -> indexingService.getIndexProxy( index ).newValueReader() );
@@ -141,7 +141,7 @@ public class AllStoreHolder extends Read
         }
 
         AccessMode mode = ktx.securityContext().mode();
-        boolean existsInNodeStore = storageReader.nodeExists( reference, cursorContext );
+        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.cursorContext() );
 
         if ( mode.allowsTraverseAllLabels() )
         {
@@ -153,7 +153,8 @@ public class AllStoreHolder extends Read
         }
         else
         {
-            try ( DefaultNodeCursor node = cursors.allocateNodeCursor( cursorContext ) ) // DefaultNodeCursor already contains traversal checks within next()
+            // DefaultNodeCursor already contains traversal checks within next()
+            try ( DefaultNodeCursor node = cursors.allocateNodeCursor( ktx.cursorContext() ) )
             {
                 ktx.dataRead().singleNode( reference, node );
                 return node.next();
@@ -202,7 +203,7 @@ public class AllStoreHolder extends Read
         if ( mode.allowsTraverseAllNodesWithLabel( labelId ) )
         {
             // All nodes with the specified label can be traversed, so the count store can be used.
-            return storageReader.countsForNode( labelId, cursorContext );
+            return storageReader.countsForNode( labelId, ktx.cursorContext() );
         }
         else if ( mode.disallowsTraverseLabel( labelId ) )
         {
@@ -216,7 +217,8 @@ public class AllStoreHolder extends Read
             // We need to calculate the counts through expensive operations.
             // We cannot use a NodeLabelScan without an expensive post-filtering, since it is not guaranteed that all nodes with the label can be traversed.
             long count = 0;
-            try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor( cursorContext ) ) // DefaultNodeCursor already contains traversal checks within next()
+            // DefaultNodeCursor already contains traversal checks within next()
+            try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor( ktx.cursorContext() ) )
             {
                 this.allNodesScan( nodes );
                 while ( nodes.next() )
@@ -240,6 +242,7 @@ public class AllStoreHolder extends Read
             try
             {
                 TransactionState txState = ktx.txState();
+                CursorContext cursorContext = ktx.cursorContext();
                 try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts, cursorContext ) )
                 {
                     txState.accept( countingVisitor );
@@ -267,6 +270,7 @@ public class AllStoreHolder extends Read
     public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
     {
         AccessMode mode = ktx.securityContext().mode();
+        CursorContext cursorContext = ktx.cursorContext();
         if ( mode.allowsTraverseRelType( typeId ) &&
              mode.allowsTraverseNode( startLabelId ) &&
              mode.allowsTraverseNode( endLabelId ) )
@@ -348,6 +352,7 @@ public class AllStoreHolder extends Read
         long count = 0;
         if ( ktx.hasTxStateWithChanges() )
         {
+            CursorContext cursorContext = ktx.cursorContext();
             CountsDelta counts = new CountsDelta();
             try
             {
@@ -402,6 +407,7 @@ public class AllStoreHolder extends Read
             }
         }
         AccessMode mode = ktx.securityContext().mode();
+        CursorContext cursorContext = ktx.cursorContext();
         boolean existsInRelStore = storageReader.relationshipExists( reference, cursorContext );
 
         if ( mode.allowsTraverseAllRelTypes() )
@@ -1096,7 +1102,7 @@ public class AllStoreHolder extends Read
     @Override
     public CursorContext cursorContext()
     {
-        return cursorContext;
+        return ktx.cursorContext();
     }
 
     @Override

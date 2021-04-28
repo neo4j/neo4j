@@ -410,7 +410,7 @@ class DefaultRelationshipTraversalCursorTest
     {
         TestRead( KernelTransactionImplementation ktx )
         {
-            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), CursorContext.NULL, ktx, Config.defaults() );
+            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), ktx, Config.defaults() );
         }
 
         @Override

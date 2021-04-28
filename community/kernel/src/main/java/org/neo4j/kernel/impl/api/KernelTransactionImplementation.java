@@ -259,8 +259,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, config );
         this.allStoreHolder =
-                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore,
-                        indexStatisticsStore, cursorContext, dependencies, config, memoryTracker );
+                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
+                        dependencies, config, memoryTracker );
         this.operations =
                 new Operations(
                         allStoreHolder,

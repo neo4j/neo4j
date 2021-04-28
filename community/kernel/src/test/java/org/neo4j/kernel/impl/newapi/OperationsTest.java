@@ -182,7 +182,7 @@ class OperationsTest
         var facade = mock( GraphDatabaseFacade.class );
         dependencies.satisfyDependency( facade );
         allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( GlobalProcedures.class ), mock( SchemaState.class ), indexingService,
-                mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), NULL, dependencies, Config.defaults(), INSTANCE );
+                mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, Config.defaults(), INSTANCE );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         tokenHolders = mockedTokenHolders();
         creationContext = mock( CommandCreationContext.class );
