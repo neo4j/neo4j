@@ -122,15 +122,15 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
     )
   }
 
-  test("Merge node should eliminate provided order and cause planning Sort") {
-    shouldEliminateProvidedSortOrder(
+  test("Merge node should not eliminate provided order and cause planning Sort") {
+    shouldRetainProvidedSortOrder(
       "MERGE (x:N)",
       {case _:Merge  => true}
     )
   }
 
-  test("Merge relationship should eliminate provided order and cause planning Sort") {
-    shouldEliminateProvidedSortOrder(
+  test("Merge relationship should not eliminate provided order and cause planning Sort") {
+    shouldRetainProvidedSortOrder(
       "MERGE ()-[x:R]-()",
       {case _:Merge  => true}
     )
@@ -205,16 +205,30 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
     )
   }
 
-  test("MERGE + ON MATCH with update should eliminate provided order and cause planning Sort") {
+  test("MERGE node + ON MATCH with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x) ON MATCH SET x.prop = 1",
       {case _:Merge  => true}
     )
   }
 
-  test("MERGE + ON CREATE with update should eliminate provided order and cause planning Sort") {
-    shouldEliminateProvidedSortOrder(
+  test("MERGE node + ON CREATE with update should not eliminate provided order and cause planning Sort") {
+    shouldRetainProvidedSortOrder(
       "MERGE (x) ON CREATE SET x.prop = 1",
+      {case _:Merge  => true}
+    )
+  }
+
+  test("Merge relationship + ON MATCH should eliminate provided order and cause planning Sort") {
+    shouldEliminateProvidedSortOrder(
+      "MERGE ()-[x:R]-() ON MATCH set x.prop = 1",
+      {case _:Merge  => true}
+    )
+  }
+
+  test("Merge relationship + ON CREATE should not eliminate provided order and cause planning Sort") {
+    shouldRetainProvidedSortOrder(
+      "MERGE ()-[x:R]-() ON CREATE set x.prop = 1",
       {case _:Merge  => true}
     )
   }

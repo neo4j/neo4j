@@ -1262,7 +1262,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val rewrittenRelPatterns = createRelationshipPatterns.map(p => PatternExpressionSolver.ForMappable().solve(inner, p, context)._1)
 
     val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
-    annotate(Merge(inner, rewrittenNodePatterns, rewrittenRelPatterns, onMatchPatterns, onCreatePatterns), solved, ProvidedOrder.empty, context)
+    val merge = Merge(inner, rewrittenNodePatterns, rewrittenRelPatterns, onMatchPatterns, onCreatePatterns)
+    val providedOrder = providedOrderOfUpdate(merge, inner)
+    annotate(merge, solved, providedOrder, context)
   }
 
   def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
@@ -1457,9 +1459,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-   * Currently we consider all updates as invalidating provided order
+   * Currently we consider all updates, except MERGE, as invalidating provided order
    */
   private def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = plan match {
+    //MERGE will either be ordered by its inner plan or create a single row which by
+    //definition is ordered. However if you do ON MATCH SET ... that might invalidate the
+    //inner ordering.
+    case m: Merge => m.onMatch.nonEmpty
     case _: UpdatingPlan => true
     case _               => false
   }
