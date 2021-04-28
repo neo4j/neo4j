@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -84,8 +87,8 @@ class ConcurrentCreateDropIndexIT
         // THEN they should all be observed as existing in the end
         try ( Transaction tx = db.beginTx() )
         {
-            List<IndexDefinition> indexes = asList( tx.schema().getIndexes() );
-            assertEquals( threads, indexes.size() );
+            List<IndexDefinition> indexes =
+                    IntStream.range( 0, threads ).mapToObj( i -> single( tx.schema().getIndexes( label( i ) ) ) ).collect( Collectors.toList() );
             Set<String> labels = new HashSet<>();
             for ( IndexDefinition index : indexes )
             {
@@ -99,12 +102,14 @@ class ConcurrentCreateDropIndexIT
     void concurrentDroppingOfIndexesShouldNotInterfere() throws Throwable
     {
         // GIVEN created indexes
+        long initialIndexCount;
         List<IndexDefinition> indexes = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
+            initialIndexCount = Streams.stream( tx.schema().getIndexes() ).count();
             for ( int i = 0; i < threads; i++ )
             {
-                indexes.add( tx.schema().indexFor( label( i ) ).on( KEY ).create() );
+                indexes.add( indexCreate( tx, i ) );
             }
             tx.commit();
         }
@@ -120,7 +125,7 @@ class ConcurrentCreateDropIndexIT
         // THEN they should all be observed as dropped in the end
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( 0, asList( tx.schema().getIndexes() ).size() );
+            assertEquals( initialIndexCount, asList( tx.schema().getIndexes() ).size() );
             tx.commit();
         }
     }
@@ -136,7 +141,7 @@ class ConcurrentCreateDropIndexIT
         {
             for ( int i = 0; i < drops; i++ )
             {
-                indexesToDrop.add( tx.schema().indexFor( label( i ) ).on( KEY ).create() );
+                indexesToDrop.add( indexCreate( tx, i ) );
             }
             tx.commit();
         }
@@ -158,9 +163,8 @@ class ConcurrentCreateDropIndexIT
         // THEN they should all be observed as dropped in the end
         try ( Transaction tx = db.beginTx() )
         {
-            List<IndexDefinition> indexes = asList( tx.schema().getIndexes() );
-            assertEquals( creates, indexes.size() );
-
+            List<IndexDefinition> indexes =
+                    IntStream.range( drops, drops + creates ).mapToObj( i -> single( tx.schema().getIndexes( label( i ) ) ) ).collect( Collectors.toList() );
             for ( IndexDefinition index : indexes )
             {
                 assertTrue( expectedIndexedLabels.remove( single( index.getLabels() ).name() ) );
@@ -251,7 +255,7 @@ class ConcurrentCreateDropIndexIT
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    tx.schema().indexFor( label( 0 ) ).on( KEY ).create();
+                    indexCreate( tx, 0 );
                     tx.commit();
                 }
             } );
@@ -277,10 +281,15 @@ class ConcurrentCreateDropIndexIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().indexFor( label( labelIndex ) ).on( KEY ).create();
+                indexCreate( tx, labelIndex );
                 tx.commit();
             }
         };
+    }
+
+    private IndexDefinition indexCreate( Transaction tx, int labelIndex )
+    {
+        return tx.schema().indexFor( label( labelIndex ) ).on( KEY ).create();
     }
 
     private Runnable indexDrop( IndexDefinition index )
