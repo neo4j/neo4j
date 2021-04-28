@@ -50,6 +50,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -76,6 +77,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
@@ -83,7 +85,6 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
@@ -509,7 +510,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
-            indexDescriptor = getIndexDescriptor( first( tx.schema().getIndexes() ) );
+            indexDescriptor = getFulltextIndexDescriptor( tx.schema().getIndexes() );
             Node node = tx.createNode( Label.label( "Label" ) );
             node.setProperty( "prop", "value" );
             nodeId = node.getId();
@@ -596,8 +597,11 @@ class FulltextIndexConsistencyCheckIT
         NodeRecord record = stores.getNodeStore().getRecord( nodeId, stores.getNodeStore().newRecord(), RecordLoad.NORMAL, NULL );
         long propId = record.getNextProp();
 
+        // Find and remove property p2
         PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL, NULL );
-        propRecord.removePropertyBlock( 1 ); // remove property p2
+        List<NamedToken> propertyKeyTokens = stores.getPropertyKeyTokenStore().getAllReadableTokens( NULL );
+        NamedToken propertyKeyToken = propertyKeyTokens.stream().filter( token -> "p2".equals( token.name() ) ).findFirst().orElseThrow();
+        propRecord.removePropertyBlock( propertyKeyToken.id() );
         stores.getPropertyStore().updateRecord( propRecord, NULL );
 
         managementService.shutdown();
@@ -671,7 +675,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
-            indexDescriptor = getIndexDescriptor( first( tx.schema().getIndexes() ) );
+            indexDescriptor = getFulltextIndexDescriptor( tx.schema().getIndexes() );
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
             rel.setProperty( "prop", "value" );
@@ -740,6 +744,18 @@ class FulltextIndexConsistencyCheckIT
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false, ConsistencyFlags.DEFAULT );
+    }
+
+    private static IndexDescriptor getFulltextIndexDescriptor( Iterable<IndexDefinition> indexes )
+    {
+        for ( IndexDefinition index : indexes )
+        {
+            if ( index.getIndexType() == IndexType.FULLTEXT )
+            {
+                return getIndexDescriptor( index );
+            }
+        }
+        return IndexDescriptor.NO_INDEX;
     }
 
     private static IndexDescriptor getIndexDescriptor( IndexDefinition definition )
