@@ -26,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
@@ -45,7 +46,6 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 @ImpermanentDbmsExtension
@@ -57,6 +57,7 @@ public class CompositeUniquenessConstraintValidationIT
 
     private ConstraintDescriptor constraintDescriptor;
     private int label;
+    private int[] propIds;
     private KernelTransaction transaction;
     protected Kernel kernel;
 
@@ -92,14 +93,13 @@ public class CompositeUniquenessConstraintValidationIT
         TokenWrite tokenWrite = transaction.tokenWrite();
         tokenWrite.labelGetOrCreateForName( "Label0" );
         label = tokenWrite.labelGetOrCreateForName( "Label1" );
-        assertEquals( 1, label );
-        for ( int i = 0; i < 10; i++ )
+        propIds = new int[10];
+        for ( int i = 0; i < propIds.length; i++ )
         {
-            int prop = tokenWrite.propertyKeyGetOrCreateForName( "prop" + i );
-            assertEquals( i, prop );
+            propIds[i] = tokenWrite.propertyKeyGetOrCreateForName( "prop" + i );
         }
         commit();
-}
+    }
 
     private void setupConstraintDescriptor( int nbrOfProperties ) throws KernelException
     {
@@ -185,7 +185,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        transaction.dataWrite().nodeRemoveProperty( node, 0 );
+        transaction.dataWrite().nodeRemoveProperty( node, propIds[0] );
         long newNode = createLabeledNode( label );
         setProperties( newNode, lhs );
 
@@ -204,7 +204,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        transaction.dataWrite().nodeSetProperty( node, 0, Values.of( "Alive!" ) );
+        transaction.dataWrite().nodeSetProperty( node, propIds[0], Values.of( "Alive!" ) );
         long newNode = createLabeledNode( label );
         setProperties( newNode, lhs );
 
@@ -226,13 +226,10 @@ public class CompositeUniquenessConstraintValidationIT
         long n2 = createLabeledNode( label );
         setProperties( n1, lhs );
         int lastPropertyOffset = lhs.length - 1;
-        for ( int prop = 0; prop < lastPropertyOffset; prop++ )
-        {
-            setProperty( n2, prop, lhs[prop] ); // still ok
-        }
+        setProperties( n2, lhs, lastPropertyOffset );
 
-        assertThatThrownBy( () -> setProperty( n2, lastPropertyOffset, lhs[lastPropertyOffset] ) ).isInstanceOf(
-                UniquePropertyValueValidationException.class );
+        assertThatThrownBy( () -> setProperty( n2, propIds[lastPropertyOffset], lhs[lastPropertyOffset] ) )
+                .isInstanceOf( UniquePropertyValueValidationException.class );
 
         // Then should fail
         commit();
@@ -250,15 +247,11 @@ public class CompositeUniquenessConstraintValidationIT
         // when
         newTransaction();
         long node = createLabeledNode( label );
-
         int lastPropertyOffset = lhs.length - 1;
-        for ( int prop = 0; prop < lastPropertyOffset; prop++ )
-        {
-            setProperty( node, prop, lhs[prop] ); // still ok
-        }
+        setProperties( node, lhs, lastPropertyOffset );
 
-        assertThatThrownBy( () -> setProperty( node, lastPropertyOffset, lhs[lastPropertyOffset] ) ).isInstanceOf(
-                UniquePropertyValueValidationException.class );
+        assertThatThrownBy( () -> setProperty( node, propIds[lastPropertyOffset], lhs[lastPropertyOffset] ) )
+                .isInstanceOf( UniquePropertyValueValidationException.class );
         commit();
     }
 
@@ -293,12 +286,9 @@ public class CompositeUniquenessConstraintValidationIT
 
         long nodeB = createLabeledNode( label );
         int lastPropertyOffset = lhs.length - 1;
-        for ( int prop = 0; prop < lastPropertyOffset; prop++ )
-        {
-            setProperty( nodeB, prop, rhs[prop] ); // still ok
-        }
+        setProperties( nodeB, rhs, lastPropertyOffset );
 
-        assertThatThrownBy( () -> setProperty( nodeB, lastPropertyOffset, rhs[lastPropertyOffset] ) )
+        assertThatThrownBy( () -> setProperty( nodeB, propIds[lastPropertyOffset], rhs[lastPropertyOffset] ) )
                 .isInstanceOf( UniquePropertyValueValidationException.class );
         commit();
     }
@@ -361,10 +351,7 @@ public class CompositeUniquenessConstraintValidationIT
         newTransaction();
         long nodeId = createNode();
         addLabel( nodeId, labelId );
-        for ( int prop = 0; prop < propertyValues.length; prop++ )
-        {
-            setProperty( nodeId, prop, propertyValues[prop] );
-        }
+        setProperties( nodeId, propertyValues );
         commit();
         return nodeId;
     }
@@ -372,19 +359,22 @@ public class CompositeUniquenessConstraintValidationIT
     private void setProperties( long nodeId, Object[] propertyValues )
             throws KernelException
     {
-        for ( int prop = 0; prop < propertyValues.length; prop++ )
+        setProperties( nodeId, propertyValues, propertyValues.length );
+    }
+
+    private void setProperties( long nodeId, Object[] propertyValues, int numOfValues )
+            throws KernelException
+    {
+        assertThat( numOfValues ).isLessThanOrEqualTo( propIds.length );
+        for ( int i = 0; i < numOfValues; i++ )
         {
-            setProperty( nodeId, prop, propertyValues[prop] );
+            setProperty( nodeId, propIds[i], propertyValues[i] );
         }
     }
 
     private int[] propertyIds( int numberOfProps )
     {
-        int[] props = new int[numberOfProps];
-        for ( int i = 0; i < numberOfProps; i++ )
-        {
-            props[i] = i;
-        }
-        return props;
+        assertThat( numberOfProps ).isLessThanOrEqualTo( propIds.length );
+        return Arrays.copyOf( propIds, numberOfProps );
     }
 }
