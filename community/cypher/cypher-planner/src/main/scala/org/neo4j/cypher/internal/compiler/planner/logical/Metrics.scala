@@ -120,7 +120,7 @@ object Metrics {
   type LabelInfo = Map[String, Set[LabelName]]
 
   /**
-   * A relationship can only have one type. If labelInfo("r") = Set(RelTypeName("Foo")), then we are certain that r:Foo.
+   * A relationship can only have one type. If labelInfo("r") = RelTypeName("Foo"), then we are certain that r:Foo.
    * If a relationship is given with multiple OR'ed types, such as ()-[:T1|T2]-(), then none of those types should be present in this map.
    */
   type RelTypeInfo = Map[String, RelTypeName]
@@ -170,5 +170,4 @@ trait MetricsFactory {
     Metrics(newCostModel(config, executionModel), cardinality, queryGraphCardinalityModel)
   }
 }
-
 

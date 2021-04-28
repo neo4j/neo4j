@@ -610,7 +610,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stringPredicateResult = calculator(stringPredicate.expr)
 
     stringPredicateResult.factor should equal(
-      0.2 // exists
+      friendsPropSel // exists
         * DEFAULT_RANGE_SEEK_FACTOR // starts with
     )
   }
@@ -785,7 +785,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val existsResult = calculator(rExists.expr)
 
-    existsResult.factor should equal(0.2)
+    existsResult.factor should equal(friendsPropSel)
   }
 
   test("exists with one label, no index") {
@@ -812,7 +812,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val existsResult = calculator(rExists.expr)
 
-    existsResult.factor should equal(0.2)
+    existsResult.factor should equal(friendsPropSel)
   }
 
   test("exists with two labels, one index") {
@@ -918,7 +918,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val eqResult = calculator(equals.expr)
 
-    eqResult.factor should equal(0.2 * (1.0 / 180.0))
+    eqResult.factor should equal(friendsPropSel * indexFriendsUniqueSel)
   }
 
   test("equality with one label, size 2") {

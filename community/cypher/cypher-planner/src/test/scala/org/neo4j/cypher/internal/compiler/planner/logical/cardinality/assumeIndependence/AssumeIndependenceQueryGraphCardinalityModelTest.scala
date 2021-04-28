@@ -277,7 +277,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH ()-[t:T1]->() WHERE t.prop > 2") {
-  expectCardinality(ANY_T1_ANY * (1 - T1prop) * DEFAULT_RANGE_SEEK_FACTOR)
+    expectCardinality(ANY_T1_ANY * (1 - T1prop) * DEFAULT_RANGE_SEEK_FACTOR)
   }
 
   test("MATCH ()-[t:T1]->() WHERE t.prop >= 2") {
