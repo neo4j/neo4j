@@ -19,17 +19,25 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
+import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -40,12 +48,15 @@ import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -59,17 +70,15 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
+@ExtendWith( SoftAssertionsExtension.class )
 @PageCacheExtension
 @Neo4jLayoutExtension
 class CountsComputerTest
@@ -86,12 +95,20 @@ class CountsComputerTest
 
     private DatabaseManagementServiceBuilder dbBuilder;
 
+    @InjectSoftAssertions
+    private SoftAssertions softly;
+
     @BeforeEach
     void setup()
     {
-        dbBuilder = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
-                .impermanent();
+        dbBuilder = configure( new TestDatabaseManagementServiceBuilder( databaseLayout )
+                                       .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                                       .impermanent() );
+    }
+
+    DatabaseManagementServiceBuilder configure( DatabaseManagementServiceBuilder builder )
+    {
+        return builder;
     }
 
     @Test
@@ -107,9 +124,9 @@ class CountsComputerTest
 
             countsStore.start( cursorTracer, INSTANCE );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+            softly.assertThat( cursorTracer.pins() ).as( "Pins" ).isEqualTo( 1 );
+            softly.assertThat( cursorTracer.unpins() ).as( "Unpins" ).isEqualTo( 1 );
+            softly.assertThat( cursorTracer.hits() ).as( "hits" ).isEqualTo( 1 );
         }
         finally
         {
@@ -128,9 +145,15 @@ class CountsComputerTest
         InvocationTrackingProgressReporter progressReporter = new InvocationTrackingProgressReporter();
         rebuildCounts( lastCommittedTransactionId, progressReporter );
 
-        checkEmptyCountStore();
-        assertTrue( progressReporter.isCompleteInvoked() );
-        assertFalse( progressReporter.isStartInvoked() );
+        try ( GBPTreeCountsStore store = createCountsStore() )
+        {
+            store.start( NULL, INSTANCE );
+            softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
+            store.accept( new AssertEmptyCountStoreVisitor(), NULL );
+        }
+
+        softly.assertThat( progressReporter.isCompleteInvoked() ).as( "Complete" ).isTrue();
+        softly.assertThat( progressReporter.isStartInvoked() ).as( "Start" ).isFalse();
     }
 
     @Test
@@ -143,20 +166,33 @@ class CountsComputerTest
 
         rebuildCounts( lastCommittedTransactionId );
 
-        checkEmptyCountStore();
+        try ( GBPTreeCountsStore store = createCountsStore() )
+        {
+            store.start( NULL, INSTANCE );
+            softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
+            store.accept( new AssertEmptyCountStoreVisitor(), NULL );
+        }
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreNodesInTheDB() throws IOException
+    void shouldCreateACountsStoreWhenThereAreNodesInTheDB() throws IOException, KernelException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+
+        Label[] labels = null;
+        int[] labelIds = null;
+        Node[] nodes = null;
+
         try ( Transaction tx = db.beginTx() )
         {
-            tx.createNode( Label.label( "A" ) );
-            tx.createNode( Label.label( "C" ) );
-            tx.createNode( Label.label( "D" ) );
-            tx.createNode();
+            labels = createLabels( 4 );
+            labelIds = getLabelIdsFrom( tx, labels );
+
+            nodes = new Node[]{tx.createNode( labels[0] ),
+                               tx.createNode( labels[1] ),
+                               tx.createNode( labels[2] ),
+                               tx.createNode()};
             tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -166,27 +202,36 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
-            assertEquals( 4, store.nodeCount( -1, NULL ) );
-            assertEquals( 1, store.nodeCount( 0, NULL ) );
-            assertEquals( 1, store.nodeCount( 1, NULL ) );
-            assertEquals( 1, store.nodeCount( 2, NULL ) );
-            assertEquals( 0, store.nodeCount( 3, NULL ) );
+            softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
+
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
         }
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB() throws IOException
+    void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB() throws IOException, KernelException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+
+        Label[] labels = null;
+        int[] labelIds = null;
+        Node[] nodes = null;
+
         try ( Transaction tx = db.beginTx() )
         {
-            tx.createNode( Label.label( "A" ) );
-            tx.createNode( Label.label( "C" ) );
-            Node node = tx.createNode( Label.label( "D" ) );
-            tx.createNode();
-            node.delete();
+            labels = createLabels( 4 );
+            labelIds = getLabelIdsFrom( tx, labels );
+
+            nodes = new Node[]{tx.createNode( labels[0] ),
+                               tx.createNode( labels[1] ),
+                               tx.createNode( labels[2] ),
+                               tx.createNode()};
+            nodes[2].delete();
             tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -196,27 +241,42 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( lastCommittedTransactionId, store.txId() );
-            assertEquals( 3, store.nodeCount( -1, NULL ) );
-            assertEquals( 1, store.nodeCount( 0, NULL ) );
-            assertEquals( 1, store.nodeCount( 1, NULL ) );
-            assertEquals( 0, store.nodeCount( 2, NULL ) );
-            assertEquals( 0, store.nodeCount( 3, NULL ) );
+            softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
+
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length - 1 );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
         }
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB() throws IOException
+    void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB() throws IOException, KernelException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+
+        Label[] labels = null;
+        int[] labelIds = null;
+        RelationshipType[] relTypes = null;
+        int[] relTypeIds = null;
+        Node[] nodes = null;
+        Relationship[] rels = null;
+
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = tx.createNode( Label.label( "A" ) );
-            Node nodeC = tx.createNode( Label.label( "C" ) );
-            Relationship rel = nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE1" ) );
-            nodeC.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE2" ) );
-            rel.delete();
+            labels = createLabels( 4 );
+            labelIds = getLabelIdsFrom( tx, labels );
+            relTypes = createRelationShipTypes( 2 );
+            relTypeIds = getRelTypeIdsFrom( tx, relTypes );
+
+            nodes = new Node[]{tx.createNode( labels[0] ),
+                               tx.createNode( labels[1] )};
+
+            rels = new Relationship[]{nodes[0].createRelationshipTo( nodes[1], relTypes[0] ),
+                                      nodes[1].createRelationshipTo( nodes[0], relTypes[1] )};
+            rels[0].delete();
             tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -226,30 +286,47 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( lastCommittedTransactionId, store.txId() );
-            assertEquals( 2, store.nodeCount( -1, NULL ) );
-            assertEquals( 1, store.nodeCount( 0, NULL ) );
-            assertEquals( 1, store.nodeCount( 1, NULL ) );
-            assertEquals( 0, store.nodeCount( 2, NULL ) );
-            assertEquals( 0, store.nodeCount( 3, NULL ) );
-            assertEquals( 0, store.relationshipCount( -1, 0, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 1, -1, NULL ) );
+            softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
+
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 0 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) ).as( "()-[]->()" ).isEqualTo( rels.length - 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[0] ).isEqualTo( 0 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[1] ).isEqualTo( 1 );
         }
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB() throws IOException
+    void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB() throws IOException, KernelException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+
+        Label[] labels = null;
+        int[] labelIds = null;
+        RelationshipType[] relTypes = null;
+        int[] relTypeIds = null;
+        Node[] nodes = null;
+        Relationship[] rels = null;
+
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = tx.createNode( Label.label( "A" ) );
-            Node nodeC = tx.createNode( Label.label( "C" ) );
-            Node nodeD = tx.createNode( Label.label( "D" ) );
-            Node node = tx.createNode();
-            nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE" ) );
-            node.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
+            labels = createLabels( 4 );
+            labelIds = getLabelIdsFrom( tx, labels );
+            relTypes = createRelationShipTypes( 3 );
+            relTypeIds = getRelTypeIdsFrom( tx, relTypes );
+
+            nodes = new Node[]{tx.createNode( labels[0] ),
+                               tx.createNode( labels[1] ),
+                               tx.createNode( labels[2] ),
+                               tx.createNode()};
+
+            rels = new Relationship[]{nodes[0].createRelationshipTo( nodes[2], relTypes[0] ),
+                                      nodes[3].createRelationshipTo( nodes[1], relTypes[1] )};
             tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -259,36 +336,53 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( lastCommittedTransactionId, store.txId() );
-            assertEquals( 4, store.nodeCount( -1, NULL ) );
-            assertEquals( 1, store.nodeCount( 0, NULL ) );
-            assertEquals( 1, store.nodeCount( 1, NULL ) );
-            assertEquals( 1, store.nodeCount( 2, NULL ) );
-            assertEquals( 0, store.nodeCount( 3, NULL ) );
-            assertEquals( 2, store.relationshipCount( -1, -1, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 0, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 1, -1, NULL ) );
-            assertEquals( 0, store.relationshipCount( -1, 2, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 1, 1, NULL ) );
-            assertEquals( 0, store.relationshipCount( -1, 0, 1, NULL ) );
+            softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
+
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) ).as( "()-[]->()" ).isEqualTo( rels.length );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[0] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[1] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[2], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[2] ).isEqualTo( 0 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], labelIds[1], NULL ) )
+                  .as( "count: ()-[:%s]->(:%s)", relTypes[1], labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], labelIds[1], NULL ) )
+                  .as( "count: ()-[:%s]->(:%s)", relTypes[0], labels[1] ).isEqualTo( 0 );
         }
     }
 
     @Test
-    void shouldCreateACountStoreWhenDBContainsDenseNodes() throws IOException
+    void shouldCreateACountStoreWhenDBContainsDenseNodes() throws IOException, KernelException
     {
-        DatabaseManagementService managementService = dbBuilder.
-                setConfig( GraphDatabaseSettings.dense_node_threshold, 2 ).build();
+        DatabaseManagementService managementService = dbBuilder.setConfig( GraphDatabaseSettings.dense_node_threshold, 2 ).build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+
+        Label[] labels = null;
+        int[] labelIds = null;
+        RelationshipType[] relTypes = null;
+        int[] relTypeIds = null;
+        Node[] nodes = null;
+        Relationship[] rels = null;
+
         try ( Transaction tx = db.beginTx() )
         {
-            Node nodeA = tx.createNode( Label.label( "A" ) );
-            Node nodeC = tx.createNode( Label.label( "C" ) );
-            Node nodeD = tx.createNode( Label.label( "D" ) );
-            nodeA.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE1" ) );
-            nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
-            nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE3" ) );
-            nodeD.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE4" ) );
+            labels = createLabels( 4 );
+            labelIds = getLabelIdsFrom( tx, labels );
+            relTypes = createRelationShipTypes( 5 );
+            relTypeIds = getRelTypeIdsFrom( tx, relTypes );
+
+            nodes = new Node[]{tx.createNode( labels[0] ),
+                               tx.createNode( labels[1] ),
+                               tx.createNode( labels[2] )};
+
+            rels = new Relationship[]{nodes[0].createRelationshipTo( nodes[0], relTypes[0] ),
+                                      nodes[0].createRelationshipTo( nodes[1], relTypes[1] ),
+                                      nodes[0].createRelationshipTo( nodes[2], relTypes[2] ),
+                                      nodes[2].createRelationshipTo( nodes[1], relTypes[3] )};
             tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
@@ -298,22 +392,57 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( lastCommittedTransactionId, store.txId() );
-            assertEquals( 3, store.nodeCount( -1, NULL ) );
-            assertEquals( 1, store.nodeCount( 0, NULL ) );
-            assertEquals( 1, store.nodeCount( 1, NULL ) );
-            assertEquals( 1, store.nodeCount( 2, NULL ) );
-            assertEquals( 0, store.nodeCount( 3, NULL ) );
-            assertEquals( 4, store.relationshipCount( -1, -1, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 0, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 1, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 2, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 3, -1, NULL ) );
-            assertEquals( 0, store.relationshipCount( -1, 4, -1, NULL ) );
-            assertEquals( 1, store.relationshipCount( -1, 1, 1, NULL ) );
-            assertEquals( 2, store.relationshipCount( -1, -1, 1, NULL ) );
-            assertEquals( 3, store.relationshipCount( 0, -1, -1, NULL ) );
+            softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
+
+            softly.assertThat( store.nodeCount( ANY_LABEL, NULL ) ).as( "count: ()" ).isEqualTo( nodes.length );
+            softly.assertThat( store.nodeCount( labelIds[0], NULL ) ).as( "count: (:%s)", labels[0] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[1], NULL ) ).as( "count: (:%s)", labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[2], NULL ) ).as( "count: (:%s)", labels[2] ).isEqualTo( 1 );
+            softly.assertThat( store.nodeCount( labelIds[3], NULL ) ).as( "count: (:%s)", labels[3] ).isEqualTo( 0 );
+
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) ).as( "()-[]->()" ).isEqualTo( rels.length );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[0], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[0] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[1] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[2], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[2] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[3], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[3] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[4], ANY_LABEL, NULL ) ).as( "count: ()-[:%s]->()", relTypes[4] ).isEqualTo( 0 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, relTypeIds[1], labelIds[1], NULL ) )
+                  .as( "count: ()-[:%s]->(:%s)", relTypes[1], labels[1] ).isEqualTo( 1 );
+            softly.assertThat( store.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, labelIds[1], NULL ) )
+                  .as( "count: ()-[]->(:%s)", labels[1] ).isEqualTo( 2 );
+            softly.assertThat( store.relationshipCount( labelIds[0], ANY_RELATIONSHIP_TYPE, ANY_LABEL, NULL ) )
+                  .as( "count: (:%s)-[]->()", labels[0] ).isEqualTo( 3 );
         }
+    }
+
+    private Label[] createLabels( int n )
+    {
+        return IntStream.range( 0, n ).mapToObj( i -> "Label" + i ).map( Label::label ).toArray( Label[]::new );
+    }
+
+    private int[] getLabelIdsFrom( Transaction tx, Label... labels ) throws KernelException
+    {
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+        TokenWrite tokenWrite = ktx.tokenWrite();
+
+        int[] ids = new int[labels.length];
+        tokenWrite.relationshipTypeGetOrCreateForNames( Arrays.stream( labels ).map( Label::name ).toArray( String[]::new ), ids );
+        return ids;
+    }
+
+    private RelationshipType[] createRelationShipTypes( int n )
+    {
+        return IntStream.range( 0, n ).mapToObj( i -> "TYPE" + i ).map( RelationshipType::withName ).toArray( RelationshipType[]::new );
+    }
+
+    private int[] getRelTypeIdsFrom( Transaction tx, RelationshipType... types ) throws KernelException
+    {
+        KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+        TokenWrite tokenWrite = ktx.tokenWrite();
+
+        int[] ids = new int[types.length];
+        tokenWrite.relationshipTypeGetOrCreateForNames( Arrays.stream( types ).map( RelationshipType::name ).toArray( String[]::new ), ids );
+        return ids;
     }
 
     private Path countsStoreFile()
@@ -326,28 +455,18 @@ class CountsComputerTest
         return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
     }
 
-    private void checkEmptyCountStore()
+    private class AssertEmptyCountStoreVisitor extends CountsVisitor.Adapter
     {
-        try ( GBPTreeCountsStore store = createCountsStore() )
+        @Override
+        public void visitNodeCount( int labelId, long count )
         {
-            store.start( NULL, INSTANCE );
-            assertEquals( BASE_TX_ID, store.txId() );
-            // check that nothing is stored in the counts store by trying all combinations of tokens in the lower range
-            for ( int s = 0; s < 10; s++ )
-            {
-                assertEquals( 0, store.nodeCount( s, NULL ) );
-                for ( int e = 0; e < 10; e++ )
-                {
-                    for ( int t = 0; t < 10; t++ )
-                    {
-                        assertEquals( 0, store.relationshipCount( s, t, e, NULL ) );
-                    }
-                }
-            }
+            softly.assertThat( count ).as( "count: (%d)", labelId ).isEqualTo( 0 );
         }
-        catch ( IOException e )
+
+        @Override
+        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
-            throw new RuntimeException( e );
+            softly.assertThat( count ).as( "count: (%d)-[%d]->(%d)", startLabelId, typeId, endLabelId ).isEqualTo( 0 );
         }
     }
 
