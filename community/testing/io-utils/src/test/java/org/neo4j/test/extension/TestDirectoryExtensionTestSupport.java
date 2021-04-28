@@ -38,8 +38,9 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -58,14 +59,73 @@ import static org.neo4j.test.extension.ExecutionSharedContext.CREATED_TEST_FILE_
 import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
-@TestDirectoryExtension
 @ResourceLock( ExecutionSharedContext.SHARED_RESOURCE )
-class TestDirectoryExtensionTestSupport
+abstract class TestDirectoryExtensionTestSupport
 {
     @Inject
     TestDirectory testDirectory;
     @Inject
-    DefaultFileSystemAbstraction fileSystem;
+    FileSystemAbstraction fileSystem;
+
+    @TestDirectoryExtension
+    static class WithRealFs extends TestDirectoryExtensionTestSupport
+    {
+        @Override
+        Class<? extends DirectoryExtensionLifecycleVerificationTest> getTestClass()
+        {
+            return DirectoryExtensionLifecycleVerificationTest.WithRealFs.class;
+        }
+
+        @Override
+        Class<? extends DirectoryExtensionLifecycleVerificationTest.SecondTestFailTest> getPerTestClass()
+        {
+            return DirectoryExtensionLifecycleVerificationTest.WithRealFs.PerClassTest.class;
+        }
+
+        @Override
+        Class<? extends DirectoryExtensionLifecycleVerificationTest.SecondTestFailTest> getPerMethodClass()
+        {
+            return DirectoryExtensionLifecycleVerificationTest.WithRealFs.PerMethodTest.class;
+        }
+
+        @Test
+        @EnabledOnOs( OS.LINUX )
+        @DisabledForRoot
+        void exceptionOnDirectoryDeletionIncludeTestDisplayName() throws IOException
+        {
+            CONTEXT.clear();
+            FailedTestExecutionListener failedTestListener = new FailedTestExecutionListener();
+            execute( "lockFileAndFailToDeleteDirectory", failedTestListener );
+            Path lockedFile = CONTEXT.getValue( LOCKED_TEST_FILE_KEY );
+
+            assertNotNull( lockedFile );
+            assertTrue( lockedFile.toFile().setReadable( true, true ) );
+            FileUtils.deleteDirectory( lockedFile );
+            failedTestListener.assertTestObserver();
+        }
+    }
+
+    @EphemeralTestDirectoryExtension
+    static class WithEphemeralFs extends TestDirectoryExtensionTestSupport
+    {
+        @Override
+        Class<? extends DirectoryExtensionLifecycleVerificationTest> getTestClass()
+        {
+            return DirectoryExtensionLifecycleVerificationTest.WithEphemeralFs.class;
+        }
+
+        @Override
+        Class<? extends DirectoryExtensionLifecycleVerificationTest.SecondTestFailTest> getPerTestClass()
+        {
+            return DirectoryExtensionLifecycleVerificationTest.WithEphemeralFs.PerClassTest.class;
+        }
+
+        @Override
+        Class<? extends DirectoryExtensionLifecycleVerificationTest.SecondTestFailTest> getPerMethodClass()
+        {
+            return DirectoryExtensionLifecycleVerificationTest.WithEphemeralFs.PerMethodTest.class;
+        }
+    }
 
     @Test
     void testDirectoryInjectionWorks()
@@ -78,7 +138,7 @@ class TestDirectoryExtensionTestSupport
     {
         Path directory = testDirectory.homePath();
         assertNotNull( directory );
-        assertTrue( Files.exists( directory ) );
+        assertTrue( fileSystem.fileExists( directory ) );
         Path targetTestData = Paths.get( "target", "test data" );
         assertTrue( directory.toAbsolutePath().toString().contains( targetTestData.toString() ) );
     }
@@ -118,25 +178,9 @@ class TestDirectoryExtensionTestSupport
     }
 
     @Test
-    @EnabledOnOs( OS.LINUX )
-    @DisabledForRoot
-    void exceptionOnDirectoryDeletionIncludeTestDisplayName() throws IOException
-    {
-        CONTEXT.clear();
-        FailedTestExecutionListener failedTestListener = new FailedTestExecutionListener();
-        execute( "lockFileAndFailToDeleteDirectory", failedTestListener );
-        Path lockedFile = CONTEXT.getValue( LOCKED_TEST_FILE_KEY );
-
-        assertNotNull( lockedFile );
-        assertTrue( lockedFile.toFile().setReadable( true, true ) );
-        FileUtils.deleteDirectory( lockedFile );
-        failedTestListener.assertTestObserver();
-    }
-
-    @Test
     void failedTestShouldKeepDirectoryInPerClassLifecycle()
     {
-        List<Pair<Path,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerClassTest.class, 6 );
+        List<Pair<Path,Boolean>> pairs = executeAndReturnCreatedFiles( getPerTestClass(), 6 );
         for ( var pair : pairs )
         {
             assertThat( pair.first() ).exists();
@@ -146,7 +190,7 @@ class TestDirectoryExtensionTestSupport
     @Test
     void failedTestShouldNotKeepDirectoryInPerMethodLifecycle()
     {
-        List<Pair<Path,Boolean>> pairs = executeAndReturnCreatedFiles( DirectoryExtensionLifecycleVerificationTest.PerMethodTest.class, 6 );
+        List<Pair<Path,Boolean>> pairs = executeAndReturnCreatedFiles( getPerMethodClass(), 6 );
         for ( var pair : pairs )
         {
             if ( pair.other() )
@@ -170,10 +214,14 @@ class TestDirectoryExtensionTestSupport
         return pairs;
     }
 
-    private static void execute( String testName, TestExecutionListener... testExecutionListeners )
+    abstract Class<? extends DirectoryExtensionLifecycleVerificationTest> getTestClass();
+    abstract Class<? extends DirectoryExtensionLifecycleVerificationTest.SecondTestFailTest> getPerTestClass();
+    abstract Class<? extends DirectoryExtensionLifecycleVerificationTest.SecondTestFailTest> getPerMethodClass();
+
+    protected void execute( String testName, TestExecutionListener... testExecutionListeners )
     {
         LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request()
-                .selectors( selectMethod( DirectoryExtensionLifecycleVerificationTest.class, testName ))
+                .selectors( selectMethod( getTestClass(), testName ))
                 .configurationParameter( TEST_TOGGLE, "true" )
                 .build();
         execute( discoveryRequest, testExecutionListeners );

@@ -26,6 +26,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -35,6 +36,7 @@ import java.nio.file.Path;
 import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.util.VisibleForTesting;
 
@@ -237,9 +239,26 @@ public class TestDirectory extends ExternalResource
     {
         try
         {
-            if ( success && isInitialised() && !keepDirectoryAfterSuccessfulTest )
+            if ( isInitialised() )
             {
-                fileSystem.deleteRecursively( directory );
+                if ( success && !keepDirectoryAfterSuccessfulTest )
+                {
+                    fileSystem.deleteRecursively( directory );
+                }
+                else if ( !Files.exists( directory ) )
+                {
+                    //We want to keep the files, make sure they actually exist on disk, not only in memory (like in EphemeralFileSystem)
+                    for ( FileHandle fh : fileSystem.streamFilesRecursive( directory ).toArray( FileHandle[]::new ) )
+                    {
+                        Path path = fh.getPath();
+                        assert !Files.exists( path );
+                        Files.createDirectories( path.getParent() );
+                        try ( InputStream inputStream = fileSystem.openAsInputStream( path ) )
+                        {
+                            Files.copy( inputStream, path );
+                        }
+                    }
+                }
             }
             directory = null;
         }

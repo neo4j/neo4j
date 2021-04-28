@@ -30,7 +30,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,6 +37,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -55,19 +56,53 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FI
  * It will be executed by a specific test executor as part of extensions lifecycle testing.
  * @see TestDirectoryExtensionTestSupport#failedTestShouldKeepDirectory()
  */
-@TestDirectoryExtension
 @ExtendWith( DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.class )
 @ResourceLock( SHARED_RESOURCE )
-class DirectoryExtensionLifecycleVerificationTest
+abstract class DirectoryExtensionLifecycleVerificationTest
 {
     @Inject
     private TestDirectory directory;
+
+    @Inject
+    private FileSystemAbstraction fs;
+
+    @TestDirectoryExtension
+    static class WithRealFs extends DirectoryExtensionLifecycleVerificationTest
+    {
+        @Nested
+        @TestInstance( TestInstance.Lifecycle.PER_CLASS )
+        class PerClassTest extends SecondTestFailTest
+        {
+        }
+
+        @Nested
+        @TestInstance( TestInstance.Lifecycle.PER_METHOD )
+        class PerMethodTest extends SecondTestFailTest
+        {
+        }
+    }
+
+    @EphemeralTestDirectoryExtension
+    static class WithEphemeralFs extends DirectoryExtensionLifecycleVerificationTest
+    {
+        @Nested
+        @TestInstance( TestInstance.Lifecycle.PER_CLASS )
+        class PerClassTest extends SecondTestFailTest
+        {
+        }
+
+        @Nested
+        @TestInstance( TestInstance.Lifecycle.PER_METHOD )
+        class PerMethodTest extends SecondTestFailTest
+        {
+        }
+    }
 
     @Test
     void executeAndCleanupDirectory()
     {
         Path file = directory.createFile( "a" );
-        assertTrue( Files.exists( file) );
+        assertTrue( fs.fileExists( file ) );
         CONTEXT.setValue( SUCCESSFUL_TEST_FILE_KEY, file );
     }
 
@@ -85,18 +120,6 @@ class DirectoryExtensionLifecycleVerificationTest
         Path nonDeletableDirectory = directory.directory( "c" );
         CONTEXT.setValue( LOCKED_TEST_FILE_KEY, nonDeletableDirectory );
         assertTrue( nonDeletableDirectory.toFile().setReadable( false, false ) );
-    }
-
-    @Nested
-    @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-    class PerClassTest extends SecondTestFailTest
-    {
-    }
-
-    @Nested
-    @TestInstance( TestInstance.Lifecycle.PER_METHOD )
-    class PerMethodTest extends SecondTestFailTest
-    {
     }
 
     static class SecondTestFailTest
