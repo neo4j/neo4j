@@ -34,7 +34,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCE
 
 public final class FulltextIndexProceduresUtil
 {
-    public static final String DB_INDEXES = "CALL db.indexes()";
+    public static final String SHOW_FULLTEXT_INDEXES = "SHOW FULLTEXT INDEXES";
     public static final String DROP = "CALL db.index.fulltext.drop(\"%s\")";
     public static final String LIST_AVAILABLE_ANALYZERS = "CALL db.index.fulltext.listAvailableAnalyzers()";
     public static final String DB_AWAIT_INDEX = "CALL db.awaitIndex(\"%s\")";

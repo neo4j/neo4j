@@ -20,15 +20,15 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -63,6 +63,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.IOUtils;
@@ -79,6 +80,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -87,14 +89,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.AWAIT_REFRESH;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DB_AWAIT_INDEX;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DB_INDEXES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DROP;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.LIST_AVAILABLE_ANALYZERS;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.SHOW_FULLTEXT_INDEXES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 import static org.neo4j.kernel.api.impl.fulltext.analyzer.StandardFoldingAnalyzer.NON_ASCII_LETTERS;
 
@@ -122,7 +124,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         Map<String,Object> row;
         try ( Transaction tx = db.beginTx() )
         {
-            result = tx.execute( DB_INDEXES );
+            result = tx.execute( SHOW_FULLTEXT_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
             assertEquals( asList( "EntityToken1", "EntityToken2" ), row.get( "labelsOrTypes" ) );
@@ -136,7 +138,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
-            result = tx.execute( DB_INDEXES );
+            result = tx.execute( SHOW_FULLTEXT_INDEXES );
             assertTrue( result.hasNext() );
             assertEquals( "ONLINE", result.next().get( "state" ) );
             assertFalse( result.hasNext() );
@@ -147,7 +149,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         restartDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            result = tx.execute( DB_INDEXES );
+            result = tx.execute( SHOW_FULLTEXT_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
             assertEquals( asList( "EntityToken1", "EntityToken2" ), row.get( "labelsOrTypes" ) );
@@ -173,18 +175,19 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
             Set<String> indexes = new HashSet<>();
 
-            tx.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
+            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
             assertThat( indexes ).containsExactly( DEFAULT_NODE_IDX_NAME, DEFAULT_REL_IDX_NAME );
             indexes.clear();
 
             tx.execute( format( DROP, DEFAULT_NODE_IDX_NAME ) );
-            tx.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
+            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
             assertThat( indexes ).containsExactly( DEFAULT_REL_IDX_NAME );
             indexes.clear();
 
             tx.execute( format( DROP, DEFAULT_REL_IDX_NAME ) );
-            tx.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
+            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
             assertThat( indexes ).isEmpty();
+
             tx.commit();
         }
     }
@@ -192,6 +195,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void dropIndex()
     {
+        long indexesBefore = indexesCount();
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
@@ -202,7 +206,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             Set<String> indexes = new HashSet<>();
-            tx.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
+            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
             assertThat( indexes ).containsExactly( DEFAULT_NODE_IDX_NAME, DEFAULT_REL_IDX_NAME );
 
             tx.execute( format( DROP, DEFAULT_NODE_IDX_NAME ) );
@@ -212,19 +216,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             Set<String> indexes = new HashSet<>();
-            tx.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
+            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
             assertThat( indexes ).containsExactly( DEFAULT_REL_IDX_NAME );
 
             tx.execute( format( DROP, DEFAULT_REL_IDX_NAME ) );
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            Set<String> indexes = new HashSet<>();
-            tx.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
-            assertThat( indexes ).isEmpty();
-        }
+        assertThat( indexesCount() ).isEqualTo( indexesBefore );
     }
 
     @Test
@@ -1497,7 +1496,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
-            assertFalse( tx.schema().getIndexes().iterator().hasNext() );
+            var result = tx.execute( SHOW_FULLTEXT_INDEXES );
+            assertThat( result.hasNext() ).isFalse().as( "Fulltext indexes should not be created" );
             tx.commit();
         }
     }
@@ -1547,6 +1547,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             for ( IndexDefinition index : tx.schema().getIndexes() )
             {
+                if ( index.getIndexType() != IndexType.FULLTEXT )
+                {
+                    continue;
+                }
                 Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
@@ -1573,6 +1577,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             for ( IndexDefinition index : tx.schema().getIndexes() )
             {
+                if ( index.getIndexType() != IndexType.FULLTEXT )
+                {
+                    continue;
+                }
                 Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
                 Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
                 assertNotNull( eventuallyConsistentObj );
@@ -1765,7 +1773,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( single( tx.schema().getIndexes() ).getName() ).isNotEqualTo( "nameIndex" );
+            assertThat( stream( tx.schema().getIndexes() ).map( IndexDefinition::getName ).collect( toList() ) ).doesNotContain( "nameIndex" );
             tx.commit();
         }
     }
@@ -1788,7 +1796,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( single( tx.schema().getIndexes() ).getName() ).isEqualTo( "nameIndex" );
+            assertThat( stream( tx.schema().getIndexes() ).map( IndexDefinition::getName ).collect( toList() ) ).contains( "nameIndex" );
             tx.commit();
         }
     }
@@ -1810,13 +1818,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         assertThat( e.getMessage() ).contains(
                 "Could not create index with specified index provider 'fulltext-1.0'. To create fulltext index, please use 'db.index.fulltext" +
                         ".createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'." );
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            long indexCount = tx.execute( DB_INDEXES ).stream().count();
-            assertThat( indexCount ).isEqualTo( 0L );
-            tx.commit();
-        }
     }
 
     @MethodSource( "entityTypeProvider" )
@@ -1931,6 +1932,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     @Test
     void makeSureFulltextIndexDoesNotBlockSchemaIndexOnSameSchemaPattern()
     {
+        long indexesBefore = indexesCount();
+
         try ( Transaction tx = db.beginTx() )
         {
             tx.execute( format( NODE_CREATE, "myindex", asStrList( LABEL.name() ), asStrList( PROP ) ) );
@@ -1951,16 +1954,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( 2, Iterables.count( tx.schema().getIndexes() ) );
-            tx.commit();
-        }
+        assertThat( indexesCount() ).isEqualTo( indexesBefore + 2 );
     }
 
     @Test
     void makeSureSchemaIndexDoesNotBlockFulltextIndexOnSameSchemaPattern()
     {
+        long indexesBefore = indexesCount();
+
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().indexFor( LABEL ).on( PROP ).create();
@@ -1981,11 +1982,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             tx.execute( format( DB_AWAIT_INDEX, "myindex" ) );
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertEquals( 2, Iterables.count( tx.schema().getIndexes() ) );
-            tx.commit();
-        }
+        assertThat( indexesCount() ).isEqualTo( indexesBefore + 2 );
     }
 
     @CsvSource( value = {NODE_CREATE + "|For node", RELATIONSHIP_CREATE + "|For relationship"}, delimiter = '|' )
@@ -2367,10 +2364,20 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             while ( iterator.hasNext() )
             {
-                nodeIds.add(((Node)iterator.next()).getId() );
+                nodeIds.add( ((Node) iterator.next()).getId() );
             }
         }
-         assertThat( nodeIds ).as( "expected search '" + searchString + "' to find " + expectedNodeId ).contains( expectedNodeId );
+        assertThat( nodeIds ).as( "expected search '" + searchString + "' to find " + expectedNodeId ).contains( expectedNodeId );
+    }
+
+    private long indexesCount()
+    {
+        long indexesBefore;
+        try ( Transaction tx = db.beginTx() )
+        {
+            indexesBefore = Iterables.count( tx.schema().getIndexes() );
+        }
+        return indexesBefore;
     }
 
     private enum SearchString

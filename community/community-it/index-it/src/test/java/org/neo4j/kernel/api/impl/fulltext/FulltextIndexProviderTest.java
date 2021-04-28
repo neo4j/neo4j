@@ -135,6 +135,7 @@ class FulltextIndexProviderTest
     private int labelIdHej;
     private int labelIdHa;
     private int labelIdHe;
+    private int relTypeIdHej;
     private int propIdHej;
     private int propIdHa;
     private int propIdHe;
@@ -146,6 +147,7 @@ class FulltextIndexProviderTest
         Label hej = label( "hej" );
         Label ha = label( "ha" );
         Label he = label( "he" );
+        RelationshipType hejType = RelationshipType.withName( "hej" );
         try ( Transaction transaction = db.beginTx() )
         {
             node1 = transaction.createNode( hej, ha, he );
@@ -154,7 +156,7 @@ class FulltextIndexProviderTest
             node1.setProperty( "he", "value2" );
             node1.setProperty( "ho", "value3" );
             node2 = transaction.createNode();
-            Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "hej" ) );
+            Relationship rel = node1.createRelationshipTo( node2, hejType );
             rel.setProperty( "hej", "valuuu" );
             rel.setProperty( "ha", "value1" );
             rel.setProperty( "he", "value2" );
@@ -169,6 +171,7 @@ class FulltextIndexProviderTest
             labelIdHej = tokenRead.nodeLabel( hej.name() );
             labelIdHa = tokenRead.nodeLabel( ha.name() );
             labelIdHe = tokenRead.nodeLabel( he.name() );
+            relTypeIdHej = tokenRead.relationshipType( hejType.name() );
             propIdHej = tokenRead.propertyKey( "hej" );
             propIdHa = tokenRead.propertyKey( "ha" );
             propIdHe = tokenRead.propertyKey( "he" );
@@ -296,6 +299,10 @@ class FulltextIndexProviderTest
         {
             for ( IndexDefinition index : tx.schema().getIndexes() )
             {
+                if ( index.getIndexType() == org.neo4j.graphdb.schema.IndexType.LOOKUP )
+                {
+                    continue;
+                }
                 assertFalse( index.isConstraintIndex() );
                 assertTrue( index.isMultiTokenIndex() );
                 assertTrue( index.isCompositeIndex() );
@@ -1092,7 +1099,7 @@ class FulltextIndexProviderTest
     @Test
     void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleAnalyzer() throws KernelException
     {
-        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1}, "english" );
+        IndexDescriptor indexReference = createIndex( new int[]{labelIdHa}, new int[]{propIdHa}, "english" );
         await( indexReference );
         try ( Transaction tx = db.beginTx() )
         {
@@ -1106,7 +1113,7 @@ class FulltextIndexProviderTest
     @Test
     void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleComposite() throws KernelException
     {
-        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1, 2}, "cypher" );
+        IndexDescriptor indexReference = createIndex( new int[]{labelIdHa}, new int[]{propIdHa, propIdHe}, "cypher" );
         await( indexReference );
         try ( Transaction tx = db.beginTx() )
         {
@@ -1120,7 +1127,7 @@ class FulltextIndexProviderTest
     @Test
     void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleMultipleEntities() throws KernelException
     {
-        IndexDescriptor indexReference = createIndex( new int[]{1, 2}, new int[]{1}, "cypher" );
+        IndexDescriptor indexReference = createIndex( new int[]{labelIdHa, labelIdHe}, new int[]{propIdHa}, "cypher" );
         await( indexReference );
         try ( Transaction tx = db.beginTx() )
         {
@@ -1134,7 +1141,7 @@ class FulltextIndexProviderTest
     @Test
     void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleNotNodeIndex() throws KernelException
     {
-        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1}, "cypher", EntityType.RELATIONSHIP );
+        IndexDescriptor indexReference = createIndex( new int[]{relTypeIdHej}, new int[]{propIdHej}, "cypher", EntityType.RELATIONSHIP );
         await( indexReference );
         try ( Transaction tx = db.beginTx() )
         {
@@ -1148,7 +1155,7 @@ class FulltextIndexProviderTest
     @Test
     void shouldThrowOnCypherFulltextQueryIfNotCypherCompatibleEventuallyConsistent() throws KernelException
     {
-        IndexDescriptor indexReference = createIndex( new int[]{1}, new int[]{1}, "cypher", EntityType.NODE, true );
+        IndexDescriptor indexReference = createIndex( new int[]{labelIdHa}, new int[]{propIdHa}, "cypher", EntityType.NODE, true );
         await( indexReference );
         try ( Transaction tx = db.beginTx() )
         {
