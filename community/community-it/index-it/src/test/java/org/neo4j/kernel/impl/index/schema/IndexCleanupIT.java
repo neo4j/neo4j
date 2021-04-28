@@ -32,6 +32,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.index.SetInitialStateInNativeIndex;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -106,6 +107,11 @@ public class IndexCleanupIT
         {
             for ( IndexDefinition index : tx.schema().getIndexes() )
             {
+                // ignore the lookup indexes which are there by default and have nothing to do with this test
+                if ( index.getIndexType() == IndexType.LOOKUP )
+                {
+                    continue;
+                }
                 IndexState indexState = tx.schema().getIndexState( index );
                 assertEquals( IndexState.FAILED, indexState, "expected index state to be " + IndexState.FAILED );
             }
