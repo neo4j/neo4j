@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexP
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexContainsScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexEndsWithScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -67,6 +68,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val propContainsBepa = contains(prop("n", "prop"), litBepa)
   private val propEndsWithApa = endsWith(prop("n", "prop"), litApa)
   private val propEndsWithBepa = endsWith(prop("n", "prop"), litBepa)
+  private val propInLit12 = in(prop("n", "prop"), listOf(lit12))
 
   private val fooExists = function(Exists.name, prop("n", "foo"))
   private val fooContainsApa = contains(prop("n", "foo"), litApa)
@@ -76,7 +78,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val bazEquals12 = equals(prop("n", "baz"), lit12)
 
   private def nodeIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider), restrictions)
+    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider()), restrictions)
 
   private def nodeIndexContainsScanLeafPlanner(restrictions: LeafPlanRestrictions) =
     NodeIndexPlanner(Seq(nodeIndexContainsScanPlanProvider), restrictions)
@@ -85,7 +87,10 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     NodeIndexPlanner(Seq(nodeIndexEndsWithScanPlanProvider), restrictions)
 
   private def allNodeScansLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider, nodeIndexContainsScanPlanProvider, nodeIndexEndsWithScanPlanProvider), restrictions)
+    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider(), nodeIndexContainsScanPlanProvider, nodeIndexEndsWithScanPlanProvider), restrictions)
+
+  private def nodeScanLeafPlannerWithSeekExclusion(restrictions: LeafPlanRestrictions) =
+    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider(nodeIndexSeekPlanProvider)), restrictions)
 
   test("does not plan index scan when no index exist") {
     new given {
@@ -1013,6 +1018,53 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // when
       val ctxWithAggregation = ctx.copy(aggregatingProperties = Set((idName, "prop")))
       val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctxWithAggregation)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("does not plan scans for IN predicates, when used together with nodeIndexSeekPlanProvider") {
+    new given {
+      indexOn("Awesome", "prop")
+      addTypeToSemanticTable(lit12, CTInteger.invariant)
+
+      qg = queryGraph(propInLit12, hasLabelAwesome)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = nodeScanLeafPlannerWithSeekExclusion(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("does plan scans when seeks are found for single property indexes, when used together with nodeIndexSeekPlanProvider") {
+    new given {
+      indexOn("Awesome", "prop")
+      addTypeToSemanticTable(lit12, CTInteger.invariant)
+
+      qg = queryGraph(propLessThan12, hasLabelAwesome)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = nodeScanLeafPlannerWithSeekExclusion(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexScan(`idName`, _, _, _, _)) => ()
+      }
+    }
+  }
+
+  test("does not plan scans when seeks are found for composite indexes, when used together with nodeIndexSeekPlanProvider") {
+    new given {
+      indexOn("Awesome", "prop", "foo")
+      addTypeToSemanticTable(lit12, CTInteger.invariant)
+
+      qg = queryGraph(propLessThan12, fooExists, hasLabelAwesome)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = nodeScanLeafPlannerWithSeekExclusion(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans shouldBe empty

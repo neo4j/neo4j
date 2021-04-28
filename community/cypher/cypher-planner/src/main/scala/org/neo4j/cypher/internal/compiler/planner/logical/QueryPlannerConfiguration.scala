@@ -59,7 +59,7 @@ object QueryPlannerConfiguration {
       // MATCH (n:Person) WHERE n.prop ENDS WITH ...
       nodeIndexEndsWithScanPlanProvider,
       // MATCH (n) WHERE has(n.prop) RETURN n
-      nodeIndexScanPlanProvider,
+      nodeIndexScanPlanProvider(nodeIndexSeekPlanProvider),
     ), restrictions),
 
     // MATCH (n:Person) RETURN n

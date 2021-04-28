@@ -72,8 +72,9 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
   override def createPlans(indexMatches: Set[IndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch, restrictions) && indexMatch.indexDescriptor.isUnique
-    plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
-  } yield plan
+    solution <- createSolution(indexMatch, hints, argumentIds, context)
+    if isSingleUniqueQuery(solution.valueExpr)
+  } yield constructPlan(solution, context)
 
   private def isSingleUniqueQuery(valueExpr: QueryExpression[_]): Boolean = valueExpr match {
     case _: SingleQueryExpression[_]    => true
@@ -81,25 +82,20 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
     case _                              => false
   }
 
-  override def constructPlan(
-    idName: String,
-    label: LabelToken,
-    properties: Seq[IndexedProperty],
-    isUnique: Boolean,
-    valueExpr: QueryExpression[Expression],
-    hint: Option[UsingIndexHint],
-    argumentIds: Set[String],
-    providedOrder: ProvidedOrder,
-    indexOrder: IndexOrder,
-    context: LogicalPlanningContext,
-    solvedPredicates: Seq[Expression],
-    predicatesForCardinalityEstimation: Seq[Expression],
-  ): Option[LogicalPlan] = {
-    if (isSingleUniqueQuery(valueExpr)) {
-      Some(context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, properties, valueExpr, solvedPredicates, predicatesForCardinalityEstimation, hint, argumentIds, providedOrder, indexOrder, context))
-    } else {
-      None
-    }
+  override def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan = {
+    context.logicalPlanProducer.planNodeUniqueIndexSeek(
+      solution.idName,
+      solution.label,
+      solution.properties,
+      solution.valueExpr,
+      solution.solvedPredicates,
+      solution.predicatesForCardinalityEstimation,
+      solution.hint,
+      solution.argumentIds,
+      solution.providedOrder,
+      solution.indexOrder,
+      context
+    )
   }
 }
 

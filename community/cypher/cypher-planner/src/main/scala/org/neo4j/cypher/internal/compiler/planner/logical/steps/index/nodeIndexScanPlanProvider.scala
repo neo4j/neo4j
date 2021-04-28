@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.Scannable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner.IndexMatch
@@ -34,7 +35,10 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-object nodeIndexScanPlanProvider extends AbstractNodeIndexScanPlanProvider {
+case class nodeIndexScanPlanProvider(
+  // This is a temporary hack to get rid of some plans that always win cost comparisons against Seek plans on the same index
+  seekPlannerPeek: NodeIndexPlanProviderPeek = NodeIndexPlanProviderPeek.default
+) extends AbstractNodeIndexScanPlanProvider {
 
   /**
    * Represents that we can solve solvedPredicates, solvedHint and providedOrder by creating a plan from indexScanParameters.
@@ -59,9 +63,26 @@ object nodeIndexScanPlanProvider extends AbstractNodeIndexScanPlanProvider {
   )
 
   override def createPlans(indexMatches: Set[IndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = {
+
+    // This is a temporary hack to get rid of some plans that always win cost comparisons against Seek plans on the same index
+    // We emulate the cases where a Scan was produced by the old leaf planners
+    def shouldAttemptPlanning(indexMatch: IndexMatch): Boolean =
+      if (indexMatch.propertyPredicates.size == 1) {
+        indexMatch.propertyPredicates.head.predicate match {
+          case AsPropertyScannable(_) => true
+          case _                      => false
+        }
+      } else {
+        def hasImplicits = indexMatch.hasImplicitPredicates
+        def seekPlanned = seekPlannerPeek.wouldCreatePlan(indexMatch, hints, argumentIds, restrictions, context)
+
+        !hasImplicits && !seekPlanned
+      }
+
     val solutions = for {
       indexMatch <- indexMatches
       if isAllowedByRestrictions(indexMatch, restrictions)
+      if shouldAttemptPlanning(indexMatch)
     } yield createSolution(indexMatch, hints, argumentIds, context)
 
     val distinctSolutions = mergeSolutions(solutions)

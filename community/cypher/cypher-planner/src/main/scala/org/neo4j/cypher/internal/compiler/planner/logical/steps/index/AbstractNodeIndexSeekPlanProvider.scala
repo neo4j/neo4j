@@ -36,6 +36,20 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 
 abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
 
+  case class Solution(
+    idName: String,
+    label: LabelToken,
+    properties: Seq[IndexedProperty],
+    isUnique: Boolean,
+    valueExpr: QueryExpression[Expression],
+    hint: Option[UsingIndexHint],
+    argumentIds: Set[String],
+    providedOrder: ProvidedOrder,
+    indexOrder: IndexOrder,
+    solvedPredicates: Seq[Expression],
+    predicatesForCardinalityEstimation: Seq[Expression],
+  )
+
   // Test if solving using this match is valid given the leaf plan restrictions
   def isAllowedByRestrictions(indexMatch: IndexMatch, restrictions: LeafPlanRestrictions): Boolean = {
     def isAllowed(predicate: IndexCompatiblePredicate) = restrictions match {
@@ -49,27 +63,14 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
     indexMatch.propertyPredicates.exists(isAllowed)
   }
 
-  protected def constructPlan(
-    idName: String,
-    label: LabelToken,
-    properties: Seq[IndexedProperty],
-    isUnique: Boolean,
-    valueExpr: QueryExpression[Expression],
-    hint: Option[UsingIndexHint],
-    argumentIds: Set[String],
-    providedOrder: ProvidedOrder,
-    indexOrder: IndexOrder,
-    context: LogicalPlanningContext,
-    solvedPredicates: Seq[Expression],
-    predicatesForCardinalityEstimation: Seq[Expression],
-  ): Option[LogicalPlan]
+  protected def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan
 
-  def doCreatePlans(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
+  def createSolution(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Option[Solution] = {
 
     val predicateSet = indexMatch.predicateSet(predicatesForIndexSeek(indexMatch.propertyPredicates), exactPredicatesCanGetValue = true)
 
     if (predicateSet.propertyPredicates.forall(_.isExists)) {
-      Set.empty
+      None
     } else {
 
       val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(predicateSet.propertyPredicates)
@@ -83,7 +84,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
       // TODO: This seems very unfair if there is a tail of non-seekable predicates
       val predicatesForCardinalityEstimation = originalPredicates.map(p => p.predicate) :+ indexMatch.labelPredicate
 
-      constructPlan(
+      Some(Solution(
         indexMatch.variableName,
         indexMatch.labelToken,
         properties,
@@ -93,10 +94,9 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         argumentIds,
         indexMatch.providedOrder,
         indexMatch.indexOrder,
-        context,
         predicateSet.allSolvedPredicates,
         predicatesForCardinalityEstimation,
-      ).toSet
+      ))
     }
   }
 
