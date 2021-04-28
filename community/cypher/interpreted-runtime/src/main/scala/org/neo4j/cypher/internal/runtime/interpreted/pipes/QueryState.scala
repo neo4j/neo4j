@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathVa
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -49,7 +50,7 @@ class QueryState(val query: QueryContext,
                  val memoryTracker: QueryMemoryTracker,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[CypherRow] = None,
-                 val cachedIn: InLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
+                 val cachedIn: InLRUCache[Any, InCheckContainer] = createDefaultInCache(),
                  val lenientCreateRelationship: Boolean = false,
                  val prePopulateResults: Boolean = false,
                  val input: InputDataStream = NoInput) extends AutoCloseable {
@@ -112,6 +113,10 @@ class QueryState(val query: QueryContext,
 object QueryState {
 
   val defaultStatistics = QueryStatistics()
+
+  val inCacheMaxSize: Int = 16
+
+  def createDefaultInCache(): InLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = inCacheMaxSize)
 }
 
 trait CypherRowFactory {
