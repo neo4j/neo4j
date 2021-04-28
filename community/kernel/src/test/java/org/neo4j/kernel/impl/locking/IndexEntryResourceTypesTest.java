@@ -36,10 +36,9 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 
 public class IndexEntryResourceTypesTest
 {
-
-    public static final int labelId = 1;
-    public static final int propertyId = 2;
-    public static final Value value = Values.of( "value" );
+    private static final int labelId = 1;
+    private static final int propertyId = 2;
+    private static final Value value = Values.of( "value" );
 
     @Test
     void shouldProduceBackwardsCompatibleId()
