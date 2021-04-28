@@ -19,8 +19,6 @@
  */
 package org.neo4j.configuration.helpers;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -34,13 +32,13 @@ public class DatabaseNamePattern
     public DatabaseNamePattern( String name )
     {
         validateDatabaseNamePattern( name );
-        this.regexPattern = buildRegexPattern( name.toLowerCase() );
+        this.regexPattern = ConfigPatternBuilder.optionalPatternFromConfigString( name.toLowerCase(), Pattern.CASE_INSENSITIVE );
         this.databaseName = name;
     }
 
     public boolean matches( String value )
     {
-        return regexPattern.map( p -> p.matcher( value.toLowerCase() ).matches() )
+        return regexPattern.map( p -> p.matcher( value ).matches() )
                            .orElse( databaseName.equals( value ) );
     }
 
@@ -52,37 +50,6 @@ public class DatabaseNamePattern
     public String getDatabaseName()
     {
         return databaseName;
-    }
-
-    public static Optional<Pattern> buildRegexPattern( String name )
-    {
-        if ( !StringUtils.containsAny( name, "*?" ) )
-        {
-            return Optional.empty();
-        }
-
-        final var pattern = new StringBuilder();
-        for ( int i = 0; i < name.length(); i++ )
-        {
-            final var ch = name.charAt( i );
-            if ( ch == '*' )
-            {
-                pattern.append( ".+" );
-            }
-            else if ( ch == '?' )
-            {
-                pattern.append( ".{0,1}" );
-            }
-            else if ( ch == '.' || ch == '-' )
-            {
-                pattern.append( "\\" ).append( ch );
-            }
-            else
-            {
-                pattern.append( ch );
-            }
-        }
-        return Optional.of( Pattern.compile( pattern.toString() ) );
     }
 
     @Override
