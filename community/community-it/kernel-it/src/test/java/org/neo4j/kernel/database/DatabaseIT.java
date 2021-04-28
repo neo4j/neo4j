@@ -340,10 +340,10 @@ class DatabaseIT
         }
 
         @Override
-        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
+        public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
                 IOController ioController ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController ), fileFlushes, ioController,
+            return new PageFileWrapper( super.map( path, pageSize, databaseName, openOptions, ioController ), fileFlushes, ioController,
                     disabledIOController, ioControllerChecks );
         }
 

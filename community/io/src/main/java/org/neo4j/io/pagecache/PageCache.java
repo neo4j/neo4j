@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 
@@ -49,8 +48,7 @@ public interface PageCache extends AutoCloseable
     int PAGE_SIZE = 8192;
 
     /**
-     * Ask for a handle to a paged file, backed by this page cache with default version context that was provided during page cache construction
-     * and default empty set of file open options.
+     * Ask for a handle to a paged file, backed by an empty set of file open options.
      * <p>
      * Note that this currently asks for the pageSize to use, which is an artifact or records being
      * of varying size in the stores. This should be consolidated to use a standard page size for the
@@ -69,7 +67,7 @@ public interface PageCache extends AutoCloseable
     }
 
     /**
-     * Ask for a handle to a paged file, backed by this page cache with default version context that was provided during page cache construction
+     * Ask for a handle to a paged file
      * <p>
      * Note that this currently asks for the pageSize to use, which is an artifact or records being
      * of varying size in the stores. This should be consolidated to use a standard page size for the
@@ -92,7 +90,7 @@ public interface PageCache extends AutoCloseable
      */
     default PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return map( path, versionContextSupplier(), pageSize, databaseName, openOptions, IOController.DISABLED );
+        return map( path, pageSize, databaseName, openOptions, IOController.DISABLED );
     }
 
     /**
@@ -103,7 +101,6 @@ public interface PageCache extends AutoCloseable
      * whole cache, with records aligning on those page boundaries.
      *
      * @param path The file to map.
-     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
      * @param pageSize The file page size to use for this mapping. If the file is already mapped with a different page
      * size, an exception will be thrown.
      * @param databaseName an name of the database the mapped file belongs to. This option associates the mapped file with a database.
@@ -119,7 +116,7 @@ public interface PageCache extends AutoCloseable
      * {@link StandardOpenOption#CREATE} option was not specified.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
+    PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
             IOController ioController ) throws IOException;
 
     /**
@@ -177,13 +174,6 @@ public interface PageCache extends AutoCloseable
      * The max number of cached pages.
      */
     long maxCachedPages();
-
-    /**
-     * Default supplier of thread local (transaction local) version context for current page cache instance that will be used
-     * on page file mapping.
-     * @return page cache specific version context supplier.
-     */
-    VersionContextSupplier versionContextSupplier();
 
     /**
      * Factory for file local buffers that are used on page cache mapped files

@@ -52,7 +52,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -288,7 +287,7 @@ class NodeStoreTest
                 PageCache customPageCache = new DelegatingPageCache( pageCache )
                 {
                     @Override
-                    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
+                    public PagedFile map( Path path, int pageSize, String databaseName,
                             ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
                     {
                         if ( path.getFileName().toString().toLowerCase().endsWith( ".id" ) )
@@ -296,7 +295,7 @@ class NodeStoreTest
                             fired.setTrue();
                             throw new IOException( "Proving a point here" );
                         }
-                        return super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController );
+                        return super.map( path, pageSize, databaseName, openOptions, ioController );
                     }
                 };
 

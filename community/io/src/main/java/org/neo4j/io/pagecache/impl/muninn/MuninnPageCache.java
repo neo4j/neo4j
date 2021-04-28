@@ -50,8 +50,6 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
@@ -166,7 +164,6 @@ public class MuninnPageCache implements PageCache
     private final int cachePageSize;
     private final int keepFree;
     private final PageCacheTracer pageCacheTracer;
-    private final VersionContextSupplier versionContextSupplier;
     private final IOBufferFactory bufferFactory;
     private final int faultLockStriping;
     private final boolean enableEvictionThread;
@@ -238,21 +235,19 @@ public class MuninnPageCache implements PageCache
         private final SystemNanoClock clock;
         private final MemoryTracker memoryTracker;
         private final PageCacheTracer pageCacheTracer;
-        private final VersionContextSupplier versionContextSupplier;
         private final int pageSize;
         private final IOBufferFactory bufferFactory;
         private final int faultLockStriping;
         private final boolean enableEvictionThread;
 
         private Configuration( MemoryAllocator memoryAllocator, SystemNanoClock clock, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
-                VersionContextSupplier versionContextSupplier, int pageSize, IOBufferFactory bufferFactory, int faultLockStriping,
+                int pageSize, IOBufferFactory bufferFactory, int faultLockStriping,
                 boolean enableEvictionThread )
         {
             this.memoryAllocator = memoryAllocator;
             this.clock = clock;
             this.memoryTracker = memoryTracker;
             this.pageCacheTracer = pageCacheTracer;
-            this.versionContextSupplier = versionContextSupplier;
             this.pageSize = pageSize;
             this.bufferFactory = bufferFactory;
             this.faultLockStriping = faultLockStriping;
@@ -264,7 +259,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration memoryAllocator( MemoryAllocator memoryAllocator )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, enableEvictionThread );
         }
 
@@ -273,7 +268,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration clock( SystemNanoClock clock )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, enableEvictionThread );
         }
 
@@ -282,7 +277,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration memoryTracker( MemoryTracker memoryTracker )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, enableEvictionThread );
         }
 
@@ -291,16 +286,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration pageCacheTracer( PageCacheTracer pageCacheTracer )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
-        }
-
-        /**
-         * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide access to thread local version context
-         */
-        public Configuration versionContextSupplier( VersionContextSupplier versionContextSupplier )
-        {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, enableEvictionThread );
         }
 
@@ -309,7 +295,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration pageSize( int pageSize )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, enableEvictionThread );
         }
 
@@ -318,7 +304,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration bufferFactory( IOBufferFactory bufferFactory )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, enableEvictionThread );
         }
 
@@ -327,7 +313,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration faultLockStriping( int faultLockStriping )
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, enableEvictionThread );
         }
 
@@ -336,7 +322,7 @@ public class MuninnPageCache implements PageCache
          */
         public Configuration disableEvictionThread()
         {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
                     faultLockStriping, false );
         }
     }
@@ -356,7 +342,7 @@ public class MuninnPageCache implements PageCache
      */
     public static Configuration config( MemoryAllocator memoryAllocator )
     {
-        return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY,
+        return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL,
                 PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true );
     }
 
@@ -378,7 +364,6 @@ public class MuninnPageCache implements PageCache
         this.cachePageSize = configuration.pageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
         this.pageCacheTracer = configuration.pageCacheTracer;
-        this.versionContextSupplier = configuration.versionContextSupplier;
         this.printExceptionsOnClose = true;
         this.bufferFactory = configuration.bufferFactory;
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize, configuration.memoryTracker );
@@ -424,7 +409,7 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int filePageSize, String databaseName,
+    public synchronized PagedFile map( Path path, int filePageSize, String databaseName,
             ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
     {
         assertHealthy();
@@ -804,12 +789,6 @@ public class MuninnPageCache implements PageCache
     public long maxCachedPages()
     {
         return pages.getPageCount();
-    }
-
-    @Override
-    public VersionContextSupplier versionContextSupplier()
-    {
-        return versionContextSupplier;
     }
 
     @Override

@@ -38,7 +38,7 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
     private MemoryAllocator allocator;
 
     @Override
-    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier contextSupplier,
+    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
             JobScheduler jobScheduler, IOBufferFactory bufferFactory )
     {
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
@@ -46,7 +46,6 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
         allocator = MemoryAllocator.createAllocator( memory, memoryTracker );
         MuninnPageCache.Configuration configuration = MuninnPageCache.config( allocator )
                 .pageCacheTracer( tracer )
-                .versionContextSupplier( contextSupplier )
                 .bufferFactory( selectBufferFactory( bufferFactory, memoryTracker ) );
         return new MuninnPageCache( swapperFactory, jobScheduler, configuration );
     }

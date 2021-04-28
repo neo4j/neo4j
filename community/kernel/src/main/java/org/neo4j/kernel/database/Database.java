@@ -327,7 +327,7 @@ public class Database extends LifecycleAdapter
         {
             databaseDependencies = new Dependencies( globalDependencies );
             ioController = ioControllerService.createIOController( databaseConfig, clock );
-            databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier, ioController );
+            databasePageCache = new DatabasePageCache( globalPageCache, ioController );
             databaseMonitors = new Monitors( parentMonitors, internalLogProvider );
 
             life = new LifeSupport();

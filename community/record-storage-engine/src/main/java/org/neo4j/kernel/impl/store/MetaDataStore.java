@@ -365,7 +365,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         var recordFormat = new MetaDataRecordFormat();
         int pageSize = pageCache.pageSize();
         long value = FIELD_NOT_PRESENT;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, EmptyVersionContextSupplier.EMPTY, pageSize, databaseName, immutable.empty(), DISABLED ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty(), DISABLED ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {

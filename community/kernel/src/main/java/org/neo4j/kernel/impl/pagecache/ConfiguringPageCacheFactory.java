@@ -101,8 +101,7 @@ public class ConfiguringPageCacheFactory
                 .memoryTracker( memoryTracker )
                 .bufferFactory( bufferFactory )
                 .clock( clock )
-                .pageCacheTracer( pageCacheTracer )
-                .versionContextSupplier( versionContextSupplier );
+                .pageCacheTracer( pageCacheTracer );
         return new MuninnPageCache( swapperFactory, scheduler, configuration );
     }
 

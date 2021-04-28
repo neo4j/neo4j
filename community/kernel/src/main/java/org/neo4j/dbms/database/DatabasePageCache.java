@@ -50,24 +50,22 @@ public class DatabasePageCache implements PageCache
 {
     private final PageCache globalPageCache;
     private final CopyOnWriteArrayList<PagedFile> databasePagedFiles = new CopyOnWriteArrayList<>();
-    private final VersionContextSupplier versionContextSupplier;
     private final IOController ioController;
     private boolean closed;
 
-    public DatabasePageCache( PageCache globalPageCache, VersionContextSupplier versionContextSupplier, IOController ioController )
+    public DatabasePageCache( PageCache globalPageCache, IOController ioController )
     {
         this.globalPageCache = requireNonNull( globalPageCache );
-        this.versionContextSupplier = requireNonNull( versionContextSupplier );
         this.ioController = requireNonNull( ioController );
     }
 
     @Override
-    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
+    public PagedFile map( Path path, int pageSize, String databaseName,
             ImmutableSet<OpenOption> openOptions, IOController ignoredController ) throws IOException
     {
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
-        PagedFile pagedFile = globalPageCache.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController );
+        PagedFile pagedFile = globalPageCache.map( path, pageSize, databaseName, openOptions, ioController );
         DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles );
         databasePagedFiles.add( databasePageFile );
         return databasePageFile;
@@ -120,12 +118,6 @@ public class DatabasePageCache implements PageCache
     public long maxCachedPages()
     {
         return globalPageCache.maxCachedPages();
-    }
-
-    @Override
-    public VersionContextSupplier versionContextSupplier()
-    {
-        return versionContextSupplier;
     }
 
     @Override

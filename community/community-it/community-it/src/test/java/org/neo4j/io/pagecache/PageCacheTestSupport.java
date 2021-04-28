@@ -112,9 +112,9 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         fs.close();
     }
 
-    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier versionContextSupplier )
+    protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer )
     {
-        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, versionContextSupplier, jobScheduler, fixture.getBufferFactory() );
+        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, jobScheduler, fixture.getBufferFactory() );
         pageCachePageSize = pageCache.pageSize();
         recordsPerFilePage = pageCachePageSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
@@ -123,15 +123,10 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return pageCache;
     }
 
-    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer, VersionContextSupplier versionContextSupplier )
-    {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
-        return createPageCache( swapperFactory, maxPages, tracer, versionContextSupplier );
-    }
-
     protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
     {
-        return createPageCache( fs, maxPages, tracer, EmptyVersionContextSupplier.EMPTY );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+        return createPageCache( swapperFactory, maxPages, tracer );
     }
 
     protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
@@ -140,7 +135,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         {
             tearDownPageCache( pageCache );
         }
-        pageCache = createPageCache( fs, maxPages, tracer, EmptyVersionContextSupplier.EMPTY );
+        pageCache = createPageCache( fs, maxPages, tracer );
         return pageCache;
     }
 
@@ -338,7 +333,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         private Function<String,Path> fileConstructor = Path::of;
         private IOBufferFactory bufferFactory;
 
-        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer, VersionContextSupplier contextSupplier,
+        public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages, PageCacheTracer tracer,
                 JobScheduler jobScheduler, IOBufferFactory bufferFactory );
 
         public abstract void tearDownPageCache( T pageCache );

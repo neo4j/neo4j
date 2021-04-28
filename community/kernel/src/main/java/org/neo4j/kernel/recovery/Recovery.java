@@ -295,7 +295,7 @@ public final class Recovery
         checkAllFilesPresence( databaseLayout, fs, pageCache, storageEngineFactory );
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors, logProvider );
-        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY, IOController.DISABLED );
+        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, IOController.DISABLED );
         SimpleLogService logService = new SimpleLogService( logProvider );
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         DatabaseReadOnlyChecker readOnlyChecker = writable();
