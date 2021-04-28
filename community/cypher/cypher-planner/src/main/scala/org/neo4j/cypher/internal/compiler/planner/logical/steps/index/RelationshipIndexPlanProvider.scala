@@ -32,3 +32,14 @@ trait RelationshipIndexPlanProvider {
                   context: LogicalPlanningContext): Set[LogicalPlan]
 
 }
+
+/**
+ * This is a temporary hack to allow the Scan provider to check if the Seek provider has created a plan
+ */
+trait RelationshipIndexPlanProviderPeek {
+  def wouldCreatePlan(indexMatch: RelationshipIndexLeafPlanner.IndexMatch): Boolean
+}
+
+object RelationshipIndexPlanProviderPeek {
+  val default: RelationshipIndexPlanProviderPeek = (_: RelationshipIndexLeafPlanner.IndexMatch) => false
+}

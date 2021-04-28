@@ -95,7 +95,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   private val bazEquals12 = equals(prop(relName, baz), lit12)
 
   private def relationshipIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =
-    RelationshipIndexLeafPlanner(Seq(RelationshipIndexScanPlanProvider), restrictions)
+    RelationshipIndexLeafPlanner(Seq(RelationshipIndexScanPlanProvider()), restrictions)
 
   private def relationshipIndexStringSearchScanLeafPlanner(restrictions: LeafPlanRestrictions) =
     RelationshipIndexLeafPlanner(Seq(RelationshipIndexStringSearchScanPlanProvider), restrictions)

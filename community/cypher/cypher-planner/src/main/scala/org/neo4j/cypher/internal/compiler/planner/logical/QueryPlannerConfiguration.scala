@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanne
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexScanPlanProvider
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexSeekPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexStringSearchScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
@@ -64,7 +65,8 @@ object QueryPlannerConfiguration {
     ), restrictions),
 
     RelationshipIndexLeafPlanner(Seq(
-      RelationshipIndexScanPlanProvider,
+      RelationshipIndexScanPlanProvider(RelationshipIndexSeekPlanProvider),
+      RelationshipIndexSeekPlanProvider,
       RelationshipIndexStringSearchScanPlanProvider,
     ), restrictions),
 

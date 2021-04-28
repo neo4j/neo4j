@@ -122,6 +122,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -199,6 +200,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
@@ -395,6 +397,56 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val annotatedPlan = annotate(plan, solved, providedOrder, context)
 
     solver.rewriteLeafPlan(annotatedPlan)
+  }
+
+  def planRelationshipIndexSeek(idName: String,
+                                typeToken: RelationshipTypeToken,
+                                properties: Seq[IndexedProperty],
+                                valueExpr: QueryExpression[Expression],
+                                argumentIds: Set[String],
+                                indexOrder: IndexOrder,
+                                pattern: PatternRelationship,
+                                solvedPredicates: Seq[Expression],
+                                solvedHint: Option[UsingIndexHint],
+                                providedOrder: ProvidedOrder,
+                                context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
+      .addPatternRelationship(pattern)
+      .addPredicates(solvedPredicates: _*)
+      .addHints(solvedHint)
+      .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
+    val rewrittenValueExpr = valueExpr.map(solver.solve(_))
+    val newArguments = solver.newArguments
+
+    val plan = if (pattern.dir == SemanticDirection.BOTH) {
+      UndirectedRelationshipIndexSeek(
+        idName,
+        pattern.left,
+        pattern.right,
+        typeToken,
+        properties,
+        rewrittenValueExpr,
+        argumentIds ++ newArguments,
+        indexOrder)
+    } else {
+      DirectedRelationshipIndexSeek(
+        idName,
+        pattern.inOrder._1,
+        pattern.inOrder._2,
+        typeToken,
+        properties,
+        rewrittenValueExpr,
+        argumentIds ++ newArguments,
+        indexOrder)
+    }
+
+    solver.rewriteLeafPlan {
+      annotate(plan, solved, providedOrder, context)
+    }
   }
 
   def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
