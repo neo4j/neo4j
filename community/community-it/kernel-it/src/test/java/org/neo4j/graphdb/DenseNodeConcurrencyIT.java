@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import org.assertj.core.description.Description;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -132,6 +133,16 @@ class DenseNodeConcurrencyIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( builder.getFileSystem() ) );
+    }
+
+    @BeforeEach
+    void setUp()
+    {
+        try ( Transaction tx = database.beginTx() ) //Since all tests share the same database we create a separator tx, for easier test separation in tx-log
+        {
+            tx.createNode().setProperty( "Test separator", "separator" );
+            tx.commit();
+        }
     }
 
     @AfterAll
