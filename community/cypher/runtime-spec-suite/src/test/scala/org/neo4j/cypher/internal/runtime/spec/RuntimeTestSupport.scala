@@ -163,14 +163,15 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   override def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
                                                 runtime: CypherRuntime[CONTEXT],
-                                                parameters: Map[String, Any] = Map.empty): IndexedSeq[Array[AnyValue]] = {
+                                                parameters: Map[String, Any] = Map.empty,
+                                                profile: Boolean = false): IndexedSeq[Array[AnyValue]] = {
     val subscriber = new RecordingQuerySubscriber
     runTransactionally(logicalQuery, runtime, NoInput, (_, result) => {
       val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
       val seq = recordingRuntimeResult.awaitAll()
       recordingRuntimeResult.runtimeResult.close()
       seq
-    }, subscriber, parameters)
+    }, subscriber, parameters, profile)
   }
 
   override def profile(logicalQuery: LogicalQuery,
@@ -243,13 +244,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                          input: InputDataStream,
                                          resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                                          subscriber: QuerySubscriber,
-                                         parameters: Map[String, Any]): RESULT = {
+                                         parameters: Map[String, Any],
+                                         profile: Boolean = false): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
     val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
     val queryContext = newQueryContext(txContext, logicalQuery.readOnly)
     try {
       val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
-      runWithTx(executionPlan, input, resultMapper, subscriber, profile = false, logicalQuery.readOnly, parameters, tx, txContext)
+      runWithTx(executionPlan, input, resultMapper, subscriber, profile = profile, logicalQuery.readOnly, parameters, tx, txContext)
     } finally {
       txContext.close()
       tx.close()

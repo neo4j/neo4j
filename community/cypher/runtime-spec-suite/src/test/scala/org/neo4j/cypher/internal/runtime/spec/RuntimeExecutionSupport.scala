@@ -102,7 +102,8 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
    */
   def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
                                        runtime: CypherRuntime[CONTEXT],
-                                       parameters: Map[String, Any] = Map.empty
+                                       parameters: Map[String, Any] = Map.empty,
+                                       profile: Boolean = false
                                       ): IndexedSeq[Array[AnyValue]]
 
   /**

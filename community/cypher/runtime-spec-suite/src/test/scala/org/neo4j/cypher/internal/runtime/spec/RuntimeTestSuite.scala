@@ -19,6 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import java.io.File
+import java.io.PrintWriter
+import java.util
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
@@ -70,10 +75,6 @@ import org.scalatest.Tag
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-import java.io.File
-import java.io.PrintWriter
-import java.util
-import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -199,8 +200,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
                                                 runtime: CypherRuntime[CONTEXT],
-                                                parameters: Map[String, Any] = Map.empty
-                                               ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters)
+                                                parameters: Map[String, Any] = Map.empty,
+                                                profile: Boolean = false
+                                               ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters, profile)
 
   override def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult = runtimeTestSupport.execute(executablePlan, readOnly)
 
