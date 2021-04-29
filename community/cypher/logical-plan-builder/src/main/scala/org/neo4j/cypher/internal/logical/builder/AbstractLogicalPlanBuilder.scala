@@ -644,6 +644,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def directedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
+    newNode(varFor(from))
+    newNode(varFor(to))
     val idExpressions = ids.map {
       case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
@@ -661,6 +663,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
+    newNode(varFor(from))
+    newNode(varFor(to))
     val idExpressions = ids.map {
       case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
@@ -773,6 +777,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val plan = IndexSeek.relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), relType,
         customQueryExpression)(idGen)
       newRelationship(varFor(plan.idName))
+      newNode(varFor(plan.leftNode))
+      newNode(varFor(plan.rightNode))
       plan
     }
     planBuilder
