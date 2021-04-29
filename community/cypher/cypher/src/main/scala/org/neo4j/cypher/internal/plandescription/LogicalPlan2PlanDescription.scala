@@ -624,7 +624,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case LoadCSV(_, _, variableName, _, _, _, _) =>
         PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables, withRawCardinalities)
 
-      case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
+      case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
         val createNodesPretty = createNodes.map {
           case CreateNode(node, labels, _) =>
             pretty"(${asPrettyString(node)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
@@ -635,9 +635,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         }
         val details: Seq[PrettyString] = Seq(pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}") ++
           (if (onMatch.nonEmpty) Seq(pretty"ON MATCH ${onMatch.map(mutatingPatternString).mkPrettyString(", ")}") else Seq.empty) ++
-          (if (onCreate.nonEmpty) Seq(pretty"ON CREATE ${onCreate.map(mutatingPatternString).mkPrettyString(", ")}") else Seq.empty)
+          (if (onCreate.nonEmpty) Seq(pretty"ON CREATE ${onCreate.map(mutatingPatternString).mkPrettyString(", ")}") else Seq.empty) ++
+          (if (nodesToLock.nonEmpty) Seq(pretty"LOCK(${keyNamesInfo(nodesToLock.toSeq)})") else Seq.empty)
 
-        PlanDescriptionImpl(id, "Merge", children, Seq(Details(details)), variables, withRawCardinalities)
+        val name = if(nodesToLock.isEmpty) "Merge" else "LockingMerge"
+        PlanDescriptionImpl(id, name, children, Seq(Details(details)), variables, withRawCardinalities)
 
       case Optional(_, protectedSymbols) =>
         PlanDescriptionImpl(id, "Optional", children, Seq(Details(keyNamesInfo(protectedSymbols.toSeq))), variables, withRawCardinalities)

@@ -1048,23 +1048,29 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Merge") {
     assertGood(
-      attach(Merge(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)), Seq.empty, Seq.empty), 32.2),
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),
+        Seq.empty, Seq.empty, Set.empty), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x), (x)<-[r:R]-(y)"))), Set("a")))
 
     assertGood(
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
-        Seq(SetLabelPattern("x", Seq(label("NEW")))), Seq.empty), 32.2),
+        Seq(SetLabelPattern("x", Seq(label("NEW")))), Seq.empty, Set.empty), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x:NEW"))), Set("a")))
 
     assertGood(
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
-        Seq.empty, Seq(SetLabelPattern("x", Seq(label("NEW"))))), 32.2),
+        Seq.empty, Seq(SetLabelPattern("x", Seq(label("NEW")))), Set.empty), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON CREATE SET x:NEW"))), Set("a")))
 
     assertGood(
       attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
-        Seq(SetLabelPattern("x", Seq(label("ON_MATCH")))), Seq(SetLabelPattern("x", Seq(label("ON_CREATE"))))), 32.2),
+        Seq(SetLabelPattern("x", Seq(label("ON_MATCH")))), Seq(SetLabelPattern("x", Seq(label("ON_CREATE")))), Set.empty), 32.2),
       planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x:ON_MATCH", "ON CREATE SET x:ON_CREATE"))), Set("a")))
+
+    assertGood(
+      attach(Merge(lhsLP, Seq.empty, Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)),
+        Seq.empty, Seq.empty, Set("x", "y")), 32.2),
+      planDescription(id, "LockingMerge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x)<-[r:R]-(y)", "LOCK(x, y)"))), Set("a")))
   }
 
   test("foreach") {
