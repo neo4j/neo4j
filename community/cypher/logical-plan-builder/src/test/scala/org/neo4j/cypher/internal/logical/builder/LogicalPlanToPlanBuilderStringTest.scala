@@ -713,7 +713,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
       .build())
 
-  testPlan("pointDistanceIndexSeek",
+  testPlan("pointDistanceNodeIndexSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()

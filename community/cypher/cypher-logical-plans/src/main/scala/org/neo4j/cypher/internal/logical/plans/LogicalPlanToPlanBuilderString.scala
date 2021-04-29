@@ -120,7 +120,7 @@ object LogicalPlanToPlanBuilderString {
       case _:FindShortestPaths => "shortestPath"
       case _:NodeIndexScan => "nodeIndexOperator"
       case _:DirectedRelationshipIndexScan => "relationshipIndexOperator"
-      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _) => "pointDistanceIndexSeek"
+      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _) => "pointDistanceNodeIndexSeek"
       case _:NodeIndexSeek => "nodeIndexOperator"
       case _:NodeUniqueIndexSeek => "nodeIndexOperator"
       case _:NodeIndexContainsScan => "nodeIndexOperator"
@@ -360,7 +360,7 @@ object LogicalPlanToPlanBuilderString {
         val propName = property.propertyKeyToken.name
         nodeIndexOperator(idName, labelToken, Seq(property), argumentIds, indexOrder, unique = false, s"$propName ENDS WITH ${expressionStringifier(valueExpr)}")
       case NodeIndexSeek(idName, labelToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(FunctionInvocation(_, FunctionName("point"), _, args), distance, inclusive))), argumentIds, indexOrder) =>
-        pointDistanceIndexSeek(idName, labelToken, properties, args.head, distance, argumentIds, indexOrder, inclusive = inclusive)
+        pointDistanceNodeIndexSeek(idName, labelToken, properties, args.head, distance, argumentIds, indexOrder, inclusive = inclusive)
       case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
@@ -555,14 +555,14 @@ object LogicalPlanToPlanBuilderString {
       s"setPropertyFromMap(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(map)))}, $removeOtherProps)"
   }
 
-  private def pointDistanceIndexSeek(idName: String,
-                                     labelToken: LabelToken,
-                                     properties: Seq[IndexedProperty],
-                                     point: Expression,
-                                     distance: Expression,
-                                     argumentIds: Set[String],
-                                     indexOrder: IndexOrder,
-                                     inclusive: Boolean): String = {
+  private def pointDistanceNodeIndexSeek(idName: String,
+                                         labelToken: LabelToken,
+                                         properties: Seq[IndexedProperty],
+                                         point: Expression,
+                                         distance: Expression,
+                                         argumentIds: Set[String],
+                                         indexOrder: IndexOrder,
+                                         inclusive: Boolean): String = {
     val propName = properties.head.propertyKeyToken.name
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
