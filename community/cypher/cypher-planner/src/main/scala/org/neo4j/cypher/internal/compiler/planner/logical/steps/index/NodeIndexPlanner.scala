@@ -347,9 +347,6 @@ case class NodeIndexPlanner(planProviders: Seq[NodeIndexPlanProvider], restricti
       case AsDynamicPropertyNonScannable(nonScannableId) if isNode(nonScannableId) =>
         Some(nonScannableId)
 
-      case AsStringRangeNonSeekable(nonScannableId) if isNode(nonScannableId) =>
-        Some(nonScannableId)
-
       case _ =>
         None
     }.toSet
