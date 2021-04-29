@@ -1304,7 +1304,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should verify that two nodes are identical with locking reads") {
-    // Temporarily disabled due to https://trello.com/c/2BBKguHd
+    // Temporarily disabled: AssertingMultiNodeSeekOperator is broken
     assume(runtime.name != "Pipelined")
 
     val nodes = given {

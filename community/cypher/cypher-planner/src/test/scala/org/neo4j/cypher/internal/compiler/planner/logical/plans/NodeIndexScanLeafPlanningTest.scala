@@ -1071,6 +1071,20 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }
   }
 
+  test("does not plan EndsWithScan for composite indexes") {
+    new given {
+      indexOn("Awesome", "prop", "foo")
+
+      qg = queryGraph(propEndsWithApa, fooEndsWithApa, hasLabelAwesome)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = nodeIndexEndsWithScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
   private def queryGraph(predicates: Expression*) =
     QueryGraph(
       selections = Selections(predicates.map(Predicate(Set(idName), _)).toSet),
