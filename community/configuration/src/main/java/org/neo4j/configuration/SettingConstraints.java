@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.regex.Pattern;
@@ -40,7 +39,6 @@ import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public final class SettingConstraints
 {
@@ -484,7 +482,12 @@ public final class SettingConstraints
 
     public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> settingConstraint )
     {
-        return dependency( settingConstraint, unconstrained(),
+        return ifCluster( settingConstraint, unconstrained() );
+    }
+
+    public static <T> SettingConstraint<T> ifCluster( SettingConstraint<T> clusterConstraint, SettingConstraint<T> nonClusterConstraint )
+    {
+        return dependency( clusterConstraint, nonClusterConstraint,
                 GraphDatabaseSettings.mode, any( is( GraphDatabaseSettings.Mode.CORE ), is( GraphDatabaseSettings.Mode.READ_REPLICA ) ) );
     }
 
