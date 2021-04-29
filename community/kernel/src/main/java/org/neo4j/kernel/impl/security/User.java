@@ -64,6 +64,16 @@ public class User
         return name;
     }
 
+    /**
+     * User ids were introduced in Neo4j 4.3-drop04.
+     * The id is added when the user is added to the system database or on a system database upgrade from a previous version.
+     * Thus, this method returning null indicates that
+     * 1. the user was created before Neo4j 4.3-drop04 and has not been properly upgraded
+     * or
+     * 2. the user was created through a neo4j-admin command and has not yet been added to the system database.
+     *
+     * @return the user's id.
+     */
     public String id()
     {
         return id;
