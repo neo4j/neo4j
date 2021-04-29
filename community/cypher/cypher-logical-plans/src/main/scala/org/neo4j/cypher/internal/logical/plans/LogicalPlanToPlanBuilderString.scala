@@ -180,7 +180,7 @@ object LogicalPlanToPlanBuilderString {
         val onMatchString = onMatch.map(mutationToString)
         val onCreateString = onCreate.map(mutationToString)
 
-        s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(", ")}), Seq(${onCreateString.mkString(", ")})"
+        s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(", ")}), Seq(${onCreateString.mkString(", ")}), Set(${wrapInQuotationsAndMkString(nodesToLock)})"
 
       case Foreach(_, variable, list, mutations) =>
         s"${wrapInQuotations(variable)}, ${wrapInQuotations(expressionStringifier(list))}, Seq(${mutations.map(mutationToString).mkString(", ")})"
