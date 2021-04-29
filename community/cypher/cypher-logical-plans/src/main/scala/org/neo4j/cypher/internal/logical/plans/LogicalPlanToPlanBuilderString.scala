@@ -432,11 +432,11 @@ object LogicalPlanToPlanBuilderString {
       case SingleQueryExpression(expression)                                     => s"${propNames.head} = ${expressionStringifier(expression)}"
       case ManyQueryExpression(ListLiteral(expressions))                         => s"${propNames.head} = ${expressions.map(expressionStringifier(_)).mkString(" OR ")}"
       case ManyQueryExpression(expr)                                             => s"${propNames.head} IN ${expressionStringifier(expr)}"
-      case ExistenceQueryExpression()                                            => s"${propNames.head} IS NOT NULL"
+      case ExistenceQueryExpression()                                            => propNames.head
       case RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(expression))) => s"${propNames.head} STARTS WITH ${expressionStringifier(expression)}"
       case RangeQueryExpression(InequalitySeekRangeWrapper(range))               => rangeStr(range, propNames.head).toString
       case CompositeQueryExpression(inner)                                       => inner.zip(propNames).map { case (qe, propName) => queryExpressionStr(qe, Seq(propName)) }.mkString(", ")
-      case x                                                                     => ""
+      case _                                                                     => ""
     }
   }
 

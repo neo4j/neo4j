@@ -778,6 +778,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"))
       .apply()
       .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending)
+      .apply()
+      .|.nodeIndexOperator("x:Honey(prop2 = 10, prop)")
 
     // NodeUniqueIndexSeek
     builder
