@@ -54,17 +54,8 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
 
     queryGraph.patternRelationships.flatMap {
 
-      //(a)-[:R]->(b)
-      case p@PatternRelationship(name, (startNode, endNode), OUTGOING, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planDirectedRelationshipByTypeScan(name, startNode, typ, endNode, p, queryGraph.argumentIds, providedOrderFor(name), context))
-
-      //(a)<-[:R]-(b)
-      case p@PatternRelationship(name, (startNode, endNode), INCOMING, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planDirectedRelationshipByTypeScan(name, endNode, typ, startNode, p, queryGraph.argumentIds, providedOrderFor(name), context))
-
-      //(a)-[:R]-(b)
-      case p@PatternRelationship(name, (startNode, endNode), BOTH, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planUndirectedRelationshipByTypeScan(name, typ, p, queryGraph.argumentIds, providedOrderFor(name), context))
+      case p@PatternRelationship(name, (_, _), _, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
+        Some(context.logicalPlanProducer.planRelationshipByTypeScan(name, typ, p, queryGraph.argumentIds, providedOrderFor(name), context))
 
       case _ => None
     }.toIndexedSeq

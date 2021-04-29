@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.predicatesForIndexScan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.IndexMatch
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
@@ -62,36 +61,18 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
 
     distinctSolutions map { solution =>
 
-      solution.indexScanParameters.patternRelationship.dir match {
-        case SemanticDirection.BOTH =>
-          context.logicalPlanProducer.planUndirectedRelationshipIndexScan(
-            idName = solution.indexScanParameters.idName,
-            solution.indexScanParameters.token,
-            pattern = solution.indexScanParameters.patternRelationship,
-            properties = solution.indexScanParameters.properties,
-            solvedPredicates = solution.solvedPredicates,
-            solvedHint = solution.solvedHint,
-            argumentIds = argumentIds,
-            providedOrder = solution.providedOrder,
-            indexOrder = solution.indexScanParameters.indexOrder,
-            context = context
-          )
-        case SemanticDirection.OUTGOING | SemanticDirection.INCOMING =>
-          context.logicalPlanProducer.planDirectedRelationshipIndexScan(
-            idName = solution.indexScanParameters.idName,
-            solution.indexScanParameters.token,
-            pattern = solution.indexScanParameters.patternRelationship,
-            startNode = solution.indexScanParameters.patternRelationship.inOrder._1,
-            endNode = solution.indexScanParameters.patternRelationship.inOrder._2,
-            properties = solution.indexScanParameters.properties,
-            solvedPredicates = solution.solvedPredicates,
-            solvedHint = solution.solvedHint,
-            argumentIds = argumentIds,
-            providedOrder = solution.providedOrder,
-            indexOrder = solution.indexScanParameters.indexOrder,
-            context = context
-          )
-      }
+      context.logicalPlanProducer.planRelationshipIndexScan(
+        idName = solution.indexScanParameters.idName,
+        solution.indexScanParameters.token,
+        pattern = solution.indexScanParameters.patternRelationship,
+        properties = solution.indexScanParameters.properties,
+        solvedPredicates = solution.solvedPredicates,
+        solvedHint = solution.solvedHint,
+        argumentIds = argumentIds,
+        providedOrder = solution.providedOrder,
+        indexOrder = solution.indexScanParameters.indexOrder,
+        context = context
+      )
     }
   }
 

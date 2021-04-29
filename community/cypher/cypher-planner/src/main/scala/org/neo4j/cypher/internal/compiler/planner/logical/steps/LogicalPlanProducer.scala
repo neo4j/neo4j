@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -286,44 +287,36 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(AllNodesScan(idName, argumentIds), solved, ProvidedOrder.empty, context)
   }
 
-  def planDirectedRelationshipByTypeScan(idName: String,
-                                         startNode: String,
-                                         typ: RelTypeName,
-                                         endNode: String,
-                                         pattern: PatternRelationship,
-                                         argumentIds: Set[String],
-                                         providedOrder: ProvidedOrder,
-                                         context: LogicalPlanningContext): LogicalPlan = {
+  def planRelationshipByTypeScan(idName: String,
+                                 relType: RelTypeName,
+                                 pattern: PatternRelationship,
+                                 argumentIds: Set[String],
+                                 providedOrder: ProvidedOrder,
+                                 context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(DirectedRelationshipTypeScan(idName, startNode, typ, endNode, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+
+    val leafPlan = if (pattern.dir == BOTH) {
+      UndirectedRelationshipTypeScan(idName, pattern.inOrder._1, relType, pattern.inOrder._2, argumentIds, toIndexOrder(providedOrder))
+    } else {
+      DirectedRelationshipTypeScan(idName, pattern.inOrder._1, relType, pattern.inOrder._2, argumentIds, toIndexOrder(providedOrder))
+    }
+
+    annotate(leafPlan, solved, providedOrder, context)
   }
 
-  def planUndirectedRelationshipByTypeScan(idName: String,
-                                           typ: RelTypeName,
-                                           pattern: PatternRelationship,
-                                           argumentIds: Set[String],
-                                           providedOrder: ProvidedOrder,
-                                           context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternRelationship(pattern)
-      .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-    annotate(UndirectedRelationshipTypeScan(idName, pattern.left, typ, pattern.right, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
-  }
-
-  def planUndirectedRelationshipIndexScan(idName: String,
-                                          relationshipType: RelationshipTypeToken,
-                                          pattern: PatternRelationship,
-                                          properties: Seq[IndexedProperty],
-                                          solvedPredicates: Seq[Expression] = Seq.empty,
-                                          solvedHint: Option[UsingIndexHint] = None,
-                                          argumentIds: Set[String],
-                                          providedOrder: ProvidedOrder,
-                                          indexOrder: IndexOrder,
-                                          context: LogicalPlanningContext): LogicalPlan = {
+  def planRelationshipIndexScan(idName: String,
+                                relationshipType: RelationshipTypeToken,
+                                pattern: PatternRelationship,
+                                properties: Seq[IndexedProperty],
+                                solvedPredicates: Seq[Expression] = Seq.empty,
+                                solvedHint: Option[UsingIndexHint] = None,
+                                argumentIds: Set[String],
+                                providedOrder: ProvidedOrder,
+                                indexOrder: IndexOrder,
+                                context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
@@ -331,45 +324,28 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
 
-    annotate(UndirectedRelationshipIndexScan(
-      idName,
-      pattern.left,
-      pattern.right,
-      relationshipType,
-      properties,
-      argumentIds,
-      indexOrder
-    ), solved, providedOrder, context)
-  }
-
-  def planDirectedRelationshipIndexScan(idName: String,
-                                        relationshipType: RelationshipTypeToken,
-                                        pattern: PatternRelationship,
-                                        startNode: String,
-                                        endNode: String,
-                                        properties: Seq[IndexedProperty],
-                                        solvedPredicates: Seq[Expression] = Seq.empty,
-                                        solvedHint: Option[UsingIndexHint] = None,
-                                        argumentIds: Set[String],
-                                        providedOrder: ProvidedOrder,
-                                        indexOrder: IndexOrder,
-                                        context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternRelationship(pattern)
-      .addPredicates(solvedPredicates: _*)
-      .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-
-    annotate(DirectedRelationshipIndexScan(
-      idName,
-      startNode,
-      endNode,
-      relationshipType,
-      properties,
-      argumentIds,
-      indexOrder
-    ), solved, providedOrder, context)
+    val leafPlan = if (pattern.dir == BOTH) {
+      UndirectedRelationshipIndexScan(
+        idName,
+        pattern.inOrder._1,
+        pattern.inOrder._2,
+        relationshipType,
+        properties,
+        argumentIds,
+        indexOrder
+      )
+    } else {
+      DirectedRelationshipIndexScan(
+        idName,
+        pattern.inOrder._1,
+        pattern.inOrder._2,
+        relationshipType,
+        properties,
+        argumentIds,
+        indexOrder
+      )
+    }
+    annotate(leafPlan, solved, providedOrder, context)
   }
 
   def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
