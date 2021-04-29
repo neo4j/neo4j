@@ -110,6 +110,7 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]->(b)" -> DirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue, RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder),
     (getValue, args, indexOrder) => "(a)<-[r:R(prop = 1)]-(b)" -> DirectedRelationshipIndexSeek("r", "b", "a", typ("R"), Seq(prop("prop", getValue, RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder),
     (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]-(b)" -> UndirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue, RELATIONSHIP_TYPE)), exactInt(1), args, indexOrder),
+    (getValue, args, indexOrder) => "(a)-[r:REL_ABC(id)]-(b)" -> UndirectedRelationshipIndexScan("r", "a", "b", typ("REL_ABC"), Seq(prop("id", getValue, RELATIONSHIP_TYPE)), args, indexOrder),
   )
 
   for {

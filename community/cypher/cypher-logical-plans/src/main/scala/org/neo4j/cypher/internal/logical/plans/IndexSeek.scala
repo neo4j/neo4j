@@ -45,7 +45,7 @@ import scala.collection.mutable.ArrayBuffer
 object IndexSeek {
 
   // primitives
-  private val ID = "([a-zA-Z][a-zA-Z0-9]*)"
+  private val ID = "([a-zA-Z][a-zA-Z0-9_]*)"
   private val VALUE = "([0-9]+|'.*'|\\?\\?\\?)"
   private val INT = "([0-9]+)".r
   private val STRING = s"'(.*)'".r
