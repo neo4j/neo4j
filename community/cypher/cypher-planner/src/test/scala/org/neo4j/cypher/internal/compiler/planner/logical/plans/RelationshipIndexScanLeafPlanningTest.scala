@@ -25,15 +25,18 @@ import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexContainsScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexScanPlanProvider
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -45,7 +48,11 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -63,16 +70,19 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   private val bar = "bar"
   private val baz = "baz"
   private val apa = "Apa"
+  private val bepa = "Bepa"
   private val relTypeName = "REL"
 
   private val lit12 = literalInt(12)
   private val litApa = literalString(apa)
+  private val litBepa = literalString(bepa)
 
   private val propExists = function(Exists.name, prop(relName, prop))
   private val propIsNotNull = isNotNull(prop(relName, prop))
   private val propStartsWithEmpty = startsWith(prop(relName, prop), literalString(""))
   private val propEquals12 = equals(prop(relName, prop), lit12)
   private val propContainsApa = contains(prop(relName, prop), litApa)
+  private val propContainsBepa = contains(prop(relName, prop), litBepa)
   private val propLessThan12 = lessThan(prop(relName, prop), lit12)
   private val propNotEquals12 = notEquals(prop(relName, prop), lit12)
   private val propRegexMatchJohnny = regex(prop(relName, prop), literalString("Johnny"))
@@ -85,6 +95,9 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
 
   private def relationshipIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =
     RelationshipIndexLeafPlanner(Seq(RelationshipIndexScanPlanProvider), restrictions)
+
+  private def relationshipIndexContainsScanLeafPlanner(restrictions: LeafPlanRestrictions) =
+    RelationshipIndexLeafPlanner(Seq(RelationshipIndexContainsScanPlanProvider), restrictions)
 
   private def solvedPredicates(plan: LogicalPlan, ctx: LogicalPlanningContext) =
     ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
@@ -525,6 +538,174 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = relationshipIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should be(empty)
+    }
+  }
+
+  // INDEX CONTAINS SCAN
+
+  test("does not plan index contains scan when no index exist") {
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("does plan index contains scan when there is an index on the property") {
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
+      relationshipIndexOn(relTypeName, prop)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
+      }
+    }
+  }
+
+  test("does plan directed index contains scan when there is an index on the property") {
+    new given {
+      qg = queryGraph(Seq(relTypeName), OUTGOING, propContainsApa)
+      relationshipIndexOn(relTypeName, prop)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(DirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
+      }
+    }
+  }
+
+  test("index contains scan with values when there is an index on the property") {
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
+      relationshipIndexOn(relTypeName, prop).providesValues()
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
+      }
+    }
+  }
+
+  test("multiple index contains scans with values when there is an index on the property and multiple predicates") {
+    new given {
+      qg = queryGraph(Seq(relTypeName), INCOMING, propContainsApa, propContainsBepa)
+      relationshipIndexOn(relTypeName, prop).providesValues()
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(
+        DirectedRelationshipIndexContainsScan(`relName`, `endNodeName`, `startNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _),
+        DirectedRelationshipIndexContainsScan(`relName`, `endNodeName`, `startNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litBepa`, _, _),
+        ) => ()
+      }
+    }
+  }
+
+  test("no index contains scans with values when there is a composite index on the property and multiple predicates") {
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, propContainsApa)
+      relationshipIndexOn(relTypeName, prop, foo).providesValues()
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq() => ()
+      }
+    }
+  }
+
+  test("plans index contains scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
+
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
+      relationshipIndexOn(relTypeName, prop)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
+      }
+
+      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
+        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
+      }
+    }
+  }
+
+  test("index contains scan does not solve seek hints") {
+    val hint: UsingIndexHint = UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
+
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
+      relationshipIndexOn(relTypeName, prop)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
+      }
+
+      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
+        case Seq(plannedQG: QueryGraph) if plannedQG.hints.isEmpty => ()
+      }
+    }
+  }
+
+  test("plans unique index contains scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
+
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
+      relationshipIndexOn(relTypeName, prop).providesValues()
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
+      }
+
+      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
+        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
+      }
+    }
+  }
+
+  test("no index contains scan when there is an index on the property but relationship variable is skipped") {
+    new given {
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
+      relationshipIndexOn(relTypeName, prop)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = relationshipIndexContainsScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(relName, Set()))(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       resultPlans should be(empty)

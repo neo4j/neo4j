@@ -143,10 +143,10 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     val hasLabel1 = hasLabels("n", "Awesome")
     val hasLabel2 = hasLabels("n", "Awesome2")
-    val  seekLabel1Prop1 = nodeIndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
-    val  seekLabel1Prop2 = nodeIndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
-    val  seekLabel2Prop1 = nodeIndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
-    val  seekLabel2Prop2 = nodeIndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
+    val seekLabel1Prop1 = nodeIndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
+    val seekLabel1Prop2 = nodeIndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
+    val seekLabel2Prop1 = nodeIndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
+    val seekLabel2Prop2 = nodeIndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
 
     val coveringCombinations = Seq(
       (Seq(seekLabel1Prop1, seekLabel1Prop2), hasLabel2),
@@ -739,6 +739,66 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
+    )
+  }
+
+  test("should plan index contains scan with GetValue when the relationship property is projected") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'foo' RETURN r.prop"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`r.prop`")
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'foo')]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = GetValue)
+        .build()
+    )
+  }
+
+  test("should plan relationship projection and index contains scan with DoNotGetValue when the index does not provide values") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'foo' RETURN r.prop"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`r.prop`")
+        .projection("r.prop AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'foo')]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .build()
+    )
+  }
+
+  test("should plan relationship projection and index contains scan with DoNotGetValue when another property is projected") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'foo' RETURN r.foo"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`r.foo`")
+        .projection("r.foo AS `r.foo`")
+        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'foo')]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .build()
     )
   }
 

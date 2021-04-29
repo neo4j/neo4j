@@ -512,6 +512,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property (undirected) should plan with provided order (contains scan)") {
+      val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'sub' RETURN r.prop ORDER BY r.prop $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'sub')]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .build()
+      )
+    }
+
     /**
      * TODO replace
      *
@@ -848,7 +870,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
         .addRelationshipExistenceConstraint("REL", "prop")
-        .enablePrintCostComparisons()
         .enablePlanningRelationshipIndexes()
         .build()
 

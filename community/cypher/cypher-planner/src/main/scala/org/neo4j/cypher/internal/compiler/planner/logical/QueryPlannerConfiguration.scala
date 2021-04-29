@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexContainsScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexContainsScanPlanProvider
@@ -65,7 +66,8 @@ object QueryPlannerConfiguration {
     ), restrictions),
 
     RelationshipIndexLeafPlanner(Seq(
-      RelationshipIndexScanPlanProvider
+      RelationshipIndexScanPlanProvider,
+      RelationshipIndexContainsScanPlanProvider,
     ), restrictions),
 
     // MATCH (n:Person) RETURN n
