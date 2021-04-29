@@ -1276,7 +1276,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .foreach("i", "[1, 2, 3]",
-        Seq(setLabel("x", "L")))
+        Seq(setLabel("x", "L", "M")))
       .nodeByLabelScan("x", "A")
       .build()
 
@@ -1288,7 +1288,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val foreachProfile = queryProfile.operatorProfile(1)
 
     foreachProfile.rows() shouldBe sizeHint
-    foreachProfile.dbHits() shouldBe costOfLabelLookup + 3 * sizeHint
+    foreachProfile.dbHits() shouldBe 2 * costOfLabelLookup + 3 * sizeHint
   }
 
   test("should profile rows and dbhits of foreach + remove label correctly") {
