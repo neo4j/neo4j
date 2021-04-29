@@ -158,6 +158,10 @@ object SingleComponentPlanner {
     leaves.flatMap {
       case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
+      case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.patternRelationships.nonEmpty =>
+        // Avoid planning an Expand on a plan that already solves another relationship.
+        // That is not supposed to happen when we initialize the table, but rather during IDP.
+        Set.empty
       case plan if solveds.get(plan.id).asSinglePlannerQuery.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
         Set(planSingleProjectEndpoints(pattern, plan, context))
       case plan =>

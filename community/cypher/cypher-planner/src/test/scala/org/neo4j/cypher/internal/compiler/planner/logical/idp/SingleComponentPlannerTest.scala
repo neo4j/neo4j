@@ -59,6 +59,25 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     assertPlansMatch(Set(plan1, plan2, plan3), logicalPlans.toSet)
   }
 
+  test("does not plan Expand on top of relationship leaf plan for queries with more than one pattern rel") {
+    // given
+    val aNode = "a"
+    val bNode = "b"
+    val cNode = "c"
+    val rel1 = PatternRelationship("r1", (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val rel2 = PatternRelationship("r2", (bNode, cNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val qg = QueryGraph(patternRelationships = Set(rel1, rel2), patternNodes = Set(aNode, bNode, cNode))
+    val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
+    val r1Plan = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(rel1.name, rel1.left, rel1.right), Seq(rel1))
+    val r2Plan = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(rel2.name, rel2.left, rel2.right), Seq(rel2))
+
+    // when
+    val logicalPlans = SingleComponentPlanner.planSinglePattern(qg, rel1, Set(r1Plan, r2Plan), context)
+
+    // then
+    assertPlansMatch(Set(r1Plan), logicalPlans.toSet)
+  }
+
   test("plans hashjoins and cartesian product for queries with single pattern rel and multiple index hints") {
     // given
     val aNode = "a"
