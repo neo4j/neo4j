@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
@@ -86,7 +86,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private def hasLabel(l: String) = hasLabels("n", l)
 
   private def indexSeekLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexSeekPlanProvider), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexSeekPlanProvider), restrictions)
 
   test("does not plan index seek when no index exist") {
     new given {

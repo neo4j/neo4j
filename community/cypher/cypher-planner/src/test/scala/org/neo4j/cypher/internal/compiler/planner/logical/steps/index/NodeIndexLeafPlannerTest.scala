@@ -8,7 +8,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
-  private val planner = new NodeIndexPlanner(Seq.empty, LeafPlanRestrictions.NoRestrictions)
+  private val planner = new NodeIndexLeafPlanner(Seq.empty, LeafPlanRestrictions.NoRestrictions)
 
   test("testFindIndexCompatiblePredicates on hasLabel with label with constraint") {
 

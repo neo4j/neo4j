@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexContainsScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexEndsWithScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
@@ -64,7 +64,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private def nodeIndexLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexSeekPlanProvider, nodeIndexContainsScanPlanProvider, nodeIndexEndsWithScanPlanProvider, nodeIndexScanPlanProvider()), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexSeekPlanProvider, nodeIndexContainsScanPlanProvider, nodeIndexEndsWithScanPlanProvider, nodeIndexScanPlanProvider()), restrictions)
 
   test("finds all types of index plans") {
 

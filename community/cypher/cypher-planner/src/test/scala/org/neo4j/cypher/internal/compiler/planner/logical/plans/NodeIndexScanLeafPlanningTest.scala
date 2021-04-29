@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexContainsScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexEndsWithScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
@@ -79,19 +79,19 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val bazEquals12 = equals(prop("n", "baz"), lit12)
 
   private def nodeIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider()), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexScanPlanProvider()), restrictions)
 
   private def nodeIndexContainsScanLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexContainsScanPlanProvider), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexContainsScanPlanProvider), restrictions)
 
   private def nodeIndexEndsWithScanLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexEndsWithScanPlanProvider), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexEndsWithScanPlanProvider), restrictions)
 
   private def allNodeScansLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider(), nodeIndexContainsScanPlanProvider, nodeIndexEndsWithScanPlanProvider), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexScanPlanProvider(), nodeIndexContainsScanPlanProvider, nodeIndexEndsWithScanPlanProvider), restrictions)
 
   private def nodeScanLeafPlannerWithSeekExclusion(restrictions: LeafPlanRestrictions) =
-    NodeIndexPlanner(Seq(nodeIndexScanPlanProvider(nodeIndexSeekPlanProvider)), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexScanPlanProvider(nodeIndexSeekPlanProvider)), restrictions)
 
   test("does not plan index scan when no index exist") {
     new given {

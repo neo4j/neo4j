@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexContainsScanPlanProvider
@@ -53,7 +53,7 @@ object QueryPlannerConfiguration {
     // MATCH (n) WHERE id(n) IN ... RETURN n
     idSeekLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
-    NodeIndexPlanner(Seq(
+    NodeIndexLeafPlanner(Seq(
       // MATCH (n) WHERE n.prop IN ... RETURN n
       nodeIndexSeekPlanProvider,
       // MATCH (n:Person) WHERE n.prop CONTAINS ...
