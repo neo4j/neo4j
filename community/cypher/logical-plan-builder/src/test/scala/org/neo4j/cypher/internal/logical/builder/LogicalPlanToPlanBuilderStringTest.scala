@@ -82,6 +82,12 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument("x")
       .build())
 
+  testPlan("produceResults of property",
+    new TestPlanBuilder()
+      .produceResults("`x.prop`")
+      .allNodeScan("x")
+      .build())
+
   testPlan("argument",
     new TestPlanBuilder()
       .produceResults("x")
@@ -569,7 +575,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .produceResults("x", "y")
       .projection("x AS y", "1 + n.foo AS z")
       .projection("cacheR[r.prop] AS rel")
-      .projection(("cacheR[r.prop] AS `r.prop`"))
+      .projection("cacheR[r.prop] AS `r.prop`")
       .projection("cacheN[n.prop] AS node")
       .projection("cache[n.prop] AS node")
       .projection("cacheFromStore[n.prop] AS node")

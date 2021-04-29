@@ -247,7 +247,7 @@ object LogicalPlanToPlanBuilderString {
         }
         s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(", ")})$yielding" """.trim
       case ProduceResult(_, columns) =>
-        wrapInQuotationsAndMkString(columns)
+        wrapInQuotationsAndMkString(columns.map(escapeIdentifier))
       case ProjectEndpoints(_, relName, start, startInScope, end, endInScope, types, directed, length) =>
         val (dirStrA, dirStrB) = arrows(if (directed) OUTGOING else BOTH)
         val typeStr = relTypeStr(types.getOrElse(Seq.empty))
@@ -614,11 +614,12 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def projectStrs(map: Map[String, Expression]): String = wrapInQuotationsAndMkString(map.map {
-    case (alias, expr) => {
-      val escapedAlias = if (alias.matches("\\w+")) alias else s"`$alias`"
-      s"${expressionStringifier(expr)} AS $escapedAlias"
-    }
+    case (alias, expr) => s"${expressionStringifier(expr)} AS ${escapeIdentifier(alias)}"
   })
+
+  private def escapeIdentifier(alias: String) = {
+    if (alias.matches("\\w+")) alias else s"`$alias`"
+  }
 
   private def wrapInQuotations(c: String): String = "\"" + c + "\""
 
