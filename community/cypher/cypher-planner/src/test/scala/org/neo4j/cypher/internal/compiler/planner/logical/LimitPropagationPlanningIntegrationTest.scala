@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
@@ -85,20 +84,20 @@ class LimitPropagationPlanningIntegrationTest
     }
   }
 
-  // TODO enable this test (and add more tests) when https://trello.com/c/8rs9Pysx/374-cardinality-estimation-should-use-relationship-indexes is done
-  ignore("should plan lazy relationship index seek instead of sort when under limit") {
+  test("should plan lazy relationship index scan instead of sort when under limit") {
     val query =
       s"""
          |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
          |MATCH (c:C)-[cb:REL_CB]->(b) WHERE cb.id IS NOT NULL
-         |RETURN a, c ORDER BY cb.id LIMIT 10
+         |RETURN a, c ORDER BY cb.id LIMIT 1
          |""".stripMargin
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
       .produceResults("a", "c")
-      .limit(10)
+      .limit(1)
       .nodeHashJoin("b")
-      .|.relationshipIndexOperator("(c)-[cb:RELCB(id)]->(b)", indexOrder = IndexOrderAscending, getValue = GetValue)
+      .|.filterExpression(hasLabels("c", "C"))
+      .|.relationshipIndexOperator("(c)-[cb:REL_CB(id)]->(b)", indexOrder = IndexOrderAscending)
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
@@ -267,6 +266,31 @@ class LimitPropagationPlanningIntegrationTest
         startsWith(
           cachedNodePropFromStore("c", "id"),
           literalString("")))
+      .expandAll("(b)<-[cb:REL_CB]-(c)")
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  test("should not plan lazy relationship index scan instead of sort when under limit and large skip") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE cb.id IS NOT NULL
+         |RETURN a, c ORDER BY cb.id
+         |SKIP 100000 LIMIT 1
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .skip(100000)
+      .top(Seq(Ascending("cb.id")), add(literalInt(1), literalInt(100000)))
+      .projection("cacheR[cb.id] AS `cb.id`")
+      .filterExpression(
+        hasLabels("c", "C"),
+        isNotNull(cachedRelPropFromStore("cb", "id")))
       .expandAll("(b)<-[cb:REL_CB]-(c)")
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
