@@ -757,12 +757,14 @@ public class NeoStoresTest
     {
         try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
         {
+            CursorContext cursorContext = NULL;
+            commandCreationContext.initialize( cursorContext );
             List<StorageCommand> commands = new ArrayList<>();
             storageEngine.createCommands( commands, transactionState, storageReader, commandCreationContext, IGNORE, NONE,
-                    storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(), tx -> tx, NULL, INSTANCE );
+                    storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(), tx -> tx, cursorContext, INSTANCE );
             PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
             tx.setHeader( EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED );
-            storageEngine.apply( new TransactionToApply( tx, EmptyVersionContextSupplier.EMPTY, NULL ), INTERNAL );
+            storageEngine.apply( new TransactionToApply( tx, EmptyVersionContextSupplier.EMPTY, cursorContext ), INTERNAL );
         }
     }
 

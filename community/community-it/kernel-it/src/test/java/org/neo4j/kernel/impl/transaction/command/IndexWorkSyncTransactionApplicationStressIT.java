@@ -146,7 +146,6 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private final NodeStore nodeIds;
         private final int batchSize;
         private final CollectingIndexUpdateListener index;
-        private final CommandCreationContext commandCreationContext;
         private int i;
         private int base;
 
@@ -159,7 +158,6 @@ public class IndexWorkSyncTransactionApplicationStressIT
             this.index = index;
             NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
-            this.commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
         }
 
         @Override
@@ -168,6 +166,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             try ( StorageReader reader = storageEngine.newReader();
                   CommandCreationContext creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
             {
+                creationContext.initialize( NULL );
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {
                     // Apply
@@ -186,10 +185,6 @@ public class IndexWorkSyncTransactionApplicationStressIT
             catch ( Exception e )
             {
                 throw new RuntimeException( e );
-            }
-            finally
-            {
-                commandCreationContext.close();
             }
         }
 

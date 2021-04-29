@@ -1059,6 +1059,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             statistics.reset();
             releaseStatementResources();
             operations.release();
+            commandCreationContext.close();
             cursorContext.close();
             initializationTrace = NONE;
             pool.release( this );
@@ -1136,7 +1137,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void dispose()
     {
         storageReader.close();
-        commandCreationContext.close();
     }
 
     /**

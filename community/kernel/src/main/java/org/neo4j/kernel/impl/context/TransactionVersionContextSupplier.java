@@ -21,28 +21,27 @@ package org.neo4j.kernel.impl.context;
 
 import java.util.function.LongSupplier;
 
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 /**
- * {@link VersionContextSupplier} that supplier thread bound version context that should be used in a context of
+ * {@link VersionContextSupplier} that supplier version context that should be used in a context of
  * transaction(Committing or reading).
  */
 public class TransactionVersionContextSupplier implements VersionContextSupplier
 {
-    private ThreadLocal<VersionContext> cursorContext;
+    private LongSupplier lastClosedTransactionIdSupplier;
 
     @Override
     public void init( LongSupplier lastClosedTransactionIdSupplier )
     {
-        this.cursorContext = ThreadLocal.withInitial( () -> new TransactionVersionContext( lastClosedTransactionIdSupplier ) );
+        this.lastClosedTransactionIdSupplier = lastClosedTransactionIdSupplier;
     }
 
     @Override
     public VersionContext getVersionContext()
     {
-        return cursorContext == null ? EmptyVersionContext.EMPTY : cursorContext.get();
+        return new TransactionVersionContext( lastClosedTransactionIdSupplier );
     }
 
 }

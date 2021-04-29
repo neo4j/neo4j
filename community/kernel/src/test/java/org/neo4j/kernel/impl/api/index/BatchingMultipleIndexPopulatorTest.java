@@ -62,6 +62,7 @@ import org.neo4j.values.storable.Values;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -161,8 +162,8 @@ public class BatchingMultipleIndexPopulatorTest
 
         batchingPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
 
-        verify( populator1 ).add( forUpdates( index1, update1, update2, update3 ), CursorContext.NULL );
-        verify( populator42 ).add( forUpdates( index42, update42 ), CursorContext.NULL );
+        verify( populator1 ).add( eq( forUpdates( index1, update1, update2, update3 ) ), any() );
+        verify( populator42 ).add( eq( forUpdates( index42, update42 ) ), any() );
     }
 
     @Test
@@ -186,7 +187,7 @@ public class BatchingMultipleIndexPopulatorTest
 
             populator = addPopulator( batchingPopulator, index1 );
             List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
-            doThrow( batchFlushError ).when( populator ).add( expected, CursorContext.NULL );
+            doThrow( batchFlushError ).when( populator ).add( eq( expected ), any() );
 
             batchingPopulator.createStoreScan( NULL ).run( NO_EXTERNAL_UPDATES );
         }

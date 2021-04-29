@@ -91,6 +91,7 @@ public class CommandCreationContextIT
             prepareIdGenerator( storeProvider.apply( neoStores ).getIdGenerator() );
             try ( var creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
             {
+                creationContext.initialize( cursorContext );
                 idReservation.applyAsLong( creationContext );
                 assertCursorOne( cursorContext );
             }
@@ -105,6 +106,7 @@ public class CommandCreationContextIT
         try ( var commandCreationContext = storageEngine.newCommandCreationContext( memoryTracker ) )
         {
             var integrityValidator = mock( IntegrityValidator.class );
+            commandCreationContext.initialize( NULL );
             var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE, LockTracer.NONE,
                     LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR );
             long heapBefore = memoryTracker.estimatedHeapMemory();

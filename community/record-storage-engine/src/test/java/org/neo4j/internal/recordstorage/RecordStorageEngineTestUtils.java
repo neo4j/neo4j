@@ -83,10 +83,14 @@ public class RecordStorageEngineTestUtils
         List<StorageCommand> commands = new ArrayList<>();
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        storageEngine.createCommands( commands, txState, storageEngine.newReader(),
-                storageEngine.newCommandCreationContext( EmptyMemoryTracker.INSTANCE ), ResourceLocker.IGNORE, LockTracer.NONE,
-                metaDataStore.getLastCommittedTransactionId(), t -> t, CursorContext.NULL, EmptyMemoryTracker.INSTANCE );
-        storageEngine.apply( new GroupOfCommands( metaDataStore.nextCommittingTransactionId(), commands.toArray( new StorageCommand[0] ) ),
-                TransactionApplicationMode.EXTERNAL );
+        CursorContext cursorContext = CursorContext.NULL;
+        try ( RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( EmptyMemoryTracker.INSTANCE ) )
+        {
+            commandCreationContext.initialize( cursorContext );
+            storageEngine.createCommands( commands, txState, storageEngine.newReader(), commandCreationContext, ResourceLocker.IGNORE, LockTracer.NONE,
+                    metaDataStore.getLastCommittedTransactionId(), t -> t, cursorContext, EmptyMemoryTracker.INSTANCE );
+            storageEngine.apply( new GroupOfCommands( metaDataStore.nextCommittingTransactionId(), commands.toArray( new StorageCommand[0] ) ),
+                    TransactionApplicationMode.EXTERNAL );
+        }
     }
 }

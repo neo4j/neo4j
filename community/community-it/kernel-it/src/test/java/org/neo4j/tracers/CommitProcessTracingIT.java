@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -88,14 +89,16 @@ public class CommitProcessTracingIT
               var reader = storageEngine.newReader() )
         {
             assertZeroCursor( cursorContext );
-            var context = storageEngine.newCommandCreationContext( INSTANCE );
-            List<StorageCommand> commands = new ArrayList<>();
-            var txState = new TxState();
-            txState.nodeDoAddLabel( 1, sourceId );
+            try ( CommandCreationContext context = storageEngine.newCommandCreationContext( INSTANCE ) )
+            {
+                context.initialize( cursorContext );
+                List<StorageCommand> commands = new ArrayList<>();
+                var txState = new TxState();
+                txState.nodeDoAddLabel( 1, sourceId );
 
-            storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorContext, INSTANCE );
-
-            assertCursor( cursorContext, 1 );
+                storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorContext, INSTANCE );
+                assertCursor( cursorContext, 1 );
+            }
         }
     }
 

@@ -94,6 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -474,7 +475,7 @@ class IndexPopulationJobTest
         }
 
         // THEN
-        verify( populator ).close( false, CursorContext.NULL );
+        verify( populator ).close( eq( false ), any() );
         verify( index, never() ).flip( any(), any() );
         verify( jobHandle ).cancel();
     }
@@ -568,7 +569,7 @@ class IndexPopulationJobTest
                         EntityType.NODE, indexPrototype( FIRST, name, false ), NULL );
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
-        doThrow( failure ).when( populator ).close( true, CursorContext.NULL );
+        doThrow( failure ).when( populator ).close( eq( true ), any() );
 
         // When
         job.run();

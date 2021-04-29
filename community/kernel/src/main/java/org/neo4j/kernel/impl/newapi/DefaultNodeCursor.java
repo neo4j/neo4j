@@ -55,7 +55,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     boolean hasChanges;
     private LongIterator addedNodes;
     StorageNodeCursor storeCursor;
-    private StorageNodeCursor securityStoreCursor;
+    private final StorageNodeCursor securityStoreCursor;
     private long currentAddedInTx;
     private long single;
     private boolean isSingle;

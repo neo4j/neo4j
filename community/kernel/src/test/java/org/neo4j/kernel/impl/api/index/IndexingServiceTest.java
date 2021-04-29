@@ -233,7 +233,7 @@ class IndexingServiceTest
         IndexProxy proxy = indexingService.getIndexProxy( index );
 
         waitForIndexesToComeOnline( indexingService, index );
-        verify( populator, timeout( 10000 ) ).close( true, NULL );
+        verify( populator, timeout( 10000 ) ).close( eq( true ), any() );
 
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
@@ -244,8 +244,8 @@ class IndexingServiceTest
         assertEquals( ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
-        order.verify( populator ).close( true, NULL );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT, NULL );
+        order.verify( populator ).close( eq( true ), any() );
+        order.verify( accessor ).newUpdater( eq( IndexUpdateMode.ONLINE_IDEMPOTENT ), any() );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -273,7 +273,7 @@ class IndexingServiceTest
     void shouldDeliverUpdatesThatOccurDuringPopulationToPopulator() throws Exception
     {
         // given
-        when( populator.newPopulatingUpdater( propertyAccessor, NULL ) ).thenReturn( updater );
+        when( populator.newPopulatingUpdater( eq( propertyAccessor ), any() ) ).thenReturn( updater );
 
         CountDownLatch populationLatch = new CountDownLatch( 1 );
 
@@ -322,7 +322,7 @@ class IndexingServiceTest
         populationLatch.countDown();
 
         waitForIndexesToComeOnline( indexingService, index );
-        verify( populator ).close( true, NULL );
+        verify( populator ).close( eq( true ), any() );
 
         // then
         assertEquals( ONLINE, proxy.getState() );
@@ -332,12 +332,12 @@ class IndexingServiceTest
         order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( CursorContext.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( IndexPopulator.PopulationWorkScheduler.class ),
                 any( CursorContext.class ) );
-        order.verify( populator ).newPopulatingUpdater( propertyAccessor, NULL );
+        order.verify( populator ).newPopulatingUpdater( eq( propertyAccessor ), any() );
         order.verify( populator ).includeSample( any() );
         order.verify( updater ).process( any() );
         order.verify( updater ).close();
-        order.verify( populator ).sample( NULL );
-        order.verify( populator ).close( true, NULL );
+        order.verify( populator ).sample( any() );
+        order.verify( populator ).close( eq( true ), any() );
         verifyNoMoreInteractions( updater );
         verifyNoMoreInteractions( populator );
 
@@ -363,7 +363,7 @@ class IndexingServiceTest
         IndexProxy proxy = indexingService.getIndexProxy( index );
 
         // don't wait for index to come ONLINE here since we're testing that it doesn't
-        verify( populator, timeout( 20000 ) ).close( true, NULL );
+        verify( populator, timeout( 20000 ) ).close( eq( true ), any() );
 
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
@@ -374,8 +374,8 @@ class IndexingServiceTest
         assertEquals( POPULATING, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater );
         order.verify( populator ).create();
-        order.verify( populator ).close( true, NULL );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE, NULL );
+        order.verify( populator ).close( eq( true ), any() );
+        order.verify( accessor ).newUpdater( eq( IndexUpdateMode.ONLINE ), any() );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -399,7 +399,7 @@ class IndexingServiceTest
         assertEquals( ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor );
         order.verify( populator ).create();
-        order.verify( populator ).close( true, NULL );
+        order.verify( populator ).close( eq( true ), any( CursorContext.class ) );
     }
 
     @Test
@@ -419,9 +419,9 @@ class IndexingServiceTest
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",
                 writable() ) );
 
-        when( provider.getInitialState( onlineIndex, NULL ) ).thenReturn( ONLINE );
-        when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
-        when( provider.getInitialState( failedIndex, NULL ) ).thenReturn( FAILED );
+        when( provider.getInitialState( eq( onlineIndex ), any() ) ).thenReturn( ONLINE );
+        when( provider.getInitialState( eq( populatingIndex ), any() ) ).thenReturn( POPULATING );
+        when( provider.getInitialState( eq( failedIndex ), any() ) ).thenReturn( FAILED );
 
         nameLookup.label( 1, "LabelOne" );
         nameLookup.label( 2, "LabelTwo" );
@@ -456,9 +456,9 @@ class IndexingServiceTest
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
                 schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", writable() );
 
-        when( provider.getInitialState( onlineIndex, NULL ) ).thenReturn( ONLINE );
-        when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
-        when( provider.getInitialState( failedIndex, NULL ) ).thenReturn( FAILED );
+        when( provider.getInitialState( eq( onlineIndex ), any() ) ).thenReturn( ONLINE );
+        when( provider.getInitialState( eq( populatingIndex ), any() ) ).thenReturn( POPULATING );
+        when( provider.getInitialState( eq( failedIndex ), any() ) ).thenReturn( FAILED );
 
         indexingService.init();
 
@@ -474,7 +474,7 @@ class IndexingServiceTest
         indexingService.start();
 
         // then
-        verify( provider ).getPopulationFailure( failedIndex, NULL );
+        verify( provider ).getPopulationFailure( eq( failedIndex ), any() );
         assertThat( internalLogProvider ).forLevel( DEBUG ).containsMessages(
                 "IndexingService.start: index 1 on (:LabelOne {propertyOne}) is ONLINE",
                 "IndexingService.start: index 2 on (:LabelOne {propertyTwo}) is POPULATING",
@@ -499,7 +499,7 @@ class IndexingServiceTest
             {
                 IndexDescriptor index = storeIndex( id, 1, id, indexProviderDescriptor );
                 indexDescriptors.add( index );
-                when( indexProvider.getInitialState( index, NULL ) ).thenReturn( ONLINE );
+                when( indexProvider.getInitialState( eq( index ), any() ) ).thenReturn( ONLINE );
                 id++;
             }
         }
@@ -617,8 +617,8 @@ class IndexingServiceTest
 
         doAnswer( waitForLatch( populatorLatch ) ).when( populator ).create();
         when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
-        when( indexProvider.getInitialState( index1, NULL ) ).thenReturn( POPULATING );
-        when( indexProvider.getInitialState( index2, NULL ) ).thenReturn( ONLINE );
+        when( indexProvider.getInitialState( eq( index1 ), any() ) ).thenReturn( POPULATING );
+        when( indexProvider.getInitialState( eq( index2 ), any() ) ).thenReturn( ONLINE );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100, 32, 32 ) );
         life.start();
 
@@ -704,7 +704,7 @@ class IndexingServiceTest
 
         indexing.createIndexes( AUTH_DISABLED, index );
         waitForIndexesToComeOnline( indexing, index );
-        verify( populator, timeout( 10000 ) ).close( true, NULL );
+        verify( populator, timeout( 10000 ) ).close( eq( true ), any() );
 
         // When
         indexing.applyUpdates( asList( add( 1, "foo" ), add( 2, "bar" ) ), NULL );
@@ -750,7 +750,7 @@ class IndexingServiceTest
 
         waitForIndexesToComeOnline( indexing, index1, index2 );
 
-        verify( populator, timeout( 10000 ).times( 2 ) ).close( true, NULL );
+        verify( populator, timeout( 10000 ).times( 2 ) ).close( eq( true ), any() );
 
         // When
         indexing.applyUpdates( asList(
@@ -1028,7 +1028,7 @@ class IndexingServiceTest
             long indexId = 1;
             IndexDescriptor index = uniqueIndex.materialise( indexId ); // Note the lack of an "owned constraint id".
             IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), index );
-            when( indexProvider.getInitialState( index, NULL ) ).thenReturn( POPULATING );
+            when( indexProvider.getInitialState( eq( index ), any() ) ).thenReturn( POPULATING );
 
             // when
             life.start();
@@ -1059,7 +1059,7 @@ class IndexingServiceTest
                 barrier.reached();
             }
         }, indexRule );
-        when( indexProvider.getInitialState( indexRule, NULL ) ).thenReturn( POPULATING );
+        when( indexProvider.getInitialState( eq( indexRule ), any() ) ).thenReturn( POPULATING );
 
         life.init();
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -1120,15 +1120,15 @@ class IndexingServiceTest
         List<IndexDescriptor> indexes = new ArrayList<>();
         int nextIndexId = 1;
         IndexDescriptor populatingIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
+        when( provider.getInitialState( eq( populatingIndex ), any() ) ).thenReturn( POPULATING );
         indexes.add( populatingIndex );
         IndexDescriptor failedIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( failedIndex, NULL ) ).thenReturn( FAILED );
+        when( provider.getInitialState( eq( failedIndex ), any() ) ).thenReturn( FAILED );
         indexes.add( failedIndex );
         for ( int i = 0; i < 10; i++ )
         {
             IndexDescriptor indexRule = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-            when( provider.getInitialState( indexRule, NULL ) ).thenReturn( ONLINE );
+            when( provider.getInitialState( eq( indexRule ), any() ) ).thenReturn( ONLINE );
             indexes.add( indexRule );
         }
         for ( int i = 0; i < nextIndexId; i++ )
@@ -1166,15 +1166,15 @@ class IndexingServiceTest
         List<IndexDescriptor> indexes = new ArrayList<>();
         int nextIndexId = 1;
         IndexDescriptor populatingIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
+        when( provider.getInitialState( eq( populatingIndex ), any() ) ).thenReturn( POPULATING );
         indexes.add( populatingIndex );
         IndexDescriptor failedIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-        when( provider.getInitialState( failedIndex, NULL ) ).thenReturn( FAILED );
+        when( provider.getInitialState( eq( failedIndex ), any() ) ).thenReturn( FAILED );
         indexes.add( failedIndex );
         for ( int i = 0; i < 10; i++ )
         {
             IndexDescriptor indexRule = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
-            when( provider.getInitialState( indexRule, NULL ) ).thenReturn( ONLINE );
+            when( provider.getInitialState( eq( indexRule ), any() ) ).thenReturn( ONLINE );
             indexes.add( indexRule );
         }
         for ( int i = 0; i < nextIndexId; i++ )

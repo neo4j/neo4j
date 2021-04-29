@@ -111,6 +111,7 @@ public abstract class RecordStorageReaderTestBase
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
         this.commitContext = storageEngine.newCommandCreationContext( INSTANCE );
+        commitContext.initialize( NULL );
         storageEngineRule.before();
     }
 

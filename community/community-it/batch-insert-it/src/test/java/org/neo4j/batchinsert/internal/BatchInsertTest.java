@@ -124,6 +124,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -911,7 +912,7 @@ class BatchInsertTest
         verify( populator ).create();
         verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ), any( CursorContext.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( true, NULL );
+        verify( populator ).close( eq( true ), any() );
         verify( provider ).stop();
         verify( provider ).shutdown();
     }
@@ -951,7 +952,7 @@ class BatchInsertTest
         verify( populator ).add( argThat( c -> c.contains( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ),
                 any( CursorContext.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( true, NULL );
+        verify( populator ).close( eq( true ), any() );
         verify( provider ).stop();
         verify( provider ).shutdown();
     }
@@ -991,7 +992,7 @@ class BatchInsertTest
         verify( populator ).add( argThat( c -> c.contains( add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ) ) &&
                                                c.contains( add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ), any( CursorContext.class ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( populator ).close( true, NULL );
+        verify( populator ).close( eq( true ), any() );
         verify( provider ).stop();
         verify( provider ).shutdown();
     }
@@ -1415,7 +1416,6 @@ class BatchInsertTest
     {
         // given
         // this test cannot run on an impermanent db since there's a test issue causing problems when flipping/closing RAMDirectory Lucene indexes
-        boolean impermanent = false;
         int denseNodeThreshold = GraphDatabaseSettings.dense_node_threshold.defaultValue();
         GraphDatabaseService db = instantiateGraphDatabaseService( denseNodeThreshold );
         String key = "key";

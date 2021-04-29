@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentMatchers;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -37,6 +39,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -112,6 +115,6 @@ class OnlineIndexSamplingJobTest
         // when
         job.run();
 
-        verify( indexSampler ).sampleIndex( new CursorContext( pageCursorTracer ) );
+        verify( indexSampler ).sampleIndex( argThat( context -> context.getCursorTracer().equals( pageCursorTracer ) ) );
     }
 }

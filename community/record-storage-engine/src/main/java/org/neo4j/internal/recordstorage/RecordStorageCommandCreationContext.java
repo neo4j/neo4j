@@ -65,7 +65,6 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     @Override
     public void initialize( CursorContext cursorContext )
     {
-        //TODO: close things as well now
         this.cursorContext = cursorContext;
         this.loaders = new Loaders( neoStores, cursorContext );
         this.relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorContext );

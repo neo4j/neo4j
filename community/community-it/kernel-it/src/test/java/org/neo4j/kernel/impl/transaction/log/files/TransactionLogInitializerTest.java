@@ -32,6 +32,8 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,6 +68,7 @@ class TransactionLogInitializerTest
         initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory(), "LostFiles" );
 
         //Then
-        verify( metaStore ).resetLastClosedTransaction( txn.transactionId(), txn.transactionId(), CURRENT_FORMAT_LOG_HEADER_SIZE, true, NULL );
+        verify( metaStore ).resetLastClosedTransaction( eq( txn.transactionId() ), eq( txn.transactionId() ), eq( (long) CURRENT_FORMAT_LOG_HEADER_SIZE ),
+                eq( true ), any() );
     }
 }
