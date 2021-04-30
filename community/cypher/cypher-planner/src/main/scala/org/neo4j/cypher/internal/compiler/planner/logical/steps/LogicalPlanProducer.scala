@@ -292,6 +292,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planRelationshipByTypeScan(idName: String,
                                  relType: RelTypeName,
                                  pattern: PatternRelationship,
+                                 solvedHint: Option[UsingScanHint],
                                  argumentIds: Set[String],
                                  providedOrder: ProvidedOrder,
                                  context: LogicalPlanningContext): LogicalPlan = {
@@ -300,6 +301,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addArgumentIds(argumentIds.toIndexedSeq)
+      .addHints(solvedHint)
     )
 
     val leafPlan = if (pattern.dir == BOTH) {

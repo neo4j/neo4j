@@ -24,10 +24,12 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -55,10 +57,17 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
     queryGraph.patternRelationships.flatMap {
 
       case p@PatternRelationship(name, (_, _), _, Seq(typ), SimplePatternLength) if !shouldIgnore(p) =>
-        Some(context.logicalPlanProducer.planRelationshipByTypeScan(name, typ, p, queryGraph.argumentIds, providedOrderFor(name), context))
+        Some(context.logicalPlanProducer.planRelationshipByTypeScan(name, typ, p, hint(queryGraph, p), queryGraph.argumentIds, providedOrderFor(name), context))
 
       case _ => None
     }.toIndexedSeq
+  }
+
+  private def hint(queryGraph: QueryGraph, patternRelationship: PatternRelationship): Option[UsingScanHint] = {
+    queryGraph.hints.collectFirst {
+      case hint@UsingScanHint(Variable(patternRelationship.name), LabelOrRelTypeName(relTypeName))
+        if relTypeName == patternRelationship.types.head.name => hint
+    }
   }
 
 }
