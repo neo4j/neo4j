@@ -155,8 +155,10 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
     context.planContext.indexesGetForLabel(labelId)
 
   private def issueNotifications(result: Set[LeafPlansForVariable], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
-    val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
-    DynamicPropertyNotifier.process(nonSolvable, IndexLookupUnfulfillableNotification, qg, context)
+    if (result.isEmpty) {
+      val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
+      DynamicPropertyNotifier.process(nonSolvable, IndexLookupUnfulfillableNotification, qg, context)
+    }
   }
 
   private def findNonSolvableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] = {
