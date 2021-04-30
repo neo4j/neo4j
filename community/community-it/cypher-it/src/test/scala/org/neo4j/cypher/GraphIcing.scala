@@ -173,6 +173,30 @@ trait GraphIcing {
       }
     }
 
+    def createNodeFulltextIndex(labels:List[String], properties: List[String], maybeName: Option[String] = None): IndexDefinition = {
+      val pattern = s"(e:${labels.map(l => s"`$l`").mkString("|")})"
+      createFulltextIndex(pattern, properties, () => getFulltextIndex(labels, properties, isNodeIndex = true), maybeName)
+    }
+
+    def createRelationshipFulltextIndex(relTypes: List[String], properties: List[String], maybeName: Option[String] = None): IndexDefinition = {
+      val pattern = s"()-[e:${relTypes.map(r => s"`$r`").mkString("|")}]-()"
+      createFulltextIndex(pattern, properties, () => getFulltextIndex(relTypes, properties, isNodeIndex = false), maybeName)
+    }
+
+    private def createFulltextIndex(pattern: String, properties: Seq[String], getIndex: () => IndexDefinition, maybeName: Option[String]): IndexDefinition = {
+      val nameString = maybeName.map(n => s" `$n`").getOrElse("")
+
+      withTx( tx => {
+        tx.execute(s"CREATE FULLTEXT INDEX$nameString FOR $pattern ON EACH [${properties.map(p => s"e.`$p`").mkString(",")}]")
+      })
+
+      withTx( tx =>  {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
+
+      getIndex()
+    }
+
     def createLookupIndex(isNodeIndex: Boolean, maybeName: Option[String] = None): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
       val (pattern, function) = if (isNodeIndex) ("(n)", "labels(n)") else ("()-[r]-()", "type(r)")
