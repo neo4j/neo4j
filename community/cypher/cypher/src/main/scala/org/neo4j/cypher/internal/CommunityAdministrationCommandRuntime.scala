@@ -136,13 +136,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Check Admin Rights for DBMS commands or self
     case AssertAllowedDbmsActionsOrSelf(user, actions) => _ =>
-      AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeValue(user, params)) || actions.forall { action =>
+      AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeStringValue(user, params)) || actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
       }, violationMessage = "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => context =>
-      new PredicateExecutionPlan((params, sc) => !sc.subject().hasUsername(runtimeValue(userName, params)),
+      new PredicateExecutionPlan((params, sc) => !sc.subject().hasUsername(runtimeStringValue(userName, params)),
         onViolation = (_, sc) => new InvalidArgumentException(s"Failed to $verb the specified user '${sc.subject().username()}': $violationMessage."),
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
       )
@@ -150,7 +150,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Check Admin Rights for some Database commands
     case AssertAllowedDatabaseAction(action, database, maybeSource) => context =>
       AuthorizationPredicateExecutionPlan((params, securityContext) =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeValue(database, params)), Segment.ALL)),
+        securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeStringValue(database, params)), Segment.ALL)),
         violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText,
         source = maybeSource match {
           case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
@@ -191,7 +191,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       def failWithError(command: String) : PredicateExecutionPlan = {
         new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
-          val user = runtimeValue(userName, params)
+          val user = runtimeStringValue(userName, params)
           throw new CantCompileQueryException(s"Failed to create the specified user '$user': '$command' is not available in community edition.")
         })
       }
@@ -210,7 +210,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
       makeRenameExecutionPlan("User", fromUserName, toUserName,
         params => {
-          val toName = runtimeValue(toUserName, params)
+          val toName = runtimeStringValue(toUserName, params)
           NameValidator.assertValidUsername(toName)
         }
       )(sourcePlan, normalExecutionEngine)
@@ -221,7 +221,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       def failWithError(command: String) : PredicateExecutionPlan = {
         new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
-          val user = runtimeValue(userName, params)
+          val user = runtimeStringValue(userName, params)
           throw new CantCompileQueryException(s"Failed to alter the specified user '$user': '$command' is not available in community edition.")
         })
       }
@@ -244,8 +244,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         QueryHandler
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '${runtimeValue(userName, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to delete the specified user '${runtimeValue(userName, p)}'.", error)
+              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified user '${runtimeStringValue(userName, p)}': $followerError", error)
+            case (error, p) => new IllegalStateException(s"Failed to delete the specified user '${runtimeStringValue(userName, p)}'.", error)
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
         parameterConverter = userNameFields.nameConverter
@@ -338,7 +338,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         case NamedDatabaseScope(p) =>
           val nameFields = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
           val combinedConverter: (Transaction, MapValue) => MapValue = (tx, m) => {
-            val normalizedName = new NormalizedDatabaseName(runtimeValue(p, m)).name()
+            val normalizedName = new NormalizedDatabaseName(runtimeStringValue(p, m)).name()
             val filteredDatabases = m.get(accessibleDbsKey).asInstanceOf[StringArray].asObjectCopy().filter(normalizedName.equals)
             nameFields.nameConverter(tx, m.updatedWith(accessibleDbsKey, Values.stringArray(filteredDatabases:_*)))
           }
@@ -373,8 +373,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           .ignoreNoResult()
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
+              new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
+            case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
         parameterConverter = nameFields.nameConverter
@@ -391,8 +391,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           .ignoreOnResult()
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to create the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
+              new DatabaseAdministrationOnFollowerException(s"Failed to create the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
+            case (error, p) => new IllegalStateException(s"Failed to create the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
         parameterConverter = nameFields.nameConverter
@@ -406,11 +406,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
            |RETURN node""".stripMargin,
         VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
         QueryHandler
-          .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $label does not exist.")))
+          .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $label does not exist.")))
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
+              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}': $followerError", error)
+            case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeStringValue(name, p)}'.", error) // should not get here but need a default case
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
         parameterConverter = nameFields.nameConverter

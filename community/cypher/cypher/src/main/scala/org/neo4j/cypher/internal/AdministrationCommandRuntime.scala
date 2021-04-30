@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
-import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -135,7 +134,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       case Values.NO_VALUE =>
         throw new ParameterNotFoundException(s"Expected parameter(s): $passwordParameter")
       case other =>
-        throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + other.getTypeName)
+        throw new ParameterWrongTypeException(s"Expected password parameter $$$passwordParameter to have type String but was ${other.getTypeName}")
     }
   }
 
@@ -146,31 +145,37 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  private def runtimeValue(parameter: String, params: MapValue): String = {
+  private def runtimeStringValue(parameter: String, params: MapValue): String = {
     val value: AnyValue = if (params.containsKey(parameter))
       params.get(parameter)
     else
       params.get(internalKey(parameter))
-    value.asInstanceOf[Value].asObject().toString
+    value match {
+      case tv: TextValue => tv.stringValue()
+      case _ =>  throw new ParameterWrongTypeException(s"Expected parameter $$$parameter to have type String but was $value")
+    }
   }
 
-  protected def runtimeValue(field: Either[String, AnyRef], params: MapValue): String = field match {
+  protected def runtimeStringValue(field: Either[String, Parameter], params: MapValue): String = field match {
     case Left(u) => u
-    case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
-      runtimeValue(p.asInstanceOf[ParameterFromSlot].name, params)
-    case Right(p) if p.isInstanceOf[Parameter] =>
-      runtimeValue(p.asInstanceOf[Parameter].name, params)
+    case Right(p)  => runtimeStringValue(p.name, params)
   }
 
+  /**
+   *
+   * @param key parameter key used in the "inner" cypher
+   * @param name the literal or parameter
+   * @param valueMapper function to apply to the value
+   * @return
+   */
   protected def getNameFields(key: String,
                               name: Either[String, Parameter],
-                              valueMapper: String => String = s => s): NameFields = name match {
+                              valueMapper: String => String = identity): NameFields = name match {
     case Left(u) =>
       NameFields(s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(parameter) =>
-      validateStringParameterType(parameter)
       def rename: String => String = paramName => internalKey(paramName)
-      NameFields(rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
+      NameFields(rename(parameter.name), Values.NO_VALUE, RenamingStringParameterConverter(parameter.name, rename, { v => Values.utf8Value(valueMapper(v.stringValue()))}))
   }
 
   case class NameFields(nameKey: String, nameValue: Value, nameConverter: (Transaction, MapValue) => MapValue)
@@ -179,10 +184,14 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     def apply(transaction: Transaction, map: MapValue): MapValue = map
   }
 
-  case class RenamingParameterConverter(parameter: String, rename: String => String = s => s, valueMapper: String => String = s => s) extends ((Transaction, MapValue) => MapValue) {
+  case class RenamingStringParameterConverter(parameter: String, rename: String => String = identity _, valueMapper: TextValue => TextValue = identity _)
+    extends ((Transaction, MapValue) => MapValue) {
     def apply(transaction: Transaction, params: MapValue): MapValue = {
-      val newValue = valueMapper(params.get(parameter).asInstanceOf[TextValue].stringValue())
-      params.updatedWith(rename(parameter), Values.utf8Value(newValue))
+      val paramValue = params.get(parameter)
+      // Check the parameter is actually the expected type
+      if (!paramValue.isInstanceOf[TextValue]) {
+        throw new ParameterWrongTypeException(s"Expected parameter $$$parameter to have type String but was $paramValue")
+      } else params.updatedWith(rename(parameter), valueMapper(params.get(parameter).asInstanceOf[TextValue]))
     }
   }
 
@@ -224,17 +233,17 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
           ) ++ homeDatabaseFields.map(_.nameValue)
       ),
       QueryHandler
-        .handleNoResult(params => Some(new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.")))
+        .handleNoResult(params => Some(new IllegalStateException(s"Failed to create the specified user '${runtimeStringValue(userName, params)}'.")))
         .handleError((error, params) => (error, error.getCause) match {
           case (_, _: UniquePropertyValueValidationException) =>
-            new InvalidArgumentException(s"Failed to create the specified user '${runtimeValue(userName, params)}': User already exists.", error)
+            new InvalidArgumentException(s"Failed to create the specified user '${runtimeStringValue(userName, params)}': User already exists.", error)
           case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(s"Failed to create the specified user '${runtimeValue(userName, params)}': $followerError", error)
-          case _ => new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.", error)
+            new DatabaseAdministrationOnFollowerException(s"Failed to create the specified user '${runtimeStringValue(userName, params)}': $followerError", error)
+          case _ => new IllegalStateException(s"Failed to create the specified user '${runtimeStringValue(userName, params)}'.", error)
         }),
       sourcePlan,
       finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero(),
-      initFunction = params => NameValidator.assertValidUsername(runtimeValue(userName, params)),
+      initFunction = params => NameValidator.assertValidUsername(runtimeStringValue(userName, params)),
       parameterConverter = mapValueConverter
     )
   }
@@ -284,17 +293,17 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       s"$query RETURN oldCredentials",
       VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
       QueryHandler
-        .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': User does not exist.")))
+        .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': User does not exist.")))
         .handleError {
           case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': $followerError", error)
-          case (error, p) => new IllegalStateException(s"Failed to alter the specified user '${runtimeValue(userName, p)}'.", error)
+            new DatabaseAdministrationOnFollowerException(s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': $followerError", error)
+          case (error, p) => new IllegalStateException(s"Failed to alter the specified user '${runtimeStringValue(userName, p)}'.", error)
         }
         .handleResult((_, value, p) => maybePw.flatMap { newPw =>
           val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
           val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
           if (oldCredentials.matchesPassword(newValue))
-            Some(new InvalidArgumentException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': Old password and new password cannot be the same."))
+            Some(new InvalidArgumentException(s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': Old password and new password cannot be the same."))
           else
             None
         }),
@@ -320,16 +329,16 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         """.stripMargin,
       VirtualValues.map(Array(fromNameFields.nameKey, toNameFields.nameKey), Array(fromNameFields.nameValue, toNameFields.nameValue)),
       QueryHandler
-        .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}' to " +
-          s"'${runtimeValue(toName, p)}': The ${entity.toLowerCase} '${runtimeValue(fromName, p)}' does not exist.")))
+        .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' to " +
+          s"'${runtimeStringValue(toName, p)}': The ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' does not exist.")))
         .handleError((error, p) => (error, error.getCause) match {
           case (_, _: UniquePropertyValueValidationException) =>
-            new InvalidArgumentException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}' to " +
-              s"'${runtimeValue(toName, p)}': " + s"$entity '${runtimeValue(toName, p)}' already exists.", error)
+            new InvalidArgumentException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' to " +
+              s"'${runtimeStringValue(toName, p)}': " + s"$entity '${runtimeStringValue(toName, p)}' already exists.", error)
           case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
-            new DatabaseAdministrationOnFollowerException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}': $followerError", error)
+            new DatabaseAdministrationOnFollowerException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}': $followerError", error)
           case _ =>
-            new IllegalStateException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}' to '${runtimeValue(toName, p)}'.", error)
+            new IllegalStateException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' to '${runtimeStringValue(toName, p)}'.", error)
         }),
       sourcePlan,
       initFunction = initFunction,

@@ -450,7 +450,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // WHEN
       execute("CREATE USER foo SET PASSWORD $password CHANGE REQUIRED", Map("password" -> 123))
       // THEN
-    } should have message "Only string values are accepted as password, got: Integer"
+    } should have message "Expected password parameter $password to have type String but was Integer"
 
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
   }
@@ -1165,7 +1165,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // WHEN
       execute(s"ALTER USER $username SET PASSWORD $$password", Map("password" -> Seq("bar", "boo")))
       // THEN
-    } should have message "Only string values are accepted as password, got: List"
+    } should have message "Expected password parameter $password to have type String but was List"
 
     // THEN
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
@@ -1484,7 +1484,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // WHEN
       executeOnSystem(username, "123", s"ALTER CURRENT USER SET PASSWORD FROM $$password TO '$newPassword'", parameter)
       // THEN
-    } should have message "Only string values are accepted as password, got: Integer"
+    } should have message "Expected password parameter $password to have type String but was Integer"
 
     // THEN
     testUserLogin(username, "123", AuthenticationResult.SUCCESS)
