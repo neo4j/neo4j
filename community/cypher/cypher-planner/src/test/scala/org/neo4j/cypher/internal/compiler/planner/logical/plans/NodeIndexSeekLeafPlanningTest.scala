@@ -545,7 +545,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val nFooToken = PropertyKeyToken("foo", PropertyKeyId(1))
       val indexedProperties = Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE), IndexedProperty(nFooToken, CanGetValue, NODE_TYPE))
 
-      // This contains all combinations except n.prop = 42 AND x.foo = 42, because it does not depend on x
+      // This contains all combinations except n.prop = 42 AND n.foo = 42, because it does not depend on x
       val expected = Set(
         NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, lit42Expr)), Set("x"), IndexOrderNone),
         NodeIndexSeek(idName, labelToken, indexedProperties, CompositeQueryExpression(Seq(xPropExpr, xPropExpr)), Set("x"), IndexOrderNone),
