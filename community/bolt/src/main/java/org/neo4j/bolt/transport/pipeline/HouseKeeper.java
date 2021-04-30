@@ -62,7 +62,7 @@ public class HouseKeeper extends ChannelInboundHandlerAdapter
             // Netty throws a NativeIoException on connection reset - directly importing that class
             // caused a host of linking errors, because it depends on JNI to work. Hence, we just
             // test on the message we know we'll get.
-            if ( Exceptions.contains( cause, e -> e.getMessage().contains( "Connection reset by peer" ) ) )
+            if ( Exceptions.contains( cause, e -> e.getMessage() != null && e.getMessage().contains( "Connection reset by peer" ) ) )
             {
                 log.warn( "Fatal error occurred when handling a client connection, " + "remote peer unexpectedly closed connection: %s", ctx.channel() );
             }
