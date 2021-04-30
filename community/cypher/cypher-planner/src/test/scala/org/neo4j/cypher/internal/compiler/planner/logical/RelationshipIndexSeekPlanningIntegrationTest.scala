@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -28,6 +29,15 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
                                                    with LogicalPlanningIntegrationTestSupport
                                                    with AstConstructionTestSupport {
+
+  override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    super.plannerBuilder()
+      .enablePlanningRelationshipIndexes()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .setRelationshipCardinality("()-[:REL2]-()", 50)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
 
   for ((pred, indexStr) <- Seq(
     "r.prop = 123"     -> "prop = 123",
@@ -37,13 +47,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
   )) {
 
     test(s"should plan undirected relationship index seek for $pred") {
-      val planner = plannerBuilder()
-        .setAllNodesCardinality(100)
-        .setAllRelationshipsCardinality(100)
-        .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-        .enablePlanningRelationshipIndexes()
-        .build()
+      val planner = plannerBuilder().build()
 
       planner.plan(s"MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
@@ -54,13 +58,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     }
 
     test(s"should plan directed OUTGOING relationship index seek for $pred") {
-      val planner = plannerBuilder()
-        .setAllNodesCardinality(100)
-        .setAllRelationshipsCardinality(100)
-        .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-        .enablePlanningRelationshipIndexes()
-        .build()
+      val planner = plannerBuilder().build()
 
       planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
@@ -71,13 +69,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     }
 
     test(s"should plan directed INCOMING relationship index seek for $pred") {
-      val planner = plannerBuilder()
-        .setAllNodesCardinality(100)
-        .setAllRelationshipsCardinality(100)
-        .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-        .enablePlanningRelationshipIndexes()
-        .build()
+      val planner = plannerBuilder().build()
 
       planner.plan(s"MATCH (a)<-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
@@ -88,13 +80,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     }
 
     test(s"should plan undirected relationship index seek on the RHS of an Apply with correct arguments for $pred") {
-      val planner = plannerBuilder()
-        .setAllNodesCardinality(100)
-        .setAllRelationshipsCardinality(1)
-        .setRelationshipCardinality("()-[:REL]-()", 1)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-        .enablePlanningRelationshipIndexes()
-        .build()
+      val planner = plannerBuilder().build()
 
       planner.plan(
         s"""
@@ -120,13 +106,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
     test(s"should plan undirected relationship index seek over NodeByLabelScan using a hint for $pred") {
       val planner = plannerBuilder()
-        .setAllNodesCardinality(10)
         .setLabelCardinality("A", 10)
-        .setAllRelationshipsCardinality(100)
-        .setRelationshipCardinality("()-[:REL]-()", 100)
-        .setRelationshipCardinality("(:A)-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-        .enablePlanningRelationshipIndexes()
+        .setRelationshipCardinality("(:A)-[:REL]-()", 10)
         .build()
 
       planner.plan(s"MATCH (a:A)-[r:REL]-(b) USING INDEX r:REL(prop) WHERE $pred RETURN r") should equal(
@@ -140,10 +121,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
     test(s"should not plan relationship index seek when not enabled for $pred") {
       val planner = plannerBuilder()
-        .setAllNodesCardinality(1000)
-        .setAllRelationshipsCardinality(100)
-        .setRelationshipCardinality("()-[:REL]-()", 100)
-        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+        .enablePlanningRelationshipIndexes(false)
         .build()
 
       withClue("Used relationship index even when not enabled:") {
