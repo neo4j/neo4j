@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -34,12 +35,14 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.TestAccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -224,16 +227,16 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
-                assertTrue( property.next() );
-                //First property
-                assertEquals( prop1, property.propertyKey() );
-                assertEquals( property.propertyValue(), stringValue( "hello" ) );
-                //second property
-                assertTrue( property.next() );
-                assertEquals( prop2, property.propertyKey() );
-                assertEquals( property.propertyValue(), stringValue( "world" ) );
+                IntObjectHashMap<Value> foundProperties = IntObjectHashMap.newMap();
+                while ( property.next() )
+                {
+                    assertNull( foundProperties.put( property.propertyKey(), property.propertyValue() ), "should only find each property once" );
+                }
 
-                assertFalse( property.next(), "should only find two properties" );
+                assertThat( foundProperties ).hasSize( 2 );
+                assertThat( foundProperties.get( prop1 ) ).isEqualTo( stringValue( "hello" ) );
+                assertThat( foundProperties.get( prop2 ) ).isEqualTo( stringValue( "world" ) );
+
                 assertFalse( node.next(), "should only find one node" );
             }
             tx.commit();
