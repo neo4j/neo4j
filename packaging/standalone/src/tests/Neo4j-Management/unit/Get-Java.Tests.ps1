@@ -73,6 +73,9 @@ InModuleScope Neo4j-Management {
 
     Context "Valid JRE install in Registry (32bit JRE on 64bit OS)" {
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $false } -ParameterFilter {
+        ($Path -in @('Registry::HKLM\SOFTWARE\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\JavaSoft\JRE'))
+      }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JRE')
       }
@@ -96,6 +99,9 @@ InModuleScope Neo4j-Management {
 
     Context "Valid JRE install in Registry" {
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $false } -ParameterFilter {
+        ($Path -in @('Registry::HKLM\SOFTWARE\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK'))
+      }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE')
       }
@@ -120,6 +126,9 @@ InModuleScope Neo4j-Management {
     Context "Invalid JRE install in Registry" {
       Mock Test-Path { $false } -ParameterFile { $Path -like "$javaHome\bin\java.exe" }
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $false } -ParameterFilter {
+        ($Path -in @('Registry::HKLM\SOFTWARE\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK'))
+      }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE')
       }
@@ -141,6 +150,9 @@ InModuleScope Neo4j-Management {
 
     Context "Valid JDK install in Registry (32bit JDK on 64bit OS)" {
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $false } -ParameterFilter {
+        ($Path -in @('Registry::HKLM\SOFTWARE\JavaSoft\JDK'))
+      }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
         ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK')
       }
@@ -209,7 +221,9 @@ InModuleScope Neo4j-Management {
 
     Context "Valid Java install in search path" {
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
-
+      Mock Test-Path -Verifiable { return $false } -ParameterFilter {
+        ($Path -in @('Registry::HKLM\SOFTWARE\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\JavaSoft\JRE', 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JRE'))
+      }
       Mock Get-Command -Verifiable { return @{ 'Path' = "$javaHome\bin\java.exe" } }
 
       $result = Get-Java
@@ -225,6 +239,9 @@ InModuleScope Neo4j-Management {
 
     Context "No Java install at all" {
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $false } -ParameterFilter {
+        ($Path -in @('Registry::HKLM\SOFTWARE\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK', 'Registry::HKLM\SOFTWARE\JavaSoft\JRE', 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JRE'))
+      }
       Mock Get-Command { $null }
 
       It "should throw if java not detected" {
