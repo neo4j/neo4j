@@ -1216,7 +1216,7 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 trait NonFusedWriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] extends WriteOperatorsDbHitsTestBase[CONTEXT] {
   self: ProfileDbHitsTestBase[CONTEXT] =>
 
-  test("should profile db hits on create nodes and relationships (fused)") {
+  test("should profile db hits on create nodes and relationships (non-fused)") {
     val createNodeCount = 7
     val createNodes = Range(0, createNodeCount).map(i => createNode(s"n$i"))
     val properties = Map("a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5)
