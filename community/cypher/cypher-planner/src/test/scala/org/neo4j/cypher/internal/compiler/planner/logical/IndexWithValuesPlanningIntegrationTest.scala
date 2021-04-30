@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -1391,6 +1392,183 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan should equal(planner.subPlanBuilder()
       .aggregation(Seq(), Seq("sum(r.prop) AS `sum(r.prop)`"))
       .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)")
+      .build()
+    )
+  }
+
+  private def relIndexSeekConfig(withValues: Boolean) =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(10)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = withValues)
+      .enablePlanningRelationshipIndexes()
+
+  test("should plan seek with GetValue when the relationship property is projected") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop = 123 RETURN r.prop"
+
+    val planner = relIndexSeekConfig(withValues = true).build()
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .relationshipIndexOperator("(a)-[r:REL(prop = 123)]-(b)", getValue = GetValue)
+      .build()
+    )
+  }
+
+  test("should plan seek with DoNotGetValue when the a relationship property is projected, but from a different variable") {
+    val query =
+      """MATCH (a)-[r:REL]-(b)
+        |WHERE r.prop = 123
+        |WITH count(*) AS count
+        |MATCH (a)-[r]-(b)
+        |RETURN r.prop""".stripMargin
+
+    val planner = relIndexSeekConfig(withValues = true).build()
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("r.prop AS `r.prop`")
+      .expandAll("(a)-[r]-(b)")
+      .apply()
+      .|.allNodeScan("a", "count")
+      .aggregation(Seq(), Seq("count(*) AS count"))
+      .relationshipIndexOperator("(a)-[r:REL(prop = 123)]-(b)", getValue = DoNotGetValue)
+      .build()
+    )
+  }
+
+  test("should plan seek with DoNotGetValue when the relationship index does not provide values") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN r.prop"
+
+    val planner = relIndexSeekConfig(withValues = false).build()
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("r.prop AS `r.prop`")
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", getValue = DoNotGetValue)
+      .build()
+    )
+  }
+
+  test("should plan seek (relationship) with GetValue when the property is used in avg function") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN avg(r.prop)"
+
+    val planner = relIndexSeekConfig(withValues = true).build()
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("avg(cacheR[r.prop]) AS `avg(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", getValue = GetValue)
+      .build()
+    )
+  }
+
+  test("should plan seek (relationship) with DoNotGetValue when the property is used in avg function") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN avg(r.prop)"
+
+    val planner = relIndexSeekConfig(withValues = false).build()
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("avg(r.prop) AS `avg(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)")
+      .build()
+    )
+  }
+
+  test("should plan seek (relationship) with GetValue when the property is used in sum function") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN sum(r.prop)"
+
+    val planner = relIndexSeekConfig(withValues = true).build()
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("sum(cacheR[r.prop]) AS `sum(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", getValue = GetValue)
+      .build()
+    )
+  }
+
+  test("should plan seek (relationship) with DoNotGetValue when the property is used in sum function") {
+    val query = s"MATCH (a)-[r:REL]-(b) WHERE r.prop > 123 RETURN sum(r.prop)"
+
+    val planner = relIndexSeekConfig(withValues = false).build()
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("sum(r.prop) AS `sum(r.prop)`"))
+      .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)")
+      .build()
+    )
+  }
+
+  private def relCompositeIndexSeekConfig(withValues: Boolean): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = withValues)
+      .addRelationshipExistenceConstraint("REL", "prop1")
+      .addRelationshipExistenceConstraint("REL", "prop2")
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+  test("should plan seek (relationship) with GetValue when composite existence constraint on projected property") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop1 > 123 RETURN r.prop2"
+
+    val planner = relCompositeIndexSeekConfig(withValues = true)
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    withClue("Index seek on two properties should be planned if they are only available through constraint") {
+      plan.toString should include("UndirectedRelationshipIndexSeek")
+    }
+
+    // This is the plan that we would like to compare against (except the get-value-behaviour) but the LogicalPlanBuilder currently does not support
+    // different get-value-behaviours on one index operation.
+    // plan shouldBe planner.subPlanBuilder()
+    //   .projection("r.prop2 AS `r.prop2`")
+    //   .relationshipIndexOperator("(a)-[r:REL(prop1 > 123, prop2)]-(b)", getValue = GetValue)
+    //   .build()
+  }
+
+  test("should plan seek (relationship) with DoNotGetValue when composite existence constraint but the index does not provide values") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop1 = 123 RETURN r.prop2"
+
+    val planner = relCompositeIndexSeekConfig(withValues = false)
+
+    val plan = planner
+      .plan(query)
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection("r.prop2 AS `r.prop2`")
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 123, prop2)]-(b)", getValue = DoNotGetValue)
       .build()
     )
   }
