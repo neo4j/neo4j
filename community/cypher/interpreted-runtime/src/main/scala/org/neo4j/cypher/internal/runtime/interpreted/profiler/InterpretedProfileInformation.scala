@@ -75,8 +75,24 @@ class InterpretedProfileInformation extends QueryProfile {
     OperatorData(dbHits, rows, pageCacheStats.hits, pageCacheStats.misses, maxMemoryAllocated)
   }
 
+  def snapshot: InterpretedProfileInformationSnapshot = {
+    val currentDbHitsMap: collection.Map[Id, Long] = dbHitsMap.map { case (k, v) => (k, v.count) }.withDefaultValue(0)
+    val currentRowsMap: collection.Map[Id, Long] = rowMap.map { case (k, v) => (k, v.count) }.withDefaultValue(0)
+    InterpretedProfileInformationSnapshot(currentDbHitsMap, currentRowsMap)
+  }
+
+  def aggregatedSnapshot: InterpretedProfileInformationAggregatedSnapshot = {
+    val aggregatedDbHits = dbHitsMap.values.map(_.count).sum
+    InterpretedProfileInformationAggregatedSnapshot(aggregatedDbHits)
+  }
+
   override def maxAllocatedMemory(): Long = QueryMemoryTracker.memoryAsProfileData(memoryTracker.totalAllocatedMemory)
 }
+
+case class InterpretedProfileInformationSnapshot(dbHitsMap: collection.Map[Id, Long],
+                                                 rowsMap: collection.Map[Id, Long])
+
+case class InterpretedProfileInformationAggregatedSnapshot(dbHits: Long)
 
 case class PageCacheStats(hits: Long, misses: Long) {
   def -(other: PageCacheStats): PageCacheStats = {

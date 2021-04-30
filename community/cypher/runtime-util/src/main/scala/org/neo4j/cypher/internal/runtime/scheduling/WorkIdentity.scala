@@ -33,6 +33,7 @@ object WorkIdentity {
 
 trait HasWorkIdentity {
   def workIdentity: WorkIdentity
+  def hasNestedPipeExpressions: Boolean = true // Always assume this _could_ be the case for now
 }
 
 trait WorkIdentity {
