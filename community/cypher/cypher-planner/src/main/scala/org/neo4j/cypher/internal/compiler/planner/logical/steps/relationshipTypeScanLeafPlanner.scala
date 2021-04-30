@@ -19,16 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -45,12 +41,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
       queryGraph.argumentIds.contains(pattern.nodes._2) ||
       skipIDs.contains(pattern.name) ||
       skipIDs.contains(pattern.nodes._1) ||
-      skipIDs.contains(pattern.nodes._2) ||
-        queryGraph.hints.exists {
-          case UsingScanHint(v, _) => v.name == pattern.nodes._1 || v.name == pattern.nodes._2
-          case UsingJoinHint(vs) => vs.exists(v => v.name == pattern.nodes._1 || v.name == pattern.nodes._2)
-          case _ => false
-        }
+      skipIDs.contains(pattern.nodes._2)
 
     def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(interestingOrderConfig.orderToSolve, _)
 
