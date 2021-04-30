@@ -131,5 +131,46 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         } should be(false)
       }
     }
+
+    test(s"should not (yet) plan relationship index seek with filter for already bound start node for $pred") {
+      val planner = plannerBuilder().build()
+      planner.plan(
+        s"""MATCH (a) WITH a SKIP 0
+          |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
+        planner.planBuilder()
+          .produceResults("r")
+          .filter(pred)
+          .expandAll("(a)-[r:REL]-(b)")
+          .skip(0)
+          .allNodeScan("a")
+          .build()
+      )
+    }
+
+    test(s"should not (yet) plan relationship index seek with filter for already bound end node for $pred") {
+      val planner = plannerBuilder().build()
+      planner.plan(
+        s"""MATCH (b) WITH b SKIP 0
+          |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
+        planner.planBuilder()
+          .produceResults("r")
+          .filter(pred)
+          .expandAll("(b)-[r:REL]-(a)")
+          .skip(0)
+          .allNodeScan("b")
+          .build()
+      )
+    }
+
+    test(s"should not plan relationship index seek for already bound relationship variable for $pred") {
+      val planner = plannerBuilder().build()
+      withClue("Did not expect an UndirectedRelationshipIndexSeek to be planned") {
+        planner.plan(
+          s"""MATCH (a)-[r:REL]-(b) WITH r SKIP 0
+            |MATCH (a2)-[r:REL]-(b2) WHERE $pred RETURN r""".stripMargin).leaves.treeExists {
+          case _: UndirectedRelationshipIndexSeek => true
+        } should be(false)
+      }
+    }
   }
 }
