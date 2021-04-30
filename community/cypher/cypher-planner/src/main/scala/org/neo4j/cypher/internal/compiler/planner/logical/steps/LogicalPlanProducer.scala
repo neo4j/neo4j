@@ -148,7 +148,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
-import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Merge
@@ -268,9 +267,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       annotate(RollUpApply(lhs, rhs, collectionName, variableToCollect), solved, providedOrders.get(lhs.id).fromLeft, context)
     }
   }
-
-  def planLock(plan: LogicalPlan, nodesToLock: Set[String], context: LogicalPlanningContext): LogicalPlan =
-    annotate(LockNodes(plan, nodesToLock), solveds.get(plan.id), providedOrders.get(plan.id).fromLeft, context)
 
   def solvePredicate(plan: LogicalPlan, solvedExpression: Expression): LogicalPlan = {
     // Keep other attributes but change solved

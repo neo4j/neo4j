@@ -117,7 +117,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
-import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
@@ -592,10 +591,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def projection(projectExpressions: Map[String, Expression]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projectExpressions)(_)))
     self
-  }
-
-  def lockNodes(nodes: String*): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => LockNodes(source, nodes.toSet)(_)))
   }
 
   def distinct(projectionStrings: String*): IMPL = {

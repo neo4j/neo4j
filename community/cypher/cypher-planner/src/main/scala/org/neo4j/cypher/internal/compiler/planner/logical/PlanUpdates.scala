@@ -244,14 +244,4 @@ case object PlanUpdates extends UpdatesPlanner {
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
     producer.planApply(source, producer.planMerge(read, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns, nodesToLock, context), context)
   }
-
-  case class AddLockToPlan(nodesToLock: Set[String], producer: LogicalPlanProducer, context: LogicalPlanningContext) extends LeafPlanUpdater {
-    override def apply(plan: LogicalPlan): LogicalPlan = {
-      val lockThese = nodesToLock intersect plan.availableSymbols
-      if (lockThese.nonEmpty)
-        producer.planLock(plan, lockThese, context)
-      else
-        plan
-    }
-  }
 }

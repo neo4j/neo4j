@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe.getNodes
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 class MergePipe(src: Pipe,
                 createOps: Array[SideEffect],
@@ -86,4 +89,11 @@ class LockingMergePipe(src: Pipe,
       ClosingIterator.single(row)
     }
   }
+
+  private def getNodes(ctx: CypherRow, varNames: Array[String]): Array[Long] =
+    varNames.flatMap(varName => ctx.getByName(varName) match {
+      case n: VirtualNodeValue => Some(n.id())
+      case IsNoValue() => None
+      case x: AnyValue => throw CastSupport.typeError[VirtualNodeValue](x)
+    })
 }

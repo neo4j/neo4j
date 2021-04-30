@@ -135,7 +135,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
-import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
@@ -577,9 +576,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
       case CacheProperties(_, properties) =>
         PlanDescriptionImpl(id, "CacheProperties", children, Seq(Details(properties.toSeq.map(asPrettyString(_)))), variables, withRawCardinalities)
-
-      case LockNodes(_, nodesToLock) =>
-        PlanDescriptionImpl(id, name = "LockNodes", children, Seq(Details(keyNamesInfo(nodesToLock.toSeq))), variables, withRawCardinalities)
 
       case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates) =>
         val predicate = predicates.map(p => pretty" WHERE ${asPrettyString(p)}").getOrElse(pretty"")

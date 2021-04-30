@@ -208,7 +208,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
-import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
@@ -1162,11 +1161,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(CacheProperties(lhsLP, Set(prop("n", "prop1"), prop("n", "prop2"))), 113.0),
       planDescription(id, "CacheProperties", SingleChild(lhsPD), Seq(details(Seq("n.prop1", "n.prop2"))), Set("a")))
-  }
-
-  test("LockNodes") {
-    assertGood(attach(LockNodes(lhsLP, Set("a", "b")), 12.0),
-      planDescription(id, "LockNodes", SingleChild(lhsPD), Seq(details("a, b")), Set("a")))
   }
 
   test("OptionalExpand") {

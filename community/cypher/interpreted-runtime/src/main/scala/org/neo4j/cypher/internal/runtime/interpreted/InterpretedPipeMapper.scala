@@ -80,7 +80,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
-import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
@@ -209,7 +208,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSelectOrSemiApplyP
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCSVPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockingMergePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
@@ -499,9 +497,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto) =>
         ExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
-
-      case LockNodes(_, nodesToLock) =>
-        LockNodesPipe(source, nodesToLock)(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray), predicate.map(buildExpression))(id = id)
