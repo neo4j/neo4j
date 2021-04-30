@@ -94,7 +94,6 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -904,9 +903,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def assertSameNode(node: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameNode(node, lhs, rhs)(_)))
-
-  def either(): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => EitherPlan(lhs, rhs)(_)))
 
   def orderedUnion(sortedOn: Seq[ColumnOrder]): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => OrderedUnion(lhs, rhs, sortedOn)(_)))

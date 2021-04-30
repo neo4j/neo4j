@@ -384,15 +384,6 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .allNodeScan("x")
       .build())
 
-  testPlan("either",
-    new TestPlanBuilder()
-      .produceResults("x")
-      .either()
-      .|.create(createNode("x"))
-      .|.argument()
-      .allNodeScan("x")
-      .build())
-
   testPlan("anti",
     new TestPlanBuilder()
       .produceResults("x")

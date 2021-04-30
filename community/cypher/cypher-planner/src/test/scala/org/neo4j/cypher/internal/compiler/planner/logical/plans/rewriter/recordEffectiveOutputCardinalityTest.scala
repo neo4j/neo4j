@@ -421,30 +421,6 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
-  test("Should apply WorkReduction only to LHS of EitherPlan") {
-    // GIVEN
-    val initial = new LogicalPlanBuilder(false)
-      .limit(100).withCardinality(100)
-      .either().withCardinality(200)
-      .|.allNodeScan("n").withCardinality(200)
-      .allNodeScan("n").withCardinality(200)
-
-    // WHEN
-    val (plan, cardinalities) = rewrite(initial, Volcano)
-
-    // THEN
-    val expected = new LogicalPlanBuilder(false)
-      .limit(100).withEffectiveCardinality(100)
-      .either().withEffectiveCardinality(100)
-      .|.allNodeScan("n").withEffectiveCardinality(200)
-      .allNodeScan("n").withEffectiveCardinality(100)
-
-    val expectedPlan = expected.build()
-    val expectedCards = expected.effectiveCardinalities
-
-    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
-  }
-
   test("Should multiply RHS cardinality of ForeachApply and apply WorkReduction if there is a Limit") {
     // GIVEN
     val initial = new LogicalPlanBuilder(false)

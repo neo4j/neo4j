@@ -881,9 +881,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case _: AssertingMultiNodeIndexSeek =>
         PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", children, Seq.empty, variables, withRawCardinalities)
 
-      case _: plans.EitherPlan =>
-        PlanDescriptionImpl(id = plan.id, "Either", children, Seq.empty, variables)
-
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 

@@ -47,7 +47,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerLimitProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.EitherTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EmptyResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EsotericAssertSameNodeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ExhaustiveLimitTestBase
@@ -276,7 +275,6 @@ class InterpretedLockNodesTest extends LockNodesTestBase(COMMUNITY.EDITION, Inte
 class InterpretedForEachTest extends ForeachTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetRelationshipPropertyTest extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedEitherTest extends EitherTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteNodeTest extends DeleteNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDetachDeleteNodeTest extends DeleteDetachNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteRelationshipTest extends DeleteRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

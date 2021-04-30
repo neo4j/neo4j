@@ -52,7 +52,6 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -426,9 +425,6 @@ object CardinalityCostModel {
       nestedLoopChildrenWorkReduction(p, parentWorkReduction, batchSize, cardinalities)
 
     case _: AssertSameNode =>
-      (parentWorkReduction, WorkReduction.NoReduction)
-
-    case _: EitherPlan =>
       (parentWorkReduction, WorkReduction.NoReduction)
 
     case u:Union =>

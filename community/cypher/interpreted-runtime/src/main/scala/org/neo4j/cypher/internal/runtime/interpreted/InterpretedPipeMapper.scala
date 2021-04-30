@@ -63,7 +63,6 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -192,7 +191,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipT
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.EitherPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ErrorPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExhaustiveLimitPipe
@@ -884,9 +882,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case RollUpApply(_, _, collectionName, identifierToCollection) =>
         RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection)(id = id)
-
-      case EitherPlan(_, _) =>
-        EitherPipe(lhs, rhs)(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")

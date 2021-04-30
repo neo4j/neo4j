@@ -136,7 +136,6 @@ object LogicalPlanToPlanBuilderString {
       case _:UndirectedRelationshipIndexScan => "relationshipIndexOperator"
       case _: DirectedRelationshipTypeScan => "relationshipTypeScan"
       case _: UndirectedRelationshipTypeScan => "relationshipTypeScan"
-      case _: EitherPlan => "either"
     }
     specialCases.applyOrElse(logicalPlan, classNameFormat)
   }
