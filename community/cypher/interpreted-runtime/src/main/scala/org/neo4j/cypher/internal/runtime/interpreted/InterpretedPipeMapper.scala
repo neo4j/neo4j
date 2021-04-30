@@ -424,7 +424,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           val nodeOps = nodes.map {
             case ir.CreateNode(node, labels, properties) =>
               CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)), allowNullProperty = true)
-
           }
           val relOps = relationships.map { r: ir.CreateRelationship =>
             CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),

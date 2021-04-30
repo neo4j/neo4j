@@ -627,4 +627,48 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesDeleted = sizeHint, relationshipsDeleted = sizeHint)
     tx.getAllNodes.asScala shouldBe empty
   }
+
+  test("foreach should create nodes and ignore null properties") {
+    // given
+    val size = sizeHint / 10
+    val lhsRows: InputValues = inputValues((1 to size).map(Array[Any](_)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]",
+        Seq(createPattern(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{p1: 42, p2: null}")))))
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("x")
+      .withRows(singleColumn(1 to size))
+      .withStatistics(nodesCreated = 3 * size, propertiesSet = 3 * size)
+  }
+
+  test("foreach should create relationships and ignore null properties") {
+    // given
+    val size = sizeHint / 10
+    val nodes = given(nodeGraph(size))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .foreach("i", "[1, 2, 3]",
+        Seq(createPattern(relationships = Seq(createRelationship("r", "x", "R", "x", properties = Some("{p1: 42, p2: null}"))))))
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("x")
+      .withRows(singleColumn(nodes))
+      .withStatistics(relationshipsCreated = 3 * size, propertiesSet = 3 * size)
+  }
 }
