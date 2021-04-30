@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowI
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Unique
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.barStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.btreeConfigValueAsString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.configAsString
@@ -52,7 +53,6 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-import java.util.StringJoiner
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.immutable.ListMap
 
@@ -87,13 +87,12 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         val isLookupIndex = indexType.equals(IndexType.LOOKUP)
 
         /*
-         * For btree and lookup the create command is the Cypher CREATE INDEX which needs the name to be escaped,
+         * The create command is the Cypher CREATE INDEX which needs the name to be escaped,
          * in case it contains special characters.
-         * For fulltext the create command is a procedure which doesn't require escaping.
         */
         val name = indexDescriptor.getName
         val escapedName = escapeBackticks(name)
-        val createName = if (indexType.equals(IndexType.FULLTEXT)) name else s"`$escapedName`"
+        val createName = s"`$escapedName`"
 
         val entityType = indexDescriptor.schema.entityType
         val labelsOrTypes = indexInfo.labelsOrTypes
@@ -190,15 +189,17 @@ object ShowIndexesCommand {
             }
         }
       case IndexType.FULLTEXT =>
-        val labelsOrTypesArray = asString(labelsOrTypes, arrayStringJoiner)
-        val propertiesArray = asString(properties, arrayStringJoiner)
+        val labelsOrTypesWithBars = asEscapedString(labelsOrTypes, barStringJoiner)
         val fulltextConfig = configAsString(indexConfig, value => fullTextConfigValueAsString(value))
+        val optionsString = optionsAsString(providerName, fulltextConfig)
 
         entityType match {
           case EntityType.NODE =>
-            s"CALL db.index.fulltext.createNodeIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
+            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+            s"CREATE FULLTEXT INDEX $escapedName FOR (n$labelsOrTypesWithBars) ON EACH [$escapedNodeProperties] OPTIONS $optionsString"
           case EntityType.RELATIONSHIP =>
-            s"CALL db.index.fulltext.createRelationshipIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
+            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+            s"CREATE FULLTEXT INDEX $escapedName FOR ()-[r$labelsOrTypesWithBars]-() ON EACH [$escapedRelProperties] OPTIONS $optionsString"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.LOOKUP =>
@@ -213,20 +214,11 @@ object ShowIndexesCommand {
     }
   }
 
-  private def asString(list: List[String], stringJoiner: StringJoiner): String = {
-    for (elem <- list) {
-      stringJoiner.add(s"'$elem'")
-    }
-    stringJoiner.toString
-  }
-
   private def fullTextConfigValueAsString(configValue: Value): String = {
     configValue match {
-      case booleanValue: BooleanValue => "'" + booleanValue.booleanValue() + "'"
+      case booleanValue: BooleanValue => booleanValue.booleanValue().toString
       case stringValue: StringValue =>"'" + stringValue.stringValue() + "'"
       case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
     }
   }
-
-  private def arrayStringJoiner = new StringJoiner(", ", "[", "]")
 }

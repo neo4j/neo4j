@@ -76,6 +76,7 @@ object ShowSchemaCommandHelper {
   }
 
   def colonStringJoiner = new StringJoiner(":",":", "")
+  def barStringJoiner = new StringJoiner("|",":", "")
   def propStringJoiner = new StringJoiner(", n.","n.", "")
   def relPropStringJoiner = new StringJoiner(", r.","r.", "")
   private def configStringJoiner = new StringJoiner(",", "{", "}")
