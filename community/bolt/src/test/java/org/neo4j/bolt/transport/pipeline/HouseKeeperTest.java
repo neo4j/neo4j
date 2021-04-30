@@ -29,7 +29,9 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.util.concurrent.EventExecutor;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -212,6 +214,28 @@ public class HouseKeeperTest
         // Then
         logProvider.assertExactly( AssertableLogProvider.inLog( HouseKeeper.class ).warn(
                 "Fatal error occurred when handling a client connection, " + "remote peer unexpectedly closed connection: %s", channel ) );
+    }
+
+    @Test
+    void shouldHandleExceptionsWithNullMessages()
+    {
+        // Given
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        HouseKeeper keeper = new HouseKeeper( null, logProvider.getLog( HouseKeeper.class ) );
+        Channel channel = mock( Channel.class );
+        when( channel.toString() ).thenReturn( "[some channel info]" );
+        ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
+        when( ctx.channel() ).thenReturn( channel );
+        when( ctx.executor() ).thenReturn( mock( EventExecutor.class ) );
+
+        // When
+        keeper.exceptionCaught( ctx, ReadTimeoutException.INSTANCE );
+
+        // Then
+        logProvider.assertExactly( AssertableLogProvider.inLog( HouseKeeper.class )
+                                                        .error( Matchers.equalTo(
+                                                                "Fatal error occurred when handling a client connection: " + ctx.channel() ),
+                                                                Matchers.equalTo( ReadTimeoutException.INSTANCE ) ) );
     }
 
     private static Bootstrap newBootstrap( HouseKeeper houseKeeper )
