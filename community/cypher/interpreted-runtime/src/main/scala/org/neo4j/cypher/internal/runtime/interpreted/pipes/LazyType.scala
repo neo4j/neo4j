@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.internal.kernel.api.TokenWrite
 
 case class LazyType(name: String) {
 
@@ -31,6 +32,13 @@ case class LazyType(name: String) {
   def getOrCreateType(context: QueryContext): Int = {
     if (id == LazyType.UNKNOWN) {
       id = context.getOrCreateRelTypeId(name)
+    }
+    id
+  }
+
+  def getOrCreateType(token: TokenWrite): Int = {
+    if (id == LazyType.UNKNOWN) {
+      id = token.relationshipTypeGetOrCreateForName(name)
     }
     id
   }

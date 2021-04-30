@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.internal.kernel.api.TokenWrite
 
 class LazyLabel(val name: String) {
 
@@ -38,6 +39,13 @@ class LazyLabel(val name: String) {
   def getOrCreateId(context: QueryContext): Int = {
     if (id == LazyLabel.UNKNOWN) {
       id = context.getOrCreateLabelId(name)
+    }
+    id
+  }
+
+  def getOrCreateId(token: TokenWrite): Int = {
+    if (id == LazyLabel.UNKNOWN) {
+      id = token.labelGetOrCreateForName(name)
     }
     id
   }

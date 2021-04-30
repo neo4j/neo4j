@@ -26,6 +26,9 @@ import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -36,7 +39,7 @@ import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
-                                                                 edition: Edition[CONTEXT],
+                                                                 val edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT],
                                                                  val sizeHint: Int,
                                                                  costOfGetPropertyChain: Long, // the reported dbHits for getting the property chain
@@ -943,8 +946,7 @@ trait NestedPlanDbHitsTestBase[CONTEXT <: RuntimeContext] {
 trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileDbHitsTestBase[CONTEXT] =>
 
-
-  test("should profile rows correctly") {
+  test("should profile rows of set property correctly") {
     // given
     given {
       bipartiteGraph(sizeHint, "A", "B", "R")
@@ -1176,5 +1178,75 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     val removeLabelsProfile = queryProfile.operatorProfile(1)
     val expectedLabelLookups = 2
     removeLabelsProfile.dbHits() shouldBe (expectedLabelLookups + nodeCount)
+  }
+
+  test("should profile db hits on create nodes with labels and properties") {
+    val createCount = 9
+    val labels = Seq("A", "B", "C")
+    val properties = Map("a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5)
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .create(createNodeWithProperties("n", labels, propertiesString(properties)))
+      .unwind(s"${Range(0, createCount).mkString("[",",","]")} AS i")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val createProfile = queryProfile.operatorProfile(1)
+    val createLabelsHits = labels.size
+    val createNodesHits = createCount
+    val createPropKeyHits = createCount * properties.size
+    val setPropertyHits = createCount * properties.size
+    createProfile.dbHits() shouldBe (createNodesHits + createLabelsHits + createPropKeyHits + setPropertyHits)
+  }
+
+  protected def propertiesString(properties: Map[String, Any]): String = {
+    properties.map { case (key, value) => s"$key: $value" }.mkString("{", ",", "}")
+  }
+}
+
+trait NonFusedWriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] extends WriteOperatorsDbHitsTestBase[CONTEXT] {
+  self: ProfileDbHitsTestBase[CONTEXT] =>
+
+  test("should profile db hits on create nodes and relationships (fused)") {
+    val createNodeCount = 7
+    val createNodes = Range(0, createNodeCount).map(i => createNode(s"n$i"))
+    val properties = Map("a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5)
+    val createRelationships = createNodes
+      .sliding(2)
+      .zipWithIndex
+      .map {
+        case (Seq(a, b), i) => createRelationship(s"r$i", a.idName, "REL", b.idName, properties = Some(propertiesString(properties)))
+      }
+      .toSeq
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .create(createNodes, createRelationships)
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val createProfile = queryProfile.operatorProfile(2)
+    val propertyHits = createRelationships.size * properties.size * 2 // TODO Looks like we count to much here
+    val relationshipHits = /* create relationships */ createRelationships.size + /* create relationship type */ createRelationships.size
+    val nodeHits = createNodeCount
+    createProfile.dbHits() shouldBe (nodeHits + relationshipHits + propertyHits)
   }
 }

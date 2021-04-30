@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexStartsWithSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeLockingUniqueIndexSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NonFusedWriteOperatorsDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelProvidedOrderTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandAllTestBase
@@ -146,7 +147,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UserDefinedAggregationSupport
 import org.neo4j.cypher.internal.runtime.spec.tests.ValueHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.WriteOperatorsDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.WriteProcedureCallTestBase
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
 
@@ -221,7 +221,7 @@ class InterpretedProvidedOrderTest extends ProvidedOrderTestBase(COMMUNITY.EDITI
 class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, createsRelValueInExpand = true)
                                    with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]
                                    with NestedPlanDbHitsTestBase[CommunityRuntimeContext]
-                                   with WriteOperatorsDbHitsTestBase[CommunityRuntimeContext]
+                                   with NonFusedWriteOperatorsDbHitsTestBase[CommunityRuntimeContext]
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)
                                   with EagerLimitProfileRowsTestBase[CommunityRuntimeContext]
                                   with MergeProfileRowsTestBase[CommunityRuntimeContext]
