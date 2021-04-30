@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.IndexMatch
+import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-object nodeIndexEndsWithScanPlanProvider extends NodeIndexPlanProvider {
+object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
 
   override def createPlans(indexMatches: Set[IndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
@@ -35,19 +36,26 @@ object nodeIndexEndsWithScanPlanProvider extends NodeIndexPlanProvider {
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
-  def doCreatePlans(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
+  private def doCreatePlans(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
     indexMatch.propertyPredicates.flatMap { indexPredicate =>
       indexPredicate.predicate match {
-        case endsWith: EndsWith =>
+        case predicate@ (_:Contains | _:EndsWith) =>
+          val (valueExpr, stringSearchMode) = predicate match {
+            case contains: Contains =>
+              (contains.rhs, ContainsSearchMode)
+            case endsWith: EndsWith =>
+              (endsWith.rhs, EndsWithSearchMode)
+          }
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 
-          val plan = context.logicalPlanProducer.planNodeIndexEndsWithScan(
+          val plan = context.logicalPlanProducer.planNodeIndexStringSearchScan(
             idName = indexMatch.variableName,
             label = indexMatch.labelToken,
             properties = singlePredicateSet.indexedProperties(context),
+            stringSearchMode = stringSearchMode,
             solvedPredicates = singlePredicateSet.allSolvedPredicates,
             solvedHint = singlePredicateSet.matchingHints(hints).find(_.spec.fulfilledByScan),
-            valueExpr = endsWith.rhs,
+            valueExpr = valueExpr,
             argumentIds = argumentIds,
             providedOrder = indexMatch.providedOrder,
             indexOrder = indexMatch.indexOrder,

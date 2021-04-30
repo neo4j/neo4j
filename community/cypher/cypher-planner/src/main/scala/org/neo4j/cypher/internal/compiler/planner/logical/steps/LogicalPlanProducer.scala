@@ -36,6 +36,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.ContainsSearchMode
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EndsWithSearchMode
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.StringSearchMode
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -362,7 +365,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                             relationshipType: RelationshipTypeToken,
                                             pattern: PatternRelationship,
                                             properties: Seq[IndexedProperty],
-                                            searchAtEndOnly: Boolean,
+                                            stringSearchMode: StringSearchMode,
                                             solvedPredicates: Seq[Expression] = Seq.empty,
                                             solvedHint: Option[UsingIndexHint] = None,
                                             valueExpr: Expression,
@@ -377,11 +380,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
 
-    val stringSearchScanPlan = (pattern.dir, searchAtEndOnly) match {
-      case (SemanticDirection.BOTH, true) => UndirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
-      case (SemanticDirection.BOTH, false) => UndirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
-      case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, true) => DirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
-      case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, false) => DirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
+    val stringSearchScanPlan = (pattern.dir, stringSearchMode) match {
+      case (SemanticDirection.BOTH, ContainsSearchMode) => UndirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
+      case (SemanticDirection.BOTH, EndsWithSearchMode) => UndirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
+      case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, ContainsSearchMode) => DirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
+      case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, EndsWithSearchMode) => DirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
     }
 
     val plan = stringSearchScanPlan(
@@ -641,9 +644,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(NodeIndexScan(idName, label, properties, argumentIds, indexOrder), solved, providedOrder, context)
   }
 
-  def planNodeIndexContainsScan(idName: String,
+  def planNodeIndexStringSearchScan(idName: String,
                                 label: LabelToken,
                                 properties: Seq[IndexedProperty],
+                                stringSearchMode: StringSearchMode,
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
@@ -660,30 +664,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
     val rewrittenValueExpr = solver.solve(valueExpr)
     val newArguments = solver.newArguments
-    val plan = annotate(NodeIndexContainsScan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder), solved, providedOrder, context)
-    solver.rewriteLeafPlan(plan)
-  }
 
-  def planNodeIndexEndsWithScan(idName: String,
-                                label: LabelToken,
-                                properties: Seq[IndexedProperty],
-                                solvedPredicates: Seq[Expression],
-                                solvedHint: Option[UsingIndexHint],
-                                valueExpr: Expression,
-                                argumentIds: Set[String],
-                                providedOrder: ProvidedOrder,
-                                indexOrder: IndexOrder,
-                                context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .addPatternNodes(idName)
-      .addPredicates(solvedPredicates: _*)
-      .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
-    val rewrittenValueExpr = solver.solve(valueExpr)
-    val newArguments = solver.newArguments
-    val plan = annotate(NodeIndexEndsWithScan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder), solved, providedOrder, context)
+    val stringSearchScanPlan = stringSearchMode match {
+      case ContainsSearchMode => NodeIndexContainsScan(_, _, _, _, _, _)
+      case EndsWithSearchMode => NodeIndexEndsWithScan(_, _, _, _, _, _)
+    }
+
+    val plan = annotate(stringSearchScanPlan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder), solved, providedOrder, context)
     solver.rewriteLeafPlan(plan)
   }
 

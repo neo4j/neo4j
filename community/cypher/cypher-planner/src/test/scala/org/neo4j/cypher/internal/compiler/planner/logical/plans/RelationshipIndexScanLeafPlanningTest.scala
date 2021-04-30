@@ -100,7 +100,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   private def relationshipIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =
     RelationshipIndexLeafPlanner(Seq(RelationshipIndexScanPlanProvider), restrictions)
 
-  private def relationshipIndexContainsScanLeafPlanner(restrictions: LeafPlanRestrictions) =
+  private def relationshipIndexStringSearchScanLeafPlanner(restrictions: LeafPlanRestrictions) =
     RelationshipIndexLeafPlanner(Seq(RelationshipIndexStringSearchScanPlanProvider), restrictions)
 
   private def solvedPredicates(plan: LogicalPlan, ctx: LogicalPlanningContext) =

@@ -40,11 +40,11 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
     indexMatch.propertyPredicates.flatMap { indexPredicate =>
       indexPredicate.predicate match {
         case predicate@ (_:Contains | _:EndsWith) =>
-          val (valueExpr, searchAtEndOnly) = predicate match {
+          val (valueExpr, stringSearchMode) = predicate match {
             case contains: Contains =>
-              (contains.rhs, false)
+              (contains.rhs, ContainsSearchMode)
             case endsWith: EndsWith =>
-              (endsWith.rhs, true)
+              (endsWith.rhs, EndsWithSearchMode)
           }
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 
@@ -53,7 +53,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
             relationshipType = indexMatch.relationshipTypeToken,
             pattern = indexMatch.patternRelationship,
             properties = singlePredicateSet.indexedProperties(context),
-            searchAtEndOnly = searchAtEndOnly,
+            stringSearchMode = stringSearchMode,
             solvedPredicates = singlePredicateSet.allSolvedPredicates,
             solvedHint = singlePredicateSet.matchingHints(hints).find(_.spec.fulfilledByScan),
             valueExpr = valueExpr,

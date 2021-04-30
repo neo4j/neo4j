@@ -33,10 +33,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexL
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexStringSearchScanPlanProvider
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexContainsScanPlanProvider
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexEndsWithScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexStringSearchScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.outerHashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
@@ -58,9 +57,8 @@ object QueryPlannerConfiguration {
       // MATCH (n) WHERE n.prop IN ... RETURN n
       nodeIndexSeekPlanProvider,
       // MATCH (n:Person) WHERE n.prop CONTAINS ...
-      nodeIndexContainsScanPlanProvider,
       // MATCH (n:Person) WHERE n.prop ENDS WITH ...
-      nodeIndexEndsWithScanPlanProvider,
+      nodeIndexStringSearchScanPlanProvider,
       // MATCH (n) WHERE has(n.prop) RETURN n
       nodeIndexScanPlanProvider(nodeIndexSeekPlanProvider),
     ), restrictions),
