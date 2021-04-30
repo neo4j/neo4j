@@ -125,6 +125,8 @@ class RecoveryCorruptedTransactionLogIT
     private LogFiles logFiles;
     private TestDatabaseManagementServiceBuilder databaseFactory;
     private StorageEngineFactory storageEngineFactory;
+    // Some transactions can have been run on start-up, so this is the offset the first transaction of a test will have.
+    private long txOffsetAfterStart;
 
     @BeforeEach
     void setUp()
@@ -134,7 +136,8 @@ class RecoveryCorruptedTransactionLogIT
                 .setInternalLogProvider( logProvider )
                 .setMonitors( monitors )
                 .setFileSystem( fileSystem );
-        startStopDatabase();
+
+        txOffsetAfterStart = startStopDatabaseAndGetTxOffset();
     }
 
     @Test
@@ -193,13 +196,14 @@ class RecoveryCorruptedTransactionLogIT
     {
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        TransactionIdStore transactionIdStore = getTransactionIdStore( database );
+        long numberOfClosedTransactionsAfterStartup = transactionIdStore.getLastClosedTransactionId();
         logFiles = buildDefaultLogFiles( getStoreId( database ) );
         for ( int i = 0; i < 10; i++ )
         {
             generateTransaction( database );
         }
-        TransactionIdStore transactionIdStore = getTransactionIdStore( database );
-        long numberOfClosedTransactions = transactionIdStore.getLastClosedTransactionId() - 1;
+        long numberOfTransactionsToRecover = transactionIdStore.getLastClosedTransactionId() - numberOfClosedTransactionsAfterStartup;
         managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
@@ -212,11 +216,11 @@ class RecoveryCorruptedTransactionLogIT
 
         try
         {
-            assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
+            assertEquals( numberOfTransactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions() );
             assertTrue( recoveryMonitor.wasRecoveryRequired() );
             assertThat( logProvider ).containsMessages( "Fail to read transaction log version 0.",
                     "Fail to read transaction log version 0. Last valid transaction start offset is: " +
-                            (5548 + HEADER_OFFSET) + "." );
+                            (5548 + txOffsetAfterStart) + "." );
         }
         catch ( Throwable t )
         {
@@ -234,9 +238,9 @@ class RecoveryCorruptedTransactionLogIT
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 0.",
                                                                   "Fail to read first transaction of log version 0.",
-                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + "}",
+                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + txOffsetAfterStart + "}",
                 "Fail to recover all transactions. Any later transactions after position LogPosition{logVersion=0, " +
-                        "byteOffset=" + HEADER_OFFSET + "} are unreadable and will be truncated." );
+                        "byteOffset=" + txOffsetAfterStart + "} are unreadable and will be truncated." );
 
         logFiles = buildDefaultLogFiles( StoreId.UNKNOWN );
         assertEquals( 0, logFiles.getLogFile().getHighestLogVersion() );
@@ -258,13 +262,13 @@ class RecoveryCorruptedTransactionLogIT
         startStopDatabase();
         assertThat( logProvider ).assertExceptionForLogMessage( "Fail to read transaction log version 0.")
                 .hasMessageContaining( "Transaction log files with version 0 has some data available after last readable " +
-                        "log entry. Last readable position " + (996 + HEADER_OFFSET) );
+                        "log entry. Last readable position " + (996 + txOffsetAfterStart) );
     }
 
     @Test
     void startWithTransactionLogsWithDataAfterLastEntryAndCorruptedLogsRecoveryEnabled() throws IOException
     {
-        long initialTransactionOffset = HEADER_OFFSET + 996;
+        long initialTransactionOffset = txOffsetAfterStart + 996;
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         logFiles = buildDefaultLogFiles( getStoreId( database ) );
@@ -278,10 +282,10 @@ class RecoveryCorruptedTransactionLogIT
         try
         {
             assertThat( logProvider ).containsMessages( "Recovery required from position " +
-                            "LogPosition{logVersion=0, byteOffset=" + (996 + HEADER_OFFSET) + "}" )
+                            "LogPosition{logVersion=0, byteOffset=" + initialTransactionOffset + "}" )
                     .assertExceptionForLogMessage( "Fail to read transaction log version 0." )
                     .hasMessageContaining( "Transaction log files with version 0 has some data available after last readable log entry. " +
-                            "Last readable position " + (996 + HEADER_OFFSET) );
+                            "Last readable position " + initialTransactionOffset );
             GraphDatabaseAPI restartedDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             assertEquals( initialTransactionOffset, getLastClosedTransactionOffset( restartedDb ) );
         }
@@ -356,11 +360,11 @@ class RecoveryCorruptedTransactionLogIT
         assertEquals( originalLogDataLength, fileSystem.getFileSize( firstLogFile ) );
 
         assertThat( logProvider ).containsMessages( "Recovery required from position LogPosition{logVersion=0, byteOffset=" +
-                (996 + HEADER_OFFSET)  + "}" )
+                (996 + txOffsetAfterStart)  + "}" )
                 .assertExceptionForLogMessage( "Fail to read transaction log version 0." )
                 .hasMessage( "Transaction log files with version 0 has 50 unreadable bytes. Was able to read upto " +
-                        (996 + HEADER_OFFSET) +
-                        " but " + (1046 + HEADER_OFFSET) + " is available." );
+                        (996 + txOffsetAfterStart) +
+                        " but " + (1046 + txOffsetAfterStart) + " is available." );
     }
 
     @Test
@@ -490,10 +494,10 @@ class RecoveryCorruptedTransactionLogIT
         startStopDbRecoveryOfCorruptedLogs();
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 0.",
-                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET  + "}",
+                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + txOffsetAfterStart  + "}",
                 "Fail to recover all transactions.",
                 "Any later transaction after LogPosition{logVersion=0, byteOffset=" +
-                        (6117 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
+                        (6117 + txOffsetAfterStart) + "} are unreadable and will be truncated." );
 
         assertEquals( 0, logFiles.getLogFile().getHighestLogVersion() );
         assertEquals( numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
@@ -532,7 +536,7 @@ class RecoveryCorruptedTransactionLogIT
         startStopDbRecoveryOfCorruptedLogs();
 
         assertThat( logProvider ).containsMessages( "Fail to read transaction log version 3.",
-                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + HEADER_OFFSET + "}",
+                "Recovery required from position LogPosition{logVersion=0, byteOffset=" + txOffsetAfterStart + "}",
                 "Fail to recover all transactions.",
                 "Any later transaction after LogPosition{logVersion=3, byteOffset=" + (4552 + HEADER_OFFSET) + "} are unreadable and will be truncated." );
 
@@ -867,6 +871,17 @@ class RecoveryCorruptedTransactionLogIT
         storageEngineFactory = ((GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME )).getDependencyResolver().resolveDependency(
                 StorageEngineFactory.class );
         managementService.shutdown();
+    }
+
+    private long startStopDatabaseAndGetTxOffset()
+    {
+        DatabaseManagementService managementService = databaseFactory.build();
+        final GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        storageEngineFactory = database.getDependencyResolver().resolveDependency(
+                StorageEngineFactory.class );
+        long offset = getLastClosedTransactionOffset( database );
+        managementService.shutdown();
+        return offset;
     }
 
     private static Stream<Arguments> corruptedLogEntryWriters()

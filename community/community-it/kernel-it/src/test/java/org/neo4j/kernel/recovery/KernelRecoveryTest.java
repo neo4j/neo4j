@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -74,6 +74,9 @@ class KernelRecoveryTest
     {
         // Given
         GraphDatabaseService db = newDB( fileSystem, "main" );
+        // We don't want to include any transactions that may have run on start-up since they
+        // will have run on start-up of rebuilt db already.
+        long txIdToExtractFrom = getLastClosedTransactionId( (GraphDatabaseAPI) db ) + 1;
         long node1 = createNode( db, "k", "v1" );
 
         // And given the power goes out
@@ -84,7 +87,7 @@ class KernelRecoveryTest
             managementService.shutdown();
             db = newDB( crashedFs, "main" );
             node2 = createNode( db, "k", "v2" );
-            extractTransactions( (GraphDatabaseAPI) db, transactions );
+            extractTransactions( (GraphDatabaseAPI) db, transactions, txIdToExtractFrom );
             managementService.shutdown();
         }
 
@@ -108,13 +111,20 @@ class KernelRecoveryTest
         }
     }
 
-    private static void extractTransactions( GraphDatabaseAPI db, List<TransactionRepresentation> transactions ) throws java.io.IOException
+    private static void extractTransactions( GraphDatabaseAPI db, List<TransactionRepresentation> transactions, long txIdToStartFrom )
+            throws java.io.IOException
     {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-        try ( TransactionCursor cursor = txStore.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
+        try ( TransactionCursor cursor = txStore.getTransactions( txIdToStartFrom ) )
         {
             cursor.forAll( tx -> transactions.add( tx.getTransactionRepresentation() ) );
         }
+    }
+
+    private long getLastClosedTransactionId( GraphDatabaseAPI database )
+    {
+        MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
+        return metaDataStore.getLastClosedTransaction()[0];
     }
 
     private GraphDatabaseService newDB( FileSystemAbstraction fs, String name )
