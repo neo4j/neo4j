@@ -129,8 +129,12 @@ trait GraphIcing {
       createNodeIndex(None, label, properties, Map("indexProvider" -> s"'$provider'"))
     }
 
+    def createRelationshipIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, label, properties, Map("indexProvider" -> s"'$provider'"))
+    }
+
     def createRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
-      createRelIndex(None, relType, properties)
+      createRelationshipIndex(None, relType, properties)
     }
 
     def createNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
@@ -138,15 +142,15 @@ trait GraphIcing {
     }
 
     def createRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
-      createRelIndex(Some(name), relType, properties)
+      createRelationshipIndex(Some(name), relType, properties)
     }
 
     private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], options: Map[String, String] = Map.empty): IndexDefinition = {
       createIndex(maybeName, s"(e:$label)", properties, () => getNodeIndex(label, properties), options)
     }
 
-    private def createRelIndex(maybeName: Option[String], relType: String, properties: Seq[String]): IndexDefinition = {
-      createIndex(maybeName, s"()-[e:$relType]-()", properties, () => getRelIndex(relType, properties))
+    private def createRelationshipIndex(maybeName: Option[String], relType: String, properties: Seq[String], options: Map[String, String] = Map.empty): IndexDefinition = {
+      createIndex(maybeName, s"()-[e:$relType]-()", properties, () => getRelIndex(relType, properties), options)
     }
 
     private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], getIndex: () => IndexDefinition, options: Map[String, String] = Map.empty): IndexDefinition = {
