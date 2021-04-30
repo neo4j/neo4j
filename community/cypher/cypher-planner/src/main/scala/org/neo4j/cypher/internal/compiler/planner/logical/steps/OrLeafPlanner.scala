@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.logical
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
@@ -44,6 +46,8 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
@@ -154,8 +158,12 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
          _: DirectedRelationshipIndexEndsWithScan |
          _: UndirectedRelationshipIndexEndsWithScan |
          _: DirectedRelationshipIndexContainsScan |
-         _: UndirectedRelationshipIndexContainsScan => 0
-    case _: NodeIndexScan         => 1
+         _: UndirectedRelationshipIndexContainsScan |
+         _: DirectedRelationshipIndexSeek |
+         _: UndirectedRelationshipIndexSeek => 0
+    case _: NodeIndexScan |
+         _: UndirectedRelationshipIndexScan |
+         _: DirectedRelationshipIndexScan => 1
     case _: NodeByLabelScan       => 2
     case _                        => 3
   }
