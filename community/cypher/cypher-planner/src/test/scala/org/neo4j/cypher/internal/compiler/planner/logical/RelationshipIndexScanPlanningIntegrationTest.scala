@@ -125,6 +125,57 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     )
   }
 
+  test("should plan undirected relationship index scan with ENDS WITH") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]-(b)")
+        .build()
+    )
+  }
+
+  test("should plan directed OUTGOING relationship index scan with ENDS WITH") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan directed INCOMING relationship index scan with ENDS WITH") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan("MATCH (a)<-[r:REL]-(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .relationshipIndexOperator("(a)<-[r:REL(prop ENDS WITH 'test')]-(b)")
+        .build()
+    )
+  }
+
   test("should plan undirected relationship index scan with IS NOT NULL on the RHS of an Apply with correct arguments") {
     val planner = plannerBuilder().build()
     planner.plan(
@@ -150,13 +201,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should plan undirected relationship index scan with CONTAINS on the RHS of an Apply with correct arguments") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setAllRelationshipsCardinality(1)
-      .setRelationshipCardinality("()-[:REL]-()", 1)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
-      .build()
+    val planner = plannerBuilder().build()
 
     planner.plan(
       """MATCH (n)
@@ -174,6 +219,30 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .filter("b.prop = n.prop")
         .apply(fromSubquery = true)
         .|.relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'test')]-(b)", argumentIds = Set("n"))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should plan undirected relationship index scan with ENDS WITH on the RHS of an Apply with correct arguments") {
+    val planner = plannerBuilder().build()
+
+    planner.plan(
+      """MATCH (n)
+        |CALL {
+        |  WITH n
+        |  MATCH (a)-[r:REL]-(b)
+        |  WHERE r.prop ENDS WITH 'test' AND b.prop = n.prop
+        |  RETURN r
+        |}
+        |RETURN n, r
+        |""".stripMargin
+    ) should equal(
+      planner.planBuilder()
+        .produceResults("n", "r")
+        .filter("b.prop = n.prop")
+        .apply(fromSubquery = true)
+        .|.relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]-(b)", argumentIds = Set("n"))
         .allNodeScan("n")
         .build()
     )
@@ -249,14 +318,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should not (yet) plan relationship index contains scan with filter for already bound start node") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setAllRelationshipsCardinality(10)
-      .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
-      .enableRelationshipTypeScanStore()
-      .build()
+    val planner = plannerBuilder().build()
 
     planner.plan(
       """MATCH (a) WITH a SKIP 0
@@ -272,14 +334,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should not (yet) plan relationship index contains scan with filter for already bound end node") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setAllRelationshipsCardinality(10)
-      .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
-      .enableRelationshipTypeScanStore()
-      .build()
+    val planner = plannerBuilder().build()
 
     planner.plan(
       """MATCH (b) WITH b SKIP 0
@@ -295,19 +350,56 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should not plan relationship index contains scan for already bound relationship variable") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setAllRelationshipsCardinality(10)
-      .setRelationshipCardinality("()-[:REL]-()", 10)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
-      .enableRelationshipTypeScanStore()
-      .build()
+    val planner = plannerBuilder().build()
 
     withClue("Did not expect an UndirectedRelationshipIndexScan to be planned") {
       planner.plan(
         """MATCH (a)-[r:REL]-(b) WITH r SKIP 0
           |MATCH (a2)-[r:REL]-(b2) WHERE r.prop CONTAINS 'foo' RETURN r""".stripMargin).leaves.treeExists {
+        case _: UndirectedRelationshipIndexScan => true
+      } should be(false)
+    }
+  }
+
+  test("should not (yet) plan relationship index ends with scan with filter for already bound start node") {
+    val planner = plannerBuilder().build()
+
+    planner.plan(
+      """MATCH (a) WITH a SKIP 0
+        |MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r""".stripMargin) should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .filter("r.prop ENDS WITH 'foo'")
+        .expandAll("(a)-[r:REL]-(b)")
+        .skip(0)
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should not (yet) plan relationship index ends with scan with filter for already bound end node") {
+    val planner = plannerBuilder().build()
+
+    planner.plan(
+      """MATCH (b) WITH b SKIP 0
+        |MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r""".stripMargin) should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .filter("r.prop ENDS WITH 'foo'")
+        .expandAll("(b)-[r:REL]-(a)")
+        .skip(0)
+        .allNodeScan("b")
+        .build()
+    )
+  }
+
+  test("should not plan relationship index ends with scan for already bound relationship variable") {
+    val planner = plannerBuilder().build()
+
+    withClue("Did not expect an UndirectedRelationshipIndexScan to be planned") {
+      planner.plan(
+        """MATCH (a)-[r:REL]-(b) WITH r SKIP 0
+          |MATCH (a2)-[r:REL]-(b2) WHERE r.prop ENDS WITH 'foo' RETURN r""".stripMargin).leaves.treeExists {
         case _: UndirectedRelationshipIndexScan => true
       } should be(false)
     }

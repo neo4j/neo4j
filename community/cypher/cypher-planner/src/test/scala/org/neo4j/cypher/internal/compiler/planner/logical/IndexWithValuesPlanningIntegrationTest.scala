@@ -1169,6 +1169,66 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
+  test("should plan index ends with scan with GetValue when the relationship property is projected") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r.prop"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`r.prop`")
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'foo')]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = GetValue)
+        .build()
+    )
+  }
+
+  test("should plan relationship projection and index ends with scan with DoNotGetValue when the index does not provide values") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r.prop"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`r.prop`")
+        .projection("r.prop AS `r.prop`")
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'foo')]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .build()
+    )
+  }
+
+  test("should plan relationship projection and index ends with scan with DoNotGetValue when another property is projected") {
+    val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r.foo"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("`r.foo`")
+        .projection("r.foo AS `r.foo`")
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'foo')]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .build()
+    )
+  }
+
   // AGGREGATIONS (=> implicit exists)
 
   test("should plan scan with GetValue when the property is used in avg function") {

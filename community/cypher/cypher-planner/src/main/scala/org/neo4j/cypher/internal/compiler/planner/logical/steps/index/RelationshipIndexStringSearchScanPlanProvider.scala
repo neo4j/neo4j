@@ -25,9 +25,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.IndexMatch
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-object RelationshipIndexContainsScanPlanProvider extends RelationshipIndexPlanProvider {
+object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPlanProvider {
 
   override def createPlans(indexMatches: Set[IndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
@@ -38,17 +39,24 @@ object RelationshipIndexContainsScanPlanProvider extends RelationshipIndexPlanPr
   private def doCreatePlans(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
     indexMatch.propertyPredicates.flatMap { indexPredicate =>
       indexPredicate.predicate match {
-        case contains: Contains =>
+        case predicate@ (_:Contains | _:EndsWith) =>
+          val (valueExpr, searchAtEndOnly) = predicate match {
+            case contains: Contains =>
+              (contains.rhs, false)
+            case endsWith: EndsWith =>
+              (endsWith.rhs, true)
+          }
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 
-          val plan = context.logicalPlanProducer.planRelationshipIndexContainsScan(
+          val plan = context.logicalPlanProducer.planRelationshipIndexStringSearchScan(
             idName = indexMatch.variableName,
             relationshipType = indexMatch.relationshipTypeToken,
             pattern = indexMatch.patternRelationship,
             properties = singlePredicateSet.indexedProperties(context),
+            searchAtEndOnly = searchAtEndOnly,
             solvedPredicates = singlePredicateSet.allSolvedPredicates,
             solvedHint = singlePredicateSet.matchingHints(hints).find(_.spec.fulfilledByScan),
-            valueExpr = contains.rhs,
+            valueExpr = valueExpr,
             argumentIds = argumentIds,
             providedOrder = indexMatch.providedOrder,
             indexOrder = indexMatch.indexOrder,

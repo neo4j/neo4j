@@ -117,6 +117,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
@@ -193,6 +194,7 @@ import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
@@ -356,17 +358,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(leafPlan, solved, providedOrder, context)
   }
 
-  def planRelationshipIndexContainsScan(idName: String,
-                                        relationshipType: RelationshipTypeToken,
-                                        pattern: PatternRelationship,
-                                        properties: Seq[IndexedProperty],
-                                        solvedPredicates: Seq[Expression] = Seq.empty,
-                                        solvedHint: Option[UsingIndexHint] = None,
-                                        valueExpr: Expression,
-                                        argumentIds: Set[String],
-                                        providedOrder: ProvidedOrder,
-                                        indexOrder: IndexOrder,
-                                        context: LogicalPlanningContext): LogicalPlan = {
+  def planRelationshipIndexStringSearchScan(idName: String,
+                                            relationshipType: RelationshipTypeToken,
+                                            pattern: PatternRelationship,
+                                            properties: Seq[IndexedProperty],
+                                            searchAtEndOnly: Boolean,
+                                            solvedPredicates: Seq[Expression] = Seq.empty,
+                                            solvedHint: Option[UsingIndexHint] = None,
+                                            valueExpr: Expression,
+                                            argumentIds: Set[String],
+                                            providedOrder: ProvidedOrder,
+                                            indexOrder: IndexOrder,
+                                            context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternRelationship(pattern)
       .addPredicates(solvedPredicates: _*)
@@ -374,29 +377,23 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
 
-    val plan = pattern.dir match {
-      case SemanticDirection.BOTH =>
-        UndirectedRelationshipIndexContainsScan(
-          idName,
-          pattern.left,
-          pattern.right,
-          relationshipType,
-          properties.head,
-          valueExpr,
-          argumentIds,
-          indexOrder)
-
-      case SemanticDirection.INCOMING | SemanticDirection.OUTGOING =>
-        DirectedRelationshipIndexContainsScan(
-          idName,
-          pattern.inOrder._1,
-          pattern.inOrder._2,
-          relationshipType,
-          properties.head,
-          valueExpr,
-          argumentIds,
-          indexOrder)
+    val stringSearchScanPlan = (pattern.dir, searchAtEndOnly) match {
+      case (SemanticDirection.BOTH, true) => UndirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
+      case (SemanticDirection.BOTH, false) => UndirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
+      case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, true) => DirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
+      case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, false) => DirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
     }
+
+    val plan = stringSearchScanPlan(
+      idName,
+      pattern.inOrder._1,
+      pattern.inOrder._2,
+      relationshipType,
+      properties.head,
+      valueExpr,
+      argumentIds,
+      indexOrder
+    )
 
     annotate(plan, solved, providedOrder, context)
   }

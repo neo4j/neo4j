@@ -126,6 +126,27 @@ class LimitPropagationPlanningIntegrationTest
     }
   }
 
+  test("should plan lazy relationship index ends with scan instead of sort when under limit") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE cb.id ENDS WITH 'suff'
+         |RETURN a, c ORDER BY cb.id LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .limit(10)
+      .nodeHashJoin("b")
+      .|.filterExpression(hasLabels("c", "C"))
+      .|.relationshipIndexOperator("(c)-[cb:REL_CB(id ENDS WITH 'suff')]->(b)", indexOrder = IndexOrderAscending)
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
 
   test("should plan lazy index scan instead of sort when under limit") {
     val query =
