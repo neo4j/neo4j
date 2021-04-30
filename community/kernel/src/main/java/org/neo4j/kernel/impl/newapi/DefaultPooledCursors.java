@@ -509,77 +509,72 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         if ( nodeCursor != null )
         {
             nodeCursor.release();
-            nodeCursor = null;
-        }
-        if ( fullAccessNodeCursor != null )
-        {
-            fullAccessNodeCursor.release();
-            fullAccessNodeCursor = null;
         }
         if ( relationshipScanCursor != null )
         {
             relationshipScanCursor.release();
-            relationshipScanCursor = null;
         }
         if ( fullAccessRelationshipScanCursor != null )
         {
             fullAccessRelationshipScanCursor.release();
-            fullAccessRelationshipScanCursor = null;
         }
         if ( relationshipTraversalCursor != null )
         {
             relationshipTraversalCursor.release();
-            relationshipTraversalCursor = null;
         }
         if ( fullAccessRelationshipTraversalCursor != null )
         {
             fullAccessRelationshipTraversalCursor.release();
-            fullAccessRelationshipTraversalCursor = null;
         }
         if ( propertyCursor != null )
         {
             propertyCursor.release();
-            propertyCursor = null;
         }
         if ( fullAccessPropertyCursor != null )
         {
             fullAccessPropertyCursor.release();
-            fullAccessPropertyCursor = null;
         }
         if ( nodeValueIndexCursor != null )
         {
             nodeValueIndexCursor.release();
-            nodeValueIndexCursor = null;
         }
         if ( fullAccessNodeValueIndexCursor != null )
         {
             fullAccessNodeValueIndexCursor.release();
-            fullAccessNodeValueIndexCursor = null;
         }
         if ( nodeLabelIndexCursor != null )
         {
             nodeLabelIndexCursor.release();
-            nodeLabelIndexCursor = null;
         }
         if ( fullAccessNodeLabelIndexCursor != null )
         {
             fullAccessNodeLabelIndexCursor.release();
-            fullAccessNodeLabelIndexCursor = null;
         }
         if ( relationshipValueIndexCursor != null )
         {
             relationshipValueIndexCursor.release();
-            relationshipValueIndexCursor = null;
         }
         if ( relationshipTypeIndexCursor != null )
         {
             relationshipTypeIndexCursor.release();
-            relationshipTypeIndexCursor = null;
         }
         if ( fullAccessRelationshipTypeIndexCursor != null )
         {
             fullAccessRelationshipTypeIndexCursor.release();
-            fullAccessRelationshipTypeIndexCursor = null;
         }
+        nodeCursor = null;
+        relationshipScanCursor = null;
+        fullAccessRelationshipScanCursor = null;
+        relationshipTraversalCursor = null;
+        fullAccessRelationshipTraversalCursor = null;
+        propertyCursor = null;
+        fullAccessPropertyCursor = null;
+        nodeValueIndexCursor = null;
+        fullAccessNodeValueIndexCursor = null;
+        nodeLabelIndexCursor = null;
+        fullAccessNodeLabelIndexCursor = null;
+        relationshipValueIndexCursor = null;
+        relationshipTypeIndexCursor = null;
+        fullAccessRelationshipTypeIndexCursor = null;
     }
 }
