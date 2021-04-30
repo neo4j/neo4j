@@ -30,13 +30,11 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
@@ -104,19 +102,14 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
         Apply(
           AllNodesScan("n", Set()),
           Merge(
-            EitherPlan(
                 Expand(
                   Argument(Set("n")),
                   "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
-                Expand(
-                  LockNodes(Argument(Set("n")), Set("n")),
-                  "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll)
-            ),
             Seq(CreateNode("b", Seq.empty, None)),
             Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
             Seq(),
             Seq(),
-            Set()
+            Set("n")
           )
         )
       )
@@ -132,18 +125,14 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
           AllNodesScan("m", Set())
         ),
         Merge(
-          EitherPlan(
             Expand(
               Argument(Set("n", "m")),
               "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto),
-            Expand(
-              LockNodes(
-                Argument(Set("n", "m")),
-                Set("n", "m")),
-              "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto)
-          ),
           Seq(),
-          Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "m", SemanticDirection.OUTGOING, None)), Seq(), Seq(), Set()
+          Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "m", SemanticDirection.OUTGOING, None)),
+          Seq(),
+          Seq(),
+          Set("n", "m")
         )
       )
     ))
@@ -161,20 +150,14 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             Map("a" -> varFor("n"), "b" -> varFor("m"))
           ),
           Merge(
-            EitherPlan(
-              Expand(
-                Argument(Set("a", "b")),
-                "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
-              Expand(
-                LockNodes(
-                  Argument(Set("a", "b")), Set("a", "b")),
-                "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto)
-            ),
+            Expand(
+              Argument(Set("a", "b")),
+              "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
             Seq(),
             Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
             Seq(),
             Seq(),
-            Set()
+            Set("a", "b")
           )
         )
       )
@@ -190,19 +173,14 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             Map("a" -> varFor("n"))
           ),
           Merge(
-            EitherPlan(
-              Expand(
-                Argument(Set("a")),
-                "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
-              Expand(
-                LockNodes(Argument(Set("a")), Set("a")),
-                "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll)
-            ),
+            Expand(
+              Argument(Set("a")),
+              "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
             Seq(CreateNode("b", Seq.empty, None)),
             Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
             Seq(),
             Seq(),
-            Set()
+            Set("a")
           )
         )
       )

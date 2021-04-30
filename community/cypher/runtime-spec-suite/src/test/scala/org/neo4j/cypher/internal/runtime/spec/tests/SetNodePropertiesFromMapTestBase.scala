@@ -561,6 +561,6 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1).withLockedNodes(Set(n.getId))
+    runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1).withLockedEntities(Set(n.getId))
   }
 }

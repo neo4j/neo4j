@@ -47,7 +47,7 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x")
       .withRows(nodes.map(Array(_)))
-      .withLockedNodes(nodes.map(_.getId).toSet)
+      .withLockedEntities(nodes.map(_.getId).toSet)
   }
 
   test("should lock nodes - with refslots") {
@@ -67,7 +67,7 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("xRef")
       .withRows(nodes.map(Array(_)))
-      .withLockedNodes(nodes.map(_.getId).toSet)
+      .withLockedEntities(nodes.map(_.getId).toSet)
   }
 
   test("should ignore to lock null nodes") {
@@ -87,7 +87,7 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x")
       .withRows(Array(null) +: nodes.map(Array(_)))
-      .withLockedNodes(nodes.map(_.getId).toSet)
+      .withLockedEntities(nodes.map(_.getId).toSet)
   }
 
   test("should lock nodes under an apply") {
@@ -108,7 +108,7 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("x")
       .withRows(nodes.map(Array(_)))
-      .withLockedNodes(nodes.map(_.getId).toSet)
+      .withLockedEntities(nodes.map(_.getId).toSet)
   }
 
   test("should lock nodes on top of limit under an apply") {
@@ -130,6 +130,6 @@ abstract class LockNodesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(null)))
     runtimeResult should beColumns("x")
       .withRows(nodes.take(1).map(Array(_)))
-      .withLockedNodes(nodes.take(1).map(_.getId).toSet)
+      .withLockedEntities(nodes.take(1).map(_.getId).toSet)
   }
 }

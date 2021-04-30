@@ -303,6 +303,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     private var maybeStatisticts: Option[QueryStatisticsMatcher] = None
     private var maybeLockedNodes: Option[LockResourceMatcher] = None
     private var maybeLockedRelationships: Option[LockResourceMatcher] = None
+
     private var maybeLocks: Option[LockMatcher] = None
 
     def withNoUpdates(): RuntimeResultMatcher = withStatistics()

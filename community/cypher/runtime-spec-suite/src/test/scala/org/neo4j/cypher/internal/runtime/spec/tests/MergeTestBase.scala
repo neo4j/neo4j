@@ -1081,7 +1081,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withRows(nodes.map(Array(_)))
       .withStatistics(nodesCreated = sizeHint, relationshipsCreated = sizeHint)
-      .withLockedNodes(nodes.map(_.getId).toSet)
+      .withLockedEntities(nodes.map(_.getId).toSet)
   }
 
   test("should not lock nodes if on matches") {
@@ -1107,7 +1107,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withRows(nodes.map(Array(_)))
       .withNoUpdates()
-      .withLockedNodes(Set.empty)
+      .withLockedEntities(Set.empty)
   }
 
   test("should lock refslot nodes") {
@@ -1134,7 +1134,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("xRef")
       .withRows(nodes.map(Array(_)))
       .withStatistics(nodesCreated = sizeHint, relationshipsCreated = sizeHint)
-      .withLockedNodes(nodes.map(_.getId).toSet)
+      .withLockedEntities(nodes.map(_.getId).toSet)
   }
 
   test("should profile rows and dbhits of merge correctly") {

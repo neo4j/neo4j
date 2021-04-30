@@ -54,6 +54,7 @@ abstract class SetRelationshipPropertyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1).withLockedRelationships(Set(r.getId))
+
     property shouldBe "prop"
   }
 
