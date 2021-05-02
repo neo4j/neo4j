@@ -82,7 +82,7 @@ public class ConfigPatternBuilder
             final var ch = name.charAt( i );
             if ( supportedWildcards.containsKey( ch ) )
             {
-                buffer = flushBuffer( pattern, buffer );
+                flushBuffer( buffer, pattern );
                 pattern.append( supportedWildcards.get( ch ) );
             }
             else
@@ -90,17 +90,16 @@ public class ConfigPatternBuilder
                 buffer.append( ch );
             }
         }
-        flushBuffer( pattern, buffer );
+        flushBuffer( buffer, pattern );
         return Pattern.compile( pattern.toString(), patternFlags );
     }
 
-    private static StringBuilder flushBuffer( StringBuilder pattern, StringBuilder buffer )
+    private static void flushBuffer( StringBuilder fromBuffer, StringBuilder toPattern )
     {
-        if ( buffer.length() > 0 )
+        if ( fromBuffer.length() > 0 )
         {
-            pattern.append( Pattern.quote( buffer.toString() ) );
-            buffer = buffer.delete( 0, Integer.MAX_VALUE );
+            toPattern.append( Pattern.quote( fromBuffer.toString() ) );
+            fromBuffer.delete( 0, Integer.MAX_VALUE );
         }
-        return buffer;
     }
 }

@@ -35,20 +35,25 @@ class ConfigPatternBuilderTest
     }
 
     @Test
-    void shouldWorkWithQuestionMarkWildcard()
+    void shouldWorkWithSingleQuestionMarkWildcard()
     {
         // Question Mark is supposed to match zero OR one character
-        // single
         var single = "fo?";
         checkMatchesAndEscapingWorks( single, "fo", "foo", "fo1", "fo.", "fo ", "fo*", "fo?" );
         checkDoesNotMatchAndEscapingWorks( single, "", "fooo", " foo", "foo " );
+    }
 
-        // multiple independent
+    @Test
+    void shouldWorkWithMultipleQuestionMarkWildcard()
+    {
         var multipleIndependent = "?o?";
         checkMatchesAndEscapingWorks( multipleIndependent, "foo", "1o1", "o", "fo", "of", "o*", "?o" );
         checkDoesNotMatchAndEscapingWorks( multipleIndependent, "", "fooo", " foo", "foo ", "afoo" );
+    }
 
-        // multiple consecutive
+    @Test
+    void shouldWorkWithMultipleConsecutiveQuestionMarkWildcard()
+    {
         var multipleConsecutive = "f??";
         checkMatchesAndEscapingWorks( multipleConsecutive, "foo", "fo1", "fo.", "fo ", "fo*", "fo?", "f  ", "f99" );
         checkDoesNotMatchAndEscapingWorks( multipleConsecutive, "", "fooo", " foo", "foo ", "afoo" );
@@ -58,20 +63,34 @@ class ConfigPatternBuilderTest
     void shouldWorkWithAsteriskWildcard()
     {
         // Asterisk is supposed to match one OR more characters
-        // single
         var single = "fo*";
         checkMatchesAndEscapingWorks( single, "foo", "fo1", "fo.", "fo ", "fo*", "fo?", "fooo", "foo " );
         checkDoesNotMatchAndEscapingWorks( single, "", "fo", " foo" );
+    }
 
-        // multiple independent
+    @Test
+    void shouldWorkWithMultipleAsteriskWildcard()
+    {
+
         var multipleIndependent = "*o*";
         checkMatchesAndEscapingWorks( multipleIndependent, "foo", "1o1", "fooo", "*o*", "?o?", " foo", "foo ", "afoo" );
         checkDoesNotMatchAndEscapingWorks( multipleIndependent, "", "o", "fo", "of" );
+    }
 
-        // multiple consecutive
+    @Test
+    void shouldWorkWithMultipleConsecutiveAsteriskWildcard()
+    {
         var multipleConsecutive = "f**";
         checkMatchesAndEscapingWorks( multipleConsecutive, "foo", "fo1", "fooo", "foo ", "fo.", "fo ", "fo*", "fo?", "f  ", "f99" );
-        checkDoesNotMatchAndEscapingWorks( multipleConsecutive, "", " foo", "afoo" );
+        checkDoesNotMatchAndEscapingWorks( multipleConsecutive, "", "f", "fo", "afoo", " foo" );
+    }
+
+    @Test
+    void shouldWorkWithMultipleConsecutiveToAchieveMinimumCharsBehaviour()
+    {
+        var multipleConsecutive = "1*2**3***";
+        checkMatchesAndEscapingWorks( multipleConsecutive, "1a2bb3ccc", "122223222", "1323333333", "1       2       3        4" );
+        checkDoesNotMatchAndEscapingWorks( multipleConsecutive, "", "123", "12 3  ", "123   3  2   23" );
     }
 
     @Test
