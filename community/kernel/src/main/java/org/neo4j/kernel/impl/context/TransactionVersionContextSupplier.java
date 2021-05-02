@@ -39,7 +39,7 @@ public class TransactionVersionContextSupplier implements VersionContextSupplier
     }
 
     @Override
-    public VersionContext getVersionContext()
+    public VersionContext createVersionContext()
     {
         return new TransactionVersionContext( lastClosedTransactionIdSupplier );
     }

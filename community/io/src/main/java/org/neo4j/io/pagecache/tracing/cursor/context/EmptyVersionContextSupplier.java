@@ -39,7 +39,7 @@ public class EmptyVersionContextSupplier implements VersionContextSupplier
     }
 
     @Override
-    public VersionContext getVersionContext()
+    public VersionContext createVersionContext()
     {
         return EmptyVersionContext.EMPTY;
     }

@@ -97,8 +97,8 @@ public class CommitProcessTracingIT
                 txState.nodeDoAddLabel( 1, sourceId );
 
                 storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorContext, INSTANCE );
-                assertCursor( cursorContext, 1 );
             }
+            assertCursor( cursorContext, 2 );
         }
     }
 

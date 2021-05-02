@@ -42,8 +42,11 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
+import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -66,7 +69,6 @@ class EagerResultIT
     private GraphDatabaseService database;
     private TestTransactionVersionContextSupplier testContextSupplier;
     private Path storeDir;
-    private TestVersionContext testCursorContext;
     private DatabaseManagementService managementService;
 
     @BeforeEach
@@ -77,10 +79,11 @@ class EagerResultIT
         database = startRestartableDatabase();
         prepareData();
         TransactionIdStore transactionIdStore = getTransactionIdStore();
-        testCursorContext = new TestVersionContext( transactionIdStore::getLastClosedTransactionId );
-        testContextSupplier.setTestVersionContext( testCursorContext );
-        testCursorContext.onlyCareAboutCurrentThread();
-        testCursorContext.setWrongLastClosedTxId( false );
+        testContextSupplier.setTestVersionContextSupplier( () -> {
+            var context = new TestVersionContext( transactionIdStore::getLastClosedTransactionId );
+            context.setWrongLastClosedTxId( false );
+            return context;
+        } );
     }
 
     @AfterEach
@@ -97,8 +100,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             int rows = 0;
             while ( result.hasNext() )
             {
@@ -115,8 +119,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             assertEquals( QueryExecutionType.query( QueryExecutionType.QueryType.READ_ONLY ), result.getQueryExecutionType() );
             transaction.commit();
         }
@@ -127,8 +132,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c as a, count(n) as b" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             assertEquals( Arrays.asList( "a", "b" ), result.columns() );
             transaction.commit();
         }
@@ -139,8 +145,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c as c, n.b as b" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             ResourceIterator<Object> cValues = result.columnAs( "c" );
             int rows = 0;
             while ( cValues.hasNext() )
@@ -158,8 +165,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             assertFalse( result.getQueryStatistics().containsUpdates() );
             transaction.commit();
         }
@@ -170,8 +178,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "profile MATCH (n) RETURN n.c" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             assertEquals( 2, result.getExecutionPlanDescription().getProfilerStatistics().getRows() );
             transaction.commit();
         }
@@ -182,8 +191,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c, n.d" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             String resultString = result.resultAsString();
             assertTrue( resultString.contains( "n.c | n.d" ) );
             assertTrue( resultString.contains( "\"d\" | \"a\"" ) );
@@ -197,8 +207,9 @@ class EagerResultIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var versionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
+            assertEquals( 1, versionContext.getNumIsDirtyCalls() );
             String expected = "+-----+\n" +
                     "| n.c |\n" +
                     "+-----+\n" +
@@ -292,10 +303,13 @@ class EagerResultIT
         public void markAsDirty()
         {
             super.markAsDirty();
-            if ( onCorrectThread() )
-            {
-                useCorrectLastCommittedTxId = true;
-            }
+            useCorrectLastCommittedTxId = true;
         }
+    }
+
+    private static org.neo4j.snapshot.TestVersionContext getTestVersionContext( Transaction transaction )
+    {
+        CursorContext cursorContext = ((InternalTransaction) transaction).kernelTransaction().cursorContext();
+        return  (org.neo4j.snapshot.TestVersionContext) cursorContext.getVersionContext();
     }
 }

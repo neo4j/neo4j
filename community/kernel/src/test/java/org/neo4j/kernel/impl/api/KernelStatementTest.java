@@ -155,7 +155,7 @@ class KernelStatementTest
 
     private KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
-        return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
+        return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(),
                 cpuClockRef, new TestDatabaseIdRepository().defaultDatabase(),
                 Config.defaults( GraphDatabaseInternalSettings.track_tx_statement_close, true ) );
     }

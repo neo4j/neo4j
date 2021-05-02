@@ -21,12 +21,10 @@ package org.neo4j.snapshot;
 
 import java.io.PrintStream;
 import java.util.function.LongSupplier;
-import java.util.function.Predicate;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -43,7 +41,6 @@ public class TestVersionContext extends TransactionVersionContext
     private boolean stayDirty;
     private Exception lastMarkAsDirtyCall;
     private Exception additionalAttemptsCall;
-    private volatile Predicate<Thread> threadFilter = Predicates.alwaysTrue();
 
     public TestVersionContext( LongSupplier transactionIdSupplier )
     {
@@ -59,23 +56,12 @@ public class TestVersionContext extends TransactionVersionContext
     @Override
     public void markAsDirty()
     {
-        if ( !onCorrectThread() )
-        {
-            // From some other background thread, ignore this
-            return;
-        }
-
         super.markAsDirty();
         if ( !stayDirty )
         {
             wrongLastClosedTxId = false;
         }
         lastMarkAsDirtyCall = new Exception( "markAsDirty" );
-    }
-
-    protected boolean onCorrectThread()
-    {
-        return threadFilter.test( Thread.currentThread() );
     }
 
     @Override
@@ -132,23 +118,12 @@ public class TestVersionContext extends TransactionVersionContext
         this.stayDirty = stayDirty;
     }
 
-    public void onlyCareAboutCurrentThread()
-    {
-        Thread threadToFilterOn = Thread.currentThread();
-        setThreadFilter( t -> t.equals( threadToFilterOn ) );
-    }
-
-    public void setThreadFilter( Predicate<Thread> filter )
-    {
-        this.threadFilter = filter;
-    }
-
     public static TestVersionContext testCursorContext( LongSupplier idSupplier )
     {
         return new TestVersionContext( idSupplier );
     }
 
-    public static TestVersionContext testCursorContext( DatabaseManagementService managementService,  String databaseName )
+    public static TestVersionContext testCursorContext( DatabaseManagementService managementService, String databaseName )
     {
         TransactionIdStore transactionIdStore = getTransactionIdStore( managementService, databaseName );
         return new TestVersionContext( transactionIdStore::getLastClosedTransactionId );

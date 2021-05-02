@@ -24,18 +24,16 @@ import java.util.Iterator;
 import java.util.function.LongConsumer;
 
 import org.neo4j.common.HexPrinter;
+import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.common.Subject;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.internal.helpers.Format.date;
@@ -70,7 +68,6 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     // These fields are provided by user
     private final TransactionRepresentation transactionRepresentation;
     private long transactionId;
-    private final VersionContextSupplier versionContextSupplier;
     private final CursorContext cursorContext;
     private TransactionToApply nextTransactionInBatch;
 
@@ -84,29 +81,13 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
      */
     public TransactionToApply( TransactionRepresentation transactionRepresentation, CursorContext cursorContext )
     {
-        this( transactionRepresentation, EmptyVersionContextSupplier.EMPTY, cursorContext );
-    }
-
-    /**
-     * Used when committing a transaction that hasn't already gotten a transaction id assigned.
-     */
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, VersionContextSupplier versionContextSupplier,
-            CursorContext cursorContext )
-    {
-        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, versionContextSupplier, cursorContext );
+        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, cursorContext );
     }
 
     public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, CursorContext cursorContext )
     {
-        this( transactionRepresentation, transactionId, EmptyVersionContextSupplier.EMPTY, cursorContext );
-    }
-
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, VersionContextSupplier versionContextSupplier,
-            CursorContext cursorContext )
-    {
         this.transactionRepresentation = transactionRepresentation;
         this.transactionId = transactionId;
-        this.versionContextSupplier = versionContextSupplier;
         this.cursorContext = cursorContext;
     }
 
@@ -172,7 +153,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     {
         this.commitment = commitment;
         this.transactionId = transactionId;
-        this.versionContextSupplier.getVersionContext().initWrite( transactionId );
+        this.cursorContext.getVersionContext().initWrite( transactionId );
     }
 
     public void logPosition( LogPosition position )

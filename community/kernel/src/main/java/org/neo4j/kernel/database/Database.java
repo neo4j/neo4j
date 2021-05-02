@@ -1055,11 +1055,6 @@ public class Database extends LifecycleAdapter
         return databaseHealth;
     }
 
-    public VersionContextSupplier getVersionContextSupplier()
-    {
-        return versionContextSupplier;
-    }
-
     public StorageEngineFactory getStorageEngineFactory()
     {
         return storageEngineFactory;

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory$;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -45,6 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ImpermanentDbmsExtension
 class SnapshotExecutionEngineTest
@@ -70,7 +72,7 @@ class SnapshotExecutionEngineTest
 
         executionEngine = new SnapshotExecutionEngine( new GraphDatabaseCypherService( db ), config, TestExecutorCaffeineCacheFactory$.MODULE$,
                 NullLogProvider.getInstance(), mock( CompilerFactory.class ) );
-        when( kernelStatement.getVersionContext() ).thenReturn( versionContext );
+        when( transactionalContext.kernelTransaction().cursorContext() ).thenReturn( new CursorContext( NULL, versionContext ) );
         when( transactionalContext.statement() ).thenReturn( kernelStatement );
         var innerExecution = mock( QueryExecution.class );
         when( executor.execute( any() ) ).thenAnswer( (Answer<QueryExecution>) invocationOnMock ->

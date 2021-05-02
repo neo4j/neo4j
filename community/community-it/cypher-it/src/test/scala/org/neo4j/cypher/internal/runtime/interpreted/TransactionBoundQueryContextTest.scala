@@ -95,7 +95,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val kernelTransaction = mock[KernelTransactionImplementation](RETURNS_DEEP_STUBS)
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
     when(kernelTransaction.acquireStatement()).thenReturn(statement)
-    statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
+    statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(),
       new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new TestDatabaseIdRepository().defaultDatabase, Config.defaults() )
     statement.initialize(null, CursorContext.NULL, 7)
     statement.acquire()

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -35,20 +34,17 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
 import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.time.Clocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
 
 @TestDirectoryExtension
 class QueryRestartIT
@@ -65,7 +62,6 @@ class QueryRestartIT
     private GraphDatabaseService database;
     private TestTransactionVersionContextSupplier testContextSupplier;
     private Path storeDir;
-    private TestVersionContext testCursorContext;
     private DatabaseManagementService managementService;
 
     @BeforeEach
@@ -78,8 +74,7 @@ class QueryRestartIT
         // Checkpoint to make the counts store flush its changes map so that it will need to read on next query
         checkpoint();
 
-        testCursorContext = TestVersionContext.testCursorContext( managementService, DEFAULT_DATABASE_NAME );
-        testContextSupplier.setTestVersionContext( testCursorContext );
+        testContextSupplier.setTestVersionContextSupplier( () -> testCursorContext( managementService, DEFAULT_DATABASE_NAME ) );
     }
 
     private void checkpoint() throws IOException
@@ -99,22 +94,22 @@ class QueryRestartIT
     @Test
     void executeQueryWithoutRestarts()
     {
-        testCursorContext.setWrongLastClosedTxId( false );
-
         try ( Transaction transaction = database.beginTx() )
         {
+            var testVersionContext = getTestVersionContext( transaction );
+            testVersionContext.setWrongLastClosedTxId( false );
             Result result = transaction.execute( "MATCH (n:label) RETURN n.c" );
             while ( result.hasNext() )
             {
                 assertEquals( "d", result.next().get( "n.c" ) );
             }
             // This extra printing is here to investigate flakiness of this test
-            if ( testCursorContext.getAdditionalAttempts() > 0 )
+            if ( testVersionContext.getAdditionalAttempts() > 0 )
             {
                 System.err.println( "Unexpected call to markAsDirty/isDirty:" );
-                testCursorContext.printDirtyCalls( System.err );
+                testVersionContext.printDirtyCalls( System.err );
             }
-            assertEquals( 0, testCursorContext.getAdditionalAttempts() );
+            assertEquals( 0, testVersionContext.getAdditionalAttempts() );
             transaction.commit();
         }
     }
@@ -124,8 +119,9 @@ class QueryRestartIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var testVersionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertThat( testCursorContext.getAdditionalAttempts() ).isNotZero();
+            assertThat( testVersionContext.getAdditionalAttempts() ).isNotZero();
             while ( result.hasNext() )
             {
                 assertEquals( "d", result.next().get( "n.c" ) );
@@ -139,8 +135,9 @@ class QueryRestartIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var testVersionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n:toRetry) RETURN count(n)" );
-            assertThat( testCursorContext.getAdditionalAttempts() ).isNotZero();
+            assertThat( testVersionContext.getAdditionalAttempts() ).isNotZero();
             while ( result.hasNext() )
             {
                 assertEquals( 1L, result.next().get( "count(n)" ) );
@@ -154,8 +151,9 @@ class QueryRestartIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
+            var testVersionContext = getTestVersionContext( transaction );
             Result result = transaction.execute( "MATCH (n:toRetry) RETURN n.c" );
-            assertThat( testCursorContext.getAdditionalAttempts() ).isNotZero();
+            assertThat( testVersionContext.getAdditionalAttempts() ).isNotZero();
             while ( result.hasNext() )
             {
                 assertEquals( "d", result.next().get( "n.c" ) );
@@ -180,7 +178,6 @@ class QueryRestartIT
         // Inject TransactionVersionContextSupplier
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( testContextSupplier );
-        dependencies.satisfyDependency( new LimitedJobScheduler() );
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
@@ -201,26 +198,9 @@ class QueryRestartIT
         }
     }
 
-    private static class LimitedJobScheduler extends CentralJobScheduler
+    private static TestVersionContext getTestVersionContext( Transaction transaction )
     {
-        protected LimitedJobScheduler()
-        {
-            super( Clocks.nanoClock() );
-        }
-
-        @Override
-        public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )
-        {
-            if ( isRestricted( group ) )
-            {
-                return JobHandle.EMPTY;
-            }
-            return super.scheduleRecurring( group, monitoredJobParams, runnable, period, timeUnit );
-        }
-
-        private boolean isRestricted( Group group )
-        {
-            return Group.STORAGE_MAINTENANCE == group;
-        }
+        CursorContext cursorContext = ((InternalTransaction) transaction).kernelTransaction().cursorContext();
+        return  (TestVersionContext) cursorContext.getVersionContext();
     }
 }

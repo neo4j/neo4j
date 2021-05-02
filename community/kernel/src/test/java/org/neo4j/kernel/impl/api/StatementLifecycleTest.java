@@ -74,7 +74,7 @@ class StatementLifecycleTest
 
     private static KernelStatement createStatement( KernelTransactionImplementation transaction )
     {
-        return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
+        return new KernelStatement( transaction, LockTracer.NONE, new ClockContext(),
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new TestDatabaseIdRepository().defaultDatabase(),
                 Config.defaults( GraphDatabaseInternalSettings.track_tx_statement_close, true ) );
     }

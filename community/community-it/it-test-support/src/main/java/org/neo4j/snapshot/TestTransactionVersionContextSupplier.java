@@ -19,6 +19,8 @@
  */
 package org.neo4j.snapshot;
 
+import java.util.function.Supplier;
+
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -29,16 +31,16 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
  */
 public class TestTransactionVersionContextSupplier extends TransactionVersionContextSupplier
 {
-    private VersionContext testVersionContext;
+    private Supplier<VersionContext> supplier;
 
-    public void setTestVersionContext( VersionContext versionContext )
+    public void setTestVersionContextSupplier( Supplier<VersionContext> supplier )
     {
-        this.testVersionContext = versionContext;
+        this.supplier = supplier;
     }
 
     @Override
-    public VersionContext getVersionContext()
+    public VersionContext createVersionContext()
     {
-        return testVersionContext == null ? super.getVersionContext() : testVersionContext;
+        return supplier == null ? super.createVersionContext() : supplier.get();
     }
 }

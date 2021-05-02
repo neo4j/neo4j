@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.graphdb.Result;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
@@ -128,7 +127,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
 
     private static VersionContext getCursorContext( TransactionalContext context )
     {
-        return ((KernelStatement) context.statement()).getVersionContext();
+        return context.kernelTransaction().cursorContext().getVersionContext();
     }
 
     @FunctionalInterface

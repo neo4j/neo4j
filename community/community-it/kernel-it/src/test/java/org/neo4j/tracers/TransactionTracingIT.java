@@ -216,9 +216,9 @@ class TransactionTracingIT
 
             transaction.kernelTransaction().dataWrite().nodeDetachDelete( sourceId );
 
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 14 );
+            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 13 );
             assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 11 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 14 );
+            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 13 );
         }
     }
 

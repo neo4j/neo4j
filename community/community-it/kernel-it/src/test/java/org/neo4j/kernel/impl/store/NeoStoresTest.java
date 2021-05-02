@@ -764,7 +764,7 @@ public class NeoStoresTest
                     storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(), tx -> tx, cursorContext, INSTANCE );
             PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
             tx.setHeader( EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED );
-            storageEngine.apply( new TransactionToApply( tx, EmptyVersionContextSupplier.EMPTY, cursorContext ), INTERNAL );
+            storageEngine.apply( new TransactionToApply( tx, cursorContext ), INTERNAL );
         }
     }
 

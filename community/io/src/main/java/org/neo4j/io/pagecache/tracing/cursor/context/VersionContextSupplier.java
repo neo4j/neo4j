@@ -37,6 +37,6 @@ public interface VersionContextSupplier
      * Provide version context
      * @return instance of version context
      */
-    VersionContext getVersionContext();
+    VersionContext createVersionContext();
 
 }

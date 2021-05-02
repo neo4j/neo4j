@@ -253,7 +253,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pageCacheTracer = tracers.getPageCacheTracer();
         this.versionContextSupplier = versionContextSupplier;
         this.leaseService = leaseService;
-        this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId, config );
+        this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, cpuClockRef, namedDatabaseId, config );
         this.statistics = new Statistics( this, cpuClockRef, config.get( GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking ) );
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
@@ -288,7 +288,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
         this.cursorContext =
-                new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.getVersionContext() );
+                new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.createVersionContext() );
         this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
@@ -778,7 +778,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation, versionContextSupplier, cursorContext );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation, cursorContext );
                     kernelTransactionMonitor.beforeApply();
                     txId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;

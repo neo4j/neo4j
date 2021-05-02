@@ -35,9 +35,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.Statement;
@@ -89,13 +86,11 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     private final LockTracer systemLockTracer;
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
     private final ClockContext clockContext;
-    private final VersionContextSupplier versionContextSupplier;
     private long initialStatementHits;
     private long initialStatementFaults;
 
     public KernelStatement( KernelTransactionImplementation transaction, LockTracer systemLockTracer, ClockContext clockContext,
-                            VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId,
-                            Config config )
+            AtomicReference<CpuClock> cpuClockRef, NamedDatabaseId namedDatabaseId, Config config )
     {
         this.transaction = transaction;
         this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, config );
@@ -104,7 +99,6 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         this.trackStatementClose = config.get( GraphDatabaseInternalSettings.track_tx_statement_close );
         this.statementOpenCloseCalls = traceStatements ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;
-        this.versionContextSupplier = versionContextSupplier;
         this.namedDatabaseId = namedDatabaseId;
     }
 
@@ -247,11 +241,6 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     public KernelTransactionImplementation getTransaction()
     {
         return transaction;
-    }
-
-    public VersionContext getVersionContext()
-    {
-        return versionContextSupplier.getVersionContext();
     }
 
     private void recordOpenCloseMethods()

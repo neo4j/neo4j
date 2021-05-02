@@ -36,7 +36,7 @@ public class GuardVersionContextSupplier implements VersionContextSupplier
     }
 
     @Override
-    public VersionContext getVersionContext()
+    public VersionContext createVersionContext()
     {
         throw new IllegalStateException( "Its illegal to use current context state supplier." );
     }
