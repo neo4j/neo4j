@@ -160,13 +160,14 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
         RecordingPageCursorTracer cursorContext = new RecordingPageCursorTracer( tracer, "ableToEvictAllPageInAPageCache" );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, blockCacheFlush( tracer ) );
-                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 );
+                CursorContext context = new CursorContext( cursorContext ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, new CursorContext( cursorContext ) ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, context ) )
             {
                 assertTrue( cursor.next() );
             }
-            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_READ_LOCK, new CursorContext( cursorContext ) ) )
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_READ_LOCK, context ) )
             {
                 assertTrue( cursor.next() );
             }
@@ -299,9 +300,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void trackPageModificationTransactionId() throws Exception
     {
         TestVersionContext versionContext = new TestVersionContext( () -> 0 );
-        CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
-                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 );
+                CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext ) )
         {
             versionContext.initWrite( 7 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
@@ -948,9 +949,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void pageModificationTracksHighestModifierTransactionId() throws IOException
     {
         TestVersionContext versionContext = new TestVersionContext( () -> 0 );
-        CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
-                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 );
+                CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext ) )
         {
             versionContext.initWrite( 1 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
@@ -1008,9 +1009,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException
     {
         TestVersionContext versionContext = new TestVersionContext( () -> 3 );
-        CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
-                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 );
+                CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext ) )
         {
             versionContext.initWrite( 7 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
@@ -1034,9 +1035,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException
     {
         TestVersionContext versionContext = new TestVersionContext( () -> 23 );
-        CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
-                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 );
+                CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext ) )
         {
             versionContext.initWrite( 17 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
@@ -1060,9 +1061,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException
     {
         TestVersionContext versionContext = new TestVersionContext( () -> 5 );
-        CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
-                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 );
+                CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext ) )
         {
             versionContext.initWrite( 3 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
@@ -1094,9 +1095,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     void doNotMarkContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionLowerThenReader() throws IOException
     {
         TestVersionContext versionContext = new TestVersionContext( () -> 15 );
-        CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext );
         try ( MuninnPageCache pageCache = createPageCache( fs, 2, PageCacheTracer.NULL );
-                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 );
+                CursorContext cursorContext = new CursorContext( PageCursorTracer.NULL, versionContext ) )
         {
             versionContext.initWrite( 3 );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )

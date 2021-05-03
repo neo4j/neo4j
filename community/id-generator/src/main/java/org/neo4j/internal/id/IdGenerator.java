@@ -36,7 +36,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * @param forceConsecutiveAllocation if {@code true} the returned {@link IdRange} will guarantee that the allocation is a range of IDs
      * where all IDs are consecutive, i.e. an empty {@link IdRange#getDefragIds()}. If {@code false} there may be some of the allocated IDs
      * non-consecutive, i.e. returned as part of {@link IdRange#getDefragIds()}.
-     * @param cursorContext for tracing page accesses.
+     * @param cursorContext for page accesses context.
      * @return an {@link IdRange} containing the allocated IDs.
      */
     IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext );

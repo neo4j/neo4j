@@ -36,7 +36,7 @@ interface IdProvider
      *
      * @param stableGeneration current stable generation.
      * @param unstableGeneration current unstable generation.
-     * @param cursorContext underlying page cache cursor access tracer
+     * @param cursorContext underlying page cache cursor context
      * @return page id guaranteed to current not be used and whose bytes are all zeros.
      * @throws IOException on {@link PageCursor} error.
      */
@@ -49,7 +49,7 @@ interface IdProvider
      * @param stableGeneration current stable generation.
      * @param unstableGeneration current unstable generation.
      * @param id page id to release.
-     * @param cursorContext underlying page cache cursor access tracer
+     * @param cursorContext underlying page cache cursor context
      * @throws IOException on {@link PageCursor} error.
      */
     void releaseId( long stableGeneration, long unstableGeneration, long id, CursorContext cursorContext ) throws IOException;

@@ -43,7 +43,7 @@ public interface CountsStorage extends AutoCloseable, ConsistencyCheckable
     /**
      * Checkpoints changes made up until this point so that they are available even after next restart.
      *
-     * @param cursorContext for tracing page cache access.
+     * @param cursorContext page cache access context.
      * @throws IOException on I/O error.
      */
     void checkpoint( CursorContext cursorContext ) throws IOException;

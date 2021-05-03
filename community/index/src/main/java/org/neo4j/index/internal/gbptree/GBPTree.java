@@ -50,7 +50,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
@@ -71,7 +70,6 @@ import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.internal.helpers.Exceptions.withMessage;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * A generation-aware B+tree (GB+Tree) implementation directly atop a {@link PageCache} with no caching in between.

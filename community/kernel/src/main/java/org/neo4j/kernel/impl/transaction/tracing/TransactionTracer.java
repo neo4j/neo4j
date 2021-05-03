@@ -71,7 +71,7 @@ public interface TransactionTracer extends TransactionLogCounters
     /**
      * A transaction starts.
      * @return An event that represents the transaction.
-     * @param cursorContext page cursor tracer that used by transaction
+     * @param cursorContext page cursor context that used by transaction
      */
     TransactionEvent beginTransaction( CursorContext cursorContext );
 }

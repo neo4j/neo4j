@@ -56,7 +56,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Log msgLog;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
-    private VersionContextSupplier versionContextSupplier;
+    private final VersionContextSupplier versionContextSupplier;
     private final Clock clock;
 
     private volatile long lastCheckPointedTx;

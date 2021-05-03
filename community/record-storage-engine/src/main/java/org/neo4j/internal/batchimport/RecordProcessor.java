@@ -31,7 +31,7 @@ public interface RecordProcessor<T extends AbstractBaseRecord> extends AutoClose
 {
     /**
      * Processes an item.
-     * @param cursorContext underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor context.
      * @return {@code true} if processing this item resulted in changes that should be updated back to the source.
      */
     boolean process( T item, CursorContext cursorContext );

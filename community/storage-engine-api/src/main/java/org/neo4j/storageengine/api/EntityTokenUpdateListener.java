@@ -26,7 +26,7 @@ public interface EntityTokenUpdateListener
     /**
      * Applies node label updates from changes in underlying storage.
      * @param labelUpdates stream of updates to apply.
-     * @param cursorContext underlying page cursor events tracer.
+     * @param cursorContext underlying page cursor context.
      */
     void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, CursorContext cursorContext );
 

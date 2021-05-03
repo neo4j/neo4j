@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
@@ -49,8 +50,9 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
 {
     private TestTransactionVersionContextSupplier testContextSupplier;
-        private TestWebContainer testWebContainer;
+    private TestWebContainer testWebContainer;
     private LongSupplier lastTransactionIdSource;
+    private final CopyOnWriteArrayList<TestVersionContext> contexts = new CopyOnWriteArrayList<>();
     private final LongSupplier idSupplier = () -> lastTransactionIdSource.getAsLong();
 
     @Before
@@ -69,7 +71,11 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
 
     private void prepareCursorContext()
     {
-        testContextSupplier.setTestVersionContextSupplier( () -> testCursorContext( idSupplier ) );
+        testContextSupplier.setTestVersionContextSupplier( () -> {
+            var context = testCursorContext( idSupplier );
+            contexts.add( context );
+            return context;
+        } );
     }
 
     private static void createData( GraphDatabaseService database )
@@ -100,8 +106,8 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
         assertThat( response.status() ).isEqualTo( 200 );
         Map<String,List<Map<String,List<Map<String,List<String>>>>>> content = response.content();
         assertEquals( "d", content.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 ) );
-        //TODO
-//        assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+        TestVersionContext testVersionContext = findCorrespondingContext();
+        assertEquals( 1, testVersionContext.getAdditionalAttempts() );
     }
 
     @Test
@@ -112,6 +118,18 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
         Map<String,List<Map<String,String>>> content = response.content();
         assertEquals( "Unable to get clean data snapshot for query 'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.",
                       content.get( "errors" ).get( 0 ).get( "message" ) );
+    }
+
+    private TestVersionContext findCorrespondingContext()
+    {
+        for ( TestVersionContext context : contexts )
+        {
+            if ( context.getNumIsDirtyCalls() > 0 )
+            {
+                return context;
+            }
+        }
+        throw new IllegalStateException( "Should have at least one matching context. Observed contexts: " + contexts );
     }
 
     private HTTP.Response executeOverHTTP( String query )

@@ -30,7 +30,7 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
 {
     /**
      * @param txId for which transaction ID the changes will be made.
-     * @param cursorContext tracer for page cache access.
+     * @param cursorContext page cache access context
      * @return an {@link Updater} which is able to make counts updates.
      */
     Updater apply( long txId, CursorContext cursorContext );
@@ -38,7 +38,7 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
     /**
      * @param groupId the relationship group ID to look for.
      * @param direction the direction to look for.
-     * @param cursorContext tracer for page cache access.
+     * @param cursorContext page cache access context.
      * @return the degree for the given groupId and direction, or {@code 0} if it wasn't found.
      */
     long degree( long groupId, RelationshipDirection direction, CursorContext cursorContext );
@@ -46,7 +46,7 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
     /**
      * Accepts a visitor observing all entries in this store.
      * @param visitor to receive the entries.
-     * @param cursorContext tracer for page cache access.
+     * @param cursorContext page cache access context.
      */
     void accept( GroupDegreeVisitor visitor, CursorContext cursorContext );
 

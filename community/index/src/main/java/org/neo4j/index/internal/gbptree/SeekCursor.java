@@ -180,7 +180,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     private final PageCursor cursor;
 
     /**
-     * underlying page cursor tracer
+     * underlying page cursor context
      */
     private final CursorContext cursorContext;
 
