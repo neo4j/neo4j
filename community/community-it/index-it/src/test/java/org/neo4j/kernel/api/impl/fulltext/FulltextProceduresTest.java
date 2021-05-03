@@ -1816,8 +1816,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             }
         } );
         assertThat( e.getMessage() ).contains(
-                "Could not create index with specified index provider 'fulltext-1.0'. To create fulltext index, please use 'db.index.fulltext" +
-                        ".createNodeIndex' or 'db.index.fulltext.createRelationshipIndex'." );
+                "Could not create index with specified index provider 'fulltext-1.0'. To create fulltext index, please use 'CREATE FULLTEXT INDEX ...'." );
     }
 
     @MethodSource( "entityTypeProvider" )

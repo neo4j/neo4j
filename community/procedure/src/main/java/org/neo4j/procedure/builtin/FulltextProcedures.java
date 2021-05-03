@@ -123,13 +123,14 @@ public class FulltextProcedures
         accessor.awaitRefresh();
     }
 
+    @Deprecated( since = "4.3.0", forRemoval = true )
     @Description( "Create a node full-text index for the given labels and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
                   "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
                   "such that updates from committing transactions are applied in a background thread." )
-    @Procedure( name = "db.index.fulltext.createNodeIndex", mode = SCHEMA )
+    @Procedure( name = "db.index.fulltext.createNodeIndex", mode = SCHEMA, deprecatedBy = "CREATE FULLTEXT INDEX command" )
     public void createNodeFulltextIndex(
             @Name( "indexName" ) String name,
             @Name( "labels" ) List<String> labelNames,
@@ -141,13 +142,14 @@ public class FulltextProcedures
         createIndex( indexCreator, name, properties, config );
     }
 
+    @Deprecated( since = "4.3.0", forRemoval = true )
     @Description( "Create a relationship full-text index for the given relationship types and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
                   "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
                   "such that updates from committing transactions are applied in a background thread." )
-    @Procedure( name = "db.index.fulltext.createRelationshipIndex", mode = SCHEMA )
+    @Procedure( name = "db.index.fulltext.createRelationshipIndex", mode = SCHEMA, deprecatedBy = "CREATE FULLTEXT INDEX command" )
     public void createRelationshipFulltextIndex(
             @Name( "indexName" ) String name,
             @Name( "relationshipTypes" ) List<String> relTypes,
@@ -192,8 +194,9 @@ public class FulltextProcedures
         indexCreator.create();
     }
 
+    @Deprecated( since = "4.3.0", forRemoval = true )
     @Description( "Drop the specified index." )
-    @Procedure( name = "db.index.fulltext.drop", mode = SCHEMA )
+    @Procedure( name = "db.index.fulltext.drop", mode = SCHEMA, deprecatedBy = "DROP INDEX command" )
     public void drop( @Name( "indexName" ) String name )
     {
         IndexDefinition index = transaction.schema().getIndexByName( name );

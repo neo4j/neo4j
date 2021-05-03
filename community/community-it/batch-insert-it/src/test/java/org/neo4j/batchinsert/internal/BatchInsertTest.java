@@ -1425,7 +1425,7 @@ class BatchInsertTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.executeTransactionally( format( "CALL db.index.fulltext.createNodeIndex('%s', ['%s'], ['%s'] )", indexName, label.name(), key ) );
+                db.executeTransactionally( format( "CREATE FULLTEXT INDEX %s FOR (n:%s) ON EACH [n.%s]", indexName, label.name(), key ) );
                 tx.commit();
             }
             try ( Transaction tx = db.beginTx() )

@@ -41,8 +41,8 @@ class PartialNodeIndexUpdateIT
         final Label userLabel = Label.label( "User" );
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.execute( "CALL db.index.fulltext.createNodeIndex('test', ['Card', '" + userLabel.name() + "'], " +
-                            "['title', 'plainText', 'username', 'screenName'] )" );
+            transaction.execute( "CREATE FULLTEXT INDEX test FOR (n: Card | " + userLabel.name() + ") " +
+                            "ON EACH [n.title, n.plainText, n.username, n.screenName]" );
             transaction.commit();
         }
 

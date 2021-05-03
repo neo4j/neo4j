@@ -153,8 +153,8 @@ public class IndexProcedures
         if ( indexProviderDescriptor == FulltextIndexProviderFactory.DESCRIPTOR )
         {
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Could not create index with specified index provider '%s'. To create fulltext index, please use '%s' or '%s'.",
-                    indexProviderDescriptor.name(), "db.index.fulltext.createNodeIndex", "db.index.fulltext.createRelationshipIndex" );
+                    "Could not create index with specified index provider '%s'. To create fulltext index, please use '%s'.",
+                    indexProviderDescriptor.name(), "CREATE FULLTEXT INDEX ..." );
         }
         if ( indexProviderDescriptor != GenericNativeIndexProvider.DESCRIPTOR &&
              indexProviderDescriptor != NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR )

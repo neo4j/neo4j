@@ -549,7 +549,7 @@ class LabelsAcceptanceTest
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    tx.execute( "CALL db.index.fulltext.createRelationshipIndex('myIndex', ['REL'], ['prop'] )" ).close();
+                    tx.execute( "CREATE FULLTEXT INDEX myIndex FOR ()-[r:REL]-() ON EACH [r.prop]" ).close();
                     indexCreateStarted.release();
                     indexCreateAllowToFinish.await();
                     tx.commit();

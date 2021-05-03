@@ -266,8 +266,7 @@ class ReadTracingIT
 
     private void createRelationshipIndex()
     {
-        database.executeTransactionally( "CALL db.index.fulltext.createRelationshipIndex('" + indexName +
-                "', ['" + type.name() + "'], ['" + property + "'])" );
+        database.executeTransactionally( "CREATE FULLTEXT INDEX " + indexName + "  FOR ()-[r:" + type.name() + "]-() ON EACH [r." + property + "]" );
 
         try ( Transaction tx = database.beginTx() )
         {
