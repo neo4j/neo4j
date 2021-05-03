@@ -194,7 +194,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
 
   test("ForeachApply containing update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
-      "FOREACH (x in [1,2,3] | MERGE (m)-[:R]-(n))",
+      "FOREACH (x in [1,2,3] | MERGE (m)-[:R]-(n) ON MATCH SET m:L)",
       {case _:ForeachApply => true})
   }
 
