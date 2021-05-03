@@ -74,8 +74,8 @@ public class StringLengthIndexValidationIT
 
     private static final String propKey = "largeString";
     private static final int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE );
-    private static final AtomicBoolean trapPopulation = new AtomicBoolean();
-    private static final Barrier.Control populationScanFinished = new Barrier.Control();
+    private final AtomicBoolean trapPopulation = new AtomicBoolean();
+    private final Barrier.Control populationScanFinished = new Barrier.Control();
     private GraphDatabaseService db;
 
     @Before
