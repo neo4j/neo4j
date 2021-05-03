@@ -40,10 +40,13 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
 
   for ((pred, indexStr) <- Seq(
-    "r.prop = 123"     -> "prop = 123",
-    "r.prop > 123"     -> "prop > 123",
-    "r.prop < 123"     -> "prop < 123",
-    "r.prop IN [1, 2]" -> "prop = 1 OR 2",
+    "r.prop = 123"       -> "prop = 123",
+    "r.prop > 123"       -> "prop > 123",
+    "r.prop < 123"       -> "prop < 123",
+    "123 < r.prop"       -> "prop > 123",
+    "10 <= r.prop < 123" -> "10 <= prop < 123",
+    "123 >= r.prop > 10" -> "10 < prop <= 123",
+    "r.prop IN [1, 2]"   -> "prop = 1 OR 2",
   )) {
 
     test(s"should plan undirected relationship index seek for $pred") {
@@ -134,32 +137,26 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
     test(s"should not (yet) plan relationship index seek with filter for already bound start node for $pred") {
       val planner = plannerBuilder().build()
-      planner.plan(
-        s"""MATCH (a) WITH a SKIP 0
-          |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
-        planner.planBuilder()
-          .produceResults("r")
-          .filter(pred)
-          .expandAll("(a)-[r:REL]-(b)")
-          .skip(0)
-          .allNodeScan("a")
-          .build()
-      )
+      withClue("Used relationship index when not expected:") {
+        planner.plan(
+          s"""MATCH (a) WITH a SKIP 0
+             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).treeExists {
+          case _: UndirectedRelationshipIndexSeek => true
+          case _: DirectedRelationshipIndexSeek => true
+        } should be(false)
+      }
     }
 
     test(s"should not (yet) plan relationship index seek with filter for already bound end node for $pred") {
       val planner = plannerBuilder().build()
-      planner.plan(
-        s"""MATCH (b) WITH b SKIP 0
-          |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin) should equal(
-        planner.planBuilder()
-          .produceResults("r")
-          .filter(pred)
-          .expandAll("(b)-[r:REL]-(a)")
-          .skip(0)
-          .allNodeScan("b")
-          .build()
-      )
+      withClue("Used relationship index when not expected:") {
+        planner.plan(
+          s"""MATCH (b) WITH b SKIP 0
+             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).treeExists {
+          case _: UndirectedRelationshipIndexSeek => true
+          case _: DirectedRelationshipIndexSeek => true
+        } should be(false)
+      }
     }
 
     test(s"should not plan relationship index seek for already bound relationship variable for $pred") {
@@ -173,4 +170,73 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       }
     }
   }
+
+  test("should plan the leaf with the longest prefix if multiple STARTS WITH patterns") {
+    val planner = plannerBuilder().build()
+    // Add an uninteresting predicate using a parameter to stop autoparameterization from happening
+    planner.plan(
+      """MATCH (a)-[r:REL]->(b)
+         |WHERE 43 = $apa
+         |  AND r.prop STARTS WITH 'w'
+         |  AND r.prop STARTS WITH 'www'
+         |RETURN r
+         |""".stripMargin).leaves.head should equal(
+      planner.subPlanBuilder()
+        .relationshipIndexOperator(s"(a)-[r:REL(prop STARTS WITH 'www')]->(b)")
+        .build()
+    )
+  }
+
+  test("should not use index seek by range when rhs of > inequality depends on property") {
+    val planner = plannerBuilder().build()
+    withClue("Used relationship index when not expected:") {
+      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop > a.prop RETURN count(r) as c").treeExists {
+        case _: UndirectedRelationshipIndexSeek => true
+        case _: DirectedRelationshipIndexSeek => true
+      } should be(false)
+    }
+  }
+
+  test("should not use index seek by range when rhs of <= inequality depends on property") {
+    val planner = plannerBuilder().build()
+    withClue("Used relationship index when not expected:") {
+      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop <= a.prop RETURN count(r) as c").treeExists {
+        case _: UndirectedRelationshipIndexSeek => true
+        case _: DirectedRelationshipIndexSeek => true
+      } should be(false)
+    }
+  }
+
+  test("should use index seek by range when rhs of > inequality depends on variable in horizon") {
+    val planner = plannerBuilder().build()
+    planner.plan(
+      """WITH 200 AS x
+        |MATCH (a)-[r:REL]-(b) WHERE r.prop > x RETURN count(r) as c
+        |""".stripMargin).leaves(1) should equal(
+      planner.subPlanBuilder()
+        .relationshipIndexOperator(s"(a)-[r:REL(prop > ???)]-(b)", argumentIds = Set("x"), paramExpr = Some(varFor("x")))
+        .build()
+    )
+  }
+
+  test("should pick index with smaller selectivity") {
+    val planner = super.plannerBuilder()
+      .enablePlanningRelationshipIndexes()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
+      .addRelationshipIndex("REL", Seq("prop2"), 0.9, 0.1)
+      .build()
+    planner.plan(
+      """MATCH (a)-[r:REL]->(b)
+        |WHERE r.prop > 1
+        |  AND r.prop2 > 1
+        |RETURN r""".stripMargin).leaves.head should equal(
+      planner.subPlanBuilder()
+        .relationshipIndexOperator(s"(a)-[r:REL(prop > 1)]->(b)")
+        .build()
+    )
+  }
+
 }
