@@ -376,7 +376,7 @@ public final class Recovery
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         CheckPointerImpl checkPointer =
                 new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, checkpointAppender,
-                        databaseHealth, logProvider, tracers, IOController.DISABLED, new StoreCopyCheckPointMutex(), clock );
+                        databaseHealth, logProvider, tracers, IOController.DISABLED, new StoreCopyCheckPointMutex(), versionContextSupplier, clock );
         recoveryLife.add( scheduler );
         recoveryLife.add( recoveryCleanupCollector );
         recoveryLife.add( extensions );

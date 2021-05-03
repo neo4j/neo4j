@@ -779,7 +779,7 @@ public class Database extends LifecycleAdapter
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         final CheckPointerImpl checkPointer =
                 new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, checkpointAppender, databaseHealth, logProvider,
-                        tracers, ioController, storeCopyCheckPointMutex, clock );
+                        tracers, ioController, storeCopyCheckPointMutex, versionContextSupplier, clock );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioController, scheduler,
@@ -1053,6 +1053,11 @@ public class Database extends LifecycleAdapter
     public DatabaseHealth getDatabaseHealth()
     {
         return databaseHealth;
+    }
+
+    public VersionContextSupplier getVersionContextSupplier()
+    {
+        return versionContextSupplier;
     }
 
     public StorageEngineFactory getStorageEngineFactory()

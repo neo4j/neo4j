@@ -212,7 +212,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     {
         DependencyResolver externalDependencyResolver = globalModule.getExternalDependencyResolver();
         Class<VersionContextSupplier> klass = VersionContextSupplier.class;
-        if ( externalDependencyResolver.resolveTypeDependencies( klass ).iterator().hasNext() )
+        if ( externalDependencyResolver.containsDependency( klass ) )
         {
             return externalDependencyResolver.resolveDependency( klass );
         }

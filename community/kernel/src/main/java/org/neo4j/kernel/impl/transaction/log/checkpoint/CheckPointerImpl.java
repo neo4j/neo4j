@@ -26,6 +26,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -55,6 +56,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Log msgLog;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
+    private VersionContextSupplier versionContextSupplier;
     private final Clock clock;
 
     private volatile long lastCheckPointedTx;
@@ -70,6 +72,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             DatabaseTracers tracers,
             IOController ioController,
             StoreCopyCheckPointMutex mutex,
+            VersionContextSupplier versionContextSupplier,
             Clock clock )
     {
         this.checkpointAppender = checkpointAppender;
@@ -82,6 +85,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracers = tracers;
         this.mutex = mutex;
+        this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
     }
 
@@ -172,11 +176,13 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     {
         var databaseTracer = tracers.getDatabaseTracer();
         var pageCacheTracer = tracers.getPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG ) );
+        var versionContext = versionContextSupplier.createVersionContext();
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CHECKPOINT_TAG ), versionContext );
               LogCheckPointEvent event = databaseTracer.beginCheckPoint() )
         {
             long[] lastClosedTransaction = metadataProvider.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTransaction[0];
+            versionContext.initWrite( lastClosedTransactionId );
             LogPosition logPosition = new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
             String checkpointReason = triggerInfo.describe( lastClosedTransactionId );
             /*

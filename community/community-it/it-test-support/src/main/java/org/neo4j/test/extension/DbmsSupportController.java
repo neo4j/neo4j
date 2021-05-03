@@ -222,7 +222,7 @@ public class DbmsSupportController
         for ( Field injectable : injectables )
         {
             var fieldType = injectable.getType();
-            if ( dependencies.resolveTypeDependencies( fieldType ).iterator().hasNext() )
+            if ( dependencies.containsDependency( fieldType ) )
             {
                 setField( testInstance, injectable, dependencies.resolveDependency( fieldType ) );
             }

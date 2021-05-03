@@ -72,6 +72,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.ThreadTestUtils.forkFuture;
 
 class CheckPointerImplTest
@@ -492,7 +493,7 @@ class CheckPointerImplTest
         when( databaseTracers.getPageCacheTracer() ).thenReturn( PageCacheTracer.NULL );
         when( metadataProvider.getStoreId() ).thenReturn( storeId );
         return new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, appender, health,
-                NullLogProvider.getInstance(), databaseTracers, limiter, mutex, clock );
+                NullLogProvider.getInstance(), databaseTracers, limiter, mutex, EMPTY, clock );
     }
 
     private CheckPointerImpl checkPointer()
