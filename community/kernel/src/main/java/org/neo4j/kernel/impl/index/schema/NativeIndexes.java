@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;

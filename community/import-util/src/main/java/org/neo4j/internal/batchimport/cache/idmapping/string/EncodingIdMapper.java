@@ -43,9 +43,8 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.max;
@@ -53,7 +52,6 @@ import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,

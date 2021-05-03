@@ -25,8 +25,8 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOController;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;

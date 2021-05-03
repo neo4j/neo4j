@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.graphdb.Result;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;

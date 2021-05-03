@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface IdUpdateListener extends AutoCloseable
 {

@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Store used by {@link TreeNodeDynamicSize} to store keys and values that are too large to be inlined in {@link GBPTree}.

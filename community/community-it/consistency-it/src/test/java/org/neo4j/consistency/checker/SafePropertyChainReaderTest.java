@@ -32,7 +32,7 @@ import org.neo4j.consistency.report.ConsistencyReport.PrimitiveConsistencyReport
 import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.CoordinateReferenceSystem;

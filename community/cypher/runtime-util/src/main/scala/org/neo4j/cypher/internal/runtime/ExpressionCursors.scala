@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.io.IOUtils
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext
+import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.memory.MemoryTracker
 
 /**

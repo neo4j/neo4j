@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.tracing.cursor;
+package org.neo4j.io.pagecache.context;
 
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.util.Objects.requireNonNull;
 

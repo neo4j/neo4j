@@ -40,7 +40,7 @@ import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.id.IdType.STRING_BLOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class BufferingIdGeneratorFactoryTest

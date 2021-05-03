@@ -24,15 +24,15 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @PageCacheExtension
 public class FreeListIdProviderTracersTest

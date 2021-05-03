@@ -23,8 +23,8 @@ import java.nio.channels.ClosedByInterruptException;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;

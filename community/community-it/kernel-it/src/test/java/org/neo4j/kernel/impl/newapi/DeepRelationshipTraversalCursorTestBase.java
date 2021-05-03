@@ -36,7 +36,7 @@ import org.neo4j.token.TokenHolders;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>

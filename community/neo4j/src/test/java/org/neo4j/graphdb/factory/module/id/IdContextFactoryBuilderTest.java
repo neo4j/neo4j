@@ -53,7 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 @PageCacheExtension

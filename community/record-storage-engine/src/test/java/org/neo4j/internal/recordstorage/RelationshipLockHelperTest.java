@@ -43,7 +43,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.internal.recordstorage.RelationshipLockHelper.SortedLockList;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;

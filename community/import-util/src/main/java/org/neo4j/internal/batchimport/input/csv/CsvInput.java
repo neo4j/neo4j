@@ -55,7 +55,7 @@ import static org.neo4j.internal.batchimport.input.Collector.EMPTY;
 import static org.neo4j.internal.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.internal.batchimport.input.csv.CsvInputIterator.extractHeader;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 /**
  * Provides {@link Input} from data contained in tabular/csv form. Expects factories for instantiating

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Builds index sample.

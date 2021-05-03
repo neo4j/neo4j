@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Race;

@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.common.Subject;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Group of commands to apply onto {@link StorageEngine}, as well as reference to {@link #next()} group of commands.

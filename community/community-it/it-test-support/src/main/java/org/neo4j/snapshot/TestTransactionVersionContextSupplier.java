@@ -22,8 +22,8 @@ package org.neo4j.snapshot;
 import java.util.function.Supplier;
 
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.context.VersionContext;
+import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 
 /**

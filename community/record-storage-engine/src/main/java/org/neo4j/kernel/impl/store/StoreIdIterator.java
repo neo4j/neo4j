@@ -23,7 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.String.format;
 

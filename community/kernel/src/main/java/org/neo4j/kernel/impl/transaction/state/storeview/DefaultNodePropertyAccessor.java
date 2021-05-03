@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageNodeCursor;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
 {

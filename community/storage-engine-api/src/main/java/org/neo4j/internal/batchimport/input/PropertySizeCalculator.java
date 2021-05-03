@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 

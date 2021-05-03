@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -32,7 +32,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 /**
  * Use together with {@link GBPTree#unsafe(GBPTreeUnsafe, CursorContext)}

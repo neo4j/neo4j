@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.store;
 import java.util.function.LongFunction;
 
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Assumes that records have been allocated such that there will be a free record, right after a given record,

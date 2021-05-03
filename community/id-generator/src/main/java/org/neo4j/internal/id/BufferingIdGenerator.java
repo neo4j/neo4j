@@ -22,7 +22,7 @@ package org.neo4j.internal.id;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
 {

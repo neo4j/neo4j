@@ -30,7 +30,7 @@ import org.neo4j.string.UTF8;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<LabelTokenRecord, LabelTokenStore>
 {

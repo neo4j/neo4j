@@ -31,11 +31,10 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -47,7 +46,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.igno
 import static org.neo4j.internal.helpers.Numbers.isPowerOfTwo;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 public class GBPTreeBootstrapper implements Closeable
 {

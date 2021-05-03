@@ -28,7 +28,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements BoundedIterable<Long>
 {

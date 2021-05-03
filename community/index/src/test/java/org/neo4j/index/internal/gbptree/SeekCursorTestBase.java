@@ -53,7 +53,7 @@ import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ExtendWith( RandomExtension.class )

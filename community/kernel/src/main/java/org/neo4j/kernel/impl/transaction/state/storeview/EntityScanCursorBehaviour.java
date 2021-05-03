@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 

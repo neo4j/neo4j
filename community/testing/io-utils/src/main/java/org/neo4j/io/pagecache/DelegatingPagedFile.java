@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public class DelegatingPagedFile implements PagedFile
 {

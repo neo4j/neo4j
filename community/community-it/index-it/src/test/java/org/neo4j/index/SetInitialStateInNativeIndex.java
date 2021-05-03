@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
 {

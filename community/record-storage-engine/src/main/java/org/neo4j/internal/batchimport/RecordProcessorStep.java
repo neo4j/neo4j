@@ -31,8 +31,8 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**

@@ -28,7 +28,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @Execution( CONCURRENT )
 class DelayedBufferTest

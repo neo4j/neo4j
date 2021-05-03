@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 class TransactionRepresentationFactory
 {

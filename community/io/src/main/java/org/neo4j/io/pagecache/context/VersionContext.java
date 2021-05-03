@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.tracing.cursor.context;
+package org.neo4j.io.pagecache.context;
 
 /**
  * Context that contains state of ongoing versioned data read or write.

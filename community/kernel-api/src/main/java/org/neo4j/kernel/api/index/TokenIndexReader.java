@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface TokenIndexReader extends IndexReader
 {

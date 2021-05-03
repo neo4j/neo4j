@@ -32,7 +32,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in

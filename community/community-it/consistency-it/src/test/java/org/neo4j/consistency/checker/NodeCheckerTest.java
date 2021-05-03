@@ -32,7 +32,7 @@ import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;

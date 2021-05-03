@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api;
 
 import java.util.UUID;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 @FunctionalInterface
 public interface DatabaseIdStore

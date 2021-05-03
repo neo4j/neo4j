@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.id;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.

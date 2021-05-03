@@ -21,9 +21,8 @@ package org.neo4j.internal.id;
 
 import java.util.function.Supplier;
 
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -31,7 +30,6 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * Storage id controller that provide buffering possibilities to be able so safely free and reuse ids.

@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
 {

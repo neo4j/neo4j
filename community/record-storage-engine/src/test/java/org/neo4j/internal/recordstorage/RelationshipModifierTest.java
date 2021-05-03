@@ -48,7 +48,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.FlatRelationshipModifications.RelationshipData;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;

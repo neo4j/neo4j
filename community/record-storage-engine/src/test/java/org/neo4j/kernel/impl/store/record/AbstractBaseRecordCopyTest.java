@@ -46,7 +46,7 @@ import static java.lang.String.format;
 import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeValue;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 

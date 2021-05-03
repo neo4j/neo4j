@@ -37,7 +37,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>

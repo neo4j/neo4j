@@ -32,7 +32,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;

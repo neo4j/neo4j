@@ -29,7 +29,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {

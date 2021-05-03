@@ -34,7 +34,7 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;

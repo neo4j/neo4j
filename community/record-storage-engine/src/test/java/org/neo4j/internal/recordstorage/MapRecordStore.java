@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;

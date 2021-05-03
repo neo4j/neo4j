@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.lang.Boolean.FALSE
 import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
+
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.greaterThan
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
@@ -52,8 +53,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
+import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type

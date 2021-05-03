@@ -21,7 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;

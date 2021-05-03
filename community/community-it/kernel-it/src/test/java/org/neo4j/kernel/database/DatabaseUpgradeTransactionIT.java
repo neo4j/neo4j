@@ -48,7 +48,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.recordstorage.Command;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;

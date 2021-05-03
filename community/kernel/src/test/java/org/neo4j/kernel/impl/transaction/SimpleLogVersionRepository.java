@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 public class SimpleLogVersionRepository implements LogVersionRepository

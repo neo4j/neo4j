@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.storageengine.api.EntityUpdates;

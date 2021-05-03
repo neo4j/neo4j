@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.tracer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;

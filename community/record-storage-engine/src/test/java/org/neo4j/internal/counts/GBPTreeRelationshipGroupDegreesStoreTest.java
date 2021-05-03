@@ -33,8 +33,8 @@ import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesReb
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.test.extension.Inject;
@@ -51,7 +51,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.degreeKey;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.keyToString;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;

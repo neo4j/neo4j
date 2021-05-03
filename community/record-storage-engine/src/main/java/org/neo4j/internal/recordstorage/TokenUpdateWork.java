@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.List;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.util.concurrent.Work;

@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport.staging;
 
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 

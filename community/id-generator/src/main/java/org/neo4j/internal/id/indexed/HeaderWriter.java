@@ -24,7 +24,7 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Writes header of an {@link IndexedIdGenerator} into the {@link GBPTree}.

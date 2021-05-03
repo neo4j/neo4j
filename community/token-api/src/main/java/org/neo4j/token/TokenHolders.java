@@ -20,7 +20,7 @@
 package org.neo4j.token;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.token.api.TokensLoader;

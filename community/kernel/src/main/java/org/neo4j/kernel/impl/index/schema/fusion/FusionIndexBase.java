@@ -25,7 +25,7 @@ import java.util.function.Function;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;

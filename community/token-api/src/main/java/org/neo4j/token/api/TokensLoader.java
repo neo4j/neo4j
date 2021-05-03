@@ -21,7 +21,7 @@ package org.neo4j.token.api;
 
 import java.util.List;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface TokensLoader
 {

@@ -20,7 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 

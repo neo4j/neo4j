@@ -31,8 +31,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.recordstorage.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 

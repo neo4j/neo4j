@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;

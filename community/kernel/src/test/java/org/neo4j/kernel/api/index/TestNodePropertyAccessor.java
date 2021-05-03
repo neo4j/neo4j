@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;

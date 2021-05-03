@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import java.util.function.IntPredicate;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;

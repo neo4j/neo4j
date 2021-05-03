@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;

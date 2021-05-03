@@ -56,7 +56,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.applyLogicalChanges;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.openSimpleStorageEngine;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @ExtendWith( RandomExtension.class )
 @EphemeralPageCacheExtension

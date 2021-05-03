@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -42,7 +42,7 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incom
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @DbmsExtension
 public class RelationshipSelectionsIT

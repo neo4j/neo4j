@@ -49,9 +49,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 

@@ -25,7 +25,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;

@@ -28,7 +28,6 @@ import java.io.IOException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

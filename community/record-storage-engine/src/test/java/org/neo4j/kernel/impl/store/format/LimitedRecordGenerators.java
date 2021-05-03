@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StandaloneDynamicRecordAllocator;

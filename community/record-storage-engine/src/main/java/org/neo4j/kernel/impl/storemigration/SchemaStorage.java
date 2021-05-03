@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface SchemaStorage
 {

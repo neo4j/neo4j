@@ -19,7 +19,7 @@
  */
 package org.neo4j.counts;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Interface for reading counts. Basically the read-parts of a {@link CountsStore}.

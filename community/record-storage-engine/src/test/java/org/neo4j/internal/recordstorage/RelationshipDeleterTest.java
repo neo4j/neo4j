@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;

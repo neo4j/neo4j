@@ -88,7 +88,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.fs.FileUtils.writeAll;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.asStream;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG;

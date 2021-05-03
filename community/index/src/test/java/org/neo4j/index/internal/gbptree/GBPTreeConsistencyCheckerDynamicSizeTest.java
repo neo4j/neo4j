@@ -28,7 +28,7 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.notAnOffloadNode;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistencyCheckerTestBase<RawBytes,RawBytes>
 {

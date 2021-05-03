@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.common.Subject;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface IndexUpdateListener
 {

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.context;
 
 import java.util.function.LongSupplier;
 
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.context.VersionContext;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 

@@ -17,26 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.tracing.cursor.context;
+package org.neo4j.io.pagecache.context;
 
 import java.util.function.LongSupplier;
 
 /**
- * Supplier to create {@link VersionContext} used during version data read and write operations
+ * {@link VersionContextSupplier} version that supply same {@link EmptyVersionContext} each time for cases
+ * where version context mechanics is not required
  */
-public interface VersionContextSupplier
+public class EmptyVersionContextSupplier implements VersionContextSupplier
 {
-    /**
-     * Initialise current supplier with provider of last closed transaction ids
-     * for future version context to be able to get version ids
-     * @param lastClosedTransactionIdSupplier closed transaction id supplier.
-     */
-    void init( LongSupplier lastClosedTransactionIdSupplier );
+    public static final VersionContextSupplier EMPTY = new EmptyVersionContextSupplier();
 
-    /**
-     * Provide version context
-     * @return instance of version context
-     */
-    VersionContext createVersionContext();
+    private EmptyVersionContextSupplier()
+    {
+    }
 
+    @Override
+    public void init( LongSupplier lastClosedTransactionIdSupplier )
+    {
+    }
+
+    @Override
+    public VersionContext createVersionContext()
+    {
+        return EmptyVersionContext.EMPTY;
+    }
 }

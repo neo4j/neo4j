@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;

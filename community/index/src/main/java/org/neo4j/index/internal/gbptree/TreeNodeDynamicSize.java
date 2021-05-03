@@ -28,7 +28,7 @@ import java.util.Arrays;
 import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;

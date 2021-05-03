@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.io.Closeable;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Component able to sample schema index.

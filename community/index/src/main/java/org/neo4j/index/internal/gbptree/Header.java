@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Defines interfaces and common implementations of header reader/writer for {@link GBPTree}.

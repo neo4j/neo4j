@@ -29,8 +29,8 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 class UpdateRecordsStepTest
 {

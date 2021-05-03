@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {

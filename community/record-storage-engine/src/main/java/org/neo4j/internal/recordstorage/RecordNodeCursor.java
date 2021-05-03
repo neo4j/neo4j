@@ -24,7 +24,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;

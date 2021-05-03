@@ -21,7 +21,7 @@ package org.neo4j.internal.id;
 
 import java.util.Arrays;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public class IdRangeIterator implements IdSequence
 {

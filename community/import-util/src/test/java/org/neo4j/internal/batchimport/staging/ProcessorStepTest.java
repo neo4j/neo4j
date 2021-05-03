@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Keys;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.assertj.core.api.Assertions.assertThat;

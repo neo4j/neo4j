@@ -20,7 +20,7 @@
 package org.neo4j.internal.id;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * An {@link IdGenerator} that knows only about a highId and is read-only

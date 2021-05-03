@@ -40,7 +40,7 @@ import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.assertCounts;
 import static org.neo4j.kernel.impl.newapi.RelationshipTestSupport.count;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;

@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing.cursor;
 
+import org.neo4j.io.pagecache.context.CursorContext;
+
 /**
  * Expose information from page cache about particular page cursor events.
  *

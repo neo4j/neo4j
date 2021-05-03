@@ -31,7 +31,7 @@ import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexConfig;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;

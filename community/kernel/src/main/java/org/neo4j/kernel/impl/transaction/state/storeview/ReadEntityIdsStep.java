@@ -27,8 +27,8 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.PullingProducerStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 
 import static org.neo4j.lock.LockWaitStrategies.INCREMENTAL_BACKOFF;

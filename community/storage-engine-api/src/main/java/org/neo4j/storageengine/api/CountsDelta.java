@@ -28,7 +28,7 @@ import java.util.Objects;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.Math.toIntExact;
 

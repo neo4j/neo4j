@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Seeks and allows read access to data in a {@link GBPTree}. The interaction is cursor-like, where the next item is visited

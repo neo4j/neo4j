@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;

@@ -25,7 +25,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;

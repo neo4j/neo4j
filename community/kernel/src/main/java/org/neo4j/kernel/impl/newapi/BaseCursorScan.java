@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static java.lang.Math.min;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;

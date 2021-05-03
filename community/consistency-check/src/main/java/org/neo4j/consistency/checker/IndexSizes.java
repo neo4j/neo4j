@@ -32,8 +32,8 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.values.storable.ValueCategory;
 

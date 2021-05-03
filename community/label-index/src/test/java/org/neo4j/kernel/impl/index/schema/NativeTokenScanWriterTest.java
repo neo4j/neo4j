@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.index.schema.LabelScanStoreIT.flipRandom;
 import static org.neo4j.kernel.impl.index.schema.LabelScanStoreIT.getLabels;
 import static org.neo4j.kernel.impl.index.schema.LabelScanStoreIT.nodesWithLabel;

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 
 final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor,AllRelationshipsScan>

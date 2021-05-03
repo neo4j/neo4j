@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * This interface exists so that {@link OffloadStoreImpl} can be used in {@link GBPTree} tests that are not backed by a page cache but

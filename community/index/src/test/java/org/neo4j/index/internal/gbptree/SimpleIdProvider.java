@@ -30,7 +30,7 @@ import java.util.Queue;
 import java.util.function.Supplier;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 class SimpleIdProvider implements IdProvider
 {

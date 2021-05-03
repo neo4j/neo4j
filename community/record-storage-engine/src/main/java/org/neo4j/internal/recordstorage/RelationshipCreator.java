@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;

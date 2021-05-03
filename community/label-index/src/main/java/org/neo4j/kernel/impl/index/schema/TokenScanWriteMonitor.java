@@ -45,7 +45,7 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 

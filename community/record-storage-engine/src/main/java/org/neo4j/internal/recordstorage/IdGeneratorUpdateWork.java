@@ -24,8 +24,8 @@ import java.util.List;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.Marker;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.util.concurrent.Work;
 
 public class IdGeneratorUpdateWork implements Work<IdGenerator,IdGeneratorUpdateWork>

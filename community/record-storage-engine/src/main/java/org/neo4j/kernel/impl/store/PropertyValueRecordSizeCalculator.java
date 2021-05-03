@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.internal.batchimport.input.PropertySizeCalculator;
 import org.neo4j.internal.id.BatchingIdSequence;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;

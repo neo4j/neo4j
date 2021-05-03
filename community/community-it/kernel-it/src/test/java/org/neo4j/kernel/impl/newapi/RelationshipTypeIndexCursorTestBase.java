@@ -36,7 +36,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationshipCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationships;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.Relationship;

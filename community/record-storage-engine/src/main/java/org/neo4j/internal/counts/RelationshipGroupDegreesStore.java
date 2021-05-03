@@ -20,7 +20,7 @@
 package org.neo4j.internal.counts;
 
 import org.neo4j.counts.CountsStorage;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
 /**

@@ -43,7 +43,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;

@@ -28,7 +28,7 @@ import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdRangeIterator;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;

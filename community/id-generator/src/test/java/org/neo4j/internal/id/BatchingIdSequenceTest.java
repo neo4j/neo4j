@@ -24,7 +24,7 @@ import org.junit.jupiter.api.parallel.Execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @Execution( CONCURRENT )
 class BatchingIdSequenceTest

@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;

@@ -25,7 +25,7 @@ import java.util.Comparator;
 
 import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 import static org.neo4j.index.internal.gbptree.KeySearch.childPositionOf;
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;

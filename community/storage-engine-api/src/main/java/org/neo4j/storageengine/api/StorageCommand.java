@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;

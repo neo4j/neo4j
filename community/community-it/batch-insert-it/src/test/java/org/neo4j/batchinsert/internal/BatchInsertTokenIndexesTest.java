@@ -39,7 +39,7 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;

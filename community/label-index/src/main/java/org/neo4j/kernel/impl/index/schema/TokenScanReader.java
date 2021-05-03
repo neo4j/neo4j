@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * Reader of a token scan store containing token-->entities mappings.

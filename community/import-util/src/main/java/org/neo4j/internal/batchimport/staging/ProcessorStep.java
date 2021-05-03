@@ -26,13 +26,12 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.internal.batchimport.executor.TaskExecutor;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.util.concurrent.AsyncApply;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext.EMPTY;
 
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.

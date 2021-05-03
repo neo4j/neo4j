@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.function.IntPredicate;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 

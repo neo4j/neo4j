@@ -24,7 +24,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 
 import java.util.Collection;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.memory.MemoryTracker;

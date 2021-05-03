@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;

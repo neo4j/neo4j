@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -45,7 +45,7 @@ import org.neo4j.time.Clocks;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 

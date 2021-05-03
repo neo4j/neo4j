@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.util.Bits;
 

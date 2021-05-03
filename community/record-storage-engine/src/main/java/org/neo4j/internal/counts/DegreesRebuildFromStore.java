@@ -21,7 +21,7 @@ package org.neo4j.internal.counts;
 
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;

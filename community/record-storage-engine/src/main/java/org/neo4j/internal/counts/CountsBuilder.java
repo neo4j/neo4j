@@ -20,7 +20,7 @@
 package org.neo4j.internal.counts;
 
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.TransactionIdStore;
 

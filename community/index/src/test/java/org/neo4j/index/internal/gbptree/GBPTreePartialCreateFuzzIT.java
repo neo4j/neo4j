@@ -41,8 +41,8 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
-import static org.neo4j.io.pagecache.tracing.cursor.CursorContext.NULL;
 
 /**
  * Tests functionality around process crashing, or similar, when having started, but not completed creation of an index file,

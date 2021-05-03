@@ -24,7 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.layout.DatabaseFile;
-import org.neo4j.io.pagecache.tracing.cursor.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContext;
 
 public enum StoreType
 {
