@@ -142,6 +142,7 @@
     <slf4j.version>1.7.30</slf4j.version>
     <neo4j-java-driver.version>4.4.5</neo4j-java-driver.version>
     <skip-scalastyle>false</skip-scalastyle>
+    <spotless.check.skip>true</spotless.check.skip>
   </properties>
 
   <modules>
@@ -797,6 +798,17 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.21.0</version>
+        <configuration>
+          <java>
+            <palantirJavaFormat />
+          </java>
+        </configuration>
       </plugin>
 
       <!-- Creates source jar if source exits -->
