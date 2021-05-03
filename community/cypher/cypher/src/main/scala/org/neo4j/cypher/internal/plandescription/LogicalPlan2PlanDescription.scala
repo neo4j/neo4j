@@ -939,16 +939,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
                                     readOnly: Boolean): String = {
     def findName(exactOnly: Boolean = true) =
       if (unique && !readOnly && exactOnly) {
-        "NodeUniqueIndexSeek(Locking)"
+        NodeIndexSeek.PLAN_DESCRIPTION_UNIQUE_LOCKING_INDEX_SEEK_NAME
       } else if (unique) {
-        "NodeUniqueIndexSeek"
+        NodeIndexSeek.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_NAME
       } else {
-        "NodeIndexSeek"
+        NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SEEK_NAME
       }
     valueExpr match {
-      case _: ExistenceQueryExpression[expressions.Expression] => "NodeIndexScan"
+      case _: ExistenceQueryExpression[expressions.Expression] => NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SCAN_NAME
       case _: RangeQueryExpression[expressions.Expression] =>
-        if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
+        if (unique) NodeIndexSeek.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME else NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME
       case e: CompositeQueryExpression[expressions.Expression] =>
         findName(e.exactOnly)
       case _: SingleQueryExpression[org.neo4j.cypher.internal.expressions.Expression] =>
@@ -959,13 +959,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
   }
 
   private def relationshipIndexOperatorName(valueExpr: QueryExpression[expressions.Expression], directed: Boolean): String = {
-    val pre = if(directed) "Directed" else "Undirected"
-    val post = valueExpr match {
-      case _: ExistenceQueryExpression[expressions.Expression] => "RelationshipIndexScan"
-      case _: RangeQueryExpression[expressions.Expression] => "RelationshipIndexSeekByRange"
-      case _ => "RelationshipIndexSeek"
+    val indexSeekNames = if (directed) DirectedRelationshipIndexSeek else UndirectedRelationshipIndexSeek
+    valueExpr match {
+      case _: ExistenceQueryExpression[expressions.Expression] => indexSeekNames.PLAN_DESCRIPTION_INDEX_SCAN_NAME
+      case _: RangeQueryExpression[expressions.Expression] => indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME
+      case _ => indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_NAME
     }
-    s"$pre$post"
   }
 
   private def indexPredicateString(propertyKeys: Seq[PropertyKeyToken],

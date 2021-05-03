@@ -47,3 +47,18 @@ case class NodeIndexSeek(idName: String,
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexSeek =
     NodeIndexSeek(idName, label, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }
+
+object NodeIndexSeek extends IndexSeekNames {
+  override val PLAN_DESCRIPTION_INDEX_SCAN_NAME: String = "NodeIndexScan"
+  override val PLAN_DESCRIPTION_INDEX_SEEK_NAME = "NodeIndexSeek"
+  override val PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME = "NodeIndexSeekByRange"
+  val PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_NAME = "NodeUniqueIndexSeek"
+  val PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME = "NodeUniqueIndexSeekByRange"
+  val PLAN_DESCRIPTION_UNIQUE_LOCKING_INDEX_SEEK_NAME = "NodeUniqueIndexSeek(Locking)"
+}
+
+trait IndexSeekNames {
+  def PLAN_DESCRIPTION_INDEX_SCAN_NAME: String
+  def PLAN_DESCRIPTION_INDEX_SEEK_NAME: String
+  def PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME: String
+}

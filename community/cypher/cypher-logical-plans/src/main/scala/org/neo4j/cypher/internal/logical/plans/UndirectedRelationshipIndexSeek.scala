@@ -54,3 +54,9 @@ case class UndirectedRelationshipIndexSeek(idName: String,
   override def withMappedProperties(f: IndexedProperty => IndexedProperty):  UndirectedRelationshipIndexSeek =
     UndirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }
+
+object UndirectedRelationshipIndexSeek extends IndexSeekNames {
+  override val PLAN_DESCRIPTION_INDEX_SCAN_NAME = "UndirectedRelationshipIndexScan"
+  override val PLAN_DESCRIPTION_INDEX_SEEK_NAME = "UndirectedRelationshipIndexSeek"
+  override val PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME = "UndirectedRelationshipIndexSeekByRange"
+}

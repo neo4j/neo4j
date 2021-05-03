@@ -47,22 +47,22 @@ object IndexSeekMode {
   }
 }
 
-sealed abstract class IndexSeekMode(val name: String)
+sealed trait IndexSeekMode
 
 sealed trait ExactSeek {
   self: IndexSeekMode =>
 }
 
-case object IndexSeek extends IndexSeekMode("NodeIndexSeek") with ExactSeek
+case object IndexSeek extends IndexSeekMode with ExactSeek
 
-case object UniqueIndexSeek extends IndexSeekMode("NodeUniqueIndexSeek") with ExactSeek
+case object UniqueIndexSeek extends IndexSeekMode with ExactSeek
 
-case object LockingUniqueIndexSeek extends IndexSeekMode("NodeUniqueIndexSeek(Locking)")
+case object LockingUniqueIndexSeek extends IndexSeekMode
 
 sealed trait SeekByRange {
   self: IndexSeekMode =>
 }
 
-case object IndexSeekByRange extends IndexSeekMode("NodeIndexSeekByRange") with SeekByRange
+case object IndexSeekByRange extends IndexSeekMode with SeekByRange
 
-case object UniqueIndexSeekByRange extends IndexSeekMode("NodeUniqueIndexSeekByRange") with SeekByRange
+case object UniqueIndexSeekByRange extends IndexSeekMode with SeekByRange

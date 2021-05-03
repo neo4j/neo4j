@@ -57,3 +57,9 @@ case class DirectedRelationshipIndexSeek(idName: String,
 
   override def rightNode: String = endNode
 }
+
+object DirectedRelationshipIndexSeek extends IndexSeekNames {
+  override val PLAN_DESCRIPTION_INDEX_SCAN_NAME = "DirectedRelationshipIndexScan"
+  override val PLAN_DESCRIPTION_INDEX_SEEK_NAME = "DirectedRelationshipIndexSeek"
+  override val PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME = "DirectedRelationshipIndexSeekByRange"
+}
