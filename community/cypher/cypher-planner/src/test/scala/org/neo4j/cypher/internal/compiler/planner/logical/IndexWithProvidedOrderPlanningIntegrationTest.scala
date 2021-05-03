@@ -1762,11 +1762,80 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   // Min and Max
 
+  private def relationshipIndexMinMaxSetup = plannerBuilder()
+    .enableRelationshipByTypeLookup()
+    .enablePlanningRelationshipIndexes()
+    .setAllNodesCardinality(500)
+    .setAllRelationshipsCardinality(500)
+    .setRelationshipCardinality("()-[:REL]->()", 100)
+
   // Tests (ASC, min), (DESC, max), (BOTH, min), (BOTH, max) -> interesting and provided order are the same
   private val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
   for ((TestOrder(plannedOrder, cypherToken, orderCapability, _), functionName) <- List((ASCENDING, "min"), (DESCENDING, "max"), (ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))) {
 
-    test(s"$orderCapability-$functionName: should use provided index order with range") {
+    // Node label scan
+
+    test(s"$orderCapability-$functionName: should use node label scan order") {
+      val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN $functionName(n)", stripProduceResults = false)
+
+      plan._2 should equal(
+        new LogicalPlanBuilder()
+          .produceResults(s"`$functionName(n)`")
+          .optional()
+          .limit(1)
+          .projection(s"n AS `$functionName(n)`")
+          .nodeByLabelScan("n", "Awesome", plannedOrder)
+          .build()
+      )
+    }
+
+    // Node property index scan
+
+    test(s"$orderCapability-$functionName: should use provided node index scan order") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
+
+      plan._2 should equal(
+        Optional(
+          Limit(
+            Projection(
+              NodeIndexScan(
+                "n",
+                LabelToken("Awesome", LabelId(0)),
+                Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
+                Set.empty,
+                plannedOrder),
+              Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
+            ),
+            literalInt(1)
+          )
+        )
+      )
+    }
+
+    test(s"$orderCapability-$functionName: should plan aggregation for node index scan when there is no $orderCapability") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesValues()
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
+
+      plan._2 should equal(
+        Aggregation(
+          NodeIndexScan(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
+            Set.empty,
+            IndexOrderNone),
+          Map.empty,
+          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
+        )
+      )
+    }
+
+    // Node property index seek
+
+    test(s"$orderCapability-$functionName: should use provided node index order with range") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
@@ -1784,21 +1853,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: should use label scan order") {
-      val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN $functionName(n)", stripProduceResults = false)
-
-      plan._2 should equal(
-        new LogicalPlanBuilder()
-          .produceResults(s"`$functionName(n)`")
-          .optional()
-          .limit(1)
-          .projection(s"n AS `$functionName(n)`")
-          .nodeByLabelScan("n", "Awesome", plannedOrder)
-          .build()
-      )
-    }
-
-    test(s"$orderCapability-$functionName: should use provided index order with ORDER BY") {
+    test(s"$orderCapability-$functionName: should use provided node index order with ORDER BY") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $cypherToken"
@@ -1816,7 +1871,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: should use provided index order followed by sort for ORDER BY with reverse order") {
+    test(s"$orderCapability-$functionName: should use provided node index order followed by sort for ORDER BY with reverse order") {
       val (inverseOrder, inverseSortOrder) = cypherToken match {
         case "ASC" => ("DESC", Descending)
         case "DESC" => ("ASC", Ascending)
@@ -1841,7 +1896,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: should use provided index order with additional Limit") {
+    test(s"$orderCapability-$functionName: should use provided node index order with additional Limit") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) LIMIT 2"
@@ -1861,7 +1916,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: should use provided index order for multiple QueryGraphs") {
+    test(s"$orderCapability-$functionName: should use provided node index order for multiple QueryGraphs") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor
@@ -1884,7 +1939,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"$orderCapability-$functionName: cannot use provided index order for multiple aggregations") {
+    test(s"$orderCapability-$functionName: cannot use provided node index order for multiple aggregations") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop), count(n.prop)"
@@ -1899,9 +1954,190 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
-    test(s"should plan aggregation with IS NOT NULL and index for $functionName when there is no $orderCapability") {
+    // Relationship type scan
+
+    test(s"$orderCapability-$functionName: should use relationship type scan order") {
+      val planner = relationshipIndexMinMaxSetup.build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) RETURN $functionName(r)")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r)`")
+               .optional()
+               .limit(1)
+               .projection(s"r AS `$functionName(r)`")
+               .relationshipTypeScan("(n)-[r:REL]->(m)", plannedOrder)
+               .build()
+
+    }
+
+    // Relationship property index scan
+
+    test(s"$orderCapability-$functionName: should use provided relationship index scan order") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop IS NOT NULL RETURN $functionName(r.prop)")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .optional()
+               .limit(1)
+               .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
+               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .build()
+    }
+
+    test(s"$orderCapability-$functionName: should plan aggregation for relationship index scan when there is no $orderCapability") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop IS NOT NULL RETURN $functionName(r.prop)")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
+               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = GetValue)
+               .build()
+
+    }
+
+    // Relationship property index seeks
+
+    test(s"$orderCapability-$functionName: should use provided relationship index order with range") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop > 0 RETURN $functionName(r.prop)")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .optional()
+               .limit(1)
+               .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .build()
+    }
+
+    test(s"$orderCapability-$functionName: should use provided relationship index order with ORDER BY") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop > 0 RETURN $functionName(r.prop) ORDER BY $functionName(r.prop) $cypherToken")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .optional()
+               .limit(1)
+               .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .build()
+    }
+
+    test(s"$orderCapability-$functionName: should use provided relationship index order followed by sort for ORDER BY with reverse order") {
+      val (inverseOrder, inverseSortOrder) = cypherToken match {
+        case "ASC" => ("DESC", Descending)
+        case "DESC" => ("ASC", Ascending)
+      }
+
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop > 0 RETURN $functionName(r.prop) ORDER BY $functionName(r.prop) $inverseOrder")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .sort(Seq(inverseSortOrder(s"$functionName(r.prop)")))
+               .optional()
+               .limit(1)
+               .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .build()
+    }
+
+    test(s"$orderCapability-$functionName: should use provided relationship index order with additional Limit") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop > 0 RETURN $functionName(r.prop) LIMIT 2")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .limit(2)
+               .optional()
+               .limit(1)
+               .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .build()
+    }
+
+    test(s"$orderCapability-$functionName: should use provided relationship index order for multiple QueryGraphs") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"""MATCH (n)-[r:REL]->(m)
+                 |WHERE r.prop > 0
+                 |WITH $functionName(r.prop) AS agg
+                 |RETURN agg
+                 |ORDER BY agg $cypherToken""".stripMargin)
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults("agg")
+               .optional()
+               .limit(1)
+               .projection(s"cacheR[r.prop] AS agg")
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .build()
+    }
+
+    test(s"$orderCapability-$functionName: cannot use provided relationship index order for multiple aggregations") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop > 0 RETURN $functionName(r.prop), count(r.prop)")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`", "`count(r.prop)`")
+               .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`", "count(cacheR[r.prop]) AS `count(r.prop)`"))
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = IndexOrderNone)
+               .build()
+    }
+
+
+  }
+
+  // Tests (ASC, max), (DESC, min) -> interesting and provided order differs
+  for ((TestOrder(_, _, orderCapability, _), functionName) <- List((ASCENDING, "max"), (DESCENDING, "min"))) {
+
+    test(s"$orderCapability-$functionName: cannot use provided node index scan order") {
       val plan = new given {
-        indexOn("Awesome", "prop").providesValues()
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
       plan._2 should equal(
@@ -1917,12 +2153,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         )
       )
     }
-  }
 
-  // Tests (ASC, max), (DESC, min) -> interesting and provided order differs
-  for ((TestOrder(_, _, orderCapability, _), functionName) <- List((ASCENDING, "max"), (DESCENDING, "min"))) {
-
-    test(s"$orderCapability-$functionName: cannot use provided index order with range") {
+    test(s"$orderCapability-$functionName: cannot use provided node index seek order") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
@@ -1935,6 +2167,39 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         )
       )
     }
+
+    test(s"$orderCapability-$functionName: cannot use provided relationship index scan order") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop IS NOT NULL RETURN $functionName(r.prop)")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
+               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = GetValue)
+               .build()
+    }
+
+    test(s"$orderCapability-$functionName: cannot use provided relationship index seek order") {
+      val planner = relationshipIndexMinMaxSetup
+        .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1, withValues = true, providesOrder = orderCapability)
+        .build()
+
+      val plan = planner
+        .plan(s"MATCH (n)-[r:REL]->(m) WHERE r.prop > 0 RETURN $functionName(r.prop)")
+
+      plan shouldEqual
+        planner.planBuilder()
+               .produceResults(s"`$functionName(r.prop)`")
+               .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue)
+               .build()
+    }
+
   }
 
   test("should mark leveragedOrder in collect with ORDER BY") {
