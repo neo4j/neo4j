@@ -48,6 +48,22 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     skipPrefixThenSortedTop
   }
 
+  test("with limit 0") {
+    // when
+    val sortedInput = for (x <- 0 until sizeHint) yield Array[Any]("A", x)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 0)
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(Random.shuffle(sortedInput):_*))
+
+    // then
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
   test("empty input gives empty output") {
     // when
     val input = inputValues()
