@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 public class DelegatingPageCache implements PageCache
 {

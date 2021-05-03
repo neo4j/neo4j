@@ -162,7 +162,7 @@ public class ConsistencyCheckServiceIntegrationTest
         JobScheduler jobScheduler = JobSchedulerFactory.createScheduler();
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( testDirectory.getFileSystem(), Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
-                        pageCacheTracer, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
+                        pageCacheTracer, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(),
                         new MemoryPools( false ) );
         try ( Lifespan life = new Lifespan( jobScheduler );
               PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )

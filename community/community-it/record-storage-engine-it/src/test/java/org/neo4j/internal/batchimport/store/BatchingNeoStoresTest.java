@@ -354,8 +354,8 @@ class BatchingNeoStoresTest
     {
         NullLog nullLog = NullLog.getInstance();
         try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
-              PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, nullLog,
-                        EmptyVersionContextSupplier.EMPTY, scheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
+                PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, nullLog, scheduler,
+                        Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
               Lifespan life = new Lifespan() )
         {
             // TODO this little dance with TokenHolders is really annoying and must be solved with a better abstraction

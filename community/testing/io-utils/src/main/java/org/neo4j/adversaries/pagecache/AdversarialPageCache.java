@@ -34,7 +34,6 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 

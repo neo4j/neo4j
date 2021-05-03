@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MachineMemory;
 import org.neo4j.memory.MemoryPools;
@@ -50,7 +49,6 @@ public class ConfiguringPageCacheFactory
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
     private final Log log;
-    private final VersionContextSupplier versionContextSupplier;
     private PageCache pageCache;
     private final JobScheduler scheduler;
     private final SystemNanoClock clock;
@@ -62,16 +60,14 @@ public class ConfiguringPageCacheFactory
      * @param config page swapper configuration
      * @param pageCacheTracer global page cache tracer
      * @param log page cache factory log
-     * @param versionContextSupplier cursor context factory
      * @param scheduler job scheduler to execute page cache jobs
      * @param clock the clock source used by the page cache.
      * @param memoryPools database memory pools to register page cache specific instance
      */
-    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log,
-            VersionContextSupplier versionContextSupplier, JobScheduler scheduler, SystemNanoClock clock, MemoryPools memoryPools )
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log, JobScheduler scheduler,
+            SystemNanoClock clock, MemoryPools memoryPools )
     {
         this.fs = fs;
-        this.versionContextSupplier = versionContextSupplier;
         this.config = config;
         this.pageCacheTracer = pageCacheTracer;
         this.log = log;

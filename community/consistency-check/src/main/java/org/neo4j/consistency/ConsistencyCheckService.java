@@ -157,7 +157,7 @@ public class ConsistencyCheckService
         var pageCacheTracer = PageCacheTracer.NULL;
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         ConfiguringPageCacheFactory pageCacheFactory =
-                new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY,
+                new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ),
                         jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ) );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 

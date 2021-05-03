@@ -72,8 +72,7 @@ class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory factory =
-                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler,
-                        Clocks.nanoClock(), new MemoryPools() );
+                new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler, Clocks.nanoClock(), new MemoryPools() );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
