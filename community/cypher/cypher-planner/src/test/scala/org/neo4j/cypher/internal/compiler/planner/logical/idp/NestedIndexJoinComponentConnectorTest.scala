@@ -19,14 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -38,6 +44,10 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
   private def register[X](registry: IdRegistry[X], elements: X*): Goal = Goal(registry.registerAll(elements))
 
   private val singleComponentPlanner = SingleComponentPlanner()(mock[IDPQueryGraphSolverMonitor])
+
+  override val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.withSettings(
+    Map(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes -> java.lang.Boolean.TRUE)
+  )
 
   test("produces nested index joins of two components connected by property equality") {
     val table = IDPTable.empty[LogicalPlan]
@@ -74,6 +84,43 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       plans should contain theSameElementsAs Seq(
         Apply(mPlan, nodeIndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),
         Apply(nPlan, nodeIndexSeek("m:M(prop = ???)", CanGetValue, paramExpr = Some(nProp), argumentIds = Set("n"), labelId = 1)),
+      )
+    }
+  }
+
+  test("produces nested relationship index joins of two components connected by property equality") {
+    val table = IDPTable.empty[LogicalPlan]
+    val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
+
+    val nProp = prop("n", "prop")
+    val mProp = prop("m", "prop")
+    val joinPred = equals(nProp, mProp)
+    new given() {
+      relationshipIndexOn("N", "prop")
+      relationshipIndexOn("M", "prop")
+      addTypeToSemanticTable(nProp, CTAny)
+      addTypeToSemanticTable(mProp, CTAny)
+    }.withLogicalPlanningContext { (_, ctx) =>
+
+      val order = InterestingOrderConfig.empty
+      val kit = ctx.config.toKit(order, ctx)
+      val nQg = QueryGraph(patternRelationships = Set(PatternRelationship("n", ("a", "b"), BOTH, Seq(relTypeName("N")), SimplePatternLength)))
+      val mQg = QueryGraph(patternRelationships = Set(PatternRelationship("m", ("c", "d"), BOTH, Seq(relTypeName("M")), SimplePatternLength)))
+      val fullQg = (nQg ++ mQg).addPredicates(joinPred)
+
+      val nPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n", "a", "b")
+      val mPlan = fakeLogicalPlanFor(ctx.planningAttributes, "m", "c", "d")
+      ctx.planningAttributes.solveds.set(nPlan.id, RegularSinglePlannerQuery(nQg))
+      ctx.planningAttributes.solveds.set(mPlan.id, RegularSinglePlannerQuery(mQg))
+      table.put(register(registry, nQg), sorted = false, nPlan)
+      table.put(register(registry, mQg), sorted = false, mPlan)
+      val goal = register(registry, nQg, mQg)
+
+      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
+      val plans = step(registry, goal, table, ctx).toSeq
+      plans should contain theSameElementsAs Seq(
+        Apply(mPlan, relationshipIndexSeek("(a)-[n:N(prop = ???)]-(b)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m", "c", "d"), typeId = 0)),
+        Apply(nPlan, relationshipIndexSeek("(c)-[m:M(prop = ???)]-(d)", CanGetValue, paramExpr = Some(nProp), argumentIds = Set("n", "a", "b"), typeId = 1)),
       )
     }
   }

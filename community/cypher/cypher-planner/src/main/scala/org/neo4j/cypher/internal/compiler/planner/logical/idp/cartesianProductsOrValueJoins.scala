@@ -31,9 +31,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
@@ -390,7 +392,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       .addPredicates(predicate)
       .addHints(rhsQG.hints)
 
-    val (leftSymbols, rightSymbols) = predicate.dependencies.map(_.name).partition(lhsQG.patternNodes.contains)
+    val (leftSymbols, rightSymbols) = predicate.dependencies.map(_.name).partition(lhsQG.idsWithoutOptionalMatchesOrUpdates.contains)
     rightSymbols.toSeq match {
       case Seq(rightSymbol) =>
         val contextForRhs = context.withUpdatedLabelInfo(lhsPlan)
@@ -428,6 +430,10 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       case NodeIndexSeek(_, _, _, valueExpr, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case NodeUniqueIndexSeek(_, _, _, valueExpr, _, _) =>
+        valueExpr.expressions.exists(_.dependencies.nonEmpty)
+      case DirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _) =>
+        valueExpr.expressions.exists(_.dependencies.nonEmpty)
+      case UndirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case _ => false
     }

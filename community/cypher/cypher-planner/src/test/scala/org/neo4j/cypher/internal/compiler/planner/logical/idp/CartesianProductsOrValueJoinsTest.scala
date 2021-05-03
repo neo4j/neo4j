@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -282,13 +281,6 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
 
     // then
     result should be(List(predicate1._1))
-  }
-
-  private def addComponent(component: PlannedComponent, cardinality: Cardinality, planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes): PlannedComponent = {
-    planningAttributes.solveds.set(component.plan.bestResult.id, RegularSinglePlannerQuery(queryGraph = component.queryGraph))
-    planningAttributes.cardinalities.set(component.plan.bestResult.id, cardinality)
-    planningAttributes.providedOrders.set(component.plan.bestResult.id, ProvidedOrder.empty)
-    component
   }
 
   private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {

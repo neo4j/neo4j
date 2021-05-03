@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -304,6 +305,30 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     withClue(plan) {
       nodeIndexSeeks should be > 0
+    }
+  }
+
+  test("should plan nested relationship index join of two components with index on relationship appearing first in predicate") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .setRelationshipCardinality("()-[:REL2]-()", 50)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .enablePlanningRelationshipIndexes()
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (a)-[r1:REL]->(b), (c)-[r2:REL2]->(d)
+        |WHERE r1.prop > r2.prop
+        |RETURN a, b, c, d""".stripMargin)
+
+    val relIndexSeeks = plan.treeCount {
+      case _: DirectedRelationshipIndexSeek => true
+    }
+
+    withClue(plan) {
+      relIndexSeeks should be > 0
     }
   }
 

@@ -657,9 +657,35 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed relationship property in a plan with an Apply") {
+      val query = s"MATCH (a)-[r:REL]-(b), (c)-[r2:REL2]-(d) WHERE r.prop > 'foo' AND r.prop = r2.prop RETURN r.prop ORDER BY r.prop $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 50)
+        .setRelationshipCardinality("()-[:REL2]-()", 50)
+        .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.1, withValues = true, providesOrder = orderCapability)
+        .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.02, withValues = true, providesOrder = orderCapability)
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheR[r.prop] AS `r.prop`")
+        .apply()
+        .|.relationshipIndexOperator("(c)-[r2:REL2(prop = ???)]-(d)", paramExpr = Some(cachedRelProp("r", "prop")), argumentIds = Set("a", "r", "b"))
+        .relationshipIndexOperator("(a)-[r:REL(prop > 'foo')]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .build()
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by label variable in a plan with an Apply") {
       val plan = new given {
-        indexOn("B", "prop").providesOrder(orderCapability)
+        indexOn("B", "prop")
       }.getLogicalPlanFor(s"MATCH (a:A), (b:B) WHERE a.prop = b.prop RETURN a ORDER BY a $cypherToken", stripProduceResults = false)
 
       plan._2 should equal(
@@ -668,6 +694,32 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .apply()
           .|.nodeIndexOperator("b:B(prop = ???)", paramExpr = Some(prop("a", "prop")), argumentIds = Set("a"))
           .nodeByLabelScan("a", "A", plannedOrder)
+          .build()
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by relationship variable in a plan with an Apply") {
+      val query = s"MATCH (a)-[r:REL]-(b), (c)-[r2:REL2]-(d) WHERE r2.prop = r.prop RETURN r ORDER BY r $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(10000)
+        .setAllRelationshipsCardinality(1000)
+        .setRelationshipCardinality("()-[:REL]-()", 50)
+        .setRelationshipCardinality("()-[:REL2]-()", 500)
+        .addRelationshipIndex("REL2", Seq("prop"), 0.1, 0.002)
+        .enableRelationshipByTypeLookup()
+        .enablePlanningRelationshipIndexes()
+        .build()
+
+      val plan = planner
+        .plan(query)
+        .stripProduceResults
+
+      plan should equal(
+        planner.subPlanBuilder()
+          .apply()
+          .|.relationshipIndexOperator("(c)-[r2:REL2(prop = ???)]-(d)", paramExpr = Some(prop("r", "prop")), argumentIds = Set("a", "r", "b"))
+          .relationshipTypeScan("(a)-[r:REL]-(b)", plannedOrder)
           .build()
       )
     }
