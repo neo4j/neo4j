@@ -22,6 +22,7 @@ package org.neo4j.kernel.builtinprocs;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -67,8 +68,10 @@ class SchemaProcedureIT extends KernelIntegrationTest
     @Test
     void testLabelIndex() throws Throwable
     {
-        // Given there is label with index and a constraint
         KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nbrIndexesOnStartup = Iterators.count( transaction.schemaRead().indexesGetAll() );
+
+        // Given there is label with index and a constraint
         long nodeId = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         transaction.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -99,9 +102,9 @@ class SchemaProcedureIT extends KernelIntegrationTest
             assertThat( node.labels() ).isEqualTo( Values.stringArray( "Person" ) );
             assertEquals( stringValue( "Person" ), node.properties().get( "name" ) );
             assertEquals( VirtualValues.list( stringValue( "name" ) ), node.properties().get( "indexes" ) );
-            assertEquals(
-                    VirtualValues.list( stringValue( "Constraint( id=3, name='constraint name', type='UNIQUENESS', schema=(:Person {age}), ownedIndex=2 )" ) ),
-                    node.properties().get( "constraints" ) );
+            assertEquals( VirtualValues.list( stringValue(
+                    "Constraint( id=" + (3 + nbrIndexesOnStartup) + ", name='constraint name', type='UNIQUENESS', schema=(:Person {age}), " +
+                    "ownedIndex=" + (2 + nbrIndexesOnStartup) + " )" ) ), node.properties().get( "constraints" ) );
         }
     }
 
