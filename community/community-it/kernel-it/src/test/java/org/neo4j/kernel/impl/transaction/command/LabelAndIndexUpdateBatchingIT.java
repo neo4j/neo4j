@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.stream.Collectors.toList;
@@ -71,10 +71,13 @@ class LabelAndIndexUpdateBatchingIT
         // perform the transactions from db-level and extract the transactions as commands
         // so that they can be applied batch-wise they way we'd like to later.
 
-        // a bunch of nodes (to have the index population later on to decide to use label scan for population)
         List<TransactionRepresentation> transactions;
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        // We don't want to include any transactions that has been run on start-up when applying to the new database later.
+        long txIdToStartFrom = getLastClosedTransactionId( db ) + 1;
+
+        // a bunch of nodes (to have the index population later on to decide to use label scan for population)
         String nodeN = "our guy";
         String otherNode = "just to create the tokens";
         try
@@ -100,7 +103,7 @@ class LabelAndIndexUpdateBatchingIT
                 tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
                 tx.commit();
             }
-            transactions = extractTransactions( db );
+            transactions = extractTransactions( db, txIdToStartFrom );
         }
         finally
         {
@@ -171,16 +174,22 @@ class LabelAndIndexUpdateBatchingIT
         return first;
     }
 
-    private static List<TransactionRepresentation> extractTransactions( GraphDatabaseAPI db )
+    private static List<TransactionRepresentation> extractTransactions( GraphDatabaseAPI db, long txIdToStartOn )
             throws IOException
     {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
         List<TransactionRepresentation> transactions = new ArrayList<>();
-        try ( TransactionCursor cursor = txStore.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
+        try ( TransactionCursor cursor = txStore.getTransactions( txIdToStartOn ) )
         {
             cursor.forAll( tx -> transactions.add( tx.getTransactionRepresentation() ) );
         }
         return transactions;
+    }
+
+    private long getLastClosedTransactionId( GraphDatabaseAPI database )
+    {
+        MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
+        return metaDataStore.getLastClosedTransaction()[0];
     }
 
     private static class CommandExtractor implements Visitor<StorageCommand,IOException>
