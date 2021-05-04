@@ -120,4 +120,26 @@ public interface Locks
     void accept( Visitor visitor );
 
     void close();
+
+    /** An implementation that doesn't do any locking **/
+    Locks NO_LOCKS = new Locks()
+    {
+        @Override
+        public Client newClient()
+        {
+            return new NoOpClient();
+        }
+
+        @Override
+        public void accept( Visitor visitor )
+        {
+
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+    };
 }

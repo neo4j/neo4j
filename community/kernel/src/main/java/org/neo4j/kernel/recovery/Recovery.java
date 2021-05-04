@@ -114,6 +114,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
+import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
@@ -328,7 +329,7 @@ public final class Recovery
 
         // Schema indexes
         IndexStoreViewFactory indexStoreViewFactory =
-                new IndexStoreViewFactory( config, storageEngine::newReader, fullScanStoreView,
+                new IndexStoreViewFactory( config, storageEngine::newReader, NO_LOCKS, fullScanStoreView,
                                            labelScanStore, NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore =

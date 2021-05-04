@@ -151,6 +151,19 @@ class KernelTransactionsTest
     }
 
     @Test
+    void shouldNotAllocateSystemTransactionId() throws Throwable
+    {
+        // Given
+        KernelTransactions transactions = newTestKernelTransactions();
+
+        // When
+        KernelTransaction firstTxn = getKernelTransaction( transactions );
+
+        // Then
+        assertThat(firstTxn.getUserTransactionId()).isNotEqualTo( 0L );
+    }
+
+    @Test
     void shouldListActiveTransactions() throws Throwable
     {
         // Given

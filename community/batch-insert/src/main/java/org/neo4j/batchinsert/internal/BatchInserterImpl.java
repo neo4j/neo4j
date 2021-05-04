@@ -201,6 +201,7 @@ import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
+import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
@@ -597,8 +598,7 @@ public class BatchInserterImpl implements BatchInserter
         var cacheTracer = PageCacheTracer.NULL;
 
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                config, () -> new RecordStorageReader( neoStores, schemaCache ), fullScanStoreView, labelIndex,
-                NO_LOCK_SERVICE, logProvider );
+                config, () -> new RecordStorageReader( neoStores, schemaCache ), NO_LOCKS, fullScanStoreView, labelIndex, NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );

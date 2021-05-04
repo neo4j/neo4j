@@ -453,7 +453,7 @@ public class Database extends LifecycleAdapter
                             pageCacheTracer, otherDatabaseMemoryTracker );
 
             IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                    databaseConfig, storageEngine::newReader, fullScanStoreView, labelScanStore, lockService, internalLogProvider );
+                    databaseConfig, storageEngine::newReader, locks, fullScanStoreView, labelScanStore, lockService, internalLogProvider );
 
             // Schema indexes
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,

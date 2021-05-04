@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 
@@ -31,6 +33,12 @@ import static java.util.Collections.synchronizedList;
 public class TestTokenScanConsumer implements TokenScanConsumer
 {
     public final List<List<Record>> batches = synchronizedList( new ArrayList<>() );
+    private final Set<Long> entities = new HashSet<>();
+
+    public long consumedEntities()
+    {
+        return entities.size();
+    }
 
     @Override
     public TokenScanConsumer.Batch newBatch()
@@ -43,6 +51,7 @@ public class TestTokenScanConsumer implements TokenScanConsumer
             public void addRecord( long entityId, long[] tokens )
             {
                 batchTokenUpdates.add( new Record( entityId, tokens ) );
+                entities.add( entityId );
             }
 
             @Override

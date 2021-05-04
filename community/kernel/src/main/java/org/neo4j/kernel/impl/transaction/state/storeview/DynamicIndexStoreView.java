@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -52,14 +53,16 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 public class DynamicIndexStoreView implements IndexStoreView
 {
     private final FullScanStoreView fullScanStoreView;
-    private final LockService locks;
+    private final Locks locks;
+    private final LockService lockService;
     private final Config config;
     private final IndexProxyProvider indexProxies;
     protected final Supplier<StorageReader> storageReader;
     private final Log log;
 
     public DynamicIndexStoreView( FullScanStoreView fullScanStoreView,
-                                  LockService locks,
+                                  Locks locks,
+                                  LockService lockService,
                                   Config config,
                                   IndexProxyProvider indexProxies,
                                   Supplier<StorageReader> storageReader,
@@ -67,6 +70,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     {
         this.fullScanStoreView = fullScanStoreView;
         this.locks = locks;
+        this.lockService = lockService;
         this.config = config;
         this.indexProxies = indexProxies;
         this.storageReader = storageReader;
@@ -78,12 +82,13 @@ public class DynamicIndexStoreView implements IndexStoreView
                                  PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
                                  boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        var tokenReader = getTokenIndexReader( storageReader, NODE );
-        if ( tokenReader.isPresent() )
+        var tokenIndex = findTokenIndex( storageReader, NODE );
+        if ( tokenIndex.isPresent() )
         {
-            return new LabelIndexedNodeStoreScan(
-                    config, storageReader.get(), locks, tokenReader.get(), labelScanConsumer, propertyScanConsumer, labelIds,
+            var nodeStoreScan = new LabelIndexedNodeStoreScan(
+                    config, storageReader.get(), lockService, tokenIndex.get().reader, labelScanConsumer, propertyScanConsumer, labelIds,
                     propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, cacheTracer, memoryTracker );
+            return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, nodeStoreScan );
         }
 
         return fullScanStoreView.visitNodes(
@@ -96,12 +101,13 @@ public class DynamicIndexStoreView implements IndexStoreView
                                          PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
 
-        var tokenReader = getTokenIndexReader( storageReader, RELATIONSHIP );
-        if ( tokenReader.isPresent() )
+        var tokenIndex = findTokenIndex( storageReader, RELATIONSHIP );
+        if ( tokenIndex.isPresent() )
         {
-            return new RelationshipIndexedRelationshipStoreScan(
-                    config, storageReader.get(), locks, tokenReader.get(), relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds,
+            var relationshipStoreScan = new RelationshipIndexedRelationshipStoreScan(
+                    config, storageReader.get(), lockService, tokenIndex.get().reader, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds,
                     propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, cacheTracer, memoryTracker );
+            return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, relationshipStoreScan );
         }
 
         return fullScanStoreView.visitRelationships(
@@ -121,7 +127,7 @@ public class DynamicIndexStoreView implements IndexStoreView
         return fullScanStoreView.newPropertyAccessor( cursorTracer, memoryTracker );
     }
 
-    private Optional<TokenIndexReader> getTokenIndexReader( Supplier<StorageReader> storageReader, EntityType entityType )
+    private Optional<TokenIndexData> findTokenIndex( Supplier<StorageReader> storageReader, EntityType entityType )
     {
         Iterator<IndexDescriptor> descriptorIterator = storageReader.get().indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( entityType ) );
         if ( !descriptorIterator.hasNext() )
@@ -133,7 +139,7 @@ public class DynamicIndexStoreView implements IndexStoreView
             IndexProxy indexProxy = indexProxies.getIndexProxy( descriptorIterator.next() );
             if ( indexProxy.getState() == InternalIndexState.ONLINE )
             {
-                return Optional.of( indexProxy.newTokenReader() );
+                return Optional.of( new TokenIndexData( indexProxy.newTokenReader(), indexProxy.getDescriptor() ) );
             }
         }
         catch ( IndexNotFoundKernelException e )
@@ -141,5 +147,17 @@ public class DynamicIndexStoreView implements IndexStoreView
             log.warn( "Token index missing for entity: %s, switching to full scan", entityType, e );
         }
         return Optional.empty();
+    }
+
+    private static class TokenIndexData
+    {
+        private final TokenIndexReader reader;
+        private final IndexDescriptor descriptor;
+
+        private TokenIndexData( TokenIndexReader reader, IndexDescriptor descriptor )
+        {
+            this.reader = reader;
+            this.descriptor = descriptor;
+        }
     }
 }

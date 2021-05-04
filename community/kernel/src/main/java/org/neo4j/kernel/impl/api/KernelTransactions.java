@@ -85,6 +85,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
  */
 public class KernelTransactions extends LifecycleAdapter implements Supplier<IdController.ConditionSnapshot>
 {
+    public static final long SYSTEM_TRANSACTION_ID = 0;
     private final Locks locks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final TransactionCommitProcess transactionCommitProcess;

@@ -25,6 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageReader;
@@ -34,6 +35,7 @@ import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettin
 public class IndexStoreViewFactory
 {
     private final FullScanStoreView fullScanStoreView;
+    private final Locks locks;
     private final LockService lockService;
     private final Config config;
     private final Supplier<StorageReader> storageReader;
@@ -43,11 +45,13 @@ public class IndexStoreViewFactory
     public IndexStoreViewFactory(
             Config config,
             Supplier<StorageReader> storageReader,
+            Locks locks,
             FullScanStoreView fullScanStoreView,
             LabelScanStore labelScanStore,
             LockService lockService,
             LogProvider logProvider )
     {
+        this.locks = locks;
         this.lockService = lockService;
         this.config = config;
         this.storageReader = storageReader;
@@ -60,7 +64,7 @@ public class IndexStoreViewFactory
     {
         if ( config.get( enable_scan_stores_as_token_indexes ) )
         {
-            return new DynamicIndexStoreView( fullScanStoreView, lockService, config, indexProxies, storageReader, logProvider );
+            return new DynamicIndexStoreView( fullScanStoreView, locks, lockService, config, indexProxies, storageReader, logProvider );
         }
         else
         {

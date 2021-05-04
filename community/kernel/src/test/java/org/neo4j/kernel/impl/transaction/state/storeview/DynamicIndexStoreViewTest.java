@@ -30,11 +30,11 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
-import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageReader;
@@ -46,7 +46,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
+import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
+import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class DynamicIndexStoreViewTest
@@ -68,8 +75,10 @@ class DynamicIndexStoreViewTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         IndexProxyProvider indexProxies = mock( IndexProxyProvider.class );
         StubTokenIndexReader tokenReader = new StubTokenIndexReader();
+        IndexDescriptor descriptor = forSchema( forAnyEntityTokens( NODE ), DESCRIPTOR ).withName( "index" ).materialise( 0 );
         when( indexProxy.getState() ).thenReturn( InternalIndexState.ONLINE );
         when( indexProxy.newTokenReader() ).thenReturn( tokenReader );
+        when( indexProxy.getDescriptor()).thenReturn( descriptor );
         when( indexProxies.getIndexProxy( any() ) ).thenReturn( indexProxy );
         // Nodes indexed by label
         for ( long nodeId : nodeIds )
@@ -100,7 +109,9 @@ class DynamicIndexStoreViewTest
         StubStorageCursors cursors = new StubStorageCursors().withTokenIndexes();
         IndexProxy indexProxy = mock( IndexProxy.class );
         IndexProxyProvider indexProxies = mock( IndexProxyProvider.class );
+        IndexDescriptor descriptor = forSchema( forAnyEntityTokens( RELATIONSHIP ), DESCRIPTOR ).withName( "index" ).materialise( 0 );
         when( indexProxy.getState() ).thenReturn( InternalIndexState.ONLINE );
+        when( indexProxy.getDescriptor()).thenReturn( descriptor );
         when( indexProxy.newTokenReader() ).thenReturn( tokenReader );
         when( indexProxies.getIndexProxy( any() ) ).thenReturn( indexProxy );
 
@@ -210,15 +221,15 @@ class DynamicIndexStoreViewTest
 
     private DynamicIndexStoreView dynamicIndexStoreView( StorageReader cursors, IndexProxyProvider indexingService )
     {
-        LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
-        return dynamicIndexStoreView( cursors, indexingService, new FullScanStoreView( locks, storageReaderSupplier, Config.defaults(), jobScheduler ) );
+        return dynamicIndexStoreView(
+                cursors, indexingService, new FullScanStoreView( NO_LOCK_SERVICE, storageReaderSupplier, Config.defaults(), jobScheduler ) );
     }
 
     private DynamicIndexStoreView dynamicIndexStoreView( StorageReader cursors, IndexProxyProvider indexingService, FullScanStoreView fullScanStoreView )
     {
-        LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
-        return new DynamicIndexStoreView( fullScanStoreView, locks, Config.defaults(), indexingService, storageReaderSupplier, NullLogProvider.getInstance() );
+        return new DynamicIndexStoreView(
+                fullScanStoreView, NO_LOCKS, NO_LOCK_SERVICE, Config.defaults(), indexingService, storageReaderSupplier, NullLogProvider.getInstance() );
     }
 }

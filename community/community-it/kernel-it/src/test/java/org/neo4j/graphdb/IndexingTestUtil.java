@@ -19,16 +19,14 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.function.Predicate;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.function.Predicates.alwaysTrue;
 
 public class IndexingTestUtil
 {
@@ -36,19 +34,34 @@ public class IndexingTestUtil
     {
         try ( var tx = db.beginTx() )
         {
-            var schemas = StreamSupport.stream( tx.schema().getIndexes().spliterator(), false ).map( IndexDefinitionImpl.class::cast )
-                                       .map( IndexDefinitionImpl::getIndexReference ).map( IndexDescriptor::schema )
-                                       .collect( Collectors.toList() );
-            assertThat( schemas ).allMatch( SchemaDescriptor::isAnyTokenSchemaDescriptor );
-            assertThat( schemas.stream().map( SchemaDescriptor::entityType ) ).containsExactlyInAnyOrder( EntityType.NODE, EntityType.RELATIONSHIP );
+            var indexes = stream( tx.schema().getIndexes().spliterator(), false ).collect( toList() );
+            assertThat( indexes.stream().filter( IndexDefinition::isNodeIndex ).count() ).isEqualTo( 1 );
+            assertThat( indexes.stream().filter( IndexDefinition::isRelationshipIndex ).count() ).isEqualTo( 1 );
+            assertThat( indexes.size() ).isEqualTo( 2 );
         }
     }
 
     public static void dropAllIndexes( GraphDatabaseService db )
     {
+        dropIndexes( db, alwaysTrue() );
+    }
+
+    public static void dropTokenIndexes( GraphDatabaseService db )
+    {
+        dropIndexes( db, index -> index.isRelationshipIndex() || index.isNodeIndex() );
+    }
+
+    private static void dropIndexes( GraphDatabaseService db, Predicate<IndexDefinition> condition )
+    {
         try ( var tx = db.beginTx() )
         {
-            tx.schema().getIndexes().forEach( IndexDefinition::drop );
+            tx.schema().getIndexes().forEach( index ->
+            {
+                if ( condition.test( index ) )
+                {
+                    index.drop();
+                }
+            } );
             tx.commit();
         }
     }
