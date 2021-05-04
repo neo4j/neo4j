@@ -44,7 +44,8 @@ import scala.collection.immutable.BitSet
  * The input is a set of disconnected patterns and this class will find the
  * cheapest way to connect all components using IDP.
  */
-case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlannerTrait, config: IDPSolverConfig, monitor: IDPSolverMonitor)
+case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlannerTrait, config: IDPSolverConfig)
+                                    (monitor: IDPSolverMonitor)
   extends JoinDisconnectedQueryGraphComponents {
 
   private val cpConnector = CartesianProductComponentConnector

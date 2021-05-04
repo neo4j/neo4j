@@ -96,8 +96,9 @@ object IDPQueryGraphSolver {
  * written by Donald Kossmann and Konrad Stocker
  */
 case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrait,
-                               componentConnector: JoinDisconnectedQueryGraphComponents,
-                               monitor: IDPQueryGraphSolverMonitor) extends QueryGraphSolver with PatternExpressionSolving {
+                               componentConnector: JoinDisconnectedQueryGraphComponents)
+                              (monitor: IDPQueryGraphSolverMonitor)
+  extends QueryGraphSolver with PatternExpressionSolving {
 
   override def plan(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): BestPlans = {
     val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrderConfig, context), context)

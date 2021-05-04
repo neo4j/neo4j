@@ -39,8 +39,8 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
 
   test("NodeHashJoin is planned in IDP planner") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
-    val planner1 = SingleComponentPlanner(monitor, solverConfig = DefaultIDPSolverConfig)
-    val solver = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins, monitor)
+    val planner1 = SingleComponentPlanner(solverConfig = DefaultIDPSolverConfig)(monitor)
+    val solver = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins)(monitor)
 
     testPlanner(solver)
   }

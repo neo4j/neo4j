@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
@@ -107,6 +105,7 @@ import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
+import java.time.Clock
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -146,13 +145,13 @@ object CypherPlanner {
         (monitor, DPSolverConfig)
     }
 
-    val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
+    val singleComponentPlanner = SingleComponentPlanner(solverConfig)(monitor)
     val componentConnectorPlanner = connectComponentsPlannerOption match {
       case CypherConnectComponentsPlannerOption.idp |
-           CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor)
+           CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, solverConfig)(monitor)
       case CypherConnectComponentsPlannerOption.greedy  => cartesianProductsOrValueJoins
     }
-    IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
+    IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner)(monitor)
   }
 
 }

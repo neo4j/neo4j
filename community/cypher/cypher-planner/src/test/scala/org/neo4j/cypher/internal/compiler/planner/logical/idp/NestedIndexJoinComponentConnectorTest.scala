@@ -37,7 +37,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
 
   private def register[X](registry: IdRegistry[X], elements: X*): Goal = Goal(registry.registerAll(elements))
 
-  private val singleComponentPlanner = SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor])
+  private val singleComponentPlanner = SingleComponentPlanner()(mock[IDPQueryGraphSolverMonitor])
 
   test("produces nested index joins of two components connected by property equality") {
     val table = IDPTable.empty[LogicalPlan]

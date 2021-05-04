@@ -86,7 +86,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(SingleComponentPlanner(monitor, solverConfig = EmptySolverConfig()), cartesianProductsOrValueJoins, monitor)
+      queryGraphSolver = IDPQueryGraphSolver(SingleComponentPlanner(solverConfig = EmptySolverConfig())(monitor), cartesianProductsOrValueJoins)(monitor)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c")
       )
@@ -911,6 +911,29 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
+  test("can call hashCode on IDPQueryGraphSolver") {
+    // Given
+    val monitor = new IDPQueryGraphSolverMonitor {
+      override def noIDPIterationFor(graph: QueryGraph, result: LogicalPlan): Unit = ()
+      override def initTableFor(graph: QueryGraph): Unit = ()
+      override def startIDPIterationFor(graph: QueryGraph): Unit = ()
+      override def endIDPIterationFor(graph: QueryGraph, result: LogicalPlan): Unit = ()
+      override def emptyComponentPlanned(graph: QueryGraph, plan: LogicalPlan): Unit = ()
+      override def startConnectingComponents(graph: QueryGraph): Unit = ()
+      override def endConnectingComponents(graph: QueryGraph, result: LogicalPlan): Unit = ()
+      override def startIteration(iteration: Int): Unit = ()
+      override def endIteration(iteration: Int, depth: Int, tableSize: Int): Unit = ()
+      override def foundPlanAfter(iterations: Int): Unit = ()
+      // The Kernel monitors behave weirdly.
+      // You can only call the methods directly defined in the interface on them, everything else throws a NullPointerException.
+      override def hashCode(): Int = throw new NullPointerException()
+    }
+    val solver = createQueryGraphSolver(monitor, ExpandOnlyIDPSolverConfig)
+
+    // When & Then
+    noException should be thrownBy solver.hashCode()
+  }
+
   private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solverConfig: SingleComponentIDPSolverConfig) =
-    IDPQueryGraphSolver(SingleComponentPlanner(monitor, solverConfig), cartesianProductsOrValueJoins, monitor)
+    IDPQueryGraphSolver(SingleComponentPlanner(solverConfig)(monitor), cartesianProductsOrValueJoins)(monitor)
 }

@@ -133,9 +133,9 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
       val solverMonitor = mock[IDPQueryGraphSolverMonitor]
-      val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
-      val connectorPlanner = ComponentConnectorPlanner(singleComponentPlanner, solverConfig, solverMonitor)
-      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, solverMonitor)
+      val singleComponentPlanner = SingleComponentPlanner(solverConfig)(solverMonitor)
+      val connectorPlanner = ComponentConnectorPlanner(singleComponentPlanner, solverConfig)(solverMonitor)
+      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner)(solverMonitor)
     }
   }
   case object QueryGraphSolverWithGreedyConnectComponents extends QueryGraphSolverSetup {
@@ -145,9 +145,9 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
     def queryGraphSolver(solverConfig: SingleComponentIDPSolverConfig): QueryGraphSolver = {
       val solverMonitor = mock[IDPQueryGraphSolverMonitor]
-      val singleComponentPlanner = SingleComponentPlanner(solverMonitor, solverConfig)
+      val singleComponentPlanner = SingleComponentPlanner(solverConfig)(solverMonitor)
       val connectorPlanner = cartesianProductsOrValueJoins
-      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner, solverMonitor)
+      new IDPQueryGraphSolver(singleComponentPlanner, connectorPlanner)(solverMonitor)
     }
   }
 

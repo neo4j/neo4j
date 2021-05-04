@@ -46,9 +46,9 @@ import org.neo4j.time.Stopwatch
  *
  * written by Donald Kossmann and Konrad Stocker
  */
-case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
-                                  solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig,
-                                  leafPlanFinder: LeafPlanFinder = leafPlanOptions) extends SingleComponentPlannerTrait {
+case class SingleComponentPlanner(solverConfig: SingleComponentIDPSolverConfig = DefaultIDPSolverConfig,
+                                  leafPlanFinder: LeafPlanFinder = leafPlanOptions)
+                                 (monitor: IDPQueryGraphSolverMonitor) extends SingleComponentPlannerTrait {
   override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrderConfig: InterestingOrderConfig): BestPlans = {
     val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrderConfig, context)
 

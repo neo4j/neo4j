@@ -307,7 +307,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       val kit = context.config.toKit(InterestingOrderConfig.empty, context)
 
       val singleComponents = input(context.planningAttributes)
-      val result = cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(singleComponents, cfg.qg, InterestingOrderConfig.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
+      val result = cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(singleComponents, cfg.qg, InterestingOrderConfig.empty, context, kit, SingleComponentPlanner()(mock[IDPQueryGraphSolverMonitor]))
 
       assertion(result.result)
     }
