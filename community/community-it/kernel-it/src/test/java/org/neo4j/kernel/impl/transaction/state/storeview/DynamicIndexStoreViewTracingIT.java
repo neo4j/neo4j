@@ -28,20 +28,25 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
+import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configure" )
 class DynamicIndexStoreViewTracingIT
 {
     @Inject
@@ -53,6 +58,12 @@ class DynamicIndexStoreViewTracingIT
     @Inject
     private RecordStorageEngine storageEngine;
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+    }
 
     @AfterEach
     void closeJobScheduler() throws Exception
@@ -83,8 +94,8 @@ class DynamicIndexStoreViewTracingIT
                 new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 6 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 6 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 6 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 4 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 4 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 4 );
     }
 }

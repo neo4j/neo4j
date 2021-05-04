@@ -33,16 +33,21 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
+import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configure" )
 class TransactionTracingIT
 {
     private static final int ENTITY_COUNT = 1_000;
@@ -51,6 +56,12 @@ class TransactionTracingIT
     private GraphDatabaseAPI database;
     @Inject
     private DatabaseManagementService managementService;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+    }
 
     @Test
     void tracePageCacheAccessOnAllNodesAccess()
@@ -146,9 +157,9 @@ class TransactionTracingIT
 
             assertEquals( ENTITY_COUNT, Iterators.count( transaction.findNodes( marker ) ) );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         }
     }
 
