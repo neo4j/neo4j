@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import java.lang.reflect.Method
+import org.neo4j.common.EntityType
 
+import java.lang.reflect.Method
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -197,6 +198,7 @@ abstract class LogicalPlan(idGen: IdGen)
         acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case MultiNodeIndexSeek(indexPlans) =>
         acc => acc ++ indexPlans.flatMap(_.indexUsage)
+      case NodeByLabelScan(idName, _, _, _) => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
       }
   }
 }
@@ -339,3 +341,4 @@ sealed trait IndexUsage {
 
 final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
 final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
+final case class SchemaIndexLookupUsage(identifier: String, entityType: EntityType) extends IndexUsage

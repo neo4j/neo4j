@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.QueryExecutionType.QueryType
@@ -80,6 +81,11 @@ trait ExecutableQuery extends CacheabilityInfo {
     * for very fast queries.
     */
   val labelIdsOfUsedIndexes: Array[Long] = compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }.toArray
+
+  /**
+   * Lookup entity types used by this executable query.
+   */
+  val lookupEntityTypes: Array[EntityType] = compilerInfo.lookupIndexes().asScala.map(_.getEntityType).toArray
 
   /**
    * Names of all parameters for this query, explicit and auto-parametrized.

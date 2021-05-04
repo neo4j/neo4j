@@ -17,36 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.api.query;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.common.EntityType;
 
-/**
- * Methods for acquiring and releasing locks.
- */
-public interface Locks
+public class LookupIndexUsage extends IndexUsage
 {
-    void acquireExclusiveNodeLock( long... ids );
+    private final String identifier;
+    private final EntityType entityType;
 
-    void acquireExclusiveRelationshipLock( long... ids );
+    public LookupIndexUsage( String identifier, EntityType entityType )
+    {
+        super( identifier );
+        this.identifier = identifier;
+        this.entityType = entityType;
+    }
 
-    void releaseExclusiveNodeLock( long... ids );
+    public EntityType getEntityType()
+    {
+        return entityType;
+    }
 
-    void releaseExclusiveRelationshipLock( long... ids );
-
-    void acquireSharedNodeLock( long... ids );
-
-    void acquireSharedRelationshipLock( long... ids );
-
-    void acquireSharedLabelLock( long... ids );
-
-    void releaseSharedNodeLock( long... ids );
-
-    void releaseSharedRelationshipLock( long... ids );
-
-    void releaseSharedLabelLock( long... ids );
-
-    void acquireSharedLookupLock( EntityType entityType );
-
-    void releaseSharedLookupLock( EntityType entityType );
+    @Override
+    public Map<String,String> asMap()
+    {
+        Map<String,String> map = new HashMap<>();
+        map.put( "indexType", "LOOKUP INDEX" );
+        map.put( "entityType", entityType.name() );
+        map.put( "identifier", identifier );
+        return map;
+    }
 }

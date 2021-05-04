@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.SchemaIndexLookupUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexScanUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexSeekUsage
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -68,6 +69,7 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.api.query.CompilerInfo
+import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.impl.query.QueryExecution
@@ -188,12 +190,18 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
   private def buildCompilerInfo(logicalPlan: LogicalPlan,
                                 plannerName: PlannerName,
-                                runtimeName: RuntimeName): CompilerInfo =
-
-    new CompilerInfo(plannerName.name, runtimeName.name, logicalPlan.indexUsage.map {
+                                runtimeName: RuntimeName): CompilerInfo = {
+    val (lookupIndexes, schemaIndexes) = logicalPlan.indexUsage.partition(_.isInstanceOf[SchemaIndexLookupUsage])
+    val schemaIndexUsage = schemaIndexes.map {
       case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
       case SchemaIndexScanUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-    }.asJava)
+    }.asJava
+    val lookupIndexUsage = lookupIndexes.map {
+      case SchemaIndexLookupUsage(identifier, entityType) => new LookupIndexUsage(identifier, entityType)
+    }.asJava
+
+    new CompilerInfo(plannerName.name, runtimeName.name, schemaIndexUsage, lookupIndexUsage)
+  }
 
   private def getQueryType(planState: LogicalPlanState): InternalQueryType = {
     // check system and procedure runtimes first, because if this is true solveds will be empty

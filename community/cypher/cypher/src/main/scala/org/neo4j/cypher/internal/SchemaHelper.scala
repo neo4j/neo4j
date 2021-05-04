@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.concurrent.atomic.AtomicLong
+import org.neo4j.common.EntityType
 
+import java.util.concurrent.atomic.AtomicLong
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -50,11 +51,18 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
     val labelIds: Array[Long] = executionPlan.labelIdsOfUsedIndexes
     if (labelIds.nonEmpty) {
       lockPlanLabels(tc, labelIds)
+    }
+
+    val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
+    lookupTypes.foreach(lockLookupType(tc, _))
+
+    if (lookupTypes.nonEmpty || labelIds.nonEmpty) {
       val schemaTokenAfter = readSchemaToken(tc)
 
       // if the schema has changed while taking all locks we release locks and return false
       if (schemaTokenBefore != schemaTokenAfter) {
         releasePlanLabels(tc, labelIds)
+        lookupTypes.foreach(releaseLookupType(tc, _))
         return false
       }
     }
@@ -67,4 +75,9 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
   private def lockPlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit =
     tc.kernelTransaction.locks().acquireSharedLabelLock(labelIds:_*)
 
+  private def lockLookupType(tc: TransactionalContext, entityType: EntityType): Unit =
+    tc.kernelTransaction.locks().acquireSharedLookupLock( entityType )
+
+  private def releaseLookupType(tc: TransactionalContext, entityType: EntityType): Unit =
+    tc.kernelTransaction.locks().releaseSharedLookupLock( entityType )
 }
