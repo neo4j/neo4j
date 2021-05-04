@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -66,5 +67,11 @@ public class IndexedStoreScan implements StoreScan
     public PopulationProgress getProgress()
     {
         return delegate.getProgress();
+    }
+
+    @Override
+    public void setPhaseTracker( PhaseTracker phaseTracker )
+    {
+        delegate.setPhaseTracker( phaseTracker );
     }
 }
