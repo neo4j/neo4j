@@ -19,6 +19,7 @@
  */
 package migration;
 
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +45,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -56,6 +58,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -68,13 +71,19 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.groupingBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.graphdb.schema.IndexType.BTREE;
+import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 import static org.neo4j.test.Unzip.unzip;
@@ -91,6 +100,7 @@ import static org.neo4j.values.storable.Values.COMPARATOR;
 @Neo4jLayoutExtension
 class IndexConfigMigrationIT
 {
+    private static final int EXPECTED_NUMBER_OF_INDEXES = 8;
     @Inject
     private DatabaseLayout databaseLayout;
 
@@ -215,7 +225,8 @@ class IndexConfigMigrationIT
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
         DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, true );
+                .setConfig( GraphDatabaseSettings.allow_upgrade, true )
+                .setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
         DatabaseManagementService dbms = builder.build();
         try
         {
@@ -223,7 +234,7 @@ class IndexConfigMigrationIT
             Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( all() );
             try ( Transaction tx = db.beginTx() )
             {
-                hasIndexCount( tx, 7 );
+                validateIndexes( tx );
                 for ( Node node : tx.getAllNodes() )
                 {
                     hasLabels( node, label1, label2, label3, label4 );
@@ -315,11 +326,16 @@ class IndexConfigMigrationIT
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private static void hasIndexCount( Transaction transaction, int expectedIndexCount )
+    private static void validateIndexes( Transaction transaction )
     {
         Iterable<IndexDefinition> indexes = transaction.schema().getIndexes();
         long actualIndexCount = Iterables.count( indexes );
-        assertEquals( expectedIndexCount, actualIndexCount, "Expected there to be " + expectedIndexCount + " indexes but was " + actualIndexCount );
+        assertEquals(
+                EXPECTED_NUMBER_OF_INDEXES, actualIndexCount, "Expected there to be " + EXPECTED_NUMBER_OF_INDEXES + " indexes but was " + actualIndexCount );
+        var indexesByTypes = stream( indexes ).collect( groupingBy( IndexDefinition::getIndexType ) );
+        assertThat( indexesByTypes ).hasEntrySatisfying( LOOKUP, new ListCondition( 1 ) )
+                .hasEntrySatisfying( BTREE, new ListCondition( 4 ) )
+                .hasEntrySatisfying( FULLTEXT, new ListCondition( 3 ) );
     }
 
     private static void hasLabels( Node node, Label... labels )
@@ -378,24 +394,17 @@ class IndexConfigMigrationIT
 
     private static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
     {
-        Map<String,Value> map = new HashMap<>();
-        map.put( ANALYZER, Values.stringValue( analyzer ) );
-        map.put( EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
-        return map;
+        return Map.of( ANALYZER, Values.stringValue( analyzer ), EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
     }
 
     private static Map<String,Value> asConfigMap( String analyzer )
     {
-        Map<String,Value> map = new HashMap<>();
-        map.put( ANALYZER, Values.stringValue( analyzer ) );
-        return map;
+        return Map.of( ANALYZER, Values.stringValue( analyzer ) );
     }
 
     private static Map<String,Value> asConfigMap( boolean eventuallyConsistent )
     {
-        Map<String,Value> map = new HashMap<>();
-        map.put( EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
-        return map;
+        return Map.of( EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
     }
 
     private static String asConfigString( Map<String,Value> configMap )
@@ -426,5 +435,21 @@ class IndexConfigMigrationIT
     private static SchemaRead schemaRead( Transaction tx )
     {
         return ((InternalTransaction) tx).kernelTransaction().schemaRead();
+    }
+
+    private static class ListCondition extends Condition<List<IndexDefinition>>
+    {
+        private final int expectedSize;
+
+        private ListCondition( int expectedSize )
+        {
+            this.expectedSize = expectedSize;
+        }
+
+        @Override
+        public boolean matches( List<IndexDefinition> value )
+        {
+            return value.size() == expectedSize;
+        }
     }
 }
