@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -53,6 +55,7 @@ class CommitContentionTest
     private final Semaphore semaphore1 = new Semaphore( 1 );
     private final Semaphore semaphore2 = new Semaphore( 1 );
     private final AtomicReference<Exception> reference = new AtomicReference<>();
+    private final AtomicBoolean interceptorEnabled = new AtomicBoolean();
 
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
@@ -60,9 +63,9 @@ class CommitContentionTest
     @BeforeEach
     void before() throws Exception
     {
+        db = createDb();
         semaphore1.acquire();
         semaphore2.acquire();
-        db = createDb();
     }
 
     @AfterEach
@@ -74,12 +77,11 @@ class CommitContentionTest
     @Test
     void shouldNotContendOnCommitWhenPushingUpdates() throws Exception
     {
+        interceptorEnabled.set( true );
+
         Thread thread = startFirstTransactionWhichBlocksDuringPushUntilSecondTransactionFinishes();
-
         runAndFinishSecondTransaction();
-
         thread.join();
-
         assertNoFailures();
     }
 
@@ -123,7 +125,9 @@ class CommitContentionTest
 
     private GraphDatabaseService createDb()
     {
-        Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath() );
+        Config cfg = Config.newBuilder().set( neo4j_home, testDirectory.absolutePath() )
+                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
+                .build();
         managementService = new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
@@ -132,8 +136,7 @@ class CommitContentionTest
                 return new SkipTransactionDatabaseStats();
             }
         } ).build( cfg, GraphDatabaseDependencies.newDependencies().dependencies( noOpSystemGraphInitializer( cfg ) ) );
-        return managementService
-                .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
+        return managementService.database( cfg.get( GraphDatabaseSettings.default_database ));
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException
@@ -180,7 +183,7 @@ class CommitContentionTest
         {
             super.transactionFinished( committed, write );
 
-            if ( committed )
+            if ( committed && interceptorEnabled.get() )
             {
                 // skip signal and waiting for second transaction
                 if ( skip )
