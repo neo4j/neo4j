@@ -143,6 +143,27 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
         return this;
     }
 
+    /**
+     * Checks that there is a message that contains all the supplies message snippets.
+     */
+    public LogAssert containsMessageWithAll( String... snippets )
+    {
+        isNotNull();
+
+        var logCalls = actual.getLogCalls();
+        boolean matched = logCalls.stream().anyMatch( call -> matchedLogger( call )
+                && matchedLevel( call )
+                && Arrays.stream( snippets ).allMatch( snippet -> matchedMessage( snippet, call ) ) );
+
+        if ( !matched )
+        {
+            failWithMessage( "Expected log to contain a message containing: `%s`. " +
+                    "But no matches found in:%s", Arrays.toString( snippets ), actual.serialize() );
+        }
+
+        return this;
+    }
+
     public LogAssert eachMessageContains( String message )
     {
         isNotNull();

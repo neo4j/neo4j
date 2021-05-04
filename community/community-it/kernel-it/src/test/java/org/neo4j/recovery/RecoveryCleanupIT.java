@@ -42,8 +42,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -80,6 +81,7 @@ class RecoveryCleanupIT
     @BeforeEach
     void setup()
     {
+        testSpecificConfig.put( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
         factory = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
     }
 
@@ -102,7 +104,7 @@ class RecoveryCleanupIT
 
         // WHEN
         Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
-        LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
+        GBPTree.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
         setMonitor( recoveryBarrierMonitor );
         Future<GraphDatabaseService> recovery = executor.submit( () -> db = startDatabase() );
         recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
@@ -127,14 +129,22 @@ class RecoveryCleanupIT
         managementService.shutdown();
 
         // then
-        assertThat( logProvider ).containsMessages( "Label index cleanup job registered",
-                                                    "Label index cleanup job started",
-                                                    "Label index cleanup job closed" );
-        assertThat( logProvider ).containsMessages(
-                "Label index cleanup job finished",
-                "Number of pages visited",
-                "Number of cleaned crashed pointers",
-                "Time spent" );
+        assertThat( logProvider )
+                .containsMessageWithAll( "Schema index cleanup job registered", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=",
+                        "neostore.labelscanstore.db" )
+                .containsMessageWithAll( "Schema index cleanup job started", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=",
+                        "neostore.labelscanstore.db" )
+                .containsMessageWithAll( "Schema index cleanup job closed", "descriptor", "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexFile=",
+                        "neostore.labelscanstore.db" )
+                .containsMessageWithAll( "Schema index cleanup job finished",
+                        "descriptor",
+                        "type='TOKEN LOOKUP'",
+                        "schema=(:<any-labels>)",
+                        "indexFile=",
+                        "neostore.labelscanstore.db",
+                        "Number of pages visited",
+                        "Number of cleaned crashed pointers",
+                        "Time spent" );
     }
 
     @Test
@@ -165,22 +175,23 @@ class RecoveryCleanupIT
         for ( String subType : subTypes )
         {
             assertThat( logProvider )
-                    .containsMessages( indexRecoveryLogMatcher( "Schema index cleanup job registered", subType ) )
-                    .containsMessages( indexRecoveryLogMatcher( "Schema index cleanup job started", subType ) )
-                    .containsMessages( indexRecoveryFinishedLogMatcher( subType ) )
-                    .containsMessages( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
+                    .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job registered", subType ) )
+                    .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job started", subType ) )
+                    .containsMessageWithAll( indexRecoveryFinishedLogMatcher( subType ) )
+                    .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
         }
     }
 
     private static String[] indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
     {
-        return new String[] { logMessage, "descriptor", "indexFile=", File.separator + subIndexProviderKey };
+        return new String[] { logMessage, "descriptor", "type='GENERAL BTREE'", "indexFile=", File.separator + subIndexProviderKey };
     }
 
     private static String[] indexRecoveryFinishedLogMatcher( String subIndexProviderKey )
     {
         return new String[] { "Schema index cleanup job finished",
                 "descriptor",
+                "type='GENERAL BTREE'",
                 "indexFile=",
                 File.separator + subIndexProviderKey,
                 "Number of pages visited",
@@ -275,7 +286,7 @@ class RecoveryCleanupIT
         return ((GraphDatabaseAPI) db).getDependencyResolver();
     }
 
-    private static class RecoveryBarrierMonitor extends LabelScanStore.Monitor.Adaptor
+    private static class RecoveryBarrierMonitor extends GBPTree.Monitor.Adaptor
     {
         private final Barrier.Control barrier;
 
@@ -285,7 +296,7 @@ class RecoveryCleanupIT
         }
 
         @Override
-        public void recoveryCleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
+        public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
         {
             barrier.reached();
         }

@@ -134,6 +134,16 @@ public class TokenIndex implements ConsistencyCheckable
      */
     private final String tokenStoreName;
 
+    /**
+     * A descriptor used for monitoring purposes.
+     * <p>
+     * A descriptor of a token index can change in very rare cases (everything is the same apart from the ID).
+     * Since the descriptor is used only for monitoring purposes, we don't have to deal with this edge case here.
+     * <p>
+     * It is named like this, so no one would be tempted to use it for anything else in the future!
+     */
+    private final IndexDescriptor monitoringDescriptor;
+
     public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor )
     {
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
@@ -145,6 +155,7 @@ public class TokenIndex implements ConsistencyCheckable
         this.databaseName = databaseIndexContext.databaseName;
         this.indexFiles = indexFiles;
         this.tokenStoreName = descriptor.getName();
+        this.monitoringDescriptor = descriptor;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
@@ -166,7 +177,7 @@ public class TokenIndex implements ConsistencyCheckable
     {
         GBPTree.Monitor treeMonitor = monitors.newMonitor( GBPTree.Monitor.class, monitorTag );
         IndexProvider.Monitor indexMonitor = monitors.newMonitor( IndexProvider.Monitor.class, monitorTag );
-        return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, null );
+        return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, monitoringDescriptor );
     }
 
     void closeResources()
