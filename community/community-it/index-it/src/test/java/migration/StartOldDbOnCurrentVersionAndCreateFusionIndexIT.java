@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -185,7 +187,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         Provider[] providers = providersUpToAndIncluding( highestProviderInOldVersion );
         Provider[] providersIncludingSubject = concat( providers, DEFAULT_PROVIDER );
         int fulltextIndexes = 4;
-        int expectedNumberOfIndexes = fulltextIndexes + providers.length * 2;
+        int lookupIndexes = 1;
+        int expectedNumberOfIndexes = fulltextIndexes + lookupIndexes + providers.length * 2;
         try
         {
             // All indexes needs to be rebuilt:
@@ -315,7 +318,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         managementService = setupDb( storeDir, indexRecoveryTracker );
         try
         {
-            int numberNewIndexes = 2;
+            int numberNewIndexes = 4;
             verifyInitialState( indexRecoveryTracker, expectedNumberOfIndexes + numberNewIndexes + NUMBER_OF_SYSTEM_INDEXES, InternalIndexState.ONLINE );
         }
         finally
@@ -336,6 +339,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         return new TestDatabaseManagementServiceBuilder( storeDir )
                 .setMonitors( monitors )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
+                .setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
                 .build();
     }
 
@@ -347,9 +351,19 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private void verifyInitialState( IndexRecoveryTracker indexRecoveryTracker, int expectedNumberOfIndexes, InternalIndexState expectedInitialState )
     {
         assertEquals( expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size(), "exactly " + expectedNumberOfIndexes + " indexes " );
-        for ( InternalIndexState actualInitialState : indexRecoveryTracker.initialStateMap.values() )
+        for ( Map.Entry<IndexDescriptor,InternalIndexState> indexStateEntry : indexRecoveryTracker.initialStateMap.entrySet() )
         {
-            assertEquals( expectedInitialState, actualInitialState, "initial state is online, don't do recovery: " + indexRecoveryTracker.initialStateMap );
+            switch ( indexStateEntry.getKey().getIndexType() )
+            {
+            case LOOKUP:
+                assertEquals( InternalIndexState.ONLINE, indexStateEntry.getValue(),
+                        "Unexpected lookup index state: " + indexRecoveryTracker.initialStateMap );
+                break;
+            default:
+                assertEquals( expectedInitialState, indexStateEntry.getValue(),
+                        "initial state is online, don't do recovery: " + indexRecoveryTracker.initialStateMap );
+                break;
+            }
         }
     }
 
