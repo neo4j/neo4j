@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.kernel.api.ResourceTracker;
 
 public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<Relationship,RelationshipTypeIndexCursor,RelationshipScanCursor>
 {
@@ -36,9 +37,10 @@ public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
             CursorEntityFactory<RelationshipTypeIndexCursor,Relationship> relationshipFactory,
+            ResourceTracker resourceTracker,
             PropertyIndexQuery... queries )
     {
-        super( relationshipTypeIndexCursor, relationshipScanCursor, propertyCursor, relationshipFactory, queries );
+        super( relationshipTypeIndexCursor, relationshipScanCursor, propertyCursor, relationshipFactory, resourceTracker, queries );
         this.read = read;
     }
 

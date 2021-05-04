@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.impl.newapi.CursorPredicates;
 
 public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR extends Cursor, ENTITY_CURSOR extends Cursor>
@@ -34,11 +35,13 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
     private final ENTITY_CURSOR entityCursor;
     private final PropertyCursor propertyCursor;
     private final PropertyIndexQuery[] queries;
+    private final ResourceTracker resourceTracker;
 
     protected PropertyFilteringIterator( TOKEN_CURSOR entityTokenCursor,
                                          ENTITY_CURSOR entityCursor,
                                          PropertyCursor propertyCursor,
                                          CursorEntityFactory<TOKEN_CURSOR,T> entityFactory,
+                                         ResourceTracker resourceTracker,
                                          PropertyIndexQuery[] queries )
     {
         super( entityTokenCursor, entityFactory );
@@ -46,6 +49,8 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
         this.entityCursor = entityCursor;
         this.propertyCursor = propertyCursor;
         this.queries = queries;
+        this.resourceTracker = resourceTracker;
+        resourceTracker.registerCloseableResource( this );
     }
 
     @Override
@@ -69,6 +74,7 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
     void closeResources()
     {
         IOUtils.closeAllSilently( entityTokenCursor, entityCursor, propertyCursor );
+        resourceTracker.unregisterCloseableResource( this );
     }
 
     private boolean hasPropertiesWithValues()

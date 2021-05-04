@@ -79,9 +79,11 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.kernel.impl.api.CloseableResourceManager;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
@@ -128,6 +130,18 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private final QueryExecutionEngine executionEngine;
     private final Consumer<Status> terminationCallback;
     private final TransactionExceptionMapper exceptionMapper;
+    /**
+     * Tracker of resources in use by the Core API.
+     * <p>
+     * Some results returned by the Core API represent resources that need to be closed.
+     * Unfortunately, users might forget to close such resources when they are done with them.
+     * Transaction resources are tracked here and unclosed resources are closed
+     * at the end of the transaction.
+     * <p>
+     * This resource tracker does not track resources opened as part of Cypher execution,
+     * which are managed in {@link org.neo4j.kernel.impl.api.KernelStatement}.
+     */
+    private final ResourceTracker coreApiResourceTracker = new CloseableResourceManager();
     private KernelTransaction transaction;
     private boolean closed;
     private List<TransactionClosedCallback> closeCallbacks;
@@ -454,7 +468,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allNodesScan( cursor );
-            return new CursorIterator<>( cursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
+            return new CursorIterator<>( cursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
         };
     }
 
@@ -563,7 +577,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allRelationshipsScan( cursor );
             return new CursorIterator<>( cursor, RelationshipScanCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference(),
-                    c.sourceNodeReference(), c.type(), c.targetNodeReference() ) );
+                    c.sourceNodeReference(), c.type(), c.targetNodeReference() ), coreApiResourceTracker );
         };
     }
 
@@ -641,6 +655,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             {
                 throw new NotInTransactionException( "The transaction has been closed." );
             }
+
+            coreApiResourceTracker.closeAllCloseableResources();
+
             operation.perform( transaction );
             closed = true;
             transaction = null;
@@ -776,7 +793,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), query );
 
-                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
+                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
             }
             catch ( KernelException e )
             {
@@ -806,7 +823,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.relationshipIndexSeek( indexSession, cursor, unconstrained(), query );
 
-                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference() ) );
+                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference() ),
+                        coreApiResourceTracker );
             }
             catch ( KernelException e )
             {
@@ -859,6 +877,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                             nodeCursor,
                             propertyCursor,
                             c -> newNodeEntity( c.nodeReference() ),
+                            coreApiResourceTracker,
                             queries );
                 }
                 catch ( KernelException e )
@@ -880,6 +899,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 nodeCursor,
                 propertyCursor,
                 c -> newNodeEntity( c.nodeReference() ),
+                coreApiResourceTracker,
                 queries );
     }
 
@@ -894,7 +914,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 List.of( propertyCursor ) );
 
         ktx.dataRead().allNodesScan( nodeCursor );
-        return new CursorIterator<>( propertyFilteredCursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
+        return new CursorIterator<>( propertyFilteredCursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
     }
 
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int typeId,
@@ -920,6 +940,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                             relationshipScanCursor,
                             propertyCursor,
                             c -> newRelationshipEntity( c.relationshipReference() ),
+                            coreApiResourceTracker,
                             queries );
                 }
                 catch ( KernelException e )
@@ -944,7 +965,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         ktx.dataRead().allRelationshipsScan( relationshipScanCursor );
         return new CursorIterator<>( propertyFilteredCursor, RelationshipScanCursor::relationshipReference,
-                c -> newRelationshipEntity( c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference() ) );
+                c -> newRelationshipEntity( c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference() ), coreApiResourceTracker );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperties( KernelTransaction transaction, int labelId, PropertyIndexQuery.ExactPredicate... queries )
@@ -967,7 +988,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
-                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
+                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
             }
             catch ( KernelException e )
             {
@@ -1016,7 +1037,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                     var session = ktx.dataRead().tokenReadSession( index );
                     var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
                     ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
-                    return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
+                    return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
                 }
                 catch ( KernelException e )
                 {
@@ -1029,7 +1050,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.pageCursorTracer() );
         ktx.dataRead().nodeLabelScan( labelId, cursor, IndexOrder.NONE );
-        return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
+        return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
     }
 
     private ResourceIterator<Node> allNodesByLabelWithoutIndex( KernelTransaction ktx, int labelId )
@@ -1037,7 +1058,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
         ktx.dataRead().allNodesScan( cursor );
         var filetredCursor = new FilteringNodeCursorWrapper( cursor, CursorPredicates.hasLabel( labelId ) );
-        return new CursorIterator<>( filetredCursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ) );
+        return new CursorIterator<>( filetredCursor, NodeCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
     }
 
     private ResourceIterator<Relationship> allRelationshipsWithType( final RelationshipType type )
@@ -1062,7 +1083,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                     var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.pageCursorTracer() );
                     ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
                     return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference,
-                            c -> newRelationshipEntity( c.relationshipReference() ) );
+                            c -> newRelationshipEntity( c.relationshipReference() ), coreApiResourceTracker );
                 }
                 catch ( KernelException e )
                 {
@@ -1080,7 +1101,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         ktx.dataRead().allRelationshipsScan( cursor );
         var filteredCursor = new FilteringRelationshipScanCursorWrapper( cursor, CursorPredicates.hasType( typeId ) );
         return new CursorIterator<>( filteredCursor, RelationshipScanCursor::relationshipReference,
-                c -> newRelationshipEntity( c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference() ) );
+                c -> newRelationshipEntity( c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference() ), coreApiResourceTracker );
     }
 
     private ResourceIterator<Relationship> relationshipsByTypeAndProperties( KernelTransaction tx, int typeId, PropertyIndexQuery.ExactPredicate... queries )
@@ -1103,7 +1124,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
                 IndexReadSession indexSession = read.indexReadSession( index );
                 read.relationshipIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
-                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference() ) );
+                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, c -> newRelationshipEntity( c.relationshipReference() ),
+                        coreApiResourceTracker );
             }
             catch ( KernelException e )
             {

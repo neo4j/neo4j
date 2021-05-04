@@ -24,6 +24,7 @@ import java.util.function.ToLongFunction;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.kernel.api.ResourceTracker;
 
 import static org.neo4j.io.IOUtils.closeAllSilently;
 
@@ -31,12 +32,16 @@ public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends Pre
 {
     private final CURSOR cursor;
     private final ToLongFunction<CURSOR> toReferenceFunction;
+    private final ResourceTracker resourceTracker;
 
-    public CursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR,E> entityFactory )
+    public CursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR,E> entityFactory,
+            ResourceTracker resourceTracker )
     {
         super( cursor, entityFactory );
         this.cursor = cursor;
         this.toReferenceFunction = toReferenceFunction;
+        this.resourceTracker = resourceTracker;
+        resourceTracker.registerCloseableResource( this );
     }
 
     @Override
@@ -52,6 +57,7 @@ public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends Pre
     @Override
     void closeResources()
     {
+        resourceTracker.unregisterCloseableResource( this );
         closeAllSilently( cursor );
     }
 }
