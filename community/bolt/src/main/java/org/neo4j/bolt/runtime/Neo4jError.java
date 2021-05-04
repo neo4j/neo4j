@@ -154,7 +154,7 @@ public class Neo4jError
             }
             if ( cause instanceof Status.HasStatus )
             {
-                return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any, isFatal );
+                return new Neo4jError( ((Status.HasStatus) cause).status(), cause.getMessage(), any, isFatal );
             }
             if ( cause instanceof OutOfMemoryError )
             {

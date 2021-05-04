@@ -59,13 +59,15 @@ public class TransactionStateMachine implements StatementProcessor
     final MutableTransactionState ctx;
     State state = State.AUTO_COMMIT;
     private final String databaseName;
+    private final String transactionId;
 
     public TransactionStateMachine( String databaseName, TransactionStateMachineSPI spi, AuthenticationResult authenticationResult, Clock clock,
-                                    RoutingContext routingContext )
+                                    RoutingContext routingContext, String transactionId )
     {
         this.spi = spi;
         ctx = new MutableTransactionState( authenticationResult, clock, routingContext );
         this.databaseName = databaseName;
+        this.transactionId = transactionId;
     }
 
     @Override

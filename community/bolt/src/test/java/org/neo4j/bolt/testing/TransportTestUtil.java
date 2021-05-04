@@ -21,6 +21,7 @@ package org.neo4j.bolt.testing;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.assertj.core.api.Condition;
+import org.assertj.core.api.Fail;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 
 import java.io.ByteArrayOutputStream;
@@ -40,6 +41,7 @@ import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.bolt.v3.messaging.response.RecordMessage;
 import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;

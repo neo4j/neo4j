@@ -21,10 +21,9 @@ package org.neo4j.bolt.runtime.statemachine;
 
 import java.time.Clock;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 
 public interface StateMachineContext
@@ -47,6 +46,6 @@ public interface StateMachineContext
 
     void initStatementProcessorProvider( AuthenticationResult authResult, RoutingContext routingContext );
 
-    StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
+    TransactionManager getTransactionManager();
 
 }

@@ -19,12 +19,11 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import org.neo4j.bolt.transaction.TransactionNotFoundException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
-import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
-import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
@@ -47,6 +46,8 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
     @Override
     public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
     {
+        context.connectionState().ensureNoPendingTerminationNotice();
+
         if ( message instanceof RunMessage )
         {
             return processRunMessage( (RunMessage) message, context );
@@ -78,30 +79,30 @@ public class TransactionReadyState extends FailSafeBoltStateMachineState
         this.readyState = readyState;
     }
 
-    private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws KernelException
+    private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws KernelException, TransactionNotFoundException
     {
         long start = context.clock().millis();
-        StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
-        StatementMetadata statementMetadata = statementProcessor.run( message.statement(), message.params() );
+        var metadata = context.getTransactionManager()
+                               .runQuery( context.connectionState().getCurrentTransactionId(), message.statement(), message.params() );
         long end = context.clock().millis();
 
-        context.connectionState().onMetadata( FIELDS_KEY, stringArray( statementMetadata.fieldNames() ) );
+        context.connectionState().onMetadata( FIELDS_KEY, stringArray( metadata.fieldNames() ) );
         context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
         return streamingState;
     }
 
-    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException
+    private BoltStateMachineState processCommitMessage( StateMachineContext context ) throws KernelException, TransactionNotFoundException
     {
-        StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
-        Bookmark bookmark = statementProcessor.commitTransaction();
+        Bookmark bookmark = context.getTransactionManager().commit( context.connectionState().getCurrentTransactionId() );
+        context.connectionState().clearCurrentTransactionId();
         bookmark.attachTo( context.connectionState() );
         return readyState;
     }
 
-    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws KernelException
+    private BoltStateMachineState processRollbackMessage( StateMachineContext context ) throws TransactionNotFoundException
     {
-        StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
-        statementProcessor.rollbackTransaction();
+        context.getTransactionManager().rollback( context.connectionState().getCurrentTransactionId() );
+        context.connectionState().clearCurrentTransactionId();
         return readyState;
     }
 

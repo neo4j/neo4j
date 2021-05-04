@@ -28,6 +28,7 @@ import java.time.Duration;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
+import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.testing.BoltTestUtil;
@@ -171,7 +172,7 @@ class BoltStateMachineFactoryImplTest
         var config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), CLOCK, Duration.ZERO );
         return new BoltStateMachineFactoryImpl( dbProvider, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance(),
-                                                mock( DefaultDatabaseResolver.class) );
+                                                mock( DefaultDatabaseResolver.class), mock( StatementProcessorTxManager.class ) );
     }
 
     private static DatabaseManagementService newDbMock()

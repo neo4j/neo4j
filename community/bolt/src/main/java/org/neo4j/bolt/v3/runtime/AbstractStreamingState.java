@@ -40,6 +40,8 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
     @Override
     public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
+        context.connectionState().ensureNoPendingTerminationNotice();
+
         if ( message instanceof PullAllMessage )
         {
             ResultConsumer resultConsumer = new ResultConsumerAdaptor( context, true );

@@ -53,7 +53,7 @@ class TransactionStateMachineV4SPITest
         when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                mock( StatementProcessorReleaseManager.class ) );
+                                                    mock( StatementProcessorReleaseManager.class ), "123" );
 
         var bookmarks = List.<Bookmark>of( new BookmarkWithDatabaseId( 42, databaseId ) );
 
@@ -76,7 +76,7 @@ class TransactionStateMachineV4SPITest
         when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                mock( StatementProcessorReleaseManager.class ) );
+                                                    mock( StatementProcessorReleaseManager.class ), "123" );
 
         // When
         var bookmark = spi.newestBookmark( tx );

@@ -26,22 +26,27 @@ import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.bolt.transaction.DefaultProgramResultReference;
+import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.messaging.ResultConsumer;
-import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
-import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -62,32 +67,37 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldRunTheStateWithTheCorrectParams() throws Exception
     {
-        var statementProcessor = mock( StatementProcessor.class );
+        var transactionManager = mock( TransactionManager.class );
         var routingTableContext = getRoutingTableContext();
         var databaseName = "dbName";
+        var metadata = mock( StatementMetadata.class );
+        var programResult = new DefaultProgramResultReference( "123", metadata );
 
-        doReturn( mock( StatementMetadata.class ) ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
+        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), anyString(), any(), any(),
+                                                                         anyBoolean(), any(), any(), any() );
 
-        getter.get( statementProcessor, routingTableContext, List.of(), databaseName );
+        getter.get( transactionManager, routingTableContext, List.of(), databaseName, "123" );
 
-        verify( statementProcessor )
-                .run( "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)",
-                      getExpectedParams( routingTableContext, databaseName ), List.of(), null, AccessMode.READ, Map.of() );
+        verify( transactionManager )
+                .runProgram( "system", "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)",
+                             getExpectedParams( routingTableContext, databaseName ), emptyList(), true, Map.of(), null, "123" );
     }
 
     @Test
     void shouldCompleteWithOneRecordFromTheResultQuery() throws Throwable
     {
-        var statementProcessor = mock( StatementProcessor.class );
+        var transactionManager = mock( TransactionManager.class );
         var queryId = 123;
         var statementMetadata = mock( StatementMetadata.class );
+        var programResult = new DefaultProgramResultReference( "123", statementMetadata );
         var boltResult = mock( BoltResult.class );
         var expectedRoutingTable = routingTable();
 
-        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
+        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), anyString(), any( MapValue.class ), anyList(), anyBoolean(),
+                                                                         anyMap(), any(), anyString() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doReturn( getFieldNames() ).when( boltResult ).fieldNames();
-        mockStreamResult( statementProcessor, queryId, boltResult, recordConsumer ->
+        mockStreamResult( transactionManager, boltResult, recordConsumer ->
         {
             recordConsumer.beginRecord( 2 );
             recordConsumer.consumeField( expectedRoutingTable.get( "ttl" ) );
@@ -95,7 +105,7 @@ class ProcedureRoutingTableGetterTest
             recordConsumer.endRecord();
         } );
 
-        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
+        var future = getter.get( transactionManager, getRoutingTableContext(), List.of(),"dbName", "123" );
 
         var routingTable = future.get( 100, TimeUnit.MILLISECONDS );
 
@@ -105,21 +115,22 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldCompleteFailureIfSomeErrorOccurDuringRecordConsumer() throws Throwable
     {
-        var statementProcessor = mock( StatementProcessor.class );
+        var transactionManager = mock( TransactionManager.class );
         var queryId = 123;
         var statementMetadata = mock( StatementMetadata.class );
+        var programResult = new DefaultProgramResultReference( "123", statementMetadata );
         var boltResult = mock( BoltResult.class );
 
-        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
+        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doReturn( getFieldNames() ).when( boltResult ).fieldNames();
-        mockStreamResult( statementProcessor, queryId, boltResult, recordConsumer ->
+        mockStreamResult( transactionManager, boltResult, recordConsumer ->
         {
             recordConsumer.beginRecord( 2 );
             recordConsumer.onError();
         } );
 
-        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
+        var future = getter.get( transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
 
         try
         {
@@ -135,12 +146,12 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldCompleteWithFailureIfTheRunMethodThrowsException() throws Throwable
     {
-        var statementProcessor = mock( StatementProcessor.class );
+        var transactionManager = mock( TransactionManager.class );
         var expectedException = new TransactionFailureException( "Something wrong", new RuntimeException() );
 
-        doThrow( expectedException ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
+        doThrow( expectedException ).when( transactionManager ).runProgram( anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any() );
 
-        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
+        var future = getter.get( transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
 
         try
         {
@@ -156,15 +167,17 @@ class ProcedureRoutingTableGetterTest
     @Test
     void shouldCompleteWithFailureIfTheStreamResultMethodThrowsException() throws Throwable
     {
-        var statementProcessor = mock( StatementProcessor.class );
+        var transactionManager = mock( TransactionManager.class );
         var queryId = 123;
         var statementMetadata = mock( StatementMetadata.class );
-        var expectedException = new TransactionFailureException( "Something wrong", new RuntimeException() );
+        var programResult = new DefaultProgramResultReference( "123", statementMetadata );
+        var expectedException = new RuntimeException( new TransactionFailureException( "Something wrong", new RuntimeException() ) );
 
-        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
+        doReturn( programResult ).when( transactionManager ).runProgram( anyString(), anyString(), any(), any(), anyBoolean(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
-        doThrow( expectedException ).when( statementProcessor ).streamResult( anyInt(), any() );
-        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
+        doThrow( expectedException ).when( transactionManager ).pullData( anyString(), anyInt(), anyLong(), any( ResultConsumer.class ) );
+
+        var future = getter.get( transactionManager, getRoutingTableContext(), List.of(), "dbName", "123" );
 
         try
         {
@@ -177,7 +190,7 @@ class ProcedureRoutingTableGetterTest
         }
     }
 
-    private void mockStreamResult( StatementProcessor statementProcessor, int queryId, BoltResult boltResult, UnsafeConsumer<BoltResult.RecordConsumer> answer )
+    private void mockStreamResult( TransactionManager transactionManager, BoltResult boltResult, UnsafeConsumer<BoltResult.RecordConsumer> answer )
             throws Throwable
     {
         doAnswer( invocationOnMock ->
@@ -191,12 +204,12 @@ class ProcedureRoutingTableGetterTest
 
         doAnswer( invocationOnMock ->
                   {
-                      var resultHandler = invocationOnMock.getArgument( 1, ResultConsumer.class );
+                      var resultHandler = invocationOnMock.getArgument( 3, ResultConsumer.class );
                       resultHandler.consume( boltResult );
                       return mock( Bookmark.class );
                   } )
-                .when( statementProcessor )
-                .streamResult( eq( queryId ), any() );
+                .when( transactionManager )
+                .pullData( any( String.class ), any( Integer.class ), any( Long.class ), any( ResultConsumer.class ) );
     }
 
     private MapValue routingTable()

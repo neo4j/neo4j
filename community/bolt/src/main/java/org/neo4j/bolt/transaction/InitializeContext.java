@@ -17,9 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime.statemachine;
+package org.neo4j.bolt.transaction;
 
-public interface StatementProcessorReleaseManager
+import org.neo4j.bolt.runtime.statemachine.impl.StatementProcessorProvider;
+
+public class InitializeContext
 {
-    void releaseStatementProcessor( String transactionId );
+    private final String connectionId;
+    private final StatementProcessorProvider statementProcessorProvider;
+
+    public InitializeContext( String connectionId, StatementProcessorProvider statementProcessorProvider )
+    {
+        this.connectionId = connectionId;
+        this.statementProcessorProvider = statementProcessorProvider;
+    }
+
+    public String connectionId()
+    {
+        return connectionId;
+    }
+
+    public StatementProcessorProvider statementProcessorProvider()
+    {
+        return statementProcessorProvider;
+    }
 }

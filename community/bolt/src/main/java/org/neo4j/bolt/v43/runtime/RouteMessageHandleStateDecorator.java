@@ -19,24 +19,18 @@
  */
 package org.neo4j.bolt.v43.runtime;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.routing.ProcedureRoutingTableGetter;
 import org.neo4j.bolt.routing.RoutingTableGetter;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
-import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 import org.neo4j.memory.HeapEstimator;
-
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 /**
  * Extends the behaviour of a given State by adding the capacity of handle the {@link RouteMessage}
@@ -108,8 +102,8 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
     {
         try
         {
-            var statementProcessor = getStatementProcessor( message, context );
-            routingTableGetter.get( statementProcessor, message.getRequestContext(), message.getBookmarks(), message.getDatabaseName() )
+            routingTableGetter.get( context.getTransactionManager(), message.getRequestContext(),
+                                    message.getBookmarks(), message.getDatabaseName(), context.connectionId() )
                               .thenAccept( routingTable -> context.connectionState().onMetadata( ROUTING_TABLE_KEY, routingTable ) )
                               .join();
             return this;
@@ -124,12 +118,6 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
             context.handleFailure( e, false );
             return failedState;
         }
-    }
-
-    private StatementProcessor getStatementProcessor( RouteMessage routeMessage, StateMachineContext context )
-            throws BoltProtocolBreachFatality, BoltIOException
-    {
-        return context.setCurrentStatementProcessorForDatabase( Optional.ofNullable( routeMessage.getDatabaseName() ).orElse( ABSENT_DB_NAME ) );
     }
 
     private BoltStateMachineState redirectToWrappedState( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality

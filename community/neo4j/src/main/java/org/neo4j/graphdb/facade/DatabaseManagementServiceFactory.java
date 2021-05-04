@@ -342,6 +342,6 @@ public class DatabaseManagementServiceFactory
                                globalModule.getGlobalMonitors(), globalModule.getLogService(), globalModule.getGlobalDependencies(),
                                edition.getBoltAuthManager( globalModule.getGlobalDependencies() ), edition.getBoltInClusterAuthManager(),
                                edition.getBoltLoopbackAuthManager(), globalModule.getMemoryPools(), edition.getDefaultDatabaseResolver(),
-                               globalModule.getCentralBufferMangerHolder() );
+                               globalModule.getCentralBufferMangerHolder(), globalModule.getTransactionManager() );
     }
 }

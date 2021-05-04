@@ -17,9 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime.statemachine;
+package org.neo4j.bolt.transaction;
 
-public interface StatementProcessorReleaseManager
+import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+
+public final class DefaultProgramResultReference implements ProgramResultReference
 {
-    void releaseStatementProcessor( String transactionId );
+    private final String transactionId;
+    private final StatementMetadata statementMetadata;
+
+    public DefaultProgramResultReference( String transactionId, StatementMetadata statementMetadata )
+    {
+        this.transactionId = transactionId;
+        this.statementMetadata = statementMetadata;
+    }
+
+    @Override
+    public String transactionId()
+    {
+        return transactionId;
+    }
+
+    @Override
+    public StatementMetadata statementMetadata()
+    {
+        return statementMetadata;
+    }
 }

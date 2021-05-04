@@ -17,9 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime.statemachine;
+package org.neo4j.bolt.transaction;
 
-public interface StatementProcessorReleaseManager
+public class CleanUpContext
 {
-    void releaseStatementProcessor( String transactionId );
+    private final String connectionId;
+
+    public CleanUpContext( String connectionId )
+    {
+        this.connectionId = connectionId;
+    }
+
+    public String connectionId()
+    {
+        return connectionId;
+    }
 }

@@ -28,8 +28,10 @@ import org.neo4j.values.AnyValue;
  */
 public interface BoltResponseHandler
 {
+    //todo method returns true if there are more records to return
     boolean onPullRecords( BoltResult result, long size ) throws Throwable;
 
+    //todo method returns true if there are more records to return
     boolean onDiscardRecords( BoltResult result, long size ) throws Throwable;
 
     void onMetadata( String key, AnyValue value );
