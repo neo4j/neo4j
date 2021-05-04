@@ -76,7 +76,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
               // OR plan, we will report solving the OR predicate, but also other predicates which are covered by ALL
               // underlying plans are solved.
               val predicates = collection.mutable.HashSet[Expression]()
-              predicates ++= coveringPredicates(plans.head, context.planningAttributes.solveds)
+              predicates ++= solvedPredicates(plans.head, context.planningAttributes.solveds)
 
               // Determines if we can plan OrderedUnion
               val maybeSortColumn = Option(context.planningAttributes.providedOrders(plans.head.id))
@@ -93,7 +93,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
 
               val singlePlan = plans.reduce[LogicalPlan] {
                 case (p1, p2) =>
-                  predicates --= (predicates diff coveringPredicates(p2, context.planningAttributes.solveds).toSet)
+                  predicates --= (predicates diff solvedPredicates(p2, context.planningAttributes.solveds).toSet)
                   maybeSortColumn match {
                     case Some((_, sortColumn)) => producer.planOrderedUnion(p1, p2, List(), Seq(sortColumn), context)
                     case None => producer.planUnion(p1, p2, List(), context)
@@ -119,11 +119,8 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
     plansPerExpression.exists(leafs => leafs.exists(_.id != id))
   }
 
-  private def coveringPredicates(plan: LogicalPlan, solveds: Solveds): Seq[Expression] = {
-    solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph.selections.flatPredicates.map {
-      case p: PartialPredicate[_] => p.coveringPredicate
-      case predicate => predicate
-    }
+  private def solvedPredicates(plan: LogicalPlan, solveds: Solveds): Seq[Expression] = {
+    solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph.selections.flatPredicates
   }
 
   private[steps] def producePlansForExpressions(exprs: Seq[Expression],
