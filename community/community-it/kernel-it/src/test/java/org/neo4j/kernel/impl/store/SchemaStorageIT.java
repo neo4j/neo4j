@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -53,7 +54,10 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
@@ -72,7 +76,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 class SchemaStorageIT
 {
     private static final String LABEL1 = "Label1";
@@ -90,6 +94,12 @@ class SchemaStorageIT
 
     private static SchemaStore schemaStore;
     private static SchemaStorage storage;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+    }
 
     @BeforeEach
     void initStorage() throws Exception
@@ -210,6 +220,9 @@ class SchemaStorageIT
     @Test
     void shouldListAllIndexRules()
     {
+        // Setup
+        IndexingTestUtil.dropAllIndexes( db );
+
         // Given
         createSchema(
                 index( LABEL1, PROP1 ),
@@ -221,9 +234,9 @@ class SchemaStorageIT
 
         // Then
         Set<IndexDescriptor> expectedRules = new HashSet<>();
-        expectedRules.add( makeIndexRule( 1, LABEL1, PROP1 ) );
-        expectedRules.add( makeIndexRule( 2, LABEL1, PROP2 ) );
-        expectedRules.add( makeIndexRuleForConstraint( 3, LABEL2, PROP1, 0L ) );
+        expectedRules.add( makeIndexRule( 3, LABEL1, PROP1 ) );
+        expectedRules.add( makeIndexRule( 4, LABEL1, PROP2 ) );
+        expectedRules.add( makeIndexRuleForConstraint( 5, LABEL2, PROP1, 0L ) );
 
         assertEquals( expectedRules, listedRules );
     }
