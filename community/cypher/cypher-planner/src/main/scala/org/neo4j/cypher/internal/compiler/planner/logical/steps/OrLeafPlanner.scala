@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContains
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
@@ -48,6 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContai
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
@@ -160,12 +162,18 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
          _: DirectedRelationshipIndexContainsScan |
          _: UndirectedRelationshipIndexContainsScan |
          _: DirectedRelationshipIndexSeek |
-         _: UndirectedRelationshipIndexSeek => 0
+         _: UndirectedRelationshipIndexSeek |
+         _: DirectedRelationshipIndexEndsWithScan |
+         _: UndirectedRelationshipIndexEndsWithScan |
+         _: DirectedRelationshipIndexContainsScan |
+         _: UndirectedRelationshipIndexContainsScan   => 0
     case _: NodeIndexScan |
          _: UndirectedRelationshipIndexScan |
-         _: DirectedRelationshipIndexScan => 1
-    case _: NodeByLabelScan       => 2
-    case _                        => 3
+         _: DirectedRelationshipIndexScan             => 1
+    case _: NodeByLabelScan |
+         _: DirectedRelationshipTypeScan |
+         _: UndirectedRelationshipTypeScan            => 2
+    case _                                            => 3
   }
 
 }

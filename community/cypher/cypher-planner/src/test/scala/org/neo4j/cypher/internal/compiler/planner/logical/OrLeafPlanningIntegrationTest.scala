@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.Await
@@ -53,7 +54,6 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
-    // Possible improvement: We could have planned this as OrderedDistinct
     plan.shouldEqual(cfg.planBuilder()
                         .produceResults("n")
                         .distinct("n AS n")
@@ -66,8 +66,8 @@ class OrLeafPlanningIntegrationTest
 
   test("should work with index seeks of label disjunctions") {
     val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
-      .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("P", Seq("p1"), 0.5, 0.5, providesOrder = IndexOrderCapability.BOTH)
       .build()
 
     val plan = cfg.plan(
@@ -88,10 +88,7 @@ class OrLeafPlanningIntegrationTest
   }
 
   test("should work with index seeks of label disjunctions only") {
-    val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
-      .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
-      .build()
+    val cfg = plannerConfig().build()
 
     val plan = cfg.plan(
       """MATCH (n)
