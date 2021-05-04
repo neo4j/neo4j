@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
+import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InputPosition
 
 /**
@@ -36,6 +37,9 @@ sealed trait InputQuery {
   def cacheKey: String
 
   def withRecompilationLimitReached: InputQuery
+
+  def withReplanOption(replanOption: CypherReplanOption): InputQuery
+
 }
 
 /**
@@ -53,6 +57,10 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
   override def description: String = rawStatement
 
   override def withRecompilationLimitReached: PreParsedQuery = copy(options = options.withRecompilationLimitReached)
+
+  override def withReplanOption(replanOption: CypherReplanOption): PreParsedQuery = copy(
+    options = options.copy(queryOptions = options.queryOptions.copy(replan = replanOption))
+  )
 }
 
 /**
@@ -65,6 +73,10 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
   override def withRecompilationLimitReached: FullyParsedQuery = copy(options = options.withRecompilationLimitReached)
 
   override val cacheKey: String = s"${options.cacheKey} ${state.queryText}"
+
+  override def withReplanOption(replanOption: CypherReplanOption): FullyParsedQuery = copy(
+    options = options.copy(queryOptions = options.queryOptions.copy(replan = replanOption))
+  )
 
 }
 
@@ -82,6 +94,8 @@ case class QueryOptions(offset: InputPosition,
   def useCompiledExpressions: Boolean = queryOptions.expressionEngine == CypherExpressionEngineOption.compiled || (compileWhenHot && recompilationLimitReached)
 
   def withRecompilationLimitReached: QueryOptions = copy(recompilationLimitReached = true)
+
+  def withReplanOption(replanOption: CypherReplanOption): QueryOptions = copy(queryOptions = queryOptions.copy(replan = replanOption))
 
   def withExecutionMode(executionMode: CypherExecutionMode): QueryOptions =
     copy(queryOptions = queryOptions.copy(executionMode = executionMode))

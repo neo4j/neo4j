@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.options.CypherExecutionMode
+import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
@@ -252,31 +253,40 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   private def getOrCompile(context: TransactionalContext,
-                           inputQuery: InputQuery,
+                           initialInputQuery: InputQuery,
                            tracer: QueryCompilationEvent,
                            params: MapValue,
                           ): ExecutableQuery = {
-    val cacheKey = Pair.of(inputQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
+    val cacheKey = Pair.of(initialInputQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
 
     // create transaction and query context
     val tc = context.getOrBeginNewIfClosed()
     val compilerAuthorization = tc.restrictCurrentTransaction(tc.securityContext.withMode(AccessMode.Static.READ))
+    var forceReplan = false
+    var inputQuery = initialInputQuery
 
     try {
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
 
         val schemaToken = schemaHelper.readSchemaToken(tc)
+        if (forceReplan) {
+          forceReplan = false
+          inputQuery = inputQuery.withReplanOption(CypherReplanOption.force)
+        }
         val compiler = compilerWithExpressionCodeGenOption(inputQuery, tracer, tc, params)
         val executableQuery = queryCache.computeIfAbsentOrStale(cacheKey,
           tc,
           compiler,
-          inputQuery.options.queryOptions.replan,
+          CypherReplanOption.force,
           inputQuery.description)
 
-        if (schemaHelper.lockLabels(schemaToken, executableQuery, inputQuery.options.queryOptions.version, tc)) {
+        val lockedLabels = schemaHelper.lockLabels(schemaToken, executableQuery, tc)
+
+        if (lockedLabels.successful) {
           return executableQuery
         }
+        forceReplan = lockedLabels.needsReplan
 
         // if the schema has changed while taking all locks we need to try again.
         n += 1

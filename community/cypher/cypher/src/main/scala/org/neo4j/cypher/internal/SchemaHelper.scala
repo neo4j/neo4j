@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
-
-import java.util.concurrent.atomic.AtomicLong
-import org.neo4j.cypher.internal.options.CypherVersion
+import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
+
+import java.util.concurrent.atomic.AtomicLong
 
 case class SchemaToken(x: Long) extends AnyVal
 
@@ -46,15 +46,21 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
 
   def lockLabels(schemaTokenBefore: SchemaToken,
                  executionPlan: ExecutableQuery,
-                 version: CypherVersion,
-                 tc: TransactionalContext): Boolean = {
+                 tc: TransactionalContext): LockedLabels = {
+    val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
+
+    // Need to lock lookup index before checking if it exists in order to not have a race with drop index.
+    lookupTypes.foreach(lockLookupType(tc, _))
+    if (lookupTypes.exists(!hasLookupIndex(tc, _))) {
+      lookupTypes.foreach(releaseLookupType(tc, _))
+      // lookup index for entity type has been dropped -> need to replan.
+      return LockedLabels(successful = false, needsReplan = true)
+    }
+
     val labelIds: Array[Long] = executionPlan.labelIdsOfUsedIndexes
     if (labelIds.nonEmpty) {
       lockPlanLabels(tc, labelIds)
     }
-
-    val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
-    lookupTypes.foreach(lockLookupType(tc, _))
 
     if (lookupTypes.nonEmpty || labelIds.nonEmpty) {
       val schemaTokenAfter = readSchemaToken(tc)
@@ -63,10 +69,10 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
       if (schemaTokenBefore != schemaTokenAfter) {
         releasePlanLabels(tc, labelIds)
         lookupTypes.foreach(releaseLookupType(tc, _))
-        return false
+        return LockedLabels(successful = false, needsReplan = false)
       }
     }
-    true
+    LockedLabels(successful = true, needsReplan = false)
   }
 
   private def releasePlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit =
@@ -80,4 +86,9 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
 
   private def releaseLookupType(tc: TransactionalContext, entityType: EntityType): Unit =
     tc.kernelTransaction.locks().releaseSharedLookupLock( entityType )
+
+  private def hasLookupIndex(tc: TransactionalContext, entityType: EntityType): Boolean =
+    !tc.kernelTransaction().schemaRead.scanStoreAsTokenIndexEnabled || tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(entityType)).hasNext
+
+  case class LockedLabels(successful: Boolean, needsReplan: Boolean)
 }
