@@ -74,9 +74,9 @@ class SafePropertyChainReader implements AutoCloseable
         this.stringStoreBlockSize = neoStores.getPropertyStore().getStringStore().getRecordDataSize();
         this.arrayStoreBlockSize = neoStores.getPropertyStore().getArrayStore().getRecordDataSize();
         this.propertyStore = neoStores.getPropertyStore();
-        this.propertyReader = new RecordReader<>( neoStores.getPropertyStore(), cursorContext );
-        this.stringReader = new RecordReader<>( neoStores.getPropertyStore().getStringStore(), cursorContext );
-        this.arrayReader = new RecordReader<>( neoStores.getPropertyStore().getArrayStore(), cursorContext );
+        this.propertyReader = new RecordReader<>( neoStores.getPropertyStore(), false, cursorContext );
+        this.stringReader = new RecordReader<>( neoStores.getPropertyStore().getStringStore(), false, cursorContext );
+        this.arrayReader = new RecordReader<>( neoStores.getPropertyStore().getArrayStore(), false, cursorContext );
         this.seenRecords = new LongHashSet();
         this.seenDynamicRecordIds = new LongHashSet();
         this.dynamicRecords = new ArrayList<>();

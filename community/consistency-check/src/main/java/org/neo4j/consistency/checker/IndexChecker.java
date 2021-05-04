@@ -241,10 +241,9 @@ public class IndexChecker implements Checker
     {
         // This is one thread
         CheckerContext noReportingContext = context.withoutReporting();
-        try ( RecordStorageReader reader = new RecordStorageReader( context.neoStores );
-              var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ENTITY_CHECK_TAG ) );
-              RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorContext );
-              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorContext );
+        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ENTITY_CHECK_TAG ) );
+              RecordReader<NodeRecord> nodeReader = new RecordReader<>( context.neoStores.getNodeStore(), true, cursorContext );
+              RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), false, cursorContext );
               SafePropertyChainReader propertyReader = new SafePropertyChainReader( noReportingContext, cursorContext ) )
         {
             ProgressListener localScanProgress = scanProgress.threadLocalReporter();
@@ -253,13 +252,13 @@ public class IndexChecker implements Checker
             int numberOfIndexes = indexes.size();
             for ( long entityId = fromEntityId; entityId < toEntityId && !context.isCancelled(); entityId++ )
             {
-                nodeCursor.single( entityId );
-                if ( nodeCursor.next() )
+                NodeRecord nodeRecord = nodeReader.read( entityId );
+                if ( nodeRecord.inUse() )
                 {
-                    long[] entityTokens = safeGetNodeLabels( noReportingContext, nodeCursor.getId(), nodeCursor.getLabelField(), labelReader, cursorContext );
+                    long[] entityTokens = safeGetNodeLabels( noReportingContext, nodeRecord.getId(), nodeRecord.getLabelField(), labelReader, cursorContext );
                     lightClear( allValues );
                     boolean propertyChainRead =
-                            entityTokens != null && propertyReader.read( allValues, nodeCursor, noReportingContext.reporter::forNode, cursorContext );
+                            entityTokens != null && propertyReader.read( allValues, nodeRecord, noReportingContext.reporter::forNode, cursorContext );
                     if ( propertyChainRead )
                     {
                         for ( int i = 0; i < numberOfIndexes; i++ )

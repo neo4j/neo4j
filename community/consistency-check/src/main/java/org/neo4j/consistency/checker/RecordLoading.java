@@ -208,8 +208,8 @@ class RecordLoading
         List<DynamicRecord> nameRecords = new ArrayList<>();
         MutableLongSet seenRecordIds = new LongHashSet();
         int nameBlockSize = nameStore.getRecordDataSize();
-        try ( RecordReader<RECORD> tokenReader = new RecordReader<>( tokenStore, cursorContext );
-              RecordReader<DynamicRecord> nameReader = new RecordReader<>( nameStore, cursorContext ) )
+        try ( RecordReader<RECORD> tokenReader = new RecordReader<>( tokenStore, true, cursorContext );
+              RecordReader<DynamicRecord> nameReader = new RecordReader<>( nameStore, false, cursorContext ) )
         {
             for ( long id = 0; id < highId; id++ )
             {

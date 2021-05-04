@@ -88,7 +88,7 @@ class RelationshipGroupChecker implements Checker
         final long highId = groupStore.getHighId();
 
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_GROUPS_CHECKER_TAG ) );
-                RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), cursorContext ) )
+                RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), true, cursorContext ) )
         {
             for ( long id = 0; id < highId && !context.isCancelled(); id++ )
             {
@@ -136,8 +136,8 @@ class RelationshipGroupChecker implements Checker
     private void checkToRelationship( long fromGroupId, long toGroupId, PageCacheTracer pageCacheTracer )
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_GROUPS_CHECKER_TAG ) );
-              RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), cursorContext );
-              RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), cursorContext );
+              RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), true, cursorContext );
+              RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), false, cursorContext );
               RecordStorageReader reader = new RecordStorageReader( neoStores );
               RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorContext ) )
         {

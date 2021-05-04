@@ -97,7 +97,7 @@ class SchemaChecker
             CursorContext cursorContext )
     {
         long highId = schemaStore.getHighId();
-        try ( RecordReader<SchemaRecord> schemaReader = new RecordReader<>( schemaStore, cursorContext ) )
+        try ( RecordReader<SchemaRecord> schemaReader = new RecordReader<>( schemaStore, true, cursorContext ) )
         {
             Map<Long,SchemaRecord> indexObligations = new HashMap<>();
             Map<Long,SchemaRecord> constraintObligations = new HashMap<>();
@@ -273,8 +273,8 @@ class SchemaChecker
         MutableLongSet seenNameRecordIds = LongSets.mutable.empty();
         int blockSize = store.getNameStore().getRecordDataSize();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_CHECKER_TAG ) );
-              RecordReader<R> tokenReader = new RecordReader<>( store, cursorContext );
-              RecordReader<DynamicRecord> nameReader = new RecordReader<>( store.getNameStore(), cursorContext ) )
+              RecordReader<R> tokenReader = new RecordReader<>( store, true, cursorContext );
+              RecordReader<DynamicRecord> nameReader = new RecordReader<>( store.getNameStore(), false, cursorContext ) )
         {
             for ( long id = 0; id < highId; id++ )
             {

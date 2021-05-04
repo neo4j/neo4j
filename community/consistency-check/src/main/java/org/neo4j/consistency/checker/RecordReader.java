@@ -36,11 +36,11 @@ class RecordReader<RECORD extends AbstractBaseRecord> implements AutoCloseable
     private final RECORD record;
     private final PageCursor cursor;
 
-    RecordReader( CommonAbstractStore<RECORD,?> store, CursorContext cursorContext )
+    RecordReader( CommonAbstractStore<RECORD,?> store, boolean prefetch, CursorContext cursorContext )
     {
         this.store = store;
         this.record = store.newRecord();
-        this.cursor = store.openPageCursorForReading( 0, cursorContext );
+        this.cursor = prefetch ? store.openPageCursorForReadingWithPrefetching( 0, cursorContext ) : store.openPageCursorForReading( 0, cursorContext );
     }
 
     RECORD read( long id )
