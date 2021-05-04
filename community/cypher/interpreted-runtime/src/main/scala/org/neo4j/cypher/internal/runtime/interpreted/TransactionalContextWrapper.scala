@@ -34,8 +34,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 /**
- * TODO: Currently threadSafeCursors is entirely unused (always null), so we should consider removing it
- *
  * @param threadSafeCursors use this instead of the cursors of the current transaction, unless this is `null`.
  */
 case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null) extends QueryTransactionalContext {

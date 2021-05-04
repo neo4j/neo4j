@@ -133,6 +133,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
+import org.neo4j.cypher.internal.logical.plans.NonPipelined
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -908,6 +909,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nonFuseable(): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => NonFuseable(lp)(_)))
+
+  def nonPipelined(): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => NonPipelined(lp)(_)))
 
   def prober(probe: Prober.Probe): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Prober(lp, probe)(_)))

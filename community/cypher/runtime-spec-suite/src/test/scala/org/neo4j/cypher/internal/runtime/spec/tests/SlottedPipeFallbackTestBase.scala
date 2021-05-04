@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -31,7 +33,9 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   protected  val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+) extends RuntimeTestSuite[CONTEXT](edition.copyWith(
+    // Set this to allow support for nonPipelined()
+    GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> CypherPipelinedInterpretedPipesFallback.ALL), runtime) {
 
   test("should expand into and provide variables for relationship - outgoing") {
     // given
@@ -154,11 +158,11 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b", "n", "m", "r") // 0
+      .produceResults("r") // 0
       .nonFuseable()
-      .projectEndpoints("(a)-[r]->(b)", startInScope = false, endInScope = false) // 2
+      .nonPipelined() // 2
       .nonFuseable()
-      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false) // 4
+      .nonPipelined() // 4
       .nonFuseable()
       .input(relationships = Seq("r")) // 3
       .build()
@@ -166,24 +170,22 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = profile(logicalQuery, runtime, inputValues(rels.map(Array[Any](_)): _*))
 
     // then
-    val expected = relTuples.zip(rels).map {
-      case ((f, t, _), rel) => Array(nodes(f), nodes(t), nodes(f), nodes(t), rel)
-    }
+    val expected = rels.map(rel => Array(rel))
 
-    runtimeResult should beColumns("a", "b", "n", "m", "r").withRows(expected)
+    runtimeResult should beColumns("r").withRows(expected)
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
 
     // ROWS
     queryProfile.operatorProfile(0).rows() shouldBe relTuples.size // produce result
-    queryProfile.operatorProfile(2).rows() shouldBe relTuples.size // project endpoints
-    queryProfile.operatorProfile(4).rows() shouldBe relTuples.size // project endpoints
+    queryProfile.operatorProfile(2).rows() shouldBe relTuples.size // nonPipelined
+    queryProfile.operatorProfile(4).rows() shouldBe relTuples.size // nonPipelined
     queryProfile.operatorProfile(6).rows() shouldBe relTuples.size // input
 
     // TIME
     queryProfile.operatorProfile(0).time() should be > 0L // produce result
-    queryProfile.operatorProfile(2).time() should be > 0L// project endpoints
-    queryProfile.operatorProfile(4).time() should be > 0L // project endpoints
+    queryProfile.operatorProfile(2).time() shouldBe OperatorProfile.NO_DATA // nonPipelined
+    queryProfile.operatorProfile(4).time() shouldBe OperatorProfile.NO_DATA // nonPipelined
     queryProfile.operatorProfile(6).time() should be > 0L // input
   }
 
@@ -195,9 +197,9 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("a", "b", "n", "m", "r", "x", "y") // 0
-      .projectEndpoints("(a)-[r]->(b)", startInScope = false, endInScope = false) // 1
-      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false) // 2
+      .produceResults("r", "x", "y") // 0
+      .nonPipelined() // 1
+      .nonPipelined() // 2
       .pruningVarExpand("(x)-[*1..1]->(y)") // 3
       .input(nodes = Seq("x"), relationships = Seq("r")) // 4
       .build()
@@ -209,22 +211,22 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
     // ROWS
     queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce result
-    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // project endpoints
-    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // project endpoints
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // nonPipelined
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // nonPipelined
     queryProfile.operatorProfile(3).rows() shouldBe sizeHint // var expand
     queryProfile.operatorProfile(4).rows() shouldBe sizeHint // input
 
     // TIME
     queryProfile.operatorProfile(0).time() should be > 0L // produce result
-    queryProfile.operatorProfile(1).time() should be > 0L// project endpoints
-    queryProfile.operatorProfile(2).time() should be > 0L// project endpoints
+    queryProfile.operatorProfile(1).time() shouldBe OperatorProfile.NO_DATA // nonPipelined
+    queryProfile.operatorProfile(2).time() shouldBe OperatorProfile.NO_DATA // nonPipelined
     queryProfile.operatorProfile(3).time() shouldBe OperatorProfile.NO_DATA // var expand
     queryProfile.operatorProfile(4).time() should be > 0L // input
 
     // DB HITS
-    queryProfile.operatorProfile(0).dbHits() shouldBe sizeHint * 7 // produce result
-    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint // project endpoints
-    queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint // project endpoints
+    queryProfile.operatorProfile(0).dbHits() shouldBe sizeHint * 3 // produce result
+    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint // nonPipelined
+    queryProfile.operatorProfile(2).dbHits() shouldBe sizeHint // nonPipelined
     queryProfile.operatorProfile(3).dbHits() shouldBe 2 * sizeHint // var expand
     queryProfile.operatorProfile(4).dbHits() shouldBe 0L // input
   }
