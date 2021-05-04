@@ -1601,6 +1601,16 @@
         <artifactId>aws-java-sdk-ec2</artifactId>
         <version>${amazon-sdk.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-ec2instanceconnect</artifactId>
+        <version>${amazon-sdk.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.amazonaws</groupId>
+        <artifactId>aws-java-sdk-lambda</artifactId>
+        <version>${amazon-sdk.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>
