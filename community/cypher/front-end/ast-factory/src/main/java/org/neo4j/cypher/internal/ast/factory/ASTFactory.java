@@ -215,6 +215,8 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE showConstraintClause( POS p, String constraintType, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
 
+    CLAUSE showProcedureClause( POS p, boolean currentUser, String user, EXPRESSION where, boolean hasYield );
+
     // Administration Commands
     ADMINISTRATION_COMMAND useGraph( ADMINISTRATION_COMMAND command, USE_GRAPH useGraph );
 

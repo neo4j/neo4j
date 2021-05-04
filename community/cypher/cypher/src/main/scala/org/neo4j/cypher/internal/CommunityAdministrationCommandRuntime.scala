@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NameValidator
+import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.RenameUser
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
@@ -423,7 +424,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         case _ => QueryRenderer.render(Seq(call))
       }
 
-      def addParameterDefaults(transaction: Transaction, params: MapValue): MapValue = {
+      def addParameterDefaults(params: MapValue): MapValue = {
         val builder = call.treeFold(new MapValueBuilder()) {
           case ImplicitProcedureArgument(name, _, defaultValue) => acc =>
             acc.add(name, ValueUtils.of(defaultValue))
@@ -435,8 +436,15 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, MapValue.EMPTY,
         checkCredentialsExpired = checkCredentialsExpired,
-        parameterConverter = addParameterDefaults,
+        parameterConverter = (_, params) => addParameterDefaults(params),
         modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ))
+      )
+
+    // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES
+    case AllowedNonAdministrationCommands(statement) => _ =>
+      val queryString = QueryRenderer.render(statement)
+      SystemCommandExecutionPlan("AllowedNonAdministrationCommand", normalExecutionEngine, queryString, MapValue.EMPTY,
+        modeConverter = s => s // Keep the users permissions
       )
 
     // Ignore the log command in community

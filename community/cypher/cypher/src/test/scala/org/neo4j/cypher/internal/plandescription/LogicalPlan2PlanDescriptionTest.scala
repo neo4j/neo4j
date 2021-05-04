@@ -49,10 +49,15 @@ import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.CurrentUser
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.User
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TraverseAction
@@ -109,6 +114,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
@@ -259,6 +265,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
+import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
@@ -839,6 +846,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("relationshipExistenceConstraints, allColumns")), Set.empty))
   }
 
+  test("ShowProcedures") {
+    assertGood(attach(ShowProcedures(None, verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowProcedures", NoChildren, Seq(details("proceduresForUser(all), defaultColumns")), Set.empty))
+
+    assertGood(attach(ShowProcedures(Some(CurrentUser), verbose = true, Set.empty), 1.0),
+      planDescription(id, "ShowProcedures", NoChildren, Seq(details("proceduresForUser(current), allColumns")), Set.empty))
+
+    assertGood(attach(ShowProcedures(Some(User("foo")), verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowProcedures", NoChildren, Seq(details("proceduresForUser(foo), defaultColumns")), Set.empty))
+  }
+
   test("Aggregation") {
     // Aggregation 1 grouping, 0 aggregating
     assertGood(
@@ -1290,6 +1308,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Admin") {
     val adminPlanDescription: PlanDescriptionImpl = planDescription(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
+
+    assertGood(attach(AllowedNonAdministrationCommands(Query(None, SingleQuery(Seq(ShowProceduresClause(None, None, hasYield = false)(pos)))(pos))(pos)), 1.0), adminPlanDescription)
 
     assertGood(attach(ShowUsers(privLhsLP, List(), None, None), 1.0), adminPlanDescription)
 

@@ -23,6 +23,7 @@ import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.CommandClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateRole
@@ -40,6 +41,7 @@ import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
+import org.neo4j.cypher.internal.ast.FellowshipOfClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
@@ -413,6 +415,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
         Some(plans.SystemProcedureCall(signature.name.toString, resolved, returns, context.params, checkCredentialsExpired = !signature.allowExpiredCredentials))
+
+      // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
+      // Currently doesn't allow WITH, is this a problem for rewrites?
+      case q@Query(None, SingleQuery(clauses))
+        if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(_.isInstanceOf[FellowshipOfClauseAllowedOnSystem]) =>
+        Some(plans.AllowedNonAdministrationCommands(q))
 
       case _ => None
     }

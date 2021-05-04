@@ -42,13 +42,6 @@ public enum PrivilegeAction
 
     SET_PROPERTY,
 
-    /** Execute procedure or user defined function */
-    EXECUTE,
-    /** Execute procedure or user defined function with elevated access */
-    EXECUTE_BOOSTED,
-    /** Execute @Admin procedure with elevated access */
-    EXECUTE_ADMIN,
-
     CREATE_LABEL,
     CREATE_RELTYPE,
     CREATE_PROPERTYKEY,
@@ -90,6 +83,13 @@ public enum PrivilegeAction
     SHOW_PRIVILEGE,
     ASSIGN_PRIVILEGE,
     REMOVE_PRIVILEGE,
+
+    /** Execute procedure or user defined function */
+    EXECUTE,
+    /** Execute procedure or user defined function with elevated access */
+    EXECUTE_BOOSTED,
+    /** Execute @Admin procedure with elevated access */
+    EXECUTE_ADMIN,
 
     // Some grouping actions that represent super-sets of other actions
 

@@ -332,6 +332,7 @@ TOKEN [IGNORE_CASE] :
     | < END: "END" >
     | < ENDS: "ENDS" >
     | < EQ: "=" >
+    | < EXECUTABLE: "EXECUTABLE" >
     | < EXIST: "EXIST" >
     | < EXISTENCE: "EXISTENCE" >
     | < EXISTS: "EXISTS" >
@@ -387,6 +388,8 @@ TOKEN [IGNORE_CASE] :
     | < PLUS: "+" >
     | < POPULATED: "POPULATED">
     | < POW: "^" >
+    | < PROCEDURE: "PROCEDURE" >
+    | < PROCEDURES: "PROCEDURES" >
     | < PROPERTY: "PROPERTY" >
     | < RBRACKET: "]" >
     | < RCURLY: "}" >
@@ -2697,6 +2700,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowUsers( start, useClause )
         | statement=ShowCurrentUser( start, useClause )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, "ALL" ) // <ALL>.image
+        | statement=ShowProcedures( start, useClause )
     )
     {
         return statement;
@@ -2964,6 +2968,51 @@ STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, String c
         else
         {
             clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, false ) );
+        }
+        return astFactory.newSingleQuery( clauses );
+    }
+}
+
+STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
+{
+    List<CLAUSE> clauses = new ArrayList<>();
+    if (useClause != null)
+    {
+        clauses.add( useClause );
+    }
+
+    boolean currentUser = false;
+    Token userToken = null;
+    String user = null;
+
+    EXPRESSION where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
+}
+{
+    ( <PROCEDURE> | <PROCEDURES> )
+    (
+        <EXECUTABLE> { currentUser = true; } (<BY>
+        ( <CURRENT> <USER> { currentUser = true; }
+        | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ))?
+    )?
+    (
+        ( yieldClause = YieldClause() ( returnClause=ReturnClause() ) ? )
+        | where = Where()
+    )?
+    {
+        if ( yieldClause != null )
+        {
+            clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, true ) );
+            clauses.add( yieldClause );
+            if ( returnClause != null )
+            {
+                clauses.add( returnClause );
+            }
+        }
+        else
+        {
+            clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, false ) );
         }
         return astFactory.newSingleQuery( clauses );
     }
@@ -3626,6 +3675,7 @@ Token SymbolicNameString() :
         | t=<ENCRYPTED>
         | t=<END>
         | t=<ENDS>
+        | t=<EXECUTABLE>
         | t=<EXIST>
         | t=<EXISTENCE>
         | t=<EXISTS>
@@ -3668,6 +3718,8 @@ Token SymbolicNameString() :
         | t=<PERIODIC>
         | t=<PLAINTEXT>
         | t=<POPULATED>
+        | t=<PROCEDURE>
+        | t=<PROCEDURES>
         | t=<PROPERTY>
         | t=<REDUCE>
         | t=<REL>

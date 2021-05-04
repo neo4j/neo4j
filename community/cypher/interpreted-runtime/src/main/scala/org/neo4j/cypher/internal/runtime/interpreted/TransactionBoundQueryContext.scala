@@ -1189,6 +1189,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
+  override def graph(): GraphDatabaseQueryService = {
+    transactionalContext.tc.graph()
+  }
+
   private def allocateAndTraceNodeCursor() = {
     val cursor = transactionalContext.cursors.allocateNodeCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)

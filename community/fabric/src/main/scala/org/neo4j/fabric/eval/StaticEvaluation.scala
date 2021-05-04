@@ -60,6 +60,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.api.procedure.GlobalProcedures
@@ -395,6 +396,8 @@ object StaticEvaluation {
     override def getTxStateNodePropertyOrNull(nodeId: Long, propertyKey: Int): Value = notAvailable()
 
     override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value = notAvailable()
+
+    override def graph(): GraphDatabaseQueryService = notAvailable()
   }
 
 }

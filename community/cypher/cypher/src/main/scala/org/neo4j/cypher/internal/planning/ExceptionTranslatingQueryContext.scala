@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
@@ -400,6 +401,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def assertShowIndexAllowed(): Unit = translateException(tokenNameLookup, inner.assertShowIndexAllowed())
 
   override def assertShowConstraintAllowed(): Unit = translateException(tokenNameLookup, inner.assertShowConstraintAllowed())
+
+  override def graph(): GraphDatabaseQueryService = inner.graph()
 
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
     extends Operations[T, CURSOR] {

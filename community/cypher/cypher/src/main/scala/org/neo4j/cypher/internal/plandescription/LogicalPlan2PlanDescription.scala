@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.ExecutableBy
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -184,6 +185,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
+import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -448,6 +450,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val typeDescription = asPrettyString.raw(constraintType.description)
         val colsDescription = if (verbose) pretty"allColumns" else pretty"defaultColumns"
         PlanDescriptionImpl(id, "ShowConstraints", NoChildren, Seq(Details(pretty"$typeDescription, $colsDescription")), variables, withRawCardinalities)
+
+      case s: ShowProcedures =>
+        val executableDescription = s.executableBy.map(e => asPrettyString.raw(e.description)).getOrElse(asPrettyString.raw(ExecutableBy.defaultDescription))
+        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        PlanDescriptionImpl(id, "ShowProcedures", NoChildren, Seq(Details(pretty"$executableDescription, $colsDescription")), variables, withRawCardinalities)
 
       case SystemProcedureCall(procedureName, _, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables, withRawCardinalities)

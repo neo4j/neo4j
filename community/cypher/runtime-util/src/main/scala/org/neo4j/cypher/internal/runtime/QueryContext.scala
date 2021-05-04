@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -269,6 +270,8 @@ trait QueryContext extends TokenContext with DbAccess {
   def callDbmsProcedure(id: Int, args: Array[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]]
 
   def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
+
+  def graph(): GraphDatabaseQueryService
 
   /**
    * Delete the node with the specified id and all of its relationships and return the number of deleted relationships.

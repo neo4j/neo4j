@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
@@ -59,6 +60,9 @@ abstract class DatabaseAdministrationLogicalPlan(source: Option[AdministrationCo
 abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
   override def invalid(message: String): SecurityAdministrationException = new SecurityAdministrationException(message)
 }
+
+// Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES
+case class AllowedNonAdministrationCommands(statement: Statement)(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan
 
 // Security administration commands
 case class ShowUsers(source: PrivilegePlan, override val returnColumns: List[String], yields: Option[Yield], returns: Option[Return])

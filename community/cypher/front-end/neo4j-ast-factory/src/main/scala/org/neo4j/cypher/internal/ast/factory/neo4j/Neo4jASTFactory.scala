@@ -104,6 +104,9 @@ import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
+import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.CurrentUser
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.User
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -893,6 +896,16 @@ class Neo4jASTFactory(query: String)
       case "RELATIONSHIP EXIST" => RelExistsConstraints(OldValidSyntax)
     }
     ShowConstraintsClause(constraintType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+  }
+
+  override def showProcedureClause(p: InputPosition,
+                                   currentUser: Boolean,
+                                   user: String,
+                                   where: Expression,
+                                   hasYield: Boolean): Clause = {
+    // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
+    val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
+    ShowProceduresClause(executableBy, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
 
   // Administration Commands

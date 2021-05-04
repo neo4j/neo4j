@@ -34,6 +34,8 @@ trait CommandHelper extends Parser
 
   def ConstraintKeyword: Rule0 = keyword("CONSTRAINTS") | keyword("CONSTRAINT")
 
+  def ProcedureKeyword: Rule0 = keyword("PROCEDURES") | keyword("PROCEDURE")
+
   def options: Rule1[Map[String, Expression]] = rule {
     keyword("OPTIONS") ~~ optionsMap
   }

@@ -35,7 +35,6 @@ trait SchemaCommand extends Parser
   with Expressions
   with Literals
   with Base
-  with ProcedureCalls
   with GraphSelection
   with CommandHelper {
 
@@ -54,8 +53,6 @@ trait SchemaCommand extends Parser
       | DropIndexOnName) ~~> ((use, command) => command.withGraph(use))
   )
 
-  def ShowSchemaCommand: Rule1[ast.Query] = rule(ShowIndexes | ShowConstraints)
-
   private def VariablePropertyExpression: Rule1[Property] = rule("single property expression from variable") {
     Variable ~ PropertyLookup
   }
@@ -64,10 +61,13 @@ trait SchemaCommand extends Parser
     oneOrMore(WS ~ VariablePropertyExpression, separator = CommaSep)
   }
 
-  private def SchemaOutput: Rule1[Boolean] = rule("type of show output") {
-    keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
-    keyword("BRIEF") ~~ optional(keyword("OUTPUT")) ~~~> (_ => false)
-  }
+  private def RelationshipPatternSyntax: Rule2[Variable, RelTypeName] = rule(
+    ("()-[" ~~ Variable~~ RelType ~~ "]-()")
+      | ("()-[" ~~ Variable~~ RelType ~~ "]->()")
+      | ("()<-[" ~~ Variable~~ RelType ~~ "]-()")
+  )
+
+  // INDEX commands
 
   private def CreateIndexOldSyntax: Rule1[ast.CreateIndexOldSyntax] = rule {
     group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyNames ~~ ")") ~~>> (ast.CreateIndexOldSyntax(_, _))
@@ -156,35 +156,7 @@ trait SchemaCommand extends Parser
     group(keyword("DROP INDEX") ~~ SymbolicNameString) ~~>> (ast.DropIndexOnName(_, ifExists = false))
   }
 
-  private def ShowIndexes: Rule1[ast.Query] = rule("SHOW INDEXES") {
-    UseGraph ~~ ShowIndexesClauses ~~>> ((use, show) => pos => ast.Query(None, ast.SingleQuery(use +: show)(pos))(pos)) |
-    ShowIndexesClauses ~~>> (show => pos => ast.Query(None, ast.SingleQuery(show)(pos))(pos))
-  }
-
-  private def ShowIndexesClauses: Rule1[Seq[ast.Clause]] = rule("SHOW INDEXES YIELD / WHERE / RETURN") {
-    keyword("SHOW") ~~ OldIndexType ~~ IndexKeyword ~~ SchemaOutput  ~~>>
-      ((indexType, verbose) => pos => Seq(ast.ShowIndexesClause(indexType, !verbose, verbose, None, hasYield = false)(pos))) |
-    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ ShowCommandClauses  ~~>>
-      ((indexType, clauses) => pos => clauses match {
-        case Right(where) => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, Some(where), hasYield = false)(pos))
-        case Left((y, Some(r))) => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
-        case Left((y, None)) => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y)
-      }) |
-    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~>>
-      (indexType => pos => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = false)(pos)))
-  }
-
-  private def OldIndexType: Rule1[ast.ShowIndexType] = rule("type of indexes") {
-    keyword("BTREE") ~~~> (_ => ast.BtreeIndexes) |
-    optional(keyword("ALL")) ~~~> (_ => ast.AllIndexes)
-  }
-
-  private def IndexType: Rule1[ast.ShowIndexType] = rule("type of indexes") {
-    keyword("BTREE") ~~~> (_ => ast.BtreeIndexes) |
-    keyword("FULLTEXT") ~~~> (_ => ast.FulltextIndexes) |
-    keyword("LOOKUP") ~~~> (_ => ast.LookupIndexes) |
-    optional(keyword("ALL")) ~~~> (_ => ast.AllIndexes)
-  }
+  // CONSTRAINT commands
 
   private def CreateConstraint: Rule1[ast.SchemaCommand] = rule {
     group(CreateConstraintStart ~~ UniqueConstraintWithOptionsSyntax) ~~>>
@@ -238,73 +210,6 @@ trait SchemaCommand extends Parser
     group(keyword("DROP CONSTRAINT") ~~ SymbolicNameString) ~~>> (ast.DropConstraintOnName(_, ifExists = false))
   }
 
-  private def ShowConstraints: Rule1[ast.Query] = rule("SHOW CONSTRAINTS") {
-    UseGraph ~~ ShowConstraintsClauses ~~>> ((use, show) => pos => ast.Query(None, ast.SingleQuery(use +: show)(pos))(pos)) |
-    ShowConstraintsClauses ~~>> (show => pos => ast.Query(None, ast.SingleQuery(show)(pos))(pos))
-  }
-
-  private def ShowConstraintsClauses: Rule1[Seq[ast.Clause]] = rule("SHOW CONSTRAINTS YIELD / WHERE / RETURN") {
-    keyword("SHOW") ~~ OldConstraintType ~~ ConstraintKeyword ~~ SchemaOutput ~~>>
-      ((constraintType, verbose) => pos => Seq(ast.ShowConstraintsClause(constraintType, !verbose, verbose, None, hasYield = false)(pos))) |
-    keyword("SHOW") ~~ NewConstraintType ~~ ConstraintKeyword ~~ ShowCommandClauses ~~>>
-      ((constraintType, clauses) => pos => clauses match {
-        case Right(where) => Seq(ast.ShowConstraintsClause(constraintType, brief = false, verbose = false, Some(where), hasYield = false)(pos))
-        case Left((y, Some(r))) => Seq(ast.ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
-        case Left((y, None)) => Seq(ast.ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y)
-      }) |
-    keyword("SHOW") ~~ MixedConstraintType ~~ ConstraintKeyword ~~>>
-      (constraintType => pos => Seq(ast.ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)))
-  }
-
-  private def OldConstraintType: Rule1[ast.ShowConstraintType] = rule("old type of constraints") {
-    keyword("UNIQUE") ~~~> (_ => ast.UniqueConstraints) |
-    keyword("NODE KEY") ~~~> (_ => ast.NodeKeyConstraints) |
-    keyword("NODE") ~~ OldExistencePart ~~> (ecs => ast.NodeExistsConstraints(ecs)) |
-    keyword("RELATIONSHIP") ~~ OldExistencePart ~~> (ecs => ast.RelExistsConstraints(ecs)) |
-    OldExistencePart ~~> (ecs => ast.ExistsConstraints(ecs)) |
-    optional(keyword("ALL")) ~~~> (_ => ast.AllConstraints)
-  }
-
-  private def MixedConstraintType: Rule1[ast.ShowConstraintType] = rule("type of constraints") {
-    keyword("UNIQUE") ~~~> (_ => ast.UniqueConstraints) |
-    keyword("NODE KEY") ~~~> (_ => ast.NodeKeyConstraints) |
-    keyword("NODE") ~~ MixedExistencePart ~~> (ecs => ast.NodeExistsConstraints(ecs)) |
-    keyword("RELATIONSHIP") ~~ MixedExistencePart ~~> (ecs => ast.RelExistsConstraints(ecs)) |
-    keyword("REL") ~~ NewExistencePart ~~> (_ => ast.RelExistsConstraints(ast.NewSyntax)) |
-    MixedExistencePart ~~> (ecs => ast.ExistsConstraints(ecs)) |
-    optional(keyword("ALL")) ~~~> (_ => ast.AllConstraints)
-  }
-
-  private def NewConstraintType: Rule1[ast.ShowConstraintType] = rule("type of constraints") {
-    keyword("UNIQUE") ~~~> (_ => ast.UniqueConstraints) |
-    keyword("NODE KEY") ~~~> (_ => ast.NodeKeyConstraints) |
-    keyword("NODE") ~~ NewExistencePart ~~> (ecs => ast.NodeExistsConstraints(ecs)) |
-    keyword("RELATIONSHIP") ~~ NewExistencePart ~~> (ecs => ast.RelExistsConstraints(ecs)) |
-    keyword("REL") ~~ NewExistencePart ~~> (_ => ast.RelExistsConstraints(ast.NewSyntax)) |
-    NewExistencePart ~~> (ecs => ast.ExistsConstraints(ecs)) |
-    optional(keyword("ALL")) ~~~> (_ => ast.AllConstraints)
-  }
-
-  private def OldExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
-    keyword("EXISTS") ~~~> (_ => ast.DeprecatedSyntax) |
-    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
-  }
-
-  private def MixedExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
-    keyword("PROPERTY EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("PROPERTY EXIST") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXISTS") ~~~> (_ => ast.DeprecatedSyntax) |
-    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
-  }
-
-  private def NewExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
-    keyword("PROPERTY EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("PROPERTY EXIST") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXISTENCE") ~~~> (_ => ast.NewSyntax) |
-    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
-  }
-
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
@@ -354,10 +259,4 @@ trait SchemaCommand extends Parser
     RelationshipPropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => false) |
     RelationshipPropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => false)
   }
-
-  private def RelationshipPatternSyntax = rule(
-    ("()-[" ~~ Variable~~ RelType ~~ "]-()")
-      | ("()-[" ~~ Variable~~ RelType ~~ "]->()")
-      | ("()<-[" ~~ Variable~~ RelType ~~ "]-()")
-  )
 }

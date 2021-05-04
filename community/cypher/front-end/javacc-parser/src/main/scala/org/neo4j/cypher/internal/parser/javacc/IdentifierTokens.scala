@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENCRYPTED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.END
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENDS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ESCAPED_SYMBOLIC_NAME
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXECUTABLE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXIST
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTENCE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTS
@@ -103,6 +104,8 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORD
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PLAINTEXT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REL
@@ -194,6 +197,7 @@ object IdentifierTokens {
     ENCRYPTED,
     END,
     ENDS,
+    EXECUTABLE,
     EXIST,
     EXISTENCE,
     EXISTS,
@@ -236,6 +240,8 @@ object IdentifierTokens {
     PERIODIC,
     PLAINTEXT,
     POPULATED,
+    PROCEDURE,
+    PROCEDURES,
     PROPERTY,
     REDUCE,
     REL,

@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.ast.ShowColumn
-import org.neo4j.cypher.internal.ast.ShowConstraintType
-import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
@@ -59,8 +56,6 @@ case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, pr
 
 case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
-
 case class CreateBtreeIndex(source: Option[DoNothingIfExistsForBtreeIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
@@ -71,8 +66,6 @@ case class CreateLookupIndex(source: Option[DoNothingIfExistsForLookupIndex], is
 
 case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-
-case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
 case class DoNothingIfExistsForBtreeIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForLookupIndex(isNodeIndex: Boolean, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)

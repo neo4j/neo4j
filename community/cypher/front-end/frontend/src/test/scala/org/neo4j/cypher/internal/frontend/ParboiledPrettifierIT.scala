@@ -30,7 +30,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
   val parser = new CypherParser
-  val tests: Seq[(String, String)] = queryTests() ++ schemaTests() ++ administrationTests()
+  val tests: Seq[(String, String)] = queryTests() ++ schemaTests() ++ showCommandTests() ++ administrationTests()
 
   def queryTests(): Seq[(String, String)] = Seq[(String, String)](
     "return 42" -> "RETURN 42",
@@ -192,6 +192,9 @@ class ParboiledPrettifierIT extends CypherFunSuite {
   )
 
   def schemaTests(): Seq[(String, String)] = Seq[(String, String)](
+
+    // index commands
+
     "create INDEX ON :A(p)" ->
       "CREATE INDEX ON :A(p)",
 
@@ -330,65 +333,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "drop INDEX foo if EXISTS" ->
       "DROP INDEX foo IF EXISTS",
 
-    "show index" ->
-      "SHOW ALL INDEXES",
-
-    "show all inDEXES" ->
-      "SHOW ALL INDEXES",
-
-    "show indexes brief" ->
-      "SHOW ALL INDEXES BRIEF",
-
-    "show index verbose" ->
-      "SHOW ALL INDEXES VERBOSE",
-
-    "show BTREE index" ->
-      "SHOW BTREE INDEXES",
-
-    "show BTREE index BRIEF" ->
-      "SHOW BTREE INDEXES BRIEF",
-
-    "show BTREE index VERBOSE output" ->
-      "SHOW BTREE INDEXES VERBOSE",
-
-    "show FULltEXT index" ->
-      "SHOW FULLTEXT INDEXES",
-
-    "show loOKup index" ->
-      "SHOW LOOKUP INDEXES",
-
-    "show \nindex\n verbose" ->
-      "SHOW ALL INDEXES VERBOSE",
-
-    "show index WHERE uniqueness = 'UNIQUE'" ->
-      """SHOW ALL INDEXES
-        |  WHERE uniqueness = "UNIQUE"""".stripMargin,
-
-    "show btree inDEXES WHERE uniqueness = 'UNIQUE'" ->
-      """SHOW BTREE INDEXES
-        |  WHERE uniqueness = "UNIQUE"""".stripMargin,
-
-    "show lookup index  YIELD *" ->
-      """SHOW LOOKUP INDEXES
-        |YIELD *""".stripMargin,
-
-    "show index  YIELD * Return DISTINCT type" ->
-      """SHOW ALL INDEXES
-        |YIELD *
-        |RETURN DISTINCT type""".stripMargin,
-
-    "show fulltext index YIELD * where name = 'neo4j' Return *" ->
-      """SHOW FULLTEXT INDEXES
-        |YIELD *
-        |  WHERE name = "neo4j"
-        |RETURN *""".stripMargin,
-
-    "show index yield name order by name skip 1 limit 1" ->
-      """SHOW ALL INDEXES
-        |YIELD name
-        |  ORDER BY name ASCENDING
-        |  SKIP 1
-        |  LIMIT 1""".stripMargin,
+    // constraint commands
 
     "create CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
       "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
@@ -557,6 +502,73 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
     "drop CONSTRAINT foo IF exists" ->
       "DROP CONSTRAINT foo IF EXISTS",
+  )
+
+  def showCommandTests(): Seq[(String, String)] = Seq[(String, String)](
+
+    // show indexes
+
+    "show index" ->
+      "SHOW ALL INDEXES",
+
+    "show all inDEXES" ->
+      "SHOW ALL INDEXES",
+
+    "show indexes brief" ->
+      "SHOW ALL INDEXES BRIEF",
+
+    "show index verbose" ->
+      "SHOW ALL INDEXES VERBOSE",
+
+    "show BTREE index" ->
+      "SHOW BTREE INDEXES",
+
+    "show BTREE index BRIEF" ->
+      "SHOW BTREE INDEXES BRIEF",
+
+    "show BTREE index VERBOSE output" ->
+      "SHOW BTREE INDEXES VERBOSE",
+
+    "show FULltEXT index" ->
+      "SHOW FULLTEXT INDEXES",
+
+    "show loOKup index" ->
+      "SHOW LOOKUP INDEXES",
+
+    "show \nindex\n verbose" ->
+      "SHOW ALL INDEXES VERBOSE",
+
+    "show index WHERE uniqueness = 'UNIQUE'" ->
+      """SHOW ALL INDEXES
+        |  WHERE uniqueness = "UNIQUE"""".stripMargin,
+
+    "show btree inDEXES WHERE uniqueness = 'UNIQUE'" ->
+      """SHOW BTREE INDEXES
+        |  WHERE uniqueness = "UNIQUE"""".stripMargin,
+
+    "show lookup index  YIELD *" ->
+      """SHOW LOOKUP INDEXES
+        |YIELD *""".stripMargin,
+
+    "show index  YIELD * Return DISTINCT type" ->
+      """SHOW ALL INDEXES
+        |YIELD *
+        |RETURN DISTINCT type""".stripMargin,
+
+    "show fulltext index YIELD * where name = 'neo4j' Return *" ->
+      """SHOW FULLTEXT INDEXES
+        |YIELD *
+        |  WHERE name = "neo4j"
+        |RETURN *""".stripMargin,
+
+    "show index yield name order by name skip 1 limit 1" ->
+      """SHOW ALL INDEXES
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+
+    // show constraints
 
     "show constraints" ->
       "SHOW ALL CONSTRAINTS",
@@ -625,6 +637,52 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
     "show constraint yield name order by name skip 1 limit 1" ->
       """SHOW ALL CONSTRAINTS
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+
+    // show procedures
+
+    "show procedure" ->
+      "SHOW PROCEDURES",
+
+    "show procEDUREs" ->
+      "SHOW PROCEDURES",
+
+    "show procedures executable" ->
+      "SHOW PROCEDURES EXECUTABLE BY CURRENT USER",
+
+    "show procedures executable BY cuRRent USer" ->
+      "SHOW PROCEDURES EXECUTABLE BY CURRENT USER",
+
+    "show procedures executable BY USer" ->
+      "SHOW PROCEDURES EXECUTABLE BY USer",
+
+    "show \nprocedure\n executable" ->
+      "SHOW PROCEDURES EXECUTABLE BY CURRENT USER",
+
+    "show procEDUREs WHERE name = 'my.proc'" ->
+      """SHOW PROCEDURES
+        |  WHERE name = "my.proc"""".stripMargin,
+
+    "show procedure  YIELD *" ->
+      """SHOW PROCEDURES
+        |YIELD *""".stripMargin,
+
+    "show procedure  YIELD * Return DISTINCT mode" ->
+      """SHOW PROCEDURES
+        |YIELD *
+        |RETURN DISTINCT mode""".stripMargin,
+
+    "show procedure YIELD * where name = 'neo4j' Return *" ->
+      """SHOW PROCEDURES
+        |YIELD *
+        |  WHERE name = "neo4j"
+        |RETURN *""".stripMargin,
+
+    "show procedure yield name order by name skip 1 limit 1" ->
+      """SHOW PROCEDURES
         |YIELD name
         |  ORDER BY name ASCENDING
         |  SKIP 1

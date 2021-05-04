@@ -58,6 +58,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
@@ -393,6 +394,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getTxStateRelationshipPropertyOrNull(relId: Long, propertyKey: Int): Value =
     inner.getTxStateRelationshipPropertyOrNull(relId, propertyKey)
+
+  override def graph(): GraphDatabaseQueryService = inner.graph()
 
 }
 

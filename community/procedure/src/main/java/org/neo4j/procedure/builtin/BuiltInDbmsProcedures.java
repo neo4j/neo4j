@@ -218,9 +218,10 @@ public class BuiltInDbmsProcedures
         return Stream.of( ((InternalTransaction) transaction).kernelTransaction().getMetaData() ).map( MetadataResult::new );
     }
 
+    @Deprecated( since = "4.3.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all procedures in the DBMS." )
-    @Procedure( name = "dbms.procedures", mode = DBMS )
+    @Procedure( name = "dbms.procedures", mode = DBMS, deprecatedBy = "SHOW PROCEDURES command" )
     public Stream<ProcedureResult> listProcedures()
     {
         securityContext.assertCredentialsNotExpired();
