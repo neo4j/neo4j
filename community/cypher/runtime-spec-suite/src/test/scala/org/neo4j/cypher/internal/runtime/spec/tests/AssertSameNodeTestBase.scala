@@ -304,7 +304,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail on merge using multiple unique indexes if it found a node matching single property only") {
-    val nodes = given {
+    given {
       uniqueIndex("Person", "id")
       uniqueIndex("Person", "email")
       nodePropertyGraph(1, {
@@ -325,7 +325,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail on merge using multiple unique indexes if it found a node matching single property only, flipped order") {
-    val nodes = given {
+    given {
       uniqueIndex("Person", "id")
       uniqueIndex("Person", "email")
       nodePropertyGraph(1, {
@@ -344,7 +344,145 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     // then
     a [MergeConstraintConflictException] should be thrownBy consume(execute(logicalQuery, runtime))
   }
+  test("two unique indexes same node") {
+    val nodes = given {
+      uniqueIndex("L", "prop1")
+      uniqueIndex("L", "prop2")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop1" -> i, "prop2" -> i.toString)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator("x:L(prop2 = '20')")
+      .nodeIndexOperator("x:L(prop1 = 20)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
+
+  test("two unique indexes different nodes") {
+    given {
+      uniqueIndex("L", "prop1")
+      uniqueIndex("L", "prop2")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop1" -> i, "prop2" -> i.toString)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator("x:L(prop2 = '21')")
+      .nodeIndexOperator("x:L(prop1 = 20)")
+      .build()
+
+    //then
+    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+  }
 }
+
+trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
+  self: AssertSameNodeTestBase[CONTEXT] =>
+
+    test("one node key constraint, same node") {
+      val nodes = given {
+        nodeKey("L", "prop1", "prop2")
+        nodePropertyGraph(sizeHint, {
+          case i => Map("prop1" -> i, "prop2" -> i.toString)
+        }, "L")
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x")
+        .assertSameNode("x")
+        .|.nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true)
+        .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true)
+        .build(readOnly = false)
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodes(20)
+      runtimeResult should beColumns("x").withSingleRow(expected)
+    }
+
+  test("one node key constraint, different nodes") {
+    given {
+      nodeKey("L", "prop1", "prop2")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop1" -> i, "prop2" -> i.toString)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator("x:L(prop1 = 21, prop2 = '21')", unique = true)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true)
+      .build(readOnly = false)
+
+    //then
+    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+  }
+
+  test("two node key constraints, same node") {
+    val nodes = given {
+      nodeKey("L", "prop1", "prop2")
+      nodeKey("L", "prop3", "prop4")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop1" -> i, "prop2" -> i.toString, "prop3" -> i, "prop4" -> i.toString)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator("x:L(prop3 = 20, prop4 = '20')", unique = true)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
+
+  test("two node key constraints, different nodes") {
+    given {
+      nodeKey("L", "prop1", "prop2")
+      nodeKey("L", "prop3", "prop4")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop1" -> i, "prop2" -> i.toString, "prop3" -> i, "prop4" -> i.toString)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator("x:L(prop3 = 21, prop4 = '21')", unique = true)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true)
+      .build(readOnly = false)
+
+    //then
+    a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
+  }
+
+}
+
 
 /**
  * These are tests for cases which don't really happen in production
@@ -465,5 +603,6 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     //then
     a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
+
 }
 
