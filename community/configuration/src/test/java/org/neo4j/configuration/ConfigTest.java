@@ -21,10 +21,13 @@ package org.neo4j.configuration;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,7 +36,7 @@ import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.Arrays;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -59,6 +63,13 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
@@ -87,6 +98,10 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 @TestDirectoryExtension
 class ConfigTest
 {
+    private static final Set<PosixFilePermission> permittedFilePermissionsForCommandExpansion = Set.of( OWNER_READ, OWNER_WRITE, GROUP_READ );
+    private static final Set<PosixFilePermission> forbiddenFilePermissionsForCommandExpansion =
+            Set.of( OWNER_EXECUTE, GROUP_WRITE, GROUP_EXECUTE, OTHERS_READ, OTHERS_WRITE, OTHERS_EXECUTE );
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -546,10 +561,14 @@ class ConfigTest
               );
     }
 
+    /**
+     * This test is supposed to run and pass on Windows *and* Linux/Mac
+     * @throws IOException
+     */
     @Test
     void canReadK8sStyleConfigDir() throws IOException
     {
-        Path confDir = createK8sStyleConfigDir();
+        Path confDir = createK8sStyleConfigDir( Set.of() );
 
         Config config = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFile( confDir )::build );
         Config config2 = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFileNoThrow( confDir )::build );
@@ -563,12 +582,15 @@ class ConfigTest
     }
 
     /**
-     * This tests some of the unusual arrangements with links and metadata files/directories that can exist in Kubernetes mounted volumes
+     * Creates a configuration directory in the style of a Kubernetes ConfigMap mounted as a volume.
      *
-     * @param fileAttributes
+     * This replicates of the unusual arrangements with links and metadata files/directories that can exist in Kubernetes mounted volumes.
+     * If running on Windows the stuff about file permissions is ignored.
+     *
+     * @param posixFilePermissions file permissions to set on files in the config directory. This can be empty if command explansion is not being used.
      * @throws IOException
      */
-    private Path createK8sStyleConfigDir( FileAttribute<?>... fileAttributes ) throws IOException
+    private Path createK8sStyleConfigDir( Set<PosixFilePermission> posixFilePermissions ) throws IOException
     {
         // Create and populate a directory for files and directories that we will target using links
         Path targetDir = testDirectory.directory( "links" );
@@ -577,11 +599,11 @@ class ConfigTest
         Path dotDir = Files.createDirectory( targetDir.resolve( "..metadata" ) );
 
         Path defaultDatabase = targetDir.resolve( GraphDatabaseSettings.default_database.name() );
-        Files.createFile( defaultDatabase, fileAttributes );
+        Files.createFile( defaultDatabase );
         Files.write( defaultDatabase, "foo".getBytes() );
 
         Path authEnabled = targetDir.resolve( GraphDatabaseSettings.auth_enabled.name() );
-        Files.createFile( authEnabled, fileAttributes );
+        Files.createFile( authEnabled );
         Files.write( authEnabled, "true".getBytes() );
 
         // Create and populate the actual conf dir
@@ -604,8 +626,15 @@ class ConfigTest
         Files.createDirectory( confDir.resolve( "..version" ) );
         // An actual settings file we want to read
         Path authMaxFailedAttempts = confDir.resolve( GraphDatabaseSettings.auth_max_failed_attempts.name() );
-        Files.createFile( authMaxFailedAttempts, fileAttributes );
+        Files.createFile( authMaxFailedAttempts );
         Files.write( authMaxFailedAttempts, "4".getBytes() );
+
+        if ( !IS_OS_WINDOWS && !posixFilePermissions.isEmpty() )
+        {
+            setPosixFilePermissions( defaultDatabase, posixFilePermissions );
+            setPosixFilePermissions( authEnabled, posixFilePermissions );
+            setPosixFilePermissions( authMaxFailedAttempts, posixFilePermissions );
+        }
         return confDir;
     }
 
@@ -636,7 +665,7 @@ class ConfigTest
 
     @Test
     @DisabledForRoot
-    void mustThrowIfConfigFileCoutNotBeRead() throws IOException
+    void mustThrowIfConfigFileCouldNotBeRead() throws IOException
     {
         Path confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.toFile().createNewFile() );
@@ -860,28 +889,50 @@ class ConfigTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
+    void testThatFileAttributePermissionsDoNotWork() throws IOException
+    {
+        // Given
+        Path confFile = testDirectory.file( "test.conf" );
+        Set<PosixFilePermission> permissions = PosixFilePermissions.fromString( "rw---x-w-" );
+
+        // When
+        Files.createFile( confFile, PosixFilePermissions.asFileAttribute( permissions ) );
+
+        // Then
+        // we would expect that the created file has all the permissions that we asked for...
+        assertThrows( AssertionError.class,
+                      () -> assertThat( Files.getPosixFilePermissions( confFile ) ).containsExactlyInAnyOrderElementsOf( permissions )
+        );
+        // why would you do this to us java ?!
+    }
+
+    @Test
+    @DisabledOnOs( OS.WINDOWS )
+    void testThatFilesPosixFilePermissionsDoWork() throws IOException
+    {
+        // Given
+        Path confFile = testDirectory.file( "test.conf" );
+        Set<PosixFilePermission> permissions = PosixFilePermissions.fromString( "rw---x-w-" );
+
+        // When
+        Files.createFile( confFile );
+        Files.setPosixFilePermissions( confFile, permissions );
+
+        // Then
+        assertThat( Files.getPosixFilePermissions( confFile ) ).containsExactlyInAnyOrderElementsOf( permissions );
+    }
+
+    @Test
     @DisabledOnOs( OS.WINDOWS ) //For some reason it does not work on our test instances on TC
     void shouldCorrectlyEvaluateCommandFromFile() throws IOException
     {
         assumeUnixOrWindows();
-        String command = IS_OS_WINDOWS ? "cmd.exe /c set /a" : "expr";
-
         Path confFile = testDirectory.file( "test.conf" );
-        if ( IS_OS_WINDOWS )
-        {
-            Files.createFile( confFile );
-            AclFileAttributeView attrs = Files.getFileAttributeView( confFile, AclFileAttributeView.class );
-            attrs.setAcl( List.of( AclEntry.newBuilder().setType( AclEntryType.ALLOW )
-                    .setPrincipal( attrs.getOwner() )
-                    .setPermissions( AclEntryPermission.READ_DATA, AclEntryPermission.WRITE_DATA, AclEntryPermission.READ_ATTRIBUTES,
-                            AclEntryPermission.WRITE_ATTRIBUTES, AclEntryPermission.READ_NAMED_ATTRS, AclEntryPermission.WRITE_NAMED_ATTRS,
-                            AclEntryPermission.APPEND_DATA, AclEntryPermission.READ_ACL, AclEntryPermission.SYNCHRONIZE ).build() ) );
-        }
-        else
-        {
-            Files.createFile( confFile, PosixFilePermissions.asFileAttribute( Set.of( OWNER_READ, OWNER_WRITE ) ) );
-        }
-        Files.write( confFile, List.of( format("%s=$(%s 3 + 3)", TestSettings.intSetting.name(), command ) ) );
+        Files.createFile( confFile );
+        Files.write( confFile, List.of( format("%s=$(expr 3 + 3)", TestSettings.intSetting.name() ) ) );
+
+        setPosixFilePermissions( confFile, permittedFilePermissionsForCommandExpansion );
 
         //Given
         Config config = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile ).build();
@@ -895,9 +946,11 @@ class ConfigTest
     {
         assumeUnixOrWindows();
         Path confFile = testDirectory.file( "test.conf" );
+        Files.createFile( confFile );
+        Files.write( confFile, List.of( TestSettings.intSetting.name() + "=$(foo bar)" ) );
+
         if ( IS_OS_WINDOWS )
         {
-            Files.createFile( confFile );
             AclFileAttributeView attrs = Files.getFileAttributeView( confFile, AclFileAttributeView.class );
             attrs.setAcl( List.of( AclEntry.newBuilder().setType( AclEntryType.ALLOW )
                     .setPrincipal( attrs.getOwner() )
@@ -908,10 +961,8 @@ class ConfigTest
         }
         else
         {
-            Files.createFile( confFile, PosixFilePermissions.asFileAttribute( PosixFilePermissions.fromString( "rwx------" ) ) );
-
+            setPosixFilePermissions( confFile, PosixFilePermissions.fromString( "rw-----w-" ) );
         }
-        Files.write( confFile, List.of( TestSettings.intSetting.name() + "=$(foo bar)" ) );
 
         //Given
         Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile );
@@ -922,12 +973,21 @@ class ConfigTest
         assertThat( msg ).contains( expectedErrorMessage );
     }
 
+    private void setPosixFilePermissions( Path confFile, Set<PosixFilePermission> filePermissions ) throws IOException
+    {
+        Files.setPosixFilePermissions( confFile, filePermissions );
+
+        // It seems weird to assert here but when setting file permissions via FileAttributes the created files did not have the permissions that we asked for.
+        // So better to check explicitly here than to get really confused later.
+        assertThat( Files.getPosixFilePermissions( confFile ) ).containsExactlyInAnyOrderElementsOf( filePermissions );
+    }
+
     @Test
-    @EnabledOnOs( {OS.LINUX, OS.MAC} )
+    @DisabledOnOs( {OS.WINDOWS} )
     void shouldNotEvaluateK8sConfDirWithIncorrectFilePermission() throws IOException
     {
         //Given
-        Path confDir = createK8sStyleConfigDir( PosixFilePermissions.asFileAttribute( PosixFilePermissions.fromString( "rwx------" ) ) );
+        Path confDir = createK8sStyleConfigDir( PosixFilePermissions.fromString( "rw-----w-" ) );
         Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confDir );
 
         //Then
@@ -937,16 +997,17 @@ class ConfigTest
     }
 
     @Test
-    @EnabledOnOs( {OS.LINUX, OS.MAC} )
+    @DisabledOnOs( {OS.WINDOWS} )
     void shouldEvaluateK8sConfDirWithCorrectFilePermission() throws IOException
     {
-        var acceptablePermissions = PosixFilePermissions.asFileAttribute( Set.of( OWNER_READ, OWNER_WRITE ) );
+        var permittedPermissions = permittedFilePermissionsForCommandExpansion;
 
         // Given
-        Path confDir = createK8sStyleConfigDir( acceptablePermissions );
+        Path confDir = createK8sStyleConfigDir( permittedPermissions );
 
-        var testSetting = Files.createFile( confDir.resolve( TestSettings.intSetting.name() ), acceptablePermissions );
+        var testSetting = Files.createFile( confDir.resolve( TestSettings.intSetting.name() ) );
         Files.write( testSetting, "$(expr 3 + 3)".getBytes() );
+        Files.setPosixFilePermissions( testSetting, permittedPermissions );
 
         Config.Builder configBuilder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confDir );
 
@@ -1006,6 +1067,116 @@ class ConfigTest
 
         //Then
         assertThat( config.get( BootloaderSettings.additional_jvm ) ).isEqualTo( String.format( "%s%n%s%n%s", "-Dfoo", "-Dbar", "-Dbaz" ) );
+    }
+
+    /**
+     * Ideally we'd generate all possible combinations of permissions but that requires some combinatorics library, which we don't have
+     */
+    private static Stream<Arguments> forbiddenFilePermissions()
+    {
+        return forbiddenFilePermissionsForCommandExpansion.stream()
+                                                          .map( p -> Arguments.of( Set.of( p ) ) );
+    }
+
+    /**
+     * Check that the method we are using to generate test parameters does what we think it does.
+     */
+    @Test
+    void testForbiddenFilePermissionsContainsAllNotPermittedPermissions()
+    {
+        Set<PosixFilePermission> invalidFilePermissions = forbiddenFilePermissions().flatMap( a -> ((Set<PosixFilePermission>) a.get()[0]).stream() )
+                                                                                    .collect( Collectors.toSet() );
+
+        // Any file permission that's not in the acceptable list is invalid - there's no middle ground. So all possible permissions must be exist in either
+        // the permitted list or the forbidden list.
+        assertThat( Sets.union( invalidFilePermissions, permittedFilePermissionsForCommandExpansion ) )
+                .containsExactlyInAnyOrderElementsOf( Arrays.asList( PosixFilePermission.values() ) );
+
+        // This is just a sanity check
+        assertThat( invalidFilePermissions ).hasSize( 6 );
+
+        // This is the most important one to check, this should never be valid
+        assertThat( invalidFilePermissions ).contains( OTHERS_WRITE );
+    }
+
+    @DisabledOnOs( {OS.WINDOWS} )
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "forbiddenFilePermissions" )
+    void testForbiddenFilePermissionsShouldBeInvalidOnTheirOwn( Set<PosixFilePermission> forbidden ) throws IOException
+    {
+        //Given
+        Set<PosixFilePermission> readable = Set.of( OWNER_READ ); // required otherwise the test will fail because we cannot read the file at all
+        Path confFile = testDirectory.file( "test.conf" );
+        Files.createFile( confFile );
+        Files.write( confFile, List.of( format("%s=$(expr 3 + 3)", TestSettings.intSetting.name() ) ) );
+        setPosixFilePermissions( confFile, Sets.union( readable, forbidden ) );
+        Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile );
+
+        //when
+        String errorMessage = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+
+        //then
+        assertThat( errorMessage ).contains( "does not have the correct file permissions to evaluate commands" );
+    }
+
+    @DisabledOnOs( {OS.WINDOWS} )
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "forbiddenFilePermissions" )
+    void testForbiddenFilePermissionsShouldBeInvalidWhenCombinedWithPermittedPermissions( Set<PosixFilePermission> forbidden ) throws IOException
+    {
+        //Given
+        Set<PosixFilePermission> permittedPermissions = permittedFilePermissionsForCommandExpansion;
+        Path confFile = testDirectory.file( "test.conf" );
+        Files.createFile( confFile );
+        Files.write( confFile, List.of( format("%s=$(expr 3 + 3)", TestSettings.intSetting.name() ) ) );
+        setPosixFilePermissions( confFile, Sets.union( permittedPermissions, forbidden ) );
+        Config.Builder builder = Config.newBuilder().allowCommandExpansion().addSettingsClass( TestSettings.class ).fromFile( confFile );
+
+        //when
+        String errorMessage = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+
+        //then
+        assertThat( errorMessage ).contains( "does not have the correct file permissions to evaluate commands" );
+    }
+
+    @DisabledOnOs( {OS.WINDOWS} )
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "forbiddenFilePermissions" )
+    void testForbiddenFilePermissionsShouldBeInvalidOnTheirOwnForK8sConfDir( Set<PosixFilePermission> forbidden ) throws IOException
+    {
+        //Given
+        Set<PosixFilePermission> readable = Set.of( OWNER_READ ); // required otherwise the test will fail because we cannot read the file at all
+        Path confDir = createK8sStyleConfigDir( Sets.union( readable, forbidden ) );
+        Config.Builder builder = Config.newBuilder()
+                                       .allowCommandExpansion()
+                                       .addSettingsClass( TestSettings.class )
+                                       .fromFile( confDir );
+
+        //when
+        String errorMessage = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+
+        //then
+        assertThat( errorMessage ).contains( "does not have the correct file permissions to evaluate commands" );
+    }
+
+    @DisabledOnOs( {OS.WINDOWS} )
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "forbiddenFilePermissions" )
+    void testForbiddenFilePermissionsShouldBeInvalidWhenCombinedWithPermittedPermissionsForK8sConfDir( Set<PosixFilePermission> forbidden ) throws IOException
+    {
+        //Given
+        Set<PosixFilePermission> permittedPermissions = permittedFilePermissionsForCommandExpansion;
+        Path confDir = createK8sStyleConfigDir( Sets.union( permittedPermissions, forbidden ) );
+        Config.Builder builder = Config.newBuilder()
+                                       .allowCommandExpansion()
+                                       .addSettingsClass( TestSettings.class )
+                                       .fromFile( confDir );
+
+        //when
+        String errorMessage = assertThrows( IllegalArgumentException.class, builder::build ).getMessage();
+
+        //then
+        assertThat( errorMessage ).contains( "does not have the correct file permissions to evaluate commands" );
     }
 
     private static final class TestSettings implements SettingsDeclaration

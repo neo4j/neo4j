@@ -318,39 +318,22 @@ public class Config implements Configuration
             {
                 return;
             }
-            String processOwner = SystemUtils.getUserName();
             if ( SystemUtils.IS_OS_UNIX )
             {
-                String processGroup = executeCommand( "id -gn", config_command_evaluation_timeout.defaultValue() );
 
                 for ( Path path : files )
                 {
                     try
                     {
-                        final Set<PosixFilePermission> unixPermission600 = Set.of( PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE );
+                        final Set<PosixFilePermission> unixPermission640 = Set.of( PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE,
+                                                                                   PosixFilePermission.GROUP_READ );
                         PosixFileAttributes attrs = Files.getFileAttributeView( path, PosixFileAttributeView.class ).readAttributes();
                         Set<PosixFilePermission> permissions = attrs.permissions();
-                        if ( !unixPermission600.containsAll( permissions ) ) //actual permission is a subset of required ones
+                        if ( !unixPermission640.containsAll( permissions ) ) //actual permission is a subset of required ones
                         {
                             throw new IllegalArgumentException(
                                     format( "%s does not have the correct file permissions to evaluate commands. Has %s, requires at most %s.", path,
-                                            permissions, unixPermission600 ) );
-                        }
-
-                        String fileOwner = attrs.owner().getName();
-                        if ( !fileOwner.equals( processOwner ) )
-                        {
-                            throw new IllegalArgumentException(
-                                    format( "%s does not have the correct file owner to evaluate commands. Has %s, requires %s.", path, fileOwner,
-                                            processOwner ) );
-                        }
-
-                        String fileGroup = attrs.group().getName();
-                        if ( !fileGroup.equals( processGroup ) )
-                        {
-                            throw new IllegalArgumentException(
-                                    format( "%s does not have the correct file group to evaluate commands. Has %s, requires %s.", path, fileGroup,
-                                            processGroup ) );
+                                            permissions, unixPermission640 ) );
                         }
                     }
                     catch ( IOException | UnsupportedOperationException e )
@@ -361,6 +344,7 @@ public class Config implements Configuration
             }
             else if ( SystemUtils.IS_OS_WINDOWS )
             {
+                String processOwner = SystemUtils.getUserName();
                 for ( Path path : files )
                 {
                     try
