@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -164,14 +165,15 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   override def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
                                                 runtime: CypherRuntime[CONTEXT],
                                                 parameters: Map[String, Any] = Map.empty,
-                                                profile: Boolean = false): IndexedSeq[Array[AnyValue]] = {
+                                                profileAssertion: Option[QueryProfile => Unit] = None): IndexedSeq[Array[AnyValue]] = {
     val subscriber = new RecordingQuerySubscriber
     runTransactionally(logicalQuery, runtime, NoInput, (_, result) => {
       val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
       val seq = recordingRuntimeResult.awaitAll()
+      profileAssertion.foreach(_(recordingRuntimeResult.runtimeResult.queryProfile()))
       recordingRuntimeResult.runtimeResult.close()
       seq
-    }, subscriber, parameters, profile)
+    }, subscriber, parameters, profile = profileAssertion.isDefined)
   }
 
   override def profile(logicalQuery: LogicalQuery,

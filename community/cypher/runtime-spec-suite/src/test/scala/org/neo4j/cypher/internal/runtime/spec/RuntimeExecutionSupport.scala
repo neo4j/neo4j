@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -103,7 +104,7 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
                                        runtime: CypherRuntime[CONTEXT],
                                        parameters: Map[String, Any] = Map.empty,
-                                       profile: Boolean = false
+                                       profileAssertion: Option[QueryProfile => Unit] = None
                                       ): IndexedSeq[Array[AnyValue]]
 
   /**
