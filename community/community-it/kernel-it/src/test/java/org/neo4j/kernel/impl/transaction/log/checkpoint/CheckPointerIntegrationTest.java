@@ -35,6 +35,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -69,6 +70,7 @@ class CheckPointerIntegrationTest
     {
         builder = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
+                .setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true)
                 .impermanent();
     }
 
@@ -261,7 +263,7 @@ class CheckPointerIntegrationTest
             long initialBytesWritten = cacheTracer.bytesWritten();
             long initialPins = cacheTracer.pins();
 
-            getCheckPointer( databaseAPI ).tryCheckPointNoWait( new SimpleTriggerInfo( "tracing" ) );
+            getCheckPointer( databaseAPI ).forceCheckPoint( new SimpleTriggerInfo( "tracing" ) );
 
             assertThat( cacheTracer.flushes() ).isGreaterThan( initialFlushes );
             assertThat( cacheTracer.bytesWritten() ).isGreaterThan( initialBytesWritten );
