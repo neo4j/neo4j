@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashSet;
@@ -55,10 +54,9 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 
@@ -66,12 +64,13 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 @Timeout( 20 )
 class CompositeIndexingIT
 {
-    private static final int LABEL_ID = 1;
-    private static final int REL_TYPE_ID = 1;
 
     @Inject
     private GraphDatabaseAPI graphDatabaseAPI;
     private IndexDescriptor index;
+    private int labelId;
+    private int relTypeId;
+    private int[] propIds;
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -87,19 +86,24 @@ class CompositeIndexingIT
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
             TokenWrite tokenWrite = ktx.tokenWrite();
             tokenWrite.labelGetOrCreateForName( "Label0" );
-            assertEquals( LABEL_ID, tokenWrite.labelGetOrCreateForName( "Label1" ) );
+            labelId = tokenWrite.labelGetOrCreateForName( "Label1" );
+
             tokenWrite.relationshipTypeGetOrCreateForName( "Type0" );
-            assertEquals( REL_TYPE_ID, tokenWrite.relationshipTypeGetOrCreateForName( "Type1" ) );
-            for ( int i = 0; i < 10; i++ )
+            tokenWrite.relationshipTypeGetOrCreateForName( "Type1" );
+            relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( "Type2" );
+
+            propIds = new int[10];
+            for ( int i = 0; i < propIds.length; i++ )
             {
-                tokenWrite.propertyKeyGetOrCreateForName( "prop" + i );
+                propIds[i] = tokenWrite.propertyKeyGetOrCreateForName( "prop" + i );
             }
             tx.commit();
         }
     }
 
-    void setup( IndexPrototype prototype ) throws Exception
+    void setup( PrototypeFactory prototypeFactory ) throws Exception
     {
+        var prototype = prototypeFactory.build( labelId, relTypeId, propIds );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -159,28 +163,45 @@ class CompositeIndexingIT
         }
     }
 
-    private static Stream<Arguments> params()
+    private static Stream<Params> params()
     {
         return Stream.of(
-                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1 ) ), EntityControl.NODE ),
-                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2 ) ), EntityControl.NODE ),
-                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4 ) ), EntityControl.NODE ),
-                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ), EntityControl.NODE ),
-                arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1 ) ), EntityControl.NODE ),
-                arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2 ) ), EntityControl.NODE ),
-                arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ), EntityControl.NODE ),
-                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1 ) ), EntityControl.RELATIONSHIP ),
-                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1, 2 ) ), EntityControl.RELATIONSHIP ),
-                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1, 2, 3, 4 ) ), EntityControl.RELATIONSHIP ),
-                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ), EntityControl.RELATIONSHIP )
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forLabel( labelId, propIds[1] ) ), EntityControl.NODE ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forLabel( labelId, propIds[1], propIds[2] ) ), EntityControl.NODE ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forLabel( labelId, propIds[1], propIds[2], propIds[3], propIds[4] ) ), EntityControl.NODE ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forLabel( labelId, propIds[1], propIds[2], propIds[3],
+                                                            propIds[4], propIds[5], propIds[6], propIds[7] ) ), EntityControl.NODE ),
+
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> uniqueForSchema( forLabel( labelId, propIds[1] ) ), EntityControl.NODE ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> uniqueForSchema( forLabel( labelId, propIds[1], propIds[2] ) ), EntityControl.NODE ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> uniqueForSchema( forLabel( labelId, propIds[1], propIds[2], propIds[3],
+                                                                  propIds[4], propIds[5], propIds[6], propIds[7] ) ), EntityControl.NODE ),
+
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forRelType( relTypeId, propIds[1] ) ), EntityControl.RELATIONSHIP ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forRelType( relTypeId, propIds[1], propIds[2] ) ), EntityControl.RELATIONSHIP ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forRelType( relTypeId, propIds[1], propIds[2], propIds[3], propIds[4] ) ), EntityControl.RELATIONSHIP ),
+                new Params( ( labelId, relTypeId, propIds )
+                                    -> forSchema( forRelType( relTypeId, propIds[1], propIds[2], propIds[3],
+                                                              propIds[4], propIds[5], propIds[6], propIds[7] ) ), EntityControl.RELATIONSHIP )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeEntityAddedByPropertyToIndexInTranslation( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldSeeEntityAddedByPropertyToIndexInTranslation( Params params ) throws Exception
     {
-        setup( prototype );
+        setup( params.prototypeFactory );
+        var entityControl = params.entityControl;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -193,10 +214,10 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeEntityAddedByTokenToIndexInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldSeeEntityAddedByTokenToIndexInTransaction( Params params ) throws Exception
     {
-        assumeTrue( entityControl == EntityControl.NODE );
-        setup( prototype );
+        setup( params.prototypeFactory );
+        var entityControl = params.entityControl;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -209,14 +230,15 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeEntityThatWasDeletedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldNotSeeEntityThatWasDeletedInTransaction( Params params ) throws Exception
     {
-        setup( prototype );
-        long nodeID = createEntity( entityControl );
+        setup( params.prototypeFactory );
+        var entityControl = params.entityControl;
+        long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            entityControl.deleteEntity( ktx, nodeID );
+            entityControl.deleteEntity( ktx, entity );
 
             assertThat( entityControl.seek( ktx, index ) ).isEmpty();
         }
@@ -224,15 +246,22 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeEntityThatHasItsTokenRemovedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldNotSeeEntityThatHasItsTokenRemovedInTransaction( Params params ) throws Exception
     {
-        assumeTrue( entityControl == EntityControl.NODE );
-        setup( prototype );
-        long nodeID = createEntity( entityControl );
+        // EntityControl::removeToken not supported
+        var entityControl = params.entityControl;
+        if ( entityControl == EntityControl.RELATIONSHIP )
+        {
+            return;
+        }
+
+        setup( params.prototypeFactory );
+
+        long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            entityControl.removeToken( ktx, nodeID );
+            entityControl.removeToken( ktx, entity, labelId );
 
             assertThat( entityControl.seek( ktx, index ) ).isEmpty();
         }
@@ -240,9 +269,10 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeEntityhatHasAPropertyRemovedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldNotSeeEntityhatHasAPropertyRemovedInTransaction( Params params ) throws Exception
     {
-        setup( prototype );
+        setup( params.prototypeFactory );
+        var entityControl = params.entityControl;
         long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
@@ -255,9 +285,10 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllEntitiesAddedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldSeeAllEntitiesAddedInTransaction( Params params ) throws Exception
     {
-        setup( prototype );
+        setup( params.prototypeFactory );
+        var entityControl = params.entityControl;
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -275,9 +306,10 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllEntitiesAddedBeforeTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldSeeAllEntitiesAddedBeforeTransaction( Params params ) throws Exception
     {
-        setup( prototype );
+        setup( params.prototypeFactory );
+        var entityControl = params.entityControl;
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             long entity1 = createEntity( entityControl );
@@ -294,9 +326,10 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeEntitiesLackingOneProperty( IndexPrototype prototype, EntityControl entityControl ) throws Exception
+    void shouldNotSeeEntitiesLackingOneProperty( Params params ) throws Exception
     {
-        setup( prototype );
+        setup( params.prototypeFactory );
+        var entityControl = params.entityControl;
         long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
@@ -304,6 +337,24 @@ class CompositeIndexingIT
             entityControl.createEntity( ktx, index, true );
 
             assertThat( entityControl.seek( ktx, index ) ).containsExactly( entity );
+        }
+    }
+
+    @FunctionalInterface
+    private interface PrototypeFactory
+    {
+        IndexPrototype build( int labelId, int relTypeId, int[] propIds );
+    }
+
+    private static class Params
+    {
+        PrototypeFactory prototypeFactory;
+        EntityControl entityControl;
+
+        Params( PrototypeFactory prototypeFactory, EntityControl entityControl )
+        {
+            this.prototypeFactory = prototypeFactory;
+            this.entityControl = entityControl;
         }
     }
 
@@ -341,7 +392,7 @@ class CompositeIndexingIT
                     {
                         Write write = ktx.dataWrite();
                         var nodeID = write.nodeCreate();
-                        write.nodeAddLabel( nodeID, LABEL_ID );
+                        write.nodeAddLabel( nodeID, index.schema().getLabelId() );
                         for ( int propID : index.schema().getPropertyIds() )
                         {
                             if ( excludeFirstProperty )
@@ -363,7 +414,7 @@ class CompositeIndexingIT
                         {
                             write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
                         }
-                        write.nodeAddLabel( nodeID, LABEL_ID );
+                        write.nodeAddLabel( nodeID, index.schema().getLabelId() );
                         return nodeID;
                     }
 
@@ -374,9 +425,10 @@ class CompositeIndexingIT
                     }
 
                     @Override
-                    public void removeToken( KernelTransaction ktx, long entityId ) throws InvalidTransactionTypeKernelException, EntityNotFoundException
+                    public void removeToken( KernelTransaction ktx, long entityId, int labelId )
+                            throws InvalidTransactionTypeKernelException, EntityNotFoundException
                     {
-                        ktx.dataWrite().nodeRemoveLabel( entityId, LABEL_ID );
+                        ktx.dataWrite().nodeRemoveLabel( entityId, labelId );
                     }
 
                     @Override
@@ -409,7 +461,7 @@ class CompositeIndexingIT
                         Write write = ktx.dataWrite();
                         var from = write.nodeCreate();
                         var to = write.nodeCreate();
-                        var rel = write.relationshipCreate( from, REL_TYPE_ID, to );
+                        var rel = write.relationshipCreate( from, index.schema().getRelTypeId(), to );
                         for ( int propID : index.schema().getPropertyIds() )
                         {
                             if ( excludeFirstProperty )
@@ -435,7 +487,7 @@ class CompositeIndexingIT
                     }
 
                     @Override
-                    public void removeToken( KernelTransaction ktx, long entityId )
+                    public void removeToken( KernelTransaction ktx, long entityId, int relTypeId )
                     {
                         throw new IllegalStateException( "Not supported" );
                     }
@@ -476,7 +528,7 @@ class CompositeIndexingIT
 
         public abstract void deleteEntity( KernelTransaction ktx, long id ) throws KernelException;
 
-        public abstract void removeToken( KernelTransaction ktx, long entityId ) throws KernelException;
+        public abstract void removeToken( KernelTransaction ktx, long entityId, int tokenId ) throws KernelException;
 
         public abstract void removeProperty( KernelTransaction ktx, long entity, int propertyId ) throws KernelException;
     }
