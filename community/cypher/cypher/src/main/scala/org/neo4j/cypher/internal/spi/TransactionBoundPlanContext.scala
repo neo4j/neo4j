@@ -241,8 +241,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def canLookupNodesByLabel: Boolean = {
-    !tc.schemaRead.scanStoreAsTokenIndexEnabled || tc.schemaRead.indexesGetAll.exists(descriptor =>
-      descriptor.getIndexType == IndexType.LOOKUP && descriptor.schema.entityType == EntityType.NODE)
+    !tc.schemaRead.scanStoreAsTokenIndexEnabled || tc.schemaRead.index(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE)).hasNext
   }
 
   override def canLookupRelationshipsByType: Boolean = {
