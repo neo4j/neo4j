@@ -30,7 +30,7 @@ case class TestPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends PipeWithSo
 
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.map(row => {
-      state.query.nodeLabel("DUMMY_LABEL") // Expected to generate one db hit per row, for testing profiling.
+      state.query.getOptLabelId("DUMMY_LABEL") // Expected to generate one db hit per row, for testing profiling.
       row
     })
   }

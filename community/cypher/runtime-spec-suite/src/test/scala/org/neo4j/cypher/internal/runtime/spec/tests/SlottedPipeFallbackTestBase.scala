@@ -164,7 +164,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .nonPipelined() // 4
       .nonFuseable()
-      .input(relationships = Seq("r")) // 3
+      .input(relationships = Seq("r")) // 6
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime, inputValues(rels.map(Array[Any](_)): _*))
