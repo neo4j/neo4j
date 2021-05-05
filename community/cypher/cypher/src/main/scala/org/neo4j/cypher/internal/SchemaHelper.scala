@@ -47,39 +47,37 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
   def lockLabels(schemaTokenBefore: SchemaToken,
                  executionPlan: ExecutableQuery,
                  tc: TransactionalContext): LockedLabels = {
-    val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
-
-    // Need to lock lookup index before checking if it exists in order to not have a race with drop index.
-    lookupTypes.foreach(lockLookupType(tc, _))
-    if (lookupTypes.exists(!hasLookupIndex(tc, _))) {
-      lookupTypes.foreach(releaseLookupType(tc, _))
-      // lookup index for entity type has been dropped -> need to replan.
-      return LockedLabels(successful = false, needsReplan = true)
-    }
-
     val labelIds: Array[Long] = executionPlan.labelIdsOfUsedIndexes
-    if (labelIds.nonEmpty) {
-      lockPlanLabels(tc, labelIds)
-    }
+    lockPlanLabels(tc, labelIds)
+
+    val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
+    lookupTypes.foreach(lockLookupType(tc, _))
 
     if (lookupTypes.nonEmpty || labelIds.nonEmpty) {
       val schemaTokenAfter = readSchemaToken(tc)
+      val indexDropped = lookupTypes.exists(!hasLookupIndex(tc, _))
 
       // if the schema has changed while taking all locks we release locks and return false
-      if (schemaTokenBefore != schemaTokenAfter) {
+      if (schemaTokenBefore != schemaTokenAfter || indexDropped) {
         releasePlanLabels(tc, labelIds)
         lookupTypes.foreach(releaseLookupType(tc, _))
-        return LockedLabels(successful = false, needsReplan = false)
+        return LockedLabels(successful = false, needsReplan = indexDropped)
       }
     }
     LockedLabels(successful = true, needsReplan = false)
   }
 
-  private def releasePlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit =
-    tc.kernelTransaction.locks().releaseSharedLabelLock(labelIds:_*)
+  private def releasePlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit = {
+    if (labelIds.nonEmpty) {
+      tc.kernelTransaction.locks().releaseSharedLabelLock(labelIds: _*)
+    }
+  }
 
-  private def lockPlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit =
-    tc.kernelTransaction.locks().acquireSharedLabelLock(labelIds:_*)
+  private def lockPlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit = {
+    if (labelIds.nonEmpty) {
+      tc.kernelTransaction.locks().acquireSharedLabelLock(labelIds: _*)
+    }
+  }
 
   private def lockLookupType(tc: TransactionalContext, entityType: EntityType): Unit =
     tc.kernelTransaction.locks().acquireSharedLookupLock( entityType )
