@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -88,13 +89,19 @@ class RecoverIndexDropIT
     @Inject
     private DatabaseLayout databaseLayout;
 
+    DatabaseManagementServiceBuilder configure( DatabaseManagementServiceBuilder builder )
+    {
+        return builder;
+    }
+
     @Test
     void shouldDropIndexOnRecovery() throws IOException
     {
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
+        DatabaseManagementService managementService = configure( new TestDatabaseManagementServiceBuilder( databaseLayout ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+        long initialIndexCount = currentIndexCount( db );
         createIndex( db );
         StorageEngineFactory storageEngineFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngineFactory.class );
         managementService.shutdown();
@@ -104,24 +111,28 @@ class RecoverIndexDropIT
         Monitors monitors = new Monitors();
         AssertRecoveryIsPerformed recoveryMonitor = new AssertRecoveryIsPerformed();
         monitors.addMonitorListener( recoveryMonitor );
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setMonitors( monitors )
-                .build();
+        managementService = configure( new TestDatabaseManagementServiceBuilder( databaseLayout )
+                                               .setMonitors( monitors ) ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
-            assertTrue( recoveryMonitor.recoveryWasPerformed );
+            assertTrue( recoveryMonitor.recoveryWasRequired );
 
             // then
-            try ( Transaction tx = db.beginTx() )
-            {
-                assertEquals( 0, count( tx.schema().getIndexes() ) );
-                tx.commit();
-            }
+            assertEquals( initialIndexCount, currentIndexCount( db ) );
         }
         finally
         {
             // and the ability to shut down w/o failing on still open files
             managementService.shutdown();
+        }
+    }
+
+    private static long currentIndexCount( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            return count( tx.schema().getIndexes() );
         }
     }
 
@@ -162,7 +173,7 @@ class RecoverIndexDropIT
     private CommittedTransactionRepresentation prepareDropTransaction() throws IOException
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.directory( "preparation" ) ).build();
+                configure( new TestDatabaseManagementServiceBuilder( directory.directory( "preparation" ) ) ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -198,12 +209,12 @@ class RecoverIndexDropIT
 
     private static class AssertRecoveryIsPerformed implements RecoveryMonitor
     {
-        boolean recoveryWasPerformed;
+        boolean recoveryWasRequired;
 
         @Override
         public void recoveryRequired( LogPosition recoveryPosition )
         {
-            recoveryWasPerformed = true;
+            recoveryWasRequired = true;
         }
     }
 }
