@@ -35,6 +35,7 @@ import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ThrowingAction;
+import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.prettyprint.PrettyConfig;
@@ -144,12 +145,19 @@ public class Main
             else
             {
                 // Can only prompt for password if input has not been redirected
-                connectMaybeInteractively( shell, connectionConfig,
-                                           !cliArgs.getNonInteractive() && isInputInteractive(),
-                                           !cliArgs.getNonInteractive() && isOutputInteractive(),
-                                           !cliArgs.getNonInteractive()/*Don't ask for password if using --non-interactive*/ );
+                var newConnectionConfig = connectMaybeInteractively( shell, connectionConfig,
+                                                                     !cliArgs.getNonInteractive() && isInputInteractive(),
+                                                                     !cliArgs.getNonInteractive() && isOutputInteractive(),
+                                                                     !cliArgs.getNonInteractive()/*Don't ask for password if using --non-interactive*/ );
+
+                if ( !newConnectionConfig.driverUrl().equals( connectionConfig.driverUrl() ) )
+                {
+                    var fallbackWarning = "Failed to connect to " + connectionConfig.driverUrl() + ", fallback to " + newConnectionConfig.driverUrl();
+                    logger.printIfVerbose( AnsiFormattedText.s().colorOrange().append( fallbackWarning ).formattedString() );
+                }
+
                 // Construct shellrunner after connecting, due to interrupt handling
-                ShellRunner shellRunner = ShellRunner.getShellRunner( cliArgs, shell, logger, connectionConfig );
+                ShellRunner shellRunner = ShellRunner.getShellRunner( cliArgs, shell, logger, newConnectionConfig );
                 CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell );
 
                 shell.setCommandHelper( commandHelper );
@@ -164,25 +172,27 @@ public class Main
         }
     }
 
-    void connectMaybeInteractively( @Nonnull CypherShell shell,
-                                    @Nonnull ConnectionConfig connectionConfig,
-                                    boolean inputInteractive,
-                                    boolean outputInteractive,
-                                    boolean shouldPromptForPassword )
+    ConnectionConfig connectMaybeInteractively( @Nonnull CypherShell shell,
+                                                @Nonnull ConnectionConfig connectionConfig,
+                                                boolean inputInteractive,
+                                                boolean outputInteractive,
+                                                boolean shouldPromptForPassword )
             throws Exception
     {
-        connectMaybeInteractively( shell, connectionConfig, inputInteractive, outputInteractive, shouldPromptForPassword, null );
+        return connectMaybeInteractively( shell, connectionConfig, inputInteractive, outputInteractive, shouldPromptForPassword, null );
     }
 
     /**
-     * Connect the shell to the server, and try to handle missing passwords and such
+     * Connect the shell to the server, and try to handle missing passwords and such.
+     *
+     * @return connection configuration used to connect (can be different from the supplied)
      */
-    private void connectMaybeInteractively( @Nonnull CypherShell shell,
-                                            @Nonnull ConnectionConfig connectionConfig,
-                                            boolean inputInteractive,
-                                            boolean outputInteractive,
-                                            boolean shouldPromptForPassword,
-                                            ThrowingAction<CommandException> command )
+    private ConnectionConfig connectMaybeInteractively( @Nonnull CypherShell shell,
+                                                        @Nonnull ConnectionConfig connectionConfig,
+                                                        boolean inputInteractive,
+                                                        boolean outputInteractive,
+                                                        boolean shouldPromptForPassword,
+                                                        ThrowingAction<CommandException> command )
             throws Exception
     {
 
@@ -200,10 +210,7 @@ public class Main
             try
             {
                 // Try to connect
-                shell.connect( connectionConfig, command );
-
-                // If no exception occurred we are done
-                break;
+                return shell.connect( connectionConfig, command );
             }
             catch ( AuthenticationException e )
             {
@@ -238,14 +245,13 @@ public class Main
     private void promptForUsernameAndPassword( ConnectionConfig connectionConfig, boolean outputInteractive ) throws Exception
     {
         OutputStream promptOutputStream = getOutputStreamForInteractivePrompt();
-        ConsoleReader consoleReader = new ConsoleReader( in, promptOutputStream );
-        // Disable expansion of bangs: !
-        consoleReader.setExpandEvents( false );
-        // Ensure Reader does not handle user input for ctrl+C behaviour
-        consoleReader.setHandleUserInterrupt( false );
 
-        try
+        try ( ConsoleReader consoleReader = new ConsoleReader( in, promptOutputStream ) )
         {
+            // Disable expansion of bangs: !
+            consoleReader.setExpandEvents( false );
+            // Ensure Reader does not handle user input for ctrl+C behaviour
+            consoleReader.setHandleUserInterrupt( false );
             if ( connectionConfig.username().isEmpty() )
             {
                 String username = outputInteractive ?
@@ -258,25 +264,19 @@ public class Main
                 connectionConfig.setPassword( promptForText( "password", consoleReader, '*' ) );
             }
         }
-        finally
-        {
-            consoleReader.close();
-        }
     }
 
     private void promptForPasswordChange( ConnectionConfig connectionConfig, boolean outputInteractive ) throws Exception
     {
         OutputStream promptOutputStream = getOutputStreamForInteractivePrompt();
-        ConsoleReader consoleReader = new ConsoleReader( in, promptOutputStream );
-        // Disable expansion of bangs: !
-        consoleReader.setExpandEvents( false );
-        // Ensure Reader does not handle user input for ctrl+C behaviour
-        consoleReader.setHandleUserInterrupt( false );
 
-        consoleReader.println( "Password change required" );
-
-        try
+        try ( ConsoleReader consoleReader = new ConsoleReader( in, promptOutputStream ) )
         {
+            // Disable expansion of bangs: !
+            consoleReader.setExpandEvents( false );
+            // Ensure Reader does not handle user input for ctrl+C behaviour
+            consoleReader.setHandleUserInterrupt( false );
+            consoleReader.println( "Password change required" );
             if ( connectionConfig.username().isEmpty() )
             {
                 String username = outputInteractive ?
@@ -292,10 +292,6 @@ public class Main
                                  promptForNonEmptyText( "new password", consoleReader, '*' ) :
                                  promptForText( "new password", consoleReader, '*' );
             connectionConfig.setNewPassword( newPassword );
-        }
-        finally
-        {
-            consoleReader.close();
         }
     }
 

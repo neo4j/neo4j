@@ -186,12 +186,13 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
      *
      * @param connectionConfig
      * @param command
+     * @return connection configuration used to connect (can be different from the supplied)
      */
     @Override
-    public void connect( @Nonnull ConnectionConfig connectionConfig,
-                         ThrowingAction<CommandException> command ) throws CommandException
+    public ConnectionConfig connect( @Nonnull ConnectionConfig connectionConfig,
+                                     ThrowingAction<CommandException> command ) throws CommandException
     {
-        boltStateHandler.connect( connectionConfig, command );
+        return boltStateHandler.connect( connectionConfig, command );
     }
 
     @Nonnull

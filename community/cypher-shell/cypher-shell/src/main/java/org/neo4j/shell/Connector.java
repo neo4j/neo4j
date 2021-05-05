@@ -44,9 +44,12 @@ public interface Connector
     }
 
     /**
+     * Tries to connect to database.
+     *
      * @throws CommandException if connection failed
+     * @return connection configuration used to connect (can be different from the supplied)
      */
-    void connect( @Nonnull ConnectionConfig connectionConfig, ThrowingAction<CommandException> action ) throws CommandException;
+    ConnectionConfig connect( @Nonnull ConnectionConfig connectionConfig, ThrowingAction<CommandException> action ) throws CommandException;
 
     /**
      * Returns the version of Neo4j which the shell is connected to. If the version is before 3.1.0-M09, or we are not connected yet, this returns the empty

@@ -20,9 +20,7 @@
 package org.neo4j.shell;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,19 +44,20 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.ToStringLinePrinter;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.isA;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 import static org.neo4j.shell.Main.EXIT_FAILURE;
@@ -67,11 +66,9 @@ import static org.neo4j.shell.util.Versions.majorVersion;
 
 public class MainIntegrationTest
 {
-    private static String USER = "neo4j";
-    private static String PASSWORD = "neo";
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-    private String inputString = String.format( "%s%n%s%n", USER, PASSWORD );
+    private static final String USER = "neo4j";
+    private static final String PASSWORD = "neo";
+    private final String inputString = String.format( "%s%n%s%n", USER, PASSWORD );
     private ByteArrayOutputStream baos;
     private ConnectionConfig connectionConfig;
     private CliArgs cliArgs;
@@ -195,9 +192,8 @@ public class MainIntegrationTest
             assertEquals( "pass", connectionConfig.password() );
 
             // Should get exception with instructions on how to change password using procedure
-            exception.expect( ClientException.class );
-            exception.expectMessage( "CALL dbms.changePassword" );
-            shell.execute( "MATCH (n) RETURN count(n)" );
+            var exception = assertThrows( ClientException.class, () -> shell.execute( "MATCH (n) RETURN count(n)" ) );
+            assertThat( exception.getMessage(), containsString( "CALL dbms.changePassword" ) );
         }
     }
 
@@ -315,7 +311,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void wrongPortWithBolt() throws Exception
+    public void wrongPortWithBolt()
     {
         // given
         CliArgs cliArgs = new CliArgs();
@@ -326,13 +322,13 @@ public class MainIntegrationTest
         CypherShell shell = sac.shell;
         ConnectionConfig connectionConfig = sac.connectionConfig;
 
-        exception.expect( ServiceUnavailableException.class );
-        exception.expectMessage( "Unable to connect to localhost:1234, ensure the database is running and that there is a working network connection to it" );
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
+        var exception = assertThrows( ServiceUnavailableException.class, () -> main.connectMaybeInteractively( shell, connectionConfig, true, true, true ) );
+        var expectedMesssage = "Unable to connect to localhost:1234, ensure the database is running and that there is a working network connection to it";
+        assertThat( exception.getMessage(), containsString( expectedMesssage ) );
     }
 
     @Test
-    public void wrongPortWithNeo4j() throws Exception
+    public void wrongPortWithNeo4j()
     {
         // given
         CliArgs cliArgs = new CliArgs();
@@ -343,9 +339,8 @@ public class MainIntegrationTest
         CypherShell shell = sac.shell;
         ConnectionConfig connectionConfig = sac.connectionConfig;
 
-        exception.expect( ServiceUnavailableException.class );
         // The error message here may be subject to change and is not stable across versions so let us not assert on it
-        main.connectMaybeInteractively( shell, connectionConfig, true, true, true );
+        assertThrows( ServiceUnavailableException.class, () -> main.connectMaybeInteractively( shell, connectionConfig, true, true, true ) );
     }
 
     @Test
@@ -371,19 +366,19 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldReadSingleCypherStatementsFromFile() throws Exception
+    public void shouldReadSingleCypherStatementsFromFile()
     {
         assertEquals( format( "result%n42%n" ), executeFileNonInteractively( fileFromResource( "single.cypher" ) ) );
     }
 
     @Test
-    public void shouldReadEmptyCypherStatementsFile() throws Exception
+    public void shouldReadEmptyCypherStatementsFile()
     {
         assertEquals( "", executeFileNonInteractively( fileFromResource( "empty.cypher" ) ) );
     }
 
     @Test
-    public void shouldReadMultipleCypherStatementsFromFile() throws Exception
+    public void shouldReadMultipleCypherStatementsFromFile()
     {
         assertEquals( format( "result%n42%n" +
                               "result%n1337%n" +
@@ -391,7 +386,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldFailIfInputFileDoesntExist() throws Exception
+    public void shouldFailIfInputFileDoesntExist()
     {
         //given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -401,11 +396,11 @@ public class MainIntegrationTest
         executeFileNonInteractively( "what.cypher", logger );
 
         //then
-        assertEquals( format( "what.cypher (No such file or directory)%n" ), out.toString() );
+        assertThat( out.toString(), containsString( format( "what.cypher (No such file or directory)%n" ) ) );
     }
 
     @Test
-    public void shouldHandleInvalidCypherFromFile() throws Exception
+    public void shouldHandleInvalidCypherFromFile()
     {
         //given
         Logger logger = mock( Logger.class );
@@ -417,7 +412,6 @@ public class MainIntegrationTest
         assertEquals( format( "result%n42%n" ), actual );
         //and print errors to the error log
         verify( logger ).printError( any( ClientException.class ) );
-        verifyNoMoreInteractions( logger );
     }
 
     @Test
@@ -475,9 +469,8 @@ public class MainIntegrationTest
         CypherShell shell = interactiveShell( linePrinter );
 
         // then
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Invalid input 'T" );
-        shell.execute( ":source " + fileFromResource( "invalid.cypher" ) );
+        var exception = assertThrows( ClientException.class, () -> shell.execute( ":source " + fileFromResource( "invalid.cypher" ) ) );
+        assertThat( exception.getMessage(), containsString( "Invalid input 'T" ) );
     }
 
     @Test
@@ -488,10 +481,9 @@ public class MainIntegrationTest
         CypherShell shell = interactiveShell( linePrinter );
 
         // expect
-        exception.expect( CommandException.class );
-        exception.expectMessage( "Cannot find file: 'what.cypher'" );
-        exception.expectCause( isA( FileNotFoundException.class ) );
-        shell.execute( ":source what.cypher" );
+        var exception = assertThrows( CommandException.class, () -> shell.execute( ":source what.cypher" ) );
+        assertThat( exception.getMessage(), containsString( "Cannot find file: 'what.cypher'" ) );
+        assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ) );
     }
 
     @Test
@@ -688,6 +680,7 @@ public class MainIntegrationTest
         String msg = new AnsiLogger( false ).getFormattedMessage( e );
         assertThat( msg, anyOf(
                 containsString( "Database '" + dbName + "' is unavailable" ),
+                containsString( "Database '" + dbName + "' unavailable" ),
                 containsString( "Unable to get a routing table for database '" + dbName + "' because this database is unavailable" )
         ) );
     }
@@ -723,7 +716,7 @@ public class MainIntegrationTest
 
     private String fileFromResource( String filename )
     {
-        return getClass().getClassLoader().getResource( filename ).getFile();
+        return requireNonNull( getClass().getClassLoader().getResource( filename ) ).getFile();
     }
 
     private CypherShell interactiveShell( LinePrinter linePrinter ) throws Exception
