@@ -212,21 +212,14 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         val labels = labelInfo.getOrElse(variable, Set.empty)
         val relTypes = relTypeInfo.get(variable)
         val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
-          val ids = name match {
-            case labelName: LabelName     => (semanticTable.id(labelName), semanticTable.id(propertyKey))
-            case relTypeName: RelTypeName => (semanticTable.id(relTypeName), semanticTable.id(propertyKey))
-          }
-          ids match {
-            case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-              val descriptor = labelOrRelTypeId match {
-                case labelId: LabelId     => IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
-                case relTypeId: RelTypeId => IndexDescriptor.forRelType(relTypeId, Seq(propertyKeyId))
-              }
-              indexSelectivityForPropertyEquality(descriptor, size)
 
-              case _ =>
-                Some(Selectivity.ZERO)
-            }
+          val descriptor: Option[IndexDescriptor] = (name, semanticTable.id(propertyKey)) match {
+            case (labelName: LabelName, Some(propKeyId))     => semanticTable.id(labelName).map(id => IndexDescriptor.forLabel(id, Seq(propKeyId)))
+            case (relTypeName: RelTypeName, Some(propKeyId)) => semanticTable.id(relTypeName).map(id => IndexDescriptor.forRelType(id, Seq(propKeyId)))
+            case _ => None
+          }
+
+          descriptor.flatMap(indexSelectivityForPropertyEquality(_, size))
         }
 
         combiner.orTogetherSelectivities(indexSelectivities)
@@ -235,14 +228,14 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     }
   }
 
-  private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int) = for {
+  private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int): Option[Selectivity] = for {
     propExists <- stats.indexPropertyExistsSelectivity(descriptor)
     propEqualsSingleValue <- stats.uniqueValueSelectivity(descriptor)
     propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
     combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
   } yield combinedSelectivity
 
-  private def defaultSelectivityForPropertyEquality(size: Int) = for {
+  private def defaultSelectivityForPropertyEquality(size: Int): Option[Selectivity] = for {
     propExists <- Some(DEFAULT_PROPERTY_SELECTIVITY)
     propEqualsSingleValue <- Some(DEFAULT_EQUALITY_SELECTIVITY)
     propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))

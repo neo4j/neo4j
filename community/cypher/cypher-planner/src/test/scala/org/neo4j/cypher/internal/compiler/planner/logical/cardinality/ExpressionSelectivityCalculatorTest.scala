@@ -1090,7 +1090,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     in1Result should be <= existsSel
     in100Result should be <= existsSel
     in10000Result should be <= existsSel
-
   }
 
   test("selectivity of IN should never exceed the exists() selectivity, with indexes") {
@@ -1116,7 +1115,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     in1Result should be <= existsSel
     in100Result should be <= existsSel
     in10000Result should be <= existsSel
-
   }
 
   // HELPER METHODS
