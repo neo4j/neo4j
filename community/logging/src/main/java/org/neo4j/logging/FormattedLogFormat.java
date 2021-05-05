@@ -19,11 +19,11 @@
  */
 package org.neo4j.logging;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
+import org.neo4j.annotations.api.PublicApi;
 
-@IgnoreApiCheck
+@PublicApi
 public enum FormattedLogFormat
 {
-    STANDARD_FORMAT,
-    JSON_FORMAT;
+    PLAIN,
+    JSON;
 }

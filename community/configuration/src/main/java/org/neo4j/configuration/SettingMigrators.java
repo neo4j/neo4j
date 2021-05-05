@@ -38,6 +38,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -501,6 +502,32 @@ public final class SettingMigrators
             migrateSettingRemoval( values, log, "unsupported.consistency_checker.experimental",
                     "There is no longer multiple different consistency checkers to choose from" );
             migrateSettingNameChange( values, log, "unsupported.consistency_checker.experimental.fail_fast", consistency_checker_fail_fast_threshold );
+        }
+    }
+
+    @ServiceProvider
+    public static class LogFormatMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            String value = values.remove( "unsupported.dbms.logs.format" );
+            if ( isNotBlank( value ) )
+            {
+                log.warn( "Use of deprecated setting unsupported.dbms.logs.format." );
+                if ( "STANDARD_FORMAT".equals( value ) )
+                {
+                    values.put( GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.PLAIN.name() );
+                }
+                else if ( "JSON_FORMAT".equals( value ) )
+                {
+                    values.put( GraphDatabaseSettings.default_log_format.name(), FormattedLogFormat.JSON.name() );
+                }
+                else
+                {
+                    log.warn( "Unrecognized value for unsupported.dbms.logs.format. Was %s but expected STANDARD_FORMAT or JSON_FORMAT.", value );
+                }
+            }
         }
     }
 

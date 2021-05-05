@@ -1,3 +1,8 @@
+org.neo4j.logging.FormattedLogFormat public final enum extends java.lang.Enum<org.neo4j.logging.FormattedLogFormat>
+org.neo4j.logging.FormattedLogFormat::JSON org.neo4j.logging.FormattedLogFormat public static final
+org.neo4j.logging.FormattedLogFormat::PLAIN org.neo4j.logging.FormattedLogFormat public static final
+org.neo4j.logging.FormattedLogFormat::valueOf(java.lang.String) org.neo4j.logging.FormattedLogFormat public static
+org.neo4j.logging.FormattedLogFormat::values() org.neo4j.logging.FormattedLogFormat[] public static
 org.neo4j.logging.Level public final enum extends java.lang.Enum<org.neo4j.logging.Level>
 org.neo4j.logging.Level::DEBUG org.neo4j.logging.Level public static final
 org.neo4j.logging.Level::ERROR org.neo4j.logging.Level public static final

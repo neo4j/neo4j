@@ -321,7 +321,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                .withFormat( FormattedLogFormat.STANDARD_FORMAT )
+                .withFormat( FormattedLogFormat.PLAIN )
                 .build();
 
         Logger logger = ctx.getLogger( "org.neo4j.classname" );
@@ -336,7 +336,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                .withFormat( FormattedLogFormat.STANDARD_FORMAT )
+                .withFormat( FormattedLogFormat.PLAIN )
                 .withCategory( false )
                 .build();
 
@@ -352,7 +352,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                .withFormat( FormattedLogFormat.JSON_FORMAT )
+                .withFormat( FormattedLogFormat.JSON )
                 .build();
 
         Logger logger = ctx.getLogger( "org.neo4j.classname" );
@@ -368,7 +368,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                .withFormat( FormattedLogFormat.JSON_FORMAT )
+                .withFormat( FormattedLogFormat.JSON )
                 .withCategory( false )
                 .build();
 
@@ -385,7 +385,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                .withFormat( FormattedLogFormat.JSON_FORMAT )
+                .withFormat( FormattedLogFormat.JSON )
                 .build();
 
         Logger logger = ctx.getLogger( "org.neo4j.classname" );
@@ -402,7 +402,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                       .withFormat( FormattedLogFormat.JSON_FORMAT )
+                       .withFormat( FormattedLogFormat.JSON )
                        .build();
 
         Logger logger = ctx.getLogger( "org.neo4j.classname" );
@@ -419,7 +419,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                       .withFormat( FormattedLogFormat.JSON_FORMAT )
+                       .withFormat( FormattedLogFormat.JSON )
                        .withCategory( false )
                        .build();
 
@@ -437,7 +437,7 @@ class LogConfigTest
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
 
         ctx = LogConfig.createBuilder( outContent, Level.INFO )
-                       .withFormat( FormattedLogFormat.STANDARD_FORMAT )
+                       .withFormat( FormattedLogFormat.PLAIN )
                        .build();
 
         Logger logger = ctx.getLogger( "org.neo4j.classname" );

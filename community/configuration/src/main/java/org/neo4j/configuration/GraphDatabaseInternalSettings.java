@@ -25,7 +25,6 @@ import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.logging.FormattedLogFormat;
 
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
@@ -423,11 +422,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Duration> vm_pause_monitor_stall_alert_threshold =
             newBuilder( "unsupported.vm_pause_monitor.stall_alert_threshold", DURATION, ofMillis( 100 ) ).build();
-
-    @Internal
-    @Description( "Log format to use." )
-    public static final Setting<FormattedLogFormat> log_format =
-            newBuilder( "unsupported.dbms.logs.format", ofEnum( FormattedLogFormat.class ), FormattedLogFormat.STANDARD_FORMAT ).build();
 
     @Internal
     @Description( "Create a heap dump just before the end of each query execution. " +

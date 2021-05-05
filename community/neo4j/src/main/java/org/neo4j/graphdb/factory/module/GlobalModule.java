@@ -99,13 +99,13 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.log_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_global_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_level;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_max_archives;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
@@ -353,7 +353,7 @@ public class GlobalModule
         // Will get diagnostics as header in each newly created log file (diagnostics in the first file is printed during start up).
         Neo4jLoggerContext loggerContext =
                 LogConfig.createBuilder( fileSystem, globalConfig.get( store_internal_log_path ), globalConfig.get( store_internal_log_level ) )
-                         .withFormat( globalConfig.get( log_format ) )
+                         .withFormat( globalConfig.get( store_internal_log_format ) )
                 .withTimezone( globalConfig.get( db_timezone ) )
                 .withHeaderLogger( log -> dbmsDiagnosticsManager.dumpAll(log), DiagnosticsManager.class.getCanonicalName() )
                 .withRotation( globalConfig.get( store_internal_log_rotation_threshold ), globalConfig.get( store_internal_log_max_archives ) )

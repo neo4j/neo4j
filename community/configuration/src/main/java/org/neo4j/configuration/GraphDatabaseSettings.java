@@ -35,6 +35,7 @@ import org.neo4j.configuration.connectors.ConnectorDefaults;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -366,6 +367,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
+    @Description( "Default log format. Will apply to all logs unless overridden." )
+    public static final Setting<FormattedLogFormat> default_log_format =
+            newBuilder( "dbms.logs.default_format", ofEnum( FormattedLogFormat.class ), FormattedLogFormat.PLAIN ).immutable().build();
+
+    @Description( "Log format to use for user log." )
+    public static final Setting<FormattedLogFormat> store_user_log_format =
+            newBuilder( "dbms.logs.user.format", ofEnum( FormattedLogFormat.class ), null ).setDependency( default_log_format ).build();
+
     @Description( "Threshold for rotation of the user log (_neo4j.log_). If set to 0, log rotation is " +
             "disabled. Note that if dbms.logs.user.stdout_enabled is enabled this setting will be ignored." )
     public static final Setting<Long> store_user_log_rotation_threshold =
@@ -659,6 +668,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         OFF, INFO, VERBOSE
     }
 
+    @Description( "Log format to use for the query log." )
+    public static final Setting<FormattedLogFormat> log_query_format =
+            newBuilder( "dbms.logs.query.format", ofEnum( FormattedLogFormat.class ), null ).setDependency( default_log_format ).build();
+
     @Description( "Log transaction ID for the executed queries being logged" )
     public static final Setting<Boolean> log_queries_transaction_id =
             newBuilder( "dbms.logs.query.transaction_id.enabled", BOOL, false ).dynamic().build();
@@ -691,6 +704,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .setDependency( logs_directory )
             .immutable()
             .build();
+
+    @Description( "Log format to use for debug log." )
+    public static final Setting<FormattedLogFormat> store_internal_log_format =
+            newBuilder( "dbms.logs.debug.format", ofEnum( FormattedLogFormat.class ), null ).setDependency( default_log_format ).build();
 
     @Description( "Path to the debug log file." )
     public static final Setting<Path> store_internal_log_path = newBuilder( "dbms.logs.debug.path", PATH, Path.of( "debug.log" ) )

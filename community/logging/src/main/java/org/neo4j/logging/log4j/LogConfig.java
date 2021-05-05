@@ -123,7 +123,7 @@ public final class LogConfig
     private static Neo4jLogLayout getLayout( Builder builder )
     {
         String datePattern = "yyyy-MM-dd HH:mm:ss.SSSZ";
-        if ( builder.format == FormattedLogFormat.STANDARD_FORMAT )
+        if ( builder.format == FormattedLogFormat.PLAIN )
         {
             String date = "%d{" + datePattern + "}" + (builder.timezone == LogTimeZone.UTC ? "{GMT+0}" : "");
             return Neo4jLogLayout.createLayout( builder.includeCategory ?
@@ -209,7 +209,7 @@ public final class LogConfig
         private OutputStream outputStream;
         private long rotationThreshold;
         private int maxArchives;
-        private FormattedLogFormat format = FormattedLogFormat.STANDARD_FORMAT;
+        private FormattedLogFormat format = FormattedLogFormat.PLAIN;
         private LogTimeZone timezone = LogTimeZone.UTC;
         private boolean includeCategory = true;
         private Consumer<Log> headerLogger;

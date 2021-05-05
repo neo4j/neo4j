@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.neo4j.configuration.BufferingLog;
 import org.neo4j.configuration.BootloaderSettings;
+import org.neo4j.configuration.BufferingLog;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -219,7 +219,7 @@ public abstract class NeoBootstrapper implements Bootstrapper
                 LogConfig.createBuilder( new DefaultFileSystemAbstraction(), config.get( GraphDatabaseSettings.store_user_log_path ),
                         config.get( GraphDatabaseSettings.store_internal_log_level ) )
                          .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) )
-                         .withFormat( config.get( GraphDatabaseInternalSettings.log_format ) )
+                         .withFormat( config.get( GraphDatabaseSettings.store_user_log_format ) )
                          .withCategory( false )
                          .withRotation( config.get( GraphDatabaseSettings.store_user_log_rotation_threshold ),
                                  config.get( GraphDatabaseSettings.store_user_log_max_archives ) );
