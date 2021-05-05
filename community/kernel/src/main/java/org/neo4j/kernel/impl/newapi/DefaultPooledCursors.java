@@ -510,6 +510,10 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             nodeCursor.release();
         }
+        if ( fullAccessNodeCursor != null )
+        {
+            fullAccessNodeCursor.release();
+        }
         if ( relationshipScanCursor != null )
         {
             relationshipScanCursor.release();
@@ -563,6 +567,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             fullAccessRelationshipTypeIndexCursor.release();
         }
         nodeCursor = null;
+        fullAccessNodeCursor = null;
         relationshipScanCursor = null;
         fullAccessRelationshipScanCursor = null;
         relationshipTraversalCursor = null;
