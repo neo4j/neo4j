@@ -131,7 +131,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     }.toSeq should contain(plan._2)
   }
 
-  test("in an OR index plan with 4 indexes should get values for equality predicates ") {
+  test("in an OR index plan with 4 indexes should get values for equality predicates") {
     val plan = new given {
       indexOn("Awesome", "prop1").providesValues()
       indexOn("Awesome", "prop2").providesValues()
