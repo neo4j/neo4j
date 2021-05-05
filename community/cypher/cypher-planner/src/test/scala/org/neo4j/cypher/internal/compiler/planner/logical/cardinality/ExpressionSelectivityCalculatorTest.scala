@@ -877,7 +877,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val calculator = setUpCalculator()
     val eqResult = calculator(equals.expr)
     val resFor1 =  DEFAULT_EQUALITY_SELECTIVITY
-    val resForAny = IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get
+    val resForAny = IndependenceCombiner.orTogetherSelectivities(Seq.fill(DEFAULT_LIST_CARDINALITY.amount.toInt)(resFor1)).get
     eqResult should equal(DEFAULT_PROPERTY_SELECTIVITY * resForAny)
   }
 

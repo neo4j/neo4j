@@ -66,6 +66,14 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(N * Asel * Bsel)
   }
 
+  test("MATCH (a:A:B) WHERE a.prop = 42") {
+    expectCardinality(N * Asel * Bsel * or(Aprop, Bprop))
+  }
+
+  test("MATCH (a:A:B) WHERE a.prop IN [17, 42]") {
+    expectCardinality(N * Asel * Bsel * or(or(Aprop, Aprop), or(Bprop, Bprop)))
+  }
+
   test("MATCH (a:A) WHERE a.prop = 42") {
     expectCardinality(A * Aprop)
   }
@@ -75,7 +83,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH (a:B) WHERE a.bar = 42") {
-    expectCardinality(B * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(B * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH (a:A) WHERE NOT a.prop = 42") {
@@ -91,7 +99,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH (a:B) WHERE a.prop = 42 OR a.bar = 43") {
-    expectCardinality(B * or(Bprop, DEFAULT_EQUALITY_SELECTIVITY))
+    expectCardinality(B * or(Bprop, DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY))
   }
 
   test("MATCH (a) WHERE false") {
@@ -103,7 +111,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH (a:B) WHERE a.prop = 42 AND a.bar = 43") {
-    expectCardinality(B * Bprop * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(B * Bprop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH (a)-->(b)") {
@@ -212,12 +220,16 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(ANY_T1_ANY * T1prop)
   }
 
+  test("MATCH ()-[t: T1|T2]->() WHERE t.prop = 2") {
+    expectCardinality(R * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
   test("MATCH ()-[t: T1 {prop: 2}]->()") {
     expectCardinality(ANY_T1_ANY * T1prop)
   }
 
   test("MATCH ()-[t: T2 {prop: 2}]->()") {
-    expectCardinality(ANY_T2_ANY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(ANY_T2_ANY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH ()-[t {prop: 2}]->() WHERE t:T1") {
@@ -245,7 +257,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH ()-[t:T1]->() WHERE t.bar = 42") {
-    expectCardinality(ANY_T1_ANY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(ANY_T1_ANY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH ()-[t:T1]->() WHERE NOT t.prop = 42") {
@@ -265,7 +277,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH ()-[t1: T1]->()-[t2:T2]->() WHERE t1.prop = 2 AND t2.prop = 3") {
-    expectCardinality(N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH ()-[t1:T1]->()-[t2:T2*2..2]->() WHERE t1.prop = 2") {
@@ -288,12 +300,23 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(ANY_T1_ANY * or(T1prop, T1prop, T1prop))
   }
 
+  test("MATCH ()-[t: T1|T2]->() WHERE t.prop IN [1, 2]") {
+    val listOfOne = DEFAULT_EQUALITY_SELECTIVITY
+    expectCardinality(R * DEFAULT_PROPERTY_SELECTIVITY * or(listOfOne, listOfOne))
+  }
+
+  test("MATCH ()-[t: T1|T2]->() WHERE t.prop IN [1, 2, 3]") {
+    val listOfOne = DEFAULT_EQUALITY_SELECTIVITY
+    val listOfThree = or(listOfOne, listOfOne, listOfOne)
+    expectCardinality(R * DEFAULT_PROPERTY_SELECTIVITY * listOfThree)
+  }
+
   test("MATCH ()-[t: T1]->() WHERE t.prop = 2 AND t.prop IN [1, 2, 3]") {
     expectCardinality(ANY_T1_ANY * T1prop * or(T1prop, T1prop, T1prop))
   }
 
   test("MATCH ()-[t: T1]->() WHERE t.prop = 2 AND t.bar = 2") {
-    expectCardinality(ANY_T1_ANY * T1prop * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(ANY_T1_ANY * T1prop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH ()-[t: T1]->() WITH t AS t WHERE t.prop = 2") {
@@ -332,7 +355,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
   test("MATCH (a:A) WITH 1 AS foo MATCH (a) WHERE a.prop = 2") {
     // Different a-variables, don't use index for a.prop = 2
-    expectCardinality(A * N * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(A * N * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH (a:A) WITH a, 1 AS foo MATCH (a) WHERE a.prop = 1") {
@@ -461,7 +484,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH (a:A) CALL { MATCH (a) WHERE a.prop = 42 RETURN 42 AS ft }") {
-    expectCardinality(A * N * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(A * N * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (b:B) RETURN b AS x UNION ALL WITH a MATCH (c:C) RETURN c AS x}") {

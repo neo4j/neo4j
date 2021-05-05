@@ -228,16 +228,16 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     }
   }
 
-  private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int): Option[Selectivity] = for {
-    propExists <- stats.indexPropertyExistsSelectivity(descriptor)
-    propEqualsSingleValue <- stats.uniqueValueSelectivity(descriptor)
-    propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
-    combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
-  } yield combinedSelectivity
+  private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int): Option[Selectivity] =
+    selectivityForPropertyEquality(stats.indexPropertyExistsSelectivity(descriptor), stats.uniqueValueSelectivity(descriptor), size)
 
-  private def defaultSelectivityForPropertyEquality(size: Int): Option[Selectivity] = for {
-    propExists <- Some(DEFAULT_PROPERTY_SELECTIVITY)
-    propEqualsSingleValue <- Some(DEFAULT_EQUALITY_SELECTIVITY)
+
+  private def defaultSelectivityForPropertyEquality(size: Int): Option[Selectivity] =
+    selectivityForPropertyEquality(Some(DEFAULT_PROPERTY_SELECTIVITY), Some(DEFAULT_EQUALITY_SELECTIVITY), size)
+
+  private def selectivityForPropertyEquality(propertySelectivity: Option[Selectivity], uniqueValueSelectivity: Option[Selectivity], size: Int): Option[Selectivity] = for {
+    propExists <- propertySelectivity
+    propEqualsSingleValue <- uniqueValueSelectivity
     propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
     combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
   } yield combinedSelectivity
