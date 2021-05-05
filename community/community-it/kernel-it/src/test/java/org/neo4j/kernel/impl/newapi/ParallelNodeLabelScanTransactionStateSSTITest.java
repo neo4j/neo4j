@@ -19,10 +19,18 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class ParallelNodeLabelScanTransactionStateTest extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport>
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
+
+public class ParallelNodeLabelScanTransactionStateSSTITest extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport>
 {
     @Override
     public WriteTestSupport newTestSupport()
@@ -32,15 +40,20 @@ public class ParallelNodeLabelScanTransactionStateTest extends ParallelNodeLabel
             @Override
             protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
             {
-                builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
-                return builder;
+                builder = builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+                return super.configure( builder );
             }
         };
     }
 
     @Override
-    void doAssertBackingNodeLabelStructureExists()
+    void doAssertBackingNodeLabelStructureExists() throws KernelException
     {
-        // No-op, labelScanStore should exist already
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            IndexPrototype prototype = forSchema( forAnyEntityTokens( EntityType.NODE ) ).withIndexType( IndexType.LOOKUP );
+            tx.schemaWrite().indexCreate( prototype );
+            tx.commit();
+        }
     }
 }

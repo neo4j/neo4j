@@ -23,6 +23,7 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.index.schema.TokenScan;
 
 public interface TokenIndexReader extends IndexReader
 {
@@ -49,6 +50,8 @@ public interface TokenIndexReader extends IndexReader
     void query( IndexProgressor.EntityTokenClient client,
                 IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, CursorContext cursorContext );
 
+    TokenScan entityTokenScan( int tokenId, CursorContext cursorContext );
+
     TokenIndexReader EMPTY = new TokenIndexReader()
     {
         @Override
@@ -61,6 +64,12 @@ public interface TokenIndexReader extends IndexReader
                            IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, CursorContext cursorContext )
         {
 
+        }
+
+        @Override
+        public TokenScan entityTokenScan( int tokenId, CursorContext cursorContext )
+        {
+            throw new UnsupportedOperationException( "EMPTY implementation does not support this method." );
         }
 
         @Override

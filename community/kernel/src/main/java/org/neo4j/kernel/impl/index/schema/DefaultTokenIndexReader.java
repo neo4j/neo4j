@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -32,8 +33,10 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUpdater.rangeOf;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 public class DefaultTokenIndexReader implements TokenIndexReader
 {
@@ -69,6 +72,29 @@ public class DefaultTokenIndexReader implements TokenIndexReader
         }
     }
 
+    @Override
+    public TokenScan entityTokenScan( int tokenId, CursorContext cursorContext )
+    {
+        try
+        {
+            long highestEntityIdForToken = highestEntityIdForToken( tokenId, cursorContext );
+            return new NativeTokenScan( tokenId, highestEntityIdForToken );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private long highestEntityIdForToken( int tokenId, CursorContext cursorContext ) throws IOException
+    {
+        try ( Seeker<TokenScanKey,TokenScanValue> seeker = index.seek( new TokenScanKey( tokenId, Long.MAX_VALUE ),
+                new TokenScanKey( tokenId, Long.MIN_VALUE ), cursorContext ) )
+        {
+            return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
+        }
+    }
+
     private Seeker<TokenScanKey,TokenScanValue> seekerForToken(
             EntityRange range, int tokenId, IndexOrder indexOrder, CursorContext cursorContext ) throws IOException
     {
@@ -91,5 +117,64 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     public void close()
     {
         // nothing
+    }
+
+    @VisibleForTesting
+    static long roundUp( long sizeHint )
+    {
+        return ((sizeHint + RANGE_SIZE - 1) / RANGE_SIZE) * RANGE_SIZE;
+    }
+
+    private class NativeTokenScan implements TokenScan
+    {
+        private final AtomicLong nextStart;
+        private final int tokenId;
+        private final long max;
+
+        NativeTokenScan( int tokenId, long max )
+        {
+            this.tokenId = tokenId;
+            this.max = max;
+            nextStart = new AtomicLong( 0 );
+        }
+
+        @Override
+        public IndexProgressor initialize( IndexProgressor.EntityTokenClient client, IndexOrder indexOrder, CursorContext cursorContext )
+        {
+            return init( client, Long.MIN_VALUE, Long.MAX_VALUE, indexOrder, cursorContext );
+        }
+
+        @Override
+        public IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, CursorContext cursorContext )
+        {
+            if ( sizeHint == 0 )
+            {
+                return IndexProgressor.EMPTY;
+            }
+            long size = roundUp( sizeHint );
+            long start = nextStart.getAndAdd( size );
+            long stop = Math.min( start + size, max );
+            if ( start >= max )
+            {
+                return IndexProgressor.EMPTY;
+            }
+            return init( client, start, stop, IndexOrder.NONE, cursorContext );
+        }
+
+        private IndexProgressor init( IndexProgressor.EntityTokenClient client, long start, long stop, IndexOrder indexOrder, CursorContext cursorContext )
+        {
+            Seeker<TokenScanKey,TokenScanValue> cursor;
+            EntityRange range = new EntityRange( start, stop );
+            try
+            {
+                cursor = seekerForToken( range, tokenId, indexOrder, cursorContext );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+
+            return new TokenScanValueIndexProgressor( cursor, client, indexOrder, range );
+        }
     }
 }

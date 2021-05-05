@@ -24,6 +24,7 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -62,6 +63,14 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         extends KernelAPIWriteTestBase<G>
 {
     private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
+
+    abstract void doAssertBackingNodeLabelStructureExists() throws KernelException;
+
+    @BeforeEach
+    private void assertBackingNodeLabelStructureExists() throws KernelException
+    {
+        doAssertBackingNodeLabelStructureExists();
+    }
 
     @Test
     void shouldHandleEmptyDatabase() throws KernelException

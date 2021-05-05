@@ -20,27 +20,14 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-public class ParallelNodeLabelScanTransactionStateTest extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport>
+public class ParallelNodeLabelScanSSTITest extends ParallelNodeLabelScanTestBase<ReadTestSupport>
 {
     @Override
-    public WriteTestSupport newTestSupport()
+    public ReadTestSupport newTestSupport()
     {
-        return new WriteTestSupport()
-        {
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-            {
-                builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
-                return builder;
-            }
-        };
-    }
-
-    @Override
-    void doAssertBackingNodeLabelStructureExists()
-    {
-        // No-op, labelScanStore should exist already
+        ReadTestSupport readTestSupport = new ReadTestSupport();
+        readTestSupport.addSetting( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+        return readTestSupport;
     }
 }

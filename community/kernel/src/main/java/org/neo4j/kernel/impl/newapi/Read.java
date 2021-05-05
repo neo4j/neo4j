@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Iterator;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
@@ -230,7 +232,31 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         CursorContext cursorContext = ktx.cursorContext();
-        return new NodeLabelIndexCursorScan( this, label, labelScanReader().entityTokenScan( label, cursorContext ), cursorContext );
+
+        TokenScan tokenScan;
+        if ( scanStoreAsTokenIndexEnabled )
+        {
+            try
+            {
+                Iterator<IndexDescriptor> index = index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+                if ( !index.hasNext() )
+                {
+                    throw new IndexNotFoundKernelException( "There is no index that can back a node label scan." );
+                }
+                IndexDescriptor nliDescriptor = index.next();
+                DefaultTokenReadSession session = (DefaultTokenReadSession) tokenReadSession( nliDescriptor );
+                tokenScan = session.reader.entityTokenScan( label, cursorContext );
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+        else
+        {
+            tokenScan = labelScanReader().entityTokenScan( label, cursorContext );
+        }
+        return new NodeLabelIndexCursorScan( this, label, tokenScan, cursorContext );
     }
 
     @Override
