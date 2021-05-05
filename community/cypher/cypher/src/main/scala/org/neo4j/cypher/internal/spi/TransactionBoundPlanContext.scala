@@ -69,7 +69,6 @@ import org.neo4j.values.storable.ValueCategory
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
-import scala.collection.convert.ImplicitConversions.`iterator asScala`
 
 object TransactionBoundPlanContext {
   def apply(tc: TransactionalContextWrapper,
@@ -241,7 +240,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def canLookupNodesByLabel: Boolean = {
-    !tc.schemaRead.scanStoreAsTokenIndexEnabled || tc.schemaRead.index(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE)).hasNext
+    !tc.schemaRead.scanStoreAsTokenIndexEnabled || tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE)).hasNext
   }
 
   override def canLookupRelationshipsByType: Boolean = {
