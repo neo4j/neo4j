@@ -95,7 +95,8 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
     } else None
 
     val typeTokenIndex = if (typeScan) {
-      Some(Iterators.first(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))))
+      //TODO once we switched over to new API this should do Iterators first just as the others
+      Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))))
     } else None
 
     QueryIndexes(labelScan, indexes, labelTokenIndex, typeTokenIndex)

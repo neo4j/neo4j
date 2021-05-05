@@ -198,6 +198,8 @@ abstract class LogicalPlan(idGen: IdGen)
       case MultiNodeIndexSeek(indexPlans) =>
         acc => acc ++ indexPlans.flatMap(_.indexUsage(lookupIndexAvailable))
       case NodeByLabelScan(idName, _, _, _) if lookupIndexAvailable => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
+      case DirectedRelationshipTypeScan(idName, _, _, _, _, _) => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
+      case UndirectedRelationshipTypeScan(idName, _, _, _, _, _) => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
       }
   }
 }

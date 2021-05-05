@@ -245,7 +245,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def canLookupRelationshipsByType: Boolean = {
     tc.schemaRead.scanStoreAsTokenIndexEnabled() &&
-      tc.schemaRead.index(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)).hasNext
+      tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)).hasNext
   }
 
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
