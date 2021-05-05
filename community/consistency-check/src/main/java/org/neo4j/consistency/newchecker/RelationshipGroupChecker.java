@@ -31,6 +31,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordRelationshipScanCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -59,8 +60,12 @@ class RelationshipGroupChecker implements Checker
     public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         ParallelExecution execution = context.execution;
-        execution.run( getClass().getSimpleName(), execution.partition( neoStores.getRelationshipGroupStore(),
-                ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to ) ) );
+        checkToOwner( nodeIdRange );
+        if ( firstRange )
+        {
+            execution.run( getClass().getSimpleName(), execution.partition( neoStores.getRelationshipGroupStore(),
+                    ( from, to, last ) -> () -> checkToRelationship( from, to ) ) );
+        }
     }
 
     @Override
@@ -69,16 +74,19 @@ class RelationshipGroupChecker implements Checker
         return flags.isCheckGraph();
     }
 
-    private void check( LongRange nodeIdRange, boolean firstRound, long fromGroupId, long toGroupId )
+    /**
+     * Check relationship group to owner node
+     */
+    private void checkToOwner( LongRange nodeIdRange )
     {
-        try ( RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
-                RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
-                RecordStorageReader reader = new RecordStorageReader( neoStores );
-                RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor() )
+        ProgressListener localProgress = progress.threadLocalReporter();
+        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        CacheAccess.Client client = context.cacheAccess.client();
+        final long highId = groupStore.getHighId();
+
+        try ( RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore() ) )
         {
-            ProgressListener localProgress = progress.threadLocalReporter();
-            CacheAccess.Client client = context.cacheAccess.client();
-            for ( long id = fromGroupId; id < toGroupId && !context.isCancelled(); id++ )
+            for ( long id = 0; id < highId && !context.isCancelled(); id++ )
             {
                 localProgress.add( 1 );
                 RelationshipGroupRecord record = groupReader.read( id );
@@ -102,55 +110,75 @@ class RelationshipGroupChecker implements Checker
                         client.putToCacheSingle( owningNode, CacheSlots.NodeLink.SLOT_CHECK_MARK, 0 );
                     }
                 }
-
-                if ( firstRound )
-                {
-                    if ( owningNode < 0 )
-                    {
-                        reporter.forRelationshipGroup( record ).illegalOwner();
-                    }
-                    checkValidToken( record, record.getType(), context.tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
-                            ( group, token ) -> reporter.forRelationshipGroup( group ).illegalRelationshipType(),
-                            ( group, token ) -> reporter.forRelationshipGroup( group ).relationshipTypeNotInUse( token ) );
-
-                    if ( !NULL_REFERENCE.is( record.getNext() ) )
-                    {
-                        RelationshipGroupRecord comparativeRecord = comparativeReader.read( record.getNext() );
-                        if ( !comparativeRecord.inUse() )
-                        {
-                            reporter.forRelationshipGroup( record ).nextGroupNotInUse();
-                        }
-                        else
-                        {
-                            if ( record.getType() >= comparativeRecord.getType() )
-                            {
-                                reporter.forRelationshipGroup( record ).invalidTypeSortOrder();
-                            }
-                            if ( owningNode != comparativeRecord.getOwningNode() )
-                            {
-                                reporter.forRelationshipGroup( record ).nextHasOtherOwner( comparativeRecord );
-                            }
-                        }
-                    }
-
-                    checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstOut(), RelationshipGroupLink.OUT,
-                            group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipNotInUse(),
-                            group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipNotFirstInChain(),
-                            group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipOfOtherType(),
-                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipDoesNotShareNodeWithGroup( rel ) );
-                    checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstIn(), RelationshipGroupLink.IN,
-                            group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotInUse(),
-                            group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotFirstInChain(),
-                            group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipOfOtherType(),
-                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipDoesNotShareNodeWithGroup( rel ) );
-                    checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstLoop(), RelationshipGroupLink.LOOP,
-                            group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotInUse(),
-                            group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotFirstInChain(),
-                            group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipOfOtherType(),
-                            ( group, rel ) -> reporter.forRelationshipGroup( group ).firstLoopRelationshipDoesNotShareNodeWithGroup( rel ) );
-                }
             }
-            localProgress.done();
+        }
+        localProgress.done();
+    }
+
+    /**
+     * Check relationship groups to first in chain relationship. Run only on first node-range
+     */
+    private void checkToRelationship( long fromGroupId, long toGroupId )
+    {
+        try ( RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
+              RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore() );
+              RecordStorageReader reader = new RecordStorageReader( neoStores );
+              RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor() )
+        {
+            for ( long id = fromGroupId; id < toGroupId && !context.isCancelled(); id++ )
+            {
+                RelationshipGroupRecord record = groupReader.read( id );
+                if ( !record.inUse() )
+                {
+                    continue;
+                }
+
+                long owningNode = record.getOwningNode();
+
+                if ( owningNode < 0 )
+                {
+                    reporter.forRelationshipGroup( record ).illegalOwner();
+                }
+                checkValidToken( record, record.getType(), context.tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
+                        ( group, token ) -> reporter.forRelationshipGroup( group ).illegalRelationshipType(),
+                        ( group, token ) -> reporter.forRelationshipGroup( group ).relationshipTypeNotInUse( token ) );
+
+                if ( !NULL_REFERENCE.is( record.getNext() ) )
+                {
+                    RelationshipGroupRecord comparativeRecord = comparativeReader.read( record.getNext() );
+                    if ( !comparativeRecord.inUse() )
+                    {
+                        reporter.forRelationshipGroup( record ).nextGroupNotInUse();
+                    }
+                    else
+                    {
+                        if ( record.getType() >= comparativeRecord.getType() )
+                        {
+                            reporter.forRelationshipGroup( record ).invalidTypeSortOrder();
+                        }
+                        if ( owningNode != comparativeRecord.getOwningNode() )
+                        {
+                            reporter.forRelationshipGroup( record ).nextHasOtherOwner( comparativeRecord );
+                        }
+                    }
+                }
+
+                checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstOut(), RelationshipGroupLink.OUT,
+                        group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipNotInUse(),
+                        group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipNotFirstInChain(),
+                        group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipOfOtherType(),
+                        ( group, rel ) -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipDoesNotShareNodeWithGroup( rel ) );
+                checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstIn(), RelationshipGroupLink.IN,
+                        group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotInUse(),
+                        group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotFirstInChain(),
+                        group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipOfOtherType(),
+                        ( group, rel ) -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipDoesNotShareNodeWithGroup( rel ) );
+                checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstLoop(), RelationshipGroupLink.LOOP,
+                        group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotInUse(),
+                        group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotFirstInChain(),
+                        group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipOfOtherType(),
+                        ( group, rel ) -> reporter.forRelationshipGroup( group ).firstLoopRelationshipDoesNotShareNodeWithGroup( rel ) );
+            }
         }
     }
 
