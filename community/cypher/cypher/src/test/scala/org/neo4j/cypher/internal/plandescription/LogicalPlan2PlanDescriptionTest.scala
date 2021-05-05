@@ -658,6 +658,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateIndex") {
+
+    // BTREE
+
     assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
 
@@ -688,51 +691,55 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
       ), Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
+    // LOOKUP
+
     assertGood(attach(CreateLookupIndex(None, isNodeIndex = true, Some("$indexName")), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (n) ON EACH labels(n)")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("LOOKUP INDEX `$indexName` FOR (n) ON EACH labels(n)")), Set.empty))
 
     assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(isNodeIndex = true, None)), isNodeIndex = true, None), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (n) ON EACH labels(n)")), Set.empty)
-      ), Seq(details("INDEX FOR (n) ON EACH labels(n)")), Set.empty))
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("LOOKUP INDEX FOR (n) ON EACH labels(n)")), Set.empty)
+      ), Seq(details("LOOKUP INDEX FOR (n) ON EACH labels(n)")), Set.empty))
 
     assertGood(attach(CreateLookupIndex(None, isNodeIndex = false, Some("$indexName")), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR ()-[r]-() ON EACH type(r)")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("LOOKUP INDEX `$indexName` FOR ()-[r]-() ON EACH type(r)")), Set.empty))
 
     assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(isNodeIndex = false, None)), isNodeIndex = false, None), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty)
-      ), Seq(details("INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty))
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty)
+      ), Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty))
+
+    // FULLTEXT
 
     assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON EACH [prop]")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX `$indexName` FOR (:Label) ON EACH [prop]")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop1"), key("prop2")), None, Map.empty), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON EACH [prop1, prop2]")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX FOR (:Label) ON EACH [prop1, prop2]")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label1"), label("Label2"))), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("fulltext-1.0"))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR (:Label1|Label2) ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""FULLTEXT INDEX `$indexName` FOR (:Label1|Label2) ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(Some(DoNothingIfExistsForFulltextIndex(Left(List(label("Label"))), List(key("prop")), None)),
       Left(List(label("Label"))), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON EACH [prop]")), Set.empty)
-      ), Seq(details("INDEX FOR (:Label) ON EACH [prop]")), Set.empty))
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("FULLTEXT INDEX FOR (:Label) ON EACH [prop]")), Set.empty)
+      ), Seq(details("FULLTEXT INDEX FOR (:Label) ON EACH [prop]")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"), relType("Type"))), List(key("prop1"), key("prop2")), None, Map.empty), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR ()-[:Label|Type]-() ON EACH [prop1, prop2]")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX FOR ()-[:Label|Type]-() ON EACH [prop1, prop2]")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("fulltext-1.0"))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("""FULLTEXT INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(Some(DoNothingIfExistsForFulltextIndex(Right(List(relType("Label"))), List(key("prop")), None)),
       Right(List(relType("Label"))), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty)
-      ), Seq(details("INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("FULLTEXT INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty)
+      ), Seq(details("FULLTEXT INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
   }
 
   test("DropIndex") {

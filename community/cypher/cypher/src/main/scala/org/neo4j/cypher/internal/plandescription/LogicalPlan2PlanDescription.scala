@@ -376,25 +376,25 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForLookupIndex(isNodeIndex, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(lookupIndexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateLookupIndex(_, isNodeIndex, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(lookupIndexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
 
       case CreateFulltextIndex(_, entityNames, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case DropIndex(labelName, propertyKeyNames) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, Left(labelName), propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(btreeIndexInfo(None, Left(labelName), propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables, withRawCardinalities)
@@ -725,10 +725,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(Details(pretty"$expandDescription$predicatesDescription")), variables, withRawCardinalities)
 
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateLookupIndex(_, isNodeIndex, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(lookupIndexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
 
       case CreateFulltextIndex(_, entityNames, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, options))), variables, withRawCardinalities)
@@ -1164,7 +1164,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     if (caches.isEmpty) pretty"" else caches.map(asPrettyString(_)).mkPrettyString(", ", ", ", "")
   }
 
-  private def indexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
+  private def btreeIndexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
@@ -1195,17 +1195,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val innerPattern = relTypes.map(r => asPrettyString(r.name)).mkPrettyString(":", "|", "")
         pretty"()-[$innerPattern]-()"
     }
-    pretty"INDEX$name FOR $pattern ON EACH $propertyString${prettyOptions(options)}"
+    pretty"FULLTEXT INDEX$name FOR $pattern ON EACH $propertyString${prettyOptions(options)}"
   }
 
-  private def indexInfo(nameOption: Option[String], isNodeIndex: Boolean): PrettyString = {
+  private def lookupIndexInfo(nameOption: Option[String], isNodeIndex: Boolean): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
     }
     val (pattern, function) = if (isNodeIndex) (pretty"(n)", pretty"${asPrettyString.raw(Labels.name)}(n)")
                               else (pretty"()-[r]-()", pretty"${asPrettyString.raw(Type.name)}(r)")
-    pretty"INDEX$name FOR $pattern ON EACH $function"
+    pretty"LOOKUP INDEX$name FOR $pattern ON EACH $function"
   }
 
   private def constraintInfo(nameOption: Option[String],

@@ -113,8 +113,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   }
 }
 
-case class CreateBtreeIndexOptionsConverter(schemaType: String) extends OptionsConverter[CreateBtreeIndexOptions] {
-
+trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   implicit class MapValueExists(mv: MapValue) {
     def exists(f: (Any, Any) => Boolean): Boolean = {
       var result = false
@@ -123,16 +122,24 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends OptionsC
     }
   }
 
-  override def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateBtreeIndexOptions =  {
+  def getOptionsParts(options: Map[String, Expression], params: MapValue, schemaType: String): (Option[Expression], IndexConfig) = {
     val lowerCaseOptions = options.map { case (k, v) => (k.toLowerCase, v) }
     val maybeIndexProvider = lowerCaseOptions.get("indexprovider")
     val maybeConfig = lowerCaseOptions.get("indexconfig")
 
-    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, params, schemaType))
-    val configMap: java.util.Map[String, Object] = maybeConfig.map(assertValidAndTransformConfig(_, params, schemaType).asInstanceOf[java.util.Map[String, Object]])
-      .getOrElse(Collections.emptyMap())
+    val configMap: java.util.Map[String, Object] = maybeConfig.map(assertValidAndTransformConfig(_, params, schemaType)).getOrElse(Collections.emptyMap())
     val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
+    (maybeIndexProvider, indexConfig)
+  }
 
+  def assertValidAndTransformConfig(config: Expression, params: MapValue, schemaType: String): java.util.Map[String, Object]
+}
+
+case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateBtreeIndexOptions] {
+
+  override def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateBtreeIndexOptions =  {
+    val (maybeIndexProvider, indexConfig) = getOptionsParts(options, params, schemaType)
+    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, params, schemaType))
     CreateBtreeIndexOptions(indexProvider, indexConfig)
   }
 
@@ -154,7 +161,7 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends OptionsC
       throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '${indexProvider.asCanonicalStringVal}'. Expected String value.")
   }
 
-  private def assertValidAndTransformConfig(config: Expression, params: MapValue, schemaType: String): java.util.Map[String, Array[Double]] = {
+  override def assertValidAndTransformConfig(config: Expression, params: MapValue, schemaType: String): java.util.Map[String, Object] = {
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
@@ -185,32 +192,18 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends OptionsC
             hm.put(p, configValue)
           case _ => throw exceptionWrongType(itemsMap)
         }
-        hm
+        hm.asInstanceOf[java.util.Map[String, Object]]
       case unknown =>
         throw exceptionWrongType(unknown)
     }
   }
 }
 
-case object CreateFulltextIndexOptionsConverter extends OptionsConverter[CreateFulltextIndexOptions] {
-
-  implicit class MapValueExists(mv: MapValue) {
-    def exists(f: (Any, Any) => Boolean): Boolean = {
-      var result = false
-      mv.foreach { case (k, v) => if (f(k, v)) result = true }
-      result
-    }
-  }
+case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[CreateFulltextIndexOptions] {
 
   override def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateFulltextIndexOptions =  {
-    val lowerCaseOptions = options.map { case (k, v) => (k.toLowerCase, v) }
-    val maybeIndexProvider = lowerCaseOptions.get("indexprovider")
-    val maybeConfig = lowerCaseOptions.get("indexconfig")
-
+    val (maybeIndexProvider, indexConfig) = getOptionsParts(options, params, "fulltext index")
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, params))
-    val configMap: java.util.Map[String, Object] = maybeConfig.map(assertValidAndTransformConfig(_, params)).getOrElse(Collections.emptyMap())
-    val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
-
     CreateFulltextIndexOptions(indexProvider, indexConfig)
   }
 
@@ -232,7 +225,7 @@ case object CreateFulltextIndexOptionsConverter extends OptionsConverter[CreateF
       throw new InvalidArgumentsException(s"Could not create fulltext index with specified index provider '${indexProvider.asCanonicalStringVal}'. Expected String value.")
   }
 
-  private def assertValidAndTransformConfig(config: Expression, params: MapValue): java.util.Map[String, Object] = {
+  override def assertValidAndTransformConfig(config: Expression, params: MapValue, schemaType: String): java.util.Map[String, Object] = {
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
