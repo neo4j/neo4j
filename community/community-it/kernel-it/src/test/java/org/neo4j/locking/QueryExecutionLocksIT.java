@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -67,6 +68,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -78,6 +80,8 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.ValueMapper;
@@ -89,7 +93,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 class QueryExecutionLocksIT
 {
     @Inject
@@ -98,6 +102,12 @@ class QueryExecutionLocksIT
     private GraphDatabaseQueryService queryService;
     @Inject
     private QueryExecutionEngine executionEngine;
+
+    @ExtensionCallback
+    static void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+    }
 
     @Test
     void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception
@@ -170,6 +180,32 @@ class QueryExecutionLocksIT
         assertEquals( ResourceTypes.LABEL, operationRecord2.resourceType );
     }
 
+    @Test
+    void labelScanWithLookupIndex() throws Exception
+    {
+        String labelName = "Robot";
+        Label robot = Label.label( labelName );
+        String propertyKey = "name";
+
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node = transaction.createNode( robot );
+            node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+            transaction.commit();
+        }
+
+        String query = "MATCH (n:" + labelName + ") RETURN n ";
+
+        LockOperationListener lockOperationListener = new OnceSchemaFlushListener();
+        List<LookupLockOperationRecord> lookupLockOperationRecords = traceLookupQueryLocks( query, lockOperationListener );
+        assertThat( lookupLockOperationRecords ).as( "Observed list of lookup lock operations is: " + lookupLockOperationRecords ).hasSize( 1 );
+
+        LookupLockOperationRecord operationRecord = lookupLockOperationRecords.get( 0 );
+        assertTrue( operationRecord.acquisition );
+        assertFalse( operationRecord.exclusive );
+        assertEquals( EntityType.NODE, operationRecord.entityType );
+    }
+
     private void createIndex( Label label, String propertyKey )
     {
         try ( Transaction transaction = db.beginTx() )
@@ -193,6 +229,16 @@ class QueryExecutionLocksIT
         }
     }
 
+    private List<LookupLockOperationRecord> traceLookupQueryLocks( String query, LockOperationListener... listeners ) throws QueryExecutionKernelException
+    {
+        try ( InternalTransaction tx = queryService.beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
+        {
+            TransactionalContextWrapper context = new TransactionalContextWrapper( createTransactionContext( queryService, tx, query ), listeners );
+            executionEngine.executeQuery( query, EMPTY_MAP, context, false );
+            return new ArrayList<>( context.recordingLocks.getLookupLockOperationRecords() );
+        }
+    }
+
     private static TransactionalContext createTransactionContext( GraphDatabaseQueryService graph, InternalTransaction tx, String query )
     {
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( graph );
@@ -204,19 +250,25 @@ class QueryExecutionLocksIT
 
         private final TransactionalContext delegate;
         private final List<LockOperationRecord> recordedLocks;
+        private final List<LookupLockOperationRecord> recordedLookupLocks;
         private final LockOperationListener[] listeners;
         private RecordingLocks recordingLocks;
 
-        private TransactionalContextWrapper( TransactionalContext delegate, LockOperationListener... listeners )
+        private TransactionalContextWrapper( TransactionalContext delegate,
+                                             LockOperationListener... listeners )
         {
-            this( delegate, new ArrayList<>(), listeners );
+            this( delegate, new ArrayList<>(), new ArrayList<>(), listeners );
         }
 
-        private TransactionalContextWrapper( TransactionalContext delegate, List<LockOperationRecord> recordedLocks, LockOperationListener... listeners )
+        private TransactionalContextWrapper( TransactionalContext delegate,
+                                             List<LockOperationRecord> recordedLocks,
+                                             List<LookupLockOperationRecord> recordedLookupLocks,
+                                             LockOperationListener... listeners )
         {
             this.delegate = delegate;
             this.recordedLocks = recordedLocks;
             this.listeners = listeners;
+            this.recordedLookupLocks = recordedLookupLocks;
         }
 
         @Override
@@ -236,7 +288,7 @@ class QueryExecutionLocksIT
         {
             if ( recordingLocks == null )
             {
-                recordingLocks = new RecordingLocks( delegate.transaction(), asList( listeners ), recordedLocks );
+                recordingLocks = new RecordingLocks( delegate.transaction(), asList( listeners ), recordedLocks, recordedLookupLocks );
             }
             return new DelegatingTransaction( delegate.kernelTransaction(), recordingLocks );
         }
@@ -286,7 +338,7 @@ class QueryExecutionLocksIT
             }
             else
             {
-                return new TransactionalContextWrapper( delegate.getOrBeginNewIfClosed(), recordedLocks, listeners );
+                return new TransactionalContextWrapper( delegate.getOrBeginNewIfClosed(), recordedLocks, recordedLookupLocks, listeners );
             }
         }
 
@@ -344,12 +396,18 @@ class QueryExecutionLocksIT
         private final Locks delegate;
         private final List<LockOperationListener> listeners;
         private final List<LockOperationRecord> lockOperationRecords;
+        private final List<LookupLockOperationRecord> lookupLockOperationRecords;
         private final InternalTransaction transaction;
 
-        private RecordingLocks( InternalTransaction transaction, List<LockOperationListener> listeners, List<LockOperationRecord> lockOperationRecords )
+        private RecordingLocks( InternalTransaction transaction,
+                                List<LockOperationListener> listeners,
+                                List<LockOperationRecord> lockOperationRecords,
+                                List<LookupLockOperationRecord> lookupLockOperationRecords
+                                )
         {
             this.listeners = listeners;
             this.lockOperationRecords = lockOperationRecords;
+            this.lookupLockOperationRecords = lookupLockOperationRecords;
             this.transaction = transaction;
             this.delegate = transaction.kernelTransaction().locks();
         }
@@ -357,6 +415,11 @@ class QueryExecutionLocksIT
         List<LockOperationRecord> getLockOperationRecords()
         {
             return lockOperationRecords;
+        }
+
+        List<LookupLockOperationRecord> getLookupLockOperationRecords()
+        {
+            return lookupLockOperationRecords;
         }
 
         private void record( boolean exclusive, boolean acquisition, ResourceTypes type, long... ids )
@@ -369,6 +432,18 @@ class QueryExecutionLocksIT
                 }
             }
             lockOperationRecords.add( new LockOperationRecord( exclusive, acquisition, type, ids ) );
+        }
+
+        private void recordLookupIndex( boolean exclusive, boolean acquisition, EntityType type )
+        {
+            if ( acquisition )
+            {
+                for ( LockOperationListener listener : listeners )
+                {
+                    listener.lockAcquired( transaction, exclusive, type );
+                }
+            }
+            lookupLockOperationRecords.add( new LookupLockOperationRecord( exclusive, acquisition, type ) );
         }
 
         @Override
@@ -440,11 +515,30 @@ class QueryExecutionLocksIT
             record( false, false, ResourceTypes.LABEL, ids );
             delegate.releaseSharedLabelLock( ids );
         }
+
+        @Override
+        public void acquireSharedLookupLock( EntityType entityType )
+        {
+            recordLookupIndex( false, true, entityType );
+            delegate.acquireSharedLookupLock( entityType );
+        }
+
+        @Override
+        public void releaseSharedLookupLock( EntityType entityType )
+        {
+            recordLookupIndex( false, false, entityType );
+            delegate.releaseSharedLookupLock( entityType );
+        }
     }
 
     private static class LockOperationListener implements EventListener
     {
         void lockAcquired( Transaction tx, boolean exclusive, ResourceType resourceType, long... ids )
+        {
+            // empty operation
+        }
+
+        void lockAcquired( Transaction tx, boolean exclusive, EntityType resourceType )
         {
             // empty operation
         }
@@ -473,12 +567,44 @@ class QueryExecutionLocksIT
         }
     }
 
+    private static class LookupLockOperationRecord
+    {
+        private final boolean exclusive;
+        private final boolean acquisition;
+        private final EntityType entityType;
+
+        LookupLockOperationRecord( boolean exclusive, boolean acquisition, EntityType entityType )
+        {
+            this.exclusive = exclusive;
+            this.acquisition = acquisition;
+            this.entityType = entityType;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "LookupLockOperationRecord{exclusive=" + exclusive + ", acquisition=" + acquisition +
+                   ", entityType=" + entityType + "}";
+        }
+    }
+
     private static class OnceSchemaFlushListener extends LockOperationListener
     {
         private boolean executed;
 
         @Override
         void lockAcquired( Transaction tx, boolean exclusive, ResourceType resourceType, long... ids )
+        {
+            if ( !executed )
+            {
+                KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
+                ktx.schemaRead().schemaStateFlush();
+            }
+            executed = true;
+        }
+
+        @Override
+        void lockAcquired( Transaction tx, boolean exclusive, EntityType type )
         {
             if ( !executed )
             {
