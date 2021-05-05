@@ -39,6 +39,7 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.summary.DatabaseInfo;
@@ -429,26 +430,22 @@ public class BoltStateHandlerTest
     @Test
     public void fallbackToBolt() throws CommandException
     {
-        final String[] uriScheme = new String[1];
-        RecordingDriverProvider provider = new RecordingDriverProvider()
-        {
-            @Override
-            public Driver apply( String uri, AuthToken authToken, Config config )
-            {
-                uriScheme[0] = uri.substring( 0, uri.indexOf( ':' ) );
-                if ( uriScheme[0].equals( "neo4j" ) )
-                {
-                    throw new org.neo4j.driver.exceptions.ServiceUnavailableException( "Please fall back" );
-                }
-                super.apply( uri, authToken, config );
-                return new FakeDriver();
-            }
-        };
-        BoltStateHandler handler = new BoltStateHandler( provider, false );
-        ConnectionConfig config = new ConnectionConfig( "neo4j", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
-        handler.connect( config );
+        fallbackTest( "neo4j", "bolt", () -> { throw new ServiceUnavailableException( "Please fall back" ); } );
+        fallbackTest( "neo4j", "bolt", () -> { throw new SessionExpiredException( "Please fall back" ); } );
+    }
 
-        assertEquals( "bolt", uriScheme[0] );
+    @Test
+    public void fallbackToBoltSSC() throws CommandException
+    {
+        fallbackTest( "neo4j+ssc", "bolt+ssc", () -> { throw new ServiceUnavailableException( "Please fall back" ); } );
+        fallbackTest( "neo4j+ssc", "bolt+ssc", () -> { throw new SessionExpiredException( "Please fall back" ); } );
+    }
+
+    @Test
+    public void fallbackToBoltS() throws CommandException
+    {
+        fallbackTest( "neo4j+s", "bolt+s", () -> { throw new ServiceUnavailableException( "Please fall back" ); } );
+        fallbackTest( "neo4j+s", "bolt+s", () -> { throw new SessionExpiredException( "Please fall back" ); } );
     }
 
     @Test
@@ -470,31 +467,6 @@ public class BoltStateHandlerTest
 
         //then
         verify( sessionMock ).run( "RETURN 1" );
-    }
-
-    @Test
-    public void fallbackToBoltSSC() throws CommandException
-    {
-        final String[] uriScheme = new String[1];
-        RecordingDriverProvider provider = new RecordingDriverProvider()
-        {
-            @Override
-            public Driver apply( String uri, AuthToken authToken, Config config )
-            {
-                uriScheme[0] = uri.substring( 0, uri.indexOf( ':' ) );
-                if ( uriScheme[0].equals( "neo4j+ssc" ) )
-                {
-                    throw new org.neo4j.driver.exceptions.ServiceUnavailableException( "Please fall back" );
-                }
-                super.apply( uri, authToken, config );
-                return new FakeDriver();
-            }
-        };
-        BoltStateHandler handler = new BoltStateHandler( provider, false );
-        ConnectionConfig config = new ConnectionConfig( "neo4j+ssc", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
-        handler.connect( config );
-
-        assertEquals( "bolt+ssc", uriScheme[0] );
     }
 
     @Test
@@ -607,31 +579,6 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void fallbackToBoltS() throws CommandException
-    {
-        final String[] uriScheme = new String[1];
-        RecordingDriverProvider provider = new RecordingDriverProvider()
-        {
-            @Override
-            public Driver apply( String uri, AuthToken authToken, Config config )
-            {
-                uriScheme[0] = uri.substring( 0, uri.indexOf( ':' ) );
-                if ( uriScheme[0].equals( "neo4j+s" ) )
-                {
-                    throw new org.neo4j.driver.exceptions.ServiceUnavailableException( "Please fall back" );
-                }
-                super.apply( uri, authToken, config );
-                return new FakeDriver();
-            }
-        };
-        BoltStateHandler handler = new BoltStateHandler( provider, false );
-        ConnectionConfig config = new ConnectionConfig( "neo4j+s", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
-        handler.connect( config );
-
-        assertEquals( "bolt+s", uriScheme[0] );
-    }
-
-    @Test
     public void provideUserAgentstring() throws CommandException
     {
         RecordingDriverProvider provider = new RecordingDriverProvider()
@@ -704,6 +651,30 @@ public class BoltStateHandlerTest
         when( driverMock.session( any() ) ).thenReturn( sessionMock );
 
         return driverMock;
+    }
+
+    private void fallbackTest( String initialScheme, String fallbackScheme, Runnable failer ) throws CommandException
+    {
+        final String[] uriScheme = new String[1];
+        RecordingDriverProvider provider = new RecordingDriverProvider()
+        {
+            @Override
+            public Driver apply( String uri, AuthToken authToken, Config config )
+            {
+                uriScheme[0] = uri.substring( 0, uri.indexOf( ':' ) );
+                if ( uriScheme[0].equals( initialScheme ) )
+                {
+                    failer.run();
+                }
+                super.apply( uri, authToken, config );
+                return new FakeDriver();
+            }
+        };
+        BoltStateHandler handler = new BoltStateHandler( provider, false );
+        ConnectionConfig config = new ConnectionConfig( initialScheme, "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
+        handler.connect( config );
+
+        assertEquals( fallbackScheme, uriScheme[0] );
     }
 
     /**

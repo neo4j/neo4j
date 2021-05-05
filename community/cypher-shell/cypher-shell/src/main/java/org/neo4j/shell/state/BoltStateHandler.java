@@ -44,6 +44,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.summary.DatabaseInfo;
@@ -232,7 +233,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public void connect( @Nonnull ConnectionConfig connectionConfig, ThrowingAction<CommandException> command ) throws CommandException
+    public ConnectionConfig connect( @Nonnull ConnectionConfig connectionConfig, ThrowingAction<CommandException> command ) throws CommandException
     {
         if ( isConnected() )
         {
@@ -248,7 +249,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 driver = getDriver( connectionConfig, authToken );
                 reconnect( activeDatabaseNameAsSetByUser, previousDatabaseName, command );
             }
-            catch ( org.neo4j.driver.exceptions.ServiceUnavailableException e )
+            catch ( ServiceUnavailableException | SessionExpiredException e )
             {
                 String scheme = connectionConfig.scheme();
                 String fallbackScheme;
@@ -274,8 +275,17 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                         connectionConfig.password(),
                         connectionConfig.encryption(),
                         connectionConfig.database() );
-                driver = getDriver( connectionConfig, authToken );
-                reconnect( activeDatabaseNameAsSetByUser, previousDatabaseName, command );
+
+                try
+                {
+                    driver = getDriver( connectionConfig, authToken );
+                    reconnect( activeDatabaseNameAsSetByUser, previousDatabaseName, command );
+                }
+                catch ( Throwable fallbackThrowable )
+                {
+                    // Throw the original exception to not cause confusion.
+                    throw e;
+                }
             }
         }
         catch ( Throwable t )
@@ -290,6 +300,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             }
             throw t;
         }
+        return connectionConfig;
     }
 
     private void reconnect( String databaseToConnectTo, String previousDatabase ) throws CommandException

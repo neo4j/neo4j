@@ -36,6 +36,7 @@ public class AnsiFormattedText
 {
 
     private static final String RED = "RED";
+    private static final String YELLOW = "YELLOW";
     private static final String BOLD = "BOLD";
     private static final String DEFAULT_COLOR = "DEFAULT";
     // no mapping means not defined
@@ -51,8 +52,7 @@ public class AnsiFormattedText
      */
     private static <K, V> Map<K, V> mergeMaps( Map<K, V> primary, Map<K, V> secondary )
     {
-        Map<K, V> result = new HashMap<>();
-        result.putAll( primary );
+        Map<K,V> result = new HashMap<>( primary );
         secondary.forEach( result::putIfAbsent );
         return result;
     }
@@ -204,6 +204,12 @@ public class AnsiFormattedText
     public AnsiFormattedText colorRed()
     {
         color = RED;
+        return this;
+    }
+
+    public AnsiFormattedText colorOrange()
+    {
+        color = YELLOW;
         return this;
     }
 
