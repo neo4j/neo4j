@@ -206,39 +206,48 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       relTypeInfo: RelTypeInfo,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = labelInfo.getOrElse(variable, Set.empty)
-    val relTypes = relTypeInfo.get(variable)
-    val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
-      val ids = name match {
-        case labelName: LabelName => (semanticTable.id(labelName), semanticTable.id(propertyKey))
-        case relTypeName: RelTypeName => (semanticTable.id(relTypeName), semanticTable.id(propertyKey))
-      }
-
-      ids match {
-        case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-          val descriptor = labelOrRelTypeId match {
-            case labelId: LabelId => IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
-            case relTypeId: RelTypeId => IndexDescriptor.forRelType(relTypeId, Seq(propertyKeyId))
+    sizeHint.getOrElse(DEFAULT_LIST_CARDINALITY.amount.toInt) match {
+      case 0    => Selectivity.ZERO
+      case size =>
+        val labels = labelInfo.getOrElse(variable, Set.empty)
+        val relTypes = relTypeInfo.get(variable)
+        val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
+          val ids = name match {
+            case labelName: LabelName     => (semanticTable.id(labelName), semanticTable.id(propertyKey))
+            case relTypeName: RelTypeName => (semanticTable.id(relTypeName), semanticTable.id(propertyKey))
           }
+          ids match {
+            case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
+              val descriptor = labelOrRelTypeId match {
+                case labelId: LabelId     => IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
+                case relTypeId: RelTypeId => IndexDescriptor.forRelType(relTypeId, Seq(propertyKeyId))
+              }
+              indexSelectivityForPropertyEquality(descriptor, size)
 
-          for {
-            propExists <- stats.indexPropertyExistsSelectivity(descriptor)
-            propEqualsValue <- stats.uniqueValueSelectivity(descriptor)
-            combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsValue))
-          } yield combinedSelectivity
+              case _ =>
+                Some(Selectivity.ZERO)
+            }
+        }
 
-        case _ => Some(Selectivity.ZERO)
-      }
-    }
-
-    val itemSelectivity = combiner.orTogetherSelectivities(indexSelectivities).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
-    val size = sizeHint.getOrElse(DEFAULT_LIST_CARDINALITY.amount.toInt)
-    if (size == 0) {
-      Selectivity.ZERO
-    } else {
-      combiner.orTogetherSelectivities(1.to(size).map(_ => itemSelectivity)).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
+        combiner.orTogetherSelectivities(indexSelectivities)
+                .orElse(defaultSelectivityForPropertyEquality(size))
+                .getOrElse(DEFAULT_PREDICATE_SELECTIVITY)
     }
   }
+
+  private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int) = for {
+    propExists <- stats.indexPropertyExistsSelectivity(descriptor)
+    propEqualsSingleValue <- stats.uniqueValueSelectivity(descriptor)
+    propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
+    combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
+  } yield combinedSelectivity
+
+  private def defaultSelectivityForPropertyEquality(size: Int) = for {
+    propExists <- Some(DEFAULT_PROPERTY_SELECTIVITY)
+    propEqualsSingleValue <- Some(DEFAULT_EQUALITY_SELECTIVITY)
+    propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
+    combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
+  } yield combinedSelectivity
 
   private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable,
                                                         labelInfo: LabelInfo,

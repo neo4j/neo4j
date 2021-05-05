@@ -858,7 +858,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator()
     val eqResult = calculator(equals.expr)
-    eqResult should equal(DEFAULT_EQUALITY_SELECTIVITY)
+    eqResult should equal(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("equality with no label, size 2") {
@@ -867,7 +867,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val calculator = setUpCalculator()
     val eqResult = calculator(equals.expr)
     val resFor1 = DEFAULT_EQUALITY_SELECTIVITY.factor
-    eqResult.factor should equal(resFor1 + resFor1 - resFor1 * resFor1)
+    val resForAny = resFor1 + resFor1 - resFor1 * resFor1
+    eqResult.factor should equal(DEFAULT_PROPERTY_SELECTIVITY.factor * resForAny)
   }
 
   test("equality with no label, size unknown") {
@@ -875,8 +876,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator()
     val eqResult = calculator(equals.expr)
-    val resFor1 = DEFAULT_EQUALITY_SELECTIVITY
-    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
+    val resFor1 =  DEFAULT_EQUALITY_SELECTIVITY
+    val resForAny = IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get
+    eqResult should equal(DEFAULT_PROPERTY_SELECTIVITY * resForAny)
   }
 
   test("equality with one label, size 0") {
@@ -930,8 +932,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val eqResult = calculator(equals.expr)
 
     labelResult.factor should equal(0.1)
-    val resFor1 = 0.2 * (1.0 / 180.0)
-    eqResult.factor should equal(resFor1 + resFor1 - resFor1 * resFor1)
+    val existsSel = 200.0 / 1000.0
+    val equal1Sel = 1.0 / 180.0
+    val inSel = existsSel * (equal1Sel + equal1Sel - equal1Sel * equal1Sel)
+    eqResult.factor should equal(inSel)
   }
 
   test("equality with one label, size unknown") {
@@ -943,8 +947,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val eqResult = calculator(equals.expr)
 
     labelResult.factor should equal(0.1)
-    val resFor1 = Selectivity(0.2 * (1.0 / 180.0))
-    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
+    val existsSel = Selectivity(200.0 / 1000.0)
+    val equal1Sel = Selectivity(1.0 / 180.0)
+    val equalAnySel = IndependenceCombiner.orTogetherSelectivities(Seq.fill(DEFAULT_LIST_CARDINALITY.amount.toInt)(equal1Sel)).get
+    eqResult should equal(existsSel * equalAnySel)
   }
 
   test("equality with two labels, size 0") {
@@ -998,10 +1004,13 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
 
-    val personSel = (300.0 / 1000.0) * (1.0 / 200.0)
-    val animalSel = (500.0 / 800.0) * (1.0 / 400.0)
-    val resFor1 = personSel + animalSel - personSel * animalSel
-    eqResult.factor should equal(resFor1 + resFor1 - resFor1 * resFor1)
+    val personExistsSel = 300.0 / 1000.0
+    val personEquals1Sel = 1.0 / 200.0
+    val animalExistsSel = 500.0 / 800.0
+    val animalEquals1Sel = 1.0 / 400.0
+    val personInSel = personExistsSel * (personEquals1Sel + personEquals1Sel - personEquals1Sel * personEquals1Sel)
+    val animalInSel = animalExistsSel * (animalEquals1Sel + animalEquals1Sel - animalEquals1Sel * animalEquals1Sel)
+    eqResult.factor should equal(personInSel + animalInSel - personInSel * animalInSel)
   }
 
   test("equality with two labels, size unknown") {
@@ -1019,10 +1028,13 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
 
-    val personSel = (300.0 / 1000.0) * (1.0 / 200.0)
-    val animalSel = (500.0 / 800.0) * (1.0 / 400.0)
-    val resFor1 = Selectivity(personSel + animalSel - personSel * animalSel)
-    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
+    val personExistsSel = Selectivity(300.0 / 1000.0)
+    val personEquals1Sel = Selectivity(1.0 / 200.0)
+    val animalExistsSel = Selectivity(500.0 / 800.0)
+    val animalEquals1Sel = Selectivity(1.0 / 400.0)
+    val personInSel = personExistsSel * IndependenceCombiner.orTogetherSelectivities(Seq.fill(DEFAULT_LIST_CARDINALITY.amount.toInt)(personEquals1Sel)).get
+    val animalInSel = animalExistsSel * IndependenceCombiner.orTogetherSelectivities(Seq.fill(DEFAULT_LIST_CARDINALITY.amount.toInt)(animalEquals1Sel)).get
+    eqResult should equal(IndependenceCombiner.orTogetherSelectivities(Seq(personInSel, animalInSel)).get)
   }
 
   // OTHER
@@ -1053,6 +1065,58 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val expr = HasLabels(null, Seq(labelName("Foo")))(pos)
     calculator(expr, Map.empty, Map.empty) should equal(Selectivity.of(10.0 / 10.0).get)
+  }
+
+  test("selectivity of IN should never exceed the exists() selectivity") {
+    val in1 = nPredicate(in(nProp, listOfInt(1L)))
+    val in100 = nPredicate(in(nProp, listOfInt(0L to 100L:_*)))
+    val in10000 = nPredicate(in(nProp, listOfInt(0L to 10000L:_*)))
+
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(
+        labelOrRelCardinalities = Map(indexPerson.label -> 1000.0),
+        indexCardinalities = Map(),
+        indexUniqueCardinalities = Map()
+      )
+    )
+
+    val in1Result = calculator(in1.expr)
+    val in100Result = calculator(in100.expr)
+    val in10000Result = calculator(in10000.expr)
+
+    val existsSel = calculator(exists(nProp))
+
+    in1Result should be <= existsSel
+    in100Result should be <= existsSel
+    in10000Result should be <= existsSel
+
+  }
+
+  test("selectivity of IN should never exceed the exists() selectivity, with indexes") {
+    val in1 = nPredicate(in(nProp, listOfInt(1L)))
+    val in100 = nPredicate(in(nProp, listOfInt(0L to 100L:_*)))
+    val in10000 = nPredicate(in(nProp, listOfInt(0L to 10000L:_*)))
+
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(
+        labelOrRelCardinalities = Map(indexPerson.label -> 1000.0),
+        indexCardinalities = Map(indexPerson -> 300.0),
+        indexUniqueCardinalities = Map(indexPerson -> 2.0)
+      )
+    )
+
+    val in1Result = calculator(in1.expr)
+    val in100Result = calculator(in100.expr)
+    val in10000Result = calculator(in10000.expr)
+
+    val existsSel = Selectivity(300.0 / 1000.0)
+
+    in1Result should be <= existsSel
+    in100Result should be <= existsSel
+    in10000Result should be <= existsSel
+
   }
 
   // HELPER METHODS

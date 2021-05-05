@@ -139,7 +139,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setLabelCardinality("Person", i)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT 10 WHERE a.age = 20",
-        Math.min(i, 10.0) * DEFAULT_EQUALITY_SELECTIVITY)
+      Math.min(i, 10.0) * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("should reduce cardinality using index stats for a WHERE after a WITH") {
@@ -160,7 +160,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setLabelCardinality("Person", i)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT $limit WHERE a.age = 20",
-        Math.min(i, DEFAULT_LIMIT_CARDINALITY) * DEFAULT_EQUALITY_SELECTIVITY)
+      Math.min(i, DEFAULT_LIMIT_CARDINALITY) * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with ORDER BY") {
@@ -170,7 +170,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setLabelCardinality("Person", i)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a ORDER BY a.name WHERE a.age = 20",
-        i * DEFAULT_EQUALITY_SELECTIVITY)
+      i * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with DISTINCT") {
@@ -180,7 +180,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setLabelCardinality("Person", i)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH DISTINCT a WHERE a.age = 20",
-        i * DEFAULT_DISTINCT_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+      i * DEFAULT_DISTINCT_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION without grouping") {

@@ -34,6 +34,7 @@ trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSup
   self: CypherFunSuite =>
 
   val DEFAULT_PREDICATE_SELECTIVITY: Double = PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY.factor
+  val DEFAULT_PROPERTY_SELECTIVITY: Double = PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY.factor
   val DEFAULT_EQUALITY_SELECTIVITY: Double = PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY.factor
   val DEFAULT_RANGE_SELECTIVITY: Double = PlannerDefaults.DEFAULT_RANGE_SELECTIVITY.factor
   val DEFAULT_REL_UNIQUENESS_SELECTIVITY: Double = PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor
