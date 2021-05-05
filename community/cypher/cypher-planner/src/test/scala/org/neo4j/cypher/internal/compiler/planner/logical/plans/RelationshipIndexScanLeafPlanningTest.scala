@@ -48,13 +48,10 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -571,9 +568,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propContainsApa
+      ))
     }
   }
 
@@ -586,9 +589,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(DirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]->($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propContainsApa
+      ))
     }
   }
 
@@ -601,9 +610,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propContainsApa
+      ))
     }
   }
 
@@ -616,12 +631,21 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(
-        DirectedRelationshipIndexContainsScan(`relName`, `endNodeName`, `startNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _),
-        DirectedRelationshipIndexContainsScan(`relName`, `endNodeName`, `startNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litBepa`, _, _),
-        ) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .build(),
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop CONTAINS '$bepa')]-($endNodeName)", getValue = CanGetValue)
+          .build()
+      ))
+
+      solvedPredicates(resultPlans.head, ctx) should equal(Set(
+        propContainsApa
+      ))
+      solvedPredicates(resultPlans(1), ctx) should equal(Set(
+        propContainsBepa
+      ))
     }
   }
 
@@ -651,9 +675,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propContainsApa
+      ))
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
@@ -672,33 +702,18 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propContainsApa
+      ))
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints.isEmpty => ()
-      }
-    }
-  }
-
-  test("plans unique index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
-
-    new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
-      relationshipIndexOn(relTypeName, prop).providesValues()
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexContainsScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
-
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
-        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
       }
     }
   }
@@ -739,9 +754,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexEndsWithScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propEndsWithApa
+      ))
     }
   }
 
@@ -754,9 +775,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(DirectedRelationshipIndexEndsWithScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]->($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propEndsWithApa
+      ))
     }
   }
 
@@ -769,9 +796,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexEndsWithScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propEndsWithApa
+      ))
     }
   }
 
@@ -790,6 +823,21 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
         DirectedRelationshipIndexEndsWithScan(`relName`, `endNodeName`, `startNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litBepa`, _, _),
         ) => ()
       }
+      // then
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .build(),
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop ENDS WITH '$bepa')]-($endNodeName)", getValue = CanGetValue)
+          .build()
+      ))
+      solvedPredicates(resultPlans.head, ctx) should equal(Set(
+        propEndsWithApa
+      ))
+      solvedPredicates(resultPlans(1), ctx) should equal(Set(
+        propEndsWithBepa
+      ))
     }
   }
 
@@ -819,9 +867,15 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexEndsWithScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propEndsWithApa
+      ))
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
@@ -840,33 +894,18 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexEndsWithScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, DoNotGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
+      resultPlans should equal(Seq(
+        new LogicalPlanBuilder(wholePlan = false)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .build()
+      ))
+      val plan = resultPlans.head
+      solvedPredicates(plan, ctx) should equal(Set(
+        propEndsWithApa
+      ))
 
       resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
         case Seq(plannedQG: QueryGraph) if plannedQG.hints.isEmpty => ()
-      }
-    }
-  }
-
-  test("plans unique index ends with scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
-
-    new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa).addHints(Some(hint))
-      relationshipIndexOn(relTypeName, prop).providesValues()
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = relationshipIndexStringSearchScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(UndirectedRelationshipIndexEndsWithScan(`relName`, `startNodeName`, `endNodeName`, _, IndexedProperty(_, CanGetValue, RELATIONSHIP_TYPE), `litApa`, _, _)) => ()
-      }
-
-      resultPlans.map(p => ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph) should beLike {
-        case Seq(plannedQG: QueryGraph) if plannedQG.hints == Set(hint) => ()
       }
     }
   }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -54,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -87,6 +90,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
@@ -98,6 +102,10 @@ import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  override val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.withSettings(
+    Map(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes -> java.lang.Boolean.TRUE)
+  )
 
   test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
     val plan = (new given {
@@ -621,6 +629,44 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case Apply(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
       NodeIndexContainsScan("n", _, _, _, SetExtractor(argumentName), _), _
+      ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should solve pattern comprehension for DirectedRelationshipIndexContainsScan") {
+    val q =
+      """
+        |MATCH ()-[r:R]->()
+        |WHERE r.prop CONTAINS toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
+        |RETURN r
+      """.stripMargin
+    val (_, plan, _, _) = new given {
+      relationshipIndexOn("R", "prop")
+    } getLogicalPlanFor q
+
+    plan should beLike {
+      case Apply(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
+      DirectedRelationshipIndexContainsScan("r", _, _, _, _, _, SetExtractor(argumentName), _), _
+      ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should solve pattern comprehension for UndirectedRelationshipIndexEndsWithScan") {
+    val q =
+      """
+        |MATCH ()-[r:R]-()
+        |WHERE r.prop ENDS WITH toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
+        |RETURN r
+      """.stripMargin
+    val (_, plan, _, _) = new given {
+      relationshipIndexOn("R", "prop")
+    } getLogicalPlanFor q
+
+    plan should beLike {
+      case Apply(
+      RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
+      UndirectedRelationshipIndexEndsWithScan("r", _, _, _, _, _, SetExtractor(argumentName), _), _
       ) if collectionName == argumentName => ()
     }
   }

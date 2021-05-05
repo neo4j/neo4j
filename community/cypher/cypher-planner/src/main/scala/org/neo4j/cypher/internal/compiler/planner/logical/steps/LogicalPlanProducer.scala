@@ -380,25 +380,21 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
 
-    val stringSearchScanPlan = (pattern.dir, stringSearchMode) match {
+    val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
+    val rewrittenValueExpr = solver.solve(valueExpr)
+    val newArguments = solver.newArguments
+
+    val planTemplate = (pattern.dir, stringSearchMode) match {
       case (SemanticDirection.BOTH, ContainsSearchMode) => UndirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
       case (SemanticDirection.BOTH, EndsWithSearchMode) => UndirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
       case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, ContainsSearchMode) => DirectedRelationshipIndexContainsScan(_, _, _, _, _, _, _, _)
       case (SemanticDirection.INCOMING | SemanticDirection.OUTGOING, EndsWithSearchMode) => DirectedRelationshipIndexEndsWithScan(_, _, _, _, _, _, _, _)
     }
 
-    val plan = stringSearchScanPlan(
-      idName,
-      pattern.inOrder._1,
-      pattern.inOrder._2,
-      relationshipType,
-      properties.head,
-      valueExpr,
-      argumentIds,
-      indexOrder
-    )
+    val plan = planTemplate(idName, pattern.inOrder._1, pattern.inOrder._2, relationshipType, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder)
+    val annotatedPlan = annotate(plan, solved, providedOrder, context)
 
-    annotate(plan, solved, providedOrder, context)
+    solver.rewriteLeafPlan(annotatedPlan)
   }
 
   def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -645,16 +641,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planNodeIndexStringSearchScan(idName: String,
-                                label: LabelToken,
-                                properties: Seq[IndexedProperty],
-                                stringSearchMode: StringSearchMode,
-                                solvedPredicates: Seq[Expression],
-                                solvedHint: Option[UsingIndexHint],
-                                valueExpr: Expression,
-                                argumentIds: Set[String],
-                                providedOrder: ProvidedOrder,
-                                indexOrder: IndexOrder,
-                                context: LogicalPlanningContext): LogicalPlan = {
+                                    label: LabelToken,
+                                    properties: Seq[IndexedProperty],
+                                    stringSearchMode: StringSearchMode,
+                                    solvedPredicates: Seq[Expression],
+                                    solvedHint: Option[UsingIndexHint],
+                                    valueExpr: Expression,
+                                    argumentIds: Set[String],
+                                    providedOrder: ProvidedOrder,
+                                    indexOrder: IndexOrder,
+                                    context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
@@ -665,13 +661,15 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val rewrittenValueExpr = solver.solve(valueExpr)
     val newArguments = solver.newArguments
 
-    val stringSearchScanPlan = stringSearchMode match {
+    val planTemplate = stringSearchMode match {
       case ContainsSearchMode => NodeIndexContainsScan(_, _, _, _, _, _)
       case EndsWithSearchMode => NodeIndexEndsWithScan(_, _, _, _, _, _)
     }
 
-    val plan = annotate(stringSearchScanPlan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder), solved, providedOrder, context)
-    solver.rewriteLeafPlan(plan)
+    val plan = planTemplate(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder)
+    val annotatedPlan = annotate(plan, solved, providedOrder, context)
+
+    solver.rewriteLeafPlan(annotatedPlan)
   }
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
