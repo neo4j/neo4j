@@ -1014,6 +1014,30 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(expected, listInAnyOrder = true)
   }
 
+  test("high cardinality fuse-able var length expand followed by expand") {
+    // given
+    val depth = 3
+    val outDegree = 4
+    given {
+      circleGraph(nNodes = sizeHint, relType = "R", outDegree)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .expand("(b)-[:R]->(c)")
+      .filter("id(b) >= 0") // this is only here to make the var-length expand fuse-able
+      .expand(s"(a)-[:R*$depth..$depth]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedRowCount = sizeHint * Math.pow(outDegree, depth).asInstanceOf[Int] * outDegree
+    runtimeResult should beColumns("a", "b", "c").withRows(rowCount(expectedRowCount))
+  }
+
   // HELPERS
 
   private def closestMultipleOf(sizeHint: Int, div: Int) = (sizeHint / div) * div

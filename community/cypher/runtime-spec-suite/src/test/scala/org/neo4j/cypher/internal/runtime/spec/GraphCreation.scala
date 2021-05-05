@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
@@ -29,6 +27,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 
+import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -300,17 +299,26 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
+    circleGraph(nNodes, relType = "R", outDegree = 1, labels = labels.toSeq)
+  }
+
+  def circleGraph(nNodes: Int,
+                  relType: String,
+                  outDegree: Int,
+                  labels: Seq[String] = Seq.empty): (Seq[Node], Seq[Relationship]) = {
     val nodes =
       for (_ <- 0 until nNodes) yield {
         runtimeTestSupport.tx.createNode(labels.map(Label.label): _*)
       }
 
     val rels = new ArrayBuffer[Relationship]
-    val rType = RelationshipType.withName("R")
+    val rType = RelationshipType.withName(relType)
     for (i <- 0 until nNodes) {
       val a = nodes(i)
-      val b = nodes((i + 1) % nNodes)
-      rels += a.createRelationshipTo(b, rType)
+      for (j <- 0 until outDegree) {
+        val b = nodes((i + j + 1) % nNodes)
+        rels += a.createRelationshipTo(b, rType)
+      }
     }
     (nodes, rels)
   }
