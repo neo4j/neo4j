@@ -68,7 +68,6 @@ class OrLeafPlanningIntegrationTest
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
       .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
-      .enablePrintCostComparisons()
       .build()
 
     val plan = cfg.plan(
@@ -92,7 +91,6 @@ class OrLeafPlanningIntegrationTest
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
       .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
-      .enablePrintCostComparisons()
       .build()
 
     val plan = cfg.plan(

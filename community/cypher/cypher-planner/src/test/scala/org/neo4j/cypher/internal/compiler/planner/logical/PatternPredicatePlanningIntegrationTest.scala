@@ -522,7 +522,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     val plan = planFor(q)._2
-    println(plan)
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
