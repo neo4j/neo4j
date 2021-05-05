@@ -25,7 +25,6 @@ import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.PrimitiveIterator;
 import java.util.stream.LongStream;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
@@ -34,6 +33,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -131,12 +131,14 @@ class NativeTokenScanReaderTest
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
         TokenScan tokenScan = reader.entityTokenScan( LABEL_ID, NULL );
-        TokenScanValueIndexProgressorTest.MyClient client = new TokenScanValueIndexProgressorTest.MyClient( LongStream.of( expected ).iterator() );
+        TokenScanValueIndexProgressorTest.MyClient client = new TokenScanValueIndexProgressorTest.MyClient();
         IndexProgressor progressor = tokenScan.initialize( client, IndexOrder.ASCENDING, NULL );
 
         while ( progressor.next() )
         {
         }
+
+        assertThat( client.observedIds ).containsExactly( LongStream.of( expected ).boxed().toArray( Long[]::new ) );
     }
 
     @Test
@@ -148,17 +150,17 @@ class NativeTokenScanReaderTest
         // WHEN
         NativeTokenScanReader reader = new NativeTokenScanReader( index );
         TokenScan tokenScan = reader.entityTokenScan( LABEL_ID, NULL );
-        PrimitiveIterator.OfLong iterator = LongStream.of( expected )
-                                                      .boxed()
-                                                      .sorted( Collections.reverseOrder() )
-                                                      .mapToLong( l -> l )
-                                                      .iterator();
-        TokenScanValueIndexProgressorTest.MyClient client = new TokenScanValueIndexProgressorTest.MyClient( iterator );
+        TokenScanValueIndexProgressorTest.MyClient client = new TokenScanValueIndexProgressorTest.MyClient();
         IndexProgressor progressor = tokenScan.initialize( client, IndexOrder.DESCENDING, NULL );
 
         while ( progressor.next() )
         {
         }
+
+        assertThat( client.observedIds ).containsExactly( LongStream.of( expected )
+                                                                    .boxed()
+                                                                    .sorted( Collections.reverseOrder() )
+                                                                    .toArray( Long[]::new ) );
     }
 
     @Test

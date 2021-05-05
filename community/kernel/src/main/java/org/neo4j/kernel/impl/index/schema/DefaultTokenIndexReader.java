@@ -60,7 +60,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader
             final int tokenId = query.tokenId();
             final IndexOrder order = constraints.order();
             Seeker<TokenScanKey,TokenScanValue> seeker = seekerForToken( range, tokenId, order, tracer );
-            IndexProgressor progressor = new TokenScanValueIndexProgressor( seeker, client, order );
+            IndexProgressor progressor = new TokenScanValueIndexProgressor( seeker, client, order, range );
             client.initialize( progressor, tokenId, order );
         }
         catch ( IOException e )

@@ -33,6 +33,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.util.VisibleForTesting;
 
@@ -203,7 +204,7 @@ class NativeTokenScanReader implements TokenScanReader
                 throw new UncheckedIOException( e );
             }
 
-            return new TokenScanValueIndexProgressor( cursor, client, indexOrder );
+            return new TokenScanValueIndexProgressor( cursor, client, indexOrder, new EntityRange( start, stop ) );
         }
     }
 }

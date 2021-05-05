@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
+import java.util.NoSuchElementException;
+
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
@@ -76,7 +78,7 @@ public class TokenIndexScanIdIterator implements EntityIdIterator
     public void invalidateCache()
     {
         this.idIterator.close();
-        this.idIterator = createIdIterator( EntityRange.from( lastReturnedId ), tokenIds );
+        this.idIterator = createIdIterator( EntityRange.from( lastReturnedId + 1 ), tokenIds );
     }
 
     private CompositeTokenScanValueIterator createIdIterator( EntityRange range, int[] tokenIds )
@@ -118,6 +120,8 @@ public class TokenIndexScanIdIterator implements EntityIdIterator
     {
         private long entityId;
         private IndexProgressor progressor;
+        private boolean hasNextDecided;
+        private boolean hasNext;
 
         @Override
         public void initialize( IndexProgressor progressor, int token, IndexOrder order )
@@ -135,12 +139,25 @@ public class TokenIndexScanIdIterator implements EntityIdIterator
 
         public long next()
         {
+            if ( !hasNextDecided && !hasNext() )
+            {
+                throw new NoSuchElementException( "No more elements in " + this );
+            }
+            hasNextDecided = false;
+
             return entityId;
         }
 
         public boolean hasNext()
         {
-            return progressor.next();
+            if ( hasNextDecided )
+            {
+                return hasNext;
+            }
+
+            hasNext = progressor.next();
+            hasNextDecided = true;
+            return hasNext;
         }
 
         @Override

@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
@@ -36,12 +37,14 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
 {
     private final EntityTokenClient client;
     private final IndexOrder indexOrder;
+    private final EntityRange range;
 
-    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, EntityTokenClient client, IndexOrder indexOrder )
+    TokenScanValueIndexProgressor( Seeker<TokenScanKey,TokenScanValue> cursor, EntityTokenClient client, IndexOrder indexOrder, EntityRange range )
     {
         super( cursor );
         this.client = client;
         this.indexOrder = indexOrder;
+        this.range = range;
     }
 
     /**
@@ -83,7 +86,7 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
                     idForClient = (baseEntityId + Long.SIZE) - 1 - delta;
                 }
 
-                if ( client.acceptEntity( idForClient, null ) )
+                if ( isInRange( idForClient ) && client.acceptEntity( idForClient, null ) )
                 {
                     return true;
                 }
@@ -107,5 +110,17 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
             //noinspection AssertWithSideEffects
             assert keysInOrder( key, indexOrder );
         }
+    }
+
+    /**
+     * The entity information in token indexes is stored in a collection of 64 bit bitmaps,
+     * The index seek with specified range has a bitmap granularity.
+     * In other words, the range of entity IDs coming from the index seeker corresponds to the search range with
+     * start of the range rounded down to the nearest multiple of 64 and the end of the range rounded up to the nearest multiple of 64.
+     * The purpose of this method is to filter out the extra entity IDs that are present in the seek result because of the rounding.
+     */
+    private boolean isInRange( long entityId )
+    {
+        return entityId >= range.fromInclusive && entityId < range.toExclusive;
     }
 }
