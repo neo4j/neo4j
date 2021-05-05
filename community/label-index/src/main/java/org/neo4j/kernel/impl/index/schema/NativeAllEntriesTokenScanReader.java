@@ -137,14 +137,15 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
             try
             {
                 // One "rangeSize" range at a time
-                for ( Seeker<TokenScanKey,TokenScanValue> cursor : cursors )
+                for ( var iterator = cursors.iterator(); iterator.hasNext(); )
                 {
+                    var cursor = iterator.next();
                     long idRange = cursor.key().idRange;
                     if ( idRange < currentRange )
                     {
-                        // This should only happen if the cursor has been exhausted and the iterator have moved on
-                        // from the range it returned as its last hit.
-                        assert !cursor.next();
+                        // This should never happen because if the cursor has been exhausted and the iterator have moved on
+                        // from the range it returned as its last hit, that cursor is removed from the collection
+                        throw new IllegalStateException( "Accessing cursor that is out of range" );
                     }
                     else if ( idRange == currentRange )
                     {
@@ -156,6 +157,11 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                         if ( cursor.next() )
                         {
                             nextLowestRange = min( nextLowestRange, cursor.key().idRange );
+                        }
+                        else
+                        {
+                            // remove exhausted cursor so we never try to read from it again
+                            iterator.remove();
                         }
                     }
                     else

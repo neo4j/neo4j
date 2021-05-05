@@ -261,6 +261,7 @@ class NativeAllEntriesTokenScanReaderTest
     static final class LabelsSeeker<TokenScanKey, TokenScanValue> implements Seeker<TokenScanKey,TokenScanValue>
     {
         int cursor = -1;
+        private boolean closed;
         private final List<Pair<TokenScanKey,TokenScanValue>> entries;
 
         LabelsSeeker( List<Pair<TokenScanKey,TokenScanValue>> entries )
@@ -271,12 +272,14 @@ class NativeAllEntriesTokenScanReaderTest
         @Override
         public TokenScanKey key()
         {
+            assertFalse( closed );
             return entries.get( cursor ).first();
         }
 
         @Override
         public TokenScanValue value()
         {
+            assertFalse( closed );
             return entries.get( cursor ).other();
         }
 
@@ -285,6 +288,7 @@ class NativeAllEntriesTokenScanReaderTest
         {
             if ( cursor + 1 >= entries.size() )
             {
+                close();
                 return false;
             }
             cursor++;
@@ -293,7 +297,8 @@ class NativeAllEntriesTokenScanReaderTest
 
         @Override
         public void close()
-        {   // Nothing to close
+        {
+            closed = true;
         }
     }
 

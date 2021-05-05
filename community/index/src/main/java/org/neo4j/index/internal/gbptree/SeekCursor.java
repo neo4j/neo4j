@@ -1296,5 +1296,9 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         {
             throw new IllegalStateException( "There has been no successful call to next() yet" );
         }
+        if ( closed )
+        {
+            throw new IllegalStateException( "This cursor is closed" );
+        }
     }
 }
