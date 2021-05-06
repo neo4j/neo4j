@@ -86,7 +86,6 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
     tc.kernelTransaction.locks().releaseSharedLookupLock( entityType )
 
   private def hasLookupIndex(tc: TransactionalContext, entityType: EntityType): Boolean =
-    !tc.kernelTransaction().schemaRead.scanStoreAsTokenIndexEnabled ||
       tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(entityType)).hasNext
 
   case class LockedLabels(successful: Boolean, needsReplan: Boolean)

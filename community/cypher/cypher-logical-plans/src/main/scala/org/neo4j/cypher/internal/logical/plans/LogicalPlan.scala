@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
-
-import java.lang.reflect.Method
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -37,6 +35,7 @@ import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
 
+import java.lang.reflect.Method
 import scala.collection.mutable
 import scala.collection.mutable.ArrayStack
 import scala.util.hashing.MurmurHash3
@@ -188,7 +187,7 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
-  def indexUsage: Seq[IndexUsage] = {
+  def indexUsage(lookupIndexAvailable: Boolean): Seq[IndexUsage] = {
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, properties, _, _, _) =>
         acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
@@ -197,8 +196,8 @@ abstract class LogicalPlan(idGen: IdGen)
       case NodeIndexScan(idName, label, properties, _, _) =>
         acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case MultiNodeIndexSeek(indexPlans) =>
-        acc => acc ++ indexPlans.flatMap(_.indexUsage)
-      case NodeByLabelScan(idName, _, _, _) => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
+        acc => acc ++ indexPlans.flatMap(_.indexUsage(lookupIndexAvailable))
+      case NodeByLabelScan(idName, _, _, _) if lookupIndexAvailable => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
       }
   }
 }

@@ -278,7 +278,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val executableQuery = queryCache.computeIfAbsentOrStale(cacheKey,
           tc,
           compiler,
-          CypherReplanOption.force,
+          inputQuery.options.queryOptions.replan,
           inputQuery.description)
 
         val lockedLabels = schemaHelper.lockLabels(schemaToken, executableQuery, tc)
