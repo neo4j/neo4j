@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -31,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -100,7 +98,7 @@ public class FromPaths
                                                  .collect( Collectors.toSet() );
     }
 
-    private void validateParentPath( File file )
+    private static void validateParentPath( File file )
     {
         final var parentPath = file.getParent();
         if ( parentPath != null && !parentPath.trim().isEmpty() )
@@ -118,7 +116,7 @@ public class FromPaths
         }
     }
 
-    private void validateLastSubPath( File file )
+    private static void validateLastSubPath( File file )
     {
         if ( file.getParent() == null || Path.of( file.getParent() ).getNameCount() == 0 )
         {
@@ -136,7 +134,7 @@ public class FromPaths
         }
     }
 
-    private void validateNotEmpty( String path )
+    private static void validateNotEmpty( String path )
     {
         Objects.requireNonNull( path, "The provided from parameter is empty." );
 

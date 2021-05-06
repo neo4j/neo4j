@@ -299,7 +299,7 @@ class BatchingTransactionAppenderTest
         return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth, BASE_TX_CHECKSUM );
     }
 
-    private TransactionRepresentation transaction( List<StorageCommand> commands, byte[] additionalHeader, long timeStarted,
+    private static TransactionRepresentation transaction( List<StorageCommand> commands, byte[] additionalHeader, long timeStarted,
             long latestCommittedTxWhenStarted, long timeCommitted )
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
@@ -307,12 +307,12 @@ class BatchingTransactionAppenderTest
         return tx;
     }
 
-    private List<StorageCommand> singleTestCommand()
+    private static List<StorageCommand> singleTestCommand()
     {
         return Collections.singletonList( new TestCommand() );
     }
 
-    private TransactionToApply batchOf( TransactionRepresentation... transactions )
+    private static TransactionToApply batchOf( TransactionRepresentation... transactions )
     {
         TransactionToApply first = null;
         TransactionToApply last = null;

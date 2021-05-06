@@ -168,7 +168,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         return result;
     }
 
-    private boolean contains( long[] array, long id, int arrayLength )
+    private static boolean contains( long[] array, long id, int arrayLength )
     {
         for ( int i = 0; i < arrayLength; i++ )
         {

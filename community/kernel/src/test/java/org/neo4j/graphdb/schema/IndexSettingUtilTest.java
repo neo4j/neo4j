@@ -176,21 +176,21 @@ class IndexSettingUtilTest
         }
     }
 
-    private void assertBoolean( IndexSetting setting, Object object, boolean expectedResult )
+    private static void assertBoolean( IndexSetting setting, Object object, boolean expectedResult )
     {
         Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
         assertTrue( result instanceof BooleanValue );
         assertEquals( expectedResult, ((BooleanValue) result).booleanValue() );
     }
 
-    private void assertString( IndexSetting setting, Object object, String expectedResult )
+    private static void assertString( IndexSetting setting, Object object, String expectedResult )
     {
         Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
         assertTrue( result instanceof StringValue );
         assertEquals( expectedResult, ((StringValue) result).stringValue() );
     }
 
-    private void assertDoubleArray( IndexSetting setting, Object object, double[] expectedResult )
+    private static void assertDoubleArray( IndexSetting setting, Object object, double[] expectedResult )
     {
         Value result = IndexSettingUtil.asIndexSettingValue( setting, object );
         assertTrue( result instanceof DoubleArray );

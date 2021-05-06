@@ -66,7 +66,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     @Override
     protected boolean tryLockPage( long pageRef )
     {
-        lockStamp = pagedFile.tryOptimisticReadLock( pageRef );
+        lockStamp = PageList.tryOptimisticReadLock( pageRef );
         return true;
     }
 
@@ -79,13 +79,13 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
     {
         reset( pageRef );
-        pagedFile.incrementUsage( pageRef );
+        PageList.incrementUsage( pageRef );
     }
 
     @Override
     protected void convertPageFaultLock( long pageRef )
     {
-        lockStamp = pagedFile.unlockExclusive( pageRef );
+        lockStamp = PageList.unlockExclusive( pageRef );
     }
 
     @Override
@@ -95,7 +95,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         do
         {
             long pageRef = cursor.pinnedPageRef;
-            if ( pageRef != 0 && !pagedFile.validateReadLock( pageRef, cursor.lockStamp ) )
+            if ( pageRef != 0 && !PageList.validateReadLock( pageRef, cursor.lockStamp ) )
             {
                 startRetryLinkedChain();
                 return true;
@@ -126,11 +126,11 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         setOffset( 0 );
         checkAndClearBoundsFlag();
         clearCursorException();
-        lockStamp = pagedFile.tryOptimisticReadLock( pageRef );
+        lockStamp = PageList.tryOptimisticReadLock( pageRef );
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still
         // the page we're actually interested in:
-        if ( !pagedFile.isBoundTo( pageRef, pagedFile.swapperId, loadPlainCurrentPageId() ) )
+        if ( !PageList.isBoundTo( pageRef, pagedFile.swapperId, loadPlainCurrentPageId() ) )
         {
             // This is no longer the page we're interested in, so we have
             // to redo the pinning.

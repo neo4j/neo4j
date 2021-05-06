@@ -326,7 +326,7 @@ class OnlineIndexUpdatesTest
                 recordAccess );
     }
 
-    private NodeRecord getNode( int nodeId, boolean inUse )
+    private static NodeRecord getNode( int nodeId, boolean inUse )
     {
         NodeRecord nodeRecord = new NodeRecord( nodeId );
         nodeRecord = nodeRecord.initialize( inUse, NO_NEXT_PROPERTY.longValue(), false, NO_NEXT_RELATIONSHIP.longValue(), NO_LABELS_FIELD.longValue() );
@@ -338,7 +338,7 @@ class OnlineIndexUpdatesTest
         return nodeRecord;
     }
 
-    private RelationshipRecord getRelationship( long relId, boolean inUse, int type )
+    private static RelationshipRecord getRelationship( long relId, boolean inUse, int type )
     {
         if ( !inUse )
         {

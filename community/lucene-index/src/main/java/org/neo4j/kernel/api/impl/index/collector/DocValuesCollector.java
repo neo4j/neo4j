@@ -208,7 +208,7 @@ public class DocValuesCollector extends SimpleCollector
     /**
      * @return a new {@link Docs} to record hits.
      */
-    private Docs createDocs( final int maxDoc )
+    private static Docs createDocs( final int maxDoc )
     {
         return new Docs( maxDoc );
     }

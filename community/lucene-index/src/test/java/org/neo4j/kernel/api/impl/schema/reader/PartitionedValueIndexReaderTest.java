@@ -174,7 +174,7 @@ class PartitionedValueIndexReaderTest
         assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex( NULL ) );
     }
 
-    private LongSet queryResultAsSet( PartitionedValueIndexReader indexReader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
+    private static LongSet queryResultAsSet( PartitionedValueIndexReader indexReader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
@@ -183,7 +183,7 @@ class PartitionedValueIndexReaderTest
         }
     }
 
-    private void verifyResult( LongSet results )
+    private static void verifyResult( LongSet results )
     {
         assertEquals(3, results.size());
         assertTrue( results.contains( 1 ) );

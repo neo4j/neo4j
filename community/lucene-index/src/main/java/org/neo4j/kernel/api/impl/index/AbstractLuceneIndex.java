@@ -70,7 +70,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
 
     // Note that we rely on the thread-safe internal snapshot feature of the CopyOnWriteArrayList
     // for the thread-safety of this and derived classes.
-    private CopyOnWriteArrayList<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<AbstractIndexPartition> partitions = new CopyOnWriteArrayList<>();
 
     private volatile boolean open;
 
@@ -328,7 +328,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
     {
         try
         {
-            getPartitions().parallelStream().forEach( this::maybeRefreshPartition );
+            getPartitions().parallelStream().forEach( AbstractLuceneIndex::maybeRefreshPartition );
         }
         catch ( UncheckedIOException e )
         {
@@ -336,7 +336,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         }
     }
 
-    private void maybeRefreshPartition( AbstractIndexPartition partition )
+    private static void maybeRefreshPartition( AbstractIndexPartition partition )
     {
         try
         {
@@ -354,12 +354,12 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         return partitions;
     }
 
-    public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
+    public static boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
     {
         return partitions.size() == 1;
     }
 
-    public AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
+    public static AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
     {
         return partitions.get( 0 );
     }

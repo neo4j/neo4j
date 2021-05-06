@@ -606,7 +606,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
         assertFalse( lockAcquisition.completed(), "locking thread completed" );
     }
 
-    private void assertLockAcquisitionSucceeded( LockAcquisition lockAcquisition ) throws Exception
+    private static void assertLockAcquisitionSucceeded( LockAcquisition lockAcquisition ) throws Exception
     {
         boolean completed = false;
         for ( int i = 0; i < 30; i++ )
@@ -624,7 +624,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
         assertTrue( lockAcquisition.completed(), "locking thread seem to be still in progress" );
     }
 
-    private void assertLockAcquisitionFailed( LockAcquisition lockAcquisition )
+    private static void assertLockAcquisitionFailed( LockAcquisition lockAcquisition )
     {
         ExecutionException executionException = null;
         for ( int i = 0; i < 30; i++ )

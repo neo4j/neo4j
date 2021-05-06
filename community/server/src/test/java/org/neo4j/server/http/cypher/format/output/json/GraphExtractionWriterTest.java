@@ -209,7 +209,7 @@ class GraphExtractionWriterTest
 
     // The expected format of the result
 
-    private void assertNodes( JsonNode result )
+    private static void assertNodes( JsonNode result )
     {
         JsonNode nodes = result.get( "graph" ).get( "nodes" );
         assertEquals( 3, nodes.size(), "there should be 3 nodes" );
@@ -218,7 +218,7 @@ class GraphExtractionWriterTest
         assertNode( "42", nodes, asList( "Foo", "Bar" ), property( "name", "n3" ) );
     }
 
-    private void assertRelationships( JsonNode result )
+    private static void assertRelationships( JsonNode result )
     {
         JsonNode relationships = result.get( "graph" ).get( "relationships" );
         assertEquals( 2, relationships.size(), "there should be 2 relationships" );

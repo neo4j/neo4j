@@ -132,7 +132,7 @@ public class FreeListIdProviderTracersTest
         assertThat( cursorTracer.hits() ).isEqualTo( 3 );
     }
 
-    private void assertOneCursor( CursorContext cursorContext )
+    private static void assertOneCursor( CursorContext cursorContext )
     {
         var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
@@ -140,7 +140,7 @@ public class FreeListIdProviderTracersTest
         assertThat( cursorTracer.faults() ).isOne();
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();

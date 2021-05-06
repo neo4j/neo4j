@@ -585,15 +585,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                     .build();
 
     @Internal
-    public static Setting<Boolean> recovery_ignore_store_id_validation =
+    public static final Setting<Boolean> recovery_ignore_store_id_validation =
             newBuilder( "unsupported.dbms.recovery.ignore_store_id_validation", BOOL, false ).build();
 
     @Internal
-    public static Setting<Boolean> enable_transaction_heap_allocation_tracking =
+    public static final Setting<Boolean> enable_transaction_heap_allocation_tracking =
             newBuilder( "unsupported.dbms.enable_transaction_heap_allocation_tracking", BOOL, false ).build();
 
     @Internal
-    public static Setting<Long> initial_transaction_heap_grab_size =
+    public static final Setting<Long> initial_transaction_heap_grab_size =
             newBuilder( "unsupported.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes( 2 ) ).build();
 
     /**
@@ -607,59 +607,60 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
      * </ul>
      */
     @Internal
-    public static Setting<Boolean> strictly_prioritize_id_freelist = newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, false ).build();
+    public static final Setting<Boolean> strictly_prioritize_id_freelist =
+            newBuilder( "unsupported.dbms.strictly_prioritize_id_freelist", BOOL, false ).build();
 
     @Internal
-    public static Setting<Long> index_populator_block_size = newBuilder( "unsupported.dbms.index.populator_block_size", BYTES, mebiBytes( 1 ) )
+    public static final Setting<Long> index_populator_block_size = newBuilder( "unsupported.dbms.index.populator_block_size", BYTES, mebiBytes( 1 ) )
             .addConstraint( min( 20L ) )
             .addConstraint( max( (long) Integer.MAX_VALUE ) )
             .build();
 
     @Internal
-    public static Setting<Integer> index_populator_merge_factor = newBuilder( "unsupported.dbms.index.populator_merge_factor", INT, 8 ).build();
+    public static final Setting<Integer> index_populator_merge_factor = newBuilder( "unsupported.dbms.index.populator_merge_factor", INT, 8 ).build();
 
     @Internal
-    public static Setting<Boolean> id_generator_log_enabled = newBuilder( "unsupported.dbms.idgenerator.log.enabled", BOOL, false ).build();
+    public static final Setting<Boolean> id_generator_log_enabled = newBuilder( "unsupported.dbms.idgenerator.log.enabled", BOOL, false ).build();
 
     @Internal
-    public static Setting<Long> id_generator_log_rotation_threshold =
+    public static final Setting<Long> id_generator_log_rotation_threshold =
             newBuilder( "unsupported.dbms.idgenerator.log.rotation_threshold", BYTES, mebiBytes( 200 ) ).build();
 
     @Internal
-    public static Setting<Duration> id_generator_log_prune_threshold =
+    public static final Setting<Duration> id_generator_log_prune_threshold =
             newBuilder( "unsupported.dbms.idgenerator.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
 
     @Internal
-    public static Setting<Boolean> token_scan_write_log_enabled = newBuilder( "unsupported.dbms.tokenscan.log.enabled", BOOL, false ).build();
+    public static final Setting<Boolean> token_scan_write_log_enabled = newBuilder( "unsupported.dbms.tokenscan.log.enabled", BOOL, false ).build();
 
     @Internal
-    public static Setting<Long> token_scan_write_log_rotation_threshold =
+    public static final Setting<Long> token_scan_write_log_rotation_threshold =
             newBuilder( "unsupported.dbms.tokenscan.log.rotation_threshold", BYTES, mebiBytes( 200 ) ).build();
 
     @Internal
-    public static Setting<Duration> token_scan_write_log_prune_threshold =
+    public static final Setting<Duration> token_scan_write_log_prune_threshold =
             newBuilder( "unsupported.dbms.tokenscan.log.prune_threshold", DURATION, ofDays( 2 ) ).build();
 
     @Internal
-    public static Setting<Boolean> print_page_buffer_allocation_trace =
+    public static final Setting<Boolean> print_page_buffer_allocation_trace =
             newBuilder( "unsupported.dbms.debug.print_page_buffer_allocation_trace", BOOL, false ).build();
 
     @Internal
-    public static Setting<Boolean> index_population_print_debug =
+    public static final Setting<Boolean> index_population_print_debug =
             newBuilder( "unsupported.dbms.index.population_print_debug", BOOL, false ).build();
 
     @Internal
-    public static Setting<Integer> index_population_queue_threshold =
+    public static final Setting<Integer> index_population_queue_threshold =
             newBuilder( "unsupported.dbms.index.population_queue_threshold", INT, 20_000 ).build();
 
     @Internal
-    public static Setting<Long> index_population_batch_max_byte_size =
+    public static final Setting<Long> index_population_batch_max_byte_size =
             newBuilder( "unsupported.dbms.index.population_batch_max_byte_size", BYTES, mebiBytes( 10 ) )
                     .addConstraint( max( (long) Integer.MAX_VALUE ) )
                     .build();
 
     @Internal
-    public static Setting<Duration> config_command_evaluation_timeout =
+    public static final Setting<Duration> config_command_evaluation_timeout =
             newBuilder( "unsupported.dbms.config.command_evaluation_timeout", DURATION, ofSeconds( 30 ) ).build();
 
     @Internal
@@ -673,15 +674,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Whether or not DBMS's byte buffer manager should be used for network stack buffers instead " +
             "of each network library managing its buffers on its own" )
-    public static Setting<Boolean> managed_network_buffers =
+    public static final Setting<Boolean> managed_network_buffers =
             newBuilder( "unsupported.dbms.memory.managed_network_buffers", BOOL, true ).build();
 
     @Internal
-    public static Setting<Duration> neo_byte_buffer_pool_collection_interval_override =
+    public static final Setting<Duration> neo_byte_buffer_pool_collection_interval_override =
             newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.collection_interval_override", DURATION, null ).build();
 
     @Internal
-    public static Setting<List<String>> neo_byte_buffer_pool_buckets_override =
+    public static final Setting<List<String>> neo_byte_buffer_pool_buckets_override =
             newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.buckets_override", listOf( STRING ), List.of() ).build();
 
     @Internal

@@ -493,7 +493,7 @@ class LogCommandSerializationV4_0Test
         assertBeforeAndAfterEquals( command, before, after );
     }
 
-    private SchemaRecord createRandomSchemaRecord()
+    private static SchemaRecord createRandomSchemaRecord()
     {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         SchemaRecord record = new SchemaRecord( 42 );

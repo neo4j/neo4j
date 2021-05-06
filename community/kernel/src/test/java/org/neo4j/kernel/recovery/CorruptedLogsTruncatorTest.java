@@ -229,7 +229,7 @@ class CorruptedLogsTruncatorTest
         }
     }
 
-    private void checkEntryNameAndSize( ZipFile zipFile, String entryName, long expectedSize ) throws IOException
+    private static void checkEntryNameAndSize( ZipFile zipFile, String entryName, long expectedSize ) throws IOException
     {
         ZipEntry entry = zipFile.getEntry( entryName );
         InputStream inputStream = zipFile.getInputStream( entry );
@@ -241,14 +241,14 @@ class CorruptedLogsTruncatorTest
         assertEquals( expectedSize, entryBytes );
     }
 
-    private void checkArchiveName( long highestLogVersion, long byteOffset, File corruptedLogsArchive )
+    private static void checkArchiveName( long highestLogVersion, long byteOffset, File corruptedLogsArchive )
     {
         String name = corruptedLogsArchive.getName();
         assertTrue( name.startsWith( "corrupted-neostore.transaction.db-" + highestLogVersion + "-" + byteOffset ) );
         assertTrue( FilenameUtils.isExtension( name, "zip" ) );
     }
 
-    private void generateTransactionLogFiles( LogFiles logFiles ) throws IOException
+    private static void generateTransactionLogFiles( LogFiles logFiles ) throws IOException
     {
         LogFile logFile = logFiles.getLogFile();
         FlushablePositionAwareChecksumChannel writer = logFile.getTransactionLogWriter().getChannel();

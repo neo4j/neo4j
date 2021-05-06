@@ -203,7 +203,7 @@ class CheckerContext
     {
         if ( !isCancelled() && checker.shouldBeChecked( consistencyFlags ) )
         {
-            timeOperation( checker.toString(), () -> checker.check( range, limiter.isFirst( range ), limiter.isLast( range ) ), true );
+            timeOperation( checker.toString(), () -> checker.check( range, NodeBasedMemoryLimiter.isFirst( range ), limiter.isLast( range ) ), true );
         }
     }
 

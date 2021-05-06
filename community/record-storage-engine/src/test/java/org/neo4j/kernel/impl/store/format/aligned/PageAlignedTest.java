@@ -51,7 +51,7 @@ class PageAlignedTest
         // don't check meta data format because it had never even filled one page and it has been made page-aligned by default anyway
     }
 
-    private void assertNotEquals( RecordFormats aligned, RecordFormats standard, Function<RecordFormats,RecordFormat<?>> format )
+    private static void assertNotEquals( RecordFormats aligned, RecordFormats standard, Function<RecordFormats,RecordFormat<?>> format )
     {
         assertThat( format.apply( aligned ) ).isNotEqualTo( format.apply( standard ) );
     }

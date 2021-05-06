@@ -248,7 +248,7 @@ class PropertyPhysicalToLogicalConverterTest
         return updates.build();
     }
 
-    private Command.PropertyCommand change( final PropertyRecord before, final PropertyRecord after )
+    private static Command.PropertyCommand change( final PropertyRecord before, final PropertyRecord after )
     {
         return new Command.PropertyCommand( before, after );
     }

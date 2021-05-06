@@ -70,7 +70,7 @@ public class RawBytes
         return joiner.toString();
     }
 
-    private String replaceZeroes( int nbrOfZeroes )
+    private static String replaceZeroes( int nbrOfZeroes )
     {
         if ( nbrOfZeroes > 3 )
         {

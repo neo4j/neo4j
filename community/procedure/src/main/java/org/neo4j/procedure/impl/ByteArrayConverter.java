@@ -64,7 +64,7 @@ public class ByteArrayConverter implements Function<String,DefaultParameterValue
         }
     }
 
-    private byte safeGetByte( Object value )
+    private static byte safeGetByte( Object value )
     {
         if ( value instanceof Number )
         {

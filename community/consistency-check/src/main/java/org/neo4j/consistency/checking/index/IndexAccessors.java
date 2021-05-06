@@ -156,7 +156,7 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    private IndexProvider provider( IndexProviderMap providers, IndexDescriptor indexRule )
+    private static IndexProvider provider( IndexProviderMap providers, IndexDescriptor indexRule )
     {
         return providers.lookup( indexRule.getIndexProvider() );
     }

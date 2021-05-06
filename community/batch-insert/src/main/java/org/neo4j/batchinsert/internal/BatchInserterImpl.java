@@ -585,7 +585,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private boolean isFullTextIndexType( IndexPrototype prototype )
+    private static boolean isFullTextIndexType( IndexPrototype prototype )
     {
         return prototype.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT;
     }
@@ -771,7 +771,7 @@ public class BatchInserterImpl implements BatchInserter
         return schemaish;
     }
 
-    private TransactionFailureException kernelExceptionToUserException( KernelException e )
+    private static TransactionFailureException kernelExceptionToUserException( KernelException e )
     {
         // This may look odd, but previously TokenHolder#getOrCreateId silently converted KernelException into TransactionFailureException
         throw new TransactionFailureException( "Unexpected kernel exception writing schema rules", e );
@@ -824,7 +824,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private int silentGetOrCreateTokenId( TokenHolder tokens, String name )
+    private static int silentGetOrCreateTokenId( TokenHolder tokens, String name )
     {
         try
         {

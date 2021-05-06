@@ -138,7 +138,7 @@ class SchemaComplianceChecker implements AutoCloseable
         reportIncorrectIndexCount( entity, propertyValues, indexRule, count, reportSupplier );
     }
 
-    private PropertyIndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
+    private static PropertyIndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
     {
         int[] propertyIds = schema.getPropertyIds();
         assert propertyIds.length == propertyValues.length;
@@ -150,7 +150,7 @@ class SchemaComplianceChecker implements AutoCloseable
         return query;
     }
 
-    private LongIterator queryIndexOrEmpty( ValueIndexReader reader, PropertyIndexQuery[] query )
+    private static LongIterator queryIndexOrEmpty( ValueIndexReader reader, PropertyIndexQuery[] query )
     {
         try
         {
@@ -182,7 +182,7 @@ class SchemaComplianceChecker implements AutoCloseable
         }
     }
 
-    private boolean valuesContainTextProperty( Value[] values )
+    private static boolean valuesContainTextProperty( Value[] values )
     {
         for ( Value value : values )
         {

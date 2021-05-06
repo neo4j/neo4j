@@ -328,7 +328,7 @@ class BatchingNeoStoresTest
         }
     }
 
-    private StoreType[] relevantRecordStores()
+    private static StoreType[] relevantRecordStores()
     {
         return Stream.of( StoreType.values() )
                 .filter( type -> type != StoreType.META_DATA ).toArray( StoreType[]::new );
@@ -419,7 +419,7 @@ class BatchingNeoStoresTest
         }
     }
 
-    private void apply( TxState txState, CommandCreationContext commandCreationContext, RecordStorageEngine storageEngine ) throws Exception
+    private static void apply( TxState txState, CommandCreationContext commandCreationContext, RecordStorageEngine storageEngine ) throws Exception
     {
         List<StorageCommand> commands = new ArrayList<>();
         try ( RecordStorageReader storageReader = storageEngine.newReader() )

@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
 /**
@@ -55,15 +54,4 @@ public abstract class BaseCommandReader implements CommandReader
      * @throws IOException if channel throws exception.
      */
     protected abstract Command read( byte commandType, ReadableChannel channel ) throws IOException;
-
-    protected IOException unknownCommandType( byte commandType, ReadableChannel channel ) throws IOException
-    {
-        String message = "Unknown command type[" + commandType + "]";
-        if ( channel instanceof PositionAwareChannel )
-        {
-            PositionAwareChannel logChannel = (PositionAwareChannel) channel;
-            message += " near " + logChannel.getCurrentPosition();
-        }
-        return new IOException( message );
-    }
 }

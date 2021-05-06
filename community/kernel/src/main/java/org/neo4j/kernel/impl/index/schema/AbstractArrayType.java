@@ -165,7 +165,7 @@ abstract class AbstractArrayType<T> extends Type
         state.isHighestArray = true;
     }
 
-    int arrayKeySize( GenericKey key, int elementSize )
+    static int arrayKeySize( GenericKey key, int elementSize )
     {
         return SIZE_ARRAY_LENGTH + key.arrayLength * elementSize;
     }

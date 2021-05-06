@@ -81,7 +81,7 @@ public class DiagnosticsReporter
         }
     }
 
-    private void writeDiagnostics( ZipOutputStream zip, List<DiagnosticsReportSource> sources, DiagnosticsReporterProgress progress )
+    private static void writeDiagnostics( ZipOutputStream zip, List<DiagnosticsReportSource> sources, DiagnosticsReporterProgress progress )
     {
         int step = 0;
         final byte[] buf = new byte[(int) kibiBytes( 8 )]; // same as default buf size in buffered streams
@@ -126,9 +126,8 @@ public class DiagnosticsReporter
         return allSources;
     }
 
-    private void estimateSizeAndCheckAvailableDiskSpace( Path destination, List<DiagnosticsReportSource> sources, Path destinationDir )
+    private static void estimateSizeAndCheckAvailableDiskSpace( Path destination, List<DiagnosticsReportSource> sources, Path destinationDir )
     {
-
         final long estimatedFinalSize = sources.stream().mapToLong( DiagnosticsReportSource::estimatedSize ).sum();
         final long freeSpace = destinationDir.toFile().getFreeSpace();
         if ( estimatedFinalSize > freeSpace )

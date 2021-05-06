@@ -88,7 +88,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
         }
     }
 
-    private void updateDegree( boolean hasExternalDegrees, long firstRel, RelationshipGroupRecord groupRecord, RelationshipDirection direction,
+    private static void updateDegree( boolean hasExternalDegrees, long firstRel, RelationshipGroupRecord groupRecord, RelationshipDirection direction,
             StorageRelationshipTraversalCursor traversalCursor, RelationshipGroupDegreesStore.Updater updater )
     {
         if ( !hasExternalDegrees )

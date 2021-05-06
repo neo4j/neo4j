@@ -61,7 +61,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         this.factory = createJsonFactory();
     }
 
-    private JsonFactory createJsonFactory()
+    private static JsonFactory createJsonFactory()
     {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.disable( FLUSH_AFTER_WRITE_VALUE );
@@ -128,7 +128,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         throw new UnsupportedOperationException();
     }
 
-    private boolean empty( String input )
+    private static boolean empty( String input )
     {
         return input == null || "".equals( input.trim() );
     }
@@ -186,7 +186,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         }
     }
 
-    private String stripByteOrderMark( String string )
+    private static String stripByteOrderMark( String string )
     {
         if ( string != null && !string.isEmpty() && string.charAt( 0 ) == 0xfeff )
         {

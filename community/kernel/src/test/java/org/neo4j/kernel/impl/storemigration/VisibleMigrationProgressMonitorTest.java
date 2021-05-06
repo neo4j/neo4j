@@ -96,7 +96,7 @@ class VisibleMigrationProgressMonitorTest
         assertThat( logProvider ).containsMessages( "took 1s 500ms" );
     }
 
-    private void verifySectionReportedCorrectly( AssertableLogProvider logProvider )
+    private static void verifySectionReportedCorrectly( AssertableLogProvider logProvider )
     {
         var messageMatcher = assertThat( logProvider );
         messageMatcher.containsMessages( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
@@ -108,7 +108,7 @@ class VisibleMigrationProgressMonitorTest
         messageMatcher.forClass( VisibleMigrationProgressMonitor.class ).forLevel( INFO ).doesNotContainMessage( "110%" );
     }
 
-    private void monitorSection( VisibleMigrationProgressMonitor monitor, String name, int max, int... steps )
+    private static void monitorSection( VisibleMigrationProgressMonitor monitor, String name, int max, int... steps )
     {
         ProgressReporter progressReporter = monitor.startSection( name );
         progressReporter.start( max );

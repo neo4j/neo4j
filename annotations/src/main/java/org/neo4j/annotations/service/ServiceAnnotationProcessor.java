@@ -63,7 +63,7 @@ import static org.neo4j.annotations.AnnotationConstants.DEFAULT_NEW_LINE;
  */
 public class ServiceAnnotationProcessor extends AbstractProcessor
 {
-    private static final boolean enableDebug = Boolean.getBoolean( "enableAnnotationLogging" );
+    private static final boolean ENABLE_DEBUG = Boolean.getBoolean( "enableAnnotationLogging" );
     private final MutableMultimap<TypeElement, TypeElement> serviceProviders = Multimaps.mutable.list.empty();
     private final String newLine;
     private Types typeUtils;
@@ -238,7 +238,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
 
     private void info( String msg )
     {
-        if ( enableDebug )
+        if ( ENABLE_DEBUG )
         {
             processingEnv.getMessager().printMessage( NOTE, msg );
         }

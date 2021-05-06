@@ -153,24 +153,24 @@ class TestLongerShortString
         return result;
     }
 
-    private void assertCanEncodeAndDecodeToSame( String string )
+    private static void assertCanEncodeAndDecodeToSame( String string )
     {
         assertCanEncodeAndDecodeToSame( string, DEFAULT_PAYLOAD_SIZE );
     }
 
-    private void assertCanEncodeAndDecodeToSame( String string, int payloadSize )
+    private static void assertCanEncodeAndDecodeToSame( String string, int payloadSize )
     {
         PropertyBlock target = new PropertyBlock();
         assertTrue( LongerShortString.encode( 0, string, target, payloadSize ) );
         assertEquals( Values.stringValue( string ), LongerShortString.decode( target ) );
     }
 
-    private void assertCannotEncode( String string )
+    private static void assertCannotEncode( String string )
     {
         assertCannotEncode( string, DEFAULT_PAYLOAD_SIZE );
     }
 
-    private void assertCannotEncode( String string, int payloadSize )
+    private static void assertCannotEncode( String string, int payloadSize )
     {
         assertFalse( LongerShortString.encode( 0, string, new PropertyBlock(), payloadSize ) );
     }

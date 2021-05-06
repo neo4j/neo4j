@@ -200,7 +200,7 @@ public class BatchingMultipleIndexPopulatorTest
         verify( populator ).markAsFailed( failure( batchFlushError ).asString() );
     }
 
-    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, Update... updates )
+    private static List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, Update... updates )
     {
         var entityUpdates = Arrays.stream( updates ).map( update ->
                 EntityUpdates.forEntity( update.id, true )
@@ -216,7 +216,7 @@ public class BatchingMultipleIndexPopulatorTest
                         ) ) );
     }
 
-    private Update nodeUpdate( int nodeId, int propertyId, String propertyValue, long... labelIds )
+    private static Update nodeUpdate( int nodeId, int propertyId, String propertyValue, long... labelIds )
     {
         return new Update( nodeId, labelIds, propertyId, Values.stringValue( propertyValue ) );
     }

@@ -140,7 +140,7 @@ class BlockBasedIndexPopulatorTest
         jobScheduler.shutdown();
     }
 
-    private IndexPopulator.PopulationWorkScheduler wrapScheduler( JobScheduler jobScheduler )
+    private static IndexPopulator.PopulationWorkScheduler wrapScheduler( JobScheduler jobScheduler )
     {
         return new IndexPopulator.PopulationWorkScheduler()
         {
@@ -663,7 +663,8 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private Seeker<GenericKey,NativeIndexValue> seek( GBPTree<GenericKey,NativeIndexValue> tree, Layout<GenericKey,NativeIndexValue> layout ) throws IOException
+    private static Seeker<GenericKey,NativeIndexValue> seek( GBPTree<GenericKey,NativeIndexValue> tree, Layout<GenericKey,NativeIndexValue> layout )
+            throws IOException
     {
         GenericKey low = layout.newKey();
         low.initialize( Long.MIN_VALUE );
@@ -674,7 +675,7 @@ class BlockBasedIndexPopulatorTest
         return tree.seek( low, high, NULL );
     }
 
-    private void externalUpdates( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, int firstId, int lastId )
+    private static void externalUpdates( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, int firstId, int lastId )
             throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
@@ -716,7 +717,7 @@ class BlockBasedIndexPopulatorTest
         return populator;
     }
 
-    private GenericLayout layout()
+    private static GenericLayout layout()
     {
         IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
         return new GenericLayout( 1, spatialSettings );

@@ -33,7 +33,7 @@ public class HasLabelSubscriberTest
 {
 
     public static final int THE_NODE = 13;
-    private DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
+    private final DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
 
     @Test
     void shouldFindLabels()
@@ -116,12 +116,12 @@ public class HasLabelSubscriberTest
         return new HasLabelSubscriber( label, labelStore, CursorContext.NULL );
     }
 
-    private DynamicRecord record( int numberOfLabels )
+    private static DynamicRecord record( int numberOfLabels )
     {
         return record( numberOfLabels, 0, true );
     }
 
-    private DynamicRecord record( int numberOfLabels, int startLabel, boolean needsHeader )
+    private static DynamicRecord record( int numberOfLabels, int startLabel, boolean needsHeader )
     {
         Bits bits;
         if ( needsHeader )

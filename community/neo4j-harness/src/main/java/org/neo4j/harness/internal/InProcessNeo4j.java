@@ -146,7 +146,7 @@ public class InProcessNeo4j implements Neo4j
     {
         if ( file != null && Files.exists( file ) )
         {
-            out.println( String.format( "---------- BEGIN %s ----------", description ) );
+            out.printf( "---------- BEGIN %s ----------%n", description );
 
             try
             {
@@ -159,12 +159,12 @@ public class InProcessNeo4j implements Neo4j
             }
             finally
             {
-                out.println( String.format( "---------- END %s ----------", description ) );
+                out.printf( "---------- END %s ----------%n", description );
             }
         }
     }
 
-    private boolean looksLikeMd5Hash( String name )
+    private static boolean looksLikeMd5Hash( String name )
     {
         // Pure paranoia, and a silly check - but this decreases the likelihood that we delete something that isn't
         // our randomly generated folder significantly.

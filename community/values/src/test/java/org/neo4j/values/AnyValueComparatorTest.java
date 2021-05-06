@@ -77,7 +77,7 @@ class AnyValueComparatorTest
     private final AnyValueComparator comparator =
             new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );
 
-    private Object[] objs = new Object[]{
+    private final Object[] objs = new Object[]{
             // MAP LIKE TYPES
 
             // Map
@@ -379,7 +379,7 @@ class AnyValueComparatorTest
         }
     }
 
-    private int compare( AnyValueComparator comparator, AnyValue left, AnyValue right )
+    private static int compare( AnyValueComparator comparator, AnyValue left, AnyValue right )
     {
         int cmp1 = comparator.compare( left, right );
         int cmp2 = comparator.compare( right, left );

@@ -307,12 +307,12 @@ class CountsChangesTest
         }
     }
 
-    private CountsKey randomKey( Random random )
+    private static CountsKey randomKey( Random random )
     {
         return random.nextBoolean() ? nodeKey( randomToken( random ) ) : relationshipKey( randomToken( random ), randomToken( random ), randomToken( random ) );
     }
 
-    private int randomToken( Random random )
+    private static int randomToken( Random random )
     {
         return random.nextInt( 20 );
     }

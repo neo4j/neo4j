@@ -172,7 +172,7 @@ public class PropertyCreator
         assert traverser.assertPropertyChain( primitive, propertyRecords );
     }
 
-    private void removeProperty( PrimitiveRecord primitive, PropertyRecord host, PropertyBlock block )
+    private static void removeProperty( PrimitiveRecord primitive, PropertyRecord host, PropertyBlock block )
     {
         host.removePropertyBlock( block.getKeyIndexId() );
         host.setChanged( primitive );

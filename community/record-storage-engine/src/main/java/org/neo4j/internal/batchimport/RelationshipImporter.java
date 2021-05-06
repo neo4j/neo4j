@@ -208,7 +208,7 @@ public class RelationshipImporter extends EntityImporter
         super.endOfEntity();
     }
 
-    private Group group( Group group )
+    private static Group group( Group group )
     {
         return group != null ? group : Group.GLOBAL;
     }

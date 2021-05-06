@@ -110,7 +110,7 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase
         assertEqualityByDescriptor( ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
     }
 
-    private void assertEqualityByDescriptor( UniquenessConstraintDescriptor descriptor )
+    private static void assertEqualityByDescriptor( UniquenessConstraintDescriptor descriptor )
     {
         ConstraintDescriptor rule1 = descriptor.withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 );
         ConstraintDescriptor rule2 = descriptor.withId( RULE_ID_2 );
@@ -118,7 +118,7 @@ class ConstraintDescriptorTest extends SchemaRuleTestBase
         assertEquality( rule1, rule2 );
     }
 
-    private void assertEqualityByDescriptor( ConstraintDescriptor descriptor )
+    private static void assertEqualityByDescriptor( ConstraintDescriptor descriptor )
     {
         ConstraintDescriptor rule1 = descriptor.withId( RULE_ID );
         ConstraintDescriptor rule2 = descriptor.withId( RULE_ID_2 );

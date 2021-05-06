@@ -1343,7 +1343,7 @@ class OperationsTest
         }
     }
 
-    private void assertAuthorized( Executable executable )
+    private static void assertAuthorized( Executable executable )
     {
         try
         {

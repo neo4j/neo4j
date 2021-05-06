@@ -198,7 +198,7 @@ class EntityStateImpl implements EntityState
         return null;
     }
 
-    private Iterator<StorageProperty> toPropertyIterator( LongObjectMap<Value> propertyMap )
+    private static Iterator<StorageProperty> toPropertyIterator( LongObjectMap<Value> propertyMap )
     {
         return propertyMap == null ? emptyIterator()
                                    : propertyMap.keyValuesView().collect(

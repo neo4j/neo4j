@@ -80,8 +80,8 @@ public class IndexEntryResourceTypesTest
         long hash( long labelId, ExactPredicate[] predicates );
     }
 
-    @SuppressWarnings( {"UnnecessaryBoxing", "BooleanConstructorCall"} )
-    private void verifyCanHashAllTypes( IndexEntryHasher hasher )
+    @SuppressWarnings( {"UnnecessaryBoxing"} )
+    private static void verifyCanHashAllTypes( IndexEntryHasher hasher )
     {
         hasher.hash( 42, array( exact( 1, "" ) ) );
         hasher.hash( 42, array( exact( 1, "a" ) ) );

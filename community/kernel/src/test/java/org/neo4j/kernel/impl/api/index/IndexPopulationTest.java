@@ -96,7 +96,7 @@ class IndexPopulationTest
                 .failure( "failure" ), NullLogProvider.getInstance() );
     }
 
-    private IndexPopulator.Adapter emptyPopulatorWithThrowingUpdater()
+    private static IndexPopulator.Adapter emptyPopulatorWithThrowingUpdater()
     {
         return new IndexPopulator.Adapter()
         {
@@ -120,7 +120,7 @@ class IndexPopulationTest
         };
     }
 
-    private IndexStoreView.Adaptor emptyIndexStoreViewThatProcessUpdates()
+    private static IndexStoreView.Adaptor emptyIndexStoreViewThatProcessUpdates()
     {
         return new IndexStoreView.Adaptor()
         {
@@ -129,7 +129,6 @@ class IndexPopulationTest
                     TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
                     MemoryTracker memoryTracker )
             {
-                //noinspection unchecked
                 return new StoreScan()
                 {
                     @Override
@@ -157,7 +156,7 @@ class IndexPopulationTest
         return new ValueIndexProxyStrategy( TestIndexDescriptorFactory.forLabel( 0, 0 ), indexStatisticsStore, tokens );
     }
 
-    private IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()
+    private static IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()
     {
         return IndexEntryUpdate.add( 0, SchemaDescriptor.forLabel( 0, 0 ), Values.numberValue( 0 ) );
     }

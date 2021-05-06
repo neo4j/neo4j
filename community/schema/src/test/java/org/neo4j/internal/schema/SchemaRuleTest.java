@@ -40,61 +40,67 @@ import static org.neo4j.internal.schema.IndexType.LOOKUP;
 
 class SchemaRuleTest
 {
-    private LabelSchemaDescriptor labelSchema = SchemaDescriptor.forLabel( 1, 2, 3 );
-    private RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptor.forRelType( 1, 2, 3 );
-    private FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptor.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
-    private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
-    private LabelSchemaDescriptor labelSchema2 = SchemaDescriptor.forLabel( 0, 0, 1 );
-    private FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptor.fulltext( NODE, new int[]{0, 1}, new int[]{0, 1} );
-    private AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptor.forAnyEntityTokens( NODE );
-    private AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptor.forAnyEntityTokens( RELATIONSHIP );
-    private IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema );
-    private IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
-    private IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );
-    private IndexPrototype relTypeUniquePrototype = IndexPrototype.uniqueForSchema( relTypeSchema );
-    private IndexPrototype nodeFtsPrototype = IndexPrototype.forSchema( fulltextNodeSchema ).withIndexType( FULLTEXT );
-    private IndexPrototype relFtsPrototype = IndexPrototype.forSchema( fulltextRelSchema ).withIndexType( FULLTEXT );
-    private IndexPrototype labelFtsPrototype2 = IndexPrototype.forSchema( labelSchema2 ).withIndexType( FULLTEXT );
-    private IndexPrototype nodeFtsPrototype2 = IndexPrototype.forSchema( fulltextNodeSchema2 ).withIndexType( FULLTEXT );
-    private IndexPrototype allLabelsPrototype = IndexPrototype.forSchema( allLabelsSchema ).withIndexType( LOOKUP );
-    private IndexPrototype allRelTypesPrototype = IndexPrototype.forSchema( allRelTypesSchema ).withIndexType( LOOKUP );
-    private IndexPrototype labelPrototypeNamed = IndexPrototype.forSchema( labelSchema ).withName( "labelPrototypeNamed" );
-    private IndexPrototype labelUniquePrototypeNamed = IndexPrototype.uniqueForSchema( labelSchema ).withName( "labelUniquePrototypeNamed" );
-    private IndexPrototype relTypePrototypeNamed = IndexPrototype.forSchema( relTypeSchema ).withName( "relTypePrototypeNamed" );
-    private IndexPrototype relTypeUniquePrototypeNamed = IndexPrototype.uniqueForSchema( relTypeSchema ).withName( "relTypeUniquePrototypeNamed" );
-    private IndexPrototype nodeFtsPrototypeNamed = IndexPrototype.forSchema( fulltextNodeSchema ).withIndexType( FULLTEXT ).withName( "nodeFtsPrototypeNamed" );
-    private IndexPrototype relFtsPrototypeNamed = IndexPrototype.forSchema( fulltextRelSchema ).withIndexType( FULLTEXT ).withName( "relFtsPrototypeNamed" );
-    private IndexPrototype labelFtsPrototype2Named = IndexPrototype.forSchema( labelSchema2 ).withIndexType( FULLTEXT ).withName( "labelFtsPrototype2Named" );
-    private IndexPrototype nodeFtsPrototype2Named =
+    private final LabelSchemaDescriptor labelSchema = SchemaDescriptor.forLabel( 1, 2, 3 );
+    private final RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptor.forRelType( 1, 2, 3 );
+    private final FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptor.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
+    private final FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
+    private final LabelSchemaDescriptor labelSchema2 = SchemaDescriptor.forLabel( 0, 0, 1 );
+    private final FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptor.fulltext( NODE, new int[]{0, 1}, new int[]{0, 1} );
+    private final AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptor.forAnyEntityTokens( NODE );
+    private final AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptor.forAnyEntityTokens( RELATIONSHIP );
+    private final IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema );
+    private final IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
+    private final IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );
+    private final IndexPrototype relTypeUniquePrototype = IndexPrototype.uniqueForSchema( relTypeSchema );
+    private final IndexPrototype nodeFtsPrototype = IndexPrototype.forSchema( fulltextNodeSchema ).withIndexType( FULLTEXT );
+    private final IndexPrototype relFtsPrototype = IndexPrototype.forSchema( fulltextRelSchema ).withIndexType( FULLTEXT );
+    private final IndexPrototype labelFtsPrototype2 = IndexPrototype.forSchema( labelSchema2 ).withIndexType( FULLTEXT );
+    private final IndexPrototype nodeFtsPrototype2 = IndexPrototype.forSchema( fulltextNodeSchema2 ).withIndexType( FULLTEXT );
+    private final IndexPrototype allLabelsPrototype = IndexPrototype.forSchema( allLabelsSchema ).withIndexType( LOOKUP );
+    private final IndexPrototype allRelTypesPrototype = IndexPrototype.forSchema( allRelTypesSchema ).withIndexType( LOOKUP );
+    private final IndexPrototype labelPrototypeNamed = IndexPrototype.forSchema( labelSchema ).withName( "labelPrototypeNamed" );
+    private final IndexPrototype labelUniquePrototypeNamed = IndexPrototype.uniqueForSchema( labelSchema ).withName( "labelUniquePrototypeNamed" );
+    private final IndexPrototype relTypePrototypeNamed = IndexPrototype.forSchema( relTypeSchema ).withName( "relTypePrototypeNamed" );
+    private final IndexPrototype relTypeUniquePrototypeNamed = IndexPrototype.uniqueForSchema( relTypeSchema ).withName( "relTypeUniquePrototypeNamed" );
+    private final IndexPrototype nodeFtsPrototypeNamed =
+            IndexPrototype.forSchema( fulltextNodeSchema ).withIndexType( FULLTEXT ).withName( "nodeFtsPrototypeNamed" );
+    private final IndexPrototype relFtsPrototypeNamed =
+            IndexPrototype.forSchema( fulltextRelSchema ).withIndexType( FULLTEXT ).withName( "relFtsPrototypeNamed" );
+    private final IndexPrototype labelFtsPrototype2Named =
+            IndexPrototype.forSchema( labelSchema2 ).withIndexType( FULLTEXT ).withName( "labelFtsPrototype2Named" );
+    private final IndexPrototype nodeFtsPrototype2Named =
             IndexPrototype.forSchema( fulltextNodeSchema2 ).withIndexType( FULLTEXT ).withName( "nodeFtsPrototype2Named" );
-    private IndexPrototype allLabelsPrototypeNamed = IndexPrototype.forSchema( allLabelsSchema ).withIndexType( LOOKUP ).withName( "allLabelsPrototypeNamed" );
-    private IndexPrototype allRelTypesPrototypeNamed =
+    private final IndexPrototype allLabelsPrototypeNamed =
+            IndexPrototype.forSchema( allLabelsSchema ).withIndexType( LOOKUP ).withName( "allLabelsPrototypeNamed" );
+    private final IndexPrototype allRelTypesPrototypeNamed =
             IndexPrototype.forSchema( allRelTypesSchema ).withIndexType( LOOKUP ).withName( "allRelTypesPrototypeNamed" );
-    private IndexDescriptor labelIndexNamed = labelPrototypeNamed.withName( "labelIndexNamed" ).materialise( 1 );
-    private IndexDescriptor labelUniqueIndexNamed = labelUniquePrototypeNamed.withName( "labelUniqueIndexNamed" ).materialise( 2 );
-    private IndexDescriptor relTypeIndexNamed = relTypePrototypeNamed.withName( "relTypeIndexNamed" ).materialise( 3 );
-    private IndexDescriptor relTypeUniqueIndexNamed = relTypeUniquePrototypeNamed.withName( "relTypeUniqueIndexNamed" ).materialise( 4 );
-    private IndexDescriptor nodeFtsIndexNamed = nodeFtsPrototypeNamed.withName( "nodeFtsIndexNamed" ).materialise( 5 );
-    private IndexDescriptor relFtsIndexNamed = relFtsPrototypeNamed.withName( "relFtsIndexNamed" ).materialise( 6 );
-    private IndexDescriptor labelFtsIndex2Named = labelFtsPrototype2Named.withName( "labelFtsIndex2Named" ).materialise( 7 );
-    private IndexDescriptor nodeFtsIndex2Named = nodeFtsPrototype2Named.withName( "nodeFtsIndex2Named" ).materialise( 8 );
-    private IndexDescriptor allLabelsIndexNamed = allLabelsPrototypeNamed.withName( "allLabelsIndexNamed" ).materialise( 9 );
-    private IndexDescriptor allRelTypesIndexNamed = allRelTypesPrototypeNamed.withName( "allRelTypesIndexNamed" ).materialise( 10 );
-    private IndexDescriptor indexBelongingToConstraint =
+    private final IndexDescriptor labelIndexNamed = labelPrototypeNamed.withName( "labelIndexNamed" ).materialise( 1 );
+    private final IndexDescriptor labelUniqueIndexNamed = labelUniquePrototypeNamed.withName( "labelUniqueIndexNamed" ).materialise( 2 );
+    private final IndexDescriptor relTypeIndexNamed = relTypePrototypeNamed.withName( "relTypeIndexNamed" ).materialise( 3 );
+    private final IndexDescriptor relTypeUniqueIndexNamed = relTypeUniquePrototypeNamed.withName( "relTypeUniqueIndexNamed" ).materialise( 4 );
+    private final IndexDescriptor nodeFtsIndexNamed = nodeFtsPrototypeNamed.withName( "nodeFtsIndexNamed" ).materialise( 5 );
+    private final IndexDescriptor relFtsIndexNamed = relFtsPrototypeNamed.withName( "relFtsIndexNamed" ).materialise( 6 );
+    private final IndexDescriptor labelFtsIndex2Named = labelFtsPrototype2Named.withName( "labelFtsIndex2Named" ).materialise( 7 );
+    private final IndexDescriptor nodeFtsIndex2Named = nodeFtsPrototype2Named.withName( "nodeFtsIndex2Named" ).materialise( 8 );
+    private final IndexDescriptor allLabelsIndexNamed = allLabelsPrototypeNamed.withName( "allLabelsIndexNamed" ).materialise( 9 );
+    private final IndexDescriptor allRelTypesIndexNamed = allRelTypesPrototypeNamed.withName( "allRelTypesIndexNamed" ).materialise( 10 );
+    private final IndexDescriptor indexBelongingToConstraint =
             labelUniquePrototypeNamed.withName( "indexBelongingToConstraint" ).materialise( 11 ).withOwningConstraintId( 1 );
-    private ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
-    private ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
-    private ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
-    private ConstraintDescriptor existsRelTypeConstraint = ConstraintDescriptorFactory.existsForSchema( relTypeSchema );
-    private ConstraintDescriptor uniqueLabelConstraint2 = ConstraintDescriptorFactory.uniqueForSchema( labelSchema2 );
-    private ConstraintDescriptor uniqueLabelConstraintNamed = uniqueLabelConstraint.withName( "uniqueLabelConstraintNamed" ).withId( 1 ).withOwnedIndexId( 1 );
-    private ConstraintDescriptor existsLabelConstraintNamed = existsLabelConstraint.withName( "existsLabelConstraintNamed" ).withId( 2 ).withOwnedIndexId( 2 );
-    private ConstraintDescriptor nodeKeyConstraintNamed = nodeKeyConstraint.withName( "nodeKeyConstraintNamed" ).withId( 3 ).withOwnedIndexId( 3 );
-    private ConstraintDescriptor existsRelTypeConstraintNamed =
+    private final ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
+    private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
+    private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
+    private final ConstraintDescriptor existsRelTypeConstraint = ConstraintDescriptorFactory.existsForSchema( relTypeSchema );
+    private final ConstraintDescriptor uniqueLabelConstraint2 = ConstraintDescriptorFactory.uniqueForSchema( labelSchema2 );
+    private final ConstraintDescriptor uniqueLabelConstraintNamed =
+            uniqueLabelConstraint.withName( "uniqueLabelConstraintNamed" ).withId( 1 ).withOwnedIndexId( 1 );
+    private final ConstraintDescriptor existsLabelConstraintNamed =
+            existsLabelConstraint.withName( "existsLabelConstraintNamed" ).withId( 2 ).withOwnedIndexId( 2 );
+    private final ConstraintDescriptor nodeKeyConstraintNamed = nodeKeyConstraint.withName( "nodeKeyConstraintNamed" ).withId( 3 ).withOwnedIndexId( 3 );
+    private final ConstraintDescriptor existsRelTypeConstraintNamed =
             existsRelTypeConstraint.withName( "existsRelTypeConstraintNamed" ).withId( 4 ).withOwnedIndexId( 4 );
-    private ConstraintDescriptor uniqueLabelConstraint2Named =
+    private final ConstraintDescriptor uniqueLabelConstraint2Named =
             uniqueLabelConstraint2.withName( "uniqueLabelConstraint2Named" ).withId( 5 ).withOwnedIndexId( 5 );
-    private InMemoryTokens lookup = new InMemoryTokens()
+    private final InMemoryTokens lookup = new InMemoryTokens()
             .label( 0, "La:bel" ).label( 1, "Label1" ).label( 2, "Label2" )
             .relationshipType( 0, "Ty:pe" ).relationshipType( 1, "Type1" ).relationshipType( 2, "Type2" )
             .propertyKey( 0, "prop:erty" ).propertyKey( 1, "prop1" ).propertyKey( 2, "prop2" ).propertyKey( 3, "prop3" );
@@ -211,7 +217,7 @@ class SchemaRuleTest
                 uniqueLabelConstraint2Named );
     }
 
-    private void assertName( SchemaDescriptorSupplier schemaish, String expectedName )
+    private static void assertName( SchemaDescriptorSupplier schemaish, String expectedName )
     {
         String generateName = SchemaRule.generateName( schemaish, new String[]{"A"}, new String[]{"B", "C"} );
         assertThat( generateName ).isEqualTo( expectedName );

@@ -123,12 +123,12 @@ class JavaProceduresTest
         public Stream<LongResult> countNodes()
         {
             LongResult t = new LongResult();
-            t.value = myCoreAPI.countNodes( transaction );
+            t.value = MyCoreAPI.countNodes( transaction );
             return Stream.of( t );
         }
     }
 
-    private Neo4jBuilder createServer( Class<?> procedureClass )
+    private static Neo4jBuilder createServer( Class<?> procedureClass )
     {
         return Neo4jBuilders.newInProcessBuilder()
                                  .withProcedure( procedureClass );
@@ -199,7 +199,7 @@ class JavaProceduresTest
         }
     }
 
-    private void assertQueryGetsValue( Neo4j server, String query, long value ) throws Throwable
+    private static void assertQueryGetsValue( Neo4j server, String query, long value ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
@@ -210,7 +210,7 @@ class JavaProceduresTest
         assertEquals( value, result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asLong() );
     }
 
-    private void assertQueryGetsError( Neo4j server, String query, String error ) throws Throwable
+    private static void assertQueryGetsError( Neo4j server, String query, String error ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );

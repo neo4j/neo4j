@@ -691,7 +691,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return filteredRules.toArray( IndexDescriptor[]::new );
     }
 
-    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate,
+    private static void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate,
             CursorContext cursorContext ) throws IndexEntryConflictException
     {
         IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey(), cursorContext );

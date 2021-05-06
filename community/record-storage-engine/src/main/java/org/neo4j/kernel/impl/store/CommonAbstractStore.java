@@ -1040,7 +1040,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    private LongPredicate createRecordCycleGuard()
+    private static LongPredicate createRecordCycleGuard()
     {
         MutableLongSet observedSet = LongSets.mutable.empty();
         return id -> !observedSet.add( id );

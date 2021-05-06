@@ -207,7 +207,7 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
         schemaStore.setHighestPossibleIdInUse( rule.getId() );
     }
 
-    private PropertyRecord newInitialisedPropertyRecord( PropertyStore propertyStore, SchemaRule rule, CursorContext cursorContext )
+    private static PropertyRecord newInitialisedPropertyRecord( PropertyStore propertyStore, SchemaRule rule, CursorContext cursorContext )
     {
         PropertyRecord record = propertyStore.newRecord();
         record.setId( propertyStore.nextId( cursorContext ) );
@@ -216,7 +216,8 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
         return record;
     }
 
-    private void linkAndWritePropertyRecord( PropertyStore propertyStore, PropertyRecord record, long prevPropId, long nextProp, CursorContext cursorContext )
+    private static void linkAndWritePropertyRecord( PropertyStore propertyStore, PropertyRecord record, long prevPropId, long nextProp,
+            CursorContext cursorContext )
     {
         record.setInUse( true );
         record.setPrevProp( prevPropId );
@@ -267,14 +268,14 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, cursorContext ) ), nli );
     }
 
-    private Stream<IndexDescriptor> indexRules( Stream<SchemaRule> stream )
+    private static Stream<IndexDescriptor> indexRules( Stream<SchemaRule> stream )
     {
         return stream
                 .filter( rule -> rule instanceof IndexDescriptor )
                 .map( rule -> (IndexDescriptor) rule );
     }
 
-    private Stream<ConstraintDescriptor> constraintRules( Stream<SchemaRule> stream )
+    private static Stream<ConstraintDescriptor> constraintRules( Stream<SchemaRule> stream )
     {
         return stream
                 .filter( rule -> rule instanceof ConstraintDescriptor )

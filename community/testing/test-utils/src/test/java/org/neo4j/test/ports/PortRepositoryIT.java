@@ -74,7 +74,7 @@ class PortRepositoryIT
         assertThat( exception.getMessage() ).isEqualTo( "There are no more ports available" );
     }
 
-    private Path temporaryDirectory() throws IOException
+    private static Path temporaryDirectory() throws IOException
     {
         return Files.createTempDirectory( "portRepo" );
     }

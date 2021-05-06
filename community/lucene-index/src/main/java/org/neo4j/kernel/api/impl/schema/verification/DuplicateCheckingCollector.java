@@ -72,7 +72,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
         }
     }
 
-    protected void doCollect( int doc ) throws IOException, KernelException, IndexEntryConflictException
+    protected void doCollect( int doc ) throws IOException, KernelException
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
@@ -116,7 +116,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
         }
     }
 
-    private boolean useFastCheck( int expectedNumberOfEntries )
+    private static boolean useFastCheck( int expectedNumberOfEntries )
     {
         return expectedNumberOfEntries <= BucketsDuplicateCheckStrategy.BUCKET_STRATEGY_ENTRIES_THRESHOLD;
     }

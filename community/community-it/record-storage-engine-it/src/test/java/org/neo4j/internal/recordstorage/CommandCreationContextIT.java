@@ -154,7 +154,7 @@ public class CommandCreationContextIT
         );
     }
 
-    private void assertCursorOne( CursorContext cursorContext )
+    private static void assertCursorOne( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
@@ -162,7 +162,7 @@ public class CommandCreationContextIT
         assertThat( cursorTracer.hits() ).isOne();
     }
 
-    private void prepareIdGenerator( IdGenerator idGenerator )
+    private static void prepareIdGenerator( IdGenerator idGenerator )
     {
         try ( var marker = idGenerator.marker( NULL ) )
         {

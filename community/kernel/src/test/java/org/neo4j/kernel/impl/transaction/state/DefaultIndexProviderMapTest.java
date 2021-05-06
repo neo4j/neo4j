@@ -101,7 +101,7 @@ class DefaultIndexProviderMapTest
         return provider( "fulltext", "1.0" );
     }
 
-    private IndexProvider tokenProvider()
+    private static IndexProvider tokenProvider()
     {
         return provider( "token-lookup", "1.0" );
     }

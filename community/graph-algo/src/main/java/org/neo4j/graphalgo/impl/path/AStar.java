@@ -114,7 +114,7 @@ public class AStar implements PathFinder<WeightedPath>
         return lastMetadata;
     }
 
-    private Path toPath( Node start, List<Relationship> rels )
+    private static Path toPath( Node start, List<Relationship> rels )
     {
         PathImpl.Builder builder = new PathImpl.Builder( start );
         for ( Relationship rel : rels )

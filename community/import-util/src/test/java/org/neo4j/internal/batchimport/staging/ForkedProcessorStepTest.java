@@ -291,7 +291,7 @@ class ForkedProcessorStepTest
         shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 );
     }
 
-    private void shouldBeAbleToProgressUnderStressfulProcessorChanges( int orderingGuarantees ) throws Exception
+    private static void shouldBeAbleToProgressUnderStressfulProcessorChanges( int orderingGuarantees ) throws Exception
     {
         // given
         int batches = 100;

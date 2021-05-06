@@ -85,7 +85,7 @@ class GraphNameValidatorTest
         assertEquals( "The provided graph name must have a length between 3 and 63 characters.", e2.getMessage() );
     }
 
-    private void checkGraphName( String name )
+    private static void checkGraphName( String name )
     {
         GraphNameValidator.assertValidGraphName( new NormalizedGraphName( name ) );
     }

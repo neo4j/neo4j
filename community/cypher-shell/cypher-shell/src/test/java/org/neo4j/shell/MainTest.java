@@ -238,7 +238,7 @@ public class MainTest
 
             String out = baos.toString( StandardCharsets.UTF_8 );
 
-            assertEquals( out, "" );
+            assertEquals( "", out );
             verify( connectionConfig ).setUsername( "bob" );
             verify( shell, times( 2 ) ).connect( connectionConfig, null );
         }
@@ -301,7 +301,7 @@ public class MainTest
 
             String out = baos.toString( StandardCharsets.UTF_8 );
 
-            assertEquals( out, "" );
+            assertEquals( "",  out );
             verify( connectionConfig ).setPassword( "secret" );
             verify( shell, times( 1 ) ).connect( connectionConfig, null );
         }

@@ -82,7 +82,7 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
      */
     protected abstract void progress( long progress );
 
-    private long doneBatches( StageExecution execution )
+    private static long doneBatches( StageExecution execution )
     {
         Step<?> step = Iterables.last( execution.steps() );
         return step.stats().stat( Keys.done_batches ).asLong();

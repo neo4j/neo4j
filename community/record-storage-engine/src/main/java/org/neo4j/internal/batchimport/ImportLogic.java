@@ -228,7 +228,7 @@ public class ImportLogic implements Closeable
         // Sanity checking against estimates
         new EstimationSanityChecker( recordFormats, monitor ).sanityCheck( inputEstimates );
         new HeapSizeSanityChecker( monitor ).sanityCheck( inputEstimates, recordFormats, neoStore,
-                nodeRelationshipCache.memoryEstimation( inputEstimates.numberOfNodes() ),
+                NodeRelationshipCache.memoryEstimation( inputEstimates.numberOfNodes() ),
                 idMapper.memoryEstimation( inputEstimates.numberOfNodes() ) );
 
         dependencies.satisfyDependencies( inputEstimates, idMapper, neoStore, nodeRelationshipCache, numberArrayFactoryMonitor );

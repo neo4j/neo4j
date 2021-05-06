@@ -81,8 +81,8 @@ class FromPathsIT
                             .getPaths() ).containsAll( Set.of( neo4j1Directory ) );
         assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "*4*" ) )
                             .getPaths() ).containsAll( Set.of( neo4j1Directory ) );
-        assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "*" ) ).getPaths().containsAll(
-                Set.of( neo4j1Directory, mongo1Directory, redis1Directory ) ) );
+        assertThat( new FromPaths( concatenateSubPath( dbRoot1Directory.toAbsolutePath().toString(), "*" ) ).getPaths() ).containsAll(
+                Set.of( neo4j1Directory, mongo1Directory, redis1Directory ) );
     }
 
     @Test
@@ -100,7 +100,7 @@ class FromPathsIT
     @Test
     void shouldReturnTheInputListIfFilterIsNotApplied()
     {
-        final var paths = new FromPaths( dbRoot1Directory.toAbsolutePath().toString() + ", " + dbRoot2Directory.toAbsolutePath().toString() )
+        final var paths = new FromPaths( dbRoot1Directory.toAbsolutePath() + ", " + dbRoot2Directory.toAbsolutePath() )
                 .getPaths();
 
         final var expected = Set.of( dbRoot1Directory, dbRoot2Directory );
@@ -152,12 +152,12 @@ class FromPathsIT
         new FromPaths( concatenateSubPath( "a", "b" ) );
     }
 
-    private void assertValid( String name )
+    private static void assertValid( String name )
     {
         new FromPaths( name );
     }
 
-    private String concatenateSubPath( String... paths )
+    private static String concatenateSubPath( String... paths )
     {
         return String.join( File.separator, paths );
     }

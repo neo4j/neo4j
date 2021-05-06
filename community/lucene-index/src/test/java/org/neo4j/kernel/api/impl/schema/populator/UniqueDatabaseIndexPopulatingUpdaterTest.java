@@ -106,7 +106,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void addedNodePropertiesIncludedInSample() throws IndexEntryConflictException
+    void addedNodePropertiesIncludedInSample()
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -120,7 +120,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void changedNodePropertiesDoNotInfluenceSample() throws IndexEntryConflictException
+    void changedNodePropertiesDoNotInfluenceSample()
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -132,7 +132,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void removedNodePropertyIncludedInSample() throws IndexEntryConflictException
+    void removedNodePropertyIncludedInSample()
     {
         long initialValue = 10;
         UniqueIndexSampler sampler = new UniqueIndexSampler();
@@ -147,7 +147,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     }
 
     @Test
-    void nodePropertyUpdatesIncludedInSample() throws IndexEntryConflictException
+    void nodePropertyUpdatesIncludedInSample()
     {
         UniqueIndexSampler sampler = new UniqueIndexSampler();
         UniqueLuceneIndexPopulatingUpdater updater = newUpdater( sampler );
@@ -240,7 +240,7 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
                 mock( NodePropertyAccessor.class ), sampler );
     }
 
-    private void verifyVerifyUniqueness( SchemaIndex index, SchemaDescriptor descriptor, Object... values )
+    private static void verifyVerifyUniqueness( SchemaIndex index, SchemaDescriptor descriptor, Object... values )
             throws IOException, IndexEntryConflictException
     {
         @SuppressWarnings( "unchecked" )

@@ -574,7 +574,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return false;
     }
 
-    private void progressCursor( PageCursor cursor, int delta )
+    private static void progressCursor( PageCursor cursor, int delta )
     {
         cursor.setOffset( cursor.getOffset() + delta );
     }
@@ -1229,7 +1229,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         zeroPad( fromCursor, childFromOffset, lengthInBytes );
     }
 
-    private void zeroPad( PageCursor fromCursor, int fromOffset, int lengthInBytes )
+    private static void zeroPad( PageCursor fromCursor, int fromOffset, int lengthInBytes )
     {
         fromCursor.setOffset( fromOffset );
         fromCursor.putBytes( lengthInBytes, (byte) 0 );
@@ -1522,7 +1522,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return bytesKeyOffset() + SIZE_PAGE_REFERENCE;
     }
 
-    private int childSize()
+    private static int childSize()
     {
         return SIZE_PAGE_REFERENCE;
     }

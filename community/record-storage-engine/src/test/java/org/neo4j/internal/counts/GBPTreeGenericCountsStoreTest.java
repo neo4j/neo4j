@@ -726,7 +726,7 @@ class GBPTreeGenericCountsStoreTest
         }
     }
 
-    private int randomTokenId( Random rng )
+    private static int randomTokenId( Random rng )
     {
         // i.e. also include chance for -1 which is the "any" token
         return rng.nextInt( HIGH_TOKEN_ID + 1 ) - 1;
@@ -769,7 +769,7 @@ class GBPTreeGenericCountsStoreTest
                         DEFAULT_DATABASE_NAME, randomMaxCacheSize() );
     }
 
-    private void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )
+    private static void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )
     {
         assertThat( pageCacheTracer.faults() ).isZero();
         assertThat( pageCacheTracer.pins() ).isZero();
@@ -777,7 +777,7 @@ class GBPTreeGenericCountsStoreTest
         assertThat( pageCacheTracer.hits() ).isZero();
     }
 
-    private void assertZeroTracer( CursorContext cursorContext )
+    private static void assertZeroTracer( CursorContext cursorContext )
     {
         var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.faults() ).isZero();

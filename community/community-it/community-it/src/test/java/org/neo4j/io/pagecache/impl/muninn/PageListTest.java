@@ -1745,7 +1745,7 @@ public class PageListTest
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
         assertThat( pageList.getFilePageId( pageRef ) ).isEqualTo( filePageId );
         assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( swapperId );
-        assertTrue( pageList.isLoaded( pageRef ) );
+        assertTrue( PageList.isLoaded( pageRef ) );
         assertTrue( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
     }
 
@@ -1762,7 +1762,7 @@ public class PageListTest
         pageList.fault( pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL );
         assertThat( pageList.getFilePageId( pageRef ) ).isEqualTo( filePageId );
         assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( swapperId );
-        assertTrue( pageList.isLoaded( pageRef ) );
+        assertTrue( PageList.isLoaded( pageRef ) );
         assertTrue( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
     }
 
@@ -1795,7 +1795,7 @@ public class PageListTest
         }
         assertThat( pageList.getFilePageId( pageRef ) ).isEqualTo( filePageId );
         assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( 0 ); // 0 means not bound
-        assertTrue( pageList.isLoaded( pageRef ) );
+        assertTrue( PageList.isLoaded( pageRef ) );
         assertFalse( pageList.isBoundTo( pageRef, swapperId, filePageId ) );
     }
 
@@ -1884,7 +1884,7 @@ public class PageListTest
     {
         init( pageId );
 
-        assertFalse( pageList.isLoaded( pageRef ) );
+        assertFalse( PageList.isLoaded( pageRef ) );
     }
 
     @ParameterizedTest( name = "pageRef = {0}" )
@@ -1936,8 +1936,8 @@ public class PageListTest
         pageList.unlockExclusive( pageRef );
         doFault( (short) 1, 42 );
 
-        assertFalse( pageList.isLoaded( prevPageRef ) );
-        assertFalse( pageList.isLoaded( nextPageRef ) );
+        assertFalse( PageList.isLoaded( prevPageRef ) );
+        assertFalse( PageList.isLoaded( nextPageRef ) );
         assertFalse( pageList.isBoundTo( prevPageRef, (short) 1, 42 ) );
         assertFalse( pageList.isBoundTo( prevPageRef, (short) 0, 0 ) );
         assertFalse( pageList.isBoundTo( nextPageRef, (short) 1, 42 ) );
@@ -1953,8 +1953,8 @@ public class PageListTest
         pageList.unlockExclusive( pageRef );
         doFailedFault( (short) 1, 42 );
 
-        assertFalse( pageList.isLoaded( prevPageRef ) );
-        assertFalse( pageList.isLoaded( nextPageRef ) );
+        assertFalse( PageList.isLoaded( prevPageRef ) );
+        assertFalse( PageList.isLoaded( nextPageRef ) );
         assertFalse( pageList.isBoundTo( prevPageRef, (short) 1, 42 ) );
         assertFalse( pageList.isBoundTo( prevPageRef, (short) 0, 0 ) );
         assertFalse( pageList.isBoundTo( nextPageRef, (short) 1, 42 ) );
@@ -2045,9 +2045,9 @@ public class PageListTest
         int swapperId = swappers.allocate( DUMMY_SWAPPER );
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
-        assertTrue( pageList.isLoaded( pageRef ) );
+        assertTrue( PageList.isLoaded( pageRef ) );
         pageList.tryEvict( pageRef, EvictionRunEvent.NULL );
-        assertFalse( pageList.isLoaded( pageRef ) );
+        assertFalse( PageList.isLoaded( pageRef ) );
     }
 
     @ParameterizedTest( name = "pageRef = {0}" )
@@ -2061,11 +2061,11 @@ public class PageListTest
         doFault( swapperId, 42 ); // page now bound & exclusively locked
         pageList.unlockExclusive( pageRef ); // no longer exclusively locked; can now be evicted
         assertTrue( pageList.isBoundTo( pageRef, (short) 1, 42 ) );
-        assertTrue( pageList.isLoaded( pageRef ) );
+        assertTrue( PageList.isLoaded( pageRef ) );
         assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( 1 );
         pageList.tryEvict( pageRef, EvictionRunEvent.NULL );
         assertFalse( pageList.isBoundTo( pageRef, (short) 1, 42 ) );
-        assertFalse( pageList.isLoaded( pageRef ) );
+        assertFalse( PageList.isLoaded( pageRef ) );
         assertThat( pageList.getSwapperId( pageRef ) ).isEqualTo( 0 );
     }
 
@@ -2222,7 +2222,7 @@ public class PageListTest
         // there should be no lock preventing us from taking an exclusive lock
         assertTrue( pageList.tryExclusiveLock( pageRef ) );
         // page should still be loaded...
-        assertTrue( pageList.isLoaded( pageRef ) );
+        assertTrue( PageList.isLoaded( pageRef ) );
         // ... and bound
         assertTrue( pageList.isBoundTo( pageRef, swapperId, 42 ) );
         // ... and modified

@@ -325,7 +325,7 @@ public class CsvInput implements Input
         return estimates;
     }
 
-    private long propertyPreAllocateRounding( long initialEstimatedPropertyStoreSize )
+    private static long propertyPreAllocateRounding( long initialEstimatedPropertyStoreSize )
     {
         if ( !IS_OS_LINUX )
         {
@@ -417,19 +417,19 @@ public class CsvInput implements Input
         @Override
         public void duplicateSourceFile( String sourceFile )
         {
-            out.println( String.format( "WARN: source file %s has been specified multiple times, this may result in unwanted duplicates", sourceFile ) );
+            out.printf( "WARN: source file %s has been specified multiple times, this may result in unwanted duplicates%n", sourceFile );
         }
 
         @Override
         public void noNodeLabelsSpecified( String sourceFile )
         {
-            out.println( String.format( "WARN: file group with header file %s specifies no node labels, which could be a mistake", sourceFile ) );
+            out.printf( "WARN: file group with header file %s specifies no node labels, which could be a mistake%n", sourceFile );
         }
 
         @Override
         public void noRelationshipTypeSpecified( String sourceFile )
         {
-            out.println( String.format( "WARN: file group with header file %s specifies no relationship type, which could be a mistake", sourceFile ) );
+            out.printf( "WARN: file group with header file %s specifies no relationship type, which could be a mistake%n", sourceFile );
         }
     }
 }

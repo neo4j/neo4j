@@ -338,7 +338,7 @@ class BlockStorageTest
         assertEquals( 300, entryCountForThreeFactorsMergeFactorBlocks );
     }
 
-    private Iterable<List<BlockEntry<MutableLong,MutableLong>>> asOneBigBlock( List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
+    private static Iterable<List<BlockEntry<MutableLong,MutableLong>>> asOneBigBlock( List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
     {
         List<BlockEntry<MutableLong,MutableLong>> all = new ArrayList<>();
         for ( List<BlockEntry<MutableLong,MutableLong>> expectedBlock : expectedBlocks )
@@ -412,12 +412,12 @@ class BlockStorageTest
         return key;
     }
 
-    private void sort( List<BlockEntry<MutableLong,MutableLong>> entries )
+    private static void sort( List<BlockEntry<MutableLong,MutableLong>> entries )
     {
         entries.sort( comparingLong( p -> p.key().longValue() ) );
     }
 
-    private void assertContents( SimpleLongLayout layout, BlockStorage<MutableLong,MutableLong> storage,
+    private static void assertContents( SimpleLongLayout layout, BlockStorage<MutableLong,MutableLong> storage,
             Iterable<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
             throws IOException
     {

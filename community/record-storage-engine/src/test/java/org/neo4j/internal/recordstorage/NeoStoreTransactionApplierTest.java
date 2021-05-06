@@ -146,7 +146,7 @@ class NeoStoreTransactionApplierTest
         when( transactionToApply.subject() ).thenReturn( AUTH_DISABLED );
     }
 
-    private <T extends CommonAbstractStore> T mockedStore( Class<T> cls, IdType idType )
+    private static <T extends CommonAbstractStore> T mockedStore( Class<T> cls, IdType idType )
     {
         T store = mock( cls );
         when( store.getIdType() ).thenReturn( idType );
@@ -910,7 +910,7 @@ class NeoStoreTransactionApplierTest
 
     }
 
-    private Command.MetaDataCommand createMetaDataCommand( MetaDataStore.Position position, long toValue )
+    private static Command.MetaDataCommand createMetaDataCommand( MetaDataStore.Position position, long toValue )
     {
         int id = position.id();
 
@@ -936,7 +936,7 @@ class NeoStoreTransactionApplierTest
         return applier;
     }
 
-    private TransactionApplierFactory newApplierFacade( TransactionApplierFactory... appliers )
+    private static TransactionApplierFactory newApplierFacade( TransactionApplierFactory... appliers )
     {
         Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
         return new TransactionApplierFactoryChain( () -> new EnqueuingIdUpdateListener( idGeneratorWorkSyncs, PageCacheTracer.NULL ), appliers );

@@ -118,7 +118,7 @@ public abstract class AbstractLogTailScanner
                         "integrity might be compromised, please consider restoring from a consistent backup instead.", t );
     }
 
-    private void verifyLastFile( long highestLogVersion, long version, LogPosition logPosition, long logFileSize, long channelLeftovers )
+    private static void verifyLastFile( long highestLogVersion, long version, LogPosition logPosition, long logFileSize, long channelLeftovers )
     {
         if ( version != highestLogVersion )
         {

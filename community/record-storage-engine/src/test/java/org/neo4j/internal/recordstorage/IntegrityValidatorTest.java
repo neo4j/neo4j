@@ -78,7 +78,7 @@ class IntegrityValidatorTest
         record.setInUse( false );
 
         // When
-        assertThrows( Exception.class, () -> validator.validateNodeRecord( record ) );
+        assertThrows( Exception.class, () -> IntegrityValidator.validateNodeRecord( record ) );
     }
 
     @Test

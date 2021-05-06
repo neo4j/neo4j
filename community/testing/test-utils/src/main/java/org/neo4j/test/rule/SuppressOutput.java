@@ -313,7 +313,7 @@ public final class SuppressOutput implements TestRule
         releaseVoices( voices, failure );
     }
 
-    private void releaseVoices( Voice[] voices, boolean failure )
+    private static void releaseVoices( Voice[] voices, boolean failure )
     {
         List<Throwable> failures = null;
         try

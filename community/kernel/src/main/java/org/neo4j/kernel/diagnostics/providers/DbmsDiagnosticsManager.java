@@ -106,7 +106,7 @@ public class DbmsDiagnosticsManager
         }
     }
 
-    private void dumpConciseDiagnostics( Collection<? extends DatabaseContext> databaseContexts, Log log )
+    private static void dumpConciseDiagnostics( Collection<? extends DatabaseContext> databaseContexts, Log log )
     {
         var startedDbs = databaseContexts.stream().map( DatabaseContext::database ).filter( Database::isStarted ).collect( toList() );
         var stoppedDbs = databaseContexts.stream().map( DatabaseContext::database ).filter( not( Database::isStarted ) ).collect( toList() );
@@ -118,7 +118,7 @@ public class DbmsDiagnosticsManager
         } );
     }
 
-    private void logDatabasesState( DiagnosticsLogger log, List<Database> databases, String state )
+    private static void logDatabasesState( DiagnosticsLogger log, List<Database> databases, String state )
     {
         DiagnosticsManager.section( log, state + " Databases" );
         if ( databases.isEmpty() )
@@ -137,7 +137,7 @@ public class DbmsDiagnosticsManager
         logDatabases( log, lastDbs );
     }
 
-    private void logDatabases( DiagnosticsLogger log, List<Database> subList )
+    private static void logDatabases( DiagnosticsLogger log, List<Database> subList )
     {
         log.log( subList
                 .stream()
@@ -158,7 +158,7 @@ public class DbmsDiagnosticsManager
         } );
     }
 
-    private void dumpDatabaseDiagnostics( Database database, Log log, boolean checkStatus )
+    private static void dumpDatabaseDiagnostics( Database database, Log log, boolean checkStatus )
     {
         dumpAsSingleMessageWithDbPrefix( log, stringJoiner ->
         {
@@ -185,12 +185,12 @@ public class DbmsDiagnosticsManager
         }, database.getNamedDatabaseId() );
     }
 
-    private void dumpAsSingleMessageWithDbPrefix( Log log, Consumer<StringJoiner> dumpFunction, NamedDatabaseId db )
+    private static void dumpAsSingleMessageWithDbPrefix( Log log, Consumer<StringJoiner> dumpFunction, NamedDatabaseId db )
     {
         dumpAsSingleMessageWithPrefix( log, dumpFunction, "[" + db.logPrefix() + "] " );
     }
 
-    private void dumpAsSingleMessage( Log log, Consumer<StringJoiner> dumpFunction )
+    private static void dumpAsSingleMessage( Log log, Consumer<StringJoiner> dumpFunction )
     {
                 dumpAsSingleMessageWithPrefix( log, dumpFunction, "" );
     }
@@ -198,7 +198,7 @@ public class DbmsDiagnosticsManager
     /**
      * Messages will be buffered and logged as one single message to make sure that diagnostics are grouped together in the log.
      */
-    private void dumpAsSingleMessageWithPrefix( Log log, Consumer<StringJoiner> dumpFunction, String prefix )
+    private static void dumpAsSingleMessageWithPrefix( Log log, Consumer<StringJoiner> dumpFunction, String prefix )
     {
         // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
         // This is first and foremost useful for speeding up testing.
@@ -218,7 +218,7 @@ public class DbmsDiagnosticsManager
         log.log( format( "Database is %s.", database.isStarted() ? "started" : "stopped" ) );
     }
 
-    private void dumpDatabaseSectionName( Database database, DiagnosticsLogger log )
+    private static void dumpDatabaseSectionName( Database database, DiagnosticsLogger log )
     {
         DiagnosticsManager.section( log, "Database: " + database.getNamedDatabaseId().name() );
     }

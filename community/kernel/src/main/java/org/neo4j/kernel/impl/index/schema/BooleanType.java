@@ -106,7 +106,7 @@ class BooleanType extends Type
         return true;
     }
 
-    void write( GenericKey state, boolean value )
+    static void write( GenericKey state, boolean value )
     {
         state.long0 = value ? TRUE : FALSE;
     }

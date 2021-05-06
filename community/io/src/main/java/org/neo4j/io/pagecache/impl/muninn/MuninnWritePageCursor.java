@@ -47,7 +47,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             }
             else
             {
-                pagedFile.unlockWrite( pageRef );
+                PageList.unlockWrite( pageRef );
             }
         }
         clearPageCursorState();
@@ -55,7 +55,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
 
     private void eagerlyFlushAndUnlockPage( long pageRef )
     {
-        long flushStamp = pagedFile.unlockWriteAndTryTakeFlushLock( pageRef );
+        long flushStamp = PageList.unlockWriteAndTryTakeFlushLock( pageRef );
         if ( flushStamp != 0 )
         {
             boolean success = false;
@@ -65,7 +65,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
             }
             finally
             {
-                pagedFile.unlockFlush( pageRef, flushStamp, success );
+                PageList.unlockFlush( pageRef, flushStamp, success );
             }
         }
     }
@@ -103,13 +103,13 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     @Override
     protected boolean tryLockPage( long pageRef )
     {
-        return pagedFile.tryWriteLock( pageRef );
+        return PageList.tryWriteLock( pageRef );
     }
 
     @Override
     protected void unlockPage( long pageRef )
     {
-        pagedFile.unlockWrite( pageRef );
+        PageList.unlockWrite( pageRef );
     }
 
     @Override
@@ -124,14 +124,14 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
         assertPagedFileStillMappedAndGetIdOfLastPage();
-        pagedFile.incrementUsage( pageRef );
-        pagedFile.setLastModifiedTxId( pageRef, versionContext.committingTransactionId() );
+        PageList.incrementUsage( pageRef );
+        PageList.setLastModifiedTxId( pageRef, versionContext.committingTransactionId() );
     }
 
     @Override
     protected void convertPageFaultLock( long pageRef )
     {
-        pagedFile.unlockExclusiveAndTakeWriteLock( pageRef );
+        PageList.unlockExclusiveAndTakeWriteLock( pageRef );
     }
 
     @Override

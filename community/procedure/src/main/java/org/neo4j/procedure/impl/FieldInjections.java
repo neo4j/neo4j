@@ -107,7 +107,7 @@ class FieldInjections
         return new FieldSetter( field, provider );
     }
 
-    private void assertValidForInjection( Class<?> cls, Field field ) throws ProcedureException
+    private static void assertValidForInjection( Class<?> cls, Field field ) throws ProcedureException
     {
         if ( !field.isAnnotationPresent( Context.class ) )
         {

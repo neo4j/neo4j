@@ -134,7 +134,7 @@ class DefaultNonUniqueIndexSamplerTest
         assertSampledValues( sampler, 1, 1, 1 );
     }
 
-    private void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues,
+    private static void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues,
             long expectedSampledSize )
     {
         IndexSample sample = sampler.sample( NULL );

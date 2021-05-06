@@ -43,7 +43,7 @@ public class EstimationSanityChecker
                 monitor::mayExceedRelationshipIdCapacity );
     }
 
-    private void sanityCheckEstimateWithMaxId( long estimate, long max, BiConsumer<Long,Long> reporter )
+    private static void sanityCheckEstimateWithMaxId( long estimate, long max, BiConsumer<Long,Long> reporter )
     {
         if ( estimate > max * 0.8 )
         {

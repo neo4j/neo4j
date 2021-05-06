@@ -60,7 +60,7 @@ class LocalTimeArrayType extends AbstractArrayType<LocalTime>
         key.long0Array = ensureBigEnough( key.long0Array, length );
     }
 
-    void write( GenericKey state, int offset, long nanoOfDay )
+    static void write( GenericKey state, int offset, long nanoOfDay )
     {
         state.long0Array[offset] = nanoOfDay;
     }

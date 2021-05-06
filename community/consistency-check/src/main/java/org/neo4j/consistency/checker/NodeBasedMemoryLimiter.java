@@ -137,7 +137,7 @@ public class NodeBasedMemoryLimiter extends PrefetchingIterator<LongRange>
         return builder.toString();
     }
 
-    boolean isFirst( LongRange range )
+    static boolean isFirst( LongRange range )
     {
         return range.from() == 0;
     }

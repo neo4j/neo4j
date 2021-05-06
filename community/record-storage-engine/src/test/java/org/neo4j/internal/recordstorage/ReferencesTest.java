@@ -23,7 +23,6 @@ import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.IntToLongFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,7 +63,7 @@ class ReferencesTest
         testLongFlag( DENSE, RelationshipReferenceEncoding::encodeDense );
     }
 
-    private void testLongFlag( RelationshipReferenceEncoding flag, LongToLongFunction encoder )
+    private static void testLongFlag( RelationshipReferenceEncoding flag, LongToLongFunction encoder )
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -73,18 +72,6 @@ class ReferencesTest
             assertNotEquals( flag, parseEncoding( reference ) );
             assertEquals( flag, parseEncoding( encoder.applyAsLong( reference ) ) );
             assertTrue( encoder.applyAsLong( reference ) < 0, "encoded reference is negative" );
-        }
-    }
-
-    private void testIntFlag( RelationshipReferenceEncoding flag, IntToLongFunction encoder )
-    {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
-        {
-            int token = random.nextInt( Integer.MAX_VALUE );
-            assertNotEquals( flag, parseEncoding( token ) );
-            assertEquals( flag, parseEncoding( encoder.applyAsLong( token ) ) );
-            assertTrue( encoder.applyAsLong( token ) < 0, "encoded reference is negative" );
         }
     }
 }

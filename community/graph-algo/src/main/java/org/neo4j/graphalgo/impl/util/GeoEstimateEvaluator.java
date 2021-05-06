@@ -58,7 +58,7 @@ public class GeoEstimateEvaluator implements EstimateEvaluator<Double>
         };
     }
 
-    private double distance( double latitude1, double longitude1,
+    private static double distance( double latitude1, double longitude1,
             double latitude2, double longitude2 )
     {
         latitude1 = Math.toRadians( latitude1 );

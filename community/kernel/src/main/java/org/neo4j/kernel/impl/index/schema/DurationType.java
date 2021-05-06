@@ -129,7 +129,7 @@ class DurationType extends Type
         return true;
     }
 
-    void write( GenericKey state, long months, long days, long totalAvgSeconds, int nanos )
+    static void write( GenericKey state, long months, long days, long totalAvgSeconds, int nanos )
     {
         state.long0 = totalAvgSeconds;
         state.long1 = nanos;

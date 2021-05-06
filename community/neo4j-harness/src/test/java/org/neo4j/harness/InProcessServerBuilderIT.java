@@ -394,7 +394,7 @@ class InProcessServerBuilderIT
         }
     }
 
-    private void trustAllSSLCerts() throws NoSuchAlgorithmException, KeyManagementException
+    private static void trustAllSSLCerts() throws NoSuchAlgorithmException, KeyManagementException
     {
         TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager()

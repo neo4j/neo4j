@@ -116,7 +116,7 @@ class DurationValueTest
         testDurationToString( -78036, -143000000, "PT-21H-40M-36.143S" );
     }
 
-    private void testDurationToString( long seconds, int nanos, String expectedValue )
+    private static void testDurationToString( long seconds, int nanos, String expectedValue )
     {
         assertEquals( expectedValue, duration( 0, 0, seconds, nanos ).prettyPrint() );
     }
@@ -220,7 +220,7 @@ class DurationValueTest
         assertEquals( duration( 0, 0, 50, 0 ), parse( "PT1M-10S" ) );
     }
 
-    private void assertParsesOne( String prefix, String suffix, int months, int days, int seconds )
+    private static void assertParsesOne( String prefix, String suffix, int months, int days, int seconds )
     {
         assertEquals( duration( months, days, seconds, 0 ), parse( prefix + "1" + suffix ) );
         assertEquals( duration( months, days, seconds, 0 ), parse( "+" + prefix + "1" + suffix ) );
@@ -668,7 +668,7 @@ class DurationValueTest
         assertConstructorThrows( months, 0, seconds - 1, 0 );
     }
 
-    private void assertConstructorThrows( long months, long days, long seconds, int nanos )
+    private static void assertConstructorThrows( long months, long days, long seconds, int nanos )
     {
         InvalidArgumentException e = assertThrows( InvalidArgumentException.class, () -> duration( months, days, seconds, nanos ) );
 

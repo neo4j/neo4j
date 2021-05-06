@@ -272,7 +272,7 @@ public class ConsistencyCheckService
         return Result.success( reportFile, summary );
     }
 
-    private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem, MemoryTracker memoryTracker )
+    private static void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
         try

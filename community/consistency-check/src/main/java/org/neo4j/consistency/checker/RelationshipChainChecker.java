@@ -373,7 +373,7 @@ class RelationshipChainChecker implements Checker
         }
     }
 
-    private void queueRelationshipCheck( ArrayBlockingQueue<BatchedRelationshipRecords>[] threadQueues, BatchedRelationshipRecords[] threadBatches,
+    private static void queueRelationshipCheck( ArrayBlockingQueue<BatchedRelationshipRecords>[] threadQueues, BatchedRelationshipRecords[] threadBatches,
             RelationshipRecord relationshipCursor, int thread ) throws InterruptedException
     {
         if ( !threadBatches[thread].hasMoreSpace() )
@@ -384,7 +384,8 @@ class RelationshipChainChecker implements Checker
         threadBatches[thread].add( relationshipCursor );
     }
 
-    private void processLastRelationshipChecks( ArrayBlockingQueue<BatchedRelationshipRecords>[] threadQueues, BatchedRelationshipRecords[] threadBatches,
+    private static void processLastRelationshipChecks( ArrayBlockingQueue<BatchedRelationshipRecords>[] threadQueues,
+            BatchedRelationshipRecords[] threadBatches,
             AtomicBoolean end ) throws Exception
     {
         for ( int i = 0; i < threadBatches.length; i++ )

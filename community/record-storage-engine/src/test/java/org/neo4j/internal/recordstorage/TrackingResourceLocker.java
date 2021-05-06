@@ -154,13 +154,13 @@ class TrackingResourceLocker implements ResourceLocker
         return locks.stream();
     }
 
-    private void gatherActiveLocks( List<ActiveLock> locks, HashMap<ResourceType,MutableSortedBag<Long>> locksByType, LockType lockType )
+    private static void gatherActiveLocks( List<ActiveLock> locks, HashMap<ResourceType,MutableSortedBag<Long>> locksByType, LockType lockType )
     {
         locksByType.forEach(
                 ( resourceType, resourceIds ) -> resourceIds.forEach( resourceId -> locks.add( new ActiveLock( resourceType, lockType, -1, resourceId ) ) ) );
     }
 
-    private MutableSortedBag<Long> locks( ResourceType resourceType, HashMap<ResourceType,MutableSortedBag<Long>> locksByType )
+    private static MutableSortedBag<Long> locks( ResourceType resourceType, HashMap<ResourceType,MutableSortedBag<Long>> locksByType )
     {
         return locksByType.computeIfAbsent( resourceType, type -> SortedBags.mutable.empty() );
     }

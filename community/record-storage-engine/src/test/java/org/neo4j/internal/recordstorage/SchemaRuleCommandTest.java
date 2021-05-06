@@ -250,7 +250,7 @@ class SchemaRuleCommandTest
      * to an index that it owns. However, the {@link RandomSchema} might generate such {@link ConstraintDescriptor ConstraintDescriptors},
      * so we have to filter them out.
      */
-    private Predicate<? super SchemaRule> indexBackedConstraintsWithoutIndexes()
+    private static Predicate<? super SchemaRule> indexBackedConstraintsWithoutIndexes()
     {
         return r ->
         {

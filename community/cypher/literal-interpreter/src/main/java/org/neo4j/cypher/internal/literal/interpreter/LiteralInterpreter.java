@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -77,7 +78,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         NULL>
 {
 
-    public static ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
+    public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
     public static final String LONG_MIN_VALUE_DECIMAL_STRING = Long.toString( Long.MIN_VALUE ).substring( 1 );
     public static final String LONG_MIN_VALUE_HEXADECIMAL_STRING = "0x" + Long.toString( Long.MIN_VALUE, 16 ).substring( 1 );
     public static final String LONG_MIN_VALUE_OCTAL_STRING_OLD_SYNTAX = "0" + Long.toString( Long.MIN_VALUE, 8 ).substring( 1 );
@@ -830,7 +831,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     {
         if ( namespace.isEmpty() )
         {
-            switch ( name.toLowerCase() )
+            switch ( name.toLowerCase( Locale.ROOT ) )
             {
             case "date":
                 return createTemporalValue( arguments, name, DateValue::now, DateValue::parse, DateValue::build );
@@ -854,7 +855,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         throw new UnsupportedOperationException( "functionInvocation is not a literal" );
     }
 
-    private PointValue createPoint( List<Object> arguments )
+    private static PointValue createPoint( List<Object> arguments )
     {
         if ( arguments.size() == 1 )
         {
@@ -865,7 +866,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
             }
             else if ( point instanceof Map )
             {
-                Map<String,?> pointAsMap = (Map) point;
+                @SuppressWarnings( "unchecked" )
+                Map<String,?> pointAsMap = (Map<String,?>) point;
                 return PointValue.fromMap( asMapValue( pointAsMap ) );
             }
             else
@@ -881,7 +883,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         }
     }
 
-    private <T> T createTemporalValue( List<Object> arguments, String functionName, Function<Clock,T> onEmpty, Function<String,T> onString,
+    private static <T> T createTemporalValue( List<Object> arguments, String functionName, Function<Clock,T> onEmpty, Function<String,T> onString,
                                        BiFunction<MapValue,Supplier<ZoneId>,T> onMap )
     {
         if ( arguments.isEmpty() )
@@ -901,7 +903,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
             }
             else if ( date instanceof Map )
             {
-                MapValue dateMap = asMapValue( (Map) date );
+                @SuppressWarnings( "unchecked" )
+                MapValue dateMap = asMapValue( (Map<String,?>) date );
                 return onMap.apply( dateMap, () -> DEFAULT_ZONE_ID );
             }
         }
@@ -910,7 +913,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
                 "Function `" + functionName + "` did not get expected number of arguments: expected 0 or 1 argument, got " + arguments.size() + " arguments." );
     }
 
-    private DurationValue createDurationValue( List<Object> arguments )
+    private static DurationValue createDurationValue( List<Object> arguments )
     {
         if ( arguments.size() == 1 )
         {
@@ -921,7 +924,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
             }
             else if ( duration instanceof Map )
             {
-                MapValue dateMap = asMapValue( (Map) duration );
+                @SuppressWarnings( "unchecked" )
+                MapValue dateMap = asMapValue( (Map<String,?>) duration );
                 return DurationValue.build( dateMap );
             }
         }

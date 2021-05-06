@@ -118,7 +118,7 @@ class NodeRepresentationTest
         assertUriMatches( uriPattern( "/labels" ), noderep( 1234 ).labelsUriTemplate() );
     }
 
-    private NodeRepresentation noderep( long id )
+    private static NodeRepresentation noderep( long id )
     {
         return new NodeRepresentation( node( id, properties(), "Label" ) );
     }

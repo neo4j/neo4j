@@ -48,7 +48,7 @@ import org.neo4j.values.storable.Value;
 
 public class SchemaCalculator
 {
-    private Map<Integer,String> propertyIdToPropertyNameMapping;
+    private final Map<Integer,String> propertyIdToPropertyNameMapping;
 
     private final MutableIntSet emptyPropertyIdSet = IntSets.mutable.empty();
 
@@ -307,7 +307,7 @@ public class SchemaCalculator
         }
     }
 
-    private <X, Y> void updateValueTypeInMapping( Value currentValue, Pair<X,Y> key, Map<Pair<X,Y>,ValueTypeListHelper> mappingToUpdate )
+    private static <X, Y> void updateValueTypeInMapping( Value currentValue, Pair<X,Y> key, Map<Pair<X,Y>,ValueTypeListHelper> mappingToUpdate )
     {
         ValueTypeListHelper helper = mappingToUpdate.get( key );
         if ( helper == null )
@@ -321,7 +321,7 @@ public class SchemaCalculator
         }
     }
 
-    private void addNamesToCollection( Iterator<NamedToken> labelIterator, Map<Integer,String> collection )
+    private static void addNamesToCollection( Iterator<NamedToken> labelIterator, Map<Integer,String> collection )
     {
         while ( labelIterator.hasNext() )
         {

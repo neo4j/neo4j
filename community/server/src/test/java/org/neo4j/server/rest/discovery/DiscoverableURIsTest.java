@@ -217,7 +217,7 @@ class DiscoverableURIsTest
         verify( consumer ).accept( "bolt_routing", "neo4j://myCat.com:7687" );
     }
 
-    private Config configWithBoltEnabled()
+    private static Config configWithBoltEnabled()
     {
         return Config.newBuilder().set( BoltConnector.enabled, true ).build();
     }

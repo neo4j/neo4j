@@ -76,7 +76,7 @@ abstract class DeadlockCompatibility extends LockCompatibilityTestSupport
                 acquireShared( clientA, LockTracer.NONE, NODE, 2L ) );
     }
 
-    private void assertDetectsDeadlock( LockCommand... commands )
+    private static void assertDetectsDeadlock( LockCommand... commands )
     {
         List<Future<Void>> calls = Arrays.stream( commands )
                 .map( LockCommand::call )
@@ -98,7 +98,7 @@ abstract class DeadlockCompatibility extends LockCompatibilityTestSupport
                 "but none of the clients reported any deadlocks." );
     }
 
-    private boolean tryDetectDeadlock( Future<Void> call )
+    private static boolean tryDetectDeadlock( Future<Void> call )
     {
         try
         {

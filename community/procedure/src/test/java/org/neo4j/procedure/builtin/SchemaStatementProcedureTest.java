@@ -183,13 +183,13 @@ class SchemaStatementProcedureTest
         assertFalse( iter.hasNext() );
     }
 
-    private IndexDescriptor indexBoundToConstraint( IndexDescriptor index, ConstraintDescriptor constraint )
+    private static IndexDescriptor indexBoundToConstraint( IndexDescriptor index, ConstraintDescriptor constraint )
     {
         index = index.withOwningConstraintId( constraint.getId() );
         return index.withName( constraint.getName() );
     }
 
-    private ConstraintDescriptor indexBackedConstraint( IndexDescriptor backingIndex )
+    private static ConstraintDescriptor indexBackedConstraint( IndexDescriptor backingIndex )
     {
         return ConstraintDescriptorFactory.uniqueForSchema( backingIndex.schema() )
                 .withOwnedIndexId( backingIndex.getId() )
@@ -197,12 +197,12 @@ class SchemaStatementProcedureTest
                 .withName( CONSTRAINT_NAME );
     }
 
-    private IndexDescriptor someIndex()
+    private static IndexDescriptor someIndex()
     {
         return forSchema( forLabel( 1, 1 ) ).withName( "index" ).materialise( 1 );
     }
 
-    private IndexDescriptor someOrphanedIndex()
+    private static IndexDescriptor someOrphanedIndex()
     {
         IndexDescriptor index = uniqueForSchema( forLabel( 1, 1 ) ).withName( "index" ).materialise( 1 );
         assertTrue( index.isUnique() );
@@ -210,17 +210,17 @@ class SchemaStatementProcedureTest
         return index;
     }
 
-    private SchemaReadCore getSchemaReadCore( IndexDescriptor index, InternalIndexState indexState ) throws IndexNotFoundKernelException
+    private static SchemaReadCore getSchemaReadCore( IndexDescriptor index, InternalIndexState indexState ) throws IndexNotFoundKernelException
     {
         return getSchemaReadCore( null, index, indexState );
     }
 
-    private SchemaReadCore getSchemaReadCore( ConstraintDescriptor constraint ) throws IndexNotFoundKernelException
+    private static SchemaReadCore getSchemaReadCore( ConstraintDescriptor constraint ) throws IndexNotFoundKernelException
     {
         return getSchemaReadCore( constraint, null, null );
     }
 
-    private SchemaReadCore getSchemaReadCore( ConstraintDescriptor constraint, IndexDescriptor index, InternalIndexState indexState )
+    private static SchemaReadCore getSchemaReadCore( ConstraintDescriptor constraint, IndexDescriptor index, InternalIndexState indexState )
             throws IndexNotFoundKernelException
     {
         SchemaReadCore schemaReadCore = mock( SchemaReadCore.class );

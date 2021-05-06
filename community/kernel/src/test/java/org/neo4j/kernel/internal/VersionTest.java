@@ -77,7 +77,7 @@ class VersionTest
         }
     }
 
-    private Version version( String version )
+    private static Version version( String version )
     {
         return new Version( "test-component", version );
     }

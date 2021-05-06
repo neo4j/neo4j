@@ -754,17 +754,17 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         }
     }
 
-    private long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private static long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         return pointer( TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
-    private long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private static long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         return pointer( TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
-    private long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private static long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         return pointer( TreeNode.successor( cursor, stableGeneration, unstableGeneration ) );
     }

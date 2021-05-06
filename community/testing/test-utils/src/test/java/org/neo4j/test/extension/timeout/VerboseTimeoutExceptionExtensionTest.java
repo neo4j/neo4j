@@ -57,12 +57,12 @@ class VerboseTimeoutExceptionExtensionTest
         assertTestGetsNoThreadDump( "doNotDumpOnDeepException" );
     }
 
-    void assertTestGetsThreadDump( String test )
+    static void assertTestGetsThreadDump( String test )
     {
         assertThreadDumpEvent( executeTest( test ), true );
     }
 
-    void assertTestGetsNoThreadDump( String test )
+    static void assertTestGetsNoThreadDump( String test )
     {
         assertThreadDumpEvent( executeTest( test ), false );
     }

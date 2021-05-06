@@ -80,7 +80,7 @@ class IndexDefineCommandTest
         assertThrows( AssertionError.class, () -> command.serialize( channel ) );
     }
 
-    private IndexDefineCommand initIndexDefineCommand( int nbrOfEntries )
+    private static IndexDefineCommand initIndexDefineCommand( int nbrOfEntries )
     {
         IndexDefineCommand command = new IndexDefineCommand();
         MutableObjectIntMap<String> indexNames = initMap( nbrOfEntries );
@@ -89,7 +89,7 @@ class IndexDefineCommandTest
         return command;
     }
 
-    private MutableObjectIntMap<String> initMap( int nbrOfEntries )
+    private static MutableObjectIntMap<String> initMap( int nbrOfEntries )
     {
         MutableObjectIntMap<String> toReturn = new ObjectIntHashMap<>();
         while ( nbrOfEntries-- > 0 )

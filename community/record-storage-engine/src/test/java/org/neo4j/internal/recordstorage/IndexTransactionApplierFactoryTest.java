@@ -130,20 +130,20 @@ class IndexTransactionApplierFactoryTest
         verifyNoMoreInteractions( indexUpdateListener );
     }
 
-    private IndexDescriptor uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
+    private static IndexDescriptor uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
     {
         final IndexProviderDescriptor indexProvider = new IndexProviderDescriptor( providerKey, providerVersion );
         return IndexPrototype.uniqueForSchema( schema, indexProvider ).withName( "constraint_" + id )
                 .materialise( id ).withOwningConstraintId( owningConstraint );
     }
 
-    private SchemaRecord asSchemaRecord( SchemaRule rule, boolean inUse )
+    private static SchemaRecord asSchemaRecord( SchemaRule rule, boolean inUse )
     {
         // Only used to transfer
         return new SchemaRecord( rule.getId() ).initialize( inUse, NO_NEXT_PROPERTY.longValue() );
     }
 
-    private NodeCommand node( long nodeId )
+    private static NodeCommand node( long nodeId )
     {
         NodeRecord after = new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
         NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL, INSTANCE );

@@ -257,19 +257,19 @@ class IndexQueryTest
 
     // GEOMETRY RANGE
 
-    private PointValue gps1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -56.7 );
-    private PointValue gps2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -55.7 );
-    private PointValue gps3 = Values.pointValue( CoordinateReferenceSystem.WGS84, -11.0, -55 );
-    private PointValue gps4 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
-    private PointValue gps5 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 56.7 );
-    private PointValue gps6 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 58.7 );
-    private PointValue gps7 = Values.pointValue( CoordinateReferenceSystem.WGS84, 15.6, 59.7 );
-    private PointValue car1 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 );
-    private PointValue car2 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2, 2 );
-    private PointValue car3 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2, 3 );
-    private PointValue car4 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 3, 4 );
-    private PointValue gps1_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.8, 100.0 );
-    private PointValue gps2_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.8, 56.9, 200.0 );
+    private final PointValue gps1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -56.7 );
+    private final PointValue gps2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -55.7 );
+    private final PointValue gps3 = Values.pointValue( CoordinateReferenceSystem.WGS84, -11.0, -55 );
+    private final PointValue gps4 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
+    private final PointValue gps5 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 56.7 );
+    private final PointValue gps6 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 58.7 );
+    private final PointValue gps7 = Values.pointValue( CoordinateReferenceSystem.WGS84, 15.6, 59.7 );
+    private final PointValue car1 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 );
+    private final PointValue car2 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2, 2 );
+    private final PointValue car3 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2, 3 );
+    private final PointValue car4 = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 3, 4 );
+    private final PointValue gps1_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.6, 56.8, 100.0 );
+    private final PointValue gps2_3d = Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 12.8, 56.9, 200.0 );
 
     //TODO: Also insert points which can't be compared e.g. Cartesian and (-100, 100)
 
@@ -526,7 +526,7 @@ class IndexQueryTest
 
     // HELPERS
 
-    private void assertFalseForOtherThings( PropertyIndexQuery p )
+    private static void assertFalseForOtherThings( PropertyIndexQuery p )
     {
         assertFalse( test( p, "other string" ) );
         assertFalse( test( p, "string1" ) );
@@ -538,7 +538,7 @@ class IndexQueryTest
         assertFalse( test( p, null ) );
     }
 
-    private boolean test( PropertyIndexQuery p, Object x )
+    private static boolean test( PropertyIndexQuery p, Object x )
     {
         return p.acceptsValue( x instanceof Value ? (Value)x : Values.of( x ) );
     }

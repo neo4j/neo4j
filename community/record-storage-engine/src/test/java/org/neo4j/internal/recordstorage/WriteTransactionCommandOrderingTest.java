@@ -91,7 +91,7 @@ class WriteTransactionCommandOrderingTest
         commands.accept( element -> ((Command)element).handle( orderVerifyingCommandHandler ) );
     }
 
-    private CommandsToApply transactionRepresentationOf( TransactionRecordState tx )
+    private static CommandsToApply transactionRepresentationOf( TransactionRecordState tx )
             throws TransactionFailureException
     {
         List<StorageCommand> commands = new ArrayList<>();
@@ -99,7 +99,7 @@ class WriteTransactionCommandOrderingTest
         return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
     }
 
-    private TransactionRecordState injectAllPossibleCommands()
+    private static TransactionRecordState injectAllPossibleCommands()
     {
         RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 

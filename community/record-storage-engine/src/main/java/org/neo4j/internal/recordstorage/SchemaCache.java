@@ -442,7 +442,7 @@ public class SchemaCache
             return indexesBySchema.get( SchemaDescriptor.forAnyEntityTokens( entityType ) );
         }
 
-        private <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,
+        private static <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,
                 long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
             Set<T> descriptors = UnifiedSet.newSet();

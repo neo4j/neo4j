@@ -61,7 +61,7 @@ public final class ArrayEncoder
 
     static class ValueEncoder implements ValueWriter<RuntimeException>
     {
-        private StringBuilder builder;
+        private final StringBuilder builder;
 
         ValueEncoder()
         {
@@ -228,27 +228,34 @@ public final class ArrayEncoder
             }
         }
 
-        private char typeChar( ArrayType arrayType )
+        private static char typeChar( ArrayType arrayType )
         {
             switch ( arrayType )
             {
-            case BOOLEAN: return 'Z';
-            case BYTE: return 'D';
-            case SHORT: return 'D';
-            case INT: return 'D';
-            case LONG: return 'D';
-            case FLOAT: return 'D';
-            case DOUBLE: return 'D';
-            case CHAR: return 'L';
-            case STRING: return 'L';
-            case POINT: return 'P';
-            case ZONED_DATE_TIME: return 'T';
-            case LOCAL_DATE_TIME: return 'T';
-            case DATE: return 'T';
-            case ZONED_TIME: return 'T';
-            case LOCAL_TIME: return 'T';
-            case DURATION: return 'A';
-            default: throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
+            case BOOLEAN:
+                return 'Z';
+            case BYTE:
+            case SHORT:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+                return 'D';
+            case CHAR:
+            case STRING:
+                return 'L';
+            case POINT:
+                return 'P';
+            case ZONED_DATE_TIME:
+            case LOCAL_DATE_TIME:
+            case DATE:
+            case ZONED_TIME:
+            case LOCAL_TIME:
+                return 'T';
+            case DURATION:
+                return 'A';
+            default:
+                throw new UnsupportedOperationException( "Not supported array type: " + arrayType );
             }
         }
     }

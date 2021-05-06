@@ -157,7 +157,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         return index;
     }
 
-    private IndexCapability getCapability( IndexDescriptor index )
+    private static IndexCapability getCapability( IndexDescriptor index )
     {
         return new FulltextIndexCapability( isEventuallyConsistent( index ) );
     }

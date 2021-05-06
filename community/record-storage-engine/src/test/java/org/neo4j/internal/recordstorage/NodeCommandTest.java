@@ -268,7 +268,7 @@ class NodeCommandTest
         return labels;
     }
 
-    private Collection<DynamicRecord> emptyAndUnused( Collection<DynamicRecord> dynamicLabelRecords, int type )
+    private static Collection<DynamicRecord> emptyAndUnused( Collection<DynamicRecord> dynamicLabelRecords, int type )
     {
         return dynamicLabelRecords.stream().map( record ->
         {

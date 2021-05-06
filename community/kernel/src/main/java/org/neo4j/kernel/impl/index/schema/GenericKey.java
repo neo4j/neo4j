@@ -414,11 +414,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.DATE ).write( this, epochDay );
+            setType( Types.DATE );
+            DateType.write( this, epochDay );
         }
         else
         {
-            Types.DATE_ARRAY.write( this, currentArrayOffset++, epochDay );
+            DateArrayType.write( this, currentArrayOffset++, epochDay );
         }
     }
 
@@ -427,11 +428,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.LOCAL_TIME ).write( this, nanoOfDay );
+            setType( Types.LOCAL_TIME );
+            LocalTimeType.write( this, nanoOfDay );
         }
         else
         {
-            Types.LOCAL_TIME_ARRAY.write( this, currentArrayOffset++, nanoOfDay );
+            LocalTimeArrayType.write( this, currentArrayOffset++, nanoOfDay );
         }
     }
 
@@ -440,11 +442,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.ZONED_TIME ).write( this, nanosOfDayUTC, offsetSeconds );
+            setType( Types.ZONED_TIME );
+            ZonedTimeType.write( this, nanosOfDayUTC, offsetSeconds );
         }
         else
         {
-            Types.ZONED_TIME_ARRAY.write( this, currentArrayOffset++, nanosOfDayUTC, offsetSeconds );
+            ZonedTimeArrayType.write( this, currentArrayOffset++, nanosOfDayUTC, offsetSeconds );
         }
     }
 
@@ -453,11 +456,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.LOCAL_DATE_TIME ).write( this, epochSecond, nano );
+            setType( Types.LOCAL_DATE_TIME );
+            LocalDateTimeType.write( this, epochSecond, nano );
         }
         else
         {
-            Types.LOCAL_DATE_TIME_ARRAY.write( this, currentArrayOffset++, epochSecond, nano );
+            LocalDateTimeArrayType.write( this, currentArrayOffset++, epochSecond, nano );
         }
     }
 
@@ -482,11 +486,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.ZONED_DATE_TIME ).write( this, epochSecondUTC, nano, zoneId, offsetSeconds );
+            setType( Types.ZONED_DATE_TIME );
+            ZonedDateTimeType.write( this, epochSecondUTC, nano, zoneId, offsetSeconds );
         }
         else
         {
-            Types.ZONED_DATE_TIME_ARRAY.write( this, currentArrayOffset++, epochSecondUTC, nano, zoneId, offsetSeconds );
+            ZonedDateTimeArrayType.write( this, currentArrayOffset++, epochSecondUTC, nano, zoneId, offsetSeconds );
         }
     }
 
@@ -495,11 +500,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.BOOLEAN ).write( this, value );
+            setType( Types.BOOLEAN );
+            BooleanType.write( this, value );
         }
         else
         {
-            Types.BOOLEAN_ARRAY.write( this, currentArrayOffset++, value );
+            BooleanArrayType.write( this, currentArrayOffset++, value );
         }
     }
 
@@ -507,11 +513,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.NUMBER ).write( this, value, numberType );
+            setType( Types.NUMBER );
+            NumberType.write( this, value, numberType );
         }
         else
         {
-            Types.NUMBER_ARRAY.write( this, currentArrayOffset++, value );
+            NumberArrayType.write( this, currentArrayOffset++, value );
         }
     }
 
@@ -584,12 +591,13 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.TEXT ).write( this, bytes, isCharType );
+            setType( Types.TEXT );
+            TextType.write( this, bytes, isCharType );
         }
         else
         {
             // in the array case we've already noted the char/string type in beginArray
-            Types.TEXT_ARRAY.write( this, currentArrayOffset++, bytes );
+            TextArrayType.write( this, currentArrayOffset++, bytes );
         }
         long1 = FALSE; // long1 is dereferenced true/false
     }
@@ -608,7 +616,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         {
             setType( Types.GEOMETRY );
             updateCurve( crs.getTable().getTableId(), crs.getCode() );
-            Types.GEOMETRY.write( this, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
+            GeometryType.write( this, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
         }
         else
         {
@@ -622,7 +630,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
                         "Tried to assign a geometry array containing different coordinate reference systems, first:%s, violating:%s at array position:%d",
                         CoordinateReferenceSystem.get( (int) long1, (int) long2 ), crs, currentArrayOffset ) );
             }
-            Types.GEOMETRY_ARRAY.write( this, currentArrayOffset++, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
+            GeometryArrayType.write( this, currentArrayOffset++, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
         }
     }
 
@@ -634,8 +642,9 @@ public class GenericKey extends NativeIndexKey<GenericKey>
                     "from a queried range and each sub-range written to separate keys. " +
                     "As such it's unexpected that this key state thinks that it's holds state for an array" );
         }
+        setType( Types.GEOMETRY );
         updateCurve( crs.getTable().getTableId(), crs.getCode() );
-        setType( Types.GEOMETRY ).write( this, derivedValue, NO_COORDINATES );
+        GeometryType.write( this, derivedValue, NO_COORDINATES );
         this.inclusion = inclusion;
     }
 
@@ -653,11 +662,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     {
         if ( !isArray )
         {
-            setType( Types.DURATION ).write( this, months, days, totalAvgSeconds, nanos );
+            setType( Types.DURATION );
+            DurationType.write( this, months, days, totalAvgSeconds, nanos );
         }
         else
         {
-            Types.DURATION_ARRAY.write( this, currentArrayOffset++, months, days, totalAvgSeconds, nanos );
+            DurationArrayType.write( this, currentArrayOffset++, months, days, totalAvgSeconds, nanos );
         }
     }
     // Write byte array is a special case,

@@ -48,7 +48,6 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.X509Certificate;
@@ -56,13 +55,10 @@ import java.util.Date;
 import java.util.Random;
 import java.util.Set;
 
-import static java.nio.file.Files.delete;
-import static java.nio.file.Files.exists;
-
 /**
  * Utility for generating a 3 certificate chain with embedded ocsp revocation checking URIs
  */
-public class CertificateChainFactory
+public final class CertificateChainFactory
 {
     /**
      * Current time minus 1 year, just in case software clock goes back due to time synchronization
@@ -75,8 +71,12 @@ public class CertificateChainFactory
 
     private static volatile boolean cleanupRequired = true;
 
-    public void createCertificateChain( Path endUserCertPath, Path endUserPrivateKeyPath, Path intCertPath, Path intPrivateKeyPath,
-                                        Path rootCertPath, Path rootPrivateKeyPath, int ocspServerPortNo, BouncyCastleProvider bouncyCastleProvider )
+    private CertificateChainFactory()
+    {
+    }
+
+    public static void createCertificateChain( Path endUserCertPath, Path endUserPrivateKeyPath, Path intCertPath, Path intPrivateKeyPath,
+            Path rootCertPath, Path rootPrivateKeyPath, int ocspServerPortNo, BouncyCastleProvider bouncyCastleProvider )
             throws Exception
     {
         Security.addProvider( bouncyCastleProvider );
@@ -109,9 +109,9 @@ public class CertificateChainFactory
         return kpGen.generateKeyPair();
     }
 
-    private X509Certificate generateCertificate( X509Certificate issuingCert, PrivateKey issuingPrivateKey, KeyPair certKeyPair, String certName,
-                                                 String ocspURL, Path certificatePath, Path keyPath,
-                                                 BouncyCastleProvider bouncyCastleProvider ) throws Exception
+    private static X509Certificate generateCertificate( X509Certificate issuingCert, PrivateKey issuingPrivateKey, KeyPair certKeyPair, String certName,
+            String ocspURL, Path certificatePath, Path keyPath,
+            BouncyCastleProvider bouncyCastleProvider ) throws Exception
     {
         X509v3CertificateBuilder builder;
 
@@ -193,7 +193,7 @@ public class CertificateChainFactory
                                                           } ) );
     }
 
-    private void writePem( String type, byte[] encodedContent, Path path ) throws IOException
+    private static void writePem( String type, byte[] encodedContent, Path path ) throws IOException
     {
         Files.createDirectories( path.getParent() );
         try ( PemWriter writer = new PemWriter( Files.newBufferedWriter( path, StandardCharsets.UTF_8 ) ) )
@@ -216,7 +216,7 @@ public class CertificateChainFactory
         }
     }
 
-    private void writePem( String type, byte[] certA, byte[] certB, byte[] certC, Path path ) throws IOException
+    private static void writePem( String type, byte[] certA, byte[] certB, byte[] certC, Path path ) throws IOException
     {
         Files.createDirectories( path.getParent() );
         try ( PemWriter writer = new PemWriter( Files.newBufferedWriter( path, StandardCharsets.UTF_8 ) ) )

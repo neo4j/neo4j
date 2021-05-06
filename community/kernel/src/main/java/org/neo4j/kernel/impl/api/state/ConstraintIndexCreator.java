@@ -178,7 +178,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private boolean indexStillExists( SchemaRead schemaRead, IndexDescriptor index )
+    private static boolean indexStillExists( SchemaRead schemaRead, IndexDescriptor index )
     {
         IndexDescriptor existingIndex = schemaRead.indexGetForName( index.getName() );
         return existingIndex != IndexDescriptor.NO_INDEX && existingIndex.equals( index );
@@ -197,7 +197,8 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstraintIndexPopulation( IndexBackedConstraintDescriptor constraint, IndexProxy proxy, KernelTransactionImplementation transaction )
+    private static void awaitConstraintIndexPopulation( IndexBackedConstraintDescriptor constraint, IndexProxy proxy,
+            KernelTransactionImplementation transaction )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try

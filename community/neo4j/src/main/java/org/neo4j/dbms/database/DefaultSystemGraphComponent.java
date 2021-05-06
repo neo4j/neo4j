@@ -106,7 +106,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     {
     }
 
-    private boolean hasDatabaseNode( Transaction tx )
+    private static boolean hasDatabaseNode( Transaction tx )
     {
         try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL ) )
         {
@@ -114,7 +114,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         }
     }
 
-    private boolean hasSystemDatabaseNode( Transaction tx )
+    private static boolean hasSystemDatabaseNode( Transaction tx )
     {
         try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL, DATABASE_NAME_PROPERTY, SYSTEM_DATABASE_NAME ) )
         {
@@ -185,7 +185,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         newDb( system, defaultDbName, true, UUID.randomUUID() );
     }
 
-    private void newDb( GraphDatabaseService system, NormalizedDatabaseName databaseName, boolean defaultDb, UUID uuid ) throws InvalidArgumentsException
+    private static void newDb( GraphDatabaseService system, NormalizedDatabaseName databaseName, boolean defaultDb, UUID uuid ) throws InvalidArgumentsException
     {
         try ( Transaction tx = system.beginTx() )
         {

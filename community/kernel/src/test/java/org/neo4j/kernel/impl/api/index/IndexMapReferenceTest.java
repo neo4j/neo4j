@@ -72,7 +72,7 @@ class IndexMapReferenceTest
         }
     }
 
-    private Runnable putIndexProxy( IndexMapReference ref, IndexProxy proxy )
+    private static Runnable putIndexProxy( IndexMapReference ref, IndexProxy proxy )
     {
         return () -> ref.modify( indexMap ->
         {
@@ -81,7 +81,7 @@ class IndexMapReferenceTest
         } );
     }
 
-    private Runnable removeIndexProxy( IndexMapReference ref, long indexId )
+    private static Runnable removeIndexProxy( IndexMapReference ref, long indexId )
     {
         return () -> ref.modify( indexMap ->
         {
@@ -90,7 +90,7 @@ class IndexMapReferenceTest
         } );
     }
 
-    private IndexProxy[] mockedIndexProxies( int base, int count )
+    private static IndexProxy[] mockedIndexProxies( int base, int count )
     {
         IndexProxy[] existing = new IndexProxy[count];
         for ( int i = 0; i < count; i++ )

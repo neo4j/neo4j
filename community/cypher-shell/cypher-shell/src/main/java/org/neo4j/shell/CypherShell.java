@@ -299,7 +299,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         boltStateHandler.disconnect();
     }
 
-    private String getErrorCode( Neo4jException e )
+    private static String getErrorCode( Neo4jException e )
     {
         Neo4jException statusException = e;
 

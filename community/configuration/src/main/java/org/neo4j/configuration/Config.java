@@ -70,8 +70,8 @@ import org.neo4j.util.Preconditions;
 import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 
 @IgnoreApiCheck
@@ -93,7 +93,7 @@ public class Config implements Configuration
         private final Log log = new BufferingLog();
         private boolean expandCommands;
 
-        private <T> boolean allowedToOverrideValues( String setting, T value, Map<String,T> settingValues )
+        private static <T> boolean allowedToOverrideValues( String setting, T value, Map<String,T> settingValues )
         {
             if ( Objects.equals( setting, additional_jvm.name() ) )
             {
@@ -103,6 +103,7 @@ public class Config implements Configuration
                     if ( value instanceof String && oldValue instanceof String )
                     {
                         String newValue = oldValue + System.lineSeparator() + value;
+                        //noinspection unchecked
                         settingValues.put( setting, (T) newValue ); //need to keep all jvm additionals
                     }
                     else
@@ -312,7 +313,7 @@ public class Config implements Configuration
                     fromConfig, log, expandCommands );
         }
 
-        private void validateFilePermissionForCommandExpansion( List<Path> files )
+        private static void validateFilePermissionForCommandExpansion( List<Path> files )
         {
             if ( files.isEmpty() )
             {
@@ -740,7 +741,7 @@ public class Config implements Configuration
 
         try
         {
-            Object defaultValue = null;
+            Object defaultValue;
             if ( overriddenDefaultObjects.containsKey( key ) ) // Map default value
             {
                 defaultValue = overriddenDefaultObjects.get( key );

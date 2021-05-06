@@ -179,7 +179,7 @@ class IdRangeTest
         return idRange.getState( offset );
     }
 
-    private IdRange idRange( int numLongs, int offset, int commitBit, int reuseBit, int reservedBit )
+    private static IdRange idRange( int numLongs, int offset, int commitBit, int reuseBit, int reservedBit )
     {
         IdRange idRange = new IdRange( numLongs );
         potentiallySetBit( idRange, BITSET_COMMIT, commitBit, offset );
@@ -188,7 +188,7 @@ class IdRangeTest
         return idRange;
     }
 
-    private void potentiallySetBit( IdRange idRange, int type, int value, int offset )
+    private static void potentiallySetBit( IdRange idRange, int type, int value, int offset )
     {
         if ( value == 1 )
         {
@@ -196,7 +196,7 @@ class IdRangeTest
         }
     }
 
-    private void testNormalize( IdState beforeState, IdState afterState )
+    private static void testNormalize( IdState beforeState, IdState afterState )
     {
         // given
         var range = initialIdRange( beforeState );
@@ -208,7 +208,7 @@ class IdRangeTest
         assertEquals( afterState, range.getState( 0 ) );
     }
 
-    private void testNormalize( int beforeState, IdState afterState )
+    private static void testNormalize( int beforeState, IdState afterState )
     {
         // given
         var range = new IdRange( 1 );

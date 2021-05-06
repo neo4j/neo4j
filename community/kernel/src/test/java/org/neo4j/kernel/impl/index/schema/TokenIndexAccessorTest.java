@@ -357,7 +357,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         }
     }
 
-    private MutableLongObjectMap<MutableLongList> convertToExpectedEntitiesPerToken( MutableLongObjectMap<long[]> trackingStructure )
+    private static MutableLongObjectMap<MutableLongList> convertToExpectedEntitiesPerToken( MutableLongObjectMap<long[]> trackingStructure )
     {
         MutableLongObjectMap<MutableLongList> entitiesPerToken = LongObjectMaps.mutable.empty();
         trackingStructure.forEachKeyValue( ( entityId, tokens ) -> {
@@ -403,8 +403,8 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         }
     }
 
-    private void assertReaderFindsExpected( TokenIndexReader reader, IndexOrder indexOrder, long tokenId, LongList expectedIds,
-                                            ThrowingConsumer<TokenIndexReader,Exception> innerCalling )
+    private static void assertReaderFindsExpected( TokenIndexReader reader, IndexOrder indexOrder, long tokenId, LongList expectedIds,
+            ThrowingConsumer<TokenIndexReader,Exception> innerCalling )
             throws Exception
     {
         if ( indexOrder.equals( IndexOrder.DESCENDING ) )
@@ -475,11 +475,6 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         private final long expectedToken;
         private final MutableLongList actualIds = LongLists.mutable.empty();
         private IndexProgressor progressor;
-
-        private CollectingEntityTokenClient()
-        {
-            this( -1 );
-        }
 
         private CollectingEntityTokenClient( long expectedToken )
         {

@@ -84,7 +84,7 @@ public class SyntaxException extends Neo4jException
         }
     }
 
-    private String findErrorLine( int offset, String[] message )
+    private static String findErrorLine( int offset, String[] message )
     {
         int currentOffset = offset;
         if ( message.length == 0 )
@@ -119,7 +119,7 @@ public class SyntaxException extends Neo4jException
         }
     }
 
-    private void buildErrorString( StringBuilder builder, String element, int currentOffset )
+    private static void buildErrorString( StringBuilder builder, String element, int currentOffset )
     {
         builder.append( "\"" )
                .append( element.stripTrailing() ) // removes potential \r at the end

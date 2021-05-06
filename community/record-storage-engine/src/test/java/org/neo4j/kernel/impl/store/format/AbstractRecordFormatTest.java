@@ -181,7 +181,7 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format, RecordKey<R> key, PageCursor cursor,
+    private static <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format, RecordKey<R> key, PageCursor cursor,
             int recordSize, boolean assertPostReadOffset ) throws IOException
     {
         read.setId( written.getId() );
@@ -213,7 +213,7 @@ public abstract class AbstractRecordFormatTest
      * hierarchy tests records with very large IDs, but still writes at ID 0 for convenience in various ways. However this method can be used
      * for reading things like e.g. secondary unit where the actual ID is the ID that should be read.
      */
-    protected <R extends AbstractBaseRecord> void readRecord( R read, RecordFormat<R> format, PageCursor cursor, int recordSize, long actualId,
+    protected static <R extends AbstractBaseRecord> void readRecord( R read, RecordFormat<R> format, PageCursor cursor, int recordSize, long actualId,
             RecordLoad mode ) throws IOException
     {
         cursor.next( actualId ); // this looks weird, but this test has only a single record per page to simplify things
@@ -229,7 +229,7 @@ public abstract class AbstractRecordFormatTest
         while ( cursor.shouldRetry() );
     }
 
-    protected <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PageCursor cursor, int recordSize,
+    protected static <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PageCursor cursor, int recordSize,
             BatchingIdSequence idSequence, boolean prepare ) throws IOException
     {
         if ( prepare && record.inUse() )
@@ -242,7 +242,7 @@ public abstract class AbstractRecordFormatTest
         assertWithinBounds( record, cursor, "writing" );
     }
 
-    private <R extends AbstractBaseRecord> void assertWithinBounds( R record, PageCursor cursor, String operation )
+    private static <R extends AbstractBaseRecord> void assertWithinBounds( R record, PageCursor cursor, String operation )
     {
         if ( cursor.checkAndClearBoundsFlag() )
         {

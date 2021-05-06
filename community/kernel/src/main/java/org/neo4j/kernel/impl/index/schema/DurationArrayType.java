@@ -70,7 +70,7 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
         key.long3Array = ensureBigEnough( key.long3Array, length );
     }
 
-    void write( GenericKey state, int offset, long months, long days, long totalAvgSeconds, int nanos )
+    static void write( GenericKey state, int offset, long months, long days, long totalAvgSeconds, int nanos )
     {
         state.long0Array[offset] = totalAvgSeconds;
         state.long1Array[offset] = nanos;

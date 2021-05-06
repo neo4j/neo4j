@@ -42,7 +42,7 @@ abstract class LuceneIndexSampler implements IndexSampler
      *
      * @throws IndexNotFoundKernelException if cancellation was requested.
      */
-    void checkCancellation( CancellationRequest ongoingTask ) throws IndexNotFoundKernelException
+    static void checkCancellation( CancellationRequest ongoingTask ) throws IndexNotFoundKernelException
     {
         if ( ongoingTask.cancellationRequested() )
         {

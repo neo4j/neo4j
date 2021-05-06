@@ -217,7 +217,7 @@ public abstract class IndexCommand extends Command
         channel.putShort( (short) keyId );
     }
 
-    protected void putIntOrLong( WritableChannel channel, long id ) throws IOException
+    protected static void putIntOrLong( WritableChannel channel, long id ) throws IOException
     {
         if ( needsLong( id ) == 1 )
         {

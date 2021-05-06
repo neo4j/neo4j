@@ -101,7 +101,7 @@ class LocalTimeType extends Type
         return true;
     }
 
-    void write( GenericKey state, long nanoOfDay )
+    static void write( GenericKey state, long nanoOfDay )
     {
         state.long0 = nanoOfDay;
     }

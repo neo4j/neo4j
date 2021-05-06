@@ -367,7 +367,7 @@ class RelationshipModifierTest
         assertThat( readRelationshipsFromStore( node, store ) ).isEqualTo( asSet( expectedRelationships ) );
     }
 
-    private Set<RelationshipData> readRelationshipsFromStore( long node, MapRecordStore store )
+    private static Set<RelationshipData> readRelationshipsFromStore( long node, MapRecordStore store )
     {
         Set<RelationshipData> relationships = new HashSet<>();
         store.relationshipChainVisitor().visit( node,
@@ -465,7 +465,7 @@ class RelationshipModifierTest
         return nextRelationshipId++;
     }
 
-    private IntSupplier type( int type )
+    private static IntSupplier type( int type )
     {
         return () -> type;
     }
@@ -475,7 +475,7 @@ class RelationshipModifierTest
         return () -> random.nextInt( numTypes );
     }
 
-    private IntSupplier alternatingTypes( int... types )
+    private static IntSupplier alternatingTypes( int... types )
     {
         return new IntSupplier()
         {
@@ -496,7 +496,7 @@ class RelationshipModifierTest
         return cursorContext -> nextId.getAndIncrement();
     }
 
-    private void applyModificationsToExpectedRelationships( RelationshipModifications modifications, List<RelationshipData> expectedRelationships )
+    private static void applyModificationsToExpectedRelationships( RelationshipModifications modifications, List<RelationshipData> expectedRelationships )
     {
         modifications.creations().forEach( ( relationshipId, typeId, startNodeId, endNodeId ) -> expectedRelationships.add(
                 new RelationshipData( relationshipId, typeId, startNodeId, endNodeId ) ) );

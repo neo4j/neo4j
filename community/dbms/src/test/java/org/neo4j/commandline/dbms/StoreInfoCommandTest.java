@@ -310,7 +310,7 @@ class StoreInfoCommandTest
         verify( out ).println( expectedFoo );
     }
 
-    private String expectedPrettyResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
+    private static String expectedPrettyResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
     {
         var nullSafeSuperseded = superseded == null ? "" : "Store format superseded in:   " + superseded + System.lineSeparator();
         return "Database name:                " + databaseName + System.lineSeparator() +
@@ -322,7 +322,7 @@ class StoreInfoCommandTest
                "Store needs recovery:         true";
     }
 
-    private String expectedStructuredResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
+    private static String expectedStructuredResult( String databaseName, boolean inUse, String version, String introduced, String superseded )
     {
         return "{" +
                "\"databaseName\":\"" + databaseName + "\"," +
@@ -335,7 +335,7 @@ class StoreInfoCommandTest
                "}";
     }
 
-    private String nullSafeField( String value )
+    private static String nullSafeField( String value )
     {
         return value == null ? "null" : "\"" + value + "\"";
     }
@@ -354,7 +354,7 @@ class StoreInfoCommandTest
         return neoStoreFile;
     }
 
-    private String[] args( Path path, boolean all, boolean structured )
+    private static String[] args( Path path, boolean all, boolean structured )
     {
         var args = new ArrayList<String>();
         args.add( path.toAbsolutePath().toString() );

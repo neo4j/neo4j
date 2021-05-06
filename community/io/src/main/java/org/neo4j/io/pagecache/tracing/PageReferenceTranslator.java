@@ -25,6 +25,4 @@ package org.neo4j.io.pagecache.tracing;
 public interface PageReferenceTranslator
 {
     int toId( long pageRef );
-
-    long getFilePageId( long pageRef );
 }

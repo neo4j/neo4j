@@ -106,7 +106,7 @@ abstract class FusionIndexReaderTest
                 TestIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
-    private Function<IndexSlot,ValueIndexReader> throwingFactory()
+    private static Function<IndexSlot,ValueIndexReader> throwingFactory()
     {
         return i ->
         {

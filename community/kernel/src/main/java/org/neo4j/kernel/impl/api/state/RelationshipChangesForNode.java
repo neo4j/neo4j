@@ -162,7 +162,7 @@ public class RelationshipChangesForNode
         return aggregatedIds( RelationshipDirection.INCOMING, RelationshipDirection.OUTGOING, RelationshipDirection.LOOP );
     }
 
-    private LongIterator nonEmptyConcat( LongIterator... primitiveIds )
+    private static LongIterator nonEmptyConcat( LongIterator... primitiveIds )
     {
         return concat( filter( ids -> ids != ImmutableEmptyLongIterator.INSTANCE, iterator( primitiveIds ) ) );
     }

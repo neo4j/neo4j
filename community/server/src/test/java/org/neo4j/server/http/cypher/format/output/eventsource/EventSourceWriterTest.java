@@ -73,7 +73,7 @@ class EventSourceWriterTest
         assertThat( value.get( "one" ).get( "{}" ).get( "two" ).get( "[]" ).get( 1 ).get( "{}" ).get( "three" ).get( "Z" ).asInt() ).isEqualTo( 42 );
     }
 
-    private JsonNode serialize( ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter
+    private static JsonNode serialize( ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter
             resultDataContentWriter, Map<String,Object> data ) throws IOException, JsonParseException
     {
 

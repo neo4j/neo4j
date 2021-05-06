@@ -160,12 +160,12 @@ public final class LockClientStateHolder
         clientState.set( INITIAL_STATE );
     }
 
-    private boolean isPrepare( int clientState )
+    private static boolean isPrepare( int clientState )
     {
         return getStatus( clientState ) == PREPARE;
     }
 
-    private boolean isStopped( int clientState )
+    private static boolean isStopped( int clientState )
     {
         return getStatus( clientState ) == STOPPED;
     }
@@ -180,17 +180,17 @@ public final class LockClientStateHolder
         return clientState & ~STATE_BIT_MASK;
     }
 
-    private int stateWithNewStatus( int clientState, int newStatus )
+    private static int stateWithNewStatus( int clientState, int newStatus )
     {
         return newStatus | getActiveClients( clientState );
     }
 
-    private int incrementActiveClients( int clientState )
+    private static int incrementActiveClients( int clientState )
     {
         return getStatus( clientState ) | Math.incrementExact( getActiveClients( clientState ) );
     }
 
-    private int decrementActiveClients( int clientState )
+    private static int decrementActiveClients( int clientState )
     {
         return getStatus( clientState ) | Math.decrementExact( getActiveClients( clientState ) );
     }

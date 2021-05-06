@@ -67,7 +67,7 @@ public class ActorsSupportExtension implements TestInstancePostProcessor, AfterE
         return context.getTestInstanceLifecycle().orElse( PER_METHOD );
     }
 
-    private void tearDownActors( ExtensionContext context ) throws Exception
+    private static void tearDownActors( ExtensionContext context ) throws Exception
     {
         Optional<ExtensionContext> current = Optional.of( context );
         while ( current.isPresent() )

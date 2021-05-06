@@ -66,7 +66,7 @@ class CoarseBoundedProgressExecutionMonitorTest
         assertEquals( total, progressExecutionMonitor.getProgress(), "Each item should be completed" );
     }
 
-    private long monitorSingleStageExecution( ProgressExecutionMonitor progressExecutionMonitor, Configuration config )
+    private static long monitorSingleStageExecution( ProgressExecutionMonitor progressExecutionMonitor, Configuration config )
     {
         progressExecutionMonitor.start( execution( 0, config ) );
         long total = progressExecutionMonitor.total();
@@ -80,13 +80,13 @@ class CoarseBoundedProgressExecutionMonitorTest
         return total;
     }
 
-    private StageExecution execution( long doneBatches, Configuration config )
+    private static StageExecution execution( long doneBatches, Configuration config )
     {
         Step<?> step = ControlledStep.stepWithStats( "Test", 0, Keys.done_batches, doneBatches );
         return new StageExecution( "Test", null, config, Collections.singletonList( step ), 0 );
     }
 
-    private Configuration config( int batchSize )
+    private static Configuration config( int batchSize )
     {
         return new Configuration.Overridden( Configuration.DEFAULT )
         {

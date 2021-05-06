@@ -819,12 +819,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         }
     }
 
-    private LoginContext loginContext( boolean isWriteTx )
+    private static LoginContext loginContext( boolean isWriteTx )
     {
         return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
     }
 
-    private void initializeAndClose( KernelTransactionImplementation tx, int times, boolean isWriteTx ) throws Exception
+    private static void initializeAndClose( KernelTransactionImplementation tx, int times, boolean isWriteTx ) throws Exception
     {
         for ( int i = 0; i < times; i++ )
         {

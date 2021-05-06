@@ -156,7 +156,8 @@ public class FusionIndexProvider extends IndexProvider
         return builder.toString();
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor descriptor, CursorContext cursorContext )
+    private static void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor descriptor,
+            CursorContext cursorContext )
     {
         String failure = provider.getPopulationFailure( descriptor, cursorContext );
         if ( isNotEmpty( failure ) )

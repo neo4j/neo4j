@@ -31,13 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TreeStateTest
 {
-    private final int pageSize = 256;
+    private static final int PAGE_SIZE = 256;
     private PageAwareByteArrayCursor cursor;
 
     @BeforeEach
     void initiateCursor()
     {
-        cursor = new PageAwareByteArrayCursor( pageSize );
+        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         cursor.next();
     }
 
@@ -112,7 +112,7 @@ class TreeStateTest
         } );
     }
 
-    private void breakChecksum( PageCursor cursor )
+    private static void breakChecksum( PageCursor cursor )
     {
         // Doesn't matter which bits we destroy actually. Destroying the first ones requires
         // no additional knowledge about where checksum is stored
@@ -120,7 +120,7 @@ class TreeStateTest
         cursor.putLong( cursor.getOffset(), ~existing );
     }
 
-    private void write( PageCursor cursor, TreeState origin )
+    private static void write( PageCursor cursor, TreeState origin )
     {
         TreeState.write( cursor,
                 origin.stableGeneration(),

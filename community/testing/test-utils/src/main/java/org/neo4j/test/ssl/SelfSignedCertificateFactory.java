@@ -173,7 +173,7 @@ public class SelfSignedCertificateFactory
         } ) );
     }
 
-    private void writePem( String type, byte[] encodedContent, Path path ) throws IOException
+    private static void writePem( String type, byte[] encodedContent, Path path ) throws IOException
     {
         Files.createDirectories( path.getParent() );
         try ( PemWriter writer = new PemWriter( Files.newBufferedWriter( path, StandardCharsets.UTF_8 ) ) )

@@ -156,7 +156,7 @@ class NumberType extends Type
         return RawBits.compare( this_long0, (byte) this_long1, that_long0, (byte) that_long1 );
     }
 
-    void write( GenericKey state, long value, byte numberType )
+    static void write( GenericKey state, long value, byte numberType )
     {
         state.long0 = value;
         state.long1 = numberType;

@@ -113,7 +113,7 @@ class ZonedTimeType extends Type
         return compare;
     }
 
-    void write( GenericKey state, long nanosOfDayUTC, int offsetSeconds )
+    static void write( GenericKey state, long nanosOfDayUTC, int offsetSeconds )
     {
         state.long0 = nanosOfDayUTC;
         state.long1 = offsetSeconds;

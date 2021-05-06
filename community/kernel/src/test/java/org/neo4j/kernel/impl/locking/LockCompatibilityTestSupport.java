@@ -195,7 +195,7 @@ public abstract class LockCompatibilityTestSupport
         };
     }
 
-    void assertNotWaiting( Future<Void> lock )
+    static void assertNotWaiting( Future<Void> lock )
     {
         assertDoesNotThrow( () -> lock.get( 5, TimeUnit.SECONDS ), "Waiting for lock timed out!" );
     }

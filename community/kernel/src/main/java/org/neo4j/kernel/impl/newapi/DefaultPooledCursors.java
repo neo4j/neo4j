@@ -164,7 +164,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
     }
 
-    private <C extends TraceableCursor<?>> C acquire( C cursor )
+    private static <C extends TraceableCursor<?>> C acquire( C cursor )
     {
         cursor.acquire();
         return cursor;

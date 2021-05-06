@@ -52,7 +52,7 @@ public class ValueComparisonTest
 {
     private static final Comparator<Value> comparator = Values.COMPARATOR;
 
-    private Object[] objs = new Object[]{
+    private final Object[] objs = new Object[]{
             // ARRAYS
             new PointValue[] {},
             new PointValue[] { pointValue( WGS84, -1.0, -1.0 ) },
@@ -283,7 +283,7 @@ public class ValueComparisonTest
         assertEquals( 0, cmp, "East-Saskatchewan and Saskatchewan are the same place" );
     }
 
-    private <T> int compare( Comparator<T> comparator, T left, T right )
+    private static <T> int compare( Comparator<T> comparator, T left, T right )
     {
         int cmp1 = comparator.compare( left, right );
         int cmp2 = comparator.compare( right, left );

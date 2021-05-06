@@ -179,12 +179,12 @@ public class TransactionLogInitializer
         }
     }
 
-    private PhysicalTransactionRepresentation emptyTransaction( long timestamp )
+    private static PhysicalTransactionRepresentation emptyTransaction( long timestamp )
     {
         return new PhysicalTransactionRepresentation( Collections.emptyList(), EMPTY_BYTE_ARRAY, timestamp, BASE_TX_ID, timestamp, NO_LEASE, ANONYMOUS );
     }
 
-    private void appendCheckpoint( LogFiles logFiles, String reason, LogPosition position ) throws IOException
+    private static void appendCheckpoint( LogFiles logFiles, String reason, LogPosition position ) throws IOException
     {
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         checkpointAppender.checkPoint( LogCheckPointEvent.NULL, position, Instant.now(), reason );

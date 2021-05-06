@@ -130,7 +130,7 @@ class PrivilegeActionTest
         }
     }
 
-    void assertGroupSatisfies( PrivilegeAction group, Set<PrivilegeAction> actions )
+    static void assertGroupSatisfies( PrivilegeAction group, Set<PrivilegeAction> actions )
     {
         for ( var action : actions )
         {
@@ -154,14 +154,14 @@ class PrivilegeActionTest
         }
     }
 
-    private Set<PrivilegeAction> notChild( PrivilegeAction action )
+    private static Set<PrivilegeAction> notChild( PrivilegeAction action )
     {
         var notChildren = new HashSet<>( Arrays.asList( PrivilegeAction.values() ) );
         removeChildren( action, notChildren );
         return notChildren;
     }
 
-    private void removeChildren( PrivilegeAction action, Set<PrivilegeAction> notChildren )
+    private static void removeChildren( PrivilegeAction action, Set<PrivilegeAction> notChildren )
     {
         notChildren.remove( action );
         if ( expected.containsKey( action ) )

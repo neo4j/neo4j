@@ -126,7 +126,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         pageCacheArrayFactoryMonitor = dependencyResolver.resolveDependency( PageCacheArrayFactoryMonitor.class );
 
         long biggestCacheMemory = estimatedCacheSize( neoStores,
-                nodeRelationshipCache.memoryEstimation( estimates.numberOfNodes() ),
+                NodeRelationshipCache.memoryEstimation( estimates.numberOfNodes() ),
                 idMapper.memoryEstimation( estimates.numberOfNodes() ) );
         System.out.println();
         printStageHeader( "Import starting",
@@ -223,7 +223,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void endPrevious()
     {
         updateProgress( goal );
-        System.out.println( format( "%s COMPLETED in %s%n", currentStage.description(), duration( currentTimeMillis() - stageStartTime ) ) );
+        System.out.printf( "%s COMPLETED in %s%n%n", currentStage.description(), duration( currentTimeMillis() - stageStartTime ) );
     }
 
     private void initializeNodeImport( Input.Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
@@ -268,7 +268,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         startStage( ImportStage.linking,
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString(
                         baselineMemoryRequirement( neoStores ) +
-                        defensivelyPadMemoryEstimate( nodeRelationshipCache.memoryEstimation( distribution.getNodeCount() ) ) ) );
+                        defensivelyPadMemoryEstimate( NodeRelationshipCache.memoryEstimation( distribution.getNodeCount() ) ) ) );
         // The reason the highId of the relationship store is used, as opposed to actual number of imported relationships
         // is that the stages underneath operate on id ranges, not knowing which records are actually in use.
         long relationshipRecordIdCount = neoStores.getRelationshipStore().getHighId();
@@ -334,7 +334,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             if ( currentLine < line || currentDotOnLine == dotsPerLine() )
             {
                 int percentage = percentage( currentLine );
-                System.out.println( format( "%4d%% ∆%s", percentage, durationSinceLastReport() ) );
+                System.out.printf( "%4d%% ∆%s%n", percentage, durationSinceLastReport() );
                 monitor.progress( currentStage, percentage );
                 currentLine++;
                 if ( currentLine == lines() )
@@ -422,7 +422,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         currentStage = stage;
     }
 
-    private void printStageHeader( String description, Object... data )
+    private static void printStageHeader( String description, Object... data )
     {
         System.out.println( description + " " + localDate() );
         if ( data.length > 0 )
@@ -445,7 +445,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         endPrevious();
 
         System.out.println();
-        System.out.println( format( "IMPORT %s in %s. %s", successful ? "DONE" : "FAILED", duration( totalTimeMillis ), additionalInformation ) );
+        System.out.printf( "IMPORT %s in %s. %s%n", successful ? "DONE" : "FAILED", duration( totalTimeMillis ), additionalInformation );
     }
 
     @Override

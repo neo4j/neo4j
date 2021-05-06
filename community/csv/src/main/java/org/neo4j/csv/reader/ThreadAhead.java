@@ -85,7 +85,7 @@ public abstract class ThreadAhead extends Thread implements Closeable
         }
     }
 
-    protected void parkAWhile()
+    protected static void parkAWhile()
     {
         LockSupport.parkNanos( PARK_TIME );
     }

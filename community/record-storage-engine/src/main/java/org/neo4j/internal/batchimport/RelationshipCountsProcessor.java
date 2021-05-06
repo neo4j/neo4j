@@ -117,7 +117,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
         wildcardCounts.close();
     }
 
-    private void mergeCounts( LongArray destination, LongArray part )
+    private static void mergeCounts( LongArray destination, LongArray part )
     {
         long length = destination.length();
         for ( long i = 0; i < length; i++ )

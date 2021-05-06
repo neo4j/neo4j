@@ -112,7 +112,7 @@ public abstract class EagerQuerySubscription implements QuerySubscription
         }
     }
 
-    private long checkForOverflow( long value )
+    private static long checkForOverflow( long value )
     {
         if ( value < 0 )
         {

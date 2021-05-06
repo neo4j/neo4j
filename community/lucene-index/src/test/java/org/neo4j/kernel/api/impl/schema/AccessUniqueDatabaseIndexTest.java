@@ -179,13 +179,13 @@ class AccessUniqueDatabaseIndexTest
         return IndexEntryUpdate.remove( nodeId, index.schema(), Values.of( oldValue ) );
     }
 
-    private List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
+    private static List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException
     {
         return AllNodesCollector.getAllNodes( indexStorage.openDirectory( indexStorage.getPartitionFolder( 1 ) ),
                 Values.stringValue( propertyValue ) );
     }
 
-    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
+    private static void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {

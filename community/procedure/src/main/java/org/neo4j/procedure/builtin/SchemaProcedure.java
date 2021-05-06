@@ -175,7 +175,7 @@ public class SchemaProcedure
         }
     }
 
-    private VirtualNodeHack getOrCreateLabel( String label, Map<String,Object> properties,
+    private static VirtualNodeHack getOrCreateLabel( String label, Map<String,Object> properties,
             final Map<String,VirtualNodeHack> nodeMap )
     {
         if ( nodeMap.containsKey( label ) )
@@ -187,7 +187,7 @@ public class SchemaProcedure
         return node;
     }
 
-    private void addRelationship( VirtualNodeHack startNode, VirtualNodeHack endNode, String relType,
+    private static void addRelationship( VirtualNodeHack startNode, VirtualNodeHack endNode, String relType,
             final Map<String,Set<VirtualRelationshipHack>> relationshipMap )
     {
         Set<VirtualRelationshipHack> relationshipsForType;
@@ -204,7 +204,7 @@ public class SchemaProcedure
         relationshipsForType.add( relationship );
     }
 
-    private GraphResult getGraphResult( final Map<String,VirtualNodeHack> nodeMap,
+    private static GraphResult getGraphResult( final Map<String,VirtualNodeHack> nodeMap,
             final Map<String,Set<VirtualRelationshipHack>> relationshipMap )
     {
         List<Relationship> relationships = new LinkedList<>();

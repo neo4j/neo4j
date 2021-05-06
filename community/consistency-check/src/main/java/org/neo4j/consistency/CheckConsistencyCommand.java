@@ -169,7 +169,7 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
-    private void checkDatabaseExistence( DatabaseLayout databaseLayout )
+    private static void checkDatabaseExistence( DatabaseLayout databaseLayout )
     {
         try
         {

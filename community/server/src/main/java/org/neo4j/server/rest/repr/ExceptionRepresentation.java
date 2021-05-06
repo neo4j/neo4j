@@ -71,7 +71,7 @@ public class ExceptionRepresentation extends MappingRepresentation
         serializer.putList( "errors", ErrorEntryRepresentation.list( errors ) );
     }
 
-    private void renderWithLegacyFormat( Throwable exception, MappingSerializer serializer )
+    private static void renderWithLegacyFormat( Throwable exception, MappingSerializer serializer )
     {
         String message = exception.getMessage();
         if ( message != null )

@@ -268,7 +268,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
         assertTrue( checkpointCompletedCall.get() );
     }
 
-    private GBPTree.Monitor.Adaptor getCheckpointCompletedListener( AtomicBoolean checkpointCompletedCall )
+    private static GBPTree.Monitor.Adaptor getCheckpointCompletedListener( AtomicBoolean checkpointCompletedCall )
     {
         return new GBPTree.Monitor.Adaptor()
         {

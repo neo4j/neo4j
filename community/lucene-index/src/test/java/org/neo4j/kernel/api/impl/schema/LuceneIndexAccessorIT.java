@@ -197,7 +197,7 @@ public class LuceneIndexAccessorIT
         }
     }
 
-    private void removeSomeNodes( IndexDescriptor indexDescriptor, int nodes, IndexAccessor accessor, MutableLongSet expectedNodes )
+    private static void removeSomeNodes( IndexDescriptor indexDescriptor, int nodes, IndexAccessor accessor, MutableLongSet expectedNodes )
             throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
@@ -237,7 +237,7 @@ public class LuceneIndexAccessorIT
         populator.close( true, NULL );
     }
 
-    private Value[] values( IndexDescriptor properties, long id )
+    private static Value[] values( IndexDescriptor properties, long id )
     {
         int numProperties = properties.schema().getPropertyIds().length;
         Value[] values = new Value[numProperties];
@@ -248,7 +248,7 @@ public class LuceneIndexAccessorIT
         return values;
     }
 
-    private TextValue value( long id )
+    private static TextValue value( long id )
     {
         return stringValue( "string_" + id );
     }
@@ -278,7 +278,7 @@ public class LuceneIndexAccessorIT
         return liveEntityIds;
     }
 
-    private IndexEntryUpdate<?> randomUpdate( MutableLong highEntityId, BitSet liveEntityIds, IndexDescriptor descriptor, Random random )
+    private static IndexEntryUpdate<?> randomUpdate( MutableLong highEntityId, BitSet liveEntityIds, IndexDescriptor descriptor, Random random )
     {
         if ( highEntityId.longValue() > 0 && random.nextInt( 10 ) == 0 )
         {

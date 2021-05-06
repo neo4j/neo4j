@@ -123,7 +123,6 @@ import static org.neo4j.values.storable.Values.utf8Value;
  */
 public class TransactionImpl extends EntityValidationTransactionImpl
 {
-    private static final EntityLocker locker = new EntityLocker();
     private final TokenHolders tokenHolders;
     private final TransactionalContextFactory contextFactory;
     private final DatabaseAvailabilityGuard availabilityGuard;
@@ -394,7 +393,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return nodesByLabelAndProperty( transaction, labelId, query );
     }
 
-    private PropertyIndexQuery getIndexQuery( String value, StringSearchMode searchMode, int propertyId )
+    private static PropertyIndexQuery getIndexQuery( String value, StringSearchMode searchMode, int propertyId )
     {
         PropertyIndexQuery query;
         switch ( searchMode )
@@ -683,13 +682,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     @Override
     public Lock acquireWriteLock( Entity entity )
     {
-        return locker.exclusiveLock( kernelTransaction(), entity );
+        return EntityLocker.exclusiveLock( kernelTransaction(), entity );
     }
 
     @Override
     public Lock acquireReadLock( Entity entity )
     {
-        return locker.sharedLock( kernelTransaction(), entity );
+        return EntityLocker.sharedLock( kernelTransaction(), entity );
     }
 
     @Override
@@ -1135,7 +1134,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return getRelationshipsByTypeAndPropertyWithoutPropertyIndex( tx, typeId, queries );
     }
 
-    private PropertyIndexQuery.ExactPredicate[] convertToQueries( Map<String,Object> propertyValues, TokenRead tokenRead )
+    private static PropertyIndexQuery.ExactPredicate[] convertToQueries( Map<String,Object> propertyValues, TokenRead tokenRead )
     {
         PropertyIndexQuery.ExactPredicate[] queries = new PropertyIndexQuery.ExactPredicate[propertyValues.size()];
         int i = 0;

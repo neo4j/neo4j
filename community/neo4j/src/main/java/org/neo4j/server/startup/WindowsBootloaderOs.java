@@ -91,11 +91,11 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
                 .with( arg( "--StartMethod", "start" ) )
                 .with( arg( "--ServiceUser", "LocalSystem" ) )
                 .with( arg( "--StartPath", home.toString() ) )
-                .with( multiArg( "--StartParams", "--config-dir=" + ctx.confDir(), "--home-dir=" + home.toString() ) )
+                .with( multiArg( "--StartParams", "--config-dir=" + ctx.confDir(), "--home-dir=" + home ) )
                 .with( arg( "--StopMode", "jvm" ) )
                 .with( arg( "--StopMethod", "stop" ) )
                 .with( arg( "--StopPath", home.toString() ) )
-                .with( arg( "--Description", "Neo4j Graph Database - " + home.toString() ) )
+                .with( arg( "--Description", "Neo4j Graph Database - " + home ) )
                 .with( arg( "--DisplayName", "Neo4j Graph Database - " + serviceName() ) )
                 .with( arg( "--Jvm", jvmDll.toString() ) )
                 .with( arg( "--LogPath", logs.toString() ) )
@@ -117,7 +117,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         runProcess( argList, behaviour().inheritIO() );
     }
 
-    private String multiArg( String key, String... values )
+    private static String multiArg( String key, String... values )
     {
         // Procrun expects us to split each option with `;` if these characters are used inside the actual option values
         // that will cause problems in parsing. To overcome the problem, we need to escape those characters by placing
@@ -175,7 +175,6 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
     @Override
     Long getPidIfRunning()
     {
-
         String status = getStatus();
         boolean stopped = StringUtils.isEmpty( status ) || status.startsWith( "Stopped" );
         return stopped ? null : UNKNOWN_PID;
@@ -278,12 +277,12 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
                 .with( format( "//%s//%s", serviceCommand, serviceName() ) );
     }
 
-    private List<String> asPowershellScript( List<String> command )
+    private static List<String> asPowershellScript( List<String> command )
     {
         return asExternalCommand( List.of( String.join( " ", command ) ) );
     }
 
-    private List<String> asExternalCommand( List<String> command )
+    private static List<String> asExternalCommand( List<String> command )
     {
         // We use powershell rather than cmd.exe because cmd.exe doesn't support large argument lists and will wait.
         // Powershell tolerates much longer argument lists and will not wait
@@ -293,7 +292,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
                      .collect( Collectors.toList() );
     }
 
-    private String powershellCmd()
+    private static String powershellCmd()
     {
         return "powershell.exe";
     }

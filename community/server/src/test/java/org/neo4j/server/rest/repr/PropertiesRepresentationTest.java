@@ -94,7 +94,7 @@ class PropertiesRepresentationTest
         assertFalse( properties.isEmpty() );
     }
 
-    private void assertEqualContent( List<?> expected, List<?> actual )
+    private static void assertEqualContent( List<?> expected, List<?> actual )
     {
         assertEquals( expected.size(), actual.size() );
         for ( Iterator<?> ex = expected.iterator(), ac = actual.iterator(); ex.hasNext() && ac.hasNext(); )

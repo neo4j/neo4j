@@ -128,7 +128,7 @@ class GBPTreeLockTest
     }
 
     @Test
-    void test_race_ULvsUL() throws Throwable
+    void test_race_ULvsUL()
     {
         assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock );
     }
@@ -140,30 +140,30 @@ class GBPTreeLockTest
     }
 
     @Test
-    void test_race_ULvsLL() throws Throwable
+    void test_race_ULvsLL()
     {
         assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock );
     }
 
     @Test
-    void test_race_LUvsLU() throws Throwable
+    void test_race_LUvsLU()
     {
         assertOnlyOneSucceeds( lock::writerLock, lock::writerLock );
     }
 
     @Test
-    void test_race_LUvsLL() throws Throwable
+    void test_race_LUvsLL()
     {
         assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock );
     }
 
     @Test
-    void test_race_LLvsLL() throws Throwable
+    void test_race_LLvsLL()
     {
         assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock );
     }
 
-    private void assertOnlyOneSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
+    private void assertOnlyOneSucceeds( Runnable lockAction1, Runnable lockAction2 )
     {
         assertUU();
         Race race = new Race();
@@ -208,7 +208,7 @@ class GBPTreeLockTest
         assertTrue( c1State.other() && c2State.other(), withState( "Expected both to be started.", c1State, c2State ) );
     }
 
-    private String withState( String message, Pair<Boolean,Boolean> c1State, Pair<Boolean,Boolean> c2State )
+    private static String withState( String message, Pair<Boolean,Boolean> c1State, Pair<Boolean,Boolean> c2State )
     {
         return String.format( "%s c1.lockAcquired=%b, c1.started=%b, c2.lockAcquired=%b, c2.started=%b",
                 message, c1State.first(), c1State.other(), c2State.first(), c2State.other() );

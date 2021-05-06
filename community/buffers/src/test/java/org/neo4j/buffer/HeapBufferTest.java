@@ -104,7 +104,7 @@ class HeapBufferTest
         buf.release();
     }
 
-    private void write( ByteBuf buf, int size )
+    private static void write( ByteBuf buf, int size )
     {
         for ( var i = 0; i < size; i++ )
         {

@@ -128,7 +128,7 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
         }
     }
 
-    private void printError( ExtensionContext context, String message )
+    private static void printError( ExtensionContext context, String message )
     {
         ExtensionContext.Store store = context.getStore( SUPPRESS_OUTPUT_NAMESPACE );
         SuppressOutput suppressOutput = store.get( SuppressOutputExtension.SUPPRESS_OUTPUT, SuppressOutput.class );

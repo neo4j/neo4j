@@ -150,7 +150,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private boolean supportedArrayType( Class<?> valueClass )
+    private static boolean supportedArrayType( Class<?> valueClass )
     {
         return Geometry.class.isAssignableFrom( valueClass ) || CRS.class.isAssignableFrom( valueClass ) ||
                Temporal.class.isAssignableFrom( valueClass ) || TemporalAmount.class.isAssignableFrom( valueClass );
@@ -208,7 +208,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writePath( JsonGenerator out, Iterator<Entity> value, TransactionStateChecker txStateChecker,
+    private static void writePath( JsonGenerator out, Iterator<Entity> value, TransactionStateChecker txStateChecker,
             TransitionalTxManagementKernelTransaction context ) throws IOException
     {
         out.writeStartArray();
@@ -225,7 +225,8 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeEntity( JsonGenerator out, Entity value, TransactionStateChecker txStateChecker, TransitionalTxManagementKernelTransaction context )
+    private static void writeEntity( JsonGenerator out, Entity value, TransactionStateChecker txStateChecker,
+            TransitionalTxManagementKernelTransaction context )
             throws IOException
     {
         var transaction = context.getInternalTransaction();
@@ -247,7 +248,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeNodeOrRelationship( JsonGenerator out, Entity entity, boolean isDeleted )
+    private static void writeNodeOrRelationship( JsonGenerator out, Entity entity, boolean isDeleted )
             throws IOException
     {
         out.writeStartObject();
@@ -267,7 +268,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeByteArray( JsonGenerator out, byte[] bytes ) throws IOException
+    private static void writeByteArray( JsonGenerator out, byte[] bytes ) throws IOException
     {
         out.writeStartArray();
         try
@@ -335,7 +336,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private Neo4jJsonMetaType parseGeometryType( Geometry value )
+    private static Neo4jJsonMetaType parseGeometryType( Geometry value )
     {
         Neo4jJsonMetaType type = null;
         if ( value instanceof Point )
@@ -350,7 +351,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         return type;
     }
 
-    private Neo4jJsonMetaType parseTemporalType( Temporal value )
+    private static Neo4jJsonMetaType parseTemporalType( Temporal value )
     {
         Neo4jJsonMetaType type = null;
         if ( value instanceof ZonedDateTime )
@@ -397,7 +398,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeObjectMeta( JsonGenerator out, Neo4jJsonMetaType type )
+    private static void writeObjectMeta( JsonGenerator out, Neo4jJsonMetaType type )
             throws IOException
     {
         requireNonNull( type, "The meta type cannot be null for known types." );
@@ -412,7 +413,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeNodeOrRelationshipMeta( JsonGenerator out, long id, Neo4jJsonMetaType type, boolean isDeleted )
+    private static void writeNodeOrRelationshipMeta( JsonGenerator out, long id, Neo4jJsonMetaType type, boolean isDeleted )
             throws IOException
     {
         requireNonNull( type, "The meta type could not be null for node or relationship." );

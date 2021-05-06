@@ -26,7 +26,7 @@ import org.neo4j.logging.Log;
 
 public abstract class SecurityModule implements SecurityProvider
 {
-    protected final void registerProcedure( GlobalProcedures globalProcedures, Log log, Class procedureClass, String warning )
+    protected static void registerProcedure( GlobalProcedures globalProcedures, Log log, Class procedureClass, String warning )
     {
         try
         {

@@ -216,7 +216,7 @@ class StoreScanStageTest
         assertThat( scan.numberOfIteratedEntities() ).isEqualTo( (long) config.batchSize() * NUMBER_OF_BATCHES );
     }
 
-    private void runScan( StoreScanStage<StorageNodeCursor> scan )
+    private static void runScan( StoreScanStage<StorageNodeCursor> scan )
     {
         superviseDynamicExecution( saturateSpecificStep( 1 ), scan );
     }

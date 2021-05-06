@@ -129,7 +129,7 @@ class IdGeneratorMigratorTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void createSomeRecordsAndSomeHoles( RecordStore<R> store, int rounds, int numDeleted, int numCreated )
+    private static <R extends AbstractBaseRecord> void createSomeRecordsAndSomeHoles( RecordStore<R> store, int rounds, int numDeleted, int numCreated )
     {
         R record = store.newRecord();
         record.setInUse( true );

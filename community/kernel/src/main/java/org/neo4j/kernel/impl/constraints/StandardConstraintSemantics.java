@@ -115,14 +115,14 @@ public class StandardConstraintSemantics extends ConstraintSemantics
         throw new IllegalStateException( errorMessage );
     }
 
-    private CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor )
+    private static CreateConstraintFailureException propertyExistenceConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
         // When creating a Property Existence Constraint in Community Edition
         return new CreateConstraintFailureException(
                 ConstraintDescriptorFactory.existsForSchema( descriptor ), ERROR_MESSAGE_EXISTS );
     }
 
-    private CreateConstraintFailureException nodeKeyConstraintsNotAllowed( SchemaDescriptor descriptor )
+    private static CreateConstraintFailureException nodeKeyConstraintsNotAllowed( SchemaDescriptor descriptor )
     {
         // When creating a Node Key Constraint in Community Edition
         return new CreateConstraintFailureException(

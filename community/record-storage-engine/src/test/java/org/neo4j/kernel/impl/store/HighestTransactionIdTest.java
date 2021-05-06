@@ -89,14 +89,14 @@ class HighestTransactionIdTest
         assertEquals( updaters, highest.get().transactionId() );
     }
 
-    private void assertAccepted( HighestTransactionId highest, long txId )
+    private static void assertAccepted( HighestTransactionId highest, long txId )
     {
         TransactionId current = highest.get();
         assertTrue( highest.offer( txId, -1, -1 ) );
         assertTrue( txId > current.transactionId() );
     }
 
-    private void assertRejected( HighestTransactionId highest, long txId )
+    private static void assertRejected( HighestTransactionId highest, long txId )
     {
         TransactionId current = highest.get();
         assertFalse( highest.offer( txId, -1, -1 ) );

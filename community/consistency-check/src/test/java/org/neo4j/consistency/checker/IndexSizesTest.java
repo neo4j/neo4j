@@ -155,7 +155,7 @@ class IndexSizesTest
         }
     }
 
-    private IndexPrototype prototype()
+    private static IndexPrototype prototype()
     {
         return IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1, 2 ) ).withName( "foo" );
     }

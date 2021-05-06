@@ -168,46 +168,46 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
                 generation, readPointer, pointer, GenerationSafePointerPair.pointerStateName( stateA ) );
     }
 
-    private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
+    private static String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
             long expectedRightSiblingGeneration, long expectedRightSibling )
     {
         return format( "{%d(%d)}-(%d)->{%d}", actualLeftSibling, actualLeftSiblingGeneration, expectedRightSiblingGeneration,
                 expectedRightSibling );
     }
 
-    private String rightPattern( long actualRightSibling, long actualRightSiblingGeneration,
+    private static String rightPattern( long actualRightSibling, long actualRightSiblingGeneration,
             long expectedLeftSiblingGeneration, long expectedLeftSibling )
     {
         return format( "{%d}<-(%d)-{%d(%d)}", expectedLeftSibling, expectedLeftSiblingGeneration, actualRightSibling,
                 actualRightSiblingGeneration );
     }
 
-    private void throwKeyOrderInconsistency( String format, Object... args )
+    private static void throwKeyOrderInconsistency( String format, Object... args )
     {
         throwWithPrefix( keyOrderInconsistency, format, args );
     }
 
-    private void throwTreeStructureInconsistency( String format, Object... args )
+    private static void throwTreeStructureInconsistency( String format, Object... args )
     {
         throwWithPrefix( treeStructureInconsistency, format, args );
     }
 
-    private void throwNodeMetaInconsistency( String format, Object... args )
+    private static void throwNodeMetaInconsistency( String format, Object... args )
     {
         throwWithPrefix( nodeMetaInconsistency, format, args );
     }
 
-    private void throwTreeMetaInconsistency( String format, Object... args )
+    private static void throwTreeMetaInconsistency( String format, Object... args )
     {
         throwWithPrefix( treeMetaInconsistency, format, args );
     }
 
-    private void throwUnexpectedExceptionInconsistency( String format, Object... args )
+    private static void throwUnexpectedExceptionInconsistency( String format, Object... args )
     {
         throwWithPrefix( unexpectedExceptionInconsistency, format, args );
     }
 
-    private void throwWithPrefix( String prefix, String format, Object[] args )
+    private static void throwWithPrefix( String prefix, String format, Object[] args )
     {
         throw new TreeInconsistencyException( String.format( prefix + format, args ) );
     }

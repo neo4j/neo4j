@@ -106,7 +106,7 @@ public class RepresentationFormatRepositoryTest
         assertEquals( "{\"a\":\"test\"}", baos.toString() );
     }
 
-    private Response.ResponseBuilder mockResponseBuilder( Response response, final AtomicReference<StreamingOutput> ref )
+    private static Response.ResponseBuilder mockResponseBuilder( Response response, final AtomicReference<StreamingOutput> ref )
     {
         final Response.ResponseBuilder responseBuilder = mock( Response.ResponseBuilder.class );
         when( responseBuilder.entity( isA( StreamingOutput.class ) ) ).thenAnswer(
@@ -121,7 +121,7 @@ public class RepresentationFormatRepositoryTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private MultivaluedMap<String, String> streamingHeader()
+    private static MultivaluedMap<String, String> streamingHeader()
     {
         MultivaluedMap<String, String> headers = mock( MultivaluedMap.class );
         when( headers.getFirst( StreamingFormat.STREAM_HEADER ) ).thenReturn( "true" );

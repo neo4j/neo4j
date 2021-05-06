@@ -104,7 +104,7 @@ public class IndexDefineCommand extends Command
         return getOrAssignId( keyIdRange, idToKey, nextKeyId, key );
     }
 
-    private int getOrAssignId( MutableObjectIntMap<String> stringToId, MutableIntObjectMap<String> idToString,
+    private static int getOrAssignId( MutableObjectIntMap<String> stringToId, MutableIntObjectMap<String> idToString,
             AtomicInteger nextId, String string )
     {
         if ( string == null )

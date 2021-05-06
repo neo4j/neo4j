@@ -28,9 +28,13 @@ import org.neo4j.kernel.api.KernelTransaction;
 /**
  * Manages user-facing locks.
  */
-class EntityLocker
+final class EntityLocker
 {
-    Lock exclusiveLock( KernelTransaction ktx, Entity entity )
+    private EntityLocker()
+    {
+    }
+
+    static Lock exclusiveLock( KernelTransaction ktx, Entity entity )
     {
         long id = entity.getId();
         if ( entity instanceof Node )
@@ -49,7 +53,7 @@ class EntityLocker
         }
     }
 
-    Lock sharedLock( KernelTransaction ktx, Entity entity )
+    static Lock sharedLock( KernelTransaction ktx, Entity entity )
     {
         long id = entity.getId();
         if ( entity instanceof Node )

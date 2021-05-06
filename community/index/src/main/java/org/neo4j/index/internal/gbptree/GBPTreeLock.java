@@ -118,17 +118,17 @@ class GBPTreeLock
         while ( !STATE.weakCompareAndSet( this, currentState, newState ) );
     }
 
-    private boolean canLock( long state, long targetLockBit )
+    private static boolean canLock( long state, long targetLockBit )
     {
         return (state & targetLockBit) == 0;
     }
 
-    private boolean canUnlock( long state, long targetLockBit )
+    private static boolean canUnlock( long state, long targetLockBit )
     {
         return (state & targetLockBit) == targetLockBit;
     }
 
-    private void sleep()
+    private static void sleep()
     {
         LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
     }

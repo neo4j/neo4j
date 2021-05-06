@@ -127,12 +127,12 @@ public class BasicContext implements Context
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T, U> T throwIfNull( String name, U value ) throws ProcedureException
+    private static <T, U> T throwIfNull( String name, U value ) throws ProcedureException
     {
         return throwIfNull( name, value, v -> (T) v );
     }
 
-    private <T, U> T throwIfNull( String name, U value, Function<U,T> producer ) throws ProcedureException
+    private static <T, U> T throwIfNull( String name, U value, Function<U,T> producer ) throws ProcedureException
     {
         if ( value == null )
         {

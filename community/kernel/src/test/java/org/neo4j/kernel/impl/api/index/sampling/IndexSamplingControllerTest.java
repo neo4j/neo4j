@@ -39,8 +39,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -372,7 +372,7 @@ class IndexSamplingControllerTest
         verifyNoMoreInteractions( jobHandle );
     }
 
-    private RecoveryCondition always( boolean ans )
+    private static RecoveryCondition always( boolean ans )
     {
         return new Always( ans );
     }

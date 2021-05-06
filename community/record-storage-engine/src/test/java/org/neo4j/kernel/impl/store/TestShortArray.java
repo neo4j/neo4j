@@ -64,18 +64,18 @@ class TestShortArray
         assertCanEncodeAndDecodeToSameValue( intArray, 32 );
     }
 
-    private void assertCanNotEncode( Object intArray )
+    private static void assertCanNotEncode( Object intArray )
     {
         assertCanNotEncode( intArray, DEFAULT_PAYLOAD_SIZE );
     }
 
-    private void assertCanNotEncode( Object intArray, int payloadSize )
+    private static void assertCanNotEncode( Object intArray, int payloadSize )
     {
         assertFalse( ShortArray.encode( 0, intArray, new PropertyBlock(),
                 payloadSize ) );
     }
 
-    private int[] intArray( int count, int stride )
+    private static int[] intArray( int count, int stride )
     {
         int[] result = new int[count];
         for ( int i = 0; i < count; i++ )
@@ -85,12 +85,12 @@ class TestShortArray
         return result;
     }
 
-    private void assertCanEncodeAndDecodeToSameValue( Object value )
+    private static void assertCanEncodeAndDecodeToSameValue( Object value )
     {
         assertCanEncodeAndDecodeToSameValue( value, PropertyType.getPayloadSize() );
     }
 
-    private void assertCanEncodeAndDecodeToSameValue( Object value, int payloadSize )
+    private static void assertCanEncodeAndDecodeToSameValue( Object value, int payloadSize )
     {
         PropertyBlock target = new PropertyBlock();
         boolean encoded = ShortArray.encode( 0, value, target, payloadSize );

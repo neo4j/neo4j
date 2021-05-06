@@ -24,10 +24,13 @@ import java.net.URISyntaxException;
 
 import org.neo4j.configuration.helpers.SocketAddress;
 
-public class SimpleUriBuilder
+public final class SimpleUriBuilder
 {
+    private SimpleUriBuilder()
+    {
+    }
 
-    public URI buildURI( SocketAddress address, boolean isSsl )
+    public static URI buildURI( SocketAddress address, boolean isSsl )
     {
         StringBuilder sb = new StringBuilder();
         sb.append( "http" );

@@ -48,7 +48,7 @@ public class LegacyTransactionModule implements ServerModule
         webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), null );
     }
 
-    private List<Class<?>> jaxRsClasses()
+    private static List<Class<?>> jaxRsClasses()
     {
         return List.of( LegacyTransactionService.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
     }

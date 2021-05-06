@@ -297,7 +297,7 @@ class IdRangeMarkerTest
         verify( writer, times( 1 ) ).mergeIfExists( any(), any(), any() );
     }
 
-    private ValueMerger realMergerMock()
+    private static ValueMerger realMergerMock()
     {
         ValueMerger merger = mock( ValueMerger.class );
         when( merger.merge( any(), any(), any(), any() ) ).thenAnswer( invocation -> IdRangeMerger.DEFAULT.merge(

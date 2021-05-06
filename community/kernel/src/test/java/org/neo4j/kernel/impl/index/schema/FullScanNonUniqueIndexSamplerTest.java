@@ -113,7 +113,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
         assertThat( cursorTracer.faults() ).isEqualTo( 1 );
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();
@@ -155,7 +155,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
         }
     }
 
-    private ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
+    private static ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( index, typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
     }

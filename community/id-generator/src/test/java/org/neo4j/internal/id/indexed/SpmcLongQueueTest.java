@@ -155,7 +155,7 @@ class SpmcLongQueueTest
         assertEquals( -1, queue.takeOrDefault( -1 ) );
     }
 
-    private Callable<Void> createConsumer( SpmcLongQueue queue, long[] output )
+    private static Callable<Void> createConsumer( SpmcLongQueue queue, long[] output )
     {
         return () ->
         {
@@ -172,7 +172,7 @@ class SpmcLongQueueTest
         };
     }
 
-    private Callable<Void> createProducer( SpmcLongQueue queue, long[] input )
+    private static Callable<Void> createProducer( SpmcLongQueue queue, long[] input )
     {
         return () ->
         {

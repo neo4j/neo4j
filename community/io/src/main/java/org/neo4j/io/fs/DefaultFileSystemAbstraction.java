@@ -23,7 +23,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -274,7 +273,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         return Files.newInputStream( fileName );
     }
 
-    private OutputStream openFileOutputStream( Path fileName, boolean append ) throws IOException
+    private static OutputStream openFileOutputStream( Path fileName, boolean append ) throws IOException
     {
         return Files.newOutputStream( fileName, append ? APPEND_OPTIONS : DEFAULT_OUTPUT_OPTIONS );
     }

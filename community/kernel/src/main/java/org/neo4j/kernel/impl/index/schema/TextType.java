@@ -213,7 +213,7 @@ class TextType extends Type
         return booleanOf( long2 >> 1 );
     }
 
-    void write( GenericKey state, byte[] bytes, boolean isCharType )
+    static void write( GenericKey state, byte[] bytes, boolean isCharType )
     {
         state.byteArray = bytes;
         state.long0 = bytes.length;

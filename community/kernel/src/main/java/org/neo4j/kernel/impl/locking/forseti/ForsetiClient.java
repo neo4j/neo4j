@@ -737,7 +737,7 @@ public class ForsetiClient implements Locks.Client
         }
     }
 
-    private long countLocks( LongIntMap[] lockCounts )
+    private static long countLocks( LongIntMap[] lockCounts )
     {
         long count = 0;
         for ( LongIntMap lockCount : lockCounts )

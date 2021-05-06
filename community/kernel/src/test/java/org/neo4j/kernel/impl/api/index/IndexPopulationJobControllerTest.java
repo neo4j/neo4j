@@ -75,7 +75,7 @@ class IndexPopulationJobControllerTest
         verify( populationJob ).run();
     }
 
-    private IndexPopulationJob getIndexPopulationJob()
+    private static IndexPopulationJob getIndexPopulationJob()
     {
         return mock( IndexPopulationJob.class );
     }

@@ -209,7 +209,7 @@ class LogTruncationTest
         channel.close();
     }
 
-    private LabelTokenRecord createLabelTokenRecord( int id )
+    private static LabelTokenRecord createLabelTokenRecord( int id )
     {
         LabelTokenRecord labelTokenRecord = new LabelTokenRecord( id );
         labelTokenRecord.setInUse( true );
@@ -218,7 +218,7 @@ class LogTruncationTest
         return labelTokenRecord;
     }
 
-    private RelationshipTypeTokenRecord createRelationshipTypeTokenRecord( int id )
+    private static RelationshipTypeTokenRecord createRelationshipTypeTokenRecord( int id )
     {
         RelationshipTypeTokenRecord relationshipTypeTokenRecord = new RelationshipTypeTokenRecord( id );
         relationshipTypeTokenRecord.setInUse( true );
@@ -227,7 +227,7 @@ class LogTruncationTest
         return relationshipTypeTokenRecord;
     }
 
-    private PropertyKeyTokenRecord createPropertyKeyTokenRecord( int id )
+    private static PropertyKeyTokenRecord createPropertyKeyTokenRecord( int id )
     {
         PropertyKeyTokenRecord propertyKeyTokenRecord = new PropertyKeyTokenRecord( id );
         propertyKeyTokenRecord.setInUse( true );

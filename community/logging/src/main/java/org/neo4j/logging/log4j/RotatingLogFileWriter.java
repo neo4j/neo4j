@@ -82,7 +82,7 @@ public class RotatingLogFileWriter implements Closeable
         ctx.close();
     }
 
-    private Neo4jLoggerContext setupLogFile( FileSystemAbstraction fileSystemAbstraction, Path logPath, long rotationThreshold, int maxArchives,
+    private static Neo4jLoggerContext setupLogFile( FileSystemAbstraction fileSystemAbstraction, Path logPath, long rotationThreshold, int maxArchives,
             String fileSuffix, String header )
     {
         try

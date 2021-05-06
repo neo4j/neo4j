@@ -193,7 +193,7 @@ public class IndexSamplingController
         }
     }
 
-    private void waitForAsyncIndexSamples( List<IndexSamplingJobHandle> allJobs, long millisToWait )
+    private static void waitForAsyncIndexSamples( List<IndexSamplingJobHandle> allJobs, long millisToWait )
     {
         long start = System.nanoTime();
         long deadline = start + MILLISECONDS.toNanos( millisToWait );

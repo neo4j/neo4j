@@ -291,11 +291,11 @@ class PhysicalLogicalTransactionStoreTest
                 .build();
     }
 
-    private void addATransactionAndRewind( LifeSupport life, LogFiles logFiles,
-                                           TransactionMetadataCache positionCache,
-                                           TransactionIdStore transactionIdStore,
-                                           byte[] additionalHeader, long timeStarted,
-                                           long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
+    private static void addATransactionAndRewind( LifeSupport life, LogFiles logFiles,
+            TransactionMetadataCache positionCache,
+            TransactionIdStore transactionIdStore,
+            byte[] additionalHeader, long timeStarted,
+            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
                 transactionIdStore, DATABASE_HEALTH ) );
@@ -305,12 +305,12 @@ class PhysicalLogicalTransactionStoreTest
         appender.append( new TransactionToApply( transaction, NULL ), LogAppendEvent.NULL );
     }
 
-    private List<StorageCommand> singleTestCommand()
+    private static List<StorageCommand> singleTestCommand()
     {
         return Collections.singletonList( new TestCommand() );
     }
 
-    private void verifyTransaction( TransactionMetadataCache positionCache, byte[] additionalHeader, long timeStarted,
+    private static void verifyTransaction( TransactionMetadataCache positionCache, byte[] additionalHeader, long timeStarted,
             long latestCommittedTxWhenStarted, long timeCommitted, LogicalTransactionStore store ) throws IOException
     {
         try ( TransactionCursor cursor = store.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )

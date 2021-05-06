@@ -44,11 +44,11 @@ public class AggregatingIndexSampler implements IndexSampler
     public IndexSample sampleIndex( CursorContext cursorContext )
     {
         return indexSamplers.parallelStream().map( sampler -> sampleIndex( sampler, cursorContext ) )
-                .reduce( this::combine )
+                .reduce( AggregatingIndexSampler::combine )
                 .get();
     }
 
-    private IndexSample sampleIndex( IndexSampler sampler, CursorContext cursorContext )
+    private static IndexSample sampleIndex( IndexSampler sampler, CursorContext cursorContext )
     {
         try
         {
@@ -60,7 +60,7 @@ public class AggregatingIndexSampler implements IndexSampler
         }
     }
 
-    public IndexSample combine( IndexSample sample1, IndexSample sample2 )
+    public static IndexSample combine( IndexSample sample1, IndexSample sample2 )
     {
         long indexSize = Math.addExact( sample1.indexSize(), sample2.indexSize() );
         long uniqueValues = Math.addExact( sample1.uniqueValues(), sample2.uniqueValues() );

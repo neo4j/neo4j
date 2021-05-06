@@ -29,7 +29,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -136,7 +135,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
         }
     }
 
-    private void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
+    private static void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
     {
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
               IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
@@ -152,7 +151,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
             slotSelector, providerDescriptor, directoryFactory, fs, false, writable() );
     }
 
-    private IndexSamplingJob createIndexSamplingJob( IndexAccessor fusionAccessor )
+    private static IndexSamplingJob createIndexSamplingJob( IndexAccessor fusionAccessor )
     {
         IndexProxyAdapter indexProxy = new IndexProxyAdapter()
         {
@@ -194,7 +193,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
         };
     }
 
-    private IndexAccessor failingIndexAccessor()
+    private static IndexAccessor failingIndexAccessor()
     {
         return new IndexAccessor.Adapter()
         {
@@ -225,7 +224,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
 
                     @Override
                     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                                       PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
+                                       PropertyIndexQuery... query )
                     {
                     }
                 };

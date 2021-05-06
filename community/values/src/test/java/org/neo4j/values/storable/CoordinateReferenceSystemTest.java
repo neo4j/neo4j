@@ -122,13 +122,13 @@ class CoordinateReferenceSystemTest
         assertThat( crs.getCalculator().distance( cphHigh, malmo ) ).as( "3D distance should match" ).isCloseTo( expectedHigh, offset( 0.2 ) );
     }
 
-    private PointValue cart( double... coords )
+    private static PointValue cart( double... coords )
     {
         CoordinateReferenceSystem crs = coords.length == 3 ? CoordinateReferenceSystem.Cartesian_3D : CoordinateReferenceSystem.Cartesian;
         return Values.pointValue( crs, coords );
     }
 
-    private PointValue geo( double... coords )
+    private static PointValue geo( double... coords )
     {
         CoordinateReferenceSystem crs = coords.length == 3 ? CoordinateReferenceSystem.Cartesian_3D : CoordinateReferenceSystem.Cartesian;
         return Values.pointValue( crs, coords );

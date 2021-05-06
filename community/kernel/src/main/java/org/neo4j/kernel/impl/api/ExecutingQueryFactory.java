@@ -75,7 +75,7 @@ public class ExecutingQueryFactory
                 trackQueryAllocations.get() );
     }
 
-    public void bindToStatement( ExecutingQuery executingQuery, KernelStatement statement )
+    public static void bindToStatement( ExecutingQuery executingQuery, KernelStatement statement )
     {
         executingQuery.onTransactionBound( new ExecutingQuery.TransactionBinding(
                 statement.namedDatabaseId(),

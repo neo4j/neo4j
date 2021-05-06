@@ -133,7 +133,7 @@ class ShiroAuthTokenTest
         assertThat( stringRepresentation ).contains( "realm='null'" );
     }
 
-    private void testTokenSupportsRealm( ShiroAuthToken token, boolean supports, String... realms )
+    private static void testTokenSupportsRealm( ShiroAuthToken token, boolean supports, String... realms )
     {
         for ( String realm : realms )
         {
@@ -141,7 +141,7 @@ class ShiroAuthTokenTest
         }
     }
 
-    private void testBasicAuthToken( ShiroAuthToken token, String username, String password, String scheme )
+    private static void testBasicAuthToken( ShiroAuthToken token, String username, String password, String scheme )
             throws InvalidAuthTokenException
     {
         assertThat( token.getScheme() ).as( "Token should have basic scheme" ).isEqualTo( scheme );

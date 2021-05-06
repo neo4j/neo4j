@@ -59,7 +59,7 @@ public class ListConverter implements Function<String,DefaultParameterValue>
         }
     }
 
-    private void typeCheck( List<?> list, Type innerType )
+    private static void typeCheck( List<?> list, Type innerType )
     {
         if ( list == null )
         {

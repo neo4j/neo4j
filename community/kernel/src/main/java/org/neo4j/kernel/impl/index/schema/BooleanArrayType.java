@@ -76,7 +76,7 @@ class BooleanArrayType extends AbstractArrayType<Boolean>
         return Values.of( array );
     }
 
-    void write( GenericKey state, int offset, boolean value )
+    static void write( GenericKey state, int offset, boolean value )
     {
         state.long0Array[offset] = value ? TRUE : FALSE;
     }

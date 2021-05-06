@@ -45,7 +45,7 @@ import java.util.concurrent.locks.LockSupport;
  *
  * @see Work
  */
-@SuppressWarnings( {"unchecked", "NumberEquality"} )
+@SuppressWarnings( {"unchecked"} )
 public class WorkSync<Material, W extends Work<Material,W>>
 {
     private final Material material;
@@ -171,7 +171,7 @@ public class WorkSync<Material, W extends Work<Material,W>>
         }
     }
 
-    private void checkFailure( Throwable failure ) throws ExecutionException
+    private static void checkFailure( Throwable failure ) throws ExecutionException
     {
         if ( failure != null )
         {

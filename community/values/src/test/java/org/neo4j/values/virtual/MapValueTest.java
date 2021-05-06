@@ -239,7 +239,7 @@ class MapValueTest
         assertThat( combinedFiltered.isEmpty() ).isTrue();
     }
 
-    private void assertMapValueEquals( MapValue a, MapValue b )
+    private static void assertMapValueEquals( MapValue a, MapValue b )
     {
         assertThat( a ).isEqualTo( b );
         assertThat( a.size() ).isEqualTo( b.size() );
@@ -250,7 +250,7 @@ class MapValueTest
         b.foreach( ( k, v ) -> assertThat( a.get( k ) ).isEqualTo( v ) );
     }
 
-    private MapValue mapValue( Object... kv )
+    private static MapValue mapValue( Object... kv )
     {
         assert kv.length % 2 == 0;
         String[] keys = new String[kv.length / 2];

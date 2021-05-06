@@ -141,12 +141,12 @@ public class DatabaseTransactionEventListeners
         }
     }
 
-    private boolean canInvokeBeforeCommitListeners( Collection<TransactionEventListener<?>> listeners, ReadableTransactionState state )
+    private static boolean canInvokeBeforeCommitListeners( Collection<TransactionEventListener<?>> listeners, ReadableTransactionState state )
     {
         return !listeners.isEmpty() && canInvokeListenersWithTransactionState( state );
     }
 
-    private boolean canInvokeListenersWithTransactionState( ReadableTransactionState state )
+    private static boolean canInvokeListenersWithTransactionState( ReadableTransactionState state )
     {
         return state != null && state.hasChanges();
     }

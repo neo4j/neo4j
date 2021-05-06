@@ -161,7 +161,7 @@ class DegreesRebuildFromStoreTest
         assertThat( expectedDegrees.size() ).isEqualTo( 0 );
     }
 
-    private int[] createRelationshipTypes( RecordStorageEngine storageEngine )
+    private static int[] createRelationshipTypes( RecordStorageEngine storageEngine )
     {
         int[] types = new int[3];
         for ( int i = 0; i < types.length; i++ )

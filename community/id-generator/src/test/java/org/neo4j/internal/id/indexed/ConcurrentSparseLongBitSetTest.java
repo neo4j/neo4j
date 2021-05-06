@@ -142,7 +142,7 @@ class ConcurrentSparseLongBitSetTest
         assertEquals( 1, set.size() );
     }
 
-    private Runnable setter( ConcurrentSparseLongBitSet set, int idsPerChunk, int i, int numberOfThreads, long seed )
+    private static Runnable setter( ConcurrentSparseLongBitSet set, int idsPerChunk, int i, int numberOfThreads, long seed )
     {
         return new Runnable()
         {
@@ -172,7 +172,7 @@ class ConcurrentSparseLongBitSetTest
         };
     }
 
-    private void set( ConcurrentSparseLongBitSet set, BitSet key, long id, int slots, boolean value )
+    private static void set( ConcurrentSparseLongBitSet set, BitSet key, long id, int slots, boolean value )
     {
         boolean actuallySet = set.set( id, slots, value );
         assertTrue( actuallySet );

@@ -217,7 +217,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         } );
     }
 
-    private void putFormatVersion( PageCursor cursor )
+    private static void putFormatVersion( PageCursor cursor )
     {
         GenericLayout layout = getLayout();
         int major = layout.majorVersion();
@@ -226,7 +226,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         cursor.putInt( minor );
     }
 
-    private void readFormatVersion( PageCursor c )
+    private static void readFormatVersion( PageCursor c )
     {
         c.getInt(); // Major version
         c.getInt(); // Minor version
@@ -244,7 +244,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         }
     }
 
-    private void initializeFromValue( GenericKey key, Value value )
+    private static void initializeFromValue( GenericKey key, Value value )
     {
         key.initialize( ENTITY_ID );
         for ( int i = 0; i < NUMBER_OF_SLOTS; i++ )
@@ -274,12 +274,12 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
         }
     }
 
-    private String detailedFailureMessage( GenericKey actualKey, GenericKey expectedKey )
+    private static String detailedFailureMessage( GenericKey actualKey, GenericKey expectedKey )
     {
         return "expected " + expectedKey.toDetailedString() + ", but was " + actualKey.toDetailedString();
     }
 
-    private GenericLayout getLayout()
+    private static GenericLayout getLayout()
     {
         return new GenericLayout( NUMBER_OF_SLOTS, IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) );
     }

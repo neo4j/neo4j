@@ -63,7 +63,7 @@ class ZonedTimeArrayType extends AbstractArrayType<OffsetTime>
         key.long1Array = ensureBigEnough( key.long1Array, length );
     }
 
-    void write( GenericKey state, int offset, long nanosOfDayUTC, int offsetSeconds )
+    static void write( GenericKey state, int offset, long nanosOfDayUTC, int offsetSeconds )
     {
         state.long0Array[offset] = nanosOfDayUTC;
         state.long1Array[offset] = offsetSeconds;

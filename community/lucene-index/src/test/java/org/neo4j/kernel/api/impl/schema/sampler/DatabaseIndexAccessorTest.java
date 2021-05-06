@@ -364,19 +364,19 @@ public class DatabaseIndexAccessorTest
         }
     }
 
-    private Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private static Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         return toSet( results( reader, queries ) );
     }
 
-    private NodeValueIterator results( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private static NodeValueIterator results( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator results = new NodeValueIterator();
         reader.query( NULL_CONTEXT, results, unconstrained(), queries );
         return results;
     }
 
-    private long[] resultsArray( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private static long[] resultsArray( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator iterator = results( reader, queries ) )
         {

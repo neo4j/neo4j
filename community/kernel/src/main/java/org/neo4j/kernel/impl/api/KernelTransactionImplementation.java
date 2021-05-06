@@ -235,8 +235,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
-        this.memoryTracker = config.get( memory_tracking ) ?
-                             new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, heapGrabSize,
+        this.memoryTracker = config.get( memory_tracking ) ? new LocalMemoryTracker( transactionMemoryPool, 0, heapGrabSize,
                                      memory_transaction_max_size.name() ) : EmptyMemoryTracker.INSTANCE;
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;

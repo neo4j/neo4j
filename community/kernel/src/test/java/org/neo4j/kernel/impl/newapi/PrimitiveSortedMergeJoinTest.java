@@ -64,13 +64,13 @@ class PrimitiveSortedMergeJoinTest
         assertThatItWorks( asList( 1L, 3L, 5L ), asList( 2L, 3L, 6L ), indexOrder );
     }
 
-    private void assertThatItWorks( List<Long> listA, List<Long> listB, IndexOrder indexOrder )
+    private static void assertThatItWorks( List<Long> listA, List<Long> listB, IndexOrder indexOrder )
     {
         assertThatItWorksOneWay( listA, listB, indexOrder );
         assertThatItWorksOneWay( listB, listA, indexOrder );
     }
 
-    private void assertThatItWorksOneWay( List<Long> listA, List<Long> listB, IndexOrder indexOrder )
+    private static void assertThatItWorksOneWay( List<Long> listA, List<Long> listB, IndexOrder indexOrder )
     {
         PrimitiveSortedMergeJoin sortedMergeJoin = new PrimitiveSortedMergeJoin();
         sortedMergeJoin.initialize( indexOrder );
@@ -91,9 +91,9 @@ class PrimitiveSortedMergeJoinTest
         assertThat( result ).isEqualTo( expected );
     }
 
-    private List<Long> process( PrimitiveSortedMergeJoin sortedMergeJoin,
-                                Iterator<Long> iteratorA,
-                                Iterator<Long> iteratorB )
+    private static List<Long> process( PrimitiveSortedMergeJoin sortedMergeJoin,
+            Iterator<Long> iteratorA,
+            Iterator<Long> iteratorB )
     {
         final List<Long> result = new ArrayList<>();
         long node = 0;

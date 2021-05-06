@@ -434,7 +434,7 @@ class PointTest
         assertCannotParse( "{crs:WGS-84 , lat:1, y:2}" );
     }
 
-    private InvalidArgumentException assertCannotParse( String text )
+    private static InvalidArgumentException assertCannotParse( String text )
     {
         return assertThrows( InvalidArgumentException.class, () -> PointValue.parse( text ) );
     }

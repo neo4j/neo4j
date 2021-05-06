@@ -32,7 +32,6 @@ import org.neo4j.collection.trackable.HeapTrackingUnifiedMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
-import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newMap;
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
@@ -299,20 +298,7 @@ public class HeapTrackingOrderedAppendMap<K, V> extends DefaultCloseListenable
         }
     }
 
-    @VisibleForTesting
-    int numberOfChunks()
-    {
-        int i = 0;
-        var chunk = first;
-        while ( chunk != null )
-        {
-            chunk = chunk.next;
-            i++;
-        }
-        return i;
-    }
-
-    private int grow( int size )
+    private static int grow( int size )
     {
         if ( size == MAX_CHUNK_SIZE )
         {

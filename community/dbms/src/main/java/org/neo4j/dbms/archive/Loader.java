@@ -102,7 +102,7 @@ public class Loader
         }
     }
 
-    private void checkDatabasePresence( DatabaseLayout databaseLayout ) throws FileAlreadyExistsException
+    private static void checkDatabasePresence( DatabaseLayout databaseLayout ) throws FileAlreadyExistsException
     {
         if ( Files.exists( databaseLayout.metadataStore() ) )
         {
@@ -110,7 +110,7 @@ public class Loader
         }
     }
 
-    private void createDestination( Path destination ) throws IOException
+    private static void createDestination( Path destination ) throws IOException
     {
         if ( !Files.exists( destination ) )
         {
@@ -118,7 +118,7 @@ public class Loader
         }
     }
 
-    private void validatePath( Path path, boolean validateExistence ) throws FileSystemException
+    private static void validatePath( Path path, boolean validateExistence ) throws FileSystemException
     {
         if ( validateExistence && exists( path ) )
         {
@@ -142,7 +142,7 @@ public class Loader
         }
     }
 
-    private ArchiveEntry nextEntry( ArchiveInputStream stream, Path archive ) throws IncorrectFormat
+    private static ArchiveEntry nextEntry( ArchiveInputStream stream, Path archive ) throws IncorrectFormat
     {
         try
         {

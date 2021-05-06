@@ -203,7 +203,8 @@ public abstract class CRSCalculator
             }
         }
 
-        private Pair<PointValue,PointValue> boundingBoxOf( double minLon, double maxLon, double minLat, double maxLat, PointValue center, double distance )
+        private static Pair<PointValue,PointValue> boundingBoxOf( double minLon, double maxLon, double minLat, double maxLat, PointValue center,
+                double distance )
         {
             CoordinateReferenceSystem crs = center.getCoordinateReferenceSystem();
             int dimension = center.getCoordinateReferenceSystem().getDimension();

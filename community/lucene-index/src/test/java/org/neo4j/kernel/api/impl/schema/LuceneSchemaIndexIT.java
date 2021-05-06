@@ -230,7 +230,7 @@ class LuceneSchemaIndexIT
         }
     }
 
-    private void addDocumentToIndex( SchemaIndex index, int documents ) throws IOException
+    private static void addDocumentToIndex( SchemaIndex index, int documents ) throws IOException
     {
         for ( int i = 0; i < documents; i++ )
         {

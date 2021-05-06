@@ -913,7 +913,7 @@ public class MuninnPageCache implements PageCache
             }
 
             pageRef = pages.deref( clockArm );
-            if ( pages.isLoaded( pageRef ) && pages.decrementUsage( pageRef ) )
+            if ( PageList.isLoaded( pageRef ) && PageList.decrementUsage( pageRef ) )
             {
                 evicted = pages.tryEvict( pageRef, faultEvent );
             }
@@ -923,7 +923,7 @@ public class MuninnPageCache implements PageCache
         return pageRef;
     }
 
-    private CacheLiveLockException cooperativeEvictionLiveLock()
+    private static CacheLiveLockException cooperativeEvictionLiveLock()
     {
         return new CacheLiveLockException(
                 "Live-lock encountered when trying to cooperatively evict a page during page fault. " +
@@ -1061,7 +1061,7 @@ public class MuninnPageCache implements PageCache
             }
 
             long pageRef = pages.deref( clockArm );
-            if ( pages.isLoaded( pageRef ) && pages.decrementUsage( pageRef ) )
+            if ( PageList.isLoaded( pageRef ) && PageList.decrementUsage( pageRef ) )
             {
                 try
                 {
@@ -1140,7 +1140,7 @@ public class MuninnPageCache implements PageCache
                 for ( int i = 0; i < pageCount; i++ )
                 {
                     long pageRef = pages.deref( i );
-                    while ( swapperIds.contains( pages.getSwapperId( pageRef ) ) )
+                    while ( swapperIds.contains( PageList.getSwapperId( pageRef ) ) )
                     {
                         if ( pages.tryEvict( pageRef, evictionEvent ) )
                         {

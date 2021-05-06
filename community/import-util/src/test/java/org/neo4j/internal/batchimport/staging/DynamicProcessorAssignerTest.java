@@ -161,7 +161,7 @@ class DynamicProcessorAssignerTest
         assertEquals( 2, slow.processors( 0 ) );
     }
 
-    private Configuration config( final int movingAverage, int processors )
+    private static Configuration config( final int movingAverage, int processors )
     {
         return new Configuration()
         {
@@ -179,7 +179,7 @@ class DynamicProcessorAssignerTest
         };
     }
 
-    private StageExecution executionOf( Configuration config, Step<?>... steps )
+    private static StageExecution executionOf( Configuration config, Step<?>... steps )
     {
         return new StageExecution( "Test", null, config, Arrays.asList( steps ), Step.ORDER_SEND_DOWNSTREAM );
     }

@@ -86,7 +86,7 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
         assertTrue( indexRule.isUnique() && indexRule.getOwningConstraintId().isEmpty() );
     }
 
-    private void assertEqualityByDescriptor( IndexPrototype descriptor )
+    private static void assertEqualityByDescriptor( IndexPrototype descriptor )
     {
         IndexDescriptor rule1 = descriptor.withName( "a" ).materialise( RULE_ID );
         IndexDescriptor rule2 = descriptor.withName( "a" ).materialise( RULE_ID );

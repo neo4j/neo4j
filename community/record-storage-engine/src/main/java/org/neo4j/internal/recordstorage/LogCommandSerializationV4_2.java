@@ -71,7 +71,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writeNodeRecord( channel, command.getAfter() );
     }
 
-    private void writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
+    private static void writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
     {
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                 bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
@@ -103,7 +103,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writeRelationshipRecord( channel, command.getAfter() );
     }
 
-    private void writeRelationshipRecord( WritableChannel channel, RelationshipRecord record ) throws IOException
+    private static void writeRelationshipRecord( WritableChannel channel, RelationshipRecord record ) throws IOException
     {
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                 bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
@@ -138,7 +138,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writePropertyRecord( channel, command.getAfter() );
     }
 
-    private void writePropertyRecord( WritableChannel channel, PropertyRecord record ) throws IOException
+    private static void writePropertyRecord( WritableChannel channel, PropertyRecord record ) throws IOException
     {
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                 bitFlag( record.getRelId() != -1, Record.REL_PROPERTY.byteValue() ),
@@ -177,7 +177,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writeDynamicRecords( channel, record.getDeletedRecords() );
     }
 
-    private void writePropertyBlock( WritableChannel channel, PropertyBlock block ) throws IOException
+    private static void writePropertyBlock( WritableChannel channel, PropertyBlock block ) throws IOException
     {
         byte blockSize = (byte) block.getSize();
         assert blockSize > 0 : blockSize + " is not a valid block size value";
@@ -218,7 +218,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writeRelationshipGroupRecord( channel, command.getAfter() );
     }
 
-    private void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
+    private static void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
             throws IOException
     {
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
@@ -247,7 +247,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writeRelationshipTypeTokenRecord( channel, command.getAfter() );
     }
 
-    private void writeRelationshipTypeTokenRecord( WritableChannel channel, RelationshipTypeTokenRecord record ) throws IOException
+    private static void writeRelationshipTypeTokenRecord( WritableChannel channel, RelationshipTypeTokenRecord record ) throws IOException
     {
         // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
         byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
@@ -273,7 +273,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writeLabelTokenRecord( channel, command.getAfter() );
     }
 
-    private void writeLabelTokenRecord( WritableChannel channel, LabelTokenRecord record ) throws IOException
+    private static void writeLabelTokenRecord( WritableChannel channel, LabelTokenRecord record ) throws IOException
     {
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
@@ -291,7 +291,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         writePropertyKeyTokenRecord( channel, command.getAfter() );
     }
 
-    private void writePropertyKeyTokenRecord( WritableChannel channel, PropertyKeyTokenRecord record ) throws IOException
+    private static void writePropertyKeyTokenRecord( WritableChannel channel, PropertyKeyTokenRecord record ) throws IOException
     {
         // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
         byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
@@ -324,7 +324,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         }
     }
 
-    private void writeSchemaRecord( WritableChannel channel, SchemaRecord record ) throws IOException
+    private static void writeSchemaRecord( WritableChannel channel, SchemaRecord record ) throws IOException
     {
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                 bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
@@ -343,7 +343,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         }
     }
 
-    private void writeSchemaRule( WritableChannel channel, SchemaRule schemaRule ) throws IOException
+    private static void writeSchemaRule( WritableChannel channel, SchemaRule schemaRule ) throws IOException
     {
         Map<String,Value> ruleMap = SchemaStore.mapifySchemaRule( schemaRule );
         writeStringValueMap( channel, ruleMap );
@@ -352,7 +352,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
     /**
      * @see LogCommandSerializationV4_0#readStringValueMap(ReadableChannel)
      */
-    void writeStringValueMap( WritableChannel channel, Map<String,Value> ruleMap ) throws IOException
+    static void writeStringValueMap( WritableChannel channel, Map<String,Value> ruleMap ) throws IOException
     {
         channel.putInt( ruleMap.size() );
         for ( Map.Entry<String,Value> entry : ruleMap.entrySet() )
@@ -362,7 +362,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         }
     }
 
-    private void writeMapKeyByteArray( WritableChannel channel, byte[] bytes ) throws IOException
+    private static void writeMapKeyByteArray( WritableChannel channel, byte[] bytes ) throws IOException
     {
         channel.putInt( bytes.length );
         channel.put( bytes, bytes.length );
@@ -431,7 +431,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         }
     }
 
-    private void writeMapValue( WritableChannel channel, Value value ) throws IOException
+    private static void writeMapValue( WritableChannel channel, Value value ) throws IOException
     {
         value.writeTo( new ValueWriter<IOException>()
         {
@@ -626,12 +626,12 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
                .putLong( command.delta() );
     }
 
-    void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException
+    static void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException
     {
         writeDynamicRecords( channel, records, records.size() );
     }
 
-    void writeDynamicRecords( WritableChannel channel, Iterable<DynamicRecord> records, int size ) throws IOException
+    static void writeDynamicRecords( WritableChannel channel, Iterable<DynamicRecord> records, int size ) throws IOException
     {
         channel.putInt( size ); // 4
         for ( DynamicRecord record : records )
@@ -640,7 +640,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
         }
     }
 
-    void writeDynamicRecord( WritableChannel channel, DynamicRecord record ) throws IOException
+    static void writeDynamicRecord( WritableChannel channel, DynamicRecord record ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         if ( record.inUse() )

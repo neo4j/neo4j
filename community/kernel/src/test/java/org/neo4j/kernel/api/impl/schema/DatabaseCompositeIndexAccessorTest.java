@@ -343,7 +343,7 @@ public class DatabaseCompositeIndexAccessorTest
         return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP );
     }
 
-    private Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private static Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {
@@ -352,22 +352,22 @@ public class DatabaseCompositeIndexAccessorTest
         }
     }
 
-    private IndexEntryUpdate<?> add( long nodeId, Object... values )
+    private static IndexEntryUpdate<?> add( long nodeId, Object... values )
     {
         return IndexQueryHelper.add( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), values );
     }
 
-    private IndexEntryUpdate<?> remove( long nodeId, Object... values )
+    private static IndexEntryUpdate<?> remove( long nodeId, Object... values )
     {
         return IndexQueryHelper.remove( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), values );
     }
 
-    private IndexEntryUpdate<?> change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
+    private static IndexEntryUpdate<?> change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
     {
         return IndexQueryHelper.change( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), valuesBefore, valuesAfter );
     }
 
-    private void updateAndCommit( IndexAccessor accessor, List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException
+    private static void updateAndCommit( IndexAccessor accessor, List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {

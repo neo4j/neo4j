@@ -590,7 +590,7 @@ class BufferedCharSeekerTest
     @ValueSource( booleans = {false, true} )
     void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLinePlatformNewline( boolean threadAhead ) throws Exception
     {
-        shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( "%n", threadAhead );
+        shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( System.lineSeparator(), threadAhead );
     }
 
     @ParameterizedTest( name = "thread-ahead: {0}" )
@@ -790,12 +790,12 @@ class BufferedCharSeekerTest
         assertEnd( seeker, mark, delimiter );
     }
 
-    private char randomDelimiter()
+    private static char randomDelimiter()
     {
         return DELIMITER_CHARS[random.nextInt( DELIMITER_CHARS.length )];
     }
 
-    private char randomWhitespace( char except )
+    private static char randomWhitespace( char except )
     {
         char ch;
         do
@@ -832,7 +832,7 @@ class BufferedCharSeekerTest
         assertEnd( seeker, mark, COMMA );
     }
 
-    private String lines( String newline, List<String[]> cells )
+    private static String lines( String newline, List<String[]> cells )
     {
         String[] lines = new String[cells.size()];
         int i = 0;
@@ -843,21 +843,21 @@ class BufferedCharSeekerTest
         return lines( newline, lines );
     }
 
-    private String lines( String newline, String... lines )
+    private static String lines( String newline, String... lines )
     {
         StringBuilder builder = new StringBuilder();
         for ( String line : lines )
         {
             if ( builder.length() > 0 )
             {
-                builder.append( format( newline ) );
+                builder.append( newline );
             }
             builder.append( line );
         }
         return builder.toString();
     }
 
-    private String[][] randomWeirdValues( int cols, int rows, char... except )
+    private static String[][] randomWeirdValues( int cols, int rows, char... except )
     {
         String[][] data = new String[rows][cols];
         for ( int row = 0; row < rows; row++ )
@@ -870,7 +870,7 @@ class BufferedCharSeekerTest
         return data;
     }
 
-    private String randomWeirdValue( char... except )
+    private static String randomWeirdValue( char... except )
     {
         int length = random.nextInt( 10 ) + 5;
         char[] chars = new char[length];
@@ -881,7 +881,7 @@ class BufferedCharSeekerTest
         return new String( chars );
     }
 
-    private char randomWeirdChar( char... except )
+    private static char randomWeirdChar( char... except )
     {
         while ( true )
         {
@@ -893,7 +893,7 @@ class BufferedCharSeekerTest
         }
     }
 
-    private boolean in( char candidate, char[] set )
+    private static boolean in( char candidate, char[] set )
     {
         for ( char ch : set )
         {
@@ -905,7 +905,7 @@ class BufferedCharSeekerTest
         return false;
     }
 
-    private String join( String[][] data, char delimiter )
+    private static String join( String[][] data, char delimiter )
     {
         String delimiterString = String.valueOf( delimiter );
         StringBuilder builder = new StringBuilder();
@@ -933,7 +933,7 @@ class BufferedCharSeekerTest
         assertFalse( seeker.tryExtract( mark, extractors.string() ) );
     }
 
-    private void assertEnd( CharSeeker seeker, Mark mark, int delimiter ) throws IOException
+    private static void assertEnd( CharSeeker seeker, Mark mark, int delimiter ) throws IOException
     {
         assertTrue( mark.isEndOfLine() );
         assertFalse( seeker.seek( mark, delimiter ) );
@@ -953,27 +953,27 @@ class BufferedCharSeekerTest
         return line.toArray( new String[0] );
     }
 
-    private CharSeeker seeker( CharReadable readable, boolean threadAhead )
+    private static CharSeeker seeker( CharReadable readable, boolean threadAhead )
     {
         return seeker( readable, config(), threadAhead );
     }
 
-    private CharSeeker seeker( CharReadable readable, Configuration config, boolean threadAhead )
+    private static CharSeeker seeker( CharReadable readable, Configuration config, boolean threadAhead )
     {
         return charSeeker( readable, config, threadAhead );
     }
 
-    private CharSeeker seeker( String data, boolean threadAhead )
+    private static CharSeeker seeker( String data, boolean threadAhead )
     {
         return seeker( data, config(), threadAhead );
     }
 
-    private CharSeeker seeker( String data, Configuration config, boolean threadAhead )
+    private static CharSeeker seeker( String data, Configuration config, boolean threadAhead )
     {
         return seeker( wrap( stringReaderWithName( data, TEST_SOURCE ), data.length() * 2 ), config, threadAhead );
     }
 
-    private Reader stringReaderWithName( String data, final String name )
+    private static Reader stringReaderWithName( String data, final String name )
     {
         return new StringReader( data )
         {

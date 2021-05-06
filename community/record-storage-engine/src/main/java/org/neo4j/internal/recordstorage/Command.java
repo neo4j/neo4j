@@ -140,7 +140,7 @@ public abstract class Command implements StorageCommand
 
     public abstract boolean handle( CommandVisitor handler ) throws IOException;
 
-    protected String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
+    protected static String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
     {
         return format( "\t-%s%n\t+%s", before, after );
     }

@@ -120,7 +120,7 @@ class RunnablesTest
         assertSame( expectedError, actual );
     }
 
-    private Runnable error( Error error )
+    private static Runnable error( Error error )
     {
         return () ->
         {
@@ -128,7 +128,7 @@ class RunnablesTest
         };
     }
 
-    private Runnable runtimeException( RuntimeException runtimeException )
+    private static Runnable runtimeException( RuntimeException runtimeException )
     {
         return () ->
         {
@@ -136,7 +136,7 @@ class RunnablesTest
         };
     }
 
-    private void assertRun( Task... tasks )
+    private static void assertRun( Task... tasks )
     {
         for ( Task task : tasks )
         {

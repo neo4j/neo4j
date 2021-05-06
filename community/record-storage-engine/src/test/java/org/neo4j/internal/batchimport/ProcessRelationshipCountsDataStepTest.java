@@ -81,7 +81,7 @@ class ProcessRelationshipCountsDataStepTest
         assertEquals( 1, step.maxProcessors() );
     }
 
-    private ProcessRelationshipCountsDataStep instantiateStep( int highLabelId, int highRelationshipTypeId, long labelCacheSize, int maxProcessors,
+    private static ProcessRelationshipCountsDataStep instantiateStep( int highLabelId, int highRelationshipTypeId, long labelCacheSize, int maxProcessors,
             long maxMemory )
     {
         StageControl control = new SimpleStageControl();
@@ -93,7 +93,7 @@ class ProcessRelationshipCountsDataStepTest
                                                       NumberArrayFactories.OFF_HEAP, ProgressReporter.SILENT, PageCacheTracer.NULL, INSTANCE );
     }
 
-    private NodeLabelsCache nodeLabelsCache( long sizeInBytes )
+    private static NodeLabelsCache nodeLabelsCache( long sizeInBytes )
     {
         NodeLabelsCache cache = mock( NodeLabelsCache.class );
         doAnswer( invocation ->

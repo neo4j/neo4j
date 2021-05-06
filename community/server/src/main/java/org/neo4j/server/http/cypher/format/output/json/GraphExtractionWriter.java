@@ -57,7 +57,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void writeNodes( JsonGenerator out, Iterable<Node> nodes, TransactionStateChecker txStateChecker )
+    private static void writeNodes( JsonGenerator out, Iterable<Node> nodes, TransactionStateChecker txStateChecker )
             throws IOException
     {
         out.writeArrayFieldStart( "nodes" );
@@ -103,12 +103,12 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void markDeleted( JsonGenerator out ) throws IOException
+    private static void markDeleted( JsonGenerator out ) throws IOException
     {
         out.writeBooleanField( "deleted", Boolean.TRUE );
     }
 
-    private void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships,
+    private static void writeRelationships( JsonGenerator out, Iterable<Relationship> relationships,
             TransactionStateChecker txStateChecker ) throws IOException
     {
         out.writeArrayFieldStart( "relationships" );
@@ -145,7 +145,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void writeProperties( JsonGenerator out, Entity container ) throws IOException
+    private static void writeProperties( JsonGenerator out, Entity container ) throws IOException
     {
         out.writeObjectFieldStart( "properties" );
         try
@@ -162,7 +162,7 @@ class GraphExtractionWriter implements ResultDataContentWriter
         }
     }
 
-    private void extract( Set<Node> nodes, Set<Relationship> relationships, Iterable<?> source )
+    private static void extract( Set<Node> nodes, Set<Relationship> relationships, Iterable<?> source )
     {
         for ( Object item : source )
         {

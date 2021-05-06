@@ -37,7 +37,6 @@ public class MyCoreAPI
 
     public long makeNode( Transaction tx, String label ) throws ProcedureException
     {
-        long result;
         try
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -54,7 +53,7 @@ public class MyCoreAPI
         }
     }
 
-    public long countNodes( Transaction tx )
+    public static long countNodes( Transaction tx )
     {
         KernelTransaction kernelTransaction = ((InternalTransaction) tx).kernelTransaction();
         return kernelTransaction.dataRead().countsForNode( -1 );

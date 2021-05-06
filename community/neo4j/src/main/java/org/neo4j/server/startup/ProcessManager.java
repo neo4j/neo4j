@@ -202,7 +202,7 @@ class ProcessManager
         }
     }
 
-    private void installShutdownHook( Process finalProcess )
+    private static void installShutdownHook( Process finalProcess )
     {
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
             if ( finalProcess.isAlive() )

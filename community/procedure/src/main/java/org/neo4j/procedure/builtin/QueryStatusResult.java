@@ -125,7 +125,7 @@ public class QueryStatusResult
         this.connectionId = clientConnection.connectionId();
     }
 
-    private Long asMillis( Long micros )
+    private static Long asMillis( Long micros )
     {
         return micros == null ? null : TimeUnit.MICROSECONDS.toMillis( micros );
     }

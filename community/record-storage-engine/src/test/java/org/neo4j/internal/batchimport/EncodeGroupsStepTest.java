@@ -51,7 +51,6 @@ class EncodeGroupsStepTest
     private final StageControl control = new SimpleStageControl();
     private final RecordStore<RelationshipGroupRecord> store = mock( RecordStore.class );
 
-    @SuppressWarnings( "unchecked" )
     @Test
     void shouldEncodeGroupChains() throws Throwable
     {
@@ -114,7 +113,7 @@ class EncodeGroupsStepTest
         assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 10 );
     }
 
-    private void assertBatch( RelationshipGroupRecord[] batch, long lastOwningNodeLastBatch )
+    private static void assertBatch( RelationshipGroupRecord[] batch, long lastOwningNodeLastBatch )
     {
         for ( int i = 0; i < batch.length; i++ )
         {
@@ -134,7 +133,7 @@ class EncodeGroupsStepTest
         }
     }
 
-    private RelationshipGroupRecord[] batch( Group... groups )
+    private static RelationshipGroupRecord[] batch( Group... groups )
     {
         return ReadGroupsFromCacheStepTest.groups( groups ).toArray( new RelationshipGroupRecord[0] );
     }

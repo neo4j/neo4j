@@ -79,7 +79,7 @@ public abstract class SpaceFillingCurve
     private final int quadFactor;
     private final long initialNormMask;
 
-    private double[] scalingFactor;
+    private final double[] scalingFactor;
 
     SpaceFillingCurve( Envelope range, int maxLevel )
     {
@@ -336,7 +336,7 @@ public abstract class SpaceFillingCurve
         }
     }
 
-    private void computeTilesIntersectionEnvelopeAt( SpaceFillingCurveMonitor monitor, int depth,
+    private static void computeTilesIntersectionEnvelopeAt( SpaceFillingCurveMonitor monitor, int depth,
             SearchEnvelope currentExtent, long left, long newMax, List<LongRange> results )
     {
         // Note that LongRange upper bound is inclusive, hence the '-1' in several places

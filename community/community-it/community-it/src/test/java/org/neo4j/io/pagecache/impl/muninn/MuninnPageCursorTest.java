@@ -47,8 +47,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
@@ -105,7 +105,7 @@ class MuninnPageCursorTest
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 cursorHolder.set( cursor ); // enabling the failing behaviour
-                assertThrows( NullPointerException.class, cursor::next );
+                assertThatThrownBy( cursor::next ).isInstanceOf( RuntimeException.class );
                 cursorHolder.set( null ); // disabling this failing behaviour
             }
 

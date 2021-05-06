@@ -204,7 +204,7 @@ class LogFilesBuilderTest
                 () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withLogEntryReader( logEntryReader() ).buildContext().getLogVersionRepository() );
     }
 
-    private LogFilesBuilder builderWithTestLogReader( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
+    private static LogFilesBuilder builderWithTestLogReader( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
     {
         return builder( databaseLayout, fileSystem ).withLogEntryReader( logEntryReader() );
     }

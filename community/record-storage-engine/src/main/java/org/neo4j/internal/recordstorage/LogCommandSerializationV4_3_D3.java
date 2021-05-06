@@ -53,7 +53,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         return new Command.MetaDataCommand( this, before, after );
     }
 
-    private MetaDataRecord readMetaDataRecord( long id, ReadableChannel channel ) throws IOException
+    private static MetaDataRecord readMetaDataRecord( long id, ReadableChannel channel ) throws IOException
     {
         byte flags = channel.get();
         long value = channel.getLong();
@@ -75,7 +75,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         writeMetaDataRecord( channel, command.getAfter() );
     }
 
-    private void writeMetaDataRecord( WritableChannel channel, MetaDataRecord record ) throws IOException
+    private static void writeMetaDataRecord( WritableChannel channel, MetaDataRecord record ) throws IOException
     {
         byte flags = bitFlag( record.inUse(), Record.IN_USE.byteValue() );
         channel.put( flags );
@@ -107,7 +107,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         writeRelationshipGroupRecord( channel, command.getAfter() );
     }
 
-    private void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
+    private static void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
             throws IOException
     {
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
@@ -141,7 +141,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         return new Command.RelationshipGroupCommand( this, before, after );
     }
 
-    private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
+    private static RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
             throws IOException
     {
         byte flags = channel.get();

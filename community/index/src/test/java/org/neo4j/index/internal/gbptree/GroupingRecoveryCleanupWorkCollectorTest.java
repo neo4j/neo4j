@@ -151,13 +151,13 @@ class GroupingRecoveryCleanupWorkCollectorTest
         jobs.forEach( collector::add );
     }
 
-    private void assertSame( List<DummyJob> someJobs, List<DummyJob> actual )
+    private static void assertSame( List<DummyJob> someJobs, List<DummyJob> actual )
     {
         assertTrue( actual.containsAll( someJobs ) );
         assertTrue( someJobs.containsAll( actual ) );
     }
 
-    private List<DummyJob> someJobs( List<DummyJob> allRuns )
+    private static List<DummyJob> someJobs( List<DummyJob> allRuns )
     {
         return new ArrayList<>( Arrays.asList(
                 new DummyJob( "A", allRuns ),
@@ -220,7 +220,7 @@ class GroupingRecoveryCleanupWorkCollectorTest
             };
         }
 
-        private void assertGroup( Group group, Group expectedGroup )
+        private static void assertGroup( Group group, Group expectedGroup )
         {
             assertThat( group ).as( "use only target group" ).isSameAs( expectedGroup );
         }

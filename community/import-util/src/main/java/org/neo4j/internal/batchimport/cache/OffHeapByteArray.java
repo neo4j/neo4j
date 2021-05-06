@@ -101,7 +101,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         }
     }
 
-    private boolean isByteUniform( byte[] bytes )
+    private static boolean isByteUniform( byte[] bytes )
     {
         byte reference = bytes[0];
         for ( int i = 1; i < bytes.length; i++ )
@@ -130,7 +130,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         return UnsafeUtil.getByte( address( index, offset ) );
     }
 
-    private byte getByte( long p )
+    private static byte getByte( long p )
     {
         return UnsafeUtil.getByte( p );
     }
@@ -141,7 +141,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         return getShort( address( index, offset ) );
     }
 
-    private short getShort( long p )
+    private static short getShort( long p )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -157,7 +157,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         return getInt( address( index, offset ) );
     }
 
-    private int getInt( long p )
+    private static int getInt( long p )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -194,7 +194,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         return getLong( p );
     }
 
-    private long getLong( long p )
+    private static long getLong( long p )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -220,7 +220,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         UnsafeUtil.putByte( address( index, offset ), value );
     }
 
-    private void putByte( long p, byte value )
+    private static void putByte( long p, byte value )
     {
         UnsafeUtil.putByte( p, value );
     }
@@ -231,7 +231,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         putShort( address( index, offset ), value );
     }
 
-    private void putShort( long p, short value )
+    private static void putShort( long p, short value )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -249,7 +249,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         putInt( address( index, offset ), value );
     }
 
-    private void putInt( long p, int value )
+    private static void putInt( long p, int value )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -284,7 +284,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         putLong( p, value );
     }
 
-    private void putLong( long p, long value )
+    private static void putLong( long p, long value )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {

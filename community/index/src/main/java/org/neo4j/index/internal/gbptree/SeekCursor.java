@@ -938,7 +938,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
         return KeySearch.search( cursor, bTreeNode, type, key, mutableKeys[0], keyCount, cursorContext );
     }
 
-    private int positionOf( int searchResult, boolean lookingForChildPosition )
+    private static int positionOf( int searchResult, boolean lookingForChildPosition )
     {
         if ( lookingForChildPosition )
         {

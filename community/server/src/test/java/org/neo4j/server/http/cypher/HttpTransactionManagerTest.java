@@ -21,7 +21,6 @@ package org.neo4j.server.http.cypher;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
-import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -145,7 +144,7 @@ class HttpTransactionManagerTest
         assertNotNull( facade );
     }
 
-    private HttpTransactionManager newTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool )
+    private static HttpTransactionManager newTransactionManager( DatabaseManagementService managementService, MemoryPool memoryPool )
     {
         JobScheduler jobScheduler = mock( JobScheduler.class );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -168,7 +167,7 @@ class HttpTransactionManagerTest
                                            logProvider );
     }
 
-    private GraphDatabaseFacade graphWithName( String name )
+    private static GraphDatabaseFacade graphWithName( String name )
     {
         GraphDatabaseFacade graph = mock( GraphDatabaseFacade.class );
         when( graph.databaseName() ).thenReturn( name );

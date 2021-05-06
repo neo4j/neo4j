@@ -100,7 +100,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader>
         taskCoordinator.cancel();
         try
         {
-            taskCoordinator.awaitCompletion();
+            TaskCoordinator.awaitCompletion();
         }
         catch ( InterruptedException e )
         {
@@ -118,14 +118,14 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader>
                                                 : createPartitionedUniquenessVerifier( partitions );
     }
 
-    private UniquenessVerifier createSimpleUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
+    private static UniquenessVerifier createSimpleUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         SearcherReference partitionSearcher = singlePartition.acquireSearcher();
         return new SimpleUniquenessVerifier( partitionSearcher );
     }
 
-    private UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
+    private static UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<SearcherReference> searchers = acquireSearchers( partitions );
         return new PartitionedUniquenessVerifier( searchers );

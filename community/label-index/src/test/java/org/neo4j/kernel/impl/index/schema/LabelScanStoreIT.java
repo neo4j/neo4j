@@ -223,7 +223,7 @@ class LabelScanStoreIT
         }
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         assertThat( cursorContext.getCursorTracer().pins() ).isZero();
         assertThat( cursorContext.getCursorTracer().unpins() ).isZero();

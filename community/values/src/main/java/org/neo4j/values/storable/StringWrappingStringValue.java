@@ -183,7 +183,7 @@ final class StringWrappingStringValue extends StringValue
         return SHALLOW_SIZE + sizeOf( value );
     }
 
-    private int ltrimIndex( String value )
+    private static int ltrimIndex( String value )
     {
         int start = 0, length = value.length();
         while ( start < length )
@@ -199,7 +199,7 @@ final class StringWrappingStringValue extends StringValue
         return start;
     }
 
-    private int rtrimIndex( String value )
+    private static int rtrimIndex( String value )
     {
         int end = value.length();
         while ( end > 0 )

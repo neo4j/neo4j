@@ -229,7 +229,8 @@ public class IndexTxStateUpdater
         }
     }
 
-    private Value[] getValueTuple( EntityCursor entity, PropertyCursor propertyCursor, int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds,
+    private static Value[] getValueTuple( EntityCursor entity, PropertyCursor propertyCursor, int changedPropertyKeyId, Value changedValue,
+            int[] indexPropertyIds,
             MutableIntObjectMap<Value> materializedValues, MemoryTracker memoryTracker )
     {
         Value[] values = new Value[indexPropertyIds.length];

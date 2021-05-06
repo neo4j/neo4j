@@ -787,7 +787,7 @@ public class AllStoreHolder extends Read
         return indexStatisticsStore.indexSample( index.getId() );
     }
 
-    private boolean checkIndexState( IndexDescriptor index, DiffSets<IndexDescriptor> diffSet )
+    private static boolean checkIndexState( IndexDescriptor index, DiffSets<IndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
         if ( diffSet.isAdded( index ) )

@@ -261,7 +261,7 @@ class GeometryType extends Type
         return high << Short.SIZE | low;
     }
 
-    void write( GenericKey state, long derivedSpaceFillingCurveValue, double[] coordinate )
+    static void write( GenericKey state, long derivedSpaceFillingCurveValue, double[] coordinate )
     {
         state.long0 = derivedSpaceFillingCurveValue;
         state.long1Array = ensureBigEnough( state.long1Array, coordinate.length );

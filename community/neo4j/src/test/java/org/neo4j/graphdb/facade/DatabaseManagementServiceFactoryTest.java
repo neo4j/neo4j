@@ -89,7 +89,7 @@ class DatabaseManagementServiceFactoryTest
         assertEquals( shutdownError, initException.getSuppressed()[0].getCause() );
     }
 
-    private DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError,
+    private static DatabaseManagementServiceFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError,
             RuntimeException shutdownError )
     {
         return new DatabaseManagementServiceFactory( DbmsInfo.UNKNOWN, CommunityEditionModule::new )

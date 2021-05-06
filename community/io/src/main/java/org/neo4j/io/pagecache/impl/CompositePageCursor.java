@@ -39,7 +39,7 @@ public final class CompositePageCursor extends PageCursor
     private final int secondBaseOffset;
     private final int secondLength;
     private int offset;
-    private PageCursor byteAccessCursor;
+    private final PageCursor byteAccessCursor;
     private boolean outOfBounds;
 
     // Constructed with static factory methods.
@@ -426,7 +426,7 @@ public final class CompositePageCursor extends PageCursor
         throw unsupportedNext();
     }
 
-    private UnsupportedOperationException unsupportedNext()
+    private static UnsupportedOperationException unsupportedNext()
     {
         return new UnsupportedOperationException(
                 "Composite cursor does not support next operation. Please operate directly on underlying cursors." );

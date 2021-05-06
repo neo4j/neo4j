@@ -122,7 +122,7 @@ class RelationshipCountsProcessorTest
         }
     }
 
-    private RelationshipRecord record( long startNode, int type, long endNode )
+    private static RelationshipRecord record( long startNode, int type, long endNode )
     {
         RelationshipRecord record = new RelationshipRecord( 0 );
         record.setInUse( true );

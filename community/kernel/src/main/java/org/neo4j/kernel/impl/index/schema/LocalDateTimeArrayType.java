@@ -63,7 +63,7 @@ class LocalDateTimeArrayType extends AbstractArrayType<LocalDateTime>
         key.long1Array = ensureBigEnough( key.long1Array, length );
     }
 
-    void write( GenericKey state, int offset, long epochSecond, int nano )
+    static void write( GenericKey state, int offset, long epochSecond, int nano )
     {
         state.long0Array[offset] = nano;
         state.long1Array[offset] = epochSecond;

@@ -63,7 +63,7 @@ public class StatementQueryRegistry implements QueryRegistry
     @Override
     public void startQueryExecution( ExecutingQuery executingQuery )
     {
-        factory.bindToStatement( executingQuery, statement );
+        ExecutingQueryFactory.bindToStatement( executingQuery, statement );
         registerExecutingQuery( executingQuery );
     }
 

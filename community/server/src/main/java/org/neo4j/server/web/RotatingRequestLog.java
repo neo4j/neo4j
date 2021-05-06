@@ -82,7 +82,7 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
                 serviceTime );
     }
 
-    private <T> T swallowExceptions( HttpServletRequest outerRequest, Function<HttpServletRequest, T> function )
+    private static <T> T swallowExceptions( HttpServletRequest outerRequest, Function<HttpServletRequest,T> function )
     {
         try
         {
@@ -105,7 +105,7 @@ public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog,
     {
     }
 
-    private String findRequestURI( Request request )
+    private static String findRequestURI( Request request )
     {
         var requestURI = swallowExceptions( request, HttpServletRequest::getRequestURI );
         var queryString = swallowExceptions( request, HttpServletRequest::getQueryString );

@@ -33,7 +33,7 @@ public abstract class TemporalArray<T extends Temporal & Comparable<? super T>> 
         return false;
     }
 
-    protected final <E extends Exception> void writeTo( ValueWriter<E> writer, ValueWriter.ArrayType type, Temporal[] values ) throws E
+    protected static <E extends Exception> void writeTo( ValueWriter<E> writer, ValueWriter.ArrayType type, Temporal[] values ) throws E
     {
         writer.beginArray( values.length, type );
         for ( Temporal x : values )

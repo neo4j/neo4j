@@ -70,7 +70,7 @@ public abstract class Serializer
         return result.append(path).toString();
     }
 
-    void checkThatItIsBuiltInType( Object value )
+    static void checkThatItIsBuiltInType( Object value )
     {
         if ( !"java.lang".equals( value.getClass().getPackage().getName() ) )
         {

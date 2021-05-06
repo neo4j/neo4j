@@ -512,12 +512,12 @@ class NodeLabelsFieldTest
         assertTrue( key.isEmpty() );
     }
 
-    private long dynamicLabelsLongRepresentation( Iterable<DynamicRecord> records )
+    private static long dynamicLabelsLongRepresentation( Iterable<DynamicRecord> records )
     {
         return 0x8000000000L | Iterables.first( records ).getId();
     }
 
-    private long inlinedLabelsLongRepresentation( long... labelIds )
+    private static long inlinedLabelsLongRepresentation( long... labelIds )
     {
         long header = (long) labelIds.length << 36;
         byte bitsPerLabel = (byte) (36 / labelIds.length);
@@ -529,7 +529,7 @@ class NodeLabelsFieldTest
         return header | bits.getLongs()[0];
     }
 
-    private NodeRecord nodeRecordWithInlinedLabels( long... labels )
+    private static NodeRecord nodeRecordWithInlinedLabels( long... labels )
     {
         NodeRecord node = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
         if ( labels.length > 0 )
@@ -539,12 +539,12 @@ class NodeLabelsFieldTest
         return node;
     }
 
-    private NodeRecord nodeRecordWithDynamicLabels( NodeStore nodeStore, long... labels )
+    private static NodeRecord nodeRecordWithDynamicLabels( NodeStore nodeStore, long... labels )
     {
         return nodeRecordWithDynamicLabels( 0, nodeStore, labels );
     }
 
-    private NodeRecord nodeRecordWithDynamicLabels( long nodeId, NodeStore nodeStore, long... labels )
+    private static NodeRecord nodeRecordWithDynamicLabels( long nodeId, NodeStore nodeStore, long... labels )
     {
         NodeRecord node = new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 );
         Collection<DynamicRecord> initialRecords = allocateAndApply( nodeStore, node.getId(), labels );
@@ -552,14 +552,14 @@ class NodeLabelsFieldTest
         return node;
     }
 
-    private Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
+    private static Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
     {
         Collection<DynamicRecord> records = allocateRecordsForDynamicLabels( nodeId, longs, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         nodeStore.updateDynamicLabelRecords( records, IdUpdateListener.DIRECT, NULL );
         return records;
     }
 
-    private long[] oneByteLongs( int numberOfLongs )
+    private static long[] oneByteLongs( int numberOfLongs )
     {
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
@@ -570,7 +570,7 @@ class NodeLabelsFieldTest
         return result;
     }
 
-    private long[] fourByteLongs( int numberOfLongs )
+    private static long[] fourByteLongs( int numberOfLongs )
     {
         long[] result = new long[numberOfLongs];
         for ( int i = 0; i < numberOfLongs; i++ )
@@ -581,7 +581,7 @@ class NodeLabelsFieldTest
         return result;
     }
 
-    private Set<DynamicRecord> used( Set<DynamicRecord> reallocatedRecords )
+    private static Set<DynamicRecord> used( Set<DynamicRecord> reallocatedRecords )
     {
         Set<DynamicRecord> used = new HashSet<>();
         for ( DynamicRecord record : reallocatedRecords )

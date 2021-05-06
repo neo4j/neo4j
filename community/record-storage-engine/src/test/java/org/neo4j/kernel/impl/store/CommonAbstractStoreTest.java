@@ -249,7 +249,7 @@ class CommonAbstractStoreTest
         return store;
     }
 
-    private TheRecord newRecord( long id )
+    private static TheRecord newRecord( long id )
     {
         return new TheRecord( id );
     }

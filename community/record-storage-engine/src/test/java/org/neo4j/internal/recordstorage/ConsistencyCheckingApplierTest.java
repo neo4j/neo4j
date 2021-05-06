@@ -307,7 +307,7 @@ class ConsistencyCheckingApplierTest
         }
     }
 
-    private Command.RelationshipCommand create( RelationshipRecord relationship )
+    private static Command.RelationshipCommand create( RelationshipRecord relationship )
     {
         return new Command.RelationshipCommand( new RelationshipRecord( relationship.getId() ), relationship );
     }

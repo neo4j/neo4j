@@ -104,7 +104,7 @@ class ByteArrayBitsManipulatorTest
         }
     }
 
-    private void verify( ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values )
+    private static void verify( ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -112,7 +112,7 @@ class ByteArrayBitsManipulatorTest
         }
     }
 
-    private void put( ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values )
+    private static void put( ByteArrayBitsManipulator manipulator, ByteArray array, long index, long... values )
     {
         for ( int i = 0; i < values.length; i++ )
         {

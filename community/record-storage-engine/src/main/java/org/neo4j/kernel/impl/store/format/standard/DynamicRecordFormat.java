@@ -104,7 +104,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
                 record.getId(), nrOfBytes, recordSize );
     }
 
-    private String illegalBlockSizeMessage( DynamicRecord record, int dataSize )
+    private static String illegalBlockSizeMessage( DynamicRecord record, int dataSize )
     {
         return format( "Next block set[%d] current block illegal size[%d/%d]",
                 record.getNextBlock(), record.getLength(), dataSize );

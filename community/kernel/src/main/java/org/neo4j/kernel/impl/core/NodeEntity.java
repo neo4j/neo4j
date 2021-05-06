@@ -770,7 +770,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         }
     }
 
-    private int[] relTypeIds( RelationshipType[] types, TokenRead token )
+    private static int[] relTypeIds( RelationshipType[] types, TokenRead token )
     {
         int[] ids = new int[types.length];
         int outIndex = 0;

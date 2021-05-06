@@ -58,12 +58,12 @@ class CompositeGenericKeyTest
         }
     }
 
-    private int includingEntityId( int keySize )
+    private static int includingEntityId( int keySize )
     {
         return Long.BYTES + keySize;
     }
 
-    private int calculateKeySize( String[] strings )
+    private static int calculateKeySize( String[] strings )
     {
         int arrayLength = strings.length;
         int totalStringLength = 0;

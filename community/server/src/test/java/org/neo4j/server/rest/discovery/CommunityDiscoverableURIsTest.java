@@ -86,7 +86,7 @@ class CommunityDiscoverableURIsTest
         assertEquals( "neo4j://apple.com:1337", map.get( "bolt_routing" ) );
     }
 
-    private Map<String,String> toMap( DiscoverableURIs uris )
+    private static Map<String,String> toMap( DiscoverableURIs uris )
     {
         Map<String,String> out = new HashMap<>();
         uris.forEach( out::put );

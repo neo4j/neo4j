@@ -875,7 +875,7 @@ class InvocationTest
                 anyLong() );
     }
 
-    private TransactionalContext prepareKernelWithQuerySession()
+    private static TransactionalContext prepareKernelWithQuerySession()
     {
         return mock( TransactionalContext.class );
     }

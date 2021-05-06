@@ -27,10 +27,10 @@ import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
-import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
+import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
@@ -87,8 +87,8 @@ public class ExecutionEngine implements QueryExecutionEngine
         return cypherExecutionEngine;
     }
 
-    protected org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, CaffeineCacheFactory cacheFactory,
-                                                                             LogProvider logProvider, CompilerLibrary compilerLibrary )
+    protected static org.neo4j.cypher.internal.ExecutionEngine makeExecutionEngine( GraphDatabaseQueryService queryService, CaffeineCacheFactory cacheFactory,
+            LogProvider logProvider, CompilerLibrary compilerLibrary )
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         Monitors monitors = resolver.resolveDependency( Monitors.class );
@@ -147,7 +147,7 @@ public class ExecutionEngine implements QueryExecutionEngine
         }
     }
 
-    private void checkParams( TransactionalContext context, MapValue parameters ) throws QueryExecutionKernelException
+    private static void checkParams( TransactionalContext context, MapValue parameters )
     {
         parameters.foreach(
                 ( s, n ) ->

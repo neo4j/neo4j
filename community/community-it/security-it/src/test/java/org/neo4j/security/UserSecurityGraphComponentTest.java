@@ -104,7 +104,7 @@ class UserSecurityGraphComponentTest
     }
 
     @BeforeEach
-    void clear() throws Exception
+    static void clear() throws Exception
     {
         inTx( tx -> tx.getAllNodes().stream().forEach( n ->
         {
@@ -154,7 +154,7 @@ class UserSecurityGraphComponentTest
         );
     }
 
-    private void assertCanUpgradeThisVersionAndThenUpgradeIt( SystemGraphComponent.Status initialState ) throws Exception
+    private static void assertCanUpgradeThisVersionAndThenUpgradeIt( SystemGraphComponent.Status initialState ) throws Exception
     {
         var systemGraphComponents = system.getDependencyResolver().resolveDependency( SystemGraphComponents.class );
         assertStatus( Map.of(
@@ -174,7 +174,7 @@ class UserSecurityGraphComponentTest
         ) );
     }
 
-    private void assertStatus( Map<String,SystemGraphComponent.Status> expected ) throws Exception
+    private static void assertStatus( Map<String,SystemGraphComponent.Status> expected ) throws Exception
     {
         HashMap<String,SystemGraphComponent.Status> statuses = new HashMap<>();
         inTx( tx ->
@@ -188,13 +188,13 @@ class UserSecurityGraphComponentTest
         }
     }
 
-    private void initializeLatestSystem() throws Exception
+    private static void initializeLatestSystem() throws Exception
     {
         var systemGraphComponent = new DefaultSystemGraphComponent( Config.defaults() );
         systemGraphComponent.initializeSystemGraph( system, true );
     }
 
-    private void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception
+    private static void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception
     {
         KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version );
         inTx( tx -> userSecurityGraphComponent.initializeSystemGraphConstraints( tx ) );
@@ -213,7 +213,7 @@ class UserSecurityGraphComponentTest
         }
     }
 
-    private void inTx( ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
+    private static void inTx( ThrowingConsumer<Transaction,Exception> consumer ) throws Exception
     {
         try ( Transaction tx = system.beginTx() )
         {

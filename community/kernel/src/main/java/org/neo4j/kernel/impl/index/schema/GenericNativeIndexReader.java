@@ -24,11 +24,11 @@ import java.util.List;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
@@ -123,7 +123,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
      * in the query.
      * @return {@code true} if filtering is needed for the results from the reader, otherwise {@code false}.
      */
-    private boolean initializeRangeForGeometrySubQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo,
+    private static boolean initializeRangeForGeometrySubQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo,
             PropertyIndexQuery[] query, CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
     {
         boolean needsFiltering = false;
@@ -221,7 +221,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
         return rangePredicate.toInclusive() ? HIGH : LOW;
     }
 
-    private PropertyIndexQuery.GeometryRangePredicate getGeometryRangePredicateIfAny( PropertyIndexQuery[] predicates )
+    private static PropertyIndexQuery.GeometryRangePredicate getGeometryRangePredicateIfAny( PropertyIndexQuery[] predicates )
     {
         for ( PropertyIndexQuery predicate : predicates )
         {
@@ -233,7 +233,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
         return null;
     }
 
-    private boolean isGeometryRangeQuery( PropertyIndexQuery predicate )
+    private static boolean isGeometryRangeQuery( PropertyIndexQuery predicate )
     {
         return predicate instanceof PropertyIndexQuery.GeometryRangePredicate;
     }

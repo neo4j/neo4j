@@ -146,7 +146,7 @@ class ArrayEncoderTest
         raceEncode( INPUT, ArrayEncoder::encode );
     }
 
-    private void raceEncode( String[] INPUT, Function<Value, String> encodeFunction ) throws Throwable
+    private static void raceEncode( String[] INPUT, Function<Value,String> encodeFunction ) throws Throwable
     {
         Race race = new Race();
         for ( String input : INPUT )
@@ -166,7 +166,7 @@ class ArrayEncoderTest
         race.go();
     }
 
-    private void assertEncoding( String expected, Object toEncode )
+    private static void assertEncoding( String expected, Object toEncode )
     {
         assertEquals( expected, ArrayEncoder.encode( Values.of( toEncode ) ) );
     }

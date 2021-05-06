@@ -356,7 +356,7 @@ class LogCommandSerializationV3_0_10Test
         assertTrue( reader.read( channel ) instanceof Command.PropertyCommand );
     }
 
-    private <T extends AbstractBaseRecord> void verifySecondaryUnit( T record, T commandRecord )
+    private static <T extends AbstractBaseRecord> void verifySecondaryUnit( T record, T commandRecord )
     {
         assertEquals( record.requiresSecondaryUnit(),
                 commandRecord.requiresSecondaryUnit(), "Secondary unit requirements should be the same" );
@@ -364,7 +364,7 @@ class LogCommandSerializationV3_0_10Test
                 commandRecord.getSecondaryUnitId(), "Secondary unit ids should be the same" );
     }
 
-    private LogCommandSerialization writer()
+    private static LogCommandSerialization writer()
     {
         return LogCommandSerializationV4_2.INSTANCE;
     }

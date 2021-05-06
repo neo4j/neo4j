@@ -85,7 +85,7 @@ class DatabaseNameValidatorTest
         assertEquals( "The provided database name must have a length between 3 and 63 characters.", e2.getMessage() );
     }
 
-    private void assertValid( String name )
+    private static void assertValid( String name )
     {
         DatabaseNameValidator.validateExternalDatabaseName( new NormalizedDatabaseName( name ) );
     }

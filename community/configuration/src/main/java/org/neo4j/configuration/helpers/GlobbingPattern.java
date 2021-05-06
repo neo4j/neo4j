@@ -90,7 +90,7 @@ public final class GlobbingPattern
         return originalString.hashCode();
     }
 
-    private Pattern buildRegex( String globbingPattern )
+    private static Pattern buildRegex( String globbingPattern )
     {
         StringBuilder patternString = new StringBuilder();
         for ( int i = 0; i < globbingPattern.length(); i++ )

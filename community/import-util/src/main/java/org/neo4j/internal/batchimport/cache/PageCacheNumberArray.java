@@ -174,7 +174,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         visitor.offHeapUsage( length() * entrySize );
     }
 
-    protected void checkBounds( PageCursor cursor )
+    protected static void checkBounds( PageCursor cursor )
     {
         if ( cursor.checkAndClearBoundsFlag() )
         {

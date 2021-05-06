@@ -97,7 +97,7 @@ class NodeStateImplTest
         return relationships;
     }
 
-    private NodeStateImpl newNodeState()
+    private static NodeStateImpl newNodeState()
     {
         return NodeStateImpl.createNodeState( 99, false, INSTANCE, EmptyMemoryTracker.INSTANCE );
     }

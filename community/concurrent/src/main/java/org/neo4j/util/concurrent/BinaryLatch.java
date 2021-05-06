@@ -87,7 +87,7 @@ public class BinaryLatch
         unparkSuccessor( waiters );
     }
 
-    private void unparkSuccessor( Node waiters )
+    private static void unparkSuccessor( Node waiters )
     {
         if ( waiters.getClass() == Waiter.class )
         {
@@ -194,7 +194,7 @@ public class BinaryLatch
         return false;
     }
 
-    private void unparkAll( Node waiters )
+    private static void unparkAll( Node waiters )
     {
         // If we find a node that is not a waiter, then it is either 'end' or 'released'. Looking at the type pointer
         // is the cheapest way to make this check.

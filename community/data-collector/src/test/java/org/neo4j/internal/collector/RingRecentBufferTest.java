@@ -210,7 +210,7 @@ class RingRecentBufferTest
         assertTrue( buffer.numSilentQueryDrops() < 1000, "only a few silent drops expected" );
     }
 
-    private <T> Runnable stress( int n, LongConsumer action )
+    private static Runnable stress( int n, LongConsumer action )
     {
         return () -> {
             for ( long i = 0; i < n; i++ )
@@ -220,7 +220,7 @@ class RingRecentBufferTest
         };
     }
 
-    private <T> Runnable stressUntil( CountDownLatch latch, LongConsumer action )
+    private static Runnable stressUntil( CountDownLatch latch, LongConsumer action )
     {
         return () -> {
             long i = 0;

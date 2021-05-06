@@ -41,7 +41,7 @@ class ValueTupleTest
         verifyEquals( tuple( 'a', new int[]{3}, "c" ), tuple( 'a', new int[]{3}, "c" ) );
     }
 
-    private ValueTuple tuple( Object... objs )
+    private static ValueTuple tuple( Object... objs )
     {
         Value[] values = new Value[objs.length];
         for ( int i = 0; i < values.length; i++ )
@@ -51,14 +51,14 @@ class ValueTupleTest
         return ValueTuple.of( values );
     }
 
-    private void verifyEquals( ValueTuple a, ValueTuple b )
+    private static void verifyEquals( ValueTuple a, ValueTuple b )
     {
         assertThat( a ).isEqualTo( b );
         assertThat( b ).isEqualTo( a );
         assertEquals( a.hashCode(), b.hashCode(), format( "Expected hashCode for %s and %s to be equal", a, b ) );
     }
 
-    private void assertNotEquals( ValueTuple a, ValueTuple b )
+    private static void assertNotEquals( ValueTuple a, ValueTuple b )
     {
         assertThat( a ).isNotEqualTo( b );
         assertThat( b ).isNotEqualTo( a );

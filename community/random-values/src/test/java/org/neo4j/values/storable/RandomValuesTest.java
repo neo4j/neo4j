@@ -321,7 +321,7 @@ abstract class RandomValuesTest
         }
     }
 
-    private void assertValueAmongTypes( ValueType[] types, Value value )
+    private static void assertValueAmongTypes( ValueType[] types, Value value )
     {
         for ( ValueType type : types )
         {
@@ -333,7 +333,7 @@ abstract class RandomValuesTest
         fail( "Value " + value + " was not among types " + Arrays.toString( types ) );
     }
 
-    private void assertKnownType( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> types )
+    private static void assertKnownType( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> types )
     {
         for ( Class<? extends AnyValue> type : types )
         {
@@ -345,12 +345,12 @@ abstract class RandomValuesTest
         fail( typeToCheck + " is not an expected type " );
     }
 
-    private void markSeen( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> seen )
+    private static void markSeen( Class<? extends AnyValue> typeToCheck, Set<Class<? extends AnyValue>> seen )
     {
         seen.removeIf( t -> t.isAssignableFrom( typeToCheck ) );
     }
 
-    private void checkDistribution( Supplier<Value> supplier )
+    private static void checkDistribution( Supplier<Value> supplier )
     {
         Set<Value> values = new HashSet<>();
         for ( int i = 0; i < ITERATIONS; i++ )
@@ -363,7 +363,7 @@ abstract class RandomValuesTest
         assertThat( values.size() ).isGreaterThan( 1 );
     }
 
-    private void checkBounded( Supplier<NumberValue> supplier )
+    private static void checkBounded( Supplier<NumberValue> supplier )
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {

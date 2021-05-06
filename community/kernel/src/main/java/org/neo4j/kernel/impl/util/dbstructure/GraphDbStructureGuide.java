@@ -67,7 +67,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showStructure( InternalTransaction transaction, DbStructureVisitor visitor )
+    private static void showStructure( InternalTransaction transaction, DbStructureVisitor visitor )
     {
 
         try
@@ -83,14 +83,14 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showTokens( DbStructureVisitor visitor, InternalTransaction transaction )
+    private static void showTokens( DbStructureVisitor visitor, InternalTransaction transaction )
     {
         showLabels( transaction, visitor );
         showPropertyKeys( transaction, visitor );
         showRelTypes( transaction, visitor );
     }
 
-    private void showLabels( InternalTransaction transaction, DbStructureVisitor visitor )
+    private static void showLabels( InternalTransaction transaction, DbStructureVisitor visitor )
     {
         for ( Label label : transaction.getAllLabels() )
         {
@@ -99,7 +99,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showPropertyKeys( InternalTransaction transaction, DbStructureVisitor visitor )
+    private static void showPropertyKeys( InternalTransaction transaction, DbStructureVisitor visitor )
     {
         for ( String propertyKeyName : transaction.getAllPropertyKeys() )
         {
@@ -108,7 +108,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showRelTypes( InternalTransaction transaction, DbStructureVisitor visitor )
+    private static void showRelTypes( InternalTransaction transaction, DbStructureVisitor visitor )
     {
         for ( RelationshipType relType : transaction.getAllRelationshipTypes() )
         {
@@ -117,14 +117,14 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showSchema( DbStructureVisitor visitor, KernelTransaction ktx ) throws IndexNotFoundKernelException
+    private static void showSchema( DbStructureVisitor visitor, KernelTransaction ktx ) throws IndexNotFoundKernelException
     {
         TokenNameLookup nameLookup = ktx.tokenRead();
         showIndices( visitor, ktx, nameLookup );
         showUniqueConstraints( visitor, ktx, nameLookup );
     }
 
-    private void showIndices( DbStructureVisitor visitor, KernelTransaction ktx, TokenNameLookup nameLookup )
+    private static void showIndices( DbStructureVisitor visitor, KernelTransaction ktx, TokenNameLookup nameLookup )
             throws IndexNotFoundKernelException
     {
         SchemaRead schemaRead = ktx.schemaRead();
@@ -137,7 +137,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showUniqueConstraints( DbStructureVisitor visitor, KernelTransaction ktx, TokenNameLookup nameLookup )
+    private static void showUniqueConstraints( DbStructureVisitor visitor, KernelTransaction ktx, TokenNameLookup nameLookup )
     {
         Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetAll();
         while ( constraints.hasNext() )
@@ -172,13 +172,13 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void showStatistics( DbStructureVisitor visitor, InternalTransaction transaction )
+    private static void showStatistics( DbStructureVisitor visitor, InternalTransaction transaction )
     {
         showNodeCounts( transaction, visitor );
         showRelCounts( transaction, visitor );
     }
 
-    private void showNodeCounts( InternalTransaction transaction, DbStructureVisitor visitor )
+    private static void showNodeCounts( InternalTransaction transaction, DbStructureVisitor visitor )
     {
         var kernelTransaction = transaction.kernelTransaction();
         Read read = kernelTransaction.dataRead();
@@ -189,7 +189,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             visitor.visitNodeCount( labelId, label.name(), read.countsForNode( labelId ) );
         }
     }
-    private void showRelCounts( InternalTransaction transaction, DbStructureVisitor visitor )
+    private static void showRelCounts( InternalTransaction transaction, DbStructureVisitor visitor )
     {
         // all wildcards
         KernelTransaction ktx = transaction.kernelTransaction();
@@ -224,7 +224,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         }
     }
 
-    private void noSide( KernelTransaction ktx, DbStructureVisitor visitor, RelationshipType relType, int relTypeId )
+    private static void noSide( KernelTransaction ktx, DbStructureVisitor visitor, RelationshipType relType, int relTypeId )
     {
         String userDescription = format("MATCH ()-[%s]->() RETURN count(*)", colon( relType.name() ));
         long amount = ktx.dataRead().countsForRelationship( ANY_LABEL, relTypeId, ANY_LABEL );
@@ -232,7 +232,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         visitor.visitRelCount( ANY_LABEL, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void leftSide( KernelTransaction ktx, DbStructureVisitor visitor, Label label, int labelId,
+    private static void leftSide( KernelTransaction ktx, DbStructureVisitor visitor, Label label, int labelId,
             RelationshipType relType, int relTypeId )
     {
         String userDescription =
@@ -242,7 +242,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         visitor.visitRelCount( labelId, relTypeId, ANY_LABEL, userDescription, amount );
     }
 
-    private void rightSide( KernelTransaction ktx, DbStructureVisitor visitor, Label label, int labelId,
+    private static void rightSide( KernelTransaction ktx, DbStructureVisitor visitor, Label label, int labelId,
             RelationshipType relType, int relTypeId )
     {
         String userDescription =
@@ -252,7 +252,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
         visitor.visitRelCount( ANY_LABEL, relTypeId, labelId, userDescription, amount );
     }
 
-    private String colon( String name )
+    private static String colon( String name )
     {
         return  name.isEmpty() ? name : (":" + name);
     }

@@ -95,7 +95,7 @@ class DataStatisticsTest
         assertEquals( typeId, count.getTypeId() );
     }
 
-    private DataStatistics.RelationshipTypeCount typeCount( Iterator<DataStatistics.RelationshipTypeCount> iterator, int typeId )
+    private static DataStatistics.RelationshipTypeCount typeCount( Iterator<DataStatistics.RelationshipTypeCount> iterator, int typeId )
     {
         while ( iterator.hasNext() )
         {

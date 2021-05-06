@@ -78,7 +78,7 @@ public class JULBridge extends Handler
         log( log, record.getLevel().intValue(), message, record.getThrown() );
     }
 
-    private void log( Log log, int level, String message, Throwable throwable )
+    private static void log( Log log, int level, String message, Throwable throwable )
     {
         if ( level <= Level.FINE.intValue() )
         {
@@ -141,7 +141,7 @@ public class JULBridge extends Handler
         return log;
     }
 
-    private String getMessage( LogRecord record )
+    private static String getMessage( LogRecord record )
     {
         String message = record.getMessage();
         if ( message == null )

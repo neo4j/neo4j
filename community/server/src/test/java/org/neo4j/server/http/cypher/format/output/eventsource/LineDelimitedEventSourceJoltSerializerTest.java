@@ -39,7 +39,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -59,32 +58,22 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.QueryExecutionType;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransitionalTxManagementKernelTransaction;
-import org.neo4j.server.http.cypher.format.api.FailureEvent;
 import org.neo4j.server.http.cypher.format.api.RecordEvent;
-import org.neo4j.server.http.cypher.format.api.StatementEndEvent;
-import org.neo4j.server.http.cypher.format.api.StatementStartEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionInfoEvent;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
-import org.neo4j.server.http.cypher.format.input.json.InputStatement;
 import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
 import org.neo4j.server.http.cypher.format.output.json.ResultDataContent;
-import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.mockito.mock.Link;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 import org.neo4j.values.storable.DurationValue;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -365,7 +354,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     }
 
     @Test
-    void shouldHandleTransactionHandleStateCorrectly() throws Exception, InterruptedException
+    void shouldHandleTransactionHandleStateCorrectly() throws Exception
     {
 
         // The serializer is stateful, as the underlying Neo4jJsonCodec uses a handle to the transaction.
@@ -575,10 +564,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
         // when
         writeStatementStart( serializer, "column1", "column2" );
         writeRecord( serializer, row, "column1", "column2" );
-        var e = assertThrows( RuntimeException.class, () ->
-        {
-            serializer.writeRecord( recordEvent );
-        } );
+        var e = assertThrows( RuntimeException.class, () -> serializer.writeRecord( recordEvent ) );
 
         writeError( serializer, Status.Statement.ExecutionFailed, e.getMessage() );
         writeTransactionInfo( serializer );
@@ -808,12 +794,12 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                 result );
     }
 
-    protected LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
+    protected static LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
     {
         return new LineDelimitedEventSourceJoltSerializer( transactionHandle, Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
     }
 
-    protected LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
+    protected static LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
     {
         return getSerializerWith( transactionHandle, output, null );
     }

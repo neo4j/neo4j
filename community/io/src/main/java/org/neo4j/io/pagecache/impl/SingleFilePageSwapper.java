@@ -285,7 +285,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return bufferLength;
     }
 
-    private void clear( long bufferAddress, int bufferSize )
+    private static void clear( long bufferAddress, int bufferSize )
     {
         UnsafeUtil.setMemory( bufferAddress, bufferSize, MuninnPageCache.ZERO_BYTE );
     }

@@ -195,7 +195,7 @@ class RecordStoreVersionCheckTest
         return shortFile;
     }
 
-    private void metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
+    private static void metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
     {
         Path shortFile = layout.metadataStore();
         fs.deleteFile( shortFile );

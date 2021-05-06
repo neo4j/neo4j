@@ -585,7 +585,7 @@ public class Args
     }
 
     @SafeVarargs
-    private <T> T validated( T value, Validator<T>... validators )
+    private static <T> T validated( T value, Validator<T>... validators )
     {
         if ( value != null )
         {

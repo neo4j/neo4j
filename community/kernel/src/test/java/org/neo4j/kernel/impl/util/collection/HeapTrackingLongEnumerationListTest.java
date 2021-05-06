@@ -1024,7 +1024,7 @@ class HeapTrackingLongEnumerationListTest
         assertEquals( measured, memoryTracker.estimatedHeapMemory() + numberOfBoxedLongs * HeapEstimator.LONG_SIZE );
     }
 
-    private void assertEmpty( HeapTrackingLongEnumerationList<Long> table )
+    private static void assertEmpty( HeapTrackingLongEnumerationList<Long> table )
     {
         assertNull( table.getFirst() );
         assertFalse( table.valuesIterator().hasNext() );
@@ -1033,12 +1033,12 @@ class HeapTrackingLongEnumerationListTest
         assertNull( table.get( table.lastKey() ) );
     }
 
-    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long element )
+    private static void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long element )
     {
         assertContainsOnly( table, element, element );
     }
 
-    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long from, long to )
+    private static void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long from, long to )
     {
         long until = to + 1;
 
@@ -1087,13 +1087,13 @@ class HeapTrackingLongEnumerationListTest
     }
 
     // NOTE: expected needs to be sorted incrementally
-    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long[] expected )
+    private static void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, long[] expected )
     {
         assertContainsOnly( table, Arrays.stream( expected ).boxed().collect( Collectors.toList() ) );
     }
 
     // NOTE: expected needs to be sorted incrementally
-    private void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, List<Long> expected )
+    private static void assertContainsOnly( HeapTrackingLongEnumerationList<Long> table, List<Long> expected )
     {
         // getFirst
         if ( expected.size() > 0 )

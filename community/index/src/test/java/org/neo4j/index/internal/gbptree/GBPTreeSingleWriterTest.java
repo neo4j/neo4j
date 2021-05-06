@@ -219,7 +219,7 @@ class GBPTreeSingleWriterTest
         assertThat( cursorTracer.faults() ).isEqualTo( 0 );
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();

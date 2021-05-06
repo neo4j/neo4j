@@ -1371,13 +1371,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         }
     }
 
-    private void evictAllPages( MuninnPageCache pageCache ) throws IOException
+    private static void evictAllPages( MuninnPageCache pageCache ) throws IOException
     {
         PageList pages = pageCache.pages;
         for ( int pageId = 0; pageId < pages.getPageCount(); pageId++ )
         {
             long pageReference = pages.deref( pageId );
-            while ( pages.isLoaded( pageReference ) )
+            while ( PageList.isLoaded( pageReference ) )
             {
                 pages.tryEvict( pageReference, EvictionRunEvent.NULL );
             }

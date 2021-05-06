@@ -124,7 +124,7 @@ class Neo4jExtensionRegisterIT
         return offset.equals( UTC ) ? "+0000" : offset.toString().replace( ":", "" );
     }
 
-    private String contentOf( String file, GraphDatabaseService databaseService ) throws IOException
+    private static String contentOf( String file, GraphDatabaseService databaseService ) throws IOException
     {
         GraphDatabaseAPI api = (GraphDatabaseAPI) databaseService;
         Config config = api.getDependencyResolver().resolveDependency( Config.class );

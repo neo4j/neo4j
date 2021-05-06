@@ -48,7 +48,7 @@ class RowWriter implements ResultDataContentWriter
         }
     }
 
-    private void writeMeta( JsonGenerator out, RecordEvent recordEvent ) throws IOException
+    private static void writeMeta( JsonGenerator out, RecordEvent recordEvent ) throws IOException
     {
         out.writeArrayFieldStart( "meta" );
         try

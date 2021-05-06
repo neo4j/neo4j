@@ -93,7 +93,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         this.archetypalAnyTokenSchema = propertySchemaType == ENTITY_TOKENS;
     }
 
-    private void validatePropertySchema( EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
+    private static void validatePropertySchema( EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
     {
         if ( entityTokens.length == 0 )
         {
@@ -118,7 +118,7 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         validatePropertyIds( propertyKeyIds );
     }
 
-    private void validateEntityTokenSchema( EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
+    private static void validateEntityTokenSchema( EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
     {
         if ( entityTokens.length != 0 )
         {

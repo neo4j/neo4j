@@ -379,27 +379,27 @@ class CrashGenerationCleanerTest
     }
 
     /* Page */
-    private Page[] with( Page... pages )
+    private static Page[] with( Page... pages )
     {
         return pages;
     }
 
-    private Page leafWith( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... pageCorruptions )
+    private static Page leafWith( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... pageCorruptions )
     {
         return new Page( PageType.LEAF, pageCorruptions );
     }
 
-    private Page internalWith( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... pageCorruptions )
+    private static Page internalWith( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... pageCorruptions )
     {
         return new Page( PageType.INTERNAL, pageCorruptions );
     }
 
-    private Page offload()
+    private static Page offload()
     {
         return new Page( PageType.OFFLOAD );
     }
 
-    private Page freelist()
+    private static Page freelist()
     {
         return new Page( PageType.FREELIST );
     }

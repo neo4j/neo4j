@@ -242,7 +242,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public long getLogVersion( Path file )
     {
-        return fileHelper.getLogVersion( file );
+        return TransactionLogFilesHelper.getLogVersion( file );
     }
 
     @Override

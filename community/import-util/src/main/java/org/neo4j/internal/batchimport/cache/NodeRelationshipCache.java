@@ -882,7 +882,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
         return numberOfDenseNodes;
     }
 
-    public MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
+    public static MemoryStatsVisitor.Visitable memoryEstimation( long numberOfNodes )
     {
         return visitor -> visitor.offHeapUsage( ID_AND_COUNT_SIZE * numberOfNodes );
     }

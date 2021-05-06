@@ -255,8 +255,8 @@ public class Main
             if ( connectionConfig.username().isEmpty() )
             {
                 String username = outputInteractive ?
-                                  promptForNonEmptyText( "username", consoleReader, null ) :
-                                  promptForText( "username", consoleReader, null );
+                        promptForNonEmptyText( "username", consoleReader, null ) :
+                        promptForText( "username", consoleReader, null );
                 connectionConfig.setUsername( username );
             }
             if ( connectionConfig.password().isEmpty() )
@@ -276,12 +276,13 @@ public class Main
             consoleReader.setExpandEvents( false );
             // Ensure Reader does not handle user input for ctrl+C behaviour
             consoleReader.setHandleUserInterrupt( false );
+
             consoleReader.println( "Password change required" );
             if ( connectionConfig.username().isEmpty() )
             {
                 String username = outputInteractive ?
-                                  promptForNonEmptyText( "username", consoleReader, null ) :
-                                  promptForText( "username", consoleReader, null );
+                        promptForNonEmptyText( "username", consoleReader, null ) :
+                        promptForText( "username", consoleReader, null );
                 connectionConfig.setUsername( username );
             }
             if ( connectionConfig.password().isEmpty() )
@@ -289,8 +290,8 @@ public class Main
                 connectionConfig.setPassword( promptForText( "password", consoleReader, '*' ) );
             }
             String newPassword = outputInteractive ?
-                                 promptForNonEmptyText( "new password", consoleReader, '*' ) :
-                                 promptForText( "new password", consoleReader, '*' );
+                    promptForNonEmptyText( "new password", consoleReader, '*' ) :
+                    promptForText( "new password", consoleReader, '*' );
             connectionConfig.setNewPassword( newPassword );
         }
     }
@@ -302,7 +303,7 @@ public class Main
      * @throws Exception in case of errors
      */
     @Nonnull
-    private String promptForNonEmptyText( @Nonnull String prompt, @Nonnull ConsoleReader consoleReader, @Nullable Character mask ) throws Exception
+    private static String promptForNonEmptyText( @Nonnull String prompt, @Nonnull ConsoleReader consoleReader, @Nullable Character mask ) throws Exception
     {
         String text = promptForText( prompt, consoleReader, mask );
         if ( !text.isEmpty() )
@@ -322,7 +323,7 @@ public class Main
      * @throws Exception in case of errors
      */
     @Nonnull
-    private String promptForText( @Nonnull String prompt, @Nonnull ConsoleReader consoleReader, @Nullable Character mask ) throws Exception
+    private static String promptForText( @Nonnull String prompt, @Nonnull ConsoleReader consoleReader, @Nullable Character mask ) throws Exception
     {
         String line = consoleReader.readLine( prompt + ": ", mask );
         if ( line == null )

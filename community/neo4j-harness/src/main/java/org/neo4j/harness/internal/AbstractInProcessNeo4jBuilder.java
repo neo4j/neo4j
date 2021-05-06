@@ -23,7 +23,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +44,6 @@ import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.harness.Neo4jBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -67,7 +65,6 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.internal.helpers.collection.Iterables.append;
-import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
 public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 {
@@ -293,21 +290,9 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         config.set( neo4j_home, serverFolder.toAbsolutePath() );
     }
 
-    private String randomFolderName()
+    private static String randomFolderName()
     {
         return DigestUtils.md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
-    }
-
-    private static OutputStream openStream( FileSystemAbstraction fs, Path file )
-    {
-        try
-        {
-            return createOrOpenAsOutputStream( fs, file, true );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to create log file", e );
-        }
     }
 
     /**

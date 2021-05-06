@@ -123,7 +123,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return new Command.RelationshipGroupCommand( this, before, after );
     }
 
-    private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
+    private static RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
             throws IOException
     {
         byte flags = channel.get();
@@ -160,7 +160,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return new Command.RelationshipTypeTokenCommand( this, before, after );
     }
 
-    private RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableChannel channel )
+    private static RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableChannel channel )
             throws IOException
     {
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
@@ -201,7 +201,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return new Command.LabelTokenCommand( this, before, after );
     }
 
-    private LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
+    private static LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte headerByte = channel.get();
@@ -250,7 +250,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return new Command.PropertyKeyTokenCommand( this, before, after );
     }
 
-    private PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableChannel channel ) throws IOException
+    private static PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+count(int)+key_blockId(int)
         byte headerByte = channel.get();
@@ -295,7 +295,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return new Command.SchemaRuleCommand( this, before, after, schemaRule );
     }
 
-    private SchemaRecord readSchemaRecord( long id, ReadableChannel channel ) throws IOException
+    private static SchemaRecord readSchemaRecord( long id, ReadableChannel channel ) throws IOException
     {
         SchemaRecord schemaRecord = new SchemaRecord( id );
         byte flags = channel.get();
@@ -324,7 +324,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return schemaRecord;
     }
 
-    private SchemaRule readSchemaRule( long id, ReadableChannel channel ) throws IOException
+    private static SchemaRule readSchemaRule( long id, ReadableChannel channel ) throws IOException
     {
         Map<String,Value> ruleMap = readStringValueMap( channel );
         try
@@ -337,7 +337,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         }
     }
 
-    Map<String,Value> readStringValueMap( ReadableChannel channel ) throws IOException
+    static Map<String,Value> readStringValueMap( ReadableChannel channel ) throws IOException
     {
         Map<String,Value> map = new HashMap<>();
         int size = channel.getInt();
@@ -351,7 +351,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return map;
     }
 
-    private byte[] readMapKeyByteArray( ReadableChannel channel ) throws IOException
+    private static byte[] readMapKeyByteArray( ReadableChannel channel ) throws IOException
     {
         int size = channel.getInt();
         byte[] bytes = new byte[size];
@@ -359,7 +359,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return bytes;
     }
 
-    private Value readMapValue( ReadableChannel channel ) throws IOException
+    private static Value readMapValue( ReadableChannel channel ) throws IOException
     {
         SchemaMapValueType type = SchemaMapValueType.map( channel.get() );
         switch ( type )
@@ -496,7 +496,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         } // switch clause
     }
 
-    private NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
+    private static NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
     {
         byte flags = channel.get();
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
@@ -537,7 +537,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return record;
     }
 
-    private RelationshipRecord readRelationshipRecord( long id, ReadableChannel channel ) throws IOException
+    private static RelationshipRecord readRelationshipRecord( long id, ReadableChannel channel ) throws IOException
     {
         byte flags = channel.get();
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
@@ -580,7 +580,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return record;
     }
 
-    private DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
+    private static DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
@@ -612,7 +612,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return record;
     }
 
-    private <T> int readDynamicRecords( ReadableChannel channel, T target, CommandReading.DynamicRecordAdder<T> adder )
+    private static <T> int readDynamicRecords( ReadableChannel channel, T target, CommandReading.DynamicRecordAdder<T> adder )
             throws IOException
     {
         int numberOfRecords = channel.getInt();
@@ -626,7 +626,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return numberOfRecords;
     }
 
-    private PropertyRecord readPropertyRecord( long id, ReadableChannel channel ) throws IOException
+    private static PropertyRecord readPropertyRecord( long id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
         // prev_prop_id(long)+next_prop_id(long)
@@ -693,7 +693,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return record;
     }
 
-    private PropertyBlock readPropertyBlock( ReadableChannel channel ) throws IOException
+    private static PropertyBlock readPropertyBlock( ReadableChannel channel ) throws IOException
     {
         PropertyBlock toReturn = new PropertyBlock();
         byte blockSize = channel.get(); // the size is stored in bytes // 1
@@ -722,7 +722,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         return toReturn;
     }
 
-    private long[] readLongs( ReadableChannel channel, int count ) throws IOException
+    private static long[] readLongs( ReadableChannel channel, int count ) throws IOException
     {
         long[] result = new long[count];
         for ( int i = 0; i < count; i++ )

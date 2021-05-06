@@ -541,7 +541,7 @@ class KeySearchTest
         TreeNode.setKeyCount( cursor, keyCount + 1 );
     }
 
-    private void assertSearchResult( boolean hit, int position, int searchResult )
+    private static void assertSearchResult( boolean hit, int position, int searchResult )
     {
         assertEquals( hit, KeySearch.isHit( searchResult ) );
         assertEquals( position, KeySearch.positionOf( searchResult ) );
@@ -560,7 +560,7 @@ class KeySearchTest
         TreeNode.setKeyCount( cursor, KEY_COUNT );
     }
 
-    private int key( int i )
+    private static int key( int i )
     {
         return 2 << i;
     }

@@ -229,7 +229,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return until;
     }
 
-    private TemporalValue attachTime( TemporalValue temporal )
+    private static TemporalValue attachTime( TemporalValue temporal )
     {
         boolean supportsTime = temporal.isSupported( ChronoField.SECOND_OF_DAY );
 
@@ -245,7 +245,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
     }
 
-    private TemporalValue attachDate( TemporalValue temporal, LocalDate dateToAttach )
+    private static TemporalValue attachDate( TemporalValue temporal, LocalDate dateToAttach )
     {
         LocalTime timePart = temporal.getLocalTimePart();
 
@@ -261,7 +261,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
     }
 
-    private TemporalValue attachTimeZone( TemporalValue temporal, ZoneId zoneIdToAttach )
+    private static TemporalValue attachTimeZone( TemporalValue temporal, ZoneId zoneIdToAttach )
     {
         if ( temporal.isSupported( ChronoField.MONTH_OF_YEAR ) )
         {
@@ -1556,7 +1556,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 throw new InvalidArgumentException( String.format( "Cannot assign %s to field %s", valueObj, key ) );
             }
             String value = (String) valueObj;
-            if ( "timezone".equals( key.toLowerCase() ) )
+            if ( "timezone".equalsIgnoreCase( key ) )
             {
                 if ( timezone == null )
                 {

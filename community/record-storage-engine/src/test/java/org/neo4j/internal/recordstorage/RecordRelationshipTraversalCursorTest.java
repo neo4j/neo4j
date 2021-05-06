@@ -276,7 +276,7 @@ public class RecordRelationshipTraversalCursorTest
         }
     }
 
-    private void assertRelationships( RecordRelationshipTraversalCursor cursor, int count, Direction direction, int... types )
+    private static void assertRelationships( RecordRelationshipTraversalCursor cursor, int count, Direction direction, int... types )
     {
         IntSet expectedTypes = IntSets.immutable.of( types );
         int found = 0;
@@ -311,7 +311,7 @@ public class RecordRelationshipTraversalCursorTest
         relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
     }
 
-    protected RelationshipGroupRecord createRelationshipGroup( long id, int type, long[] firstIds, long next )
+    protected static RelationshipGroupRecord createRelationshipGroup( long id, int type, long[] firstIds, long next )
     {
         return new RelationshipGroupRecord( id ).initialize( true, type, firstIds[0], firstIds[1], firstIds[2], FIRST_OWNING_NODE, next );
     }
@@ -365,7 +365,7 @@ public class RecordRelationshipTraversalCursorTest
         }
     }
 
-    protected RelationshipRecord createRelationship( long id, long nextRelationship, RelationshipSpec relationshipSpec )
+    protected static RelationshipRecord createRelationship( long id, long nextRelationship, RelationshipSpec relationshipSpec )
     {
         RelationshipRecord relationship = new RelationshipRecord( id );
         relationship.initialize( true, NO_NEXT_PROPERTY.intValue(), getFirstNode( relationshipSpec.direction ),
@@ -374,12 +374,12 @@ public class RecordRelationshipTraversalCursorTest
         return relationship;
     }
 
-    protected long getSecondNode( RelationshipDirection direction )
+    protected static long getSecondNode( RelationshipDirection direction )
     {
         return direction == INCOMING || direction == LOOP ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
     }
 
-    protected long getFirstNode( RelationshipDirection direction )
+    protected static long getFirstNode( RelationshipDirection direction )
     {
         return direction == OUTGOING || direction == LOOP ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
     }
@@ -389,7 +389,7 @@ public class RecordRelationshipTraversalCursorTest
         return new RecordRelationshipTraversalCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null, CursorContext.NULL );
     }
 
-    protected RelationshipSpec[] homogenousRelationships( int count, int type, RelationshipDirection direction )
+    protected static RelationshipSpec[] homogenousRelationships( int count, int type, RelationshipDirection direction )
     {
         RelationshipSpec[] specs = new RelationshipSpec[count];
         Arrays.fill( specs, new RelationshipSpec( type, direction ) );

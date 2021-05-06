@@ -93,7 +93,7 @@ class DynamicArrayStoreTest
         }
     }
 
-    private void tracePageCacheAccessOnAllocation( DynamicArrayStore store, DefaultPageCacheTracer pageCacheTracer, Object array )
+    private static void tracePageCacheAccessOnAllocation( DynamicArrayStore store, DefaultPageCacheTracer pageCacheTracer, Object array )
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnAllocation" ) ) )
         {
@@ -106,7 +106,7 @@ class DynamicArrayStoreTest
         }
     }
 
-    private void prepareDirtyGenerator( DynamicArrayStore store )
+    private static void prepareDirtyGenerator( DynamicArrayStore store )
     {
         var idGenerator = store.getIdGenerator();
         var marker = idGenerator.marker( NULL );
@@ -114,7 +114,7 @@ class DynamicArrayStoreTest
         idGenerator.clearCache( NULL );
     }
 
-    private void assertOneCursor( CursorContext cursorContext )
+    private static void assertOneCursor( CursorContext cursorContext )
     {
         var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isOne();
@@ -122,7 +122,7 @@ class DynamicArrayStoreTest
         assertThat( cursorTracer.unpins() ).isOne();
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         var cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isZero();

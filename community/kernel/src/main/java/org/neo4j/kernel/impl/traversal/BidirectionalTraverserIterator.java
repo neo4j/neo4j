@@ -81,9 +81,9 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         this.collisionDetector = collisionPolicy.create( collisionEvaluator, uniqueness::checkFull );
     }
 
-    private BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( MonoDirectionalTraversalDescription
+    private static BidirectionalUniquenessFilter makeSureStartAndEndHasSameUniqueness( MonoDirectionalTraversalDescription
             start,
-                                                                   MonoDirectionalTraversalDescription end )
+            MonoDirectionalTraversalDescription end )
     {
         if ( !start.uniqueness.equals( end.uniqueness ) )
         {
@@ -110,7 +110,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         return (BidirectionalUniquenessFilter) uniqueness;
     }
 
-    private SideSelector fixedSide( final Direction direction )
+    private static SideSelector fixedSide( final Direction direction )
     {
         return new SideSelector()
         {

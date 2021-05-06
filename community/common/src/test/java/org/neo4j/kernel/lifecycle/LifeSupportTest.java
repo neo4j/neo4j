@@ -645,12 +645,12 @@ class LifeSupportTest
         }
     }
 
-    private LifeSupport newLifeSupport()
+    private static LifeSupport newLifeSupport()
     {
         return new LifeSupport();
     }
 
-    private String getExceptionStackTrace( Exception e )
+    private static String getExceptionStackTrace( Exception e )
     {
         StringWriter stringWriter = new StringWriter();
         e.printStackTrace( new PrintWriter( stringWriter ) );

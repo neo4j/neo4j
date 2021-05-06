@@ -204,7 +204,7 @@ class AbstractDynamicStoreTest
         }
     }
 
-    private void prepareDirtyGenerator( AbstractDynamicStore store )
+    private static void prepareDirtyGenerator( AbstractDynamicStore store )
     {
         var idGenerator = store.getIdGenerator();
         var marker = idGenerator.marker( NULL );
@@ -212,14 +212,14 @@ class AbstractDynamicStoreTest
         idGenerator.clearCache( NULL );
     }
 
-    private void assertOneCursor( CursorContext cursorContext )
+    private static void assertOneCursor( CursorContext cursorContext )
     {
         assertThat( cursorContext.getCursorTracer().hits() ).isOne();
         assertThat( cursorContext.getCursorTracer().pins() ).isOne();
         assertThat( cursorContext.getCursorTracer().unpins() ).isOne();
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         assertThat( cursorContext.getCursorTracer().hits() ).isZero();
         assertThat( cursorContext.getCursorTracer().pins() ).isZero();

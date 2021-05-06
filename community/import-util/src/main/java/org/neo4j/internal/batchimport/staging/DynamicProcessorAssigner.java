@@ -144,7 +144,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
         }
     }
 
-    private int countActiveProcessors( StageExecution execution )
+    private static int countActiveProcessors( StageExecution execution )
     {
         return execution.stillExecuting() ? StreamSupport.stream( execution.steps().spliterator(), false ).mapToInt( step -> step.processors( 0 ) ).sum() : 0;
     }

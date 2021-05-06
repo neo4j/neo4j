@@ -1161,7 +1161,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    private void connectLeftAndRightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private static void connectLeftAndRightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
             throws IOException
     {
         long currentId = cursor.getCurrentPageId();

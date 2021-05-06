@@ -68,7 +68,7 @@ public class SchemaAndIndexingFileIndexListing
         return snapshot;
     }
 
-    private void getSnapshotFilesMetadata( ResourceIterator<Path> snapshot, Collection<StoreFileMetadata> targetFiles )
+    private static void getSnapshotFilesMetadata( ResourceIterator<Path> snapshot, Collection<StoreFileMetadata> targetFiles )
     {
         snapshot.stream().map( toStoreFileMetadata ).forEach( targetFiles::add );
     }

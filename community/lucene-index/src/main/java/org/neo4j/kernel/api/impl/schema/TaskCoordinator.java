@@ -41,7 +41,7 @@ public class TaskCoordinator implements Cancelable, CancellationRequest
         cancelled = true;
     }
 
-    public void awaitCompletion() throws InterruptedException
+    public static void awaitCompletion() throws InterruptedException
     {
         while ( tasks.get() > 0 )
         {

@@ -199,7 +199,7 @@ public abstract class AbstractCypherResource
         return new LocalMemoryTracker( memoryPool, 0, 64, null );
     }
 
-    private boolean isDatabaseNotAvailable( GraphDatabaseAPI databaseAPI )
+    private static boolean isDatabaseNotAvailable( GraphDatabaseAPI databaseAPI )
     {
         return !databaseAPI.isAvailable( 0 );
     }
@@ -259,7 +259,7 @@ public abstract class AbstractCypherResource
                 new OutputEventStreamImpl( parameters, null, uriScheme, errorInvocation::execute ) ).build();
     }
 
-    private InputEventStream ensureNotNull( InputEventStream inputEventStream )
+    private static InputEventStream ensureNotNull( InputEventStream inputEventStream )
     {
         return requireNonNullElse( inputEventStream, InputEventStream.EMPTY );
     }

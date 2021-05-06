@@ -168,7 +168,7 @@ public class RelationshipGroupGetter
         return isNull( group.getFirstOut() ) && isNull( group.getFirstIn() ) && isNull( group.getFirstLoop() );
     }
 
-    public boolean deleteEmptyGroups( RecordProxy<NodeRecord,Void> nodeProxy,
+    public static boolean deleteEmptyGroups( RecordProxy<NodeRecord,Void> nodeProxy,
             Predicate<RelationshipGroupRecord> canDeleteGroup, GroupLookup groupLookup )
     {
         long groupId = nodeProxy.forReadingLinkage().getNextRel();

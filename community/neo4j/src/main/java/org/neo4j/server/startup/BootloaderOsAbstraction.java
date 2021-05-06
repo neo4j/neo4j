@@ -164,7 +164,7 @@ abstract class BootloaderOsAbstraction
         ctx.err.println( "* Please see https://neo4j.com/docs/ for Neo4j installation instructions." );
     }
 
-    private Path getJava()
+    private static Path getJava()
     {
         Optional<String> currentCommand = ProcessHandle.current().info().command();
         return Path.of( currentCommand.orElseThrow( () -> new IllegalStateException( "Wasn't able to figure out java binary" ) ) );
@@ -235,7 +235,7 @@ abstract class BootloaderOsAbstraction
         {
             opts.with( String.format( "%s:file=%s::filecount=%s,filesize=%s",
                     config.get( BootloaderSettings.gc_logging_options ),
-                    config.get( GraphDatabaseSettings.logs_directory ).resolve( "gc.log" ).toString(),
+                    config.get( GraphDatabaseSettings.logs_directory ).resolve( "gc.log" ),
                     config.get( BootloaderSettings.gc_logging_rotation_keep_number ),
                     bytesToSuitableJvmString( config.get( BootloaderSettings.gc_logging_rotation_size ) )
             ) );
@@ -262,7 +262,7 @@ abstract class BootloaderOsAbstraction
         {
             if ( Files.isDirectory( dir ) && !FileUtils.isDirectoryEmpty( dir ) )
             {
-                return dir.toAbsolutePath().toString() + File.separator + "*";
+                return dir.toAbsolutePath() + File.separator + "*";
             }
         }
         catch ( IOException e )

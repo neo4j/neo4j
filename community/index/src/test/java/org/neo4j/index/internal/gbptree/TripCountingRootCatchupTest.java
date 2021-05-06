@@ -73,7 +73,7 @@ class TripCountingRootCatchupTest
         assertSame( expectedRoot, actualRoot );
     }
 
-    private TripCountingRootCatchup getTripCounter()
+    private static TripCountingRootCatchup getTripCounter()
     {
         Root root = new Root( 1, 2 );
         return new TripCountingRootCatchup( () -> root );

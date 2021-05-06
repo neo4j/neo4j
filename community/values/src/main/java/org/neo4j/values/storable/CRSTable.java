@@ -57,7 +57,7 @@ public enum CRSTable
         return prefix + code + "/";
     }
 
-    private boolean lowerCase( String string )
+    private static boolean lowerCase( String string )
     {
         return string.toLowerCase().equals( string );
     }

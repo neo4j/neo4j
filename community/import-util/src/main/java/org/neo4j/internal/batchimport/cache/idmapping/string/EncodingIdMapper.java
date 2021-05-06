@@ -626,7 +626,7 @@ public class EncodingIdMapper implements IdMapper
         progress.done();
     }
 
-    private LongArray as5ByteLongArray( ByteArray byteArray )
+    private static LongArray as5ByteLongArray( ByteArray byteArray )
     {
         return new LongArray()
         {
@@ -847,7 +847,7 @@ public class EncodingIdMapper implements IdMapper
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionValues );
     }
 
-    private void nullSafeAcceptMemoryStatsVisitor( MemoryStatsVisitor visitor, MemoryStatsVisitor.Visitable mem )
+    private static void nullSafeAcceptMemoryStatsVisitor( MemoryStatsVisitor visitor, MemoryStatsVisitor.Visitable mem )
     {
         if ( mem != null )
         {

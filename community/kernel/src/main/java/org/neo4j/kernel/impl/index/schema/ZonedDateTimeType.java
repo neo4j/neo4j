@@ -160,7 +160,7 @@ class ZonedDateTimeType extends Type
                DateTimeValue.datetimeRaw( long0, long1, ZoneOffset.ofTotalSeconds( (int) long3 ) );
     }
 
-    void write( GenericKey state, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
+    static void write( GenericKey state, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
     {
         state.long0 = epochSecondUTC;
         state.long1 = nano;

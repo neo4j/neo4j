@@ -325,7 +325,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
 
     }
 
-    private void sleepALittle()
+    private static void sleepALittle()
     {
         try
         {

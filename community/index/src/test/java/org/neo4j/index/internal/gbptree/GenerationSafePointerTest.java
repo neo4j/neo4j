@@ -231,7 +231,7 @@ class GenerationSafePointerTest
         assertTrue( (double) collisions / count < 0.0001 );
     }
 
-    private GSP gsp( long generation, long pointer )
+    private static GSP gsp( long generation, long pointer )
     {
         GSP gsp = new GSP();
         gsp.generation = generation;
@@ -239,7 +239,7 @@ class GenerationSafePointerTest
         return gsp;
     }
 
-    private boolean read( PageCursor cursor, int offset, GSP into )
+    private static boolean read( PageCursor cursor, int offset, GSP into )
     {
         cursor.setOffset( offset );
         into.generation = GenerationSafePointer.readGeneration( cursor );
@@ -247,7 +247,7 @@ class GenerationSafePointerTest
         return GenerationSafePointer.verifyChecksum( cursor, into.generation, into.pointer );
     }
 
-    private void write( PageCursor cursor, int offset, GSP gsp )
+    private static void write( PageCursor cursor, int offset, GSP gsp )
     {
         cursor.setOffset( offset );
         GenerationSafePointer.write( cursor, gsp.generation, gsp.pointer );

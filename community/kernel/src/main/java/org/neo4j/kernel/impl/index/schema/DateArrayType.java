@@ -60,7 +60,7 @@ class DateArrayType extends AbstractArrayType<LocalDate>
         key.long0Array = ensureBigEnough( key.long0Array, length );
     }
 
-    public void write( GenericKey state, int offset, long epochDay )
+    public static void write( GenericKey state, int offset, long epochDay )
     {
         state.long0Array[offset] = epochDay;
     }

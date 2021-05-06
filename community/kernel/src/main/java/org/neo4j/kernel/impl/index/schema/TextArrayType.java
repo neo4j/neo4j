@@ -144,7 +144,7 @@ class TextArrayType extends AbstractArrayType<String>
         return super.asValue( state );
     }
 
-    private Value charArrayAsValue( GenericKey state )
+    private static Value charArrayAsValue( GenericKey state )
     {
         char[] chars = new char[state.arrayLength];
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -159,7 +159,7 @@ class TextArrayType extends AbstractArrayType<String>
         return byteArray == null ? null : UTF8.decode( byteArray, 0, (int) long0 );
     }
 
-    void write( GenericKey state, int offset, byte[] bytes )
+    static void write( GenericKey state, int offset, byte[] bytes )
     {
         state.byteArrayArray[offset] = bytes;
         state.long0Array[offset] = bytes.length;

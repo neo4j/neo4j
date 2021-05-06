@@ -67,7 +67,7 @@ public class StepStats implements StatsProvider
         return keys;
     }
 
-    private <T> boolean arrayContains( T[] array, T item )
+    private static <T> boolean arrayContains( T[] array, T item )
     {
         for ( T arrayItem : array )
         {

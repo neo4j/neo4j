@@ -287,7 +287,7 @@ public class SslPolicyLoader
         }
     }
 
-    private PrivateKey loadPrivateKey( Path privateKeyFile, SecureString privateKeyPassword )
+    private static PrivateKey loadPrivateKey( Path privateKeyFile, SecureString privateKeyPassword )
     {
         String password = privateKeyPassword != null ? privateKeyPassword.getString() : null;
 

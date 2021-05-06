@@ -125,14 +125,14 @@ class LuceneIndexProviderTest
         onlineAccessor.close();
     }
 
-    private IndexAccessor getIndexAccessor( Config readOnlyConfig, LuceneIndexProvider indexProvider )
+    private static IndexAccessor getIndexAccessor( Config readOnlyConfig, LuceneIndexProvider indexProvider )
             throws IOException
     {
         return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ), SIMPLE_TOKEN_LOOKUP );
     }
 
-    private LuceneIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,
-                                                        FileSystemAbstraction fs, Path graphDbDir )
+    private static LuceneIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,
+            FileSystemAbstraction fs, Path graphDbDir )
     {
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( graphDbDir ),
                 new Monitors(), config, readOnly() );

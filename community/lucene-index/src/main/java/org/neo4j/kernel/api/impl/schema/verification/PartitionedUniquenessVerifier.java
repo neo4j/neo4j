@@ -163,7 +163,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
         searchForDuplicates( query, collector );
     }
 
-    private DuplicateCheckingCollector getDuplicateCollector( NodePropertyAccessor accessor, int[] propertyKeyIds )
+    private static DuplicateCheckingCollector getDuplicateCollector( NodePropertyAccessor accessor, int[] propertyKeyIds )
     {
         return DuplicateCheckingCollector.forProperties( accessor, propertyKeyIds );
     }

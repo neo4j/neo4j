@@ -198,7 +198,7 @@ public class FullCheck
         return labelScanStore;
     }
 
-    private List<IdGenerator> allIdGenerators( DirectStoreAccess directStoreAccess )
+    private static List<IdGenerator> allIdGenerators( DirectStoreAccess directStoreAccess )
     {
         List<IdGenerator> idGenerators = new ArrayList<>();
         directStoreAccess.idGeneratorFactory().visit( idGenerators::add );

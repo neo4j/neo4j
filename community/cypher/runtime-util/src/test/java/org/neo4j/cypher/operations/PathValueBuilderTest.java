@@ -180,17 +180,17 @@ class PathValueBuilderTest
         assertEquals( path( n1, r1, n2, r2, n3 ), builder.build() );
     }
 
-    private NodeValue node( long id )
+    private static NodeValue node( long id )
     {
         return VirtualValues.nodeValue( id, EMPTY_TEXT_ARRAY, EMPTY_MAP );
     }
 
-    private RelationshipValue relationship( long id, NodeValue from, NodeValue to )
+    private static RelationshipValue relationship( long id, NodeValue from, NodeValue to )
     {
         return VirtualValues.relationshipValue( id, from, to, stringValue( "R" ), EMPTY_MAP );
     }
 
-    private PathValue path( AnyValue... nodeAndRel )
+    private static PathValue path( AnyValue... nodeAndRel )
     {
         NodeValue[] nodes = new NodeValue[nodeAndRel.length / 2 + 1];
         RelationshipValue[] rels = new RelationshipValue[nodeAndRel.length / 2];
@@ -208,7 +208,7 @@ class PathValueBuilderTest
         return VirtualValues.path( nodes, rels );
     }
 
-    private PathValueBuilder builder( AnyValue... values )
+    private static PathValueBuilder builder( AnyValue... values )
     {
         DbAccess dbAccess = mock( DbAccess.class );
         RelationshipScanCursor cursors = mock( RelationshipScanCursor.class );

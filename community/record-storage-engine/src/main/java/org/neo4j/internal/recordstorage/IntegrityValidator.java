@@ -51,7 +51,7 @@ class IntegrityValidator
         this.indexValidator = validator;
     }
 
-    void validateNodeRecord( NodeRecord record ) throws TransactionFailureException
+    static void validateNodeRecord( NodeRecord record ) throws TransactionFailureException
     {
         if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {

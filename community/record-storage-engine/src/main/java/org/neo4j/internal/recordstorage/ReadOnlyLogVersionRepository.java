@@ -83,7 +83,7 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
         return incrementAndGetVersion( checkpointLogVersion );
     }
 
-    private long getCurrentVersion( FixedLogVersion version )
+    private static long getCurrentVersion( FixedLogVersion version )
     {
         // We can expect a call to this during shutting down, if we have a LogFile using us.
         // So it's sort of OK.
@@ -95,12 +95,12 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
         return version.getValue();
     }
 
-    private void setCurrentVersionAttempt()
+    private static void setCurrentVersionAttempt()
     {
         throw new UnsupportedOperationException( "Can't set current log version in read only version repository." );
     }
 
-    private long incrementAndGetVersion( FixedLogVersion version )
+    private static long incrementAndGetVersion( FixedLogVersion version )
     {   // We can expect a call to this during shutting down, if we have a LogFile using us.
         // So it's sort of OK.
         if ( version.isIncrementAttempted() )

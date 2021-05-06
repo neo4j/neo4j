@@ -87,7 +87,7 @@ public class BasicSystemGraphRealm extends AuthManager
     {
     }
 
-    private void assertValidScheme( Map<String,Object> token ) throws InvalidAuthTokenException
+    private static void assertValidScheme( Map<String,Object> token ) throws InvalidAuthTokenException
     {
         String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, token );
         if ( scheme.equals( "none" ) )

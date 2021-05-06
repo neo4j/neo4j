@@ -87,7 +87,7 @@ class JavaFunctionsTestIT
         @UserFunction( "my.countNodes" )
         public long countNodes()
         {
-            return myCoreAPI.countNodes( transaction );
+            return MyCoreAPI.countNodes( transaction );
         }
     }
 
@@ -165,7 +165,7 @@ class JavaFunctionsTestIT
         }
     }
 
-    private void assertQueryGetsValue( Neo4j server, String query, long value ) throws Throwable
+    private static void assertQueryGetsValue( Neo4j server, String query, long value ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
@@ -176,7 +176,7 @@ class JavaFunctionsTestIT
         assertEquals( value, result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asLong() );
     }
 
-    private void assertQueryGetsError( Neo4j server, String query, String error ) throws Throwable
+    private static void assertQueryGetsError( Neo4j server, String query, String error ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/neo4j/tx/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );

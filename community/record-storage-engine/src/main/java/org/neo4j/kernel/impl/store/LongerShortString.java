@@ -642,7 +642,7 @@ public enum LongerShortString
         ' ', '_', '.', '-', ':', '/',
         ' ', '.', '-', '+', ',', '\'', '@', '|', ';', '*', '?', '&', '%', '#', '(', ')', '$', '<', '>', '=' };
 
-    final byte decPunctuation( int code )
+    static byte decPunctuation( int code )
     {
         return PUNCTUATION[code];
     }

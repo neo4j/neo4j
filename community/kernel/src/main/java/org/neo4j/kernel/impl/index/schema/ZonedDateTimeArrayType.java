@@ -70,7 +70,7 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
         key.long3Array = ensureBigEnough( key.long3Array, length );
     }
 
-    void write( GenericKey state, int offset, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
+    static void write( GenericKey state, int offset, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
     {
         state.long0Array[offset] = epochSecondUTC;
         state.long1Array[offset] = nano;

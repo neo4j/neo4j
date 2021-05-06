@@ -308,7 +308,7 @@ public abstract class RelationshipSelection
             return "RelationshipSelection[" + "types=" + Arrays.toString( types ) + ", " + direction + "]";
         }
 
-        private boolean existsEarlier( int[] types, int i )
+        private static boolean existsEarlier( int[] types, int i )
         {
             int candidateType = types[i];
             for ( int j = i - 1; j >= 0; j-- )

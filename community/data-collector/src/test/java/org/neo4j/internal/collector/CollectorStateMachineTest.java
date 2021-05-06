@@ -57,7 +57,7 @@ class CollectorStateMachineTest
         executor.shutdown();
     }
 
-    private <T> Runnable stress( int n, Supplier<T> action )
+    private static <T> Runnable stress( int n, Supplier<T> action )
     {
         return () -> {
             for ( int i = 0; i < n; i++ )
@@ -67,7 +67,7 @@ class CollectorStateMachineTest
         };
     }
 
-    public CollectorStateMachine.Result collect( CollectorStateMachine stateMachine )
+    public static CollectorStateMachine.Result collect( CollectorStateMachine stateMachine )
     {
         try
         {

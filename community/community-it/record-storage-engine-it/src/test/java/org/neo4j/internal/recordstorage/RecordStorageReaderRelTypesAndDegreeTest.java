@@ -237,17 +237,17 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         assertEquals( inRelCount + outRelCount + loopRelCount, degreeForDirection( cursor, BOTH ) );
     }
 
-    protected int degreeForDirection( StorageNodeCursor cursor, Direction direction )
+    protected static int degreeForDirection( StorageNodeCursor cursor, Direction direction )
     {
         return degree( cursor, selection( direction ) );
     }
 
-    protected int degreeForDirectionAndType( StorageNodeCursor cursor, Direction direction, int relType )
+    protected static int degreeForDirectionAndType( StorageNodeCursor cursor, Direction direction, int relType )
     {
         return degree( cursor, selection( relType, direction ) );
     }
 
-    private int degree( StorageNodeCursor cursor, RelationshipSelection selection )
+    private static int degree( StorageNodeCursor cursor, RelationshipSelection selection )
     {
         SingleDegree degree = new SingleDegree();
         cursor.degrees( selection, degree, true );
@@ -468,7 +468,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         assertEquals( expectedDegrees, actualDegrees );
     }
 
-    protected Set<TestDegreeItem> degrees( StorageNodeCursor nodeCursor )
+    protected static Set<TestDegreeItem> degrees( StorageNodeCursor nodeCursor )
     {
         Set<TestDegreeItem> degrees = new HashSet<>();
         EagerDegrees nodeDegrees = new EagerDegrees();

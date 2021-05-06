@@ -77,7 +77,6 @@ class JoltResultFormatIT extends AbstractRestFunctionalTestBase
                     .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
 
         assertThat( response.status() ).isEqualTo( 200 );
-        assertThat( response.header( HttpHeaders.LOCATION ) );
         assertThat( response.rawContent() ).isEqualTo( "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
                                                      "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n" +
                                                      "{\"summary\":{}}\n" +
@@ -97,7 +96,6 @@ class JoltResultFormatIT extends AbstractRestFunctionalTestBase
                     .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
 
         assertThat( response.status() ).isEqualTo( 200 );
-        assertThat( response.header( HttpHeaders.LOCATION ) );
         assertThat( response.rawContent() ).isEqualTo( "\u001E{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
                                                      "\u001E{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n" +
                                                      "\u001E{\"summary\":{}}\n" +

@@ -216,7 +216,7 @@ class ReversedSingleFileTransactionCursorTest
         }
     }
 
-    private void assertTransactionRange( CommittedTransactionRepresentation[] readTransactions, long highTxId, long lowTxId )
+    private static void assertTransactionRange( CommittedTransactionRepresentation[] readTransactions, long highTxId, long lowTxId )
     {
         long expectedTxId = highTxId;
         for ( CommittedTransactionRepresentation tx : readTransactions )
@@ -261,7 +261,7 @@ class ReversedSingleFileTransactionCursorTest
         writer.append( tx( random.intBetween( 100, 1000 ) ), ++txId, BASE_TX_CHECKSUM );
     }
 
-    private TransactionRepresentation tx( int size )
+    private static TransactionRepresentation tx( int size )
     {
         List<StorageCommand> commands = new ArrayList<>();
         for ( int i = 0; i < size; i++ )

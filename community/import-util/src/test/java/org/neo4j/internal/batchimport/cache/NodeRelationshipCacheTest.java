@@ -524,7 +524,7 @@ public class NodeRelationshipCacheTest
         }
     }
 
-    private void testNode( NodeRelationshipCache link, long node, Direction direction )
+    private static void testNode( NodeRelationshipCache link, long node, Direction direction )
     {
         int typeId = 0; // doesn't matter here because it's all sparse
         long count = link.getCount( node, typeId, direction );
@@ -533,7 +533,7 @@ public class NodeRelationshipCacheTest
         assertEquals( count, link.getCount( node, typeId, direction ) );
     }
 
-    private long findNode( NodeRelationshipCache link, long nodeCount, boolean isDense )
+    private static long findNode( NodeRelationshipCache link, long nodeCount, boolean isDense )
     {
         for ( long i = 0; i < nodeCount; i++ )
         {
@@ -556,7 +556,7 @@ public class NodeRelationshipCacheTest
         return highestSeenCount;
     }
 
-    private void increment( NodeRelationshipCache cache, long node, int count )
+    private static void increment( NodeRelationshipCache cache, long node, int count )
     {
         for ( int i = 0; i < count; i++ )
         {
@@ -564,7 +564,7 @@ public class NodeRelationshipCacheTest
         }
     }
 
-    private long[] minusOneLongs( int length )
+    private static long[] minusOneLongs( int length )
     {
         long[] array = new long[length];
         Arrays.fill( array, -1 );

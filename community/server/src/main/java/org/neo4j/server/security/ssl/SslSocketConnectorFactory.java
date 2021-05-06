@@ -65,7 +65,7 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         return createConnector( server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
     }
 
-    private SslConnectionFactory createSslConnectionFactory( SslPolicy sslPolicy )
+    private static SslConnectionFactory createSslConnectionFactory( SslPolicy sslPolicy )
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
 

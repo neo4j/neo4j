@@ -75,7 +75,7 @@ class TraversalBranchImpl implements TraversalBranch
         this.depthAndEvaluationBits |= bitValue( evaluation.includes(), 30 ) | bitValue( evaluation.continues(), 31 );
     }
 
-    private int bitValue( boolean value, int bit )
+    private static int bitValue( boolean value, int bit )
     {
         return (value ? 1 : 0) << bit;
     }

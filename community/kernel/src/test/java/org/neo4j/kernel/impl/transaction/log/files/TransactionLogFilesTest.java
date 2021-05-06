@@ -270,7 +270,7 @@ class TransactionLogFilesTest
         create3_5FileWithHeader( databaseLayout, version, 0 );
     }
 
-    private Path createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )
+    private static Path createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )
     {
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
         return transactionLogsDirectory.resolve( fileName );
@@ -289,22 +289,22 @@ class TransactionLogFilesTest
         return files;
     }
 
-    private String getVersionedLogFileName( int version )
+    private static String getVersionedLogFileName( int version )
     {
         return getVersionedLogFileName( DEFAULT_NAME, String.valueOf( version ) );
     }
 
-    private String getVersionedCheckpointLogFileName( int version )
+    private static String getVersionedCheckpointLogFileName( int version )
     {
         return getVersionedLogFileName( CHECKPOINT_FILE_PREFIX, String.valueOf( version ) );
     }
 
-    private String getVersionedLogFileName( String version )
+    private static String getVersionedLogFileName( String version )
     {
         return getVersionedLogFileName( DEFAULT_NAME, version );
     }
 
-    private String getVersionedLogFileName( String filename, String version )
+    private static String getVersionedLogFileName( String filename, String version )
     {
         return filename + "." + version;
     }

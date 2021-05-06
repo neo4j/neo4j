@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +56,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -189,7 +191,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
                 Path metaPath = getAndAssertParent( path, "META-INF" );
                 Path classesPath = getAndAssertParent( metaPath, "classes" );
                 Path targetPath = getAndAssertParent( classesPath, "target" );
-                Path mavenModulePath = targetPath.getParent();
+                Path mavenModulePath = requireNonNull( targetPath.getParent() );
                 Path oldSignaturePath = mavenModulePath.resolve( "PublicApi.txt" );
 
                 if ( Boolean.getBoolean( "overwrite" ) )
@@ -238,7 +240,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
         return diff;
     }
 
-    private void diffSide( StringBuilder diff, Set<String> left, Set<String> right, char diffSign )
+    private static void diffSide( StringBuilder diff, Set<String> left, Set<String> right, char diffSign )
     {
         for ( String oldPublicElement : left )
         {
@@ -415,7 +417,7 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
     /**
      * Takes a list of parameters and append it to the string builder, e.g. {@code "<K,V extends Object>"}
      */
-    private void addTypeParameter( StringBuilder sb, List<? extends TypeParameterElement> typeParameters )
+    private void addTypeParameter( StringBuilder sb, Collection<? extends TypeParameterElement> typeParameters )
     {
         if ( !typeParameters.isEmpty() )
         {
@@ -557,7 +559,8 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
      */
     private void validatePublicVisibility( DeclaredType declaredType )
     {
-        if ( !validatedDeclaredTypes.add( declaredType.toString() ) )
+        String declaredTypeName = declaredType.toString();
+        if ( !validatedDeclaredTypes.add( declaredTypeName ) )
         {
             return; // already validated
         }
@@ -582,8 +585,8 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
         }
 
         // We only care about our own classes
-        if ( !declaredType.toString().startsWith( "org.neo4j." ) &&
-                !declaredType.toString().startsWith( "com.neo4j." ) )
+        if ( !declaredTypeName.startsWith( "org.neo4j." ) &&
+                !declaredTypeName.startsWith( "com.neo4j." ) )
         {
             return;
         }

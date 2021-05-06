@@ -276,14 +276,14 @@ class SslPolicyLoaderTest
         assertNull( sslPolicy );
     }
 
-    private Path makeDir( Path parent, String child ) throws IOException
+    private static Path makeDir( Path parent, String child ) throws IOException
     {
         Path dir = parent.resolve( child );
         createDirectories( dir );
         return dir;
     }
 
-    private void writeJunkToFile( Path parent, String child ) throws IOException
+    private static void writeJunkToFile( Path parent, String child ) throws IOException
     {
         Path file = parent.resolve( child );
         Files.write( file, "junk data".getBytes() );
@@ -303,7 +303,7 @@ class SslPolicyLoaderTest
         return SslPolicyLoader.create( config, NullLogProvider.getInstance() );
     }
 
-    private void assertPolicyValid( SslPolicy sslPolicy ) throws SSLException
+    private static void assertPolicyValid( SslPolicy sslPolicy ) throws SSLException
     {
         assertNotNull( sslPolicy );
         assertNotNull( sslPolicy.privateKey() );

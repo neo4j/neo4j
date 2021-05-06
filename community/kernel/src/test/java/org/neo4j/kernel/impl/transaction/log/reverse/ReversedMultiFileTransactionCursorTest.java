@@ -122,7 +122,7 @@ class ReversedMultiFileTransactionCursorTest
         assertTransactionRange( reversed, 0, 0 );
     }
 
-    private void assertTransactionRange( CommittedTransactionRepresentation[] reversed, long highTxId, long lowTxId )
+    private static void assertTransactionRange( CommittedTransactionRepresentation[] reversed, long highTxId, long lowTxId )
     {
         long expectedTxId = highTxId;
         for ( CommittedTransactionRepresentation transaction : reversed )
@@ -133,7 +133,7 @@ class ReversedMultiFileTransactionCursorTest
         assertEquals( lowTxId, expectedTxId );
     }
 
-    private ThrowingFunction<LogPosition,TransactionCursor,IOException> log( int... transactionCounts ) throws IOException
+    private static ThrowingFunction<LogPosition,TransactionCursor,IOException> log( int... transactionCounts ) throws IOException
     {
         long baseOffset = start().getByteOffset();
 
@@ -165,12 +165,12 @@ class ReversedMultiFileTransactionCursorTest
         return result;
     }
 
-    private LogPosition start()
+    private static LogPosition start()
     {
         return new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE );
     }
 
-    private CommittedTransactionRepresentation[] transactions( int count, AtomicLong txId )
+    private static CommittedTransactionRepresentation[] transactions( int count, AtomicLong txId )
     {
         CommittedTransactionRepresentation[] result = new CommittedTransactionRepresentation[count];
         for ( int i = 0; i < count; i++ )

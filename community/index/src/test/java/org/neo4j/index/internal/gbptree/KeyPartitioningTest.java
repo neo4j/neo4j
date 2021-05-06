@@ -78,7 +78,7 @@ class KeyPartitioningTest
         return partition.getRight().value - partition.getLeft().value;
     }
 
-    private Layout<PartitionKey,?> layout()
+    private static Layout<PartitionKey,?> layout()
     {
         Layout<PartitionKey,?> layout = mock( Layout.class );
         when( layout.newKey() ).thenAnswer( invocationOnMock -> new PartitionKey() );
@@ -92,7 +92,7 @@ class KeyPartitioningTest
         return layout;
     }
 
-    private List<PartitionKey> keys( int count )
+    private static List<PartitionKey> keys( int count )
     {
         List<PartitionKey> keys = new ArrayList<>();
         for ( int i = 0; i < count; i++ )

@@ -131,7 +131,7 @@ class OcspStaplingIT
                 basicOCSPResp -> certificateSerialNumbersSeen.contains( basicOCSPResp.getResponses()[0].getCertID().getSerialNumber() ) ) );
     }
 
-    private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
+    private static X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
     {
         X509Certificate[] certificates = PkiUtils.loadCertificates( rootCertFile );
         assertThat( certificates.length ).isEqualTo( 1 );
@@ -144,7 +144,6 @@ class OcspStaplingIT
     {
         int jettyServerPortNo = startOcspMock();
 
-        CertificateChainFactory certFactory = new CertificateChainFactory();
         endUserKeyFile = Files.createTempFile( "end_key", "pem" );
         endUserCertFile = Files.createTempFile( "end_key", "pem" );
 
@@ -163,7 +162,7 @@ class OcspStaplingIT
         Files.delete( intCertFile );
 
         var bouncyCastleProvider = new BouncyCastleProvider();
-        certFactory.createCertificateChain( endUserCertFile, endUserKeyFile, intCertFile, intKeyFile,
+        CertificateChainFactory.createCertificateChain( endUserCertFile, endUserKeyFile, intCertFile, intKeyFile,
                                             rootCertFile, rootKeyFile, jettyServerPortNo, bouncyCastleProvider );
 
         util = new TransportTestUtil();

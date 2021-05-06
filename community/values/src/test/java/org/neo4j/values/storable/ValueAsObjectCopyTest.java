@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class ValueAsObjectCopyTest
 {
-    private Iterable<AsObjectCopyTest> scalars = Arrays.asList(
+    private final Iterable<AsObjectCopyTest> scalars = Arrays.asList(
             shouldGivePublic( Values.byteValue( (byte)1 ), (byte)1 ),
             shouldGivePublic( Values.shortValue( (short)2 ), (short)2 ),
             shouldGivePublic( Values.intValue( 3 ), 3 ),
@@ -197,7 +197,7 @@ class ValueAsObjectCopyTest
         assertArrayEquals( inStore, (boolean[]) value.asObjectCopy(), "should still generate inStore array" );
     }
 
-    private AsObjectCopyTest shouldGivePublic( Value value, Object asObject )
+    private static AsObjectCopyTest shouldGivePublic( Value value, Object asObject )
     {
         return new AsObjectCopyTest( value, asObject );
     }

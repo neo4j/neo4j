@@ -64,7 +64,7 @@ public class ChunkedNumberArrayFactory extends NumberArrayFactory.Adapter
         return newDynamicByteArray( fractionOf( length ), defaultValue, memoryTracker );
     }
 
-    private long fractionOf( long length )
+    private static long fractionOf( long length )
     {
         if ( length < MAGIC_CHUNK_COUNT )
         {

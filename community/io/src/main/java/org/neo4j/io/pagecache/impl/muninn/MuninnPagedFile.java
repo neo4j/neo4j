@@ -865,7 +865,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return chunk;
     }
 
-    private int computeNewRootTableLength( int maxChunkId )
+    private static int computeNewRootTableLength( int maxChunkId )
     {
         // Grow by approximate 10% but always by at least one full chunk, and no more than maxChunkGrowth (16 by default, equivalent to 512 MiB).
         int next = 1 + (int) (maxChunkId * 1.1);

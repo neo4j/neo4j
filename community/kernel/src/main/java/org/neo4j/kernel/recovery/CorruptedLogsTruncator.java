@@ -32,7 +32,6 @@ import java.util.function.LongConsumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -122,7 +121,7 @@ public class CorruptedLogsTruncator
                 uncheckedLongConsumer( fileIndex -> fs.deleteFile( getFileForVersion.apply( fileIndex ) ) ) );
     }
 
-    private void forEachSubsequentFile( long recoveredLogVersion, long highestLogVersion, LongConsumer action )
+    private static void forEachSubsequentFile( long recoveredLogVersion, long highestLogVersion, LongConsumer action )
     {
         for ( long fileIndex = recoveredLogVersion + 1; fileIndex <= highestLogVersion; fileIndex++ )
         {

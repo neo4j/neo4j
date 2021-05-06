@@ -19,10 +19,10 @@
  */
 package org.neo4j.resources;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-
-import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,7 +70,7 @@ class ProfilerTest
         return buffer.toString();
     }
 
-    private void expensiveComputation( Profiler profiler ) throws InterruptedException
+    private static void expensiveComputation( Profiler profiler ) throws InterruptedException
     {
         do
         {

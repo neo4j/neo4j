@@ -104,7 +104,7 @@ class NeoTransactionIndexApplierTest
         verify( indexingService ).createIndexes( SYSTEM , indexRule );
     }
 
-    private IndexDescriptor indexRule( long ruleId, int labelId, int propertyId )
+    private static IndexDescriptor indexRule( long ruleId, int labelId, int propertyId )
     {
         return IndexPrototype.forSchema( forLabel( labelId, propertyId ) ).withName( "index_" + ruleId ).materialise( ruleId );
     }

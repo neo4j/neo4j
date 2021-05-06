@@ -139,7 +139,7 @@ class TransactionLogAppendAndRotateIT
         assertTrue( monitoring.numberOfRotations() > 0 );
     }
 
-    private Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, AllTheMonitoring monitoring )
+    private static Runnable endAfterMax( final int time, final TimeUnit unit, final AtomicBoolean end, AllTheMonitoring monitoring )
     {
         return () ->
         {
@@ -186,7 +186,7 @@ class TransactionLogAppendAndRotateIT
         }
     }
 
-    private TransactionRepresentation sillyTransaction( int size )
+    private static TransactionRepresentation sillyTransaction( int size )
     {
         List<StorageCommand> commands = new ArrayList<>( size );
         for ( int i = 0; i < size; i++ )

@@ -121,7 +121,7 @@ class SpaceFillingCurveSettingsFactoryTest
         shouldGetCustomSettingsFor( crs, new double[]{-1000000000, -1000000000, -1000000000}, new double[]{1000000000, 1000000000, 1000000000} );
     }
 
-    private void shouldGetCustomSettingsFor( CoordinateReferenceSystem crs, double[] min, double[] max )
+    private static void shouldGetCustomSettingsFor( CoordinateReferenceSystem crs, double[] min, double[] max )
     {
         CrsConfig crsConf = CrsConfig.group( crs );
         Config config = Config.newBuilder()
@@ -131,7 +131,7 @@ class SpaceFillingCurveSettingsFactoryTest
         shouldGetSettingsFor( config, crs, min.length, new Envelope( min, max ) );
     }
 
-    private void shouldGetSettingsFor( Config config, CoordinateReferenceSystem crs, int dimensions, Envelope envelope )
+    private static void shouldGetSettingsFor( Config config, CoordinateReferenceSystem crs, int dimensions, Envelope envelope )
     {
         ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         SpaceFillingCurveSettings settings = configuredSettings.forCRS( crs );

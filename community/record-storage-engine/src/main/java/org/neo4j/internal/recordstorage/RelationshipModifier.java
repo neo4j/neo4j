@@ -272,7 +272,7 @@ public class RelationshipModifier
                                 nodeContext.setNode( recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext ) );
                             }
                             Predicate<RelationshipGroupRecord> canDeleteGroup = group -> !byNode.hasCreations( group.getType() );
-                            if ( relGroupGetter.deleteEmptyGroups( nodeContext.node(), canDeleteGroup, nodeDataLookup ) )
+                            if ( RelationshipGroupGetter.deleteEmptyGroups( nodeContext.node(), canDeleteGroup, nodeDataLookup ) )
                             {
                                 nodeContext.clearDenseContext();
                             }

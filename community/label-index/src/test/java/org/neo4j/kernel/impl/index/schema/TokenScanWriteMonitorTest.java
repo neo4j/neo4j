@@ -271,7 +271,7 @@ class TokenScanWriteMonitorTest
         assertThat( filesAfter.get( 0 ).getFileName().toString() ).contains( databaseLayout.relationshipTypeScanStore().getFileName().toString() );
     }
 
-    private long numberOfFilesIn( Path storeDir ) throws IOException
+    private static long numberOfFilesIn( Path storeDir ) throws IOException
     {
         try ( Stream<Path> list = Files.list( storeDir ) )
         {

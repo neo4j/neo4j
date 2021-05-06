@@ -289,7 +289,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
         }
     }
 
-    private void assertDontFind( GBPTree<RawBytes,RawBytes> tree, RawBytes key ) throws IOException
+    private static void assertDontFind( GBPTree<RawBytes,RawBytes> tree, RawBytes key ) throws IOException
     {
         try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key, NULL ) )
         {
@@ -297,7 +297,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
         }
     }
 
-    private void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key, RawBytes value ) throws IOException
+    private static void assertFindExact( GBPTree<RawBytes,RawBytes> tree, RawBytes key, RawBytes value ) throws IOException
     {
         try ( Seeker<RawBytes,RawBytes> seek = tree.seek( key, key, NULL ) )
         {
@@ -314,7 +314,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
         return new GBPTreeBuilder<>( getPageCache(), testDirectory.file( "index" ), layout ).build();
     }
 
-    private byte[] asBytes( int value )
+    private static byte[] asBytes( int value )
     {
         byte[] intBytes = new byte[Integer.BYTES];
         for ( int i = 0, j = intBytes.length - 1; i < intBytes.length; i++, j-- )
@@ -324,7 +324,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
         return intBytes;
     }
 
-    private RawBytes key( int keySize, byte... firstBytes )
+    private static RawBytes key( int keySize, byte... firstBytes )
     {
         RawBytes key = layout.newKey();
         key.bytes = new byte[keySize];
@@ -335,14 +335,14 @@ abstract class GBPTreeLargeDynamicKeysITBase
         return key;
     }
 
-    private RawBytes value( int valueSize )
+    private static RawBytes value( int valueSize )
     {
         RawBytes value = layout.newValue();
         value.bytes = new byte[valueSize];
         return value;
     }
 
-    private int inValidRange( int min, int max, int value )
+    private static int inValidRange( int min, int max, int value )
     {
         return Math.min( max, Math.max( min, value ) );
     }

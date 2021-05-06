@@ -74,12 +74,12 @@ public class UserSerialization extends FileRepositorySerializer<User>
         return  b.build();
     }
 
-    protected String serialize( LegacyCredential cred )
+    protected static String serialize( LegacyCredential cred )
     {
         return cred.serialize();
     }
 
-    private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
+    private static Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
     {
         String[] split = part.split( CREDENTIAL_SEPARATOR, -1 );
         String algorithm = split[0];

@@ -155,16 +155,16 @@ class LuceneSchemaIndexUniquenessVerificationIT
         index.verifyUniqueness( nodePropertyAccessor, new int[]{PROPERTY_KEY_ID} );
     }
 
-    private Set<Value> randomStrings()
+    private static Set<Value> randomStrings()
     {
         return ThreadLocalRandom.current()
                 .ints( nodesToCreate, 1, 200 )
-                .mapToObj( this::randomString )
+                .mapToObj( LuceneSchemaIndexUniquenessVerificationIT::randomString )
                 .map( Values::of )
                 .collect( toSet() );
     }
 
-    private String randomString( int size )
+    private static String randomString( int size )
     {
         return ThreadLocalRandom.current().nextBoolean()
                ? RandomStringUtils.random( size )

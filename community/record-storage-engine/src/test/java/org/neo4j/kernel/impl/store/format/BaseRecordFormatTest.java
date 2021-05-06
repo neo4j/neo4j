@@ -51,7 +51,7 @@ class BaseRecordFormatTest
         }
     }
 
-    private boolean shouldBeInUse( byte inUseByte )
+    private static boolean shouldBeInUse( byte inUseByte )
     {
         return (inUseByte & 0x10) != 0;
     }

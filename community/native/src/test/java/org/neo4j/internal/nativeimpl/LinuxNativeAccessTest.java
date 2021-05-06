@@ -177,7 +177,7 @@ class LinuxNativeAccessTest
         }
     }
 
-    private int getClosedDescriptor( Path file ) throws IOException, IllegalAccessException, ClassNotFoundException
+    private static int getClosedDescriptor( Path file ) throws IOException, IllegalAccessException, ClassNotFoundException
     {
         try ( Channel channel = FileChannel.open( file, READ, WRITE, CREATE ) )
         {
@@ -185,7 +185,7 @@ class LinuxNativeAccessTest
         }
     }
 
-    private int getDescriptor( Channel channel ) throws ClassNotFoundException, IllegalAccessException
+    private static int getDescriptor( Channel channel ) throws ClassNotFoundException, IllegalAccessException
     {
         Class<?> fileChannelImpl = Class.forName( "sun.nio.ch.FileChannelImpl" );
         FileDescriptor fd = (FileDescriptor) getDeclaredField( fileChannelImpl, "fd", true ).get( channel );

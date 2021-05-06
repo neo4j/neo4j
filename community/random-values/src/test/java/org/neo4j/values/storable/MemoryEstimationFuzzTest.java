@@ -31,7 +31,7 @@ import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 class MemoryEstimationFuzzTest
 {
-    private RandomValues random = RandomValues.create();
+    private final RandomValues random = RandomValues.create();
     private static final int ITERATIONS = 1000;
 
     @Test
@@ -105,7 +105,7 @@ class MemoryEstimationFuzzTest
         }
     }
 
-    private Iterable<ValueType> arrayTypes()
+    private static Iterable<ValueType> arrayTypes()
     {
         //For strings the size of the individual elements will vary
         //and it is not always true that a bigger array uses more memory

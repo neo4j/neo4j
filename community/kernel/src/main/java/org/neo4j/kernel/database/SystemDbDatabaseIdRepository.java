@@ -113,7 +113,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
         }
     }
 
-    private String getPropertyOnNode( Node node, String key, String database )
+    private static String getPropertyOnNode( Node node, String key, String database )
     {
         var value = node.getProperty( key );
         if ( value == null )

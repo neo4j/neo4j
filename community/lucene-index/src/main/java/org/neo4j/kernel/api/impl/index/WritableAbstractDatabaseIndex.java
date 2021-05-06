@@ -189,11 +189,11 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
 
     public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
     {
-        return luceneIndex.hasSinglePartition( partitions );
+        return AbstractLuceneIndex.hasSinglePartition( partitions );
     }
 
     public AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
     {
-        return luceneIndex.getFirstPartition( partitions );
+        return AbstractLuceneIndex.getFirstPartition( partitions );
     }
 }

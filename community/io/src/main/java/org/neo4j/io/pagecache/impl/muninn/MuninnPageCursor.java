@@ -129,7 +129,7 @@ public abstract class MuninnPageCursor extends PageCursor
         this.noGrow = noFault || isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
     }
 
-    private boolean isFlagRaised( int flagSet, int flag )
+    private static boolean isFlagRaised( int flagSet, int flag )
     {
         return (flagSet & flag) == flag;
     }
@@ -160,7 +160,7 @@ public abstract class MuninnPageCursor extends PageCursor
     {
         this.pinnedPageRef = pageRef;
         this.offset = 0;
-        this.pointer = pagedFile.getAddress( pageRef );
+        this.pointer = PageList.getAddress( pageRef );
         this.pageSize = filePageSize;
         pinEvent.setCachePageId( pagedFile.toId( pageRef ) );
     }
@@ -202,7 +202,7 @@ public abstract class MuninnPageCursor extends PageCursor
     {
         long pageRef = pinnedPageRef;
         Preconditions.checkState( pageRef != 0, "Cursor is closed." );
-        return pagedFile.getLastModifiedTxId( pageRef ) > lastClosedTransactionId ||
+        return PageList.getLastModifiedTxId( pageRef ) > lastClosedTransactionId ||
                 pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
     }
 
@@ -337,7 +337,7 @@ public abstract class MuninnPageCursor extends PageCursor
                 // item and try again, as the eviction thread would have set the chunk array slot to null.
                 long pageRef = pagedFile.deref( mappedPageId );
                 boolean locked = tryLockPage( pageRef );
-                if ( locked && pagedFile.isBoundTo( pageRef, swapperId, filePageId ) )
+                if ( locked && PageList.isBoundTo( pageRef, swapperId, filePageId ) )
                 {
                     pinCursorToPage( pageRef, filePageId, swapper );
                     pinEvent.hit();
@@ -433,7 +433,7 @@ public abstract class MuninnPageCursor extends PageCursor
                 try
                 {
                     // Make sure to unlock the page, so the eviction thread can pick up our trash.
-                    pagedFile.unlockExclusive( pageRef );
+                    PageList.unlockExclusive( pageRef );
                 }
                 finally
                 {
@@ -576,7 +576,7 @@ public abstract class MuninnPageCursor extends PageCursor
         return getLongAt( p );
     }
 
-    private long getLongAt( long p )
+    private static long getLongAt( long p )
     {
         long value;
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
@@ -594,7 +594,7 @@ public abstract class MuninnPageCursor extends PageCursor
         return value;
     }
 
-    private long getLongBigEndian( long p )
+    private static long getLongBigEndian( long p )
     {
         long a = UnsafeUtil.getByte( p     ) & 0xFF;
         long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
@@ -622,7 +622,7 @@ public abstract class MuninnPageCursor extends PageCursor
         putLongAt( p, value );
     }
 
-    private void putLongAt( long p, long value )
+    private static void putLongAt( long p, long value )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -634,7 +634,7 @@ public abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private void putLongBigEndian( long value, long p )
+    private static void putLongBigEndian( long value, long p )
     {
         UnsafeUtil.putByte( p    , (byte)( value >> 56 ) );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 48 ) );
@@ -662,7 +662,7 @@ public abstract class MuninnPageCursor extends PageCursor
         return getIntAt( p );
     }
 
-    private int getIntAt( long p )
+    private static int getIntAt( long p )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -672,7 +672,7 @@ public abstract class MuninnPageCursor extends PageCursor
         return getIntBigEndian( p );
     }
 
-    private int getIntBigEndian( long p )
+    private static int getIntBigEndian( long p )
     {
         int a = UnsafeUtil.getByte( p     ) & 0xFF;
         int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
@@ -696,7 +696,7 @@ public abstract class MuninnPageCursor extends PageCursor
         putIntAt( p, value );
     }
 
-    private void putIntAt( long p, int value )
+    private static void putIntAt( long p, int value )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -708,7 +708,7 @@ public abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private void putIntBigEndian( int value, long p )
+    private static void putIntBigEndian( int value, long p )
     {
         UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
@@ -807,7 +807,7 @@ public abstract class MuninnPageCursor extends PageCursor
         return getShortAt( p );
     }
 
-    private short getShortAt( long p )
+    private static short getShortAt( long p )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -817,7 +817,7 @@ public abstract class MuninnPageCursor extends PageCursor
         return getShortBigEndian( p );
     }
 
-    private short getShortBigEndian( long p )
+    private static short getShortBigEndian( long p )
     {
         short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
         short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
@@ -839,7 +839,7 @@ public abstract class MuninnPageCursor extends PageCursor
         putShortAt( p, value );
     }
 
-    private void putShortAt( long p, short value )
+    private static void putShortAt( long p, short value )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
@@ -851,7 +851,7 @@ public abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private void putShortBigEndian( short value, long p )
+    private static void putShortBigEndian( short value, long p )
     {
         UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
         UnsafeUtil.putByte( p + 1, (byte) value );
@@ -1070,7 +1070,7 @@ public abstract class MuninnPageCursor extends PageCursor
         clearCursorError( this );
     }
 
-    private void clearCursorError( MuninnPageCursor cursor )
+    private static void clearCursorError( MuninnPageCursor cursor )
     {
         while ( cursor != null )
         {
@@ -1125,6 +1125,6 @@ public abstract class MuninnPageCursor extends PageCursor
     {
         long pageRef = pinnedPageRef;
         Preconditions.checkState( pageRef != 0, "Cursor is closed." );
-        return pagedFile.getLastModifiedTxId( pageRef );
+        return PageList.getLastModifiedTxId( pageRef );
     }
 }

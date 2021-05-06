@@ -79,7 +79,7 @@ class RelationshipRepresentationTest
         verifySerialisation( repr );
     }
 
-    private RelationshipRepresentation relrep( long id )
+    private static RelationshipRepresentation relrep( long id )
     {
         return new RelationshipRepresentation(
                 relationship( id, node( 0, properties() ), "LOVES", node( 1, properties() ) ) );

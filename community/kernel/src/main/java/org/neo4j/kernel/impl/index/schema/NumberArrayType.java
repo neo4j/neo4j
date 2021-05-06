@@ -264,7 +264,7 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    void write( GenericKey state, int offset, long value )
+    static void write( GenericKey state, int offset, long value )
     {
         state.long0Array[offset] = value;
     }

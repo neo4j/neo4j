@@ -181,12 +181,12 @@ class TestDynamicStore
         }
     }
 
-    private byte[] createBytes( int length )
+    private static byte[] createBytes( int length )
     {
         return new byte[length];
     }
 
-    private byte[] createRandomBytes( Random r )
+    private static byte[] createRandomBytes( Random r )
     {
         return new byte[r.nextInt( 1024 )];
     }
@@ -200,7 +200,7 @@ class TestDynamicStore
         }
     }
 
-    private long create( DynamicArrayStore store, Object arrayToStore )
+    private static long create( DynamicArrayStore store, Object arrayToStore )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
         store.allocateRecords( records, arrayToStore, NULL, INSTANCE );

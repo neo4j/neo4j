@@ -212,9 +212,8 @@ public abstract class NeoBootstrapper implements Bootstrapper
 
     protected abstract DatabaseManagementService createNeo( Config config, GraphDatabaseDependencies dependencies );
 
-    private Log4jLogProvider setupLogging( Config config )
+    private static Log4jLogProvider setupLogging( Config config )
     {
-
         LogConfig.Builder builder =
                 LogConfig.createBuilder( new DefaultFileSystemAbstraction(), config.get( GraphDatabaseSettings.store_user_log_path ),
                         config.get( GraphDatabaseSettings.store_internal_log_level ) )

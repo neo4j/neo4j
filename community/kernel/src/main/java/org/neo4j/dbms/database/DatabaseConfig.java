@@ -56,9 +56,14 @@ public class DatabaseConfig extends Config implements Lifecycle
     @Override
     public <T> T get( Setting<T> setting )
     {
-        if ( overriddenSettings != null && overriddenSettings.containsKey( setting ) )
+        if ( overriddenSettings != null )
         {
-            return (T) overriddenSettings.get( setting );
+            Object o = overriddenSettings.get( setting );
+            if ( o != null )
+            {
+                //noinspection unchecked
+                return (T) o;
+            }
         }
         return globalConfig.get( setting );
     }

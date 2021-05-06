@@ -520,7 +520,7 @@ class SettingMigratorsTest
                 .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s", oldFormatSetting, policyConfig.trust_all.name() );
     }
 
-    private void shouldRemoveAllowKeyGeneration( String toRemove, String value )
+    private static void shouldRemoveAllowKeyGeneration( String toRemove, String value )
     {
         var config = Config.newBuilder().setRaw( Map.of( toRemove, value ) ).build();
 

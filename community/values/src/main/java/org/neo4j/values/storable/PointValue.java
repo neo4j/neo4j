@@ -60,8 +60,8 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
     static final PointValue MIN_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
     static final PointValue MAX_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
 
-    private CoordinateReferenceSystem crs;
-    private double[] coordinate;
+    private final CoordinateReferenceSystem crs;
+    private final double[] coordinate;
 
     PointValue( CoordinateReferenceSystem crs, double... coordinate )
     {
@@ -631,7 +631,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             this.srid = this.srid == -1 ? header.srid : this.srid;
         }
 
-        private void assignTextValue( String key, Object value, Consumer<String> assigner )
+        private static void assignTextValue( String key, Object value, Consumer<String> assigner )
         {
             if ( value instanceof String )
             {
@@ -647,7 +647,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             }
         }
 
-        private void assignFloatingPoint( String key, Object value, Consumer<Double> assigner )
+        private static void assignFloatingPoint( String key, Object value, Consumer<Double> assigner )
         {
             if ( value instanceof String )
             {
@@ -667,7 +667,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             }
         }
 
-        private void assignIntegral( String key, Object value, Consumer<Integer> assigner )
+        private static void assignIntegral( String key, Object value, Consumer<Integer> assigner )
         {
             if ( value instanceof String )
             {
@@ -683,7 +683,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             }
         }
 
-        private <T extends Number> T assertConvertible( Supplier<T> func )
+        private static <T extends Number> T assertConvertible( Supplier<T> func )
         {
             try
             {
@@ -695,7 +695,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
             }
         }
 
-        private void checkUnassigned( Object key, String fieldName )
+        private static void checkUnassigned( Object key, String fieldName )
         {
             if ( key != null )
             {

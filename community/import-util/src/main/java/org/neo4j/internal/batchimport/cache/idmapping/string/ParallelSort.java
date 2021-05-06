@@ -164,7 +164,7 @@ public class ParallelSort
         return rangeParams;
     }
 
-    private String dumpBuckets( long[][] rangeParams, int[] bucketRange, long[] bucketIndex )
+    private static String dumpBuckets( long[][] rangeParams, int[] bucketRange, long[] bucketIndex )
     {
         StringBuilder builder = new StringBuilder();
         builder.append( "rangeParams:\n" );

@@ -342,7 +342,7 @@ class DynamicTaskExecutorTest
         }
     }
 
-    private void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )
+    private static void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )
     {
         Exception submitException = null;
         for ( int i = 0; i < 5 && submitException == null; i++ )

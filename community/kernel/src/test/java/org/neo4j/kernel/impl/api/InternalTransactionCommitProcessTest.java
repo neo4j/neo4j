@@ -127,7 +127,7 @@ class InternalTransactionCommitProcessTest
         verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, NULL );
     }
 
-    private TransactionToApply mockedTransaction()
+    private static TransactionToApply mockedTransaction()
     {
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );

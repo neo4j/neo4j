@@ -93,7 +93,7 @@ public class SslPolicy
                 .build();
     }
 
-    private io.netty.handler.ssl.ClientAuth forNetty( ClientAuth clientAuth )
+    private static io.netty.handler.ssl.ClientAuth forNetty( ClientAuth clientAuth )
     {
         switch ( clientAuth )
         {

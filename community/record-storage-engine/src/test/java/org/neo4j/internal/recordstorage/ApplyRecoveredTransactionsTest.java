@@ -112,7 +112,7 @@ class ApplyRecoveredTransactionsTest
         assertEquals( relationshipId + 1, neoStores.getRelationshipStore().getHighId() );
     }
 
-    private RelationshipRecord with( RelationshipRecord relationship, long startNode, long endNode, int type )
+    private static RelationshipRecord with( RelationshipRecord relationship, long startNode, long endNode, int type )
     {
         relationship.setFirstNode( startNode );
         relationship.setSecondNode( endNode );

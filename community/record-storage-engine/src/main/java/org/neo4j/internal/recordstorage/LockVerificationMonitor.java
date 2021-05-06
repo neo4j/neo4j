@@ -269,7 +269,7 @@ public class LockVerificationMonitor implements LoadMonitor
             boolean enabled = config.get( GraphDatabaseInternalSettings.additional_lock_verification );
             return enabled ? ( locks, txState, neoStores, schemaRuleAccess ) -> new LockVerificationMonitor( locks, txState,
                     new NeoStoresLoader( neoStores, schemaRuleAccess ) ) : IGNORE;
-        };
+        }
 
         Factory IGNORE = ( locks, txState, neoStores, schemaRuleAccess ) -> LoadMonitor.NULL_MONITOR;
     }
@@ -346,7 +346,7 @@ public class LockVerificationMonitor implements LoadMonitor
             return readRecord( id, neoStores.getSchemaStore() );
         }
 
-        private <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )
+        private static <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )
         {
             return store.getRecord( id, store.newRecord(), RecordLoad.ALWAYS, CursorContext.NULL );
         }

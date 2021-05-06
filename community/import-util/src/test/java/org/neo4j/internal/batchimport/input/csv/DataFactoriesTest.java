@@ -232,7 +232,7 @@ public class DataFactoriesTest
 
     private static final Configuration SEEKER_CONFIG = Configuration.TABS.toBuilder().withBufferSize( 1000 ).build();
 
-    private CharSeeker seeker( String data )
+    private static CharSeeker seeker( String data )
     {
         return CharSeekers.charSeeker( wrap( data ), SEEKER_CONFIG, false );
     }

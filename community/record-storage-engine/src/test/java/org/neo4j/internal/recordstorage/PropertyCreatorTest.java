@@ -351,7 +351,7 @@ class PropertyCreatorTest
         assertEquals( propCount + 1, propertyRecordsInUse() );
     }
 
-    private void prepareDirtyGenerator( PropertyStore store )
+    private static void prepareDirtyGenerator( PropertyStore store )
     {
         var idGenerator = store.getIdGenerator();
         var marker = idGenerator.marker( NULL );

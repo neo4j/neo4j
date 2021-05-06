@@ -48,7 +48,7 @@ public class DijkstraSelectorFactory extends BestFirstSelectorFactory<Double, Do
         return withDefault( currentAggregatedValue, 0d ) + withDefault( value, 0d );
     }
 
-    private <T> T withDefault( T valueOrNull, T valueIfNull )
+    private static <T> T withDefault( T valueOrNull, T valueIfNull )
     {
         return valueOrNull != null ? valueOrNull : valueIfNull;
     }

@@ -54,7 +54,7 @@ class RowWriterTest
         assertThat( firstCell.get( "one" ).get( "two" ).get( 1 ).get( "three" ).asInt() ).isEqualTo( 42 );
     }
 
-    private JsonNode serialize( ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter
+    private static JsonNode serialize( ByteArrayOutputStream out, JsonGenerator json, ResultDataContentWriter
             resultDataContentWriter ) throws IOException, JsonParseException
     {
         Map<String, Object> data = map( "the column", map( "one", map( "two", asList( true, map( "three", 42 ) ) ) ) );

@@ -147,7 +147,7 @@ class KernelTransactionTerminationTest
         );
     }
 
-    private void runTwoThreads(
+    private static void runTwoThreads(
             Runnable cleaner,
             Consumer<TestKernelTransaction> thread1Action,
             Consumer<TestKernelTransaction> thread2Action ) throws Throwable

@@ -101,7 +101,7 @@ class DateType extends Type
         return true;
     }
 
-    void write( GenericKey state, long epochDay )
+    static void write( GenericKey state, long epochDay )
     {
         state.long0 = epochDay;
     }

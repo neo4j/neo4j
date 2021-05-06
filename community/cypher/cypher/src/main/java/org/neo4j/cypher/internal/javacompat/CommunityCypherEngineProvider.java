@@ -23,11 +23,11 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
-import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
+import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -81,7 +81,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         }
     }
 
-    private CaffeineCacheFactory makeCacheFactory( SPI spi )
+    private static CaffeineCacheFactory makeCacheFactory( SPI spi )
     {
         var monitoredExecutor = spi.jobScheduler().monitoredJobExecutor( Group.CYPHER_CACHE );
         return new ExecutorBasedCaffeineCacheFactory( job -> monitoredExecutor.execute( systemJob( "Query plan cache maintenance" ), job ) );

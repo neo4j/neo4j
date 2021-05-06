@@ -531,7 +531,7 @@ class PrettyPrinterTest
         }
     }
 
-    private MapValue props( Object... keyValue )
+    private static MapValue props( Object... keyValue )
     {
         String[] keys = new String[keyValue.length / 2];
         AnyValue[] values = new AnyValue[keyValue.length / 2];

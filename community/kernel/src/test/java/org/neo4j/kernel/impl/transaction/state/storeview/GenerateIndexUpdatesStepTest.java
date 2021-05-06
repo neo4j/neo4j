@@ -336,7 +336,7 @@ class GenerateIndexUpdatesStepTest
         }
     }
 
-    private StubStorageCursors someUniformData( int numNodes )
+    private static StubStorageCursors someUniformData( int numNodes )
     {
         StubStorageCursors data = new StubStorageCursors();
         for ( int i = 0; i < numNodes; i++ )
@@ -346,7 +346,7 @@ class GenerateIndexUpdatesStepTest
         return data;
     }
 
-    private long[] allNodeIds( StubStorageCursors data )
+    private static long[] allNodeIds( StubStorageCursors data )
     {
         try ( StorageNodeCursor cursor = data.allocateNodeCursor( NULL ) )
         {

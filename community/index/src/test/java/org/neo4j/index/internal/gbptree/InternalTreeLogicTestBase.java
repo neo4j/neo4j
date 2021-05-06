@@ -1780,7 +1780,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         return -1;
     }
 
-    private void giveSuccessor( PageCursor cursor, long nodeId ) throws IOException
+    private static void giveSuccessor( PageCursor cursor, long nodeId ) throws IOException
     {
         goTo( cursor, nodeId );
         TreeNode.setSuccessor( cursor, 42, stableGeneration, unstableGeneration );
@@ -2138,7 +2138,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         PageCursorUtil.goTo( cursor, "test", pointer( pageId ) );
     }
 
-    private void goToSuccessor( PageCursor cursor ) throws IOException
+    private static void goToSuccessor( PageCursor cursor ) throws IOException
     {
         long newestGeneration = newestGeneration( cursor, stableGeneration, unstableGeneration );
         goTo( cursor, newestGeneration );
@@ -2155,22 +2155,22 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         return pointer( node.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
     }
 
-    private long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private static long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         return pointer( TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
-    private long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private static long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         return pointer( TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
-    private long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    private static long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
         return pointer( TreeNode.successor( cursor, stableGeneration, unstableGeneration ) );
     }
 
-    private long newestGeneration( PageCursor cursor, long stableGeneration, long unstableGeneration ) throws IOException
+    private static long newestGeneration( PageCursor cursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
         long current = cursor.getCurrentPageId();
         long successor = current;

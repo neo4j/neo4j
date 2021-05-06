@@ -375,12 +375,12 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
 
         // when
         var reader = accessor.newValueReader();
         try ( NodeValueIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), false ) ) )
+                ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), false ) ) )
         {
             assertEntityIdHits( extractEntityIds( Arrays.copyOf( updates, updates.length - 1 ), alwaysTrue() ), result );
         }
@@ -398,12 +398,12 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             throws IndexEntryConflictException, IndexNotApplicableKernelException
     {
         processAll( updates );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
 
         // when
         var reader = accessor.newValueReader();
         try ( NodeValueIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), true ) ) )
+                ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), true ) ) )
         {
             assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
         }
@@ -415,12 +415,12 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
 
         // when
         var reader = accessor.newValueReader();
         try ( NodeValueIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), false ) ) )
+                ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), false ) ) )
         {
             assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length - 1 ), alwaysTrue() ), result );
         }
@@ -432,12 +432,12 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
 
         // when
         var reader = accessor.newValueReader();
         try ( NodeValueIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), true ) ) )
+                ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), true ) ) )
         {
             assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length ), alwaysTrue() ), result );
         }
@@ -448,13 +448,13 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     {
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
         processAll( updates[0], updates[1], updates[updates.length - 1], updates[updates.length - 2] );
 
         // when
         var reader = accessor.newValueReader();
         try ( NodeValueIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[updates.length - 3] ), true ) ) )
+                ValueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[updates.length - 3] ), true ) ) )
         {
             assertEntityIdHits( EMPTY_LONG_ARRAY, result );
         }
@@ -472,13 +472,13 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             throws IndexEntryConflictException, IndexNotApplicableKernelException
     {
         processAll( updates );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
 
         // when
         var reader = accessor.newValueReader();
 
-        PropertyIndexQuery outerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
-        PropertyIndexQuery innerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
+        PropertyIndexQuery outerQuery = ValueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
+        PropertyIndexQuery innerQuery = ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
         long[] expectedOuter = {entityIdOf( updates[2] ), entityIdOf( updates[3] )};
         long[] expectedInner = {entityIdOf( updates[0] ), entityIdOf( updates[1] )};
@@ -511,14 +511,14 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             throws IndexEntryConflictException, IndexNotApplicableKernelException
     {
         processAll( updates );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
 
         // when
         var reader = accessor.newValueReader();
 
-        PropertyIndexQuery query1 = valueCreatorUtil.rangeQuery( valueOf( updates[4] ), true, valueOf( updates[5] ), true );
-        PropertyIndexQuery query2 = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
-        PropertyIndexQuery query3 = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
+        PropertyIndexQuery query1 = ValueCreatorUtil.rangeQuery( valueOf( updates[4] ), true, valueOf( updates[5] ), true );
+        PropertyIndexQuery query2 = ValueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
+        PropertyIndexQuery query3 = ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
         long[] expected1 = {entityIdOf( updates[4] ), entityIdOf( updates[5] )};
         long[] expected2 = {entityIdOf( updates[2] ), entityIdOf( updates[3] )};
@@ -663,14 +663,14 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
-        valueCreatorUtil.sort( updates );
+        ValueCreatorUtil.sort( updates );
         var reader = accessor.newValueReader();
 
         // when
         try ( NodeValueIterator iter = new NodeValueIterator() )
         {
             PropertyIndexQuery.ExactPredicate filter = PropertyIndexQuery.exact( 0, valueOf( updates[1] ) );
-            PropertyIndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
+            PropertyIndexQuery rangeQuery = ValueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
             IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
             reader.query( NULL_CONTEXT, filterClient, unconstrained(), rangeQuery );
 
@@ -696,7 +696,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             someUpdates[i] = randomUpdateGenerator.next();
         }
         processAll( someUpdates );
-        Value[] allValues = valueCreatorUtil.extractValuesFromUpdates( someUpdates );
+        Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates( someUpdates );
 
         // when
         try ( var reader = accessor.newValueReader() )
@@ -716,11 +716,11 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         }
     }
 
-    private void expectIndexOrder( Value[] allValues,
-                                   ValueGroup valueGroup,
-                                   ValueIndexReader reader,
-                                   IndexOrder supportedOrder,
-                                   PropertyIndexQuery.RangePredicate<?> supportedQuery ) throws IndexNotApplicableKernelException
+    private static void expectIndexOrder( Value[] allValues,
+            ValueGroup valueGroup,
+            ValueIndexReader reader,
+            IndexOrder supportedOrder,
+            PropertyIndexQuery.RangePredicate<?> supportedQuery ) throws IndexNotApplicableKernelException
     {
         Value[] expectedValues = Arrays.stream( allValues )
                                        .filter( v -> v.valueGroup() == valueGroup )
@@ -772,7 +772,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             someUpdates[i] = randomUpdateGenerator.next();
         }
         processAll( someUpdates );
-        Value[] allValues = valueCreatorUtil.extractValuesFromUpdates( someUpdates );
+        Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates( someUpdates );
 
         // Pick one out of all added values and do a range query for the value group of that value
         Value value = random.among( allValues );

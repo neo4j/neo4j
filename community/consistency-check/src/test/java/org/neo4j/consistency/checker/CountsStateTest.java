@@ -315,7 +315,8 @@ class CountsStateTest
         verify( inconsistencyReporter, times( 18 ) ).forCounts( any() );
     }
 
-    private void visitRelationshipCountForAllPermutations( CountsState.CountsChecker checker, int startLabel, int relationshipType, int endLabel, long count )
+    private static void visitRelationshipCountForAllPermutations( CountsState.CountsChecker checker, int startLabel, int relationshipType, int endLabel,
+            long count )
     {
         checker.visitRelationshipCount( startLabel, relationshipType, ANY_LABEL, count );
         checker.visitRelationshipCount( startLabel, ANY_RELATIONSHIP_TYPE, ANY_LABEL, count );
@@ -336,12 +337,12 @@ class CountsStateTest
         }
     }
 
-    private Pair<Long,long[]> nodeLabels( long nodeId, long... labelIds )
+    private static Pair<Long,long[]> nodeLabels( long nodeId, long... labelIds )
     {
         return Pair.of( nodeId, labelIds );
     }
 
-    private RelationshipRecord relationship( long startNodeId, int relationshipType, long endNodeId )
+    private static RelationshipRecord relationship( long startNodeId, int relationshipType, long endNodeId )
     {
         return new RelationshipRecord( 0 ).initialize( true, NULL_REFERENCE.longValue(), startNodeId, endNodeId, relationshipType,
                 NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), true, true );

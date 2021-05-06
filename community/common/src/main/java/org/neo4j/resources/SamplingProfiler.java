@@ -136,7 +136,7 @@ class SamplingProfiler implements Profiler
         return nextBaseline + delayNanoes;
     }
 
-    private void record( Sample root, StackTraceElement[] frames )
+    private static void record( Sample root, StackTraceElement[] frames )
     {
         root.getAndIncrement();
         Map<StackTraceElement,Sample> level = root.children;
@@ -150,7 +150,7 @@ class SamplingProfiler implements Profiler
         }
     }
 
-    private void printSampleTree( PrintStream out, double total, PriorityQueue<Sample> children, int indent )
+    private static void printSampleTree( PrintStream out, double total, PriorityQueue<Sample> children, int indent )
     {
         Sample child;
         while ( (child = children.poll()) != null )

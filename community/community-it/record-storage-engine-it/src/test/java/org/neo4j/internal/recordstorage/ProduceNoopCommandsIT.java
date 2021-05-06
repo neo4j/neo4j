@@ -243,7 +243,7 @@ class ProduceNoopCommandsIT
         onNode( id, ( tx, node ) -> node.createRelationshipTo( tx.createNode(), TYPE ).delete() );
     }
 
-    private void deleteRelationship( Node node, int index )
+    private static void deleteRelationship( Node node, int index )
     {
         Iterator<Relationship> relationships = node.getRelationships().iterator();
         for ( int i = 0; i < index - 1; i++ )
@@ -257,7 +257,7 @@ class ProduceNoopCommandsIT
         }
     }
 
-    private void printNoOpCommands( TransactionRepresentation transactionRepresentation, StringBuilder error ) throws IOException
+    private static void printNoOpCommands( TransactionRepresentation transactionRepresentation, StringBuilder error ) throws IOException
     {
         transactionRepresentation.accept( command ->
         {
@@ -275,7 +275,7 @@ class ProduceNoopCommandsIT
         } );
     }
 
-    private boolean hasNoOpCommand( TransactionRepresentation transactionRepresentation ) throws IOException
+    private static boolean hasNoOpCommand( TransactionRepresentation transactionRepresentation ) throws IOException
     {
         MutableBoolean has = new MutableBoolean();
         transactionRepresentation.accept( command ->
@@ -326,8 +326,8 @@ class ProduceNoopCommandsIT
 
     private static class NodeBuilder
     {
-        private Transaction tx;
-        private Node node;
+        private final Transaction tx;
+        private final Node node;
 
         NodeBuilder( Transaction tx )
         {

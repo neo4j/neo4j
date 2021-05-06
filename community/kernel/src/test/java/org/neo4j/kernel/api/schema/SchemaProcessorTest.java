@@ -72,12 +72,12 @@ class SchemaProcessorTest
                 "RelationTypeSchemaDescriptor", "RelationTypeSchemaDescriptor" );
     }
 
-    private SchemaDescriptor disguisedLabel()
+    private static SchemaDescriptor disguisedLabel()
     {
         return SchemaDescriptor.forLabel( LABEL_ID, 1 );
     }
 
-    private SchemaDescriptor disguisedRelType()
+    private static SchemaDescriptor disguisedRelType()
     {
         return SchemaDescriptor.forRelType( REL_TYPE_ID, 1 );
     }

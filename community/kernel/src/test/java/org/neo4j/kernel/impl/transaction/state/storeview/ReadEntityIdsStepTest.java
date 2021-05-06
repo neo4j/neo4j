@@ -124,7 +124,7 @@ class ReadEntityIdsStepTest
         }
     }
 
-    private EntityTokenUpdate added( long id )
+    private static EntityTokenUpdate added( long id )
     {
         return tokenChanges( id, EMPTY_LONG_ARRAY, new long[]{TOKEN_ID} );
     }

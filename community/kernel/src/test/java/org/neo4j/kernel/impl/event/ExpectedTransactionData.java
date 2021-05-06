@@ -164,7 +164,7 @@ class ExpectedTransactionData
     /**
      * @return {@code true} if this property should be expected to come as removed property in the event
      */
-    private boolean removeLabel( Map<Node,Set<String>> map, Node node, Label label )
+    private static boolean removeLabel( Map<Node,Set<String>> map, Node node, Label label )
     {
         if ( map.containsKey( node ) )
         {
@@ -200,7 +200,7 @@ class ExpectedTransactionData
     /**
      * @return {@code non-null} if this property should be expected to come as removed property in the event
      */
-    private <E> Object removeProperty( Map<E,Map<String,PropertyEntryImpl<E>>> map,
+    private static <E> Object removeProperty( Map<E,Map<String,PropertyEntryImpl<E>>> map,
             E entity, String key, Object valueBeforeTx )
     {
         if ( map.containsKey( entity ) )
@@ -225,7 +225,7 @@ class ExpectedTransactionData
         return valueBeforeTx;
     }
 
-    private <E> PropertyEntryImpl<E> property( E entity, String key, Object value,
+    private static <E> PropertyEntryImpl<E> property( E entity, String key, Object value,
             Object valueBeforeTx )
     {
         return new PropertyEntryImpl<>( entity, key, value, valueBeforeTx );
@@ -324,7 +324,7 @@ class ExpectedTransactionData
                 expectedRemovedLabels.isEmpty() );
     }
 
-    private Map<Node,Set<String>> cloneLabelData( Map<Node,Set<String>> map )
+    private static Map<Node,Set<String>> cloneLabelData( Map<Node,Set<String>> map )
     {
         Map<Node,Set<String>> clone = new HashMap<>();
         for ( Map.Entry<Node,Set<String>> entry : map.entrySet() )
@@ -357,8 +357,8 @@ class ExpectedTransactionData
         }
     }
 
-    private <KEY> Map<KEY, Map<String, PropertyEntryImpl<KEY>>> clone(
-            Map<KEY, Map<String, PropertyEntryImpl<KEY>>> map )
+    private static <KEY> Map<KEY, Map<String, PropertyEntryImpl<KEY>>> clone(
+            Map<KEY,Map<String,PropertyEntryImpl<KEY>>> map )
     {
         Map<KEY, Map<String, PropertyEntryImpl<KEY>>> result = new HashMap<>();
         for ( Map.Entry<KEY,Map<String,PropertyEntryImpl<KEY>>> entry : map.entrySet() )

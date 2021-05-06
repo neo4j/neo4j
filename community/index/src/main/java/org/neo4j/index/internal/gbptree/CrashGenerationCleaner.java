@@ -158,7 +158,7 @@ class CrashGenerationCleaner
 
     // === Methods about checking if a tree node has crashed pointers ===
 
-    private boolean isTreeNode( PageCursor cursor ) throws IOException
+    private static boolean isTreeNode( PageCursor cursor ) throws IOException
     {
         boolean isTreeNode;
         do
@@ -255,7 +255,7 @@ class CrashGenerationCleaner
         return "Unexpected generations, stableGeneration=" + stableGeneration + ", unstableGeneration=" + unstableGeneration;
     }
 
-    private void awaitAll( Iterable<? extends CleanupJob.JobResult<?>> jobHandles )
+    private static void awaitAll( Iterable<? extends CleanupJob.JobResult<?>> jobHandles )
     {
         Throwable finalError = null;
         for ( var jobHandle : jobHandles )

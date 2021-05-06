@@ -83,7 +83,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         visitDegrees( node, ( type, out, in ) -> updateRelationshipsCountsFromDegrees( labelIds, type, -out, -in ) );
     }
 
-    private void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
+    private static void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
     {
         EagerDegrees degrees = new EagerDegrees();
         node.degrees( ALL_RELATIONSHIPS, degrees, true );

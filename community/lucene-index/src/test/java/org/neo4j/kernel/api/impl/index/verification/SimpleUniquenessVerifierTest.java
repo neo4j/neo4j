@@ -202,7 +202,7 @@ class SimpleUniquenessVerifierTest
         searcherManager.maybeRefreshBlocking();
     }
 
-    private NodePropertyAccessor newPropertyAccessor( List<Object> propertyValues )
+    private static NodePropertyAccessor newPropertyAccessor( List<Object> propertyValues )
     {
         return new TestPropertyAccessor(
                 propertyValues.stream()

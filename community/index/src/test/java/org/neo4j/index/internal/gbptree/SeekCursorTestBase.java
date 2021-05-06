@@ -2355,7 +2355,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         updateRoot();
     }
 
-    private void corruptGSPP( PageAwareByteArrayCursor duplicate, int offset )
+    private static void corruptGSPP( PageAwareByteArrayCursor duplicate, int offset )
     {
         int someBytes = duplicate.getInt( offset );
         duplicate.putInt( offset, ~someBytes );

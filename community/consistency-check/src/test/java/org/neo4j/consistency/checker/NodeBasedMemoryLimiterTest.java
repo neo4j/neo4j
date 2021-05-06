@@ -67,7 +67,7 @@ class NodeBasedMemoryLimiterTest
         assertEquals( 10, limiter.numberOfRanges() );
     }
 
-    private void assertRange( LongRange range, long from, long to )
+    private static void assertRange( LongRange range, long from, long to )
     {
         assertEquals( from, range.from() );
         assertEquals( to, range.to() );

@@ -734,7 +734,7 @@ public class BuiltInDbmsProcedures
         return (GraphDatabaseAPI) graph.getDependencyResolver().resolveDependency( DatabaseManagementService.class ).database( SYSTEM_DATABASE_NAME );
     }
 
-    private StoreIdProvider getSystemDatabaseStoreIdProvider( GraphDatabaseAPI databaseAPI )
+    private static StoreIdProvider getSystemDatabaseStoreIdProvider( GraphDatabaseAPI databaseAPI )
     {
         return databaseAPI.getDependencyResolver().resolveDependency( StoreIdProvider.class );
     }

@@ -307,7 +307,7 @@ class PartitionedSeekTest
         }
     }
 
-    private IntList assertEntries( long from, long to, Collection<Seeker<MutableLong,MutableLong>> seekers ) throws IOException
+    private static IntList assertEntries( long from, long to, Collection<Seeker<MutableLong,MutableLong>> seekers ) throws IOException
     {
         long nextExpected = from;
         MutableIntList entryCountPerSeeker = IntLists.mutable.empty();
@@ -326,7 +326,7 @@ class PartitionedSeekTest
         return entryCountPerSeeker;
     }
 
-    private void verifyEntryCountPerPartition( IntList entryCountPerSeeker )
+    private static void verifyEntryCountPerPartition( IntList entryCountPerSeeker )
     {
         // verify that partitions have some sort of fair distribution
         // First and last partition may have varying number of entries, but the middle ones should be (at least in this test case)

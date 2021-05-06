@@ -79,7 +79,7 @@ public final class SwapperSet
         return swapperMapping;
     }
 
-    private void checkId( int id )
+    private static void checkId( int id )
     {
         if ( id == 0 )
         {

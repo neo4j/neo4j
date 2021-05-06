@@ -85,7 +85,7 @@ class SizeEstimationTest
         }
     }
 
-    private void assertEstimateWithinMargin( GBPTree<?,?> tree, int actualCount ) throws IOException
+    private static void assertEstimateWithinMargin( GBPTree<?,?> tree, int actualCount ) throws IOException
     {
         // when
         int estimate = toIntExact( tree.estimateNumberOfEntriesInTree( NULL ) );

@@ -1701,7 +1701,7 @@ class TransactionRecordStateTest
         return recordState;
     }
 
-    private void apply( TransactionApplierFactory applier, CommandsToApply transaction ) throws Exception
+    private static void apply( TransactionApplierFactory applier, CommandsToApply transaction ) throws Exception
     {
         CommandHandlerContract.apply( applier, transaction );
     }

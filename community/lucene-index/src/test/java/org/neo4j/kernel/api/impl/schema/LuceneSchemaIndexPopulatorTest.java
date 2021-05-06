@@ -236,17 +236,17 @@ class LuceneSchemaIndexPopulatorTest
                 hit( "4a", 4 ) );
     }
 
-    private Hit hit( Object value, Long... nodeIds )
+    private static Hit hit( Object value, Long... nodeIds )
     {
         return new Hit( value, nodeIds );
     }
 
-    private Hit hit( Object value, long nodeId )
+    private static Hit hit( Object value, long nodeId )
     {
         return new Hit( value, nodeId );
     }
 
-    private Hit no( Object value )
+    private static Hit no( Object value )
     {
         return new Hit( value );
     }

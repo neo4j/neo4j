@@ -294,7 +294,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private boolean requiresCountsStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
+    private static boolean requiresCountsStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
     {
         return !oldFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE ) &&
                 newFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE );
@@ -714,7 +714,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
+    private static boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
     {
         return oldFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) !=
                 newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE );
@@ -928,7 +928,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return "Kernel StoreMigrator";
     }
 
-    private SchemaStorageCreator schemaStorageCreatorFlexible()
+    private static SchemaStorageCreator schemaStorageCreatorFlexible()
     {
         return new SchemaStorageCreator()
         {

@@ -103,13 +103,13 @@ class SortedMergeJoinTest
                                    node( 6L, "c", "e" ) ), indexOrder );
     }
 
-    private void assertThatItWorks( List<EntityWithPropertyValues> listA, List<EntityWithPropertyValues> listB, IndexOrder indexOrder )
+    private static void assertThatItWorks( List<EntityWithPropertyValues> listA, List<EntityWithPropertyValues> listB, IndexOrder indexOrder )
     {
         assertThatItWorksOneWay( listA, listB, indexOrder );
         assertThatItWorksOneWay( listB, listA, indexOrder );
     }
 
-    private void assertThatItWorksOneWay( List<EntityWithPropertyValues> listA, List<EntityWithPropertyValues> listB, IndexOrder indexOrder )
+    private static void assertThatItWorksOneWay( List<EntityWithPropertyValues> listA, List<EntityWithPropertyValues> listB, IndexOrder indexOrder )
     {
         SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
         sortedMergeJoin.initialize( indexOrder );
@@ -131,9 +131,9 @@ class SortedMergeJoinTest
         assertThat( result ).isEqualTo( expected );
     }
 
-    private List<EntityWithPropertyValues> process( SortedMergeJoin sortedMergeJoin,
-                                                    Iterator<EntityWithPropertyValues> iteratorA,
-                                                    Iterator<EntityWithPropertyValues> iteratorB )
+    private static List<EntityWithPropertyValues> process( SortedMergeJoin sortedMergeJoin,
+            Iterator<EntityWithPropertyValues> iteratorA,
+            Iterator<EntityWithPropertyValues> iteratorB )
     {
         Collector collector = new Collector();
         do
@@ -153,7 +153,7 @@ class SortedMergeJoinTest
         return collector.result;
     }
 
-    private EntityWithPropertyValues node( long id, Object... values )
+    private static EntityWithPropertyValues node( long id, Object... values )
     {
         return new EntityWithPropertyValues( id, Stream.of( values ).map( Values::of ).toArray( Value[]::new ) );
     }

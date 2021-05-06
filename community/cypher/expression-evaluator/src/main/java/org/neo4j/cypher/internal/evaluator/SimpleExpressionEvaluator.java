@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 class SimpleExpressionEvaluator implements ExpressionEvaluator
 {
-    private InternalExpressionEvaluator evaluator = new SimpleInternalExpressionEvaluator();
+    private final InternalExpressionEvaluator evaluator = new SimpleInternalExpressionEvaluator();
 
     @Override
     public <T> T evaluate( String expression, Class<T> type ) throws EvaluationException
@@ -57,7 +57,7 @@ class SimpleExpressionEvaluator implements ExpressionEvaluator
         return evaluator.evaluate( expression, params, CypherRow.empty() );
     }
 
-    private <T> T cast( Object value, Class<T> type ) throws EvaluationException
+    private static <T> T cast( Object value, Class<T> type ) throws EvaluationException
     {
         try
         {
@@ -71,7 +71,7 @@ class SimpleExpressionEvaluator implements ExpressionEvaluator
         }
     }
 
-    private Object map( AnyValue value ) throws EvaluationException
+    private static Object map( AnyValue value ) throws EvaluationException
     {
         try
         {

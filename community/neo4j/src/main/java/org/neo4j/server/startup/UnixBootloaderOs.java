@@ -30,7 +30,7 @@ class UnixBootloaderOs extends AbstractUnixBootloaderOs
         super( ctx );
     }
 
-    private int getFileHandleLimit()
+    private static int getFileHandleLimit()
     {
         try
         {

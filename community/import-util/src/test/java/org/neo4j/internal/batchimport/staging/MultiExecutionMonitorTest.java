@@ -52,7 +52,7 @@ class MultiExecutionMonitorTest
         expectCallsToCheck( multiMonitor, first, 2, other, 1 );
     }
 
-    private void expectCallsToCheck( ExecutionMonitor multiMonitor, Object... alternatingMonitorAndCount )
+    private static void expectCallsToCheck( ExecutionMonitor multiMonitor, Object... alternatingMonitorAndCount )
     {
         multiMonitor.check( null ); // null, knowing that our monitors in this test doesn't use 'em
         for ( int i = 0; i < alternatingMonitorAndCount.length; i++ )

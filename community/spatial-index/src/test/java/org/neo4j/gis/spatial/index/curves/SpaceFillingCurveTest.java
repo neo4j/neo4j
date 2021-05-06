@@ -797,7 +797,7 @@ public class SpaceFillingCurveTest
         }
     }
 
-    private void shouldNeverStepMoreThanDistanceOne( SpaceFillingCurve curve, int level, int badnessThresholdPercentage )
+    private static void shouldNeverStepMoreThanDistanceOne( SpaceFillingCurve curve, int level, int badnessThresholdPercentage )
     {
         int badCount = 0;
         long[] previous = null;

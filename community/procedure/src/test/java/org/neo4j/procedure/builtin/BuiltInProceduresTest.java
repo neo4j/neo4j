@@ -655,7 +655,7 @@ class BuiltInProceduresTest
         return toReturn;
     }
 
-    private String resultAsString( Object[] row, int index  )
+    private static String resultAsString( Object[] row, int index )
     {
         Object result = row[index];
         if ( result instanceof TextValue )
@@ -672,19 +672,19 @@ class BuiltInProceduresTest
         }
     }
 
-    private SystemGraphComponent makeSystemComponentCurrent( String component )
+    private static SystemGraphComponent makeSystemComponentCurrent( String component )
     {
         return new TestSystemGraphComponent( component, SystemGraphComponent.Status.CURRENT, null, null );
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private SystemGraphComponent makeSystemComponentUpgradeSucceeds( String component )
+    private static SystemGraphComponent makeSystemComponentUpgradeSucceeds( String component )
     {
         return new TestSystemGraphComponent( component, SystemGraphComponent.Status.REQUIRES_UPGRADE, null, null );
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private SystemGraphComponent makeSystemComponentUpgradeFails( String component )
+    private static SystemGraphComponent makeSystemComponentUpgradeFails( String component )
     {
         return new TestSystemGraphComponent( component, SystemGraphComponent.Status.REQUIRES_UPGRADE, null,
                                              new RuntimeException( "Upgrade failed because this is a test" ) );

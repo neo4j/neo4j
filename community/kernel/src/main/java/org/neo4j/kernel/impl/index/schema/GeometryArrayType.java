@@ -160,7 +160,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         return true;
     }
 
-    void write( GenericKey state, int offset, long derivedSpaceFillingCurveValue, double[] coordinates )
+    static void write( GenericKey state, int offset, long derivedSpaceFillingCurveValue, double[] coordinates )
     {
         state.long0Array[offset] = derivedSpaceFillingCurveValue;
         if ( offset == 0 )

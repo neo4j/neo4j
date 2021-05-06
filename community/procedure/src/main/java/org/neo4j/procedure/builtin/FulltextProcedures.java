@@ -45,10 +45,10 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -159,7 +159,7 @@ public class FulltextProcedures
         createIndex( indexCreator, name, properties, config );
     }
 
-    private void createIndex( IndexCreator indexCreator, String name, List<String> properties, Map<String,String> config )
+    private static void createIndex( IndexCreator indexCreator, String name, List<String> properties, Map<String,String> config )
     {
         indexCreator = indexCreator.withName( name );
         indexCreator = indexCreator.withIndexType( FULLTEXT );
@@ -255,7 +255,7 @@ public class FulltextProcedures
         return stream.onClose( cursor::close );
     }
 
-    protected IndexQueryConstraints queryConstraints( Map<String,Object> options )
+    protected static IndexQueryConstraints queryConstraints( Map<String,Object> options )
     {
         IndexQueryConstraints constraints = unconstrained();
         Object skip;

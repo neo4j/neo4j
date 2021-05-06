@@ -55,11 +55,6 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
     private final ValueType[] supportedTypes;
     private final double fractionDuplicates;
 
-    ValueCreatorUtil( ValueCreatorUtil delegate )
-    {
-        this( delegate.indexDescriptor, delegate.supportedTypes, delegate.fractionDuplicates );
-    }
-
     ValueCreatorUtil( IndexDescriptor indexDescriptor, ValueType[] supportedTypes, double fractionDuplicates )
     {
         this.indexDescriptor = indexDescriptor;
@@ -82,14 +77,9 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return fractionDuplicates;
     }
 
-    PropertyIndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
+    static PropertyIndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
     {
         return PropertyIndexQuery.range( 0, from, fromInclusive, to, toInclusive );
-    }
-
-    IndexDescriptor indexDescriptor()
-    {
-        return indexDescriptor;
     }
 
     ValueIndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
@@ -149,7 +139,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return indexEntryUpdates;
     }
 
-    Value[] extractValuesFromUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
+    static Value[] extractValuesFromUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Value[] values = new Value[updates.length];
         for ( int i = 0; i < updates.length; i++ )
@@ -180,7 +170,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return set.size();
     }
 
-    void sort( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
+    static void sort( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Arrays.sort( updates, UPDATE_COMPARATOR );
     }

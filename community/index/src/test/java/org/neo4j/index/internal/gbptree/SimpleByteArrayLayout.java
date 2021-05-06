@@ -111,7 +111,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         return copyKey( rawBytes, into, rawBytes.bytes.length );
     }
 
-    private RawBytes copyKey( RawBytes rawBytes, RawBytes into, int length )
+    private static RawBytes copyKey( RawBytes rawBytes, RawBytes into, int length )
     {
         into.bytes = Arrays.copyOf( rawBytes.bytes, length );
         return into;
@@ -225,7 +225,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         return compare( v1, v2 );
     }
 
-    private int byteArrayCompare( byte[] a, byte[] b, int fromPos )
+    private static int byteArrayCompare( byte[] a, byte[] b, int fromPos )
     {
         assert a != null && b != null : "Null arrays not supported.";
 
@@ -289,7 +289,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes,RawBytes>
         Arrays.fill( rawBytes.bytes, Byte.MAX_VALUE );
     }
 
-    private long toSeed( RawBytes rawBytes )
+    private static long toSeed( RawBytes rawBytes )
     {
         ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES, INSTANCE );
         // Because keySearch is done inside the same shouldRetry block as keyCount()

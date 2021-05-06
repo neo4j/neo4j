@@ -360,7 +360,7 @@ public class Jetty9WebServer implements WebServer, WebContainerThreadInfo
         jetty.setHandler( requestLogHandler );
     }
 
-    private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
+    private static String trimTrailingSlashToKeepJettyHappy( String mountPoint )
     {
         if ( mountPoint.equals( "/" ) )
         {

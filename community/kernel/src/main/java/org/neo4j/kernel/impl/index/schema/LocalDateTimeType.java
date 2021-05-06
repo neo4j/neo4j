@@ -111,7 +111,7 @@ class LocalDateTimeType extends Type
         return compare;
     }
 
-    void write( GenericKey state, long epochSecond, int nano )
+    static void write( GenericKey state, long epochSecond, int nano )
     {
         state.long0 = nano;
         state.long1 = epochSecond;

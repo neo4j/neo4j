@@ -628,7 +628,7 @@ class MetaDataStoreTest
         assertThat( actualValues ).isEqualTo( expectedValues );
     }
 
-    private void writeCorrectMetaDataRecord( MetaDataStore store, MetaDataStore.Position[] positions, long storeVersion )
+    private static void writeCorrectMetaDataRecord( MetaDataStore store, MetaDataStore.Position[] positions, long storeVersion )
     {
         MetaDataRecord record = store.newRecord();
         for ( MetaDataStore.Position position : positions )
@@ -937,7 +937,7 @@ class MetaDataStoreTest
     }
 
     @Test
-    void shouldBeAbleToReadAndWriteDatabaseIdUuid() throws IOException
+    void shouldBeAbleToReadAndWriteDatabaseIdUuid()
     {
         // given
         var databaseIdUuid = UUID.randomUUID();

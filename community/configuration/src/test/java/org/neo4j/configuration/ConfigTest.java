@@ -638,7 +638,7 @@ class ConfigTest
         return confDir;
     }
 
-    private Config buildWithoutErrorsOrWarnings( Supplier<Config> buildConfig )
+    private static Config buildWithoutErrorsOrWarnings( Supplier<Config> buildConfig )
     {
         AssertableLogProvider lp = new AssertableLogProvider();
 
@@ -1192,7 +1192,7 @@ class ConfigTest
 
     private static final class CircularConstraints implements SettingsDeclaration
     {
-        private static SettingConstraint<String> circular = new SettingConstraint<>()
+        private static final SettingConstraint<String> circular = new SettingConstraint<>()
         {
             @Override
             public void validate( String value, Configuration config )

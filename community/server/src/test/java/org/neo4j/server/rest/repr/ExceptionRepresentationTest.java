@@ -84,7 +84,7 @@ class ExceptionRepresentationTest
         assertThat( out.has( "message" ) ).isEqualTo( false );
     }
 
-    private JsonNode serialize( ExceptionRepresentation rep ) throws JsonParseException
+    private static JsonNode serialize( ExceptionRepresentation rep ) throws JsonParseException
     {
         Map<String, Object> output = new HashMap<>();
         MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter( output ), URI.create( "" ) );

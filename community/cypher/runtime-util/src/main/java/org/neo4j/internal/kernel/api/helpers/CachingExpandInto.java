@@ -198,7 +198,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         return connectingRelationships( nodeCursor, cursors.allocateRelationshipTraversalCursor( cursorContext ), fromNode, types, toNode );
     }
 
-    private int calculateTotalDegreeIfCheap( Read read, long node, NodeCursor nodeCursor, Direction direction,
+    private static int calculateTotalDegreeIfCheap( Read read, long node, NodeCursor nodeCursor, Direction direction,
             int[] types )
     {
         if ( !singleNode( read, nodeCursor, node ) )
@@ -212,7 +212,7 @@ public class CachingExpandInto extends DefaultCloseListenable
         return calculateTotalDegree( nodeCursor, direction, types );
     }
 
-    private int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] types )
+    private static int calculateTotalDegree( NodeCursor nodeCursor, Direction direction, int[] types )
     {
         return nodeCursor.degree( selection( types, direction ) );
     }
@@ -629,7 +629,7 @@ public class CachingExpandInto extends DefaultCloseListenable
             return cachedValue == null ? null : cachedValue.iterator();
         }
 
-        public Key key( long startNode, long endNode, Direction direction )
+        public static Key key( long startNode, long endNode, Direction direction )
         {
             long a, b;
             // if direction is BOTH than we keep the key sorted, otherwise direction is

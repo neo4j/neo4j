@@ -229,12 +229,12 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         return out.build();
     }
 
-    private boolean isSimpleType( Object value )
+    private static boolean isSimpleType( Object value )
     {
         return value == null || isSimpleType( value.getClass() );
     }
 
-    private boolean isSimpleType( Class<?> cls )
+    private static boolean isSimpleType( Class<?> cls )
     {
         return String.class.isAssignableFrom( cls ) ||
                Number.class.isAssignableFrom( cls ) ||

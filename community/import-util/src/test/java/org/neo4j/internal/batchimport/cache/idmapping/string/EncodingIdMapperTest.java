@@ -595,7 +595,7 @@ public class EncodingIdMapperTest
         assertEquals( count, correctHits );
     }
 
-    private PropertyValueLookup values( Object... values )
+    private static PropertyValueLookup values( Object... values )
     {
         return ( value, cursor ) -> values[toIntExact( value )];
     }
@@ -623,7 +623,7 @@ public class EncodingIdMapperTest
                                      collisionValuesFactory, 1_000, processors, comparator, PageCacheTracer.NULL, INSTANCE );
     }
 
-    private LongFunction<CollisionValues> autoDetect( Encoder encoder )
+    private static LongFunction<CollisionValues> autoDetect( Encoder encoder )
     {
         return numberOfCollisions -> encoder instanceof LongEncoder
                                      ? new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE )

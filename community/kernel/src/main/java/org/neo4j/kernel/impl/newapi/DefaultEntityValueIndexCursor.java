@@ -38,10 +38,10 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexResultScore;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -371,7 +371,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         }
     }
 
-    private Resource asResource( AutoCloseable resource )
+    private static Resource asResource( AutoCloseable resource )
     {
         return () -> IOUtils.closeAllUnchecked( resource );
     }

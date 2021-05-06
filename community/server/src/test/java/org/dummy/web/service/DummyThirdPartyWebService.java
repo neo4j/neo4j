@@ -61,7 +61,7 @@ public class DummyThirdPartyWebService
     @GET
     @Path( "inject-test" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response countNodes( @Context DatabaseManagementService dbms )
+    public static Response countNodes( @Context DatabaseManagementService dbms )
     {
         GraphDatabaseService db = dbms.database( "neo4j" );
         try ( Transaction transaction = db.beginTx() )
@@ -95,7 +95,7 @@ public class DummyThirdPartyWebService
         return Response.ok().entity( theEntity.toString() ).build();
     }
 
-    private int countNodesIn( Transaction tx )
+    private static int countNodesIn( Transaction tx )
     {
         int count = 0;
         for ( Node ignore : tx.getAllNodes() )

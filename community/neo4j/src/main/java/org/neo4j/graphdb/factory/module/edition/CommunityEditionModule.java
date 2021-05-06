@@ -71,7 +71,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
@@ -245,7 +244,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         systemGraphComponents.register( systemGraphComponent );
     }
 
-    protected Supplier<GraphDatabaseService> systemSupplier( DependencyResolver dependencies )
+    protected static Supplier<GraphDatabaseService> systemSupplier( DependencyResolver dependencies )
     {
         return () ->
         {
@@ -255,7 +254,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         };
     }
 
-    private void setupSecurityGraphInitializer( GlobalModule globalModule )
+    private static void setupSecurityGraphInitializer( GlobalModule globalModule )
     {
         Config config = globalModule.getGlobalConfig();
         FileSystemAbstraction fileSystem = globalModule.getFileSystem();
@@ -275,7 +274,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         setSecurityProvider( makeSecurityModule( globalModule ) );
     }
 
-    private SecurityProvider makeSecurityModule( GlobalModule globalModule )
+    private static SecurityProvider makeSecurityModule( GlobalModule globalModule )
     {
         setupSecurityGraphInitializer( globalModule );
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )

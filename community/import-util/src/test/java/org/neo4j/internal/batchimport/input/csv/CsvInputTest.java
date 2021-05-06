@@ -225,7 +225,7 @@ public class CsvInputTest
         assertClosed( relationshipData.last() );
     }
 
-    private void assertClosed( CharReadable reader )
+    private static void assertClosed( CharReadable reader )
     {
         try
         {
@@ -1515,7 +1515,7 @@ public class CsvInputTest
         }
     }
 
-    private void assertEstimatesEquals( Input.Estimates a, Input.Estimates b, double errorMargin )
+    private static void assertEstimatesEquals( Input.Estimates a, Input.Estimates b, double errorMargin )
     {
         assertEquals( a.numberOfNodes(), b.numberOfNodes(), a.numberOfNodes() * errorMargin );
         assertEquals( a.numberOfNodeLabels(), b.numberOfNodeLabels(), a.numberOfNodeLabels() * errorMargin );
@@ -1526,7 +1526,7 @@ public class CsvInputTest
         assertEquals( a.sizeOfRelationshipProperties(), b.sizeOfRelationshipProperties(), a.sizeOfRelationshipProperties() * errorMargin );
     }
 
-    private Input.Estimates calculateEstimatesOnSingleFileNodeData( IdType idType, Path nodeDataFile ) throws IOException
+    private static Input.Estimates calculateEstimatesOnSingleFileNodeData( IdType idType, Path nodeDataFile ) throws IOException
     {
         Input input = new CsvInput( dataIterable( config -> undecorated( () -> Readables.individualFiles( Charset.defaultCharset(), nodeDataFile ) ) ),
                 defaultFormatNodeFileHeader(), emptyList(), defaultFormatRelationshipFileHeader(), idType, COMMAS, NO_MONITOR, INSTANCE );
@@ -1664,17 +1664,17 @@ public class CsvInputTest
         return chunk.next( visitor );
     }
 
-    private Object[] properties( Object... keysAndValues )
+    private static Object[] properties( Object... keysAndValues )
     {
         return keysAndValues;
     }
 
-    private Set<String> labels( String... labels )
+    private static Set<String> labels( String... labels )
     {
         return asSet( labels );
     }
 
-    private Header.Factory header( final Header.Entry... entries )
+    private static Header.Factory header( final Header.Entry... entries )
     {
         return new Header.Factory()
         {
@@ -1727,7 +1727,7 @@ public class CsvInputTest
         return wrap( data );
     }
 
-    private Iterable<DataFactory> dataIterable( DataFactory... data )
+    private static Iterable<DataFactory> dataIterable( DataFactory... data )
     {
         return Iterables.iterable( data );
     }

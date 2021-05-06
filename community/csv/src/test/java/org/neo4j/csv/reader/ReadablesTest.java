@@ -337,12 +337,12 @@ class ReadablesTest
         return file;
     }
 
-    private void assertReadText( Path file, String text, ReadMethod readMethod ) throws IOException
+    private static void assertReadText( Path file, String text, ReadMethod readMethod ) throws IOException
     {
         assertReadText( Readables.files( Charset.defaultCharset(), file ), text, readMethod );
     }
 
-    private void assertReadTextAsInputStream( Path file, String text, ReadMethod readMethod ) throws IOException
+    private static void assertReadTextAsInputStream( Path file, String text, ReadMethod readMethod ) throws IOException
     {
         try ( InputStream stream = Files.newInputStream( file ) )
         {
@@ -350,7 +350,7 @@ class ReadablesTest
         }
     }
 
-    private void assertReadText( CharReadable readable, String text, ReadMethod readMethod ) throws IOException
+    private static void assertReadText( CharReadable readable, String text, ReadMethod readMethod ) throws IOException
     {
         char[] readText = readMethod.read( readable, text.toCharArray().length );
         assertArrayEquals( readText, text.toCharArray() );

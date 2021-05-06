@@ -22,7 +22,6 @@ package org.neo4j.server;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Clock;
@@ -101,7 +100,6 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private final MemoryPool transactionMemoryPool;
 
     private final List<ServerModule> serverModules = new ArrayList<>();
-    private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private final List<Pattern> authWhitelist;
     private final DatabaseManagementService databaseManagementService;
     private final Dependencies globalDependencies;
@@ -117,9 +115,9 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     protected WebServer webServer;
     protected Supplier<AuthManager> authManagerSupplier;
     protected ArrayByteBufferPool byteBufferPool;
-    private Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
-    private HttpTransactionManager httpTransactionManager;
-    private CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
+    private final Supplier<SslPolicyLoader> sslPolicyFactorySupplier;
+    private final HttpTransactionManager httpTransactionManager;
+    private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
 
     protected ConnectorPortRegister connectorPortRegister;
     private RotatingRequestLog requestLog;
@@ -335,7 +333,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         }
     }
 
-    private void setUpHttpLogging() throws IOException
+    private void setUpHttpLogging()
     {
         if ( !getConfig().get( http_logging_enabled ) )
         {
@@ -403,15 +401,15 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     public URI getBaseUri()
     {
         return httpAdvertisedAddress != null
-               ? uriBuilder.buildURI( httpAdvertisedAddress, false )
-               : uriBuilder.buildURI( httpsAdvertisedAddress, true );
+               ? SimpleUriBuilder.buildURI( httpAdvertisedAddress, false )
+               : SimpleUriBuilder.buildURI( httpsAdvertisedAddress, true );
     }
 
     @Override
     public Optional<URI> httpsUri()
     {
         return Optional.ofNullable( httpsAdvertisedAddress )
-                .map( address -> uriBuilder.buildURI( address, true ) );
+                .map( address -> SimpleUriBuilder.buildURI( address, true ) );
     }
 
     public WebServer getWebServer()

@@ -77,17 +77,17 @@ public final class FieldSignature
         {
             throw new IllegalArgumentException( String.format(
                     "Default value does not have a valid type, field type was %s, but value type was %s.",
-                    type.toString(), defaultValue.neo4jType().toString() ) );
+                    type, defaultValue.neo4jType().toString() ) );
         }
     }
 
     /** Fields that are not supported full stack (ie. by Cypher) need to be mapped from Cypher to internal types */
-    public Object map( Object input )
+    public static Object map( Object input )
     {
         return input;
     }
 
-    public Object map( AnyValue input, ValueMapper<Object> mapper )
+    public static Object map( AnyValue input, ValueMapper<Object> mapper )
     {
         return input.map( mapper );
     }

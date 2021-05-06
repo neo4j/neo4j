@@ -142,11 +142,6 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         return this;
     }
 
-    public boolean isOpen()
-    {
-        return true;
-    }
-
     @Override
     public void close()
     {

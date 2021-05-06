@@ -176,7 +176,7 @@ class EntityCommandGrouperTest
         assertFalse( cursor.nextEntity() );
     }
 
-    private Group group( long entityId, BaseCommand<? extends PrimitiveRecord> entityCommand, PropertyCommand... properties )
+    private static Group group( long entityId, BaseCommand<? extends PrimitiveRecord> entityCommand, PropertyCommand... properties )
     {
         return new Group( entityId, entityCommand, properties );
     }

@@ -246,7 +246,7 @@ public class LoggingPhaseTracker implements PhaseTracker
             return joiner.toString();
         }
 
-        void addToString( String name, long measurement, StringJoiner joiner, boolean isTime )
+        static void addToString( String name, long measurement, StringJoiner joiner, boolean isTime )
         {
             String measurementString;
             if ( isTime )

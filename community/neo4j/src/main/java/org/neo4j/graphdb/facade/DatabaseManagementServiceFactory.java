@@ -189,7 +189,7 @@ public class DatabaseManagementServiceFactory
         return new DisabledNeoWebServer();
     }
 
-    private boolean shouldEnableWebServer( Config config )
+    private static boolean shouldEnableWebServer( Config config )
     {
         return (config.get( HttpConnector.enabled ) || config.get( HttpsConnector.enabled )) && !config.get( ServerSettings.http_enabled_modules ).isEmpty();
     }

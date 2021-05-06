@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.io.bufferpool.ByteBufferManger;
-import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
+import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 
@@ -51,7 +51,7 @@ abstract class AbstractDirectBufferTest
         nettyBufferAllocator = new NettyMemoryManagerWrapper( tracingPoolWrapper );
     }
 
-    void write( ByteBuf buf, int size )
+    static void write( ByteBuf buf, int size )
     {
         for ( var i = 0; i < size; i++ )
         {

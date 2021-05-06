@@ -88,7 +88,7 @@ class BitsUtilTest
         assertBits( bits, start, slots, 0 );
     }
 
-    private void assertBits( long bits, int start, int slots )
+    private static void assertBits( long bits, int start, int slots )
     {
         for ( int i = 0; i < Long.SIZE; i++ )
         {
@@ -98,7 +98,7 @@ class BitsUtilTest
         }
     }
 
-    private void assertBits( long[] bits, int start, int slots, int startArrayIndex )
+    private static void assertBits( long[] bits, int start, int slots, int startArrayIndex )
     {
         for ( int i = startArrayIndex; slots > 0; i++ )
         {

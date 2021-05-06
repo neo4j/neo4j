@@ -124,7 +124,7 @@ class SimpleValueIndexReaderTest
     }
 
     @Test
-    void numberRangeSeekQueryReachSearcher() throws Exception
+    void numberRangeSeekQueryReachSearcher()
     {
         var simpleIndexReader = getUniqueSimpleReader();
 
@@ -155,7 +155,7 @@ class SimpleValueIndexReaderTest
         assertThat( uniqueSimpleReader.createSampler() ).isInstanceOf( NonUniqueLuceneIndexSampler.class );
     }
 
-    private void doQuery( ValueIndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
+    private static void doQuery( ValueIndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
         reader.query( NULL_CONTEXT, new NodeValueIterator(), unconstrained(), query );
     }

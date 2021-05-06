@@ -1965,7 +1965,7 @@ class GBPTreeTest
         };
     }
 
-    private void assertFutureFailsWithTreeInconsistencyException( Future<Object> future )
+    private static void assertFutureFailsWithTreeInconsistencyException( Future<Object> future )
     {
         assertThatThrownBy( future::get ).hasCauseInstanceOf( TreeInconsistencyException.class );
     }
@@ -1989,7 +1989,7 @@ class GBPTreeTest
      * trace.get( 1 ) - leftChild
      * trace.get( 2 ) - rightChild
      */
-    private void treeWithRootSplit( List<Long> trace, GBPTree<MutableLong,MutableLong> tree, CursorContext cursorContext ) throws IOException
+    private static void treeWithRootSplit( List<Long> trace, GBPTree<MutableLong,MutableLong> tree, CursorContext cursorContext ) throws IOException
     {
         long count = 0;
         do
@@ -2145,7 +2145,7 @@ class GBPTreeTest
         }
     }
 
-    private void insert( GBPTree<MutableLong,MutableLong> index, long key, long value ) throws IOException
+    private static void insert( GBPTree<MutableLong,MutableLong> index, long key, long value ) throws IOException
     {
         try ( Writer<MutableLong, MutableLong> writer = index.writer( NULL ) )
         {
@@ -2153,7 +2153,7 @@ class GBPTreeTest
         }
     }
 
-    private void shouldWait( Future<?> future )
+    private static void shouldWait( Future<?> future )
     {
         assertThatThrownBy( () -> future.get( 200, TimeUnit.MILLISECONDS ), "Expected timeout" ).isInstanceOf( TimeoutException.class );
     }
@@ -2202,8 +2202,7 @@ class GBPTreeTest
         };
     }
 
-    private Callable<List<CleanupJob>> startAndReturnStartedJobs(
-            ControlledRecoveryCleanupWorkCollector collector )
+    private static Callable<List<CleanupJob>> startAndReturnStartedJobs( ControlledRecoveryCleanupWorkCollector collector )
     {
         return () ->
         {
@@ -2219,7 +2218,7 @@ class GBPTreeTest
         };
     }
 
-    private void assertFailedDueToUnmappedFile( Future<List<CleanupJob>> cleanJob )
+    private static void assertFailedDueToUnmappedFile( Future<List<CleanupJob>> cleanJob )
             throws InterruptedException, ExecutionException
     {
         for ( CleanupJob job : cleanJob.get() )

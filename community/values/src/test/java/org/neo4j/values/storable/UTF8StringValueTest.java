@@ -188,7 +188,7 @@ class UTF8StringValueTest
         assertSame( b.plus( b ), stringValue( "楡楡" ) );
     }
 
-    private void assertSame( TextValue lhs, TextValue rhs )
+    private static void assertSame( TextValue lhs, TextValue rhs )
     {
         assertThat( lhs.length() ).as( format( "%s.length != %s.length", lhs, rhs ) ).isEqualTo( rhs.length() );
         assertThat( lhs ).as( format( "%s != %s", lhs, rhs ) ).isEqualTo( rhs );

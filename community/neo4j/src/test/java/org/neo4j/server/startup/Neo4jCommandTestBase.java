@@ -125,7 +125,7 @@ abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase
         return readFile( config.get( GraphDatabaseSettings.store_user_log_path ) );
     }
 
-    private String readFile( Path file )
+    private static String readFile( Path file )
     {
         try
         {

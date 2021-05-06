@@ -37,7 +37,7 @@ class GenerationTest
         shouldComposeAndDecomposeGeneration( GenerationSafePointer.MAX_GENERATION - 1, GenerationSafePointer.MAX_GENERATION );
     }
 
-    private void shouldComposeAndDecomposeGeneration( long stable, long unstable )
+    private static void shouldComposeAndDecomposeGeneration( long stable, long unstable )
     {
         // WHEN
         long generation = Generation.generation( stable, unstable );

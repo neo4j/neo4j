@@ -541,7 +541,7 @@ class IndexingServiceTest
         }
     }
 
-    private boolean isDeprecated( IndexProviderDescriptor indexProviderDescriptor )
+    private static boolean isDeprecated( IndexProviderDescriptor indexProviderDescriptor )
     {
         for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
         {
@@ -762,13 +762,13 @@ class IndexingServiceTest
         verify( updater2 ).close();
     }
 
-    private void waitForIndexesToComeOnline( IndexingService indexing, IndexDescriptor... index )
+    private static void waitForIndexesToComeOnline( IndexingService indexing, IndexDescriptor... index )
             throws IndexNotFoundKernelException
     {
         waitForIndexesToGetIntoState( indexing, ONLINE, index );
     }
 
-    private void waitForIndexesToGetIntoState( IndexingService indexing, InternalIndexState state,
+    private static void waitForIndexesToGetIntoState( IndexingService indexing, InternalIndexState state,
             IndexDescriptor... indexes )
             throws IndexNotFoundKernelException
     {
@@ -782,7 +782,7 @@ class IndexingServiceTest
         }
     }
 
-    private boolean allInState( IndexingService indexing, InternalIndexState state,
+    private static boolean allInState( IndexingService indexing, InternalIndexState state,
             IndexDescriptor[] indexes ) throws IndexNotFoundKernelException
     {
         for ( IndexDescriptor index : indexes )
@@ -1455,7 +1455,7 @@ class IndexingServiceTest
         return IndexEntryUpdate.add( nodeId, index, Values.of( propertyValue ) );
     }
 
-    private IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object propertyValue, IndexDescriptor index )
+    private static IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object propertyValue, IndexDescriptor index )
     {
         return IndexEntryUpdate.add( nodeId, index, Values.of( propertyValue ) );
     }

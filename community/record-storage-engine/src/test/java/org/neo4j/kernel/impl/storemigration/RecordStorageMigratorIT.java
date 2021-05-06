@@ -517,7 +517,7 @@ class RecordStorageMigratorIT
         }
     }
 
-    private <T extends TokenRecord> void createTokens( TokenStore<T> tokenStore, int tokenCount )
+    private static <T extends TokenRecord> void createTokens( TokenStore<T> tokenStore, int tokenCount )
     {
         T record = tokenStore.newRecord();
         DynamicStringStore nameStore = tokenStore.getNameStore();
@@ -662,19 +662,19 @@ class RecordStorageMigratorIT
         }
     }
 
-    private String getVersionToMigrateFrom( RecordStoreVersionCheck check )
+    private static String getVersionToMigrateFrom( RecordStoreVersionCheck check )
     {
         StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion(), NULL );
         assertTrue( result.outcome.isSuccessful() );
         return result.actualVersion;
     }
 
-    private String getVersionToMigrateTo( RecordStoreVersionCheck check )
+    private static String getVersionToMigrateTo( RecordStoreVersionCheck check )
     {
         return check.configuredVersion();
     }
 
-    private RecordStoreVersionCheck getVersionCheck( PageCache pageCache, DatabaseLayout layout )
+    private static RecordStoreVersionCheck getVersionCheck( PageCache pageCache, DatabaseLayout layout )
     {
         return new RecordStoreVersionCheck( pageCache, layout, selectFormat(), Config.defaults() );
     }
@@ -689,7 +689,7 @@ class RecordStorageMigratorIT
         return txInfo -> txInfo.transactionId() == id && txInfo.commitTimestamp() == timestamp;
     }
 
-    public List<DynamicRecord> allocateFrom( SchemaStore35 schemaStore35, SchemaRule rule, CursorContext cursorContext )
+    public static List<DynamicRecord> allocateFrom( SchemaStore35 schemaStore35, SchemaRule rule, CursorContext cursorContext )
     {
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = schemaStore35.getRecord( rule.getId(), schemaStore35.newRecord(), CHECK, cursorContext );

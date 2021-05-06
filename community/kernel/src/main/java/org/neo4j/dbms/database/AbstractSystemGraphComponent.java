@@ -115,7 +115,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
         }
     }
 
-    protected void initializeSystemGraphConstraint( Transaction tx, Label label, String property )
+    protected static void initializeSystemGraphConstraint( Transaction tx, Label label, String property )
     {
         try
         {

@@ -34,14 +34,14 @@ abstract class SchemaRuleTestBase
     private static final String PROVIDER_VERSION = "1.0";
     static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION );
 
-    void assertEquality( Object o1, Object o2 )
+    static void assertEquality( Object o1, Object o2 )
     {
         assertThat( o1 ).isEqualTo( o2 );
         assertThat( o2 ).isEqualTo( o1 );
         assertThat( o1.hashCode() ).isEqualTo( o2.hashCode() );
     }
 
-    void assertInequality( Object o1, Object o2 )
+    static void assertInequality( Object o1, Object o2 )
     {
         assertThat( o1 ).isNotEqualTo( o2 );
         assertThat( o2 ).isNotEqualTo( o1 );

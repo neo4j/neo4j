@@ -57,7 +57,7 @@ public abstract class AbstractFilter implements Filter
     {
     }
 
-    protected HttpServletRequest validateRequestType( ServletRequest request ) throws ServletException
+    protected static HttpServletRequest validateRequestType( ServletRequest request ) throws ServletException
     {
         if ( !(request instanceof HttpServletRequest) )
         {
@@ -66,7 +66,7 @@ public abstract class AbstractFilter implements Filter
         return (HttpServletRequest) request;
     }
 
-    protected HttpServletResponse validateResponseType( ServletResponse response ) throws ServletException
+    protected static HttpServletResponse validateResponseType( ServletResponse response ) throws ServletException
     {
         if ( !(response instanceof HttpServletResponse) )
         {

@@ -115,7 +115,7 @@ public class ByteArrayBitsManipulator
         slots = intoSlots( slotsAndTheirBitCounts );
     }
 
-    private Slot[] intoSlots( int[] slotsAndTheirSizes )
+    private static Slot[] intoSlots( int[] slotsAndTheirSizes )
     {
         Slot[] slots = new Slot[slotsAndTheirSizes.length];
         int bitCursor = 0;

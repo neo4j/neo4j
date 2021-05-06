@@ -417,7 +417,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private NotFoundException newIndexNotFoundException( IndexDefinition index, KernelException e )
+    private static NotFoundException newIndexNotFoundException( IndexDefinition index, KernelException e )
     {
         return new NotFoundException( "No index was found corresponding to " + index + ".", e );
     }
@@ -844,7 +844,7 @@ public class SchemaImpl implements Schema
             }
         }
 
-        private void assertConstraintableIndexType( String constraintType, IndexType indexType )
+        private static void assertConstraintableIndexType( String constraintType, IndexType indexType )
         {
             if ( indexType != null && indexType != IndexType.BTREE )
             {

@@ -91,7 +91,7 @@ class TracersTest
         return new Tracers( s, log, monitors, jobScheduler, clock, Config.defaults() );
     }
 
-    private void assertDefaultImplementation( Tracers tracers )
+    private static void assertDefaultImplementation( Tracers tracers )
     {
         assertThat( tracers.getPageCacheTracer() ).isInstanceOf( DefaultPageCacheTracer.class );
         assertThat( tracers.getDatabaseTracer() ).isInstanceOf( DefaultTracer.class );

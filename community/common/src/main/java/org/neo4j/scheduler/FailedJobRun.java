@@ -53,7 +53,7 @@ public class FailedJobRun
         this.failureDescription = constructFailureDescription( failure );
     }
 
-    private String constructFailureDescription( Throwable failure )
+    private static String constructFailureDescription( Throwable failure )
     {
         String exceptionClass = failure.getClass().getSimpleName();
         String message = failure.getMessage();

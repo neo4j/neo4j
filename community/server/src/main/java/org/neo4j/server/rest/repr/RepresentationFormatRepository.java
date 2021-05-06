@@ -75,7 +75,7 @@ public final class RepresentationFormatRepository
         return null;
     }
 
-    private boolean containsType( List<MediaType> mediaTypes, MediaType mediaType )
+    private static boolean containsType( List<MediaType> mediaTypes, MediaType mediaType )
     {
         for ( MediaType type : mediaTypes )
         {

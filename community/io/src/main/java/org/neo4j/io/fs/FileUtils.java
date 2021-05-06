@@ -668,7 +668,7 @@ public final class FileUtils
             }
         }
 
-        private String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
+        private static String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
         {
             try ( Stream<Path> list = Files.list( dir ) )
             {

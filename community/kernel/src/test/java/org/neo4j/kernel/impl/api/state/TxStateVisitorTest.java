@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TxStateVisitorTest
@@ -60,10 +60,10 @@ class TxStateVisitorTest
 
         // Then
         StorageProperty prop = new PropertyKeyValue( propKey, Values.of( "hello" ) );
-        assertThat( visitor.relPropertyChanges ).containsExactly( propChange( relId, noProperty, asList( prop ), IntSets.immutable.empty() ) );
+        assertThat( visitor.relPropertyChanges ).containsExactly( propChange( relId, noProperty, singletonList( prop ), IntSets.immutable.empty() ) );
     }
 
-    private GatheringVisitor.PropertyChange propChange( long relId, Collection<StorageProperty> added,
+    private static GatheringVisitor.PropertyChange propChange( long relId, Collection<StorageProperty> added,
             List<StorageProperty> changed, IntIterable removed )
     {
         return new GatheringVisitor.PropertyChange( relId, added, changed, removed );

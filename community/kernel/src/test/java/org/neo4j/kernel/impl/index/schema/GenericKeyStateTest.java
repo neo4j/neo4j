@@ -873,7 +873,7 @@ class GenericKeyStateTest
         assertTrue( lowestOfAll.compareValueTo( lowestInValueGroup ) <= 0 );
     }
 
-    private Value pickSmaller( Value value1, Value value2 )
+    private static Value pickSmaller( Value value1, Value value2 )
     {
         return COMPARATOR.compare( value1, value2 ) < 0 ? value1 : value2;
     }
@@ -1024,7 +1024,7 @@ class GenericKeyStateTest
         return Stream.of( listValueGenerators( false ) );
     }
 
-    private int getStringSize( Value value )
+    private static int getStringSize( Value value )
     {
         int expectedSizeOfData;
         if ( value instanceof TextValue )
@@ -1038,7 +1038,7 @@ class GenericKeyStateTest
         return expectedSizeOfData;
     }
 
-    private int getGeometrySize( Value value )
+    private static int getGeometrySize( Value value )
     {
         int expectedSizeOfData;
         int dimensions;
@@ -1065,7 +1065,7 @@ class GenericKeyStateTest
         return expectedSizeOfData;
     }
 
-    private int getNumberSize( Value value )
+    private static int getNumberSize( Value value )
     {
         int expectedSizeOfData;
         if ( value instanceof ByteValue )
@@ -1099,7 +1099,7 @@ class GenericKeyStateTest
         return expectedSizeOfData;
     }
 
-    private int getNumberArrayElementSize( Value value )
+    private static int getNumberArrayElementSize( Value value )
     {
         int arrayElementSize;
         if ( value instanceof ByteArray )
@@ -1133,7 +1133,7 @@ class GenericKeyStateTest
         return arrayElementSize;
     }
 
-    private void assertTextArraySize( Value value, int actualSizeOfData, int normalArrayOverhead, String typeName )
+    private static void assertTextArraySize( Value value, int actualSizeOfData, int normalArrayOverhead, String typeName )
     {
         if ( value instanceof TextArray )
         {
@@ -1153,7 +1153,7 @@ class GenericKeyStateTest
         }
     }
 
-    private int getGeometryArrayElementSize( Value value, int arrayLength )
+    private static int getGeometryArrayElementSize( Value value, int arrayLength )
     {
         if ( arrayLength < 1 )
         {
@@ -1198,7 +1198,7 @@ class GenericKeyStateTest
         return to;
     }
 
-    private PageCursor newPageCursor()
+    private static PageCursor newPageCursor()
     {
         return ByteArrayPageCursor.wrap( PageCache.PAGE_SIZE );
     }
@@ -1208,12 +1208,12 @@ class GenericKeyStateTest
         return new GenericKey( noSpecificIndexSettings );
     }
 
-    private Value pickOther( Value value1, Value value2, Value currentValue )
+    private static Value pickOther( Value value1, Value value2, Value currentValue )
     {
         return currentValue == value1 ? value2 : value1;
     }
 
-    private Value uniqueSecondValue( ValueGenerator valueGenerator, Value firstValue )
+    private static Value uniqueSecondValue( ValueGenerator valueGenerator, Value firstValue )
     {
         Value secondValue;
         do

@@ -51,7 +51,7 @@ public final class CommunityDatabaseStateService implements DatabaseStateService
     public DatabaseState stateOfDatabase( NamedDatabaseId namedDatabaseId )
     {
         return databaseManager.getDatabaseContext( namedDatabaseId )
-                .map( this::getState )
+                .map( CommunityDatabaseStateService::getState )
                 .orElse( CommunityDatabaseState.unknown( namedDatabaseId ) );
     }
 
@@ -61,7 +61,7 @@ public final class CommunityDatabaseStateService implements DatabaseStateService
         return databaseManager.getDatabaseContext( namedDatabaseId ).map( StandaloneDatabaseContext::failureCause );
     }
 
-    private DatabaseState getState( StandaloneDatabaseContext ctx )
+    private static DatabaseState getState( StandaloneDatabaseContext ctx )
     {
         return new CommunityDatabaseState( ctx.database().getNamedDatabaseId(),
                                            ctx.database().isStarted(),

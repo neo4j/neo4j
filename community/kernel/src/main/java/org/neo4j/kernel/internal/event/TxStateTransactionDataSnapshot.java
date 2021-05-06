@@ -359,7 +359,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         } );
     }
 
-    private RelationshipPropertyEntryView createRelationshipPropertyEntryView( MemoryTracker memoryTracker, TokenRead tokenRead,
+    private static RelationshipPropertyEntryView createRelationshipPropertyEntryView( MemoryTracker memoryTracker, TokenRead tokenRead,
             Relationship relationship, int key, Value newValue, Value oldValue ) throws PropertyKeyIdNotFoundKernelException
     {
         var entryView = new RelationshipPropertyEntryView( relationship, tokenRead.propertyKeyName( key ), newValue, oldValue );

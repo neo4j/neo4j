@@ -987,7 +987,7 @@ public class Operations implements Write, SchemaWrite
         return prototype;
     }
 
-    private <E extends Exception> String[] resolveTokenNames( ThrowingIntFunction<String, E> resolver, int[] tokenIds ) throws E
+    private static <E extends Exception> String[] resolveTokenNames( ThrowingIntFunction<String,E> resolver, int[] tokenIds ) throws E
     {
         String[] names = new String[tokenIds.length];
         for ( int i = 0; i < tokenIds.length; i++ )

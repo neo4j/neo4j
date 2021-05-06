@@ -173,7 +173,7 @@ class RecentQueryBufferTest
         assertThat( memoryTracker.estimatedHeapMemory(), equalTo( meter.measureDeep( buffer ) - notExpected ) );
     }
 
-    private TruncatedQuerySnapshot query( String query, MapValue params )
+    private static TruncatedQuerySnapshot query( String query, MapValue params )
     {
         return new TruncatedQuerySnapshot(
                 DATABASE_ID,
@@ -188,7 +188,7 @@ class RecentQueryBufferTest
     }
 
     // This wizardry is done to emulate a new supplier instance for every query.
-    private Supplier<ExecutionPlanDescription> freshSupplier( int i )
+    private static Supplier<ExecutionPlanDescription> freshSupplier( int i )
     {
         return () -> i == 0 ? null : null;
     }

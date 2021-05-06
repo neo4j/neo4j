@@ -223,7 +223,7 @@ class ArchiveTest
         assertEquals( describeRecursively( oldDirectory ), describeRecursively( newDirectory ) );
     }
 
-    private Map<Path,Description> describeRecursively( Path directory ) throws IOException
+    private static Map<Path,Description> describeRecursively( Path directory ) throws IOException
     {
         try ( Stream<Path> walk = Files.walk( directory ) )
         {
@@ -234,7 +234,7 @@ class ArchiveTest
         }
     }
 
-    private Description describe( Path file )
+    private static Description describe( Path file )
     {
         try
         {

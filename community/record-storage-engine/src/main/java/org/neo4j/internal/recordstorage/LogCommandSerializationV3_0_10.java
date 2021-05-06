@@ -152,7 +152,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return new Command.RelationshipGroupCommand( this, before, after );
     }
 
-    private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
+    private static RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
             throws IOException
     {
         byte flags = channel.get();
@@ -196,7 +196,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return new Command.RelationshipTypeTokenCommand( this, before, after );
     }
 
-    private RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableChannel channel )
+    private static RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableChannel channel )
             throws IOException
     {
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
@@ -245,7 +245,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return new Command.LabelTokenCommand( this, before, after );
     }
 
-    private LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
+    private static LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUseFlag = channel.get();
@@ -346,7 +346,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return new Command.NeoStoreCommand( this, before, after );
     }
 
-    private NeoStoreRecord readNeoStoreRecord( ReadableChannel channel ) throws IOException
+    private static NeoStoreRecord readNeoStoreRecord( ReadableChannel channel ) throws IOException
     {
         long nextProp = channel.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
@@ -395,7 +395,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return record;
     }
 
-    private RelationshipRecord readRelationshipRecord( long id, ReadableChannel channel ) throws IOException
+    private static RelationshipRecord readRelationshipRecord( long id, ReadableChannel channel ) throws IOException
     {
         byte flags = channel.get();
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
@@ -438,7 +438,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return record;
     }
 
-    private DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
+    private static DynamicRecord readDynamicRecord( ReadableChannel channel ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
@@ -469,7 +469,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return record;
     }
 
-    private <T> int readDynamicRecords( ReadableChannel channel, T target, DynamicRecordAdder<T> adder )
+    private static <T> int readDynamicRecords( ReadableChannel channel, T target, DynamicRecordAdder<T> adder )
             throws IOException
     {
         int numberOfRecords = channel.getInt();
@@ -558,7 +558,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return record;
     }
 
-    private PropertyBlock readPropertyBlock( ReadableChannel channel ) throws IOException
+    private static PropertyBlock readPropertyBlock( ReadableChannel channel ) throws IOException
     {
         PropertyBlock toReturn = new PropertyBlock();
         byte blockSize = channel.get(); // the size is stored in bytes // 1
@@ -587,7 +587,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return toReturn;
     }
 
-    private long[] readLongs( ReadableChannel channel, int count ) throws IOException
+    private static long[] readLongs( ReadableChannel channel, int count ) throws IOException
     {
         long[] result = new long[count];
         for ( int i = 0; i < count; i++ )
@@ -597,7 +597,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return result;
     }
 
-    private SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
+    private static SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
     {
         // TODO: Why was this assertion here?
         //            assert first(recordsBefore).inUse() : "Asked to deserialize schema records that were not in
@@ -708,7 +708,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         channel.putLong( command.after.getNextProp() );
     }
 
-    private MutableObjectIntMap<String> readMap( ReadableChannel channel ) throws IOException
+    private static MutableObjectIntMap<String> readMap( ReadableChannel channel ) throws IOException
     {
         int size = getUnsignedShort( channel );
         MutableObjectIntMap<String> result = new ObjectIntHashMap<>( size );
@@ -725,13 +725,13 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return result;
     }
 
-    private int getUnsignedShort( ReadableChannel channel ) throws IOException
+    private static int getUnsignedShort( ReadableChannel channel ) throws IOException
     {
         int result = channel.getShort() & 0xFFFF;
         return result == 0xFFFF ? -1 : result;
     }
 
-    private IndexCommandHeader readIndexCommandHeader( ReadableChannel channel ) throws IOException
+    private static IndexCommandHeader readIndexCommandHeader( ReadableChannel channel ) throws IOException
     {
         byte firstHeaderByte = channel.get();
         byte valueType = (byte) ((firstHeaderByte & 0x1C) >> 2);
@@ -746,7 +746,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
                 endNodeNeedsLong, keyId );
     }
 
-    private Object readIndexValue( byte valueType, ReadableChannel channel ) throws IOException
+    private static Object readIndexValue( byte valueType, ReadableChannel channel ) throws IOException
     {
         switch ( valueType )
         {

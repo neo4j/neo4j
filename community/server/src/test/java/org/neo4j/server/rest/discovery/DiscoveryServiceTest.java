@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -186,7 +185,7 @@ public class DiscoveryServiceTest
         assertThat( json ).isNotEqualTo( "null" );
     }
 
-    private UriInfo uriInfo( URI baseUri )
+    private static UriInfo uriInfo( URI baseUri )
     {
         UriInfo uriInfo = mock( UriInfo.class );
         when( uriInfo.getBaseUri() ).thenReturn( baseUri );

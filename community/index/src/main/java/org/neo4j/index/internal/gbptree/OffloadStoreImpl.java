@@ -210,7 +210,7 @@ public class OffloadStoreImpl<KEY,VALUE> implements OffloadStore<KEY,VALUE>
         cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_OFFLOAD );
     }
 
-    private boolean readHeader( PageCursor cursor )
+    private static boolean readHeader( PageCursor cursor )
     {
         byte type = TreeNode.nodeType( cursor );
         if ( type != TreeNode.NODE_TYPE_OFFLOAD )

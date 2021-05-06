@@ -255,7 +255,7 @@ public abstract class LogCommandSerialization implements CommandReader
         throw unsupportedInThisVersionException();
     }
 
-    protected IOException unknownCommandType( byte commandType, ReadableChannel channel ) throws IOException
+    protected static IOException unknownCommandType( byte commandType, ReadableChannel channel ) throws IOException
     {
         String message = "Unknown command type[" + commandType + "]";
         if ( channel instanceof PositionAwareChannel )

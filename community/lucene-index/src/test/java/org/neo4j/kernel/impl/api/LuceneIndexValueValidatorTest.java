@@ -96,7 +96,7 @@ class LuceneIndexValueValidatorTest
         VALIDATOR.validate( ENTITY_ID, values( randomAlphabetic( MAX_TERM_LENGTH ) ) );
     }
 
-    private Value[] values( Object... objects )
+    private static Value[] values( Object... objects )
     {
         Value[] array = new Value[objects.length];
         for ( int i = 0; i < objects.length; i++ )

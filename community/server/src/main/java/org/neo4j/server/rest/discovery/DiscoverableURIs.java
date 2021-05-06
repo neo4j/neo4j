@@ -119,7 +119,7 @@ public class DiscoverableURIs
 
     public static class Builder
     {
-        private Map<String,URITemplate> entries;
+        private final Map<String,URITemplate> entries;
 
         public Builder()
         {
@@ -177,7 +177,7 @@ public class DiscoverableURIs
             entries.put( key, path );
         }
 
-        private boolean isBoltHostNameExplicitlySet( Config config )
+        private static boolean isBoltHostNameExplicitlySet( Config config )
         {
             if ( config.isExplicitlySet( GraphDatabaseSettings.default_advertised_address ) )
             {

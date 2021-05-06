@@ -148,7 +148,7 @@ class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitRelCount( 0, 1, -1, "MATCH (:Person)-[:REJECTS]->() RETURN count(*)", 5 );
     }
 
-    private void assertCompiles( final String className, String source )
+    private static void assertCompiles( final String className, String source )
     {
         compile( className, source,
                 ( success, manager, diagnostics ) ->
@@ -159,7 +159,7 @@ class DbStructureInvocationTracingAcceptanceTest
         );
     }
 
-    private Visitable<DbStructureVisitor> compileVisitable( final String className, String inputSource )
+    private static Visitable<DbStructureVisitor> compileVisitable( final String className, String inputSource )
     {
         return compile( className, inputSource,
                 ( success, manager, diagnostics ) -> {
@@ -180,9 +180,9 @@ class DbStructureInvocationTracingAcceptanceTest
         );
     }
 
-    private void assertSuccessfullyCompiled( Boolean success,
-                                             List<Diagnostic<? extends JavaFileObject>> diagnostics,
-                                             String className )
+    private static void assertSuccessfullyCompiled( Boolean success,
+            List<Diagnostic<? extends JavaFileObject>> diagnostics,
+            String className )
     {
         if ( success == null || !success )
         {
@@ -199,7 +199,7 @@ class DbStructureInvocationTracingAcceptanceTest
         }
     }
 
-    private <T> T compile( String className, String source, CompilationListener<T> listener )
+    private static <T> T compile( String className, String source, CompilationListener<T> listener )
     {
         JavaCompiler systemCompiler = ToolProvider.getSystemJavaCompiler();
         JavaFileManager manager = new InMemFileManager();
@@ -234,7 +234,7 @@ class DbStructureInvocationTracingAcceptanceTest
 
     private static class InMemSink extends SimpleJavaFileObject
     {
-        private ByteArrayOutputStream byteCodeStream = new ByteArrayOutputStream();
+        private final ByteArrayOutputStream byteCodeStream = new ByteArrayOutputStream();
 
         InMemSink( String className )
         {

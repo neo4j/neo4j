@@ -36,16 +36,16 @@ import org.neo4j.kernel.impl.scheduler.ThreadPool.ThreadPoolParameters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.ActiveGroup;
-import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.CallableExecutorService;
+import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.MonitoredJobExecutor;
 import org.neo4j.scheduler.MonitoredJobInfo;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.SchedulerThreadFactoryFactory;
 import org.neo4j.time.SystemNanoClock;
 
@@ -296,7 +296,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         return null;
     }
 
-    private <T> JobHandle<T> tryRegisterCancelListener( Object maybeCancelListener, JobHandle<T> handle )
+    private static <T> JobHandle<T> tryRegisterCancelListener( Object maybeCancelListener, JobHandle<T> handle )
     {
         if ( maybeCancelListener instanceof CancelListener )
         {

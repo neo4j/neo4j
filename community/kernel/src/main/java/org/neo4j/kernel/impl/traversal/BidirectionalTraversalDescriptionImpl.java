@@ -140,7 +140,7 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
      * We currently only support mono-directional traversers as "inner" traversers, so we need to check specifically
      * for this when the user specifies traversers to work with.
      */
-    private void assertIsMonoDirectional( TraversalDescription traversal )
+    private static void assertIsMonoDirectional( TraversalDescription traversal )
     {
         if ( !(traversal instanceof MonoDirectionalTraversalDescription) )
         {

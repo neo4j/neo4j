@@ -182,7 +182,7 @@ class CachingExpandIntoTest
         assertEstimatesCorrectly( expandInto );
     }
 
-    private NodeCursor mockCursor()
+    private static NodeCursor mockCursor()
     {
         NodeCursor mock = mock( NodeCursor.class, RETURNS_DEEP_STUBS );
         when( mock.next() ).thenReturn( true );
@@ -197,7 +197,7 @@ class CachingExpandIntoTest
         assertThat( memoryTracker.estimatedHeapMemory(), equalTo( actualSize ) );
     }
 
-    private void assertReleasesHeap( CachingExpandInto expandInto ) throws Exception
+    private void assertReleasesHeap( CachingExpandInto expandInto )
     {
         expandInto.close();
         assertThat( memoryTracker.estimatedHeapMemory(), equalTo( 0L ) );

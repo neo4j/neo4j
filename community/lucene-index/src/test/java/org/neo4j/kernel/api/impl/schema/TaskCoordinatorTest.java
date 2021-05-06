@@ -83,7 +83,7 @@ class TaskCoordinatorTest
                     states.add( state.get() ); // expects B
                     phaseB.await();
                     phaseB.release();
-                    coordinator.awaitCompletion();
+                    TaskCoordinator.awaitCompletion();
                     states.add( state.get() ); // expects C
                     phaseC.reached();
                 }

@@ -495,7 +495,7 @@ abstract class AbstractLogTailScannerTest
 
     // === Below is code for helping the tests above ===
 
-    private void setupLogFiles( long endLogVersion, LogCreator... logFiles )
+    private static void setupLogFiles( long endLogVersion, LogCreator... logFiles )
     {
         Map<Entry, LogPosition> positions = new HashMap<>();
         long version = endLogVersion - logFiles.length;

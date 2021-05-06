@@ -28,13 +28,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedure.Sensitive;
 import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.kernel.api.procedure.Sensitive;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
@@ -133,7 +133,7 @@ public class AuthProcedures
         return result.stream();
     }
 
-    private static List<String> changeRequiredList = List.of( PASSWORD_CHANGE_REQUIRED );
+    private static final List<String> changeRequiredList = List.of( PASSWORD_CHANGE_REQUIRED );
 
     public static class UserResult
     {
@@ -161,7 +161,7 @@ public class AuthProcedures
         }
     }
 
-    private void translateException( Exception e, String procedureName ) throws ProcedureException
+    private static void translateException( Exception e, String procedureName ) throws ProcedureException
     {
         Status status = Status.statusCodeOf( e );
         if ( status != null && status.equals( Status.Statement.NotSystemDatabaseError ) )
@@ -172,7 +172,7 @@ public class AuthProcedures
         throw new ProcedureException( ProcedureCallFailed, e, e.getMessage() );
     }
 
-    private String escapeParameter( String input )
+    private static String escapeParameter( String input )
     {
         return String.format( "`%s`", input == null ? "" : input );
     }

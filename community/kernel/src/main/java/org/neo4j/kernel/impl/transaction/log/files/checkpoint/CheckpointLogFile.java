@@ -220,7 +220,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     @Override
     public long getDetachedCheckpointLogFileVersion( Path checkpointLogFile )
     {
-        return fileHelper.getLogVersion( checkpointLogFile );
+        return TransactionLogFilesHelper.getLogVersion( checkpointLogFile );
     }
 
     private static LogEntryDetachedCheckpoint verify( LogEntry logEntry )

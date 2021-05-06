@@ -104,7 +104,7 @@ class RecordIdIteratorTest
                 array( 60, 61, 62, 63, 64, 65 ) );
     }
 
-    private void assertIds( RecordIdIterator ids, long[]... expectedIds )
+    private static void assertIds( RecordIdIterator ids, long[]... expectedIds )
     {
         for ( long[] expectedArray : expectedIds )
         {

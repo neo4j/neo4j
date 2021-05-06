@@ -241,7 +241,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         return false;
     }
 
-    private String[] extractCredential( String header )
+    private static String[] extractCredential( String header )
     {
         if ( header == null )
         {

@@ -87,7 +87,8 @@ class BaseRecordFormatsTest
         assertCompatibility( from, to, false, CapabilityType.STORE );
     }
 
-    private void assertCompatibility( RecordStorageCapability[] from, RecordStorageCapability[] to, boolean compatible, CapabilityType... capabilityTypes )
+    private static void assertCompatibility( RecordStorageCapability[] from, RecordStorageCapability[] to, boolean compatible,
+            CapabilityType... capabilityTypes )
     {
         for ( CapabilityType type : capabilityTypes )
         {
@@ -95,7 +96,7 @@ class BaseRecordFormatsTest
         }
     }
 
-    private RecordFormats format( RecordStorageCapability... capabilities )
+    private static RecordFormats format( RecordStorageCapability... capabilities )
     {
         RecordFormats formats = mock( BaseRecordFormats.class );
         when( formats.capabilities() ).thenReturn( capabilities );

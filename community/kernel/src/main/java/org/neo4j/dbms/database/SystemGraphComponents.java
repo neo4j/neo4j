@@ -69,7 +69,7 @@ public class SystemGraphComponents
         components.forEach( process );
     }
 
-    public String component()
+    public static String component()
     {
         return "system-graph";
     }

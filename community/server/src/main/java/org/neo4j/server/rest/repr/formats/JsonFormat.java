@@ -78,7 +78,7 @@ public class JsonFormat extends RepresentationFormat
         return JsonHelper.createJsonFrom( value );
     }
 
-    private boolean empty( String input )
+    private static boolean empty( String input )
     {
         return input == null || "".equals( input.trim() );
     }
@@ -144,7 +144,7 @@ public class JsonFormat extends RepresentationFormat
         }
     }
 
-    private String stripByteOrderMark( String string )
+    private static String stripByteOrderMark( String string )
     {
         if ( string != null && !string.isEmpty() && string.charAt( 0 ) == 0xfeff )
         {

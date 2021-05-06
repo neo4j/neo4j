@@ -250,7 +250,7 @@ class ReadAheadChannelTest
         assertEquals( checksumValue, bufferedReader.endChecksumAndValidate() );
     }
 
-    private void createFile( EphemeralFileSystemAbstraction fsa, Path name, int bufferSize ) throws IOException
+    private static void createFile( EphemeralFileSystemAbstraction fsa, Path name, int bufferSize ) throws IOException
     {
         StoreChannel storeChannel = fsa.write( name );
         ByteBuffer buffer = ByteBuffers.allocate( bufferSize, INSTANCE );

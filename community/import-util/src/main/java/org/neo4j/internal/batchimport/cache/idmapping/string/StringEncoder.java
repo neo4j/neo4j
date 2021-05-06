@@ -49,7 +49,7 @@ public class StringEncoder implements Encoder
 
     public StringEncoder( int codingStrength )
     {
-        numCodes = codingStrength > 2 ? codingStrength : 2;
+        numCodes = Math.max( codingStrength, 2 );
         Arrays.fill( reMap, (byte)-1 );
     }
 
@@ -93,7 +93,7 @@ public class StringEncoder implements Encoder
         return codes;
     }
 
-    private int lengthEncoder( int length )
+    private static int lengthEncoder( int length )
     {
         if ( length < 32 )
         {
@@ -139,7 +139,7 @@ public class StringEncoder implements Encoder
         }
     }
 
-    private int[] simplestCode( byte[] bytes, int inputLength )
+    private static int[] simplestCode( byte[] bytes, int inputLength )
     {
         int[] codes = new int[]{0, 0};
         codes[0] = max( inputLength, 1 ) << 25;
@@ -155,7 +155,7 @@ public class StringEncoder implements Encoder
         return codes;
     }
 
-    private int getCode( byte[] bytes, int inputLength, int order )
+    private static int getCode( byte[] bytes, int inputLength, int order )
     {
         long code = 0;
         int size = inputLength;

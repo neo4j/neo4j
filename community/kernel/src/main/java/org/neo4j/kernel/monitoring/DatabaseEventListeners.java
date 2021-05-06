@@ -50,7 +50,7 @@ public class DatabaseEventListeners
         removeListener( listener, databaseEventListeners );
     }
 
-    private <T> void addListener( T listener, List<T> listeners )
+    private static <T> void addListener( T listener, List<T> listeners )
     {
         if ( listeners.contains( listener ) )
         {
@@ -59,7 +59,7 @@ public class DatabaseEventListeners
         listeners.add( listener );
     }
 
-    private <T> void removeListener( T listener, List<T> listeners )
+    private static <T> void removeListener( T listener, List<T> listeners )
     {
         if ( !listeners.remove( listener ) )
         {

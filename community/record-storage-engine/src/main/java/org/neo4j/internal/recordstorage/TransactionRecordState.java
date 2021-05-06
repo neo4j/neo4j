@@ -180,7 +180,7 @@ public class TransactionRecordState implements RecordState
             for ( RecordProxy<NodeRecord, Void> change : nodeChanges )
             {
                 NodeRecord record = prepared( change, nodeStore );
-                integrityValidator.validateNodeRecord( record );
+                IntegrityValidator.validateNodeRecord( record );
                 nodeCommands[i++] = new Command.NodeCommand( commandSerialization, change.getBefore(), record );
             }
             Arrays.sort( nodeCommands, COMMAND_COMPARATOR );
@@ -316,7 +316,7 @@ public class TransactionRecordState implements RecordState
         relationshipModifier.modifyRelationships( modifications, recordChangeSet, groupDegreesUpdater, locks, lockTracer );
     }
 
-    private void addFiltered( Collection<StorageCommand> target, Mode mode, Command[]... commands )
+    private static void addFiltered( Collection<StorageCommand> target, Mode mode, Command[]... commands )
     {
         for ( Command[] c : commands )
         {
@@ -346,7 +346,7 @@ public class TransactionRecordState implements RecordState
         }
         if ( nodeRecord.isDense() )
         {
-            relationshipGroupGetter.deleteEmptyGroups( nodeChange, g ->
+            RelationshipGroupGetter.deleteEmptyGroups( nodeChange, g ->
             {
                 //This lock make be taken out-of-order but we have NODE_RELATIONSHIP_GROUP_DELETE exclusive. No concurrent transaction using this node exists.
                 locks.acquireExclusive( lockTracer, RELATIONSHIP_GROUP, nodeId ); //We may take this lock multiple times but that's so rare we don't care.
@@ -359,7 +359,7 @@ public class TransactionRecordState implements RecordState
         getAndDeletePropertyChain( nodeRecord );
     }
 
-    private Collection<DynamicRecord> markNotInUse( Collection<DynamicRecord> dynamicLabelRecords )
+    private static Collection<DynamicRecord> markNotInUse( Collection<DynamicRecord> dynamicLabelRecords )
     {
         for ( DynamicRecord record : dynamicLabelRecords )
         {

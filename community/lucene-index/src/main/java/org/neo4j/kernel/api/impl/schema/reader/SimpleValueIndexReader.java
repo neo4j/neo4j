@@ -112,7 +112,7 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
         }
     }
 
-    private Query toLuceneQuery( PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
+    private static Query toLuceneQuery( PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         PropertyIndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -163,7 +163,7 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
         }
     }
 
-    private void assertNotComposite( PropertyIndexQuery[] predicates )
+    private static void assertNotComposite( PropertyIndexQuery[] predicates )
     {
         assert predicates.length == 1 : "composite indexes not yet supported for this operation";
     }

@@ -148,7 +148,7 @@ class InCacheTest
         assertEquals( NO_VALUE, cache.check( map( new String[]{ "a" }, new AnyValue[]{ NO_VALUE } ), list, EmptyMemoryTracker.INSTANCE ) );
     }
 
-    private <K, V> Iterable<Entry<K,V>> shuffled( Map<K,V> map )
+    private static <K, V> Iterable<Entry<K,V>> shuffled( Map<K,V> map )
     {
         ArrayList<Entry<K,V>> list = new ArrayList<>( map.entrySet() );
         Collections.shuffle( list );

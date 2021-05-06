@@ -93,7 +93,7 @@ class AppendedPrependListTest
         assertListValuesEquals( appended, expected );
     }
 
-    private void assertListValuesEquals( ListValue appended, ListValue expected )
+    private static void assertListValuesEquals( ListValue appended, ListValue expected )
     {
         assertEquals( expected, appended );
         assertEquals( expected.hashCode(), appended.hashCode() );

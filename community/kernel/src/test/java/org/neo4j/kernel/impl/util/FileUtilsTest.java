@@ -490,7 +490,7 @@ class FileUtilsTest
         return file;
     }
 
-    private Path path( String path )
+    private static Path path( String path )
     {
         return Path.of( path );
     }

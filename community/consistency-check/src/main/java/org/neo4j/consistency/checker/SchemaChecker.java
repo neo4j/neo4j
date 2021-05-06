@@ -263,7 +263,7 @@ class SchemaChecker
                 dynamicRecord -> reporter.forDynamicBlock( RecordType.PROPERTY_KEY_NAME, dynamicRecord ), context.pageCacheTracer ) );
     }
 
-    private <R extends TokenRecord> void checkTokens( TokenStore<R> store,
+    private static <R extends TokenRecord> void checkTokens( TokenStore<R> store,
             Function<R,ConsistencyReport.NameConsistencyReport> report,
             Function<DynamicRecord,ConsistencyReport.DynamicConsistencyReport> dynamicRecordReport, PageCacheTracer pageCacheTracer )
     {
@@ -382,7 +382,7 @@ class SchemaChecker
             putMandatoryProperty( mandatoryRelationshipProperties, schema.getRelTypeId(), schema.getPropertyIds() );
         }
 
-        private void putMandatoryProperty( MutableIntObjectMap<MutableIntSet> mandatoryProperties, int entityToken, int[] propertyIds )
+        private static void putMandatoryProperty( MutableIntObjectMap<MutableIntSet> mandatoryProperties, int entityToken, int[] propertyIds )
         {
             MutableIntSet keys = mandatoryProperties.get( entityToken );
             if ( keys == null )

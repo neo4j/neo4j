@@ -56,7 +56,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
         }
     }
 
-    private List<String> packagesFor( ThirdPartyJaxRsPackage tpp )
+    private static List<String> packagesFor( ThirdPartyJaxRsPackage tpp )
     {
         return Collections.singletonList( tpp.getPackageName() );
     }
