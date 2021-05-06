@@ -49,7 +49,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
@@ -164,7 +163,7 @@ class ImportCommandTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = COMMAS;
-        Path dbConfig = prepareDefaultConfigFile();
+        Path dbConfig = prepareConfigFileTokenIndexesOff();
 
         // WHEN
         runImport(
@@ -2515,6 +2514,18 @@ class ImportCommandTest
         store( Map.of(
                 neo4j_home.name(), testDirectory.absolutePath().toString(),
                 preallocate_logical_logs.name(), FALSE
+        ), dbConfig );
+
+        return dbConfig;
+    }
+
+    private Path prepareConfigFileTokenIndexesOff() throws IOException
+    {
+        Path dbConfig = file( "neo4j.properties" );
+        store( Map.of(
+                neo4j_home.name(), testDirectory.absolutePath().toString(),
+                preallocate_logical_logs.name(), FALSE,
+                enable_scan_stores_as_token_indexes.name(), FALSE
         ), dbConfig );
 
         return dbConfig;

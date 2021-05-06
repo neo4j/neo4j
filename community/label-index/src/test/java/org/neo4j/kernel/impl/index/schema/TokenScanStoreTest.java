@@ -206,8 +206,8 @@ public class TokenScanStoreTest
     @Test
     void shouldUseLabelScanStoreFile()
     {
-        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(), Config.defaults(),
-                PageCacheTracer.NULL, INSTANCE );
+        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(),
+                Config.defaults( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false ), PageCacheTracer.NULL, INSTANCE );
         ResourceIterator<Path> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
         Path storeFile = files.next();
@@ -579,7 +579,7 @@ public class TokenScanStoreTest
             FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker, Monitors monitors )
     {
         return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnlyChecker, monitors, immediate(),
-                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
+                Config.defaults( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false ), PageCacheTracer.NULL, INSTANCE );
     }
 
     private void corruptIndex( DatabaseLayout databaseLayout )

@@ -312,7 +312,7 @@ class LabelScanStoreIT
             store.shutdown();
         }
         store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(),
-                immediate(), Config.defaults(), cacheTracer, INSTANCE ) );
+                immediate(), Config.defaults( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false ), cacheTracer, INSTANCE ) );
     }
 
     private void verifyReads( long[] expected )

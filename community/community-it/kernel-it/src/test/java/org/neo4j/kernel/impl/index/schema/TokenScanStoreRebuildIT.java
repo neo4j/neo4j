@@ -32,15 +32,17 @@ import org.neo4j.internal.recordstorage.TestRelType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configuration" )
 class TokenScanStoreRebuildIT
 {
     @Inject
@@ -51,6 +53,12 @@ class TokenScanStoreRebuildIT
     private FileSystemAbstraction fs;
     @Inject
     private DbmsController controller;
+
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
+    }
 
     @Test
     void shouldReportCorrectEntityCountsOnRebuild()

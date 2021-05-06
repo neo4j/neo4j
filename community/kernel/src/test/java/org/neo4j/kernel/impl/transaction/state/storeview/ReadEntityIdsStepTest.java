@@ -56,6 +56,7 @@ import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
+import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.labelScanStore;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
@@ -81,7 +82,8 @@ class ReadEntityIdsStepTest
         // given
         DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
         TokenScanStore scanStore =
-                labelScanStore( pageCache, layout, directory.getFileSystem(), EMPTY, writable(), new Monitors(), immediate(), defaults(), NULL, INSTANCE );
+                labelScanStore( pageCache, layout, directory.getFileSystem(), EMPTY, writable(), new Monitors(), immediate(),
+                        defaults( enable_scan_stores_as_token_indexes, false ), NULL, INSTANCE );
         try ( Lifespan life = new Lifespan( scanStore ) )
         {
             long initialHighNodeId = 1_000 + random.nextInt( 100 );

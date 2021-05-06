@@ -19,11 +19,22 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
 public class ParallelNodeLabelScanTransactionStateTest extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport>
 {
     @Override
     public WriteTestSupport newTestSupport()
     {
-        return new WriteTestSupport();
+        return new WriteTestSupport()
+        {
+            @Override
+            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+            {
+                builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
+                return builder;
+            }
+        };
     }
 }

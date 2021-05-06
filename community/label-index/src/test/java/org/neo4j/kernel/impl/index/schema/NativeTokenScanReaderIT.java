@@ -90,7 +90,8 @@ class NativeTokenScanReaderIT
     {
         // given
         LabelScanStore store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(),
-                immediate(), Config.defaults(), PageCacheTracer.NULL, INSTANCE ) );
+                immediate(), Config.defaults( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false ), PageCacheTracer.NULL,
+                INSTANCE ) );
         int labelId = 1;
         int highNodeId = 100_000;
         BitSet expected = new BitSet( highNodeId );

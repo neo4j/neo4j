@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Consumer;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.LabelScanConsistencyReport;
@@ -34,11 +35,13 @@ import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -56,6 +59,19 @@ class NodeCheckerTest extends CheckerTestBase
     private int label3;
     private int[] otherLabels;
     private int unusedLabel;
+
+    @Override
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
+    }
+
+    @Override
+    Config additionalConfigToCC( Config config )
+    {
+        config.set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
+        return config;
+    }
 
     @Override
     void initialData( KernelTransaction tx ) throws KernelException

@@ -53,6 +53,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 @Neo4jLayoutExtension
 class LabelScanStoreRebuildTest
 {
+    private final Config config = Config.defaults( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
+
     @Inject
     private DatabaseLayout databaseLayout;
     @Inject
@@ -77,7 +79,7 @@ class LabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), monitors, immediate(),
-                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
+               config, PageCacheTracer.NULL, INSTANCE );
         labelScanStore.init();
         labelScanStore.start();
 
@@ -98,7 +100,7 @@ class LabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), monitors, ignore(),
-                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
+                config, PageCacheTracer.NULL, INSTANCE );
         labelScanStore.init();
         labelScanStore.start();
 
@@ -116,7 +118,7 @@ class LabelScanStoreRebuildTest
         existingData.add( EntityTokenUpdate.tokenChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
         LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, changeStream, writable(), new Monitors(), immediate(),
-                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
+                config, PageCacheTracer.NULL, INSTANCE );
         try
         {
             labelScanStore.init();
@@ -136,7 +138,7 @@ class LabelScanStoreRebuildTest
         try
         {
             labelScanStore = labelScanStore( pageCache, databaseLayout, fileSystem, THROWING_STREAM, writable(), new Monitors(), immediate(),
-                    Config.defaults(), PageCacheTracer.NULL, INSTANCE );
+                    config, PageCacheTracer.NULL, INSTANCE );
 
             labelScanStore.init();
             labelScanStore.start();

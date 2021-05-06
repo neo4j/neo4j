@@ -31,12 +31,15 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.index.schema.TokenScanStoreTest;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -46,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configuration" )
 @ExtendWith( RandomExtension.class )
 class LabelScanStoreStartupIT
 {
@@ -61,6 +64,12 @@ class LabelScanStoreStartupIT
     private RecoveryCleanupWorkCollector workCollector;
 
     private int labelId;
+
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
+    }
 
     @Test
     void scanStoreStartWithoutExistentIndex() throws Throwable
