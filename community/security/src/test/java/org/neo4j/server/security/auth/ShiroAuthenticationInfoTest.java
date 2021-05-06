@@ -31,11 +31,10 @@ import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MA
 
 class ShiroAuthenticationInfoTest
 {
-    private final Neo4jPrincipal principal = new Neo4jPrincipal( "user" );
-    private final ShiroAuthenticationInfo successInfo = new ShiroAuthenticationInfo( principal, "realm", SUCCESS );
-    private final ShiroAuthenticationInfo failureInfo = new ShiroAuthenticationInfo( principal, "realm", FAILURE );
-    private final ShiroAuthenticationInfo tooManyAttemptsInfo = new ShiroAuthenticationInfo( principal, "realm", TOO_MANY_ATTEMPTS );
-    private final ShiroAuthenticationInfo pwChangeRequiredInfo = new ShiroAuthenticationInfo( principal, "realm", PASSWORD_CHANGE_REQUIRED );
+    private final ShiroAuthenticationInfo successInfo = new ShiroAuthenticationInfo( "user", "realm", SUCCESS );
+    private final ShiroAuthenticationInfo failureInfo = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
+    private final ShiroAuthenticationInfo tooManyAttemptsInfo = new ShiroAuthenticationInfo( "user", "realm", TOO_MANY_ATTEMPTS );
+    private final ShiroAuthenticationInfo pwChangeRequiredInfo = new ShiroAuthenticationInfo( "user", "realm", PASSWORD_CHANGE_REQUIRED );
 
     // These tests are here to remind you that you need to update the ShiroAuthenticationInfo.mergeMatrix[][]
     // whenever you add/remove/move values in the AuthenticationResult enum
@@ -55,7 +54,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeTwoSuccessToSameValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", SUCCESS );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", SUCCESS );
         info.merge( successInfo );
 
         assertEquals( SUCCESS, info.getAuthenticationResult() );
@@ -64,7 +63,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeTwoFailureToSameValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", FAILURE );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( failureInfo );
 
         assertEquals( FAILURE, info.getAuthenticationResult() );
@@ -73,7 +72,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeTwoTooManyAttemptsToSameValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", TOO_MANY_ATTEMPTS );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", TOO_MANY_ATTEMPTS );
         info.merge( tooManyAttemptsInfo );
 
         assertEquals( TOO_MANY_ATTEMPTS, info.getAuthenticationResult() );
@@ -82,7 +81,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeTwoPasswordChangeRequiredToSameValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", PASSWORD_CHANGE_REQUIRED );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", PASSWORD_CHANGE_REQUIRED );
         info.merge( pwChangeRequiredInfo );
 
         assertEquals( PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult() );
@@ -91,7 +90,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeFailureWithSuccessToNewValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", FAILURE );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( successInfo );
 
         assertEquals( SUCCESS, info.getAuthenticationResult() );
@@ -100,7 +99,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeFailureWithTooManyAttemptsToNewValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", FAILURE );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( tooManyAttemptsInfo );
 
         assertEquals( TOO_MANY_ATTEMPTS, info.getAuthenticationResult() );
@@ -109,7 +108,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeFailureWithPasswordChangeRequiredToNewValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", FAILURE );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( pwChangeRequiredInfo );
 
         assertEquals( PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult() );
@@ -118,7 +117,7 @@ class ShiroAuthenticationInfoTest
     @Test
     void shouldMergeToNewValue()
     {
-        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( principal, "realm", FAILURE );
+        ShiroAuthenticationInfo info = new ShiroAuthenticationInfo( "user", "realm", FAILURE );
         info.merge( pwChangeRequiredInfo );
 
         assertEquals( PASSWORD_CHANGE_REQUIRED, info.getAuthenticationResult() );
