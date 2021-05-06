@@ -38,9 +38,9 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
 {
     private final UserRepository userRepository;
 
-    public CommunitySecurityComponentVersion_0_35( AbstractSecurityLog log, UserRepository userRepository )
+    public CommunitySecurityComponentVersion_0_35( AbstractSecurityLog securityLog, UserRepository userRepository )
     {
-        super( COMMUNITY_SECURITY_35, log );
+        super( COMMUNITY_SECURITY_35, securityLog );
         this.userRepository = userRepository;
     }
 
@@ -94,11 +94,11 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
 
             // Log what happened to the security log
             String userString = users.values().size() == 1 ? "user" : "users";
-            log.info( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
+            securityLog.info( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
         }
         else
         {
-            log.info( "No users migrated from auth file into system graph." );
+            securityLog.info( "No users migrated from auth file into system graph." );
         }
         setVersionProperty( tx, latest.version );
     }

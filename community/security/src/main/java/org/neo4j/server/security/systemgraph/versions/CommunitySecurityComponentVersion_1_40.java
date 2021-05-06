@@ -30,9 +30,9 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
  */
 public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySecurityComponentVersion
 {
-    public CommunitySecurityComponentVersion_1_40( AbstractSecurityLog log, UserRepository userRepository )
+    public CommunitySecurityComponentVersion_1_40( AbstractSecurityLog securityLog, UserRepository userRepository )
     {
-        super( COMMUNITY_SECURITY_40, log, userRepository );
+        super( COMMUNITY_SECURITY_40, securityLog, userRepository );
     }
 
     @Override

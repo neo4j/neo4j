@@ -37,6 +37,7 @@ import org.neo4j.logging.log4j.LogConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.logging.FormattedLogFormat.PLAIN;
 
 public class SecurityLogHelper
 {
@@ -46,7 +47,15 @@ public class SecurityLogHelper
     public SecurityLogHelper()
     {
         logProvider = new Log4jLogProvider( LogConfig.createBuilder( outContent, Level.INFO )
-                                                     .withFormat( FormattedLogFormat.STANDARD_FORMAT )
+                                                     .withFormat( PLAIN )
+                                                     .withCategory( false )
+                                                     .build() );
+    }
+
+    public SecurityLogHelper( FormattedLogFormat format )
+    {
+        logProvider = new Log4jLogProvider( LogConfig.createBuilder( outContent, Level.INFO )
+                                                     .withFormat( format )
                                                      .withCategory( false )
                                                      .build() );
     }
@@ -71,9 +80,9 @@ public class SecurityLogHelper
     {
         switch ( format )
         {
-        case STANDARD_FORMAT:
+        case PLAIN:
             return new LoggerContentValidator( content );
-        case JSON_FORMAT:
+        case JSON:
             return new JsonContentValidator( content );
         default:
         }

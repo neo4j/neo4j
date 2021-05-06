@@ -29,8 +29,8 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
  */
 public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySecurityComponentVersion
 {
-    public CommunitySecurityComponentVersion_2_41( AbstractSecurityLog log, UserRepository userRepository )
+    public CommunitySecurityComponentVersion_2_41( AbstractSecurityLog securityLog, UserRepository userRepository )
     {
-        super( COMMUNITY_SECURITY_41, log, userRepository );
+        super( COMMUNITY_SECURITY_41, securityLog, userRepository );
     }
 }

@@ -41,15 +41,15 @@ public abstract class KnownSystemComponentVersion
     protected final String componentVersionProperty;
     public final int version;
     public final String description;
-    protected final AbstractSecurityLog log;
+    protected final AbstractSecurityLog securityLog;
 
-    protected KnownSystemComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog log )
+    protected KnownSystemComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog securityLog )
     {
         this.componentVersion = componentVersion;
         this.componentVersionProperty = componentVersion.getComponentName();
         this.version = componentVersion.getVersion();
         this.description = componentVersion.getDescription();
-        this.log = log;
+        this.securityLog = securityLog;
     }
 
     public boolean isCurrent()
@@ -81,7 +81,7 @@ public abstract class KnownSystemComponentVersion
     public UnsupportedOperationException unsupported()
     {
         String message = String.format( "System graph version %d for component '%s' in '%s' is not supported", version, componentVersionProperty, description );
-        log.error( message );
+        securityLog.error( message );
         return new UnsupportedOperationException( message );
     }
 
@@ -123,11 +123,11 @@ public abstract class KnownSystemComponentVersion
         var oldVersion = versionNode.getProperty( componentVersionProperty, null );
         if ( oldVersion != null )
         {
-            log.info( String.format( "Upgrading '%s' version property from %s to %d", componentVersionProperty, oldVersion, newVersion ) );
+            securityLog.info( String.format( "Upgrading '%s' version property from %s to %d", componentVersionProperty, oldVersion, newVersion ) );
         }
         else
         {
-            log.info( String.format( "Setting version for '%s' to %d", componentVersionProperty, newVersion ) );
+            securityLog.info( String.format( "Setting version for '%s' to %d", componentVersionProperty, newVersion ) );
         }
         versionNode.setProperty( componentVersionProperty, newVersion );
     }

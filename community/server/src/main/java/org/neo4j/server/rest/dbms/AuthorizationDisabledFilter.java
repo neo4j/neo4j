@@ -30,10 +30,7 @@ import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 import org.neo4j.server.web.JettyHttpConnection;
 

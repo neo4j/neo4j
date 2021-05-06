@@ -42,9 +42,9 @@ public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySe
     private final UserRepository userRepository;
     private final SecureHasher secureHasher;
 
-    SupportedCommunitySecurityComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog log, UserRepository userRepository )
+    SupportedCommunitySecurityComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog securityLog, UserRepository userRepository )
     {
-        super( componentVersion, log );
+        super( componentVersion, securityLog );
         this.userRepository = userRepository;
         this.secureHasher = new SecureHasher();
     }
@@ -69,13 +69,13 @@ public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySe
         if ( initialUser.isPresent() )
         {
             User user = initialUser.get();
-            log.info( String.format( "Setting up initial user from `auth.ini` file: %s", user.name() ) );
+            securityLog.info( String.format( "Setting up initial user from `auth.ini` file: %s", user.name() ) );
             addUser( tx, INITIAL_USER_NAME, user.credentials(), user.passwordChangeRequired(), user.hasFlag( IS_SUSPENDED ) );
         }
         else
         {
             SystemGraphCredential credential = SystemGraphCredential.createCredentialForPassword( UTF8.encode( INITIAL_PASSWORD ), secureHasher );
-            log.info( String.format( "Setting up initial user from defaults: %s", INITIAL_USER_NAME ) );
+            securityLog.info( String.format( "Setting up initial user from defaults: %s", INITIAL_USER_NAME ) );
             addUser( tx, INITIAL_USER_NAME, credential, true, false );
         }
     }
@@ -90,17 +90,17 @@ public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySe
         }
         else
         {
-            log.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
+            securityLog.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
         }
     }
 
     private Optional<User> getInitialUser() throws Exception
     {
         userRepository.start();
-        log.debug( "Opened `auth.ini` file to find the initial user" );
+        securityLog.debug( "Opened `auth.ini` file to find the initial user" );
         if ( userRepository.numberOfUsers() == 0 )
         {
-            log.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
+            securityLog.debug( "Not updating initial user password: No initial user found in `auth.ini`" );
         }
         if ( userRepository.numberOfUsers() == 1 )
         {
@@ -110,16 +110,16 @@ public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySe
             if ( initialUser == null )
             {
                 String errorMessage = "Invalid `auth.ini` file: the user in the file is not named " + INITIAL_USER_NAME;
-                log.error( errorMessage );
+                securityLog.error( errorMessage );
                 throw new IllegalStateException( errorMessage );
             }
-            log.debug( "Valid `auth.ini` file: found initial user" );
+            securityLog.debug( "Valid `auth.ini` file: found initial user" );
             return Optional.of( initialUser );
         }
         else if ( userRepository.numberOfUsers() > 1 )
         {
             String errorMessage = "Invalid `auth.ini` file: the file contains more than one user";
-            log.error( errorMessage );
+            securityLog.error( errorMessage );
             throw new IllegalStateException( errorMessage );
         }
         return Optional.empty();

@@ -75,11 +75,6 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
         inner.warn( new SecurityLogLine( message ) );
     }
 
-    public void warn( String format, Object... arguments )
-    {
-        inner.warn( new SecurityLogLine( String.format( format, arguments ) ) );
-    }
-
     public void warn( LoginContext context, String message )
     {
         inner.warn( new SecurityLogLine( context.subject().username(), context.connectionInfo(), message ) );
@@ -110,7 +105,7 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
         return inner.isDebugEnabled();
     }
 
-    class SecurityLogLine extends StructureAwareMessage
+    static class SecurityLogLine extends StructureAwareMessage
     {
         private final String username;
         private final String sourceString;

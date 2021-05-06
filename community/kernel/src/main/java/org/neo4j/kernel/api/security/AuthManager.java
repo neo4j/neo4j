@@ -41,7 +41,7 @@ public abstract class AuthManager extends LifecycleAdapter
      * NOTE: The authToken will be cleared of any credentials
      *
      * @param authToken The authentication token to login with. Typically contains principals and credentials.
-     * @param connectionInfo
+     * @param connectionInfo The connection information of the request.
      * @return An AuthSubject representing the newly logged-in user
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */

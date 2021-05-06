@@ -25,6 +25,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.schema.SchemaState;
@@ -89,7 +90,7 @@ public final class KernelTransactionFactory
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
-        dependencies.satisfyDependency( mock( AbstractSecurityLog.class ) );
+        dependencies.satisfyDependency( CommunitySecurityLog.NULL_LOG );
         KernelTransactionImplementation transaction =
                 new KernelTransactionImplementation( Config.defaults(), mock( DatabaseTransactionEventListeners.class ),
                                                      mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),

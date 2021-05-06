@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -32,7 +31,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 public abstract class LoginContext
 {
     protected final AuthSubject subject;
-    private ClientConnectionInfo connectionInfo;
+    private final ClientConnectionInfo connectionInfo;
 
     public LoginContext( AuthSubject subject, ClientConnectionInfo connectionInfo )
     {

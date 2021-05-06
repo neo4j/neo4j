@@ -44,9 +44,9 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     public static final Label USER_LABEL = Label.label( "User" );
     private final SecureHasher secureHasher = new SecureHasher();
 
-    KnownCommunitySecurityComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog log )
+    KnownCommunitySecurityComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog securityLog )
     {
-        super( componentVersion, log );
+        super( componentVersion, securityLog );
     }
 
     boolean componentNotInVersionNode( Transaction tx )
@@ -59,7 +59,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     void addUser( Transaction tx, String username, Credential credentials, boolean passwordChangeRequired, boolean suspended )
     {
         // NOTE: If username already exists we will violate a constraint
-        log.info( String.format( "Creating new user '%s' (passwordChangeRequired=%b, suspended=%b)", username, passwordChangeRequired, suspended ) );
+        securityLog.info( String.format( "Creating new user '%s' (passwordChangeRequired=%b, suspended=%b)", username, passwordChangeRequired, suspended ) );
         Node node = tx.createNode( USER_LABEL );
         node.setProperty( "name", username );
         node.setProperty( "credentials", credentials.serialize() );
@@ -76,7 +76,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         List<Node> users = nodes.stream().collect( Collectors.toList() );
         if ( users.size() == 0 )
         {
-            log.warn( String.format( "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name() ) );
+            securityLog.warn( String.format( "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name() ) );
         }
         else if ( users.size() == 1 )
         {
@@ -86,7 +86,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                 SystemGraphCredential currentCredentials = SystemGraphCredential.deserialize( user.getProperty( "credentials" ).toString(), secureHasher );
                 if ( currentCredentials.matchesPassword( UTF8.encode( INITIAL_PASSWORD ) ) )
                 {
-                    log.info( "Updating initial user password from `auth.ini` file: %s", initialUser.name() );
+                    securityLog.info( "Updating initial user password from `auth.ini` file: %s", initialUser.name() );
                     user.setProperty( "credentials", initialUser.credentials().serialize() );
                     user.setProperty( "passwordChangeRequired", initialUser.passwordChangeRequired() );
                 }
@@ -94,7 +94,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         }
         else
         {
-            log.error( String.format( "Multiple users matching initial user password from `auth.ini` file: %s", initialUser.name() ) );
+            securityLog.error( String.format( "Multiple users matching initial user password from `auth.ini` file: %s", initialUser.name() ) );
         }
     }
 

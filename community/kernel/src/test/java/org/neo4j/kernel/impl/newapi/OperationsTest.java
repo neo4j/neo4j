@@ -1274,7 +1274,7 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.READ, false);
         assertThat( message).contains("Set label for label 'Label' is not allowed");
-        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+        logHelper.assertLog( FormattedLogFormat.PLAIN ).containsOrdered(
                 line().level( Level.ERROR )
                       .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
                       .message( "Set label for label 'Label' is not allowed for AUTH_DISABLED with READ." ) );
@@ -1285,7 +1285,7 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeAddLabel(1L, 2),  AccessMode.Static.ACCESS, false);
         assertThat( message).contains("Set label for label 'Label' is not allowed");
-        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+        logHelper.assertLog( FormattedLogFormat.PLAIN ).containsOrdered(
                 line().level( Level.ERROR )
                       .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
                       .message( "Set label for label 'Label' is not allowed for AUTH_DISABLED with ACCESS." ) );
@@ -1314,7 +1314,7 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.READ, false);
         assertThat( message).contains("Remove label for label 'Label' is not allowed");
-        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+        logHelper.assertLog( FormattedLogFormat.PLAIN ).containsOrdered(
                 line().level( Level.ERROR )
                       .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
                       .message( "Remove label for label 'Label' is not allowed for AUTH_DISABLED with READ." ) );
@@ -1325,7 +1325,7 @@ class OperationsTest
     {
         String message = runForSecurityLevel(() -> operations.nodeRemoveLabel(1L, 3),  AccessMode.Static.ACCESS, false);
         assertThat( message).contains("Remove label for label 'Label' is not allowed");
-        logHelper.assertLog( FormattedLogFormat.STANDARD_FORMAT ).containsOrdered(
+        logHelper.assertLog( FormattedLogFormat.PLAIN ).containsOrdered(
                 line().level( Level.ERROR )
                       .source( ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails() )
                       .message( "Remove label for label 'Label' is not allowed for AUTH_DISABLED with ACCESS." ) );
