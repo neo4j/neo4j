@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
@@ -114,20 +115,20 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
-    val result = inner.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig)
+  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
+    val result = inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig)
     indexesAdded.increase()
     result
   }
 
-  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = {
-    val result = inner.addLookupIndexRule(isNodeIndex, name)
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor = {
+    val result = inner.addLookupIndexRule(entityType, name)
     indexesAdded.increase()
     result
   }
 
-  override def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = {
-    val result = inner.addFulltextIndexRule(entityIds, isNodeIndex, propertyKeyIds, name, provider, indexConfig)
+  override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = {
+    val result = inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig)
     indexesAdded.increase()
     result
   }

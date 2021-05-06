@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.planning
 
 import java.net.URL
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
@@ -132,14 +133,14 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
     translateException(tokenNameLookup, inner.getOrCreatePropertyKeyIds(propertyKeys))
 
-  override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
+  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
-  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addLookupIndexRule(isNodeIndex, name))
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addLookupIndexRule(entityType, name))
 
-  override def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addFulltextIndexRule(entityIds, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
+  override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig))
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
@@ -159,14 +160,14 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     translateException(tokenNameLookup, inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor =
-    translateException(tokenNameLookup, inner.btreeIndexReference(entityId, isNodeIndex, properties:_*))
+  override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor =
+    translateException(tokenNameLookup, inner.btreeIndexReference(entityId, entityType, properties:_*))
 
-  override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor =
-    translateException(tokenNameLookup, inner.lookupIndexReference(isNodeIndex))
+  override def lookupIndexReference(entityType: EntityType): IndexDescriptor =
+    translateException(tokenNameLookup, inner.lookupIndexReference(entityType))
 
-  override def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor =
-    translateException(tokenNameLookup, inner.fulltextIndexReference(entityIds, isNodeIndex, properties:_*))
+  override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor =
+    translateException(tokenNameLookup, inner.fulltextIndexReference(entityIds, entityType, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

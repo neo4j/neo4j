@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import java.net.URL
 import java.util.Optional
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
@@ -125,11 +126,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
+  def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
 
-  def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor
+  def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor
 
-  def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
+  def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
 
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
@@ -137,11 +138,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
 
-  def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor
+  def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor
 
-  def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor
+  def lookupIndexReference(entityType: EntityType): IndexDescriptor
 
-  def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor
+  def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor
 
   def indexExists(name: String): Boolean
 

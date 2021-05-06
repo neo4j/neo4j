@@ -24,6 +24,7 @@ import java.time.Clock
 import java.util.function.Supplier
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.evaluator.EvaluationException
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
@@ -201,11 +202,11 @@ object StaticEvaluation {
 
     override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = notAvailable()
 
-    override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
+    override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
 
-    override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = notAvailable()
+    override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor = notAvailable()
 
-    override def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
+    override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
 
     override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notAvailable()
 
@@ -219,11 +220,11 @@ object StaticEvaluation {
 
     override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = notAvailable()
 
-    override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = notAvailable()
+    override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
 
-    override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = notAvailable()
+    override def lookupIndexReference(entityType: EntityType): IndexDescriptor = notAvailable()
 
-    override def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor = notAvailable()
+    override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = notAvailable()
 
     override def nodeIndexSeek(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
 

@@ -373,18 +373,20 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     relCursor
   }
 
-  override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = {
-    val descriptor = if (isNodeIndex) SchemaDescriptor.forLabel(entityId, properties: _*) else SchemaDescriptor.forRelType(entityId, properties: _*)
+  override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = {
+    val descriptor = entityType match {
+      case EntityType.NODE         => SchemaDescriptor.forLabel(entityId, properties: _*)
+      case EntityType.RELATIONSHIP => SchemaDescriptor.forRelType(entityId, properties: _*)
+    }
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
-  override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = {
-    val descriptor = if (isNodeIndex) SchemaDescriptor.forAnyEntityTokens(EntityType.NODE) else SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)
+  override def lookupIndexReference(entityType: EntityType): IndexDescriptor = {
+    val descriptor = SchemaDescriptor.forAnyEntityTokens(entityType)
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
-  override def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor = {
-    val entityType = if (isNodeIndex) EntityType.NODE else EntityType.RELATIONSHIP
+  override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = {
     val descriptor = SchemaDescriptor.fulltext(entityType, entityIds.toArray, properties.toArray)
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
@@ -925,9 +927,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ids
   }
 
-  override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
+  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
-    val descriptor = if (isNodeIndex) SchemaDescriptor.forLabel(entityId, propertyKeyIds: _*) else SchemaDescriptor.forRelType(entityId, propertyKeyIds: _*)
+    val descriptor = entityType match {
+      case EntityType.NODE         => SchemaDescriptor.forLabel(entityId, propertyKeyIds: _*)
+      case EntityType.RELATIONSHIP => SchemaDescriptor.forRelType(entityId, propertyKeyIds: _*)
+    }
     try {
       if (provider.isEmpty)
         ktx.schemaWrite().indexCreate(descriptor, indexConfig, name.orNull)
@@ -938,9 +943,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = {
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
-    val descriptor = if (isNodeIndex) SchemaDescriptor.forAnyEntityTokens(EntityType.NODE) else SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)
+    val descriptor = SchemaDescriptor.forAnyEntityTokens(entityType)
     val prototype = IndexPrototype.forSchema(descriptor).withIndexType(IndexType.LOOKUP)
     val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
     try {
@@ -951,13 +956,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def addFulltextIndexRule(entityIds: List[Int],
-                           isNodeIndex: Boolean,
-                           propertyKeyIds: Seq[Int],
-                           name: Option[String],
-                           provider: Option[IndexProviderDescriptor],
-                           indexConfig: IndexConfig): IndexDescriptor = {
+                                    entityType: EntityType,
+                                    propertyKeyIds: Seq[Int],
+                                    name: Option[String],
+                                    provider: Option[IndexProviderDescriptor],
+                                    indexConfig: IndexConfig): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
-    val entityType = if (isNodeIndex) EntityType.NODE else EntityType.RELATIONSHIP
     val descriptor = SchemaDescriptor.fulltext(entityType, entityIds.toArray, propertyKeyIds.toArray)
     val prototype =
       provider.map(p => IndexPrototype.forSchema(descriptor, p)).getOrElse(IndexPrototype.forSchema(descriptor))

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
@@ -167,14 +168,14 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     inner.getOrCreatePropertyKeyIds(propertyKeys)
   }
 
-  override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    singleDbHit(inner.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
+  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
+    singleDbHit(inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
-  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor =
-    singleDbHit(inner.addLookupIndexRule(isNodeIndex, name))
+  override def addLookupIndexRule(entityType: EntityType, name: Option[String]): IndexDescriptor =
+    singleDbHit(inner.addLookupIndexRule(entityType, name))
 
-  override def addFulltextIndexRule(entityIds: List[Int], isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
-    singleDbHit(inner.addFulltextIndexRule(entityIds, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
+  override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
+    singleDbHit(inner.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, provider, indexConfig))
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
@@ -189,11 +190,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     singleDbHit(inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.btreeIndexReference(entityId, isNodeIndex, properties:_*))
+  override def btreeIndexReference(entityId: Int, entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.btreeIndexReference(entityId, entityType, properties:_*))
 
-  override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = singleDbHit(inner.lookupIndexReference(isNodeIndex))
+  override def lookupIndexReference(entityType: EntityType): IndexDescriptor = singleDbHit(inner.lookupIndexReference(entityType))
 
-  override def fulltextIndexReference(entityIds: List[Int], isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.fulltextIndexReference(entityIds, isNodeIndex, properties:_*))
+  override def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor = singleDbHit(inner.fulltextIndexReference(entityIds, entityType, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

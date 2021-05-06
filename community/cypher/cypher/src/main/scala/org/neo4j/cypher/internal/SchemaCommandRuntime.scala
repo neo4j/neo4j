@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -168,17 +169,17 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     case CreateBtreeIndex(source, entityName, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
         val CreateBtreeIndexOptions(indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("btree index").convert(options, params)
-        val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
+        val (entityId, entityType) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
+        ctx.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
     // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
     // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
-    case CreateLookupIndex(source, isNodeIndex, name) => context =>
+    case CreateLookupIndex(source, entityType, name) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, _) => {
-        ctx.addLookupIndexRule(isNodeIndex, name)
+        ctx.addLookupIndexRule(entityType, name)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
@@ -187,9 +188,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     case CreateFulltextIndex(source, entityNames, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
         val CreateFulltextIndexOptions(indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter.convert(options, params)
-        val (entityIds, isNodeIndex) = getMultipleEntityInfo(entityNames, ctx)
+        val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addFulltextIndexRule(entityIds, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
+        ctx.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
@@ -213,9 +214,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, name) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
-        val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
+        val (entityId, entityType) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-        if (Try(ctx.btreeIndexReference(entityId, isNodeIndex, propertyKeyIds: _*).getName).isSuccess) {
+        if (Try(ctx.btreeIndexReference(entityId, entityType, propertyKeyIds: _*).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
           IgnoredResult
@@ -224,9 +225,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
-    case DoNothingIfExistsForLookupIndex(isNodeIndex, name) => _ =>
+    case DoNothingIfExistsForLookupIndex(entityType, name) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
-        if (Try(ctx.lookupIndexReference(isNodeIndex).getName).isSuccess) {
+        if (Try(ctx.lookupIndexReference(entityType).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
           IgnoredResult
@@ -237,9 +238,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, name) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
-        val (entityIds, isNodeIndex) = getMultipleEntityInfo(entityNames, ctx)
+        val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-        if (Try(ctx.fulltextIndexReference(entityIds, isNodeIndex, propertyKeyIds: _*).getName).isSuccess) {
+        if (Try(ctx.fulltextIndexReference(entityIds, entityType, propertyKeyIds: _*).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
           IgnoredResult
@@ -263,15 +264,15 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   private def getEntityInfo(entityName: Either[LabelName, RelTypeName], ctx: QueryContext) = entityName match {
-    // returns (entityId, isNodeEntity)
-    case Left(label)    => (ctx.getOrCreateLabelId(label.name), true)
-    case Right(relType) => (ctx.getOrCreateRelTypeId(relType.name), false)
+    // returns (entityId, EntityType)
+    case Left(label)    => (ctx.getOrCreateLabelId(label.name), EntityType.NODE)
+    case Right(relType) => (ctx.getOrCreateRelTypeId(relType.name), EntityType.RELATIONSHIP)
   }
 
   private def getMultipleEntityInfo(entityName: Either[List[LabelName], List[RelTypeName]], ctx: QueryContext) = entityName match {
-    // returns (entityIds, isNodeEntity)
-    case Left(labels)    => (labels.map(label => ctx.getOrCreateLabelId(label.name)), true)
-    case Right(relTypes) => (relTypes.map(relType => ctx.getOrCreateRelTypeId(relType.name)), false)
+    // returns (entityIds, EntityType)
+    case Left(labels)    => (labels.map(label => ctx.getOrCreateLabelId(label.name)), EntityType.NODE)
+    case Right(relTypes) => (relTypes.map(relType => ctx.getOrCreateRelTypeId(relType.name)), EntityType.RELATIONSHIP)
   }
 
   def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)

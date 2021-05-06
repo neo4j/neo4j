@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
@@ -60,7 +61,7 @@ case class CreateBtreeIndex(source: Option[DoNothingIfExistsForBtreeIndex], enti
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateLookupIndex(source: Option[DoNothingIfExistsForLookupIndex], isNodeIndex: Boolean, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateLookupIndex(source: Option[DoNothingIfExistsForLookupIndex], entityType: EntityType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 
@@ -72,7 +73,7 @@ case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForBtreeIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-case class DoNothingIfExistsForLookupIndex(isNodeIndex: Boolean, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForLookupIndex(entityType: EntityType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForFulltextIndex(entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForConstraint(entity: String, entityName: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 

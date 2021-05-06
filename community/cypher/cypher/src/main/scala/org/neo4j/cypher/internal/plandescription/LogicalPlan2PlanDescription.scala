@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.ShowProceduresClause.ExecutableBy
 import org.neo4j.cypher.internal.expressions
@@ -378,8 +379,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForLookupIndex(isNodeIndex, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(lookupIndexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+      case DoNothingIfExistsForLookupIndex(entityType, nameOption) =>
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(lookupIndexInfo(nameOption, entityType))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
@@ -387,8 +388,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
-      case CreateLookupIndex(_, isNodeIndex, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(lookupIndexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+      case CreateLookupIndex(_, entityType, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(lookupIndexInfo(nameOption, entityType))), variables, withRawCardinalities)
 
       case CreateFulltextIndex(_, entityNames, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, options))), variables, withRawCardinalities)
@@ -1198,13 +1199,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     pretty"FULLTEXT INDEX$name FOR $pattern ON EACH $propertyString${prettyOptions(options)}"
   }
 
-  private def lookupIndexInfo(nameOption: Option[String], isNodeIndex: Boolean): PrettyString = {
+  private def lookupIndexInfo(nameOption: Option[String], entityType: EntityType): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
     }
-    val (pattern, function) = if (isNodeIndex) (pretty"(n)", pretty"${asPrettyString.raw(Labels.name)}(n)")
-                              else (pretty"()-[r]-()", pretty"${asPrettyString.raw(Type.name)}(r)")
+    val (pattern, function) = entityType match {
+      case EntityType.NODE         => (pretty"(n)", pretty"${asPrettyString.raw(Labels.name)}(n)")
+      case EntityType.RELATIONSHIP => (pretty"()-[r]-()", pretty"${asPrettyString.raw(Type.name)}(r)")
+    }
     pretty"LOOKUP INDEX$name FOR $pattern ON EACH $function"
   }
 

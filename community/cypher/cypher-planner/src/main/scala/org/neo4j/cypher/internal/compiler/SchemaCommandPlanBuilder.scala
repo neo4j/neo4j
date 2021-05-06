@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
@@ -164,11 +165,12 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
       case CreateLookupIndex(_, isNodeIndex, _, name, ifExistsDo, _, _) =>
+        val entityType = if (isNodeIndex) EntityType.NODE else EntityType.RELATIONSHIP
         val source = ifExistsDo match {
-          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForLookupIndex(isNodeIndex, name))
+          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForLookupIndex(entityType, name))
           case _ => None
         }
-        Some(plans.CreateLookupIndex(source, isNodeIndex, name))
+        Some(plans.CreateLookupIndex(source, entityType, name))
 
       // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR (n[:LABEL[|...]]) ON EACH (n.prop[, ...]) [OPTIONS {...}]
       case CreateFulltextNodeIndex(_, labels, props, name, ifExistsDo, options, _) =>

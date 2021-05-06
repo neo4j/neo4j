@@ -26,6 +26,7 @@ import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
@@ -66,10 +67,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(true), any(), any(), any(), any()))
+  when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.NODE), any(), any(), any(), any()))
     .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1))
 
-  when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(false), any(), any(), any(), any()))
+  when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.RELATIONSHIP), any(), any(), any(), any()))
     .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forRelType(1, 2)).withName("index_1").materialise(1))
 
   var context: UpdateCountingQueryContext = _
@@ -193,25 +194,25 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("add_index for node") {
-    context.addBtreeIndexRule(0, isNodeIndex = true, Array(1), None, None, IndexConfig.empty)
+    context.addBtreeIndexRule(0, EntityType.NODE, Array(1), None, None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("add_index for node with name") {
-    context.addBtreeIndexRule(0, isNodeIndex = true, Array(1), Some("name"), None, IndexConfig.empty)
+    context.addBtreeIndexRule(0, EntityType.NODE, Array(1), Some("name"), None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("add_index for relationship") {
-    context.addBtreeIndexRule(0, isNodeIndex = false, Array(1), None, None, IndexConfig.empty)
+    context.addBtreeIndexRule(0, EntityType.RELATIONSHIP, Array(1), None, None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("add_index for relationship with name") {
-    context.addBtreeIndexRule(0, isNodeIndex = false, Array(1), Some("name"), None, IndexConfig.empty)
+    context.addBtreeIndexRule(0, EntityType.RELATIONSHIP, Array(1), Some("name"), None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }

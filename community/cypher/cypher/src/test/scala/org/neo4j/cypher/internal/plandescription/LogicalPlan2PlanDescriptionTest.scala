@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
@@ -693,18 +694,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // LOOKUP
 
-    assertGood(attach(CreateLookupIndex(None, isNodeIndex = true, Some("$indexName")), 63.2),
+    assertGood(attach(CreateLookupIndex(None, EntityType.NODE, Some("$indexName")), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("LOOKUP INDEX `$indexName` FOR (n) ON EACH labels(n)")), Set.empty))
 
-    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(isNodeIndex = true, None)), isNodeIndex = true, None), 63.2),
+    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(EntityType.NODE, None)), EntityType.NODE, None), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("LOOKUP INDEX FOR (n) ON EACH labels(n)")), Set.empty)
       ), Seq(details("LOOKUP INDEX FOR (n) ON EACH labels(n)")), Set.empty))
 
-    assertGood(attach(CreateLookupIndex(None, isNodeIndex = false, Some("$indexName")), 63.2),
+    assertGood(attach(CreateLookupIndex(None, EntityType.RELATIONSHIP, Some("$indexName")), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("LOOKUP INDEX `$indexName` FOR ()-[r]-() ON EACH type(r)")), Set.empty))
 
-    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(isNodeIndex = false, None)), isNodeIndex = false, None), 63.2),
+    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(EntityType.RELATIONSHIP, None)), EntityType.RELATIONSHIP, None), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty)
       ), Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty))
