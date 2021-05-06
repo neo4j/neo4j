@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -103,6 +104,7 @@ public class DynamicIndexStoreViewIT
         scheduler.close();
     }
 
+    @Disabled( "disabled until we have token indexes on by default" )
     @Test
     void shouldHandleConcurrentDeletionOfTokenIndexDuringNodeScan() throws Throwable
     {
@@ -123,6 +125,7 @@ public class DynamicIndexStoreViewIT
         storeScan.stop();
     }
 
+    @Disabled( "disabled until we have token indexes on by default" )
     @Test
     void shouldHandleConcurrentDeletionOfTokenIndexDuringRelationshipScan() throws Throwable
     {
