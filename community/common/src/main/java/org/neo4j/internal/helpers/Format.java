@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.helpers;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.FieldPosition;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -167,6 +170,23 @@ public final class Format
             target.append( target.length() > 0 ? " " : "" ).append( count ).append( unitFormat.apply( unit ) );
         }
         return durationMillis;
+    }
+
+    public static String numberToStringWithGroups( long number )
+    {
+        return numberToStringWithGroups( number, '.' );
+    }
+
+    public static String numberToStringWithGroups( long number, char groupSeparatorChar )
+    {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator( groupSeparatorChar );
+        DecimalFormat df = new DecimalFormat();
+        df.setDecimalFormatSymbols( symbols );
+        df.setGroupingSize( 3 );
+        df.setMaximumFractionDigits( 0 );
+        StringBuffer buffer = df.format( number, new StringBuffer(), new FieldPosition( 0 ) );
+        return buffer.toString();
     }
 
     private Format()
