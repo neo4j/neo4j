@@ -71,6 +71,24 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     `match`.containsLabelOrRelTypePredicate("m", "N") should be(false)
   }
 
+  test("containsLabelOrRelTypePredicate with label in where clause nested in ORs") {
+    // MATCH (n) WHERE n:N OR n.prop = 1
+    val `match` = Match(optional = false,
+      Pattern(Seq(EveryPath(nodePat("n"))))(pos),
+      hints = Seq.empty,
+      Some(Where(
+        ors(
+          hasLabels("n", "N"),
+          propEquality("n", "prop", 1)
+        )
+      )(pos))
+    )(pos)
+    `match`.containsLabelOrRelTypePredicate("n", "N") should be(true)
+    `match`.containsLabelOrRelTypePredicate("n", "M") should be(false)
+    `match`.containsLabelOrRelTypePredicate("m", "M") should be(false)
+    `match`.containsLabelOrRelTypePredicate("m", "N") should be(false)
+  }
+
   test("containsLabelOrRelTypePredicate with rel type in where clause") {
     // MATCH ()-[r]-() WHERE r:R
     val `match` = Match(optional = false,

@@ -194,12 +194,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("report wrong usage of label scan hint") {
-    expectError(
-      "MATCH (n) USING SCAN n:Person WHERE n:Person OR n:Bird RETURN n",
-      "Cannot use label/relationship type scan hint in this context. Label/relationship type scan hints require using a simple label/relationship type test in WHERE (either directly or as part of a top-level AND). Note that the label/relationship type must be specified on a non-optional node/relationship.")
-  }
-
   test("should forbid bound relationship list in shortestPath pattern parts") {
     expectError(
       "WITH [] AS r LIMIT 1 MATCH p = shortestPath((src)-[r*]->(dst)) RETURN src, dst",

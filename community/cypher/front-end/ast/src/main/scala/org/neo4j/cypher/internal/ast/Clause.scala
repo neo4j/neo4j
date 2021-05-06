@@ -347,7 +347,7 @@ case class Match(
         SemanticError(
           """|Cannot use label/relationship type scan hint in this context.
              | Label/relationship type scan hints require using a simple label/relationship type test in WHERE (either directly or as part of a
-             | top-level AND). Note that the label/relationship type must be specified on a non-optional node/relationship.""".stripLinesAndMargins, hint.position)
+             | top-level AND or OR). Note that the label/relationship type must be specified on a non-optional node/relationship.""".stripLinesAndMargins, hint.position)
       case hint@UsingJoinHint(_)
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
@@ -437,7 +437,7 @@ case class Match(
         case HasTypes(Variable(id), predicateRelTypes) if id == variable => {
           case (ls, rs) => SkipChildren((ls, rs ++ predicateRelTypes.map(_.name)))
         }
-        case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] =>
+        case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
           acc => TraverseChildren(acc)
         case _ =>
           acc => SkipChildren(acc)
