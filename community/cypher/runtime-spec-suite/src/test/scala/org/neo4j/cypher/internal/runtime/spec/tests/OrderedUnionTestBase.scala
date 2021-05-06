@@ -913,4 +913,37 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("y").withRows(inOrder(expected))
   }
+
+  test("should nested union of union") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // The PrintingProbes are useful for debugging so they are indeed left here commented out on purpose!
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+    //.prober(new PrintingProbe("x")("UTOP - UNION", name = "utop-union")())
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.filter("false")
+    //.|.prober(new PrintingProbe("x")("UTOP - RHS", name = "utop-rhs")())
+      .|.orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+      .|.|.filter("false")
+    //.|.|.prober(new PrintingProbe("x")("URIGHT - RHS", name = "uright-rhs")())
+      .|.|.allNodeScan("x")
+    //.|.prober(new PrintingProbe("x")("URIGHT - LHS", name = "uright-lhs")())
+      .|.allNodeScan("x")
+    //.prober(new PrintingProbe("x")("UTOP - LHS", name = "utop-lhs")())
+      .orderedUnion(Seq(Ascending("x"))).withLeveragedOrder()
+    //.|.prober(new PrintingProbe("x")("ULEFT - RHS", name = "uleft-rhs")())
+      .|.allNodeScan("x")
+      .filter("false")
+    //.prober(new PrintingProbe("x")("ULEFT - LHS", name = "uleft-lhs")())
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = nodes.map(Array(_))
+    runtimeResult should beColumns("x").withRows(inOrder(expected))
+  }
 }
