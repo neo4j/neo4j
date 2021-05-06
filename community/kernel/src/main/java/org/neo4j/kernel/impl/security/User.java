@@ -37,8 +37,6 @@ public class User
      */
     private final String name;
 
-    private final String id;
-
     /**
      * Authentication credentials used by the built in username/password authentication scheme
      */
@@ -51,10 +49,9 @@ public class User
 
     public static final String PASSWORD_CHANGE_REQUIRED = "password_change_required";
 
-    private User( String name, String id, Credential credential, SortedSet<String> flags )
+    private User( String name, Credential credential, SortedSet<String> flags )
     {
         this.name = name;
-        this.id = id;
         this.credential = credential;
         this.flags = flags;
     }
@@ -62,11 +59,6 @@ public class User
     public String name()
     {
         return name;
-    }
-
-    public String id()
-    {
-        return id;
     }
 
     public Credential credentials()
@@ -115,10 +107,6 @@ public class User
         {
             return false;
         }
-        if ( id != null ? !id.equals( user.id ) : user.id != null )
-        {
-            return false;
-        }
         if ( credential != null ? !credential.equals( user.credential ) : user.credential != null )
         {
             return false;
@@ -140,7 +128,6 @@ public class User
     {
         return "User{" +
                 "name='" + name + '\'' +
-                ", id='" + id + '\'' +
                 ", credentials=" + credential +
                 ", flags=" + flags +
                 '}';
@@ -149,7 +136,6 @@ public class User
     public static class Builder
     {
         private final String name;
-        private String id;
         private Credential credential;
         private final SortedSet<String> flags = new TreeSet<>();
 
@@ -162,7 +148,6 @@ public class User
         public Builder( User base )
         {
             name = base.name;
-            id = base.id;
             credential = base.credential;
             flags.addAll( base.flags );
         }
@@ -198,15 +183,9 @@ public class User
             return this;
         }
 
-        public Builder withId( String id )
-        {
-            this.id = id;
-            return this;
-        }
-
         public User build()
         {
-            return new User( name, id, credential, flags );
+            return new User( name, credential, flags );
         }
     }
 }

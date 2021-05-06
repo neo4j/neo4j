@@ -55,18 +55,4 @@ class UserTest
 
         assertThat( u1 ).isNotEqualTo( u2 );
     }
-
-    @Test
-    void shouldBuildUserWithId()
-    {
-        SystemGraphCredential abc = credentialFor( "123abc" );
-        User u1 = new User.Builder( "Alice", abc ).withId( "id1" ).build();
-        User u2 = new User.Builder( "Alice", abc ).withId( "id2" ).build();
-        User u3 = new User.Builder( "Alice", abc ).build();
-
-        assertThat( u1 ).isEqualTo( u1 );
-        assertThat( u1 ).isNotEqualTo( u2 );
-        assertThat( u1 ).isNotEqualTo( u3 );
-        assertThat( u3 ).isNotEqualTo( u1 );
-    }
 }

@@ -50,8 +50,6 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-import java.util.UUID
-
 trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   protected val followerError = "Administration commands must be executed on the LEADER server."
   protected val secureHasher = new SecureHasher
@@ -207,7 +205,6 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
-    val uuidKey = internalKey("uuid")
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
       case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
@@ -221,19 +218,18 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
-      s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, id: $$`$uuidKey`, credentials: $$`${credentials.key}`,
+      s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, credentials: $$`${credentials.key}`,
          |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`
          |$homeDatabaseCypher })
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameFields.nameKey, uuidKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey) ++ homeDatabaseFields.map(_.nameKey),
+        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey) ++ homeDatabaseFields.map(_.nameKey),
         Array[AnyValue](
           userNameFields.nameValue,
-          Values.utf8Value(UUID.randomUUID().toString),
           credentials.value,
           credentials.bytesValue,
           Values.booleanValue(requirePasswordChange),
-          Values.booleanValue(suspended)
+          Values.booleanValue(suspended),
           ) ++ homeDatabaseFields.map(_.nameValue)
       ),
       QueryHandler
