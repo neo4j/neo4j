@@ -134,7 +134,7 @@ public class FullCheckTokenIndexIT
         verifyInjectedNLIExistAndOnline( database );
 
         // Add a node that doesn't exist to the index.
-        updateNodeLabelIndex( database );
+        updateNodeLabelIndex( database, IndexDescriptor.INJECTED_NLI );
 
         ConsistencySummaryStatistics check = check( database, config );
         assertFalse( check.isConsistent() );
@@ -143,17 +143,65 @@ public class FullCheckTokenIndexIT
         assertThat( check.getInconsistencyCountForRecordType( RecordType.LABEL_SCAN_DOCUMENT ) ).isEqualTo( 1 );
     }
 
-    void updateNodeLabelIndex( GraphDatabaseAPI database ) throws IOException, IndexEntryConflictException
+    @Test
+    void shouldBeConsistentWithCompletePersistedTokenIndex() throws Throwable
+    {
+        config.set( allow_single_automatic_upgrade, true );
+        // Starting an existing database on 4.3 or newer binaries should make the old label scan store
+        // into a token index - and upgrade writes a record for that index in the schema store.
+        GraphDatabaseAPI database = createDatabaseOfOlderVersion();
+        IndexDescriptor persistedNLI = IndexDescriptor.NLI_PROTOTYPE.materialise( 1 );
+        upgradeDatabase( database, persistedNLI );
+
+        ConsistencySummaryStatistics check = check( database, config );
+        assertTrue( check.isConsistent() );
+    }
+
+    @Test
+    void shouldBeInconsistentWithPersistedTokenIndexNotMatchingNodeStore() throws Throwable
+    {
+        config.set( allow_single_automatic_upgrade, true );
+        // Starting an existing database on 4.3 or newer binaries should make the old label scan store
+        // into a token index - and upgrade writes a record for that index in the schema store.
+        GraphDatabaseAPI database = createDatabaseOfOlderVersion();
+        IndexDescriptor persistedNLI = IndexDescriptor.NLI_PROTOTYPE.materialise( 1 );
+        upgradeDatabase( database, persistedNLI );
+
+        // Add a node that doesn't exist to the index.
+        updateNodeLabelIndex( database, persistedNLI );
+
+        ConsistencySummaryStatistics check = check( database, config );
+        assertFalse( check.isConsistent() );
+        assertThat( logStream.toString() ).contains( "refers to a node record that is not in use" );
+        assertThat( check.getTotalInconsistencyCount() ).isEqualTo( 1 );
+        assertThat( check.getInconsistencyCountForRecordType( RecordType.LABEL_SCAN_DOCUMENT ) ).isEqualTo( 1 );
+    }
+
+    void updateNodeLabelIndex( GraphDatabaseAPI database, IndexDescriptor index ) throws IOException, IndexEntryConflictException
     {
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         IndexingService indexingService = dependencyResolver.resolveDependency( IndexingService.class );
         IndexAccessors.IndexAccessorLookup indexAccessorLookup = new LookupAccessorsFromRunningDb( indexingService );
-        IndexAccessor accessor = indexAccessorLookup.apply( IndexDescriptor.INJECTED_NLI );
+        IndexAccessor accessor = indexAccessorLookup.apply( index );
 
         try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL ) )
         {
-            indexUpdater.process( IndexEntryUpdate.change( 100, IndexDescriptor.INJECTED_NLI, new long[0], new long[]{1} ) );
+            indexUpdater.process( IndexEntryUpdate.change( 100, index, new long[0], new long[]{1} ) );
         }
+    }
+
+    private void upgradeDatabase( GraphDatabaseAPI database, IndexDescriptor persistedNLI )
+    {
+        verifyInjectedNLIExistAndOnline( database );
+
+        // Do a write transaction to trigger upgrade
+        try ( Transaction tx = database.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
+        }
+
+        verifyIndexExistAndOnline( database, persistedNLI );
     }
 
     private GraphDatabaseAPI createDatabaseOfOlderVersion() throws IOException
@@ -199,6 +247,11 @@ public class FullCheckTokenIndexIT
 
     private void verifyInjectedNLIExistAndOnline( GraphDatabaseAPI db )
     {
+        verifyIndexExistAndOnline( db, IndexDescriptor.INJECTED_NLI );
+    }
+
+    private void verifyIndexExistAndOnline( GraphDatabaseAPI db, IndexDescriptor index )
+    {
         awaitIndexesOnline( db );
         try ( Transaction tx = db.beginTx() )
         {
@@ -207,7 +260,7 @@ public class FullCheckTokenIndexIT
                     .map( IndexDefinitionImpl::getIndexReference )
                     .collect( Collectors.toList() );
             assertThat( indexes ).hasSize( 1 );
-            assertThat( indexes.get( 0 ) ).isEqualTo( IndexDescriptor.INJECTED_NLI );
+            assertThat( indexes.get( 0 ) ).isEqualTo( index );
         }
     }
 }

@@ -195,6 +195,60 @@ class RecoveryWithTokenIndexesIT
         }
     }
 
+    @Test
+    void recoverDatabaseWithPersistedTokenIndex() throws Throwable
+    {
+        // Starting an existing database on 4.3 or newer binaries should make the old label scan store
+        // into a token index - but there is no schema rule for it in store until after upgrade transaction has been run
+        // (there is just an injected indexRule in the cache).
+        // This tests that recovery on a database with the persisted version of the NLI keeps it through recovery.
+
+        config = Config.newBuilder()
+                .set( allow_single_automatic_upgrade, true )
+                .set( allow_upgrade, true )
+                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ).build();
+
+        // Database with 10 nodes with label 'label' and 10 relationships with type 'type'.
+        int numberOfEntities = 10;
+        GraphDatabaseService database = createDatabaseOfOlderVersion( "4-2-data-10-nodes-rels.zip" );
+        DatabaseLayout layout = ((GraphDatabaseAPI) database).databaseLayout();
+
+        verifyInjectedNLIExistAndOnline( database );
+
+        // Do a write transaction to trigger upgrade transaction.
+        try ( Transaction tx = database.beginTx() )
+        {
+            tx.createNode();
+            tx.commit();
+        }
+
+        // Injected index should now have been turned into a real one.
+        IndexDescriptor persistedNLI = IndexDescriptor.NLI_PROTOTYPE.materialise( 1 );
+        verifyIndexExistAndOnline( database, persistedNLI );
+
+        managementService.shutdown();
+        // Remove check point from shutdown, store upgrade, and shutdown done when creating the 4.2 store.
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( layout, fileSystem );
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( layout, fileSystem );
+        RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile( layout, fileSystem );
+
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            recoverDatabaseOfOlderVersion( layout, pageCache );
+        }
+
+        GraphDatabaseService recoveredDatabase = startDatabaseOfOlderVersion();
+
+        // Verify that the persisted version of the NLI still exist
+        verifyIndexExistAndOnline( recoveredDatabase, persistedNLI );
+
+        try ( Transaction tx = recoveredDatabase.beginTx() )
+        {
+            assertEquals( numberOfEntities, tx.findNodes( label ).stream().count() );
+            assertEquals( numberOfEntities, tx.findRelationships( type ).stream().count() );
+        }
+    }
+
     private static void checkPoint( GraphDatabaseService db ) throws IOException
     {
         ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class )
@@ -210,17 +264,22 @@ class RecoveryWithTokenIndexesIT
         }
     }
 
-    private void verifyInjectedNLIExistAndOnline( GraphDatabaseService recoveredDatabase )
+    private void verifyInjectedNLIExistAndOnline( GraphDatabaseService db )
     {
-        awaitIndexesOnline( recoveredDatabase );
-        try ( Transaction tx = recoveredDatabase.beginTx() )
+        verifyIndexExistAndOnline( db, IndexDescriptor.INJECTED_NLI );
+    }
+
+    private void verifyIndexExistAndOnline( GraphDatabaseService db, IndexDescriptor index )
+    {
+        awaitIndexesOnline( db );
+        try ( Transaction tx = db.beginTx() )
         {
             var indexes = StreamSupport.stream( tx.schema().getIndexes().spliterator(), false )
                     .map( IndexDefinitionImpl.class::cast )
                     .map( IndexDefinitionImpl::getIndexReference )
                     .collect( Collectors.toList() );
             assertThat( indexes ).hasSize( 1 );
-            assertThat( indexes.get( 0 ) ).isEqualTo( IndexDescriptor.INJECTED_NLI );
+            assertThat( indexes.get( 0 ) ).isEqualTo( index );
         }
     }
 
