@@ -66,6 +66,7 @@ import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -195,7 +196,7 @@ class OperationsTest
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
                  transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
-                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE );
+                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
         operations.initialize( NULL );
 
         this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext );
@@ -1045,7 +1046,7 @@ class OperationsTest
         when( sctx.mode() ).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
 
         // when
         operations.nodeCreate();
@@ -1074,7 +1075,7 @@ class OperationsTest
         when( sctx.mode()).thenReturn( AccessMode.Static.FULL );
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE );
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
         operations.initialize( NULL );
 
         // when
@@ -1106,7 +1107,7 @@ class OperationsTest
                                                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
                                                 mock( ConstraintIndexCreator.class ),
                                                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(),
-                                                INSTANCE );
+                                                INSTANCE, () -> KernelVersion.LATEST );
 
         // when
         operations.relationshipCreate( 0, 1, 2 );
@@ -1135,7 +1136,7 @@ class OperationsTest
         when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE );
+                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
 
         // when
         operations.indexCreate( IndexPrototype.forSchema( schema ).withName( "name" ) );

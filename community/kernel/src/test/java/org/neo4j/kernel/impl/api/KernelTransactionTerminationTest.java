@@ -37,6 +37,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -304,7 +305,7 @@ class KernelTransactionTerminationTest
                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ),
                    mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
                    LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                   TransactionExecutionMonitor.NO_OP );
+                   TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST );
 
             this.monitor = monitor;
         }

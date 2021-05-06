@@ -114,6 +114,7 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -230,7 +231,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
-            DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor )
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor,
+            KernelVersionRepository kernelVersionRepository )
     {
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
@@ -272,7 +274,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         constraintIndexCreator,
                         constraintSemantics,
                         indexingService,
-                        config, memoryTracker );
+                        config, memoryTracker,
+                        kernelVersionRepository );
         traceProvider = getTraceProvider( config );
         transactionHeapBytesLimit = config.get( memory_transaction_max_size );
         registerConfigChangeListeners( config );
@@ -1393,5 +1396,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             return SCHEMA;
         }
+    }
+
+    public KernelVersion getKernelVersion()
+    {
+        return kernelVersionRepository.kernelVersion();
     }
 }

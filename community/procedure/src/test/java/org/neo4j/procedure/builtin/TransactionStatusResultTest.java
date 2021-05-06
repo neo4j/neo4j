@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -285,8 +286,7 @@ class TransactionStatusResultTest
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ),
                     mock( IndexStatisticsStore.class ), dependencies,
                     new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                    TransactionExecutionMonitor.NO_OP
-                                                                                               )
+                    TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST )
             {
                 @Override
                 public Statistics getStatistics()

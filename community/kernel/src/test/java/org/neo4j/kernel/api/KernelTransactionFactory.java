@@ -28,6 +28,7 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -98,7 +99,7 @@ public final class KernelTransactionFactory
                                                      mock( IndexingService.class ), mock( LabelScanStore.class ),
                                                      mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
                                                      LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                                                     TransactionExecutionMonitor.NO_OP );
+                                                     TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST );
 
         transaction.initialize( 0, 0, new NoOpClient(), KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );

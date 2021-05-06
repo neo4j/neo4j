@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -697,7 +698,8 @@ class KernelTransactionsTest
     {
         return new KernelTransactions( config, locks, null,
                 commitProcess, mock( DatabaseTransactionEventListeners.class ),
-                mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore, clock,
+                mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore,
+                () -> KernelVersion.LATEST, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
@@ -767,7 +769,7 @@ class KernelTransactionsTest
         {
             super( Config.defaults(), locks, constraintIndexCreator,
                    transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
-                   storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                   storageEngine, globalProcedures, transactionIdStore, () -> KernelVersion.LATEST, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                    accessCapabilityFactory,
                    versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ),

@@ -108,6 +108,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -156,6 +157,7 @@ public class Operations implements Write, SchemaWrite
     private final boolean additionLockVerification;
     private final boolean relationshipPropertyIndexesEnabled;
     private final boolean usingTokenIndexes;
+    private final KernelVersionRepository kernelVersionRepository;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -165,7 +167,7 @@ public class Operations implements Write, SchemaWrite
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
             ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, KernelVersionRepository kernelVersionRepository )
     {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
@@ -179,6 +181,7 @@ public class Operations implements Write, SchemaWrite
         this.indexProviders = indexProviders;
         this.config = config;
         this.memoryTracker = memoryTracker;
+        this.kernelVersionRepository = kernelVersionRepository;
         additionLockVerification = config.get( additional_lock_verification );
         relationshipPropertyIndexesEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes );
         usingTokenIndexes = allStoreHolder.scanStoreAsTokenIndexEnabled();

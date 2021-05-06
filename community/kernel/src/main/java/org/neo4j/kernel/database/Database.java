@@ -166,6 +166,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -479,6 +480,7 @@ public class Database extends LifecycleAdapter
                     databaseSchemaState,
                     labelScanStore,
                     storageEngine,
+                    metadataProvider,
                     metadataProvider,
                     databaseAvailabilityGuard,
                     clock,
@@ -796,6 +798,7 @@ public class Database extends LifecycleAdapter
     private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, TransactionIdStore transactionIdStore,
+            KernelVersionRepository kernelVersionRepository,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore,
             LeaseService leaseService )
@@ -817,7 +820,8 @@ public class Database extends LifecycleAdapter
                 new KernelTransactions( databaseConfig, locks, constraintIndexCreator,
                                         transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
                                         databaseAvailabilityGuard,
-                                        storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
+                                        storageEngine, globalProcedures, transactionIdStore, kernelVersionRepository,
+                                        clock, cpuClockRef,
                                         accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
                                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
                                         indexStatisticsStore, databaseDependencies,

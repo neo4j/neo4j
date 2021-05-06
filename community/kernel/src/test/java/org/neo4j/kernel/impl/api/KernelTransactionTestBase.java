@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -192,7 +193,7 @@ class KernelTransactionTestBase
                                                     mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool,
                                                     new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
-                                                    TransactionExecutionMonitor.NO_OP );
+                                                    TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST );
     }
 
     KernelTransactionImplementation newNotInitializedTransaction( LeaseService leaseService )
