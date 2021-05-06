@@ -86,6 +86,42 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
     ))
   }
 
+  test("Should group inside an Ands") {
+    groupInequalityPredicates(Seq(
+      pred(equals(n_prop1, literalInt(1))),
+      pred(ors(ands(
+          lessThan(m_prop1, literalInt(3)),
+          greaterThan(m_prop1, literalInt(4)),
+          equals(m_prop2, literalInt(2))
+      ))),
+      pred(greaterThanOrEqual(m_prop2, literalInt(5)))
+    )).toSet should equal(Set(
+      pred(equals(n_prop1, literalInt(1))),
+      pred(ors(ands(
+        anded(m_prop1, lessThan(m_prop1, literalInt(3)), greaterThan(m_prop1, literalInt(4))).expr,
+        equals(m_prop2, literalInt(2)),
+      ))),
+      anded(m_prop2, greaterThanOrEqual(m_prop2, literalInt(5)))
+    ))
+  }
+
+  test("Should group inside an Ands and squash if only one expression remains") {
+    groupInequalityPredicates(Seq(
+      pred(equals(n_prop1, literalInt(1))),
+      pred(ors(ands(
+          lessThan(m_prop1, literalInt(3)),
+          greaterThan(m_prop1, literalInt(4)))
+      )),
+      pred(greaterThanOrEqual(m_prop2, literalInt(5)))
+    )).toSet should equal(Set(
+      pred(equals(n_prop1, literalInt(1))),
+      pred(ors(
+        anded(m_prop1, lessThan(m_prop1, literalInt(3)), greaterThan(m_prop1, literalInt(4))).expr
+      )),
+      anded(m_prop2, greaterThanOrEqual(m_prop2, literalInt(5)))
+    ))
+  }
+
   private def pred(expr: Expression) =
     Predicate(expr.dependencies.map { ident => ident.name }, expr)
 
