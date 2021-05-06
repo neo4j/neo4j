@@ -198,12 +198,22 @@ class QueryExecutionLocksIT
 
         LockOperationListener lockOperationListener = new OnceSchemaFlushListener();
         List<LookupLockOperationRecord> lookupLockOperationRecords = traceLookupQueryLocks( query, lockOperationListener );
-        assertThat( lookupLockOperationRecords ).as( "Observed list of lookup lock operations is: " + lookupLockOperationRecords ).hasSize( 1 );
+        assertThat( lookupLockOperationRecords ).as( "Observed list of lookup lock operations is: " + lookupLockOperationRecords ).hasSize( 3 );
 
         LookupLockOperationRecord operationRecord = lookupLockOperationRecords.get( 0 );
         assertTrue( operationRecord.acquisition );
         assertFalse( operationRecord.exclusive );
         assertEquals( EntityType.NODE, operationRecord.entityType );
+
+        LookupLockOperationRecord operationRecord1 = lookupLockOperationRecords.get( 1 );
+        assertFalse( operationRecord1.acquisition );
+        assertFalse( operationRecord1.exclusive );
+        assertEquals( EntityType.NODE, operationRecord1.entityType );
+
+        LookupLockOperationRecord operationRecord2 = lookupLockOperationRecords.get( 2 );
+        assertTrue( operationRecord2.acquisition );
+        assertFalse( operationRecord2.exclusive );
+        assertEquals( EntityType.NODE, operationRecord2.entityType );
     }
 
     private void createIndex( Label label, String propertyKey )
