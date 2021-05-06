@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -118,6 +119,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
@@ -297,16 +299,18 @@ object ClauseConverters {
   }
 
   /**
-   * Selections can induce an interesting order if there are label disjunctions.
+   * Selections can induce an interesting order if there are label/relType disjunctions.
    */
   private def interestingOrderCandidatesForSelections(selections: Selections): Seq[InterestingOrderCandidate] = {
-    def variableIfAllEqualHasLabels(expressions: Seq[Expression]): Option[Expression] = {
+    def variableIfAllEqualHasLabelsOrRelTypes(expressions: Seq[Expression]): Option[Expression] = {
       expressions.headOption
         .collect {
           case HasLabels(variable, _) => variable
+          case HasTypes(variable, _) => variable
         }
         .filter(variable => expressions.tail.forall {
           case HasLabels(`variable`, _) => true
+          case HasTypes(`variable`, _) => true
           case _ => false
         })
     }
@@ -314,11 +318,23 @@ object ClauseConverters {
     selections.predicates.toSeq.collect {
       case Predicate(_, Ors(expressions)) =>
         for {
-          v <- variableIfAllEqualHasLabels(expressions).toSeq
+          v <- variableIfAllEqualHasLabelsOrRelTypes(expressions).toSeq
           // ASC before DESC because it is slightly cheaper
           indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
         } yield InterestingOrderCandidate(Seq(indexOrder(v)))
     }.flatten
+  }
+
+  /**
+   * Inlined relationship type predicates can induce an interesting order if there are relType disjunctions.
+   */
+  private def interestingOrderCandidatesForPatternRelationships(relationships: Seq[PatternRelationship]): Seq[InterestingOrderCandidate] = {
+    for {
+      rel <- relationships
+      if rel.types.length > 1
+      // ASC before DESC because it is slightly cheaper
+      indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
+    } yield InterestingOrderCandidate(Seq(indexOrder(Variable(rel.name)(InputPosition.NONE))))
   }
 
   private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder =
@@ -441,7 +457,8 @@ object ClauseConverters {
 
     val selections = asSelections(clause.where)
 
-    val interestingOrderCandidates = interestingOrderCandidatesForSelections(selections)
+    val interestingOrderCandidates = interestingOrderCandidatesForSelections(selections) ++
+      interestingOrderCandidatesForPatternRelationships(patternContent.rels)
 
     val withMatch = if (clause.optional) {
       acc.amendQueryGraph { qg => qg.withAddedOptionalMatch(
