@@ -40,6 +40,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -79,6 +80,7 @@ class CommunitySystemDatabaseIT
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .noOpSystemGraphInitializer()
+                .setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = getDatabaseManager( database );
@@ -125,8 +127,12 @@ class CommunitySystemDatabaseIT
     @Test
     void separateTransactionLogsForSystemDatabase() throws IOException
     {
+
         int systemDatabaseTransactions = 100;
         int defaultDatabaseTransactions = 15;
+
+        var systemTxCountBefore = countTransactionInLogicalStore( systemDb );
+        var defaultTxCountBefore = countTransactionInLogicalStore( defaultDb );
 
         for ( int i = 0; i < systemDatabaseTransactions; i++ )
         {
@@ -148,8 +154,11 @@ class CommunitySystemDatabaseIT
             }
         }
 
-        countTransactionInLogicalStore( systemDb, systemDatabaseTransactions * 2 );
-        countTransactionInLogicalStore( defaultDb, defaultDatabaseTransactions * 2);
+        var systemTxCountAfter = countTransactionInLogicalStore( systemDb );
+        var defaultTxCountAfter = countTransactionInLogicalStore( defaultDb );
+
+        assertEquals( systemTxCountAfter - systemTxCountBefore, systemDatabaseTransactions * 2 );
+        assertEquals( defaultTxCountAfter - defaultTxCountBefore, defaultDatabaseTransactions * 2 );
     }
 
     @Test
@@ -224,17 +233,17 @@ class CommunitySystemDatabaseIT
                 NullLogProvider.getInstance(), false );
     }
 
-    private static void countTransactionInLogicalStore( GraphDatabaseFacade facade, int expectedTransactions ) throws IOException
+    private static int countTransactionInLogicalStore( GraphDatabaseFacade facade ) throws IOException
     {
         LogicalTransactionStore transactionStore = facade.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
-        try ( TransactionCursor transactions = transactionStore.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
+        try ( TransactionCursor cursor = transactionStore.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
         {
-            int counter = 0;
-            while ( transactions.next() )
+            var count = 0;
+            while ( cursor.next() )
             {
-                counter++;
+                count++;
             }
-            assertEquals( expectedTransactions, counter );
+            return count;
         }
     }
 
