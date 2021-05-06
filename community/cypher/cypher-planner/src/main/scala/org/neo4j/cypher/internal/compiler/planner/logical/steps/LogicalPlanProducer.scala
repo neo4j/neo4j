@@ -51,7 +51,6 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.MapProjection
-import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -84,7 +83,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -1306,21 +1304,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     plan
   }
 
-  def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression], context: LogicalPlanningContext): LogicalPlan = {
+  def updateSolvedForOr(orPlan: LogicalPlan, solvedQueryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(orPlan.id) match {
       case UnionQuery(part, query, _, _) => query.updateTailOrSelf { that =>
-        /*
-          * We want to report all solved predicates, so we have kept track of what each subplan reports to solve.
-          * There is no need to report the predicates that are inside the OR (exprs),
-          * since we will add the OR itself instead.
-          */
-        val newSelections = Selections.from((predicates -- orPredicate.exprs + orPredicate).toSeq)
         val newHints = part.allHints ++ query.allHints
-
-        that.amendQueryGraph(qg =>
-          qg.withSelections(newSelections)
-            .withHints(newHints)
-        )
+        that.withQueryGraph(solvedQueryGraph.withHints(newHints))
       }
     }
     val cardinality = context.cardinality.apply(solved, context.input, context.semanticTable)

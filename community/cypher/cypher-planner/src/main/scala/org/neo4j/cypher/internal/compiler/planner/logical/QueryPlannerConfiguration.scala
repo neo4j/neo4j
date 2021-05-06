@@ -50,7 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
 
-  private def leafPlanFromExpressions(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
+  private def leafPlannersUsedInOrLeafPlanner(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
     idSeekLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
@@ -72,21 +72,22 @@ object QueryPlannerConfiguration {
 
     // MATCH (n:Person) RETURN n
     labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+
+    //MATCH ()-[r:R]->()
+    relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
   )
 
   private def allLeafPlanners(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = {
-    val expressionLeafPlanners = leafPlanFromExpressions(restrictions)
-    expressionLeafPlanners ++ IndexedSeq(
+    val innerOrLeafPlanners = leafPlannersUsedInOrLeafPlanner(restrictions)
+    innerOrLeafPlanners ++ IndexedSeq(
       argumentLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
       // MATCH (n) RETURN n
       allNodesLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
-      //MATCH ()-[r:R]->()
-     relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
-
       // Handles OR between other leaf planners
-      OrLeafPlanner(expressionLeafPlanners))
+      OrLeafPlanner(innerOrLeafPlanners)
+    )
   }
 
   /**

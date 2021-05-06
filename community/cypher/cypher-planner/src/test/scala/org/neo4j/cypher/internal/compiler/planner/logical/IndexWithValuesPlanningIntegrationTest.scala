@@ -150,14 +150,15 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     val seekLabel2Prop2 = nodeIndexSeek("n:Awesome2(prop2 = 3)", _ => GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
 
     val coveringCombinations = Seq(
-      (Seq(seekLabel1Prop1, seekLabel1Prop2), hasLabel2),
-      (Seq(seekLabel2Prop1, seekLabel2Prop2), hasLabel1),
+      (seekLabel1Prop1, hasLabel2),
+      (seekLabel1Prop2, hasLabel2),
+      (seekLabel2Prop1, hasLabel1),
+      (seekLabel2Prop2, hasLabel1),
     )
 
     val planAlternatives = for {
-      (seeks, filter) <- coveringCombinations
-      Seq(seek1, seek2) <- seeks.permutations
-    } yield Selection(Seq(filter), Distinct(Union(seek1, seek2), Map("n" -> varFor("n"))))
+      Seq((seek1, filter1), (seek2, filter2)) <- coveringCombinations.permutations.map(_.take(2)).toSeq
+    } yield Distinct(Union(Selection(Seq(filter1), seek1), Selection(Seq(filter2), seek2)), Map("n" -> varFor("n")))
 
     planAlternatives should contain(unionPlan)
 

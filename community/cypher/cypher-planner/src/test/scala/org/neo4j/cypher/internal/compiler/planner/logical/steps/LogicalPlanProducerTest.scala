@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.functions.Collect
@@ -36,6 +35,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -883,8 +883,6 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val spqLhs = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = qg.hints + hint1 ))
       val spqRhs = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = qg.hints + hint2 ))
 
-      val ors = Ors(Seq(varFor("a"), varFor("b")))(InputPosition.NONE)
-
       solveds.set(lhs.id, spqLhs)
       context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.empty)
 
@@ -893,7 +891,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val p1 = lpp.planUnion(lhs, rhs, List(), context)
       val p2 = lpp.planDistinctForUnion(p1, context)
-      val p3 = lpp.updateSolvedForOr(p2, ors, Set.empty, context)
+      val p3 = lpp.updateSolvedForOr(p2, QueryGraph(), context)
 
       solveds.get(p3.id).allHints shouldBe(Set(hint1, hint2))
       context.planningAttributes.providedOrders.get(p3.id) shouldBe(ProvidedOrder.empty)
