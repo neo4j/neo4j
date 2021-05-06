@@ -29,12 +29,15 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.string.UTF8;
+import org.neo4j.util.Preconditions;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
 
-public abstract class SupportedCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
+public class SupportedCommunitySecurityComponentVersion extends KnownCommunitySecurityComponentVersion
 {
     private final UserRepository userRepository;
     private final SecureHasher secureHasher;
@@ -44,6 +47,14 @@ public abstract class SupportedCommunitySecurityComponentVersion extends KnownCo
         super( componentVersion, log );
         this.userRepository = userRepository;
         this.secureHasher = new SecureHasher();
+    }
+
+    @Override
+    public void upgradeSecurityGraph( Transaction tx, KnownCommunitySecurityComponentVersion latest )
+    {
+        Preconditions.checkState( latest.version == LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION,
+                format("Latest version should be %s but was %s", LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION, latest.version ));
+        this.setVersionProperty( tx, latest.version );
     }
 
     @Override

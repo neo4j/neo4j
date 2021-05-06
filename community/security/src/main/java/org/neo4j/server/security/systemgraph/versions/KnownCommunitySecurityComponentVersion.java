@@ -98,12 +98,8 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         }
     }
 
-    /**
-     * Upgrade the security graph to this version.
-     * This method recursively calls older versions and performs the upgrades in steps.
-     *
-     * @param tx open transaction to perform the upgrade in
-     * @param fromVersion the detected version, upgrade will be performed rolling from this
-     */
-    public abstract void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception;
+    public void upgradeSecurityGraph( Transaction tx, KnownCommunitySecurityComponentVersion latest ) throws Exception
+    {
+        throw unsupported();
+    }
 }

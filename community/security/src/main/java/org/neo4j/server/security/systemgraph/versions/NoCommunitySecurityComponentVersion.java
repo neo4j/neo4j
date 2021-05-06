@@ -42,10 +42,4 @@ public class NoCommunitySecurityComponentVersion extends KnownCommunitySecurityC
     {
         throw unsupported();
     }
-
-    @Override
-    public void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception
-    {
-        throw unsupported();
-    }
 }
