@@ -112,6 +112,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -187,7 +188,9 @@ class RecordStorageMigratorIT
         MigrationProgressMonitor progressMonitor = SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
+        migrator.migrate(
+                databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ),
+                EMPTY );
 
         // WHEN simulating resuming the migration
         migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL, batchImporterFactory, INSTANCE );
@@ -220,7 +223,9 @@ class RecordStorageMigratorIT
                 batchImporterFactory, INSTANCE );
 
         // WHEN migrating
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
+        migrator.migrate(
+                databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ),
+                EMPTY );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN starting the new store should be successful
@@ -273,7 +278,7 @@ class RecordStorageMigratorIT
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
-                versionToMigrateFrom, getVersionToMigrateTo( check ) );
+                versionToMigrateFrom, getVersionToMigrateTo( check ), EMPTY );
 
         // WHEN simulating resuming the migration
 
@@ -306,7 +311,9 @@ class RecordStorageMigratorIT
                 batchImporterFactory, INSTANCE );
 
         // WHEN migrating
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
+        migrator.migrate(
+                databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ),
+                EMPTY );
 
         // THEN it should compute the correct last tx log position
         assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationLayout ) );
@@ -332,7 +339,9 @@ class RecordStorageMigratorIT
                 batchImporterFactory, INSTANCE );
 
         // when
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
+        migrator.migrate(
+                databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ),
+                EMPTY );
 
         // then
         assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationLayout ) ) );
@@ -426,7 +435,7 @@ class RecordStorageMigratorIT
         // When we migrate it to the new store format.
         String versionToMigrateTo = getVersionToMigrateTo( check );
         ProgressReporter reporter = progressMonitor.startSection( "section" );
-        migrator.migrate( databaseLayout, migrationLayout, reporter, versionToMigrateFrom, versionToMigrateTo );
+        migrator.migrate( databaseLayout, migrationLayout, reporter, versionToMigrateFrom, versionToMigrateTo, EMPTY );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
 
         generatedRules.sort( Comparator.comparingLong( SchemaRule::getId ) );
@@ -468,7 +477,8 @@ class RecordStorageMigratorIT
                         INSTANCE );
 
         // when
-        migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo );
+        migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo,
+                          EMPTY );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
 
         // then
@@ -504,7 +514,8 @@ class RecordStorageMigratorIT
                         INSTANCE );
 
         // when
-        migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo );
+        migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo,
+                          EMPTY );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
 
         // then

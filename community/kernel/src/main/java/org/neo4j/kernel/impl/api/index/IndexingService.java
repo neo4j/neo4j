@@ -148,7 +148,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     public interface Monitor
     {
-        void initialState( IndexDescriptor descriptor, InternalIndexState state );
+        void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state );
 
         void populationCompleteOn( IndexDescriptor descriptor );
 
@@ -168,7 +168,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     public static class MonitorAdapter implements Monitor
     {
         @Override
-        public void initialState( IndexDescriptor descriptor, InternalIndexState state )
+        public void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state )
         {   // Do nothing
         }
 
@@ -290,16 +290,16 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     switch ( initialState )
                     {
                     case ONLINE:
-                        monitor.initialState( descriptor, ONLINE );
+                        monitor.initialState(databaseName, descriptor, ONLINE );
                         indexProxy = indexProxyCreator.createOnlineIndexProxy( descriptor );
                         break;
                     case POPULATING:
                         // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                        monitor.initialState( descriptor, POPULATING );
+                        monitor.initialState( databaseName, descriptor, POPULATING );
                         indexProxy = indexProxyCreator.createRecoveringIndexProxy( descriptor );
                         break;
                     case FAILED:
-                        monitor.initialState( descriptor, FAILED );
+                        monitor.initialState( databaseName, descriptor, FAILED );
                         IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor, cursorContext ) );
                         indexProxy = indexProxyCreator.createFailedIndexProxy( descriptor, failure );
                         break;

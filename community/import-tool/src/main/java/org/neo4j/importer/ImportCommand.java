@@ -312,6 +312,18 @@ public class ImportCommand extends AbstractCommand
             }
 
             @Override
+            public boolean populateRelationshipIndex()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean populateNodeIndex()
+            {
+                return true;
+            }
+
+            @Override
             public boolean allowCacheAllocationOnHeap()
             {
                 return cacheOnHeap;

@@ -34,10 +34,12 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -313,7 +315,9 @@ public class StoreUpgrader
             {
                 ProgressReporter progressReporter = progressMonitor.startSection( participantEntry.getKey() );
                 String versionToMigrateTo = storeVersionCheck.configuredVersion();
-                participantEntry.getValue().migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo );
+                IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
+                participantEntry.getValue().migrate(
+                        directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo, indexImporterFactory );
                 progressReporter.completed();
             }
         }

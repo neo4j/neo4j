@@ -29,6 +29,7 @@ import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
@@ -100,8 +101,8 @@ class HumanUnderstandableExecutionMonitorIT
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             new ParallelBatchImporter( databaseLayout, fileSystem, NULL, configuration, NullLogService.getInstance(), monitor,
-                    EMPTY, defaults(), LATEST_RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, LogFilesInitializer.NULL,
-                    EmptyMemoryTracker.INSTANCE ).doImport( input );
+                    EMPTY, defaults(), LATEST_RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE ).doImport( input );
 
             // then
             progress.assertAllProgressReachedEnd();

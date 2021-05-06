@@ -41,6 +41,7 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -153,11 +154,10 @@ public class StoreUpgraderInterruptionTestIT
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
-                    ProgressReporter progressReporter,
-                    String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException
+                    ProgressReporter progressReporter, String versionToMigrateFrom, String versionToMigrateTo,
+                    IndexImporterFactory indexImporterFactory ) throws IOException, KernelException
             {
-                super.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom,
-                        versionToMigrateTo );
+                super.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo, indexImporterFactory );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };

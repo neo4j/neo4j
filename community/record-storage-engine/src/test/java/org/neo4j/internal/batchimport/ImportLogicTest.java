@@ -76,12 +76,13 @@ class ImportLogicTest
     void closeImporterWithoutDiagnosticState() throws IOException
     {
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
+        IndexImporterFactory factory = mock( IndexImporterFactory.class );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
                 getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, EmptyMemoryTracker.INSTANCE ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 // nothing to run in this import
                 logic.success();
@@ -149,6 +150,7 @@ class ImportLogicTest
     {
         // given
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
+        IndexImporterFactory factory = mock( IndexImporterFactory.class );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, databaseLayout, defaultFormat(), DEFAULT,
                 getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
         {
@@ -160,7 +162,7 @@ class ImportLogicTest
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, EmptyMemoryTracker.INSTANCE ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR, NULL, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 logic.putState( dataStatistics );
                 logic.success();

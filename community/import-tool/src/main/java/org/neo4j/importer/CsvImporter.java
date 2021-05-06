@@ -59,6 +59,7 @@ import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
@@ -184,6 +185,7 @@ class CsvImporter implements Importer
                     jobScheduler,
                     badCollector,
                     TransactionLogInitializer.getLogFilesInitializer(),
+                    new IndexImporterFactoryImpl( databaseConfig ),
                     memoryTracker );
 
             printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, stdOut );

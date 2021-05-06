@@ -19,14 +19,21 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.io.IOException;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-import org.neo4j.internal.batchimport.input.Input;
+import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
 
 /**
- * Imports graph data given as {@link Input}.
+ * Used by the {@link BatchImporter} to get an instance of {@link IndexImporter} to which it can publish index updates.
  */
-public interface BatchImporter
+public interface IndexImporterFactory
 {
-    void doImport( Input input ) throws IOException;
+    IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache, CursorContext cursorContext );
+
+    IndexImporterFactory EMPTY = ( descriptor, layout, fs, pageCache, cursorTracer ) -> EMPTY_IMPORTER;
 }

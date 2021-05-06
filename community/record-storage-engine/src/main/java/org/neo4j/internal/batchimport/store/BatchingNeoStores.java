@@ -550,6 +550,16 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
     }
 
+    public FileSystemAbstraction fileSystem()
+    {
+        return fileSystem;
+    }
+
+    public DatabaseLayout databaseLayout()
+    {
+        return databaseLayout;
+    }
+
     public void success()
     {
         successful = true;

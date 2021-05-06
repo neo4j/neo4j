@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -64,7 +65,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
-            String versionToMigrateFrom, String versionToMigrateTo )
+                         String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
     {
         StoreVersion fromVersion = storageEngineFactory.versionInformation( versionToMigrateFrom );
         StoreVersion toVersion = storageEngineFactory.versionInformation( versionToMigrateTo );

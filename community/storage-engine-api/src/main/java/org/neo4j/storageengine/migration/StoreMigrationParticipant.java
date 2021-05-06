@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 
 public interface StoreMigrationParticipant
@@ -35,7 +36,7 @@ public interface StoreMigrationParticipant
     {
         @Override
         public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-            String versionToMigrateTo )
+            String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
         {
             // nop
         }
@@ -65,17 +66,18 @@ public interface StoreMigrationParticipant
      * @param progress migration progress monitor
      * @param versionToMigrateFrom the version to migrate from
      * @param versionToMigrateTo the version to migrate to
+     * @param indexImporterFactory the factory to create an index updater to keep the indexes updated.
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
     void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress,
-            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException;
+            String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException, KernelException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
      * @param migrationLayout directory where the
-     * {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, String, String) migration} put its files.
+     * {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, String, String, IndexImporterFactory) migration} put its files.
      * @param directoryLayout directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from
      * @param versionToMigrateTo the version we want to migrate to

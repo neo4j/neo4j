@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -243,8 +244,7 @@ class StoreMigratorTest
         // Migrate with two storeversions that have the same FORMAT capabilities
         DatabaseLayout migrationLayout = neo4jLayout.databaseLayout( "migrationDir" );
         fileSystem.mkdirs( migrationLayout.databaseDirectory() );
-        migrator.migrate( dbLayout, migrationLayout, progressReporter,
-                StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
+        migrator.migrate( dbLayout, migrationLayout, progressReporter, StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION, IndexImporterFactory.EMPTY );
 
         // Should not have started any migration
         assertFalse( progressReporter.started );

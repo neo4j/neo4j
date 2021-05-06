@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
@@ -80,7 +81,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-            String versionToMigrateTo ) throws IOException
+                         String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException
     {
         RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );

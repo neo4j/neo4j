@@ -78,6 +78,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
@@ -146,7 +147,7 @@ class CsvInputBatchImportIT
             BatchImporter importer = new ParallelBatchImporter(
                     databaseLayout, fileSystem, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitor.INVISIBLE,
                     EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(),
-                    INSTANCE );
+                    new IndexImporterFactoryImpl( dbConfig ), INSTANCE );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 

@@ -42,6 +42,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -254,7 +255,7 @@ public class StoreUpgraderTest
 
             // THEN
             verify( observingParticipant, Mockito.never() ).migrate( any( DatabaseLayout.class ), any( DatabaseLayout.class ), any( ProgressReporter.class ),
-                    eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
+                    eq( versionToMigrateFrom ), eq( versionToMigrateTo ), eq( IndexImporterFactory.EMPTY ) );
             verify( observingParticipant ).
                     moveMigratedFiles( any( DatabaseLayout.class ), any( DatabaseLayout.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
 
@@ -511,7 +512,7 @@ public class StoreUpgraderTest
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-                String versionToMigrateTo )
+                String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
             {
                 // nop
             }
@@ -652,7 +653,7 @@ public class StoreUpgraderTest
 
         @Override
         public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-                String versionToMigrateTo )
+                             String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
         {
             // empty
         }

@@ -26,38 +26,35 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
 
-public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]>
+public class RelationshipTypeIndexWriterStep extends IndexWriterStep<RelationshipRecord[]>
 {
-    private static final String LABEL_INDEX_WRITE_STEP_TAG = "labelIndexWriteStep";
+
+    private static final String RELATIONSHIP_INDEX_WRITE_STEP_TAG = "relationshipIndexWriteStep";
     private final CursorContext cursorContext;
     private final IndexImporter importer;
-    private final NodeStore nodeStore;
 
-    public LabelIndexWriterStep( StageControl control, Configuration config, Config dbConfig, BatchingNeoStores neoStores,
-                                 IndexImporterFactory indexImporterFactory,
-                                 MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer )
+    public RelationshipTypeIndexWriterStep( StageControl control, Configuration config, Config dbConfig, BatchingNeoStores neoStores,
+                                            IndexImporterFactory indexImporterFactory,
+                                            MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer )
     {
-        super( control, "LABEL INDEX", config, 1, pageCacheTracer );
-        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( LABEL_INDEX_WRITE_STEP_TAG ) );
-        this.importer = indexImporter( dbConfig, indexImporterFactory, neoStores, EntityType.NODE, memoryTracker, cursorContext );
-        this.nodeStore = neoStores.getNodeStore();
+        super( control, "RELATIONSHIP TYPE INDEX", config, 1, pageCacheTracer );
+        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_INDEX_WRITE_STEP_TAG ) );
+        this.importer = indexImporter( dbConfig, indexImporterFactory, neoStores, EntityType.RELATIONSHIP, memoryTracker, cursorContext );
     }
 
     @Override
-    protected void process( NodeRecord[] batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
+    protected void process( RelationshipRecord[] batch, BatchSender sender, CursorContext cursorTracer ) throws Throwable
     {
-        for ( NodeRecord node : batch )
+        for ( RelationshipRecord relationship : batch )
         {
-            if ( node.inUse() )
+            if ( relationship.inUse() )
             {
-                importer.add( node.getId(), get( node, nodeStore, cursorContext ) );
+                importer.add( relationship.getId(), new long[]{relationship.getType()} );
             }
         }
         sender.send( batch );

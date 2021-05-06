@@ -19,14 +19,35 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.internal.batchimport.input.Input;
-
 /**
- * Imports graph data given as {@link Input}.
+ * Used by the {@link BatchImporter} to publish index entries as it imports node & relationship records.
  */
-public interface BatchImporter
+public interface IndexImporter extends Closeable
 {
-    void doImport( Input input ) throws IOException;
+    IndexImporter EMPTY_IMPORTER = new EmptyIndexImporter();
+
+    /**
+     * Called by the batch importer for entity that is imported
+     * @param entity the id of the entity (node id/relationship id)
+     * @param tokens the tokens associated with the entity (labels/relationship types)
+     */
+    void add( long entity, long[] tokens );
+
+    class EmptyIndexImporter implements IndexImporter
+    {
+        @Override
+        public void add( long entity, long[] tokens )
+        {
+
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+
+        }
+    }
 }

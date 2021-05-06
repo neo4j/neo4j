@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -27,6 +28,7 @@ import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
@@ -34,21 +36,22 @@ import org.neo4j.memory.MemoryTracker;
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 /**
- * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
- * previously populated by f.ex {@link NodeCountsStage}.
+ * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache} previously populated by f.ex {@link
+ * NodeCountsStage}.
  */
 public class RelationshipCountsAndTypeIndexBuildStage extends Stage
 {
     public static final String NAME = "Relationship counts and relationship type index build";
 
-    public RelationshipCountsAndTypeIndexBuildStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
-            int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
-            ProgressReporter progressReporter, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+    public RelationshipCountsAndTypeIndexBuildStage( Configuration config, Config dbConfig, BatchingNeoStores neoStores, NodeLabelsCache cache,
+            RelationshipStore relationshipStore, int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
+            NumberArrayFactory cacheFactory, ProgressReporter progressReporter, IndexImporterFactory indexImporterFactory,
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
-        add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ),
-                relationshipStore.getRecordSize() ) );
+        add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ), relationshipStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, pageCacheTracer ) );
+        add( new RelationshipTypeIndexWriterStep( control(), config, dbConfig,neoStores,  indexImporterFactory, memoryTracker, pageCacheTracer ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
                 highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, memoryTracker ) );
     }

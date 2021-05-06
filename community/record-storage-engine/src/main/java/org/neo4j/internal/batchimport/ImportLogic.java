@@ -26,17 +26,14 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -54,11 +51,6 @@ import org.neo4j.internal.batchimport.staging.ExecutionSupervisors;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.counts.CountsBuilder;
-import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -76,19 +68,11 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.auto;
 import static org.neo4j.internal.helpers.Format.duration;
-import static org.neo4j.internal.helpers.collection.Iterators.stream;
-import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAccess;
-import static org.neo4j.internal.schema.IndexType.LOOKUP;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.IOUtils.closeAll;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 /**
  * Contains all algorithms and logic for doing an import. It exposes all stages as methods so that
@@ -157,6 +141,7 @@ public class ImportLogic implements Closeable
     private final Config dbConfig;
     private final Log log;
     private final PageCacheTracer pageCacheTracer;
+    private final IndexImporterFactory indexImporterFactory;
     private final MemoryTracker memoryTracker;
     private final ExecutionMonitor executionMonitor;
     private final RecordFormats recordFormats;
@@ -192,10 +177,12 @@ public class ImportLogic implements Closeable
      * @param recordFormats which {@link RecordFormats record format} to use for the created db.
      * @param badCollector {@link Collector} for bad entries.
      * @param monitor {@link Monitor} for some events.
+     * @param indexImporterFactory
      */
     public ImportLogic( DatabaseLayout databaseLayout, BatchingNeoStores neoStore, Configuration config, Config dbConfig, LogService logService,
             ExecutionMonitor executionMonitor, RecordFormats recordFormats, Collector badCollector, Monitor monitor,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            PageCacheTracer pageCacheTracer, IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker )
     {
         this.databaseDirectory = databaseLayout.databaseDirectory();
         this.databaseName = databaseLayout.getDatabaseName();
@@ -207,6 +194,7 @@ public class ImportLogic implements Closeable
         this.monitor = monitor;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.pageCacheTracer = pageCacheTracer;
+        this.indexImporterFactory = indexImporterFactory;
         this.memoryTracker = memoryTracker;
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment( executionMonitor, config );
         this.maxMemory = config.maxMemoryUsage();
@@ -536,14 +524,15 @@ public class ImportLogic implements Closeable
                     nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getNodeStore().getHighId(), neoStore.getLabelRepository().getHighId(),
                             memoryTracker );
                     MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
-                    executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+                    executeStage( new NodeCountsAndLabelIndexBuildStage( config, dbConfig, neoStore, nodeLabelsCache, neoStore.getNodeStore(),
                             neoStore.getLabelRepository().getHighId(),
-                            updater, progressMonitor.startSection( "Nodes" ), neoStore.getLabelScanStore(), pageCacheTracer, memoryUsageStats ) );
+                            updater, progressMonitor.startSection( "Nodes" ),
+                            indexImporterFactory, pageCacheTracer, memoryTracker, memoryUsageStats ) );
                     // Count label-[type]->label
-                    executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
+                    executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, dbConfig, neoStore, nodeLabelsCache, neoStore.getRelationshipStore(),
                             neoStore.getLabelRepository().getHighId(),
                             neoStore.getRelationshipTypeRepository().getHighId(), updater, numberArrayFactory,
-                            progressMonitor.startSection( "Relationships" ), pageCacheTracer, memoryTracker ) );
+                            progressMonitor.startSection( "Relationships" ),indexImporterFactory, pageCacheTracer, memoryTracker ) );
                 }
 
                 @Override
@@ -553,42 +542,6 @@ public class ImportLogic implements Closeable
                 }
             }, pageCacheTracer, cursorContext, memoryTracker );
         }
-    }
-
-    public void createTokenIndexes() throws IOException
-    {
-        if ( dbConfig.get( enable_scan_stores_as_token_indexes ) )
-        {
-            SchemaRuleAccess schemaRuleAccess = getSchemaRuleAccess( neoStore.getNeoStores().getSchemaStore(), neoStore.getTokenHolders(),
-                    neoStore.getNeoStores().getMetaDataStore(), true );
-            if ( !hasTokenIndexes( schemaRuleAccess ) )
-            {
-                try
-                {
-                    schemaRuleAccess.writeSchemaRule( indexSchemaRule( NODE ), NULL, memoryTracker );
-                    schemaRuleAccess.writeSchemaRule( indexSchemaRule( RELATIONSHIP ), NULL, memoryTracker );
-                }
-                catch ( KernelException e )
-                {
-                    throw new RuntimeException( "Error preparing indexes", e );
-                }
-            }
-        }
-    }
-
-    private boolean hasTokenIndexes( SchemaRuleAccess schemaRuleAccess )
-    {
-        Iterator<IndexDescriptor> descriptors = schemaRuleAccess.indexesGetAll( NULL );
-        return stream( descriptors ) .map( descriptor -> descriptor.schema().entityType() ) .anyMatch( type -> type == NODE || type == RELATIONSHIP );
-    }
-
-    private IndexDescriptor indexSchemaRule( EntityType entityType )
-    {
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "token-lookup", "1.0" );
-        IndexPrototype prototype = IndexPrototype.forSchema(
-                forAnyEntityTokens( entityType ) ).withIndexType( LOOKUP ).withIndexProvider( providerDescriptor );
-        prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{}, new String[]{} ) );
-        return prototype.materialise( neoStore.getNeoStores().getSchemaStore().nextId( NULL ) );
     }
 
     public void success()

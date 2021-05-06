@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.GeneratingInputIterator;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.RandomsStates;
@@ -60,6 +61,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
@@ -302,10 +304,11 @@ class MultipleIndexPopulationStressIT
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             DatabaseLayout layout = Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
+            IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE, EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
-                    TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
+                    TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE );
             importer.doImport( input );
         }
     }

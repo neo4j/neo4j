@@ -49,7 +49,8 @@ public abstract class BatchImporterFactory implements NamedService
     public abstract BatchImporter instantiate( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
-            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer, MemoryTracker memoryTracker );
+            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker );
 
     public static BatchImporterFactory withHighestPriority()
     {

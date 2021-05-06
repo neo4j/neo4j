@@ -196,7 +196,6 @@ class ImportCommandTest
 
         // THEN
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
-        assertThat( databaseLayout.relationshipTypeScanStore().toFile().exists() ).isFalse();
         assertTokenIndexesCreated();
     }
 

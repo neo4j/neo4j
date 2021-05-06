@@ -61,12 +61,14 @@ public class ParallelBatchImporter implements BatchImporter
     private final JobScheduler jobScheduler;
     private final Collector badCollector;
     private final LogFilesInitializer logFilesInitializer;
+    private final IndexImporterFactory indexImporterFactory;
     private final MemoryTracker memoryTracker;
 
     public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
-            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer, MemoryTracker memoryTracker )
+            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
+            IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker )
     {
         this.databaseLayout = databaseLayout;
         this.fileSystem = fileSystem;
@@ -81,6 +83,7 @@ public class ParallelBatchImporter implements BatchImporter
         this.jobScheduler = jobScheduler;
         this.badCollector = badCollector;
         this.logFilesInitializer = logFilesInitializer;
+        this.indexImporterFactory = indexImporterFactory;
         this.memoryTracker = memoryTracker;
     }
 
@@ -89,8 +92,9 @@ public class ParallelBatchImporter implements BatchImporter
     {
         try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, pageCacheTracer, recordFormats,
                       config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker );
-              ImportLogic logic = new ImportLogic( databaseLayout, store, config, dbConfig, logService,
-                      executionMonitor, recordFormats, badCollector, monitor, pageCacheTracer, memoryTracker ) )
+              ImportLogic logic = new ImportLogic(
+                      databaseLayout, store, config, dbConfig, logService, executionMonitor, recordFormats, badCollector,
+                      monitor, pageCacheTracer, indexImporterFactory, memoryTracker ) )
         {
             store.createNew();
             logic.initialize( input );
@@ -101,7 +105,6 @@ public class ParallelBatchImporter implements BatchImporter
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
-            logic.createTokenIndexes();
             logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT );
             logic.success();
         }

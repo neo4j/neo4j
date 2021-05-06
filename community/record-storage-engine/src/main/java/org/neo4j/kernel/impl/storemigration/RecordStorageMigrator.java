@@ -43,6 +43,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.internal.batchimport.InputIterable;
@@ -193,7 +194,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
-            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException
+            String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException, KernelException
     {
         // Extract information about the last transaction from legacy neostore
         Path neoStore = directoryLayout.metadataStore();
@@ -237,8 +238,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             if ( !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT ) )
             {
                 // Some form of migration is required (a fallback/catch-all option)
-                migrateWithBatchImporter( directoryLayout, migrationLayout, lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
-                        lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat, requiresDynamicStoreMigration, requiresPropertyMigration );
+                migrateWithBatchImporter(
+                        directoryLayout, migrationLayout, lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
+                        lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat,
+                        requiresDynamicStoreMigration, requiresPropertyMigration, indexImporterFactory );
             }
 
             // update necessary neostore records
@@ -431,8 +434,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void migrateWithBatchImporter( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationDirectoryStructure, long lastTxId,
-            int lastTxChecksum, long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter, RecordFormats oldFormat,
-            RecordFormats newFormat, boolean requiresDynamicStoreMigration, boolean requiresPropertyMigration ) throws IOException
+            int lastTxChecksum, long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter,
+            RecordFormats oldFormat, RecordFormats newFormat, boolean requiresDynamicStoreMigration, boolean requiresPropertyMigration,
+            IndexImporterFactory indexImporterFactory ) throws IOException
     {
         prepareBatchImportMigration( sourceDirectoryStructure, migrationDirectoryStructure, oldFormat, newFormat );
 
@@ -446,8 +450,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             BatchImporter importer = batchImporterFactory.instantiate(
                     migrationDirectoryStructure, fileSystem, cacheTracer, importConfig, logService,
                     migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler, Collector.STRICT,
-                    LogFilesInitializer.NULL, memoryTracker );
+                            importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler,
+                    Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker );
             InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
             InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +

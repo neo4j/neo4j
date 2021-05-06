@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -85,6 +86,7 @@ class SchemaIndexMigratorTest
         StoreVersion version = mock( StoreVersion.class );
         when( version.hasCompatibleCapabilities( any(), eq( CapabilityType.INDEX ) ) ).thenReturn( false );
         when( storageEngineFactory.versionInformation( anyString() ) ).thenReturn( version );
+        IndexImporterFactory indexImporterFactory = mock( IndexImporterFactory.class );
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         Path indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
@@ -92,7 +94,7 @@ class SchemaIndexMigratorTest
         when( indexProvider.getProviderDescriptor() )
                 .thenReturn( new IndexProviderDescriptor( "key", "version" ) );
 
-        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to" );
+        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to", indexImporterFactory );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, "from", "to" );
 
         verify( fs ).deleteRecursively( indexProviderRootDirectory );
@@ -119,7 +121,7 @@ class SchemaIndexMigratorTest
         SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false );
 
         // when
-        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to" );
+        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to", IndexImporterFactory.EMPTY );
         migrator.moveMigratedFiles( databaseLayout, migrationLayout, "from", "to" );
 
         // then

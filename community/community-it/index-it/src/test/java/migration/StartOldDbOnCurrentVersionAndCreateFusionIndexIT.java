@@ -561,7 +561,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         Map<IndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
 
         @Override
-        public void initialState( IndexDescriptor descriptor, InternalIndexState state )
+        public void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state )
         {
             initialStateMap.put( descriptor, state );
         }

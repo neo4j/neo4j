@@ -180,6 +180,22 @@ public interface Configuration
         return false;
     }
 
+    /**
+     * Controls whether or not to create and populate relationship index.
+     */
+    default boolean populateRelationshipIndex()
+    {
+        return false;
+    }
+
+    /**
+     * Controls whether or not to create and populate the node label index.
+     */
+    default boolean populateNodeIndex()
+    {
+        return false;
+    }
+
     Configuration DEFAULT = new Configuration()
     {
     };

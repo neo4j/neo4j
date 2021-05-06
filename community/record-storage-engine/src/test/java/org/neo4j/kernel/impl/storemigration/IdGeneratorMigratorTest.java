@@ -26,6 +26,7 @@ import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
@@ -99,7 +100,7 @@ class IdGeneratorMigratorTest
 
         // when
         IdGeneratorMigrator migrator = new IdGeneratorMigrator( fs, pageCache, defaults(), PageCacheTracer.NULL );
-        migrator.migrate( db, upgrade, ProgressReporter.SILENT, StandardV3_4.STORE_VERSION, Standard.LATEST_STORE_VERSION );
+        migrator.migrate( db, upgrade, ProgressReporter.SILENT, StandardV3_4.STORE_VERSION, Standard.LATEST_STORE_VERSION, IndexImporterFactory.EMPTY );
         migrator.moveMigratedFiles( upgrade, db, StandardV3_4.STORE_VERSION, Standard.LATEST_STORE_VERSION );
 
         // then

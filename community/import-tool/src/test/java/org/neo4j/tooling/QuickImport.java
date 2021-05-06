@@ -46,6 +46,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -144,6 +145,18 @@ public class QuickImport
                 String custom = args.get( "max-memory", null );
                 return custom != null ? parseMaxMemory( custom ) : super.maxMemoryUsage();
             }
+
+            @Override
+            public boolean populateRelationshipIndex()
+            {
+                return true;
+            }
+
+            @Override
+            public boolean populateNodeIndex()
+            {
+                return true;
+            }
         };
 
         float factorBadNodeData = args.getNumber( "factor-bad-node-data", 0 ).floatValue();
@@ -172,7 +185,7 @@ public class QuickImport
                 consumer = BatchImporterFactory.withHighestPriority().instantiate(
                         DatabaseLayout.ofFlat( dir ), fileSystem, PageCacheTracer.NULL, importConfig, new SimpleLogService( logging, logging ),
                         monitor, EMPTY, dbConfig, RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler,
-                        Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
+                        Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), new IndexImporterFactoryImpl( dbConfig ), INSTANCE );
             }
             consumer.doImport( input );
         }

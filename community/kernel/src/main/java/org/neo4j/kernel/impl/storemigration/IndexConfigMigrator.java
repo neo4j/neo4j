@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -74,7 +75,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-            String versionToMigrateTo ) throws IOException, KernelException
+            String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException, KernelException
     {
         if ( needConfigMigration( versionToMigrateFrom, versionToMigrateTo ) )
         {
