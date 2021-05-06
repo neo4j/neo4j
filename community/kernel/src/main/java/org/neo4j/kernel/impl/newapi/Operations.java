@@ -78,6 +78,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -899,16 +900,41 @@ public class Operations implements Write, SchemaWrite
         return indexProviders.indexProviderByName( providerName );
     }
 
+    private boolean tokenAndRelPropIndexFeaturesEnabled( KernelVersion currentVersion )
+    {
+        return currentVersion.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED );
+    }
+
+    private boolean tokenIndexFeatureEnabled( KernelVersion currentVersion )
+    {
+        return allStoreHolder.scanStoreAsTokenIndexEnabled() && tokenAndRelPropIndexFeaturesEnabled( currentVersion );
+    }
+
+    private boolean relPropIndexesEnabled( KernelVersion currentVersion )
+    {
+        return relationshipPropertyIndexesEnabled && tokenAndRelPropIndexFeaturesEnabled( currentVersion );
+    }
+
     @Override
     public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
-        if ( prototype.isTokenIndex() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        if ( prototype.isTokenIndex() )
         {
-            throw new UnsupportedOperationException( "Token indexes feature is not supported on this version" );
+            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
+            if ( !tokenIndexFeatureEnabled( currentVersion ) )
+            {
+                throw new UnsupportedOperationException( "Lookup indexes are not supported in this version: " + currentVersion +
+                                                         ". Make sure that upgrade has been completed for the database." );
+            }
         }
-        if ( prototype.schema().entityType() == RELATIONSHIP && prototype.getIndexType() == IndexType.BTREE && !relationshipPropertyIndexesEnabled )
+        if ( prototype.schema().entityType() == RELATIONSHIP && prototype.getIndexType() == IndexType.BTREE )
         {
-            throw new UnsupportedOperationException( "Relationship property indexes feature is not supported on this version" );
+            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
+            if ( !relPropIndexesEnabled( currentVersion ) )
+            {
+                throw new UnsupportedOperationException( "Relationship property indexes are not supported in this version: " + currentVersion +
+                                                         ". Make sure that upgrade has been completed for the database." );
+            }
         }
 
         exclusiveSchemaLock( prototype.schema() );
@@ -1029,9 +1055,14 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( "No index was specified." );
         }
-        if ( index.isTokenIndex() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        if ( index.isTokenIndex() )
         {
-            throw new UnsupportedOperationException( "Token indexes can not be dropped in this version" );
+            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
+            if ( !tokenIndexFeatureEnabled( currentVersion ) )
+            {
+                throw new UnsupportedOperationException( "Lookup indexes can not be dropped in this version: " + currentVersion +
+                                                         ". Make sure that upgrade has been completed for the database." );
+            }
         }
         exclusiveSchemaLock( index.schema() );
         exclusiveSchemaNameLock( index.getName() );
@@ -1090,9 +1121,14 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( "Unable to drop index called `" + indexName + "`. There is no such index." );
         }
-        if ( index.isTokenIndex() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        if ( index.isTokenIndex() )
         {
-            throw new UnsupportedOperationException( "Token indexes can not be dropped in this version" );
+            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
+            if ( !tokenIndexFeatureEnabled( currentVersion ) )
+            {
+                throw new UnsupportedOperationException( "Lookup indexes can not be dropped in this version: " + currentVersion +
+                                                         ". Make sure that upgrade has been completed for the database." );
+            }
         }
         exclusiveSchemaLock( index.schema() );
         assertIndexExistsForDrop( index );

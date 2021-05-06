@@ -35,11 +35,11 @@ public class RelationshipTypeScanStoreSettings implements SettingsDeclaration
                   "new functionality until it is complete." )
     @Internal
     public static final Setting<Boolean> enable_scan_stores_as_token_indexes =
-            newBuilder( "unsupported.dbms.enable_scan_stores_as_token_indexes", BOOL, false ).build();
+            newBuilder( "unsupported.dbms.enable_scan_stores_as_token_indexes", BOOL, true ).build();
 
     @Description( "Decide if property indexes on relationships should be enabled or not. This setting should just be used for testing with the " +
                   "new functionality until it is complete." )
     @Internal
     public static final Setting<Boolean> enable_relationship_property_indexes =
-            newBuilder( "unsupported.dbms.enable_relationship_property_indexes", BOOL, false ).build();
+            newBuilder( "unsupported.dbms.enable_relationship_property_indexes", BOOL, true ).build();
 }

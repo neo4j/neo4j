@@ -55,6 +55,7 @@ import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreVersions;
 import org.neo4j.internal.schema.IndexConfigCompleter;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -68,11 +69,13 @@ import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
@@ -113,6 +116,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private static final String STORAGE_ENGINE_START_TAG = "storageEngineStart";
     private static final String SCHEMA_CACHE_START_TAG = "schemaCacheStart";
     private static final String TOKENS_INIT_TAG = "tokensInitialisation";
+    private static final String SCHEMA_UPGRADE_TAG = "schemaUpgrade";
 
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
@@ -408,7 +412,47 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         var commands = new ArrayList<StorageCommand>();
         commands.add( new Command.MetaDataCommand( serialization, before, after ) );
 
+        // If we are on a version before the version where token indexes were introduced, we
+        // have a NLI (the old labelscanstore) but no matching schema rule in the store.
+        // Now we write a real schema rule for that index so we don't have to fake that we found
+        // it in the schemaStore.
+        if ( currentVersion.isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        {
+            // We always should have token index feature on when we have upgrade enabled, but keeping this for now
+            // to be able to disable quickly if we need to.
+            if ( usingTokenIndexes )
+            {
+                commands.add( createSchemaUpgradeCommand( serialization ) );
+            }
+        }
         return commands;
+    }
+
+    /**
+     * This is the command that creates an actual SchemaRecord for our injected NLI (the index corresponding to the old labelscanstore).
+     * To avoid having to handle token creation for any property key tokens that doesn't already exist,
+     * the SchemaRecord is not connected to any properties at all.
+     * Instead we interpret a SchemaRecord with no properties as the NLI rule when reading from the SchemaStore later.
+     */
+    private StorageCommand createSchemaUpgradeCommand( LogCommandSerialization serialization )
+    {
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_UPGRADE_TAG ) ) )
+        {
+            SchemaStore schemaStore = neoStores.getSchemaStore();
+            long nliId = schemaStore.nextId( cursorContext );
+
+            var before = schemaStore.newRecord();
+            before.setId( nliId );
+            before.initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
+
+            var after = schemaStore.newRecord();
+            after.setId( nliId );
+            after.initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+            after.setCreated();
+
+            var rule = IndexDescriptor.NLI_PROTOTYPE.materialise( nliId );
+            return new Command.SchemaRuleCommand( serialization, before, after, rule );
+        }
     }
 
     @Override

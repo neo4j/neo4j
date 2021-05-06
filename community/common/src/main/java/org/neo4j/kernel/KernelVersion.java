@@ -40,6 +40,7 @@ public enum KernelVersion
     V4_2( (byte) 2 ), // 4.2+. Removed checkpoint entries.
     // 4.3(some drop)+. Not a change to log entry format, but record storage engine log format change. Since record storage commands
     // has no command version of their own it relies on a bump of the parser set version to distinguish between versions unfortunately.
+    // Also introduces token index and relationship type property index features.
     V4_3_D4( (byte) 3 ),
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -47,7 +48,7 @@ public enum KernelVersion
     GLORIOUS_FUTURE( (byte) 99 );
 
     public static final KernelVersion LATEST = V4_3_D4;
-    public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = GLORIOUS_FUTURE;
+    public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     private static final ImmutableByteObjectMap<KernelVersion> versionMap =
             ByteObjectMaps.immutable.from( List.of( values() ), KernelVersion::version, v -> v );
 

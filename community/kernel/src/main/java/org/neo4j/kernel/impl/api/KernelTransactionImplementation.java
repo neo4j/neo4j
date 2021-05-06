@@ -1397,9 +1397,4 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             return SCHEMA;
         }
     }
-
-    public KernelVersion getKernelVersion()
-    {
-        return kernelVersionRepository.kernelVersion();
-    }
 }
