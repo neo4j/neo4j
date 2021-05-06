@@ -24,7 +24,15 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.capabilities.CapabilitiesRegistry;
+import org.neo4j.capabilities.Capability;
+import org.neo4j.capabilities.CapabilityDeclaration;
+import org.neo4j.capabilities.CapabilityProvider;
+import org.neo4j.capabilities.DBMSCapabilities;
+import org.neo4j.annotations.Public;
+import org.neo4j.capabilities.Name;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.configuration.Description;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -38,10 +46,13 @@ import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.capabilities.Type.DOUBLE;
+import static org.neo4j.capabilities.Type.INTEGER;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
@@ -131,6 +142,43 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         assertFalse(((BooleanValue) config.get(0)[3]).booleanValue() );
     }
 
+    @Test
+    void listCapabilities() throws KernelException
+    {
+        QualifiedName procedureName = procedureName( "dbms", "listCapabilities" );
+        int procedureId = procs().procedureGet( procedureName ).id();
+        RawIterator<AnyValue[],ProcedureException> callResult =
+                procs().procedureCallDbms( procedureId, new AnyValue[]{}, ProcedureCallContext.EMPTY );
+        List<AnyValue[]> capabilities = asList( callResult );
+        List<String> capabilityNames = capabilities.stream()
+                                                   .map( c -> ((TextValue) c[0]).stringValue() )
+                                                   .collect( Collectors.toList() );
+
+        assertThat( capabilityNames ).containsExactly(
+                TestCapabilities.my_custom_capability.name().fullName() );
+    }
+
+    @Test
+    void listAllCapabilities() throws KernelException
+    {
+        QualifiedName procedureName = procedureName( "dbms", "listAllCapabilities" );
+        int procedureId = procs().procedureGet( procedureName ).id();
+        RawIterator<AnyValue[],ProcedureException> callResult =
+                procs().procedureCallDbms( procedureId, new AnyValue[]{}, ProcedureCallContext.EMPTY );
+        List<AnyValue[]> capabilities = asList( callResult );
+        List<String> capabilityNames = capabilities.stream()
+                                                   .map( c -> ((TextValue) c[0]).stringValue() )
+                                                   .collect( Collectors.toList() );
+
+        assertThat( capabilityNames ).containsExactlyInAnyOrder(
+                DBMSCapabilities.dbms_instance_version.name().fullName(),
+                DBMSCapabilities.dbms_instance_kernel_version.name().fullName(),
+                DBMSCapabilities.dbms_instance_edition.name().fullName(),
+                DBMSCapabilities.dbms_instance_operational_mode.name().fullName(),
+                TestCapabilities.my_custom_capability.name().fullName(),
+                TestCapabilities.my_internal_capability.name().fullName() );
+    }
+
     private List<AnyValue[]> callListConfig( String searchString ) throws KernelException
     {
         QualifiedName procedureName = procedureName( "dbms", "listConfig" );
@@ -138,5 +186,28 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<AnyValue[],ProcedureException> callResult =
                 procs().procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), ProcedureCallContext.EMPTY );
         return asList( callResult );
+    }
+
+    public static class TestCapabilities implements CapabilityDeclaration, CapabilityProvider
+    {
+        @Public
+        @Description( "my custom capability" )
+        public static final Capability<Integer> my_custom_capability = new Capability<>( Name.of( "my.custom.capability" ), INTEGER );
+
+        @Description( "my internal capability" )
+        public static final Capability<Double> my_internal_capability = new Capability<>( Name.of( "my.internal.capability" ), DOUBLE );
+
+        @Override
+        public String namespace()
+        {
+            return "my";
+        }
+
+        @Override
+        public void register( CapabilitiesRegistry registry )
+        {
+            registry.set( my_custom_capability, 123 );
+            registry.supply( my_internal_capability, () -> 3.0 + 4.5 );
+        }
     }
 }

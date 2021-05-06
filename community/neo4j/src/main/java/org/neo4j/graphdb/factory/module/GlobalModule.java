@@ -26,6 +26,8 @@ import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.buffer.CentralBufferMangerHolder;
 import org.neo4j.buffer.NettyMemoryManagerWrapper;
+import org.neo4j.capabilities.CapabilitiesService;
+import org.neo4j.capabilities.DBMSCapabilities;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -70,6 +72,7 @@ import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.internal.locker.GlobalLockerService;
@@ -155,6 +158,7 @@ public class GlobalModule
     private final TransactionManager transactionManager;
     private final IOControllerService ioControllerService;
     private final DbmsReadOnlyChecker dbmsReadOnlyChecker;
+    private final CapabilitiesService capabilitiesService;
 
     /**
      * @param globalConfig configuration affecting global aspects of the system.
@@ -274,6 +278,9 @@ public class GlobalModule
         transactionManager = new StatementProcessorTxManager();
 
         dbmsReadOnlyChecker = new DbmsReadOnlyChecker.Default( globalConfig );
+
+        capabilitiesService = loadCapabilities();
+        globalDependencies.satisfyDependency( capabilitiesService );
 
         checkLegacyDefaultDatabase();
     }
@@ -452,6 +459,16 @@ public class GlobalModule
                 () -> new IllegalStateException( IOControllerService.class.getSimpleName() + " not found." ) );
     }
 
+    private CapabilitiesService loadCapabilities()
+    {
+        var service = CapabilitiesService.newCapabilities();
+        service.set( DBMSCapabilities.dbms_instance_version, Version.getNeo4jVersion() );
+        service.set( DBMSCapabilities.dbms_instance_kernel_version, Version.getKernelVersion() );
+        service.set( DBMSCapabilities.dbms_instance_edition, dbmsInfo.edition.toString() );
+        service.set( DBMSCapabilities.dbms_instance_operational_mode, dbmsInfo.operationalMode.toString() );
+        return service;
+    }
+
     public FileWatcher getFileWatcher()
     {
         return fileSystemWatcher.getFileWatcher();
@@ -605,5 +622,10 @@ public class GlobalModule
     public DbmsReadOnlyChecker getDbmsReadOnlyChecker()
     {
         return dbmsReadOnlyChecker;
+    }
+
+    public CapabilitiesService getCapabilitiesService()
+    {
+        return capabilitiesService;
     }
 }

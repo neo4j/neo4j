@@ -226,7 +226,9 @@ public interface ProcedureITBase
                 proc( "dbms.listConnections", "() :: (connectionId :: STRING?, connectTime :: STRING?, connector :: STRING?, username :: STRING?, " +
                                 "userAgent :: STRING?, serverAddress :: STRING?, clientAddress :: STRING?)",
                         "List all accepted network connections at this instance that are visible to the user.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" )
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
+                proc( "dbms.listCapabilities", "() :: (name :: STRING?, description :: STRING?, value :: ANY?)",
+                      "List capabilities", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" )
         );
     }
 

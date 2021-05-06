@@ -75,6 +75,11 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-capabilities</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

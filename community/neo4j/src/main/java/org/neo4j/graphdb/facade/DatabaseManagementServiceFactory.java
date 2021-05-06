@@ -165,6 +165,8 @@ public class DatabaseManagementServiceFactory
         globalDependencies.satisfyDependency( webServer );
         globalLife.add( webServer );
 
+        globalLife.add( globalModule.getCapabilitiesService() );
+
         startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService );
 
         return managementService;

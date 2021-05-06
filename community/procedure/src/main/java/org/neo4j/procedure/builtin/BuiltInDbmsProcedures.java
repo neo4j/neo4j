@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.capabilities.CapabilitiesService;
+import org.neo4j.capabilities.Capability;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -587,6 +589,30 @@ public class BuiltInDbmsProcedures
         NetworkConnectionTracker connectionTracker = getConnectionTracker();
 
         return ids.stream().map( id -> killConnection( id, connectionTracker ) );
+    }
+
+    @Admin
+    @Internal
+    @SystemProcedure
+    @Description( "List all capabilities including internals" )
+    @Procedure( name = "dbms.listAllCapabilities", mode = DBMS )
+    public Stream<CapabilityResult> listAllCapabilities()
+    {
+        var service = resolver.resolveDependency( CapabilitiesService.class );
+        var capabilities = service.declaredCapabilities();
+
+        return capabilities.stream().map( c -> new CapabilityResult( c, service.get( c.name() ) ) );
+    }
+
+    @SystemProcedure
+    @Description( "List capabilities" )
+    @Procedure( name = "dbms.listCapabilities", mode = DBMS )
+    public Stream<CapabilityResult> listCapabilities()
+    {
+        var service = resolver.resolveDependency( CapabilitiesService.class );
+        var capabilities = service.declaredCapabilities();
+
+        return capabilities.stream().filter( c -> !c.internal() ).map( c -> new CapabilityResult( c, service.get( c.name() ) ) );
     }
 
     private NetworkConnectionTracker getConnectionTracker()

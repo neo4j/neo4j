@@ -1,0 +1,63 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.capabilities;
+
+import java.util.Objects;
+import java.util.function.Supplier;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+final class CapabilityInstance<T>
+{
+    private final Capability<T> capability;
+    private volatile Supplier<T> value;
+
+    CapabilityInstance( @Nonnull Capability<T> capability )
+    {
+        this.capability = Objects.requireNonNull( capability );
+        this.value = null;
+    }
+
+    Capability<T> capability()
+    {
+        return capability;
+    }
+
+    @Nullable
+    T get()
+    {
+        var localValue = value;
+        if ( localValue == null )
+        {
+            return null;
+        }
+        return localValue.get();
+    }
+
+    void set( T value )
+    {
+        this.value = () -> value;
+    }
+
+    void supply( Supplier<T> value )
+    {
+        this.value = value;
+    }
+}
