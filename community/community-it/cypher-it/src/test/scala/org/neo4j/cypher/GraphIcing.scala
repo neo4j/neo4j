@@ -217,50 +217,29 @@ trait GraphIcing {
       } )
     }
 
-    def getNodeIndex(label: String, properties: Seq[String]): IndexDefinition = {
-      withTx( tx => {
-        tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
-      } )
-    }
+    def getNodeIndex(label: String, properties: Seq[String]): IndexDefinition =
+      getMaybeNodeIndex(label, properties).get
 
-    def getRelIndex(relType: String, properties: Seq[String]): IndexDefinition = {
-      withTx( tx => {
-        tx.schema().getIndexes(RelationshipType.withName(relType)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
-      } )
-    }
+    def getRelIndex(relType: String, properties: Seq[String]): IndexDefinition =
+      getMaybeRelIndex(relType, properties).get
 
-    def getLookupIndex(isNodeIndex: Boolean): IndexDefinition = {
-      withTx( tx => {
-        tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex).get
-      })
-    }
+    def getLookupIndex(isNodeIndex: Boolean): IndexDefinition =
+      getMaybeLookupIndex(isNodeIndex).get
 
-    def getFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): IndexDefinition = withTx(tx => {
-      tx.schema().getIndexes().asScala.find(id =>
-        id.getIndexType.equals(IndexType.FULLTEXT) &&
-        id.isNodeIndex == isNodeIndex &&
-        getEntities(id).equals(entities) &&
-        id.getPropertyKeys.asScala.toList.equals(props)
-      ).get
+    def getFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): IndexDefinition =
+      getMaybeFulltextIndex(entities, props, isNodeIndex).get
+
+    def getMaybeNodeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = withTx(tx =>  {
+      tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
+    } )
+
+    def getMaybeRelIndex(relType: String, properties: Seq[String]): Option[IndexDefinition] = withTx(tx =>  {
+      tx.schema().getIndexes(RelationshipType.withName(relType)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
+    } )
+
+    def getMaybeLookupIndex(isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
+      tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex)
     })
-
-    def getMaybeNodeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = {
-      withTx( tx =>  {
-        tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
-      } )
-    }
-
-    def getMaybeRelIndex(relType: String, properties: Seq[String]): Option[IndexDefinition] = {
-      withTx( tx =>  {
-        tx.schema().getIndexes(RelationshipType.withName(relType)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
-      } )
-    }
-
-    def getMaybeLookupIndex(isNodeIndex: Boolean): Option[IndexDefinition] = {
-      withTx( tx => {
-        tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex)
-      })
-    }
 
     def getMaybeFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
       tx.schema().getIndexes().asScala.find(id =>
@@ -271,21 +250,17 @@ trait GraphIcing {
       )
     })
 
-    def getIndexSchemaByName(name: String): (String, Seq[String]) = {
-      withTx( tx =>  {
-        val index = tx.schema().getIndexByName(name)
-        val labelOrRelType = if (index.isNodeIndex) Iterables.single(index.getLabels).name() else Iterables.single(index.getRelationshipTypes).name()
-        val properties = index.getPropertyKeys.asScala.toList
-        (labelOrRelType, properties)
-      } )
-    }
+    def getIndexSchemaByName(name: String): (String, Seq[String]) = withTx(tx =>  {
+      val index = tx.schema().getIndexByName(name)
+      val labelOrRelType = if (index.isNodeIndex) Iterables.single(index.getLabels).name() else Iterables.single(index.getRelationshipTypes).name()
+      val properties = index.getPropertyKeys.asScala.toList
+      (labelOrRelType, properties)
+    } )
 
-    def getLookupIndexByName(name: String): (IndexType, Boolean) = {
-      withTx( tx =>  {
-        val index = tx.schema().getIndexByName(name)
-        (index.getIndexType, index.isNodeIndex)
-      } )
-    }
+    def getLookupIndexByName(name: String): (IndexType, Boolean) = withTx(tx =>  {
+      val index = tx.schema().getIndexByName(name)
+      (index.getIndexType, index.isNodeIndex)
+    } )
 
     def getFulltextIndexSchemaByName(name: String): (List[String], List[String], Boolean) = withTx(tx =>  {
       val index = tx.schema().getIndexByName(name)
@@ -294,7 +269,8 @@ trait GraphIcing {
       (labelOrRelTypes, properties, index.isNodeIndex)
     } )
 
-    private def getEntities(index: IndexDefinition) =
+    // returns the list of labels/types for the given index
+    private def getEntities(index: IndexDefinition): List[String] =
       if (index.isNodeIndex) index.getLabels.asScala.toList.map(_.name) else index.getRelationshipTypes.asScala.toList.map(_.name)
 
     def getIndexConfig(name: String): Map[IndexSetting, AnyRef] = {
