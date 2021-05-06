@@ -36,54 +36,54 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   private val m_prop2 = prop("m", "prop2")
 
   test("Should handle single predicate") {
-    groupInequalityPredicates(NonEmptyList(pred(lessThan(n_prop1, literalInt(1))))).toSet should equal(NonEmptyList(anded(n_prop1, lessThan(n_prop1, literalInt(1)))).toSet)
-    groupInequalityPredicates(NonEmptyList(pred(lessThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(NonEmptyList(anded(n_prop1, lessThanOrEqual(n_prop1, literalInt(1)))).toSet)
-    groupInequalityPredicates(NonEmptyList(pred(greaterThan(n_prop1, literalInt(1))))).toSet should equal(NonEmptyList(anded(n_prop1, greaterThan(n_prop1, literalInt(1)))).toSet)
-    groupInequalityPredicates(NonEmptyList(pred(greaterThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(NonEmptyList(anded(n_prop1, greaterThanOrEqual(n_prop1, literalInt(1)))).toSet)
+    groupInequalityPredicates(Seq(pred(lessThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, lessThan(n_prop1, literalInt(1)))))
+    groupInequalityPredicates(Seq(pred(lessThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, lessThanOrEqual(n_prop1, literalInt(1)))))
+    groupInequalityPredicates(Seq(pred(greaterThan(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, greaterThan(n_prop1, literalInt(1)))))
+    groupInequalityPredicates(Seq(pred(greaterThanOrEqual(n_prop1, literalInt(1))))).toSet should equal(Set(anded(n_prop1, greaterThanOrEqual(n_prop1, literalInt(1)))))
   }
 
   test("Should group by lhs property") {
-    groupInequalityPredicates(NonEmptyList(
+    groupInequalityPredicates(Seq(
       pred(lessThan(n_prop1, literalInt(1))),
       pred(lessThanOrEqual(n_prop1, literalInt(2))),
       pred(lessThan(m_prop1, literalInt(3))),
       pred(greaterThan(m_prop1, literalInt(4))),
       pred(greaterThanOrEqual(m_prop2, literalInt(5)))
-    )).toSet should equal(NonEmptyList(
+    )).toSet should equal(Set(
       anded(n_prop1, lessThan(n_prop1, literalInt(1)), lessThanOrEqual(n_prop1, literalInt(2))),
       anded(m_prop1, lessThan(m_prop1, literalInt(3)), greaterThan(m_prop1, literalInt(4))),
       anded(m_prop2, greaterThanOrEqual(m_prop2, literalInt(5)))
-    ).toSet)
+    ))
   }
 
   test("Should keep other predicates when encountering both inequality and other predicates") {
-    groupInequalityPredicates(NonEmptyList(
+    groupInequalityPredicates(Seq(
       pred(lessThan(n_prop1, literalInt(1))),
       pred(equals(n_prop1, literalInt(1)))
-    )).toSet should equal(NonEmptyList(
+    )).toSet should equal(Set(
       anded(n_prop1, lessThan(n_prop1, literalInt(1))),
       pred(equals(n_prop1, literalInt(1)))
-    ).toSet)
+    ))
   }
 
   test("Should keep other predicates when encountering only other predicates") {
-    groupInequalityPredicates(NonEmptyList(
+    groupInequalityPredicates(Seq(
       pred(equals(n_prop1, literalInt(1))),
       pred(equals(m_prop2, literalInt(2)))
-    )).toSet should equal(NonEmptyList(
+    )).toSet should equal(Set(
       pred(equals(n_prop1, literalInt(1))),
       pred(equals(m_prop2, literalInt(2)))
-    ).toSet)
+    ))
   }
 
   test("Should not group inequalities on non-property lookups") {
-    groupInequalityPredicates(NonEmptyList(
+    groupInequalityPredicates(Seq(
       pred(lessThan(varFor("x"), literalInt(1))),
       pred(greaterThanOrEqual(varFor("x"), literalInt(1)))
-    )).toSet should equal(NonEmptyList(
+    )).toSet should equal(Set(
       pred(lessThan(varFor("x"), literalInt(1))),
       pred(greaterThanOrEqual(varFor("x"), literalInt(1)))
-    ).toSet)
+    ))
   }
 
   private def pred(expr: Expression) =

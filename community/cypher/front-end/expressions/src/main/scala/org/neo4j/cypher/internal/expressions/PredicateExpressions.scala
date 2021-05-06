@@ -198,6 +198,10 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Boole
   override def canonicalOperatorSymbol = "IS NOT NULL"
 }
 
+object InequalityExpression {
+  def unapply(arg: InequalityExpression): Option[(Expression, Expression)] = Some((arg.lhs, arg.rhs))
+}
+
 sealed trait InequalityExpression extends BooleanExpression with ChainableBinaryOperatorExpression {
   override val signatures = Vector(TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean))
 

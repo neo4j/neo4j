@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
-import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 
 case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
   extends ListSupport {
@@ -145,10 +144,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
       plannerQuery
         .amendQueryGraph(_.mapSelections {
           case Selections(predicates) =>
-            val optPredicates = predicates.toNonEmptyListOption
-            val newPredicates: Set[Predicate] = optPredicates.map { predicates =>
-              groupInequalityPredicates(predicates).toSet
-            }.getOrElse(predicates)
+            val newPredicates = groupInequalityPredicates(predicates.toSeq).toSet
             Selections(newPredicates)
         })
         .updateTail(groupInequalities)
