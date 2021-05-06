@@ -119,6 +119,22 @@ public final class StoreId
         return creationTime == storeId.creationTime && randomId == storeId.randomId;
     }
 
+    public boolean equalsIgnoringUpgrade( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        StoreId storeId = (StoreId) o;
+        return creationTime == storeId.creationTime &&
+               randomId == storeId.randomId &&
+               storeVersion == storeId.storeVersion;
+    }
+
     public boolean compatibleIncludingMinorUpgrade( StorageEngineFactory storageEngineFactory, StoreId otherStoreId )
     {
         if ( !equalsIgnoringUpdate( otherStoreId ) )
