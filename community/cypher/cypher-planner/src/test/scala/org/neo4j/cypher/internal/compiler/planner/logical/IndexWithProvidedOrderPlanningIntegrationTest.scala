@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -1202,7 +1203,41 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   // Composite index
 
-  test("Order by index backed for composite index on range") {
+  private def compositeRelIndexPlannerBuilder() =
+    plannerBuilder()
+    .setAllNodesCardinality(100)
+    .setAllRelationshipsCardinality(10)
+    .setRelationshipCardinality("()-[:REL]-()", 10)
+    .enablePlanningRelationshipIndexes()
+
+  // (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted)
+  private def compositeIndexOnRangeTestData(variable: String) = Seq(
+    // Ascending index
+    (s"$variable.prop1 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+    (s"$variable.prop1 DESC", ASC, IndexOrderNone, true, true, Seq(Descending(s"$variable.prop1")), false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC", ASC, IndexOrderAscending, false, false, Seq(Descending(s"$variable.prop2")), true, Seq(Ascending(s"$variable.prop1"))),
+    (s"$variable.prop1 DESC, $variable.prop2 ASC", ASC, IndexOrderNone, true, false, Seq(Descending(s"$variable.prop1"), Ascending(s"$variable.prop2")), false, Seq.empty),
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", ASC, IndexOrderNone, true, false, Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2")), false, Seq.empty),
+
+    // Descending index
+    (s"$variable.prop1 ASC", DESC, IndexOrderNone, true, true, Seq(Ascending(s"$variable.prop1")), false, Seq.empty),
+    (s"$variable.prop1 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 ASC", DESC, IndexOrderNone, true, false, Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2")), false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC", DESC, IndexOrderNone, true, false, Seq(Ascending(s"$variable.prop1"), Descending(s"$variable.prop2")), false, Seq.empty),
+    (s"$variable.prop1 DESC, $variable.prop2 ASC", DESC, IndexOrderDescending, false, false, Seq(Ascending(s"$variable.prop2")), true, Seq(Descending(s"$variable.prop1"))),
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
+
+    // Both index
+    (s"$variable.prop1 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+    (s"$variable.prop1 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC", BOTH, IndexOrderAscending, false, false, Seq(Descending(s"$variable.prop2")), true, Seq(Ascending(s"$variable.prop1"))),
+    (s"$variable.prop1 DESC, $variable.prop2 ASC", BOTH, IndexOrderDescending, false, false, Seq(Ascending(s"$variable.prop2")), true, Seq(Descending(s"$variable.prop1"))),
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty)
+  )
+
+  test("Order by index backed for composite node index on range") {
     val projectionBoth = Map(
       "n.prop1" -> cachedNodeProp("n", "prop1"),
       "n.prop2" -> cachedNodeProp("n", "prop2")
@@ -1212,31 +1247,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     val expr = ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)))
 
-    Seq(
-      // Ascending index
-      ("n.prop1 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 DESC", ASC, IndexOrderNone, true, true, Seq(Descending("n.prop1")), false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC", ASC, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC", ASC, IndexOrderAscending, false, false, Seq(Descending("n.prop2")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC", ASC, IndexOrderNone, true, false, Seq(Descending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
-      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderNone, true, false, Seq(Descending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
-
-      // Descending index
-      ("n.prop1 ASC", DESC, IndexOrderNone, true, true, Seq(Ascending("n.prop1")), false, Seq.empty),
-      ("n.prop1 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC", DESC, IndexOrderNone, true, false, Seq(Ascending("n.prop1"), Ascending("n.prop2")), false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC", DESC, IndexOrderNone, true, false, Seq(Ascending("n.prop1"), Descending("n.prop2")), false, Seq.empty),
-      ("n.prop1 DESC, n.prop2 ASC", DESC, IndexOrderDescending, false, false, Seq(Ascending("n.prop2")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
-
-      // Both index
-      ("n.prop1 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC", BOTH, IndexOrderAscending, false, false, Seq.empty, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC", BOTH, IndexOrderAscending, false, false, Seq(Descending("n.prop2")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC", BOTH, IndexOrderDescending, false, false, Seq(Ascending("n.prop2")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, false, Seq.empty, false, Seq.empty)
-    ).foreach {
+    compositeIndexOnRangeTestData("n").foreach {
       case t @ (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted) => withClue(t) {
         // When
         val query =
@@ -1264,27 +1275,89 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  test("Order by partially index backed for composite index on part of the order by") {
-    val asc = Seq(Ascending("n.prop1"), Ascending("n.prop2"))
-    val ascProp3 = Seq(Ascending("n.prop3"))
-    val desc = Seq(Descending("n.prop1"), Descending("n.prop2"))
-    val descProp3 = Seq(Descending("n.prop3"))
+  test("Order by index backed for composite relationship index on range") {
+    val projectionBoth = Map(
+      "r.prop1" -> cachedRelProp("r", "prop1"),
+      "r.prop2" -> cachedRelProp("r", "prop2")
+    )
+    val projectionProp1 = Map("r.prop1" -> cachedRelProp("r", "prop1"))
+    val projectionProp2 = Map("r.prop2" -> cachedRelProp("r", "prop2"))
+
+    compositeIndexOnRangeTestData("r").foreach {
+      case t @ (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted) => withClue(t) {
+        // When
+        val query =
+          s"""MATCH (a)-[r:REL]->(b)
+             |WHERE r.prop1 >= 42 AND r.prop2 <= 3
+             |RETURN r.prop1, r.prop2
+             |ORDER BY $orderByString""".stripMargin
+
+        val planner = compositeRelIndexPlannerBuilder()
+          .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+          .build()
+
+        val plan = planner.plan(query).stripProduceResults
+
+        // Then
+        val expectedPlan = {
+          val planBuilderWithSorting = {
+            if (shouldPartialSort)
+              planner.subPlanBuilder()
+                .partialSort(alreadySorted, sortItems)
+                .projection(projectionBoth)
+            else if (shouldFullSort && sortOnOnlyOne)
+              planner.subPlanBuilder()
+                .projection(projectionProp2)
+                .sort(sortItems)
+                .projection(projectionProp1)
+            else if (shouldFullSort && !sortOnOnlyOne)
+              planner.subPlanBuilder()
+                .sort(sortItems)
+                .projection(projectionBoth)
+            else
+              planner.subPlanBuilder()
+                .projection(projectionBoth)
+          }
+
+          planBuilderWithSorting
+            .filter("cacheR[r.prop2] <= 3")
+            .relationshipIndexOperator("(a)-[r:REL(prop1 >= 42, prop2 <= 3)]->(b)", indexOrder = indexOrder, getValue = _ => GetValue)
+            .build()
+        }
+
+        withClue(query) {
+          plan shouldBe expectedPlan
+        }
+      }
+    }
+  }
+
+  // (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted)
+  private def compositeIndexPartialOrderByTestData(variable: String) = {
+    val asc = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
+    val ascProp3 = Seq(Ascending(s"$variable.prop3"))
+    val desc = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
+    val descProp3 = Seq(Descending(s"$variable.prop3"))
 
     Seq(
       // Ascending index
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, asc, ascProp3),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, asc, descProp3),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", ASC, IndexOrderAscending, asc, ascProp3),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", ASC, IndexOrderAscending, asc, descProp3),
 
       // Descending index
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, desc, ascProp3),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, desc, descProp3),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", DESC, IndexOrderDescending, desc, ascProp3),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", DESC, IndexOrderDescending, desc, descProp3),
 
       // Both index
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderAscending, asc, ascProp3),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, asc, descProp3),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, desc, ascProp3),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", BOTH, IndexOrderDescending, desc, descProp3)
-    ).foreach {
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", BOTH, IndexOrderAscending, asc, ascProp3),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", BOTH, IndexOrderAscending, asc, descProp3),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderDescending, desc, ascProp3),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", BOTH, IndexOrderDescending, desc, descProp3)
+    )
+  }
+
+  test("Order by partially index backed for composite node index on part of the order by") {
+    compositeIndexPartialOrderByTestData("n").foreach {
       case (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted) =>
         // When
         val query =
@@ -1317,7 +1390,119 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  test("Order by index backed for composite index on more properties") {
+  test("Order by partially index backed for composite relationship index on part of the order by") {
+    compositeIndexPartialOrderByTestData("r").foreach {
+      case (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted) =>
+        // When
+        val query =
+          s"""MATCH (a)-[r:REL]->(b)
+             |WHERE r.prop1 >= 42 AND r.prop2 <= 3
+             |RETURN r.prop1, r.prop2, r.prop3
+             |ORDER BY $orderByString""".stripMargin
+
+        val planner = compositeRelIndexPlannerBuilder()
+          .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+          .build()
+
+        val plan = planner.plan(query).stripProduceResults
+
+        // Then
+        withClue(query) {
+          plan shouldBe planner.subPlanBuilder()
+            .partialSort(alreadySorted, toBeSorted)
+            .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`", "r.prop3 AS `r.prop3`")
+            .filter("cacheR[r.prop2] <= 3")
+            .relationshipIndexOperator("(a)-[r:REL(prop1 >= 42, prop2)]->(b)", indexOrder = indexOrder, getValue = _ => GetValue)
+            .build()
+        }
+    }
+  }
+
+  // (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted)
+  private def compositeIndexOrderByMorePropsTestData(variable: String) = {
+    val ascAll = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4"))
+    val descAll = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4"))
+    val asc1_2 = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
+    val desc1_2 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
+
+    Seq(
+      // Ascending index
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq.empty, false, Seq.empty),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, asc1_2),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, asc1_2),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC", ASC, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC", ASC, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC", ASC, IndexOrderNone, true,
+        descAll, false, Seq.empty),
+
+      // Descending index
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq.empty, false, Seq.empty),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"))),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, desc1_2),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, desc1_2),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC", DESC, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC", DESC, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC", DESC, IndexOrderNone, true,
+        ascAll, false, Seq.empty),
+
+      // Both index
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq.empty, false, Seq.empty),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, asc1_2),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, asc1_2),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC", BOTH, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC", BOTH, IndexOrderAscending, false,
+        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"))),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, desc1_2),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, desc1_2),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC", BOTH, IndexOrderDescending, false,
+        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC", BOTH, IndexOrderDescending, false,
+        Seq.empty, false, Seq.empty)
+    ) 
+  }
+
+  test("Order by index backed for composite node index on more properties") {
     val expr = ands(
       lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
       greaterThan(cachedNodeProp("n", "prop3"), literalString("a")),
@@ -1329,87 +1514,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       "n.prop3" -> cachedNodeProp("n", "prop3"),
       "n.prop4" -> cachedNodeProp("n", "prop4")
     )
-
-    val ascAll = Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4"))
-    val descAll = Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"), Descending("n.prop4"))
-    val asc1_2 = Seq(Ascending("n.prop1"), Ascending("n.prop2"))
-    val desc1_2 = Seq(Descending("n.prop1"), Descending("n.prop2"))
-
-    Seq(
-      // Ascending index
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", ASC, IndexOrderAscending, false,
-        Seq.empty, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", ASC, IndexOrderAscending, false,
-        Seq(Descending("n.prop4")), true, Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"))),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", ASC, IndexOrderAscending, false,
-        Seq(Descending("n.prop3"), Ascending("n.prop4")), true, asc1_2),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderAscending, false,
-        Seq(Descending("n.prop3"), Descending("n.prop4")), true, asc1_2),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", ASC, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", ASC, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", ASC, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", ASC, IndexOrderNone, true,
-        descAll, false, Seq.empty),
-
-      // Descending index
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", DESC, IndexOrderDescending, false,
-        Seq.empty, false, Seq.empty),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", DESC, IndexOrderDescending, false,
-        Seq(Ascending("n.prop4")), true, Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"))),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", DESC, IndexOrderDescending, false,
-        Seq(Ascending("n.prop3"), Descending("n.prop4")), true, desc1_2),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderDescending, false,
-        Seq(Ascending("n.prop3"), Ascending("n.prop4")), true, desc1_2),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", DESC, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", DESC, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", DESC, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", DESC, IndexOrderNone, true,
-        ascAll, false, Seq.empty),
-
-      // Both index
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
-        Seq.empty, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
-        Seq(Descending("n.prop4")), true, Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"))),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
-        Seq(Descending("n.prop3"), Ascending("n.prop4")), true, asc1_2),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
-        Seq(Descending("n.prop3"), Descending("n.prop4")), true, asc1_2),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 ASC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderAscending, false,
-        Seq(Descending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Ascending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
-        Seq(Ascending("n.prop4")), true, Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"))),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
-        Seq(Ascending("n.prop3"), Descending("n.prop4")), true, desc1_2),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
-        Seq(Ascending("n.prop3"), Ascending("n.prop4")), true, desc1_2),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Descending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 DESC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Descending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Descending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 ASC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderDescending, false,
-        Seq(Ascending("n.prop2"), Ascending("n.prop3"), Ascending("n.prop4")), true, Seq(Descending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, false,
-        Seq.empty, false, Seq.empty)
-    ).foreach {
+    
+    compositeIndexOrderByMorePropsTestData("n").foreach {
       case (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted) =>
         // When
         val query =
@@ -1434,47 +1540,89 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  test("Order by index backed for composite index on more properties than is ordered on") {
+  test("Order by index backed for composite relationship index on more properties") {
+    compositeIndexOrderByMorePropsTestData("r").foreach {
+      case (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted) =>
+        // When
+        val query =
+          s"""MATCH (a)-[r:REL]->(b)
+             |WHERE r.prop1 >= 42 AND r.prop2 <= 3 AND r.prop3 > 'a' AND r.prop4 < 'f'
+             |RETURN r.prop1, r.prop2, r.prop3, r.prop4
+             |ORDER BY $orderByString""".stripMargin
+
+        val planner = compositeRelIndexPlannerBuilder()
+          .addRelationshipIndex("REL", Seq("prop1", "prop2", "prop3", "prop4"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+          .build()
+
+        val plan = planner.plan(query).stripProduceResults
+
+        // Then
+
+        val expectedPlan = {
+          val planBuilderWithSorting =
+            if (fullSort)         planner.subPlanBuilder().sort(sortItems)
+            else if (partialSort) planner.subPlanBuilder().partialSort(alreadySorted, sortItems)
+            else                  planner.subPlanBuilder()
+
+          planBuilderWithSorting
+            .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`", "cacheR[r.prop3] AS `r.prop3`", "cacheR[r.prop4] AS `r.prop4`")
+            .filter("cacheR[r.prop2] <= 3", "cacheR[r.prop3] > 'a'", "cacheR[r.prop4] < 'f'")
+            .relationshipIndexOperator("(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')]->(b)", indexOrder = indexOrder, getValue = _ => GetValue)
+            .build()
+        }
+
+        withClue(query) {
+          plan shouldBe expectedPlan
+        }
+    }
+  }
+
+  // (orderByString, orderCapability, indexOrder, sort, projections, projectionsAfterSort, toSort, alreadySorted)
+  private def compositeIndexOrderByPrefixTestData(variable: String, cachedEntityProperty: (String, String) => CachedProperty) = {
+    val projectionsAll = Map(
+      s"$variable.prop1" -> cachedEntityProperty(variable, "prop1"),
+      s"$variable.prop2" -> cachedEntityProperty(variable, "prop2"),
+      s"$variable.prop3" -> cachedEntityProperty(variable, "prop3"),
+      s"$variable.prop4" -> cachedEntityProperty(variable, "prop4")
+    )
+    val projections_1_2_4 = Map(
+      s"$variable.prop1" -> cachedEntityProperty(variable, "prop1"),
+      s"$variable.prop2" -> cachedEntityProperty(variable, "prop2"),
+      s"$variable.prop4" -> cachedEntityProperty(variable, "prop4")
+    )
+    val projections_1_3_4 = Map(
+      s"$variable.prop1" -> cachedEntityProperty(variable, "prop1"),
+      s"$variable.prop3" -> cachedEntityProperty(variable, "prop3"),
+      s"$variable.prop4" -> cachedEntityProperty(variable, "prop4")
+    )
+
+    Seq(
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", BOTH, IndexOrderAscending, false,
+        projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
+      (s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop4 ASC", BOTH, IndexOrderAscending, true,
+        projections_1_2_4, Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
+        Seq(Ascending(s"$variable.prop4")), Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))),
+      (s"$variable.prop1 ASC, $variable.prop3 ASC, $variable.prop4 ASC", BOTH, IndexOrderAscending, true,
+        projections_1_3_4, Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
+        Seq(Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), Seq(Ascending(s"$variable.prop1"))),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", BOTH, IndexOrderDescending, false,
+        projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
+      (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop4 DESC", BOTH, IndexOrderDescending, true,
+        projections_1_2_4, Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
+        Seq(Descending(s"$variable.prop4")), Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))),
+      (s"$variable.prop1 DESC, $variable.prop3 DESC, $variable.prop4 DESC", BOTH, IndexOrderDescending, true,
+        projections_1_3_4, Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
+        Seq(Descending(s"$variable.prop3"), Descending(s"$variable.prop4")), Seq(Descending(s"$variable.prop1"))),
+    )
+  }
+
+  test("Order by index backed for composite node index on more properties than is ordered on") {
     val expr = ands(
       lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
       greaterThan(cachedNodeProp("n", "prop3"), literalString("a")),
       lessThan(cachedNodeProp("n", "prop4"), literalString("f"))
     )
-    val projectionsAll = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop2" -> cachedNodeProp("n", "prop2"),
-      "n.prop3" -> cachedNodeProp("n", "prop3"),
-      "n.prop4" -> cachedNodeProp("n", "prop4")
-    )
-    val projections_1_2_4 = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop2" -> cachedNodeProp("n", "prop2"),
-      "n.prop4" -> cachedNodeProp("n", "prop4")
-    )
-    val projections_1_3_4 = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop3" -> cachedNodeProp("n", "prop3"),
-      "n.prop4" -> cachedNodeProp("n", "prop4")
-    )
-
-    Seq(
-      ("n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderAscending, false,
-        projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, true,
-        projections_1_2_4, Map("n.prop3" -> cachedNodeProp("n", "prop3")),
-        Seq(Ascending("n.prop4")), Seq(Ascending("n.prop1"), Ascending("n.prop2"))),
-      ("n.prop1 ASC, n.prop3 ASC, n.prop4 ASC", BOTH, IndexOrderAscending, true,
-        projections_1_3_4, Map("n.prop2" -> cachedNodeProp("n", "prop2")),
-        Seq(Ascending("n.prop3"), Ascending("n.prop4")), Seq(Ascending("n.prop1"))),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", BOTH, IndexOrderDescending, false,
-        projectionsAll, Map.empty[String, Expression], Seq.empty, Seq.empty),
-      ("n.prop1 DESC, n.prop2 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, true,
-        projections_1_2_4, Map("n.prop3" -> cachedNodeProp("n", "prop3")),
-        Seq(Descending("n.prop4")), Seq(Descending("n.prop1"), Descending("n.prop2"))),
-      ("n.prop1 DESC, n.prop3 DESC, n.prop4 DESC", BOTH, IndexOrderDescending, true,
-        projections_1_3_4, Map("n.prop2" -> cachedNodeProp("n", "prop2")),
-        Seq(Descending("n.prop3"), Descending("n.prop4")), Seq(Descending("n.prop1"))),
-    ).foreach {
+    compositeIndexOrderByPrefixTestData("n", cachedNodeProp).foreach {
       case (orderByString, orderCapability, indexOrder, sort, projections, projectionsAfterSort, toSort, alreadySorted) =>
         // When
         val query =
@@ -1497,95 +1645,141 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  test("Order by index backed for composite index when not returning same as order on") {
+  test("Order by index backed for composite relationship index on more properties than is ordered on") {
+    compositeIndexOrderByPrefixTestData("r", cachedRelProp).foreach {
+      case (orderByString, orderCapability, indexOrder, sort, projections, projectionsAfterSort, toSort, alreadySorted) =>
+        // When
+        val query =
+          s"""MATCH (a)-[r:REL]->(b)
+             |WHERE r.prop1 >= 42 AND r.prop2 <= 3 AND r.prop3 > 'a' AND r.prop4 < 'f'
+             |RETURN r.prop1, r.prop2, r.prop3, r.prop4
+             |ORDER BY $orderByString""".stripMargin
+
+        val planner = compositeRelIndexPlannerBuilder()
+          .addRelationshipIndex("REL", Seq("prop1", "prop2", "prop3", "prop4"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+          .build()
+
+        val plan = planner.plan(query).stripProduceResults
+
+        // Then
+        val expectedPlan = {
+          val planBuilderWithSort =
+            if (sort)
+              planner.subPlanBuilder()
+                .projection(projectionsAfterSort)
+                .partialSort(alreadySorted, toSort)
+            else
+              planner.subPlanBuilder()
+
+          planBuilderWithSort
+            .projection(projections)
+            .filter("cacheR[r.prop2] <= 3", "cacheR[r.prop3] > 'a'", "cacheR[r.prop4] < 'f'")
+            .relationshipIndexOperator("(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')]->(b)", indexOrder = indexOrder, getValue = _ => GetValue)
+            .build()
+        }
+
+        withClue(query) {
+          plan shouldBe expectedPlan
+        }
+    }
+  }
+
+  // (returnString, orderByString, orderCapability, indexOrder, fullSort, partialSort, returnProjections, sortProjections, selectionExpression, sortItems, alreadySorted)
+  private def compositeIndexReturnOrderByTestData(variable: String,
+                                                  cachedEntityProp: (String, String) => CachedProperty,
+                                                  cachedEntityPropFromStore: (String, String) => CachedProperty) = {
     val expr = ands(
-      lessThanOrEqual(prop("n", "prop2"), literalInt(3)),
-      greaterThan(prop("n", "prop3"), literalString(""))
+      lessThanOrEqual(prop(variable, "prop2"), literalInt(3)),
+      greaterThan(prop(variable, "prop3"), literalString(""))
     )
     val expr_2_3_cached = ands(
-      lessThanOrEqual(cachedNodePropFromStore("n", "prop2"), literalInt(3)),
-      greaterThan(cachedNodePropFromStore("n", "prop3"), literalString(""))
+      lessThanOrEqual(cachedEntityPropFromStore(variable, "prop2"), literalInt(3)),
+      greaterThan(cachedEntityPropFromStore(variable, "prop3"), literalString(""))
     )
     val expr_2_cached = ands(
-      lessThanOrEqual(cachedNodePropFromStore("n", "prop2"), literalInt(3)),
-      greaterThan(prop("n", "prop3"), literalString(""))
+      lessThanOrEqual(cachedEntityPropFromStore(variable, "prop2"), literalInt(3)),
+      greaterThan(prop(variable, "prop3"), literalString(""))
     )
     val expr_3_cached = ands(
-      lessThanOrEqual(prop("n", "prop2"), literalInt(3)),
-      greaterThan(cachedNodePropFromStore("n", "prop3"), literalString(""))
+      lessThanOrEqual(prop(variable, "prop2"), literalInt(3)),
+      greaterThan(cachedEntityPropFromStore(variable, "prop3"), literalString(""))
     )
     val map_empty = Map.empty[String, Expression] // needed for correct type
-    val map_1 = Map("n.prop1" -> prop("n", "prop1"))
-    val map_2_cached = Map("n.prop2" -> cachedNodeProp("n", "prop2"))
-    val map_3_cached = Map("n.prop3" -> cachedNodeProp("n", "prop3"))
-    val map_2_3_cached = Map("n.prop2" -> cachedNodeProp("n", "prop2"), "n.prop3" -> cachedNodeProp("n", "prop3"))
+    val map_1 = Map(s"$variable.prop1" -> prop(variable, "prop1"))
+    val map_2_cached = Map(s"$variable.prop2" -> cachedEntityProp(variable, "prop2"))
+    val map_3_cached = Map(s"$variable.prop3" -> cachedEntityProp(variable, "prop3"))
+    val map_2_3_cached = Map(s"$variable.prop2" -> cachedEntityProp(variable, "prop2"), s"$variable.prop3" -> cachedEntityProp(variable, "prop3"))
 
-    val asc_1 = Seq(Ascending("n.prop1"))
-    val desc_1 = Seq(Descending("n.prop1"))
-    val asc_3 = Seq(Ascending("n.prop3"))
-    val desc_3 = Seq(Descending("n.prop3"))
-    val asc_1_2 = Seq(Ascending("n.prop1"), Ascending("n.prop2"))
-    val desc_1_2 = Seq(Descending("n.prop1"), Descending("n.prop2"))
-    val asc_2_3 = Seq(Ascending("n.prop2"), Ascending("n.prop3"))
-    val desc_2_asc_3 = Seq(Descending("n.prop2"), Ascending("n.prop3"))
-    val asc_1_2_3 = Seq(Ascending("n.prop1"), Ascending("n.prop2"), Ascending("n.prop3"))
-    val desc_1_2_3 = Seq(Descending("n.prop1"), Descending("n.prop2"), Descending("n.prop3"))
+    val asc_1 = Seq(Ascending(s"$variable.prop1"))
+    val desc_1 = Seq(Descending(s"$variable.prop1"))
+    val asc_3 = Seq(Ascending(s"$variable.prop3"))
+    val desc_3 = Seq(Descending(s"$variable.prop3"))
+    val asc_1_2 = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
+    val desc_1_2 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
+    val asc_2_3 = Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
+    val desc_2_asc_3 = Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
+    val asc_1_2_3 = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
+    val desc_1_2_3 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"))
 
     Seq(
       // Ascending index
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_3, asc_1_2),
-      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_1, map_2_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
-      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
-      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
-      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
-      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      (s"$variable.prop1", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
+      (s"$variable.prop1", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      (s"$variable.prop1", s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      (s"$variable.prop1", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", ASC, IndexOrderNone, true, false, map_1, map_2_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      (s"$variable.prop2", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop2", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", ASC, IndexOrderNone, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      (s"$variable.prop3", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop3", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", ASC, IndexOrderNone, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
 
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_3, asc_1_2),
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_3, asc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", ASC, IndexOrderNone, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", ASC, IndexOrderNone, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_3, asc_1_2),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC", ASC, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", ASC, IndexOrderNone, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_1_2_3, Seq.empty),
 
 
       // Descending index
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_1, map_2_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_3, desc_1_2),
-      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_2_3, desc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
-      ("n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
-      ("n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
-      ("n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
-      ("n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop1", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderNone, true, false, map_1, map_2_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      (s"$variable.prop1", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_3, desc_1_2),
+      (s"$variable.prop1", s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      (s"$variable.prop1", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1, map_empty, expr, Seq.empty, Seq.empty),
+      (s"$variable.prop2", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderNone, true, false, map_2_cached, map_1 ++ map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      (s"$variable.prop2", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", DESC, IndexOrderDescending, false, false, map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop3", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderNone, true, false, map_3_cached, map_1 ++ map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      (s"$variable.prop3", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", DESC, IndexOrderDescending, false, false, map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
 
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_2_3, desc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_3, desc_1_2),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderNone, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_2_3, desc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_3, desc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderNone, true, false, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_3, desc_1_2),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_2_cached, map_empty, expr_2_cached, Seq.empty, Seq.empty),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderNone, true, false, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_1_2_3, Seq.empty),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_2_3, desc_1),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", DESC, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_3, desc_1_2),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC", DESC, IndexOrderDescending, false, false, map_1 ++ map_3_cached, map_empty, expr_3_cached, Seq.empty, Seq.empty),
 
       // Both index
-      ("n.prop1", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_3, asc_1_2),
-      ("n.prop1", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_2_3, desc_1),
-      ("n.prop1", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_3, desc_1_2),
+      (s"$variable.prop1", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      (s"$variable.prop1", s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1, map_2_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      (s"$variable.prop1", s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      (s"$variable.prop1", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1, map_2_3_cached, expr_2_3_cached, asc_3, desc_1_2),
 
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_3, asc_1_2),
-      ("n.prop1, n.prop2", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_2_3, desc_1),
-      ("n.prop1, n.prop2", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_3, desc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 ASC, n.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_3, asc_1_2),
-      ("n.prop1, n.prop3", "n.prop1 ASC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 ASC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_2_3, desc_1),
-      ("n.prop1, n.prop3", "n.prop1 DESC, n.prop2 DESC, n.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_3, desc_1_2)
-    ).foreach {
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_3, asc_1_2),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_2_3, desc_1),
+      (s"$variable.prop1, $variable.prop2", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_2_cached, map_3_cached, expr_2_3_cached, asc_3, desc_1_2),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_3, asc_1_2),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderAscending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, desc_2_asc_3, asc_1),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_2_3, desc_1),
+      (s"$variable.prop1, $variable.prop3", s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC", BOTH, IndexOrderDescending, false, true, map_1 ++ map_3_cached, map_2_cached, expr_2_3_cached, asc_3, desc_1_2)
+    )
+  }
+
+  test("Order by index backed for composite node index when not returning same as order on") {
+    compositeIndexReturnOrderByTestData("n", cachedNodeProp, cachedNodePropFromStore).foreach {
       case (returnString, orderByString, orderCapability, indexOrder, fullSort, partialSort, returnProjections, sortProjections, selectionExpression, sortItems, alreadySorted) =>
         // When
         val query =
@@ -1614,37 +1808,86 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  test("Order by index backed for composite index with different directions and equality predicate on first property") {
+  test("Order by index backed for composite relationship index when not returning same as order on") {
+    compositeIndexReturnOrderByTestData("r", cachedRelProp, cachedRelPropFromStore).foreach {
+      case t@(returnString, orderByString, orderCapability, indexOrder, fullSort, partialSort, returnProjections, sortProjections, selectionExpression, sortItems, alreadySorted) => withClue(t) {
+        // When
+        val query =
+          s"""
+             |MATCH (a)-[r:REL]->(b)
+             |WHERE r.prop1 >= 42 AND r.prop2 <= 3 AND r.prop3 > ''
+             |RETURN $returnString
+             |ORDER BY $orderByString
+          """.stripMargin
+
+        val planner = compositeRelIndexPlannerBuilder()
+          .addRelationshipIndex("REL", Seq("prop1", "prop2", "prop3"), 1.0, 0.01, providesOrder = orderCapability)
+          .build()
+
+        val plan = planner.plan(query).stripProduceResults
+
+        // Then
+        val expectedPlan = {
+          val planBuilderWithSort =
+            if (fullSort)
+              planner.subPlanBuilder()
+                .sort(sortItems)
+                .projection(sortProjections)
+            else if (partialSort)
+              planner.subPlanBuilder()
+                .partialSort(alreadySorted, sortItems)
+                .projection(sortProjections)
+            else
+              planner.subPlanBuilder()
+
+          planBuilderWithSort
+            .projection(returnProjections)
+            .filterExpression(selectionExpression.exprs:_*)
+            .relationshipIndexOperator("(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > '')]->(b)", indexOrder = indexOrder)
+            .build()
+        }
+
+        withClue(query) {
+          plan shouldBe expectedPlan
+        }
+      }
+    }
+  }
+
+  // (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted)
+  private def compositeIndexOrderByDifferentDirectionsFirstPropTestData(variable: String) = Seq(
+    // Ascending index
+    (s"$variable.prop1 ASC",                        ASC, IndexOrderAscending, false, Seq.empty,                           Seq.empty),
+    (s"$variable.prop1 DESC",                       ASC, IndexOrderAscending, false, Seq.empty,                           Seq.empty),                  // Index gives ASC, reports DESC
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   ASC, IndexOrderAscending, false, Seq.empty,                           Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  ASC, IndexOrderAscending, true,  Seq(Ascending(s"$variable.prop1")),  Seq(Descending(s"$variable.prop2"))),
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  ASC, IndexOrderAscending, false, Seq.empty,                           Seq.empty),                  // Index gives ASC ASC, reports DESC ASC
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", ASC, IndexOrderAscending, true,  Seq(Descending(s"$variable.prop1")), Seq(Descending(s"$variable.prop2"))), // Index gives ASC ASC, reports DESC ASC
+
+    // Descending index
+    (s"$variable.prop1 ASC",                        DESC, IndexOrderDescending, false, Seq.empty,                           Seq.empty),                 // Index gives DESC, reports ASC
+    (s"$variable.prop1 DESC",                       DESC, IndexOrderDescending, false, Seq.empty,                           Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   DESC, IndexOrderDescending, true,  Seq(Ascending(s"$variable.prop1")),  Seq(Ascending(s"$variable.prop2"))), // Index gives DESC DESC, reports ASC DESC
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  DESC, IndexOrderDescending, false, Seq.empty,                           Seq.empty),                 // Index gives DESC DESC, reports ASC DESC
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  DESC, IndexOrderDescending, true,  Seq(Descending(s"$variable.prop1")), Seq(Ascending(s"$variable.prop2"))),
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty,                           Seq.empty),
+
+    // Both index
+    (s"$variable.prop1 ASC",                        BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty),
+    (s"$variable.prop1 DESC",                       BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty), // Index gives ASC, reports DESC, since ASC is cheaper
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty), // Index gives DESC DESC, reports ASC DESC
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty), // Index gives ASC ASC, reports DESC ASC
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty),
+  )
+
+  test("Order by index backed for composite node index with different directions and equality predicate on first property") {
     val projection = Map(
       "n.prop1" -> cachedNodeProp("n", "prop1"),
       "n.prop2" -> cachedNodeProp("n", "prop2")
     )
 
-    Seq(
-      // Ascending index
-      ("n.prop1 ASC",                ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),
-      ("n.prop1 DESC",               ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),                  // Index gives ASC, reports DESC
-      ("n.prop1 ASC, n.prop2 ASC",   ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC",  ASC, IndexOrderAscending, true,  Seq(Ascending("n.prop1")),  Seq(Descending("n.prop2"))),
-      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderAscending, false, Seq.empty,                  Seq.empty),                  // Index gives ASC ASC, reports DESC ASC
-      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending, true,  Seq(Descending("n.prop1")), Seq(Descending("n.prop2"))), // Index gives ASC ASC, reports DESC ASC
-
-      // Descending index
-      ("n.prop1 ASC",                DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),                 // Index gives DESC, reports ASC
-      ("n.prop1 DESC",               DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),
-      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderDescending, true,  Seq(Ascending("n.prop1")),  Seq(Ascending("n.prop2"))), // Index gives DESC DESC, reports ASC DESC
-      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),                 // Index gives DESC DESC, reports ASC DESC
-      ("n.prop1 DESC, n.prop2 ASC",  DESC, IndexOrderDescending, true,  Seq(Descending("n.prop1")), Seq(Ascending("n.prop2"))),
-      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty,                  Seq.empty),
-
-      // Both index
-      ("n.prop1 ASC",                BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty),
-      ("n.prop1 DESC",               BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty), // Index gives ASC, reports DESC, since ASC is cheaper
-      ("n.prop1 ASC, n.prop2 ASC",   BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC",  BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty), // Index gives DESC DESC, reports ASC DESC
-      ("n.prop1 DESC, n.prop2 ASC",  BOTH, IndexOrderAscending,  false, Seq.empty, Seq.empty), // Index gives ASC ASC, reports DESC ASC
-      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty, Seq.empty),
-    ).foreach {
+    compositeIndexOrderByDifferentDirectionsFirstPropTestData("n").foreach {
       case (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted) =>
         withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
           // When
@@ -1669,31 +1912,70 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  test("Order by index backed for composite index with different directions and equality predicate on second property") {
+  test("Order by index backed for composite relationship index with different directions and equality predicate on first property") {
+    compositeIndexOrderByDifferentDirectionsFirstPropTestData("r").foreach {
+      case (orderByString, orderCapability, indexOrder, shouldSort, alreadySorted, toBeSorted) =>
+        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+          // When
+          val query =
+            s"""MATCH (a)-[r:REL]->(b)
+               |WHERE r.prop1 = 42 AND r.prop2 <= 3
+               |RETURN r.prop1, r.prop2
+               |ORDER BY $orderByString""".stripMargin
+
+          val planner = compositeRelIndexPlannerBuilder()
+            .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+            .build()
+
+          val plan = planner.plan(query).stripProduceResults
+
+          // Then
+          val expectedPlan = {
+            val planBuilderWithSort =
+              if (shouldSort) planner.subPlanBuilder().partialSort(alreadySorted, toBeSorted)
+              else            planner.subPlanBuilder()
+
+            planBuilderWithSort
+              .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+              .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 <= 3)]->(b)", indexOrder = indexOrder, getValue = _ => GetValue)
+              .build()
+          }
+
+          withClue(query) {
+            plan shouldBe expectedPlan
+          }
+        }
+    }
+  }
+
+  // (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted)
+  private def compositeIndexOrderByDifferentDirectionsSecondPropTestData(variable: String) = Seq(
+    // Ascending index
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   ASC, IndexOrderAscending, false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  ASC, IndexOrderAscending, false, Seq.empty), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  ASC, IndexOrderNone,      true,  Seq(Descending(s"$variable.prop1"), Ascending(s"$variable.prop2"))),
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", ASC, IndexOrderNone,      true,  Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))),
+
+    // Descending index
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   DESC, IndexOrderNone,       true,  Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  DESC, IndexOrderNone,       true,  Seq(Ascending(s"$variable.prop1"), Descending(s"$variable.prop2"))),
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  DESC, IndexOrderDescending, false, Seq.empty), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty),
+
+    // Both index
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   BOTH, IndexOrderAscending,  false, Seq.empty),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  BOTH, IndexOrderAscending,  false, Seq.empty), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  BOTH, IndexOrderDescending, false, Seq.empty), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty),
+  )
+
+  test("Order by index backed for composite node index with different directions and equality predicate on second property") {
     val projection = Map(
       "n.prop1" -> cachedNodeProp("n", "prop1"),
       "n.prop2" -> cachedNodeProp("n", "prop2")
     )
 
-    Seq(
-      // Ascending index
-      ("n.prop1 ASC, n.prop2 ASC",   ASC, IndexOrderAscending, false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC",  ASC, IndexOrderAscending, false, Seq.empty), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
-      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderNone, true,  Seq(Descending("n.prop1"), Ascending("n.prop2"))),
-      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderNone, true,  Seq(Descending("n.prop1"), Descending("n.prop2"))),
-
-      // Descending index
-      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderNone, true,  Seq(Ascending("n.prop1"), Ascending("n.prop2"))),
-      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderNone, true,  Seq(Ascending("n.prop1"), Descending("n.prop2"))),
-      ("n.prop1 DESC, n.prop2 ASC",  DESC, IndexOrderDescending, false, Seq.empty), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
-      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending, false, Seq.empty),
-
-      // Both index
-      ("n.prop1 ASC, n.prop2 ASC",   BOTH, IndexOrderAscending,  false, Seq.empty),
-      ("n.prop1 ASC, n.prop2 DESC",  BOTH, IndexOrderAscending,  false, Seq.empty), // Index gives ASC ASC, reports ASC DESC (true after filter at least)
-      ("n.prop1 DESC, n.prop2 ASC",  BOTH, IndexOrderDescending, false, Seq.empty), // Index gives DESC DESC, reports DESC ASC (true after filter at least)
-      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderDescending, false, Seq.empty),
-    ).foreach {
+    compositeIndexOrderByDifferentDirectionsSecondPropTestData("n").foreach {
       case (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted) =>
         withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
           // When
@@ -1718,31 +2000,71 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
   }
 
-  test("Order by index backed for composite index with different directions and equality predicate on both properties") {
+  test("Order by index backed for composite relationship index with different directions and equality predicate on second property") {
+    compositeIndexOrderByDifferentDirectionsSecondPropTestData("r").foreach {
+      case (orderByString, orderCapability, indexOrder, shouldSort, toBeSorted) =>
+        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+          // When
+          val query =
+            s"""MATCH (a)-[r:REL]->(b)
+               |WHERE r.prop1 <= 42 AND r.prop2 = 3
+               |RETURN r.prop1, r.prop2
+               |ORDER BY $orderByString""".stripMargin
+
+          val planner = compositeRelIndexPlannerBuilder()
+            .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+            .build()
+
+          val plan = planner.plan(query).stripProduceResults
+
+          // Then
+          val expectedPlan = {
+            val planBuilderWithSort =
+              if (shouldSort) planner.subPlanBuilder().sort(toBeSorted)
+              else            planner.subPlanBuilder()
+
+            planBuilderWithSort
+              .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+              .filter("cacheR[r.prop2] = 3")
+              .relationshipIndexOperator("(a)-[r:REL(prop1 <= 42, prop2 = 3)]->(b)", indexOrder = indexOrder, getValue = _ => GetValue)
+              .build()
+          }
+
+          withClue(query) {
+            plan shouldBe expectedPlan
+          }
+        }
+    }
+  }
+
+  // (orderByString, orderCapability, indexOrder)
+  private def compositeIndexOrderByDifferentDirectionsBothPropsTestData(variable: String) = Seq(
+    // Ascending index
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   ASC, IndexOrderAscending),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  ASC, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
+
+    // Descending index
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   DESC, IndexOrderDescending), // Index gives DESC DESC, reports ASC ASC
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  DESC, IndexOrderDescending), // Index gives DESC DESC, reports ASC DESC
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  DESC, IndexOrderDescending), // Index gives DESC DESC, reports DESC ASC
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", DESC, IndexOrderDescending),
+
+    // Both index
+    (s"$variable.prop1 ASC, $variable.prop2 ASC",   BOTH, IndexOrderAscending),
+    (s"$variable.prop1 ASC, $variable.prop2 DESC",  BOTH, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
+    (s"$variable.prop1 DESC, $variable.prop2 ASC",  BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
+    (s"$variable.prop1 DESC, $variable.prop2 DESC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
+  )
+
+  test("Order by index backed for composite node index with different directions and equality predicate on both properties") {
     val projection = Map(
       "n.prop1" -> cachedNodeProp("n", "prop1"),
       "n.prop2" -> cachedNodeProp("n", "prop2")
     )
 
-    Seq(
-      // Ascending index
-      ("n.prop1 ASC, n.prop2 ASC",   ASC, IndexOrderAscending),
-      ("n.prop1 ASC, n.prop2 DESC",  ASC, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
-      ("n.prop1 DESC, n.prop2 ASC",  ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
-      ("n.prop1 DESC, n.prop2 DESC", ASC, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
-
-      // Descending index
-      ("n.prop1 ASC, n.prop2 ASC",   DESC, IndexOrderDescending), // Index gives DESC DESC, reports ASC ASC
-      ("n.prop1 ASC, n.prop2 DESC",  DESC, IndexOrderDescending), // Index gives DESC DESC, reports ASC DESC
-      ("n.prop1 DESC, n.prop2 ASC",  DESC, IndexOrderDescending), // Index gives DESC DESC, reports DESC ASC
-      ("n.prop1 DESC, n.prop2 DESC", DESC, IndexOrderDescending),
-
-      // Both index
-      ("n.prop1 ASC, n.prop2 ASC",   BOTH, IndexOrderAscending),
-      ("n.prop1 ASC, n.prop2 DESC",  BOTH, IndexOrderAscending), // Index gives ASC ASC, reports ASC DESC
-      ("n.prop1 DESC, n.prop2 ASC",  BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC ASC
-      ("n.prop1 DESC, n.prop2 DESC", BOTH, IndexOrderAscending), // Index gives ASC ASC, reports DESC DESC
-    ).foreach {
+    compositeIndexOrderByDifferentDirectionsBothPropsTestData("n").foreach {
       case (orderByString, orderCapability, indexOrder) =>
         withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
           // When
@@ -1756,6 +2078,33 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           } getLogicalPlanFor query
 
           plan._2 should equal(Projection(nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue), projection))
+        }
+    }
+  }
+
+  test("Order by index backed for composite relationship index with different directions and equality predicate on both properties") {
+    compositeIndexOrderByDifferentDirectionsBothPropsTestData("r").foreach {
+      case (orderByString, orderCapability, indexOrder) =>
+        withClue(s"ORDER BY $orderByString with index order capability $orderCapability:") {
+          // When
+          val query =
+            s"""MATCH (a)-[r:REL]->(b)
+               |WHERE r.prop1 = 42 AND r.prop2 = 3
+               |RETURN r.prop1, r.prop2
+               |ORDER BY $orderByString""".stripMargin
+          val planner = compositeRelIndexPlannerBuilder()
+            .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
+            .build()
+
+          val plan = planner.plan(query).stripProduceResults
+
+          // Then
+          withClue(query) {
+            plan shouldBe planner.subPlanBuilder()
+              .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+              .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 3)]->(b)", indexOrder = indexOrder, getValue = _ => GetValue)
+              .build()
+          }
         }
     }
   }

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
@@ -237,6 +238,41 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         .relationshipIndexOperator(s"(a)-[r:REL(prop > 1)]->(b)")
         .build()
     )
+  }
+
+  private def compositeRelIndexSeekConfig(): StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
+    .addRelationshipIndex("REL", Seq("prop1", "prop2"), existsSelectivity = 0.5, uniqueSelectivity = 0.5)
+    .build()
+
+  test("should plan composite relationship index seek when there is an index on two properties and both are in equality predicates") {
+    val planner = compositeRelIndexSeekConfig()
+    val query = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 'foo' RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)")
+      .build()
+  }
+
+  test("should plan composite relationship index seek when there is an index on two properties and both are in equality predicates regardless of predicate order") {
+    val planner = compositeRelIndexSeekConfig()
+    val query = "MATCH (a)-[r:REL]->(b) WHERE r.prop2 = 'foo' AND r.prop1 = 42 RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)")
+      .build()
+  }
+
+  test("should plan composite relationship index seek and filter when there is an index on two properties and both are in equality predicates together with other predicates") {
+    val planner = compositeRelIndexSeekConfig()
+    val query = "MATCH (a)-[r:REL]->(b) WHERE r.prop2 = 'foo' AND r.name IS NOT NULL AND r.prop1 = 42 RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .filter("r.name IS NOT NULL")
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)")
+      .build()
   }
 
 }

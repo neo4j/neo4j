@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -1560,6 +1561,52 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .relationshipIndexOperator("(a)-[r:REL(prop1 = 123, prop2)]-(b)", getValue = _ => DoNotGetValue)
       .build()
     )
+  }
+
+  test("should plan relationship index seek with GetValue when the property is projected (composite index)") {
+    val planner = relCompositeIndexSeekConfig(withValues = true)
+    val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop1, r.prop2"
+    val plan = planner.plan(q).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)", getValue = _ => GetValue)
+      .build()
+  }
+
+  test("for exact seeks, should even plan relationship index seek with GetValue when the index does not provide values (composite index)") {
+    val planner = relCompositeIndexSeekConfig(withValues = false)
+    val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop1, r.prop2"
+    val plan = planner.plan(q).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)", getValue = _ => GetValue)
+      .build()
+  }
+
+  test("should plan projection and index seek with DoNotGetValue when another property is projected (composite relationship index)") {
+    val planner = relCompositeIndexSeekConfig(withValues = true)
+    val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.otherProp"
+    val plan = planner.plan(q).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .projection("r.otherProp AS `r.otherProp`")
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)", getValue = _ => DoNotGetValue)
+      .build()
+  }
+
+  test("should plan relationship index seek with GetValue and DoNotGetValue when only one property is projected (composite index)") {
+    val planner = relCompositeIndexSeekConfig(withValues = true)
+    val q = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 21 RETURN r.prop2"
+    val plan = planner.plan(q).stripProduceResults
+
+    plan.leftmostLeaf should matchPattern {
+      case d: DirectedRelationshipIndexSeek
+        if d.properties.map(p => p.propertyKeyToken.name -> p.getValueFromIndex) ==
+          Seq("prop1" -> DoNotGetValue, "prop2" -> GetValue)
+      => ()
+    }
   }
 
   private def cachedNodePropertyProj(node: String, property: String) =
