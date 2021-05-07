@@ -22,6 +22,7 @@ package org.neo4j.capabilities;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class NameTest
@@ -93,5 +94,45 @@ class NameTest
         assertThatThrownBy( () -> root.child( "" ) ).isInstanceOf( IllegalArgumentException.class ).hasMessage( "'' is not a valid name" );
         assertThatThrownBy( () -> root.child( "dbms.instance" ) ).isInstanceOf( IllegalArgumentException.class )
                                                                  .hasMessage( "'dbms.instance' is not a valid name" );
+    }
+
+    @Test
+    void testThrowsOnInvalidName()
+    {
+        assertThatCode( () -> Name.of( "" ) ).doesNotThrowAnyException();
+        assertThatCode( () -> Name.of( "dbms" ) ).doesNotThrowAnyException();
+        assertThatCode( () -> Name.of( "dbms.instance" ) ).doesNotThrowAnyException();
+
+        assertThatCode( () -> Name.of( "my-dbms.instance" ) ).isInstanceOf( IllegalArgumentException.class )
+                                                             .hasMessage( "'my-dbms.instance' is not a valid name." );
+        assertThatCode( () -> Name.of( "dbms.instance." ) ).isInstanceOf( IllegalArgumentException.class )
+                                                           .hasMessage( "'dbms.instance.' is not a valid name." );
+        assertThatCode( () -> Name.of( ".dbms.instance" ) ).isInstanceOf( IllegalArgumentException.class )
+                                                           .hasMessage( "'.dbms.instance' is not a valid name." );
+    }
+
+    @Test
+    void testMatches()
+    {
+        assertThat( Name.of( "dbms" ).matches( "dbms" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance" ).matches( "dbms.instance" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance" ).matches( "dbms.instance2" ) ).isFalse();
+        assertThat( Name.of( "dbms.instance" ).matches( "dbms.*" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance" ).matches( "dbms.inst*" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance" ).matches( "dbms.instance*" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance" ).matches( "dbms.**" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance" ).matches( "dbms.**.version" ) ).isFalse();
+        assertThat( Name.of( "dbms.instance" ).matches( "*.instance" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.version" ).matches( "dbms.instance.*" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.version" ).matches( "dbms.instance.**" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "dbms.instance.*.version" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.bolt.version" ).matches( "dbms.instance.*.version" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "dbms.**" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "dbms.**.version" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "dbms.**.allowed" ) ).isFalse();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "**.allowed" ) ).isFalse();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "**.instance.**" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "**instance**" ) ).isTrue();
+        assertThat( Name.of( "dbms.instance.kernel.version" ).matches( "**instance.**" ) ).isTrue();
     }
 }

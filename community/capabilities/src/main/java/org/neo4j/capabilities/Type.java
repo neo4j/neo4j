@@ -59,6 +59,14 @@ public class Type<T>
         return type;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Type{" +
+               "name='" + name + '\'' +
+               '}';
+    }
+
     /**
      * Type that holds a String value.
      */

@@ -27,8 +27,10 @@ import java.util.List;
 
 import org.neo4j.annotations.Description;
 import org.neo4j.annotations.Public;
+import org.neo4j.configuration.Config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.capabilities.Type.BOOLEAN;
 import static org.neo4j.capabilities.Type.STRING;
@@ -39,7 +41,7 @@ class CapabilitiesServiceTest
     @Test
     void shouldAllowEmptyDeclarations()
     {
-        var capabilities = new CapabilitiesService( Collections.emptyList(), Collections.emptyList() );
+        var capabilities = new CapabilitiesService( Collections.emptyList(), Collections.emptyList(), Config.defaults() );
 
         assertThat( capabilities.declaredCapabilities() ).isEmpty();
     }
@@ -47,7 +49,8 @@ class CapabilitiesServiceTest
     @Test
     void shouldDiscoverGivenDeclarations()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class ), Collections.emptyList() );
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class ), Collections.emptyList(), Config.defaults() );
         var declared = capabilities.declaredCapabilities();
 
         assertThat( declared ).containsExactlyInAnyOrder(
@@ -69,14 +72,14 @@ class CapabilitiesServiceTest
     {
         assertThatThrownBy( () -> new CapabilitiesService(
                 List.of( TestCoreCapabilities.class, TestCypherCapabilities.class, TestDuplicateCapabilities.class ),
-                Collections.emptyList() ) ).isInstanceOf( UnsupportedOperationException.class )
-                                           .hasMessage( "duplicate capability dbms.cypher.version" );
+                Collections.emptyList(), Config.defaults() ) ).isInstanceOf( UnsupportedOperationException.class )
+                                                              .hasMessage( "duplicate capability dbms.cypher.version" );
     }
 
     @Test
     void shouldReturnAnUnmodifiableInstance()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList() );
+        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
         var unmodifiable = capabilities.unmodifiable();
 
         assertThat( unmodifiable ).isInstanceOf( Capabilities.class );
@@ -86,7 +89,7 @@ class CapabilitiesServiceTest
     @Test
     void shouldSetAndGetStaticValues()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList() );
+        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
 
         capabilities.set( TestCoreCapabilities.dbms_instance_version, "4.3.0" );
         capabilities.set( TestCoreCapabilities.dbms_instance_internal_version, "4.3.0-drop03" );
@@ -100,7 +103,7 @@ class CapabilitiesServiceTest
     @Test
     void shouldSetAndGetDynamicValues()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList() );
+        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
 
         capabilities.supply( TestCoreCapabilities.dbms_instance_version, () -> "4.3.0" );
         capabilities.supply( TestCoreCapabilities.dbms_instance_internal_version, () -> "4.3.0-drop03" );
@@ -114,7 +117,7 @@ class CapabilitiesServiceTest
     @Test
     void shouldReturnNullForUnsetCapabilities()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList() );
+        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
 
         assertThat( capabilities.get( TestCoreCapabilities.dbms_instance_version ) ).isNull();
     }
@@ -122,7 +125,7 @@ class CapabilitiesServiceTest
     @Test
     void shouldReturnNullForUnregisteredCapabilities()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList() );
+        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
 
         assertThat( capabilities.get( Name.of( "dbms.instance.unregistered" ) ) ).isNull();
     }
@@ -130,7 +133,7 @@ class CapabilitiesServiceTest
     @Test
     void shouldThrowWhileSettingUnknownCapabilities()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList() );
+        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
 
         assertThatThrownBy( () -> capabilities.set( TestCypherCapabilities.dbms_cypher_version, "4.3.0" ) ).isInstanceOf( IllegalArgumentException.class );
         assertThatThrownBy( () -> capabilities.supply( TestCypherCapabilities.dbms_cypher_version, () -> "4.3.0" ) )
@@ -140,7 +143,8 @@ class CapabilitiesServiceTest
     @Test
     void shouldProcessProviders()
     {
-        var capabilities = new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderA(), new TestProviderB() ) );
+        var capabilities =
+                new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderA(), new TestProviderB() ), Config.defaults() );
 
         capabilities.processProviders();
 
@@ -154,10 +158,60 @@ class CapabilitiesServiceTest
     void shouldThrowWhenNamespaceOutOfRange()
     {
         var capabilities =
-                new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderA(), new TestProviderNamespaceError() ) );
+                new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderA(), new TestProviderNamespaceError() ),
+                                         Config.defaults() );
 
         assertThatThrownBy( capabilities::processProviders ).isInstanceOf( IllegalArgumentException.class ).hasMessage(
                 "provided capability org.example.componentB.version is not in declared namespace org.example.component" );
+    }
+
+    @Test
+    void shouldRemoveBlockedFromDeclaredCapabilities()
+    {
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class, TestProviderCapabilities.class ),
+                                         Collections.emptyList(),
+                                         Config.newBuilder().set(
+                                                 CapabilitiesSettings.dbms_capabilities_blocked,
+                                                 List.of( "org.example.**", "**.version" )
+                                         ).build() );
+
+        assertThat( capabilities.declaredCapabilities() )
+                .doesNotContain( TestProviderCapabilities.component_a_version, TestProviderCapabilities.component_a_authentication_supported,
+                                 TestProviderCapabilities.component_b_version, TestProviderCapabilities.component_b_supported_versions,
+                                 TestCoreCapabilities.dbms_instance_version, TestCypherCapabilities.dbms_cypher_version );
+    }
+
+    @Test
+    void shouldNotReturnBlockedCapabilities()
+    {
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class, TestProviderCapabilities.class ),
+                                         List.of( new TestProviderA(), new TestProviderB() ),
+                                         Config.newBuilder().set(
+                                                 CapabilitiesSettings.dbms_capabilities_blocked,
+                                                 List.of( "org.example.componentA.**", "dbms.**.version" )
+                                         ).build() );
+
+        capabilities.processProviders();
+
+        // should be able to set blocked
+        assertThatCode( () -> capabilities.set( TestCoreCapabilities.dbms_instance_version, "4.3.0" ) ).doesNotThrowAnyException();
+        assertThatCode( () -> capabilities.set( TestCoreCapabilities.dbms_instance_internal_version, "4.3.0-internal" ) ).doesNotThrowAnyException();
+        assertThatCode( () -> capabilities.set( TestCypherCapabilities.dbms_cypher_version, "4.3.0" ) ).doesNotThrowAnyException();
+        assertThatCode( () -> capabilities.set( TestCypherCapabilities.dbms_cypher_runtimes, List.of( "a", "b" ) ) ).doesNotThrowAnyException();
+
+        // blocked ones should return null
+        assertThat( capabilities.get( TestCoreCapabilities.dbms_instance_version ) ).isNull();
+        assertThat( capabilities.get( TestCypherCapabilities.dbms_cypher_version ) ).isNull();
+        assertThat( capabilities.get( TestProviderCapabilities.component_a_version ) ).isNull();
+        assertThat( capabilities.get( TestProviderCapabilities.component_a_authentication_supported ) ).isNull();
+
+        // unblocked ones should return what is set
+        assertThat( capabilities.get( TestCoreCapabilities.dbms_instance_internal_version ) ).isEqualTo( "4.3.0-internal" );
+        assertThat( capabilities.get( TestCypherCapabilities.dbms_cypher_runtimes ) ).containsExactly( "a", "b" );
+        assertThat( capabilities.get( TestProviderCapabilities.component_b_version ) ).isEqualTo( "2.3" );
+        assertThat( capabilities.get( TestProviderCapabilities.component_b_supported_versions ) ).containsExactly( "2.0", "2.1", "2.2" );
     }
 
     private static class TestCoreCapabilities implements CapabilityDeclaration

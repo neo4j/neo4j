@@ -99,4 +99,34 @@ public final class Capability<T>
     {
         this.internal = false;
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        Capability<?> that = (Capability<?>) o;
+        return name.equals( that.name );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( name );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Capability{" +
+               "name=" + name +
+               ", type=" + type +
+               '}';
+    }
 }

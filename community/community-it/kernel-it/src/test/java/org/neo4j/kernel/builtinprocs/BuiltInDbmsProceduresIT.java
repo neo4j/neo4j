@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.capabilities.CapabilitiesRegistry;
+import org.neo4j.capabilities.CapabilitiesSettings;
 import org.neo4j.capabilities.Capability;
 import org.neo4j.capabilities.CapabilityDeclaration;
 import org.neo4j.capabilities.CapabilityProvider;
@@ -32,6 +33,7 @@ import org.neo4j.capabilities.DBMSCapabilities;
 import org.neo4j.annotations.Public;
 import org.neo4j.capabilities.Name;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -159,6 +161,26 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
+    void listCapabilitiesShouldNotReturnBlocked() throws KernelException
+    {
+        // set blocked capabilities
+        Config config = dependencyResolver.resolveDependency( Config.class );
+        config.set( CapabilitiesSettings.dbms_capabilities_blocked, List.of( "my.**" ) );
+
+        QualifiedName procedureName = procedureName( "dbms", "listCapabilities" );
+        int procedureId = procs().procedureGet( procedureName ).id();
+        RawIterator<AnyValue[],ProcedureException> callResult =
+                procs().procedureCallDbms( procedureId, new AnyValue[]{}, ProcedureCallContext.EMPTY );
+        List<AnyValue[]> capabilities = asList( callResult );
+        List<String> capabilityNames = capabilities.stream()
+                                                   .map( c -> ((TextValue) c[0]).stringValue() )
+                                                   .collect( Collectors.toList() );
+
+        assertThat( capabilityNames ).doesNotContain(
+                TestCapabilities.my_custom_capability.name().fullName() );
+    }
+
+    @Test
     void listAllCapabilities() throws KernelException
     {
         QualifiedName procedureName = procedureName( "dbms", "listAllCapabilities" );
@@ -176,6 +198,30 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
                 DBMSCapabilities.dbms_instance_edition.name().fullName(),
                 DBMSCapabilities.dbms_instance_operational_mode.name().fullName(),
                 TestCapabilities.my_custom_capability.name().fullName(),
+                TestCapabilities.my_internal_capability.name().fullName() );
+    }
+
+    @Test
+    void listAllCapabilitiesShouldNotReturnBlocked() throws KernelException
+    {
+        // set blocked capabilities
+        Config config = dependencyResolver.resolveDependency( Config.class );
+        config.set( CapabilitiesSettings.dbms_capabilities_blocked, List.of( "my.custom.**" ) );
+
+        QualifiedName procedureName = procedureName( "dbms", "listAllCapabilities" );
+        int procedureId = procs().procedureGet( procedureName ).id();
+        RawIterator<AnyValue[],ProcedureException> callResult =
+                procs().procedureCallDbms( procedureId, new AnyValue[]{}, ProcedureCallContext.EMPTY );
+        List<AnyValue[]> capabilities = asList( callResult );
+        List<String> capabilityNames = capabilities.stream()
+                                                   .map( c -> ((TextValue) c[0]).stringValue() )
+                                                   .collect( Collectors.toList() );
+
+        assertThat( capabilityNames ).containsExactlyInAnyOrder(
+                DBMSCapabilities.dbms_instance_version.name().fullName(),
+                DBMSCapabilities.dbms_instance_kernel_version.name().fullName(),
+                DBMSCapabilities.dbms_instance_edition.name().fullName(),
+                DBMSCapabilities.dbms_instance_operational_mode.name().fullName(),
                 TestCapabilities.my_internal_capability.name().fullName() );
     }
 

@@ -32,6 +32,7 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.annotations.Description;
 import org.neo4j.annotations.Public;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.service.Services;
 
@@ -41,9 +42,11 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
 {
     private final Map<Name,CapabilityInstance<?>> capabilities;
     private final Collection<CapabilityProvider> capabilityProviders;
+    private final Config config;
 
     CapabilitiesService( @Nonnull Collection<Class<? extends CapabilityDeclaration>> declarationClasses,
-                         @Nonnull Collection<CapabilityProvider> capabilityProviders )
+                         @Nonnull Collection<CapabilityProvider> capabilityProviders,
+                         @Nonnull Config config )
     {
         this.capabilities =
                 getDeclaredCapabilities( Objects.requireNonNull( declarationClasses ) )
@@ -51,28 +54,36 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
                         .stream()
                         .collect( Collectors.toMap( Map.Entry::getKey, e -> new CapabilityInstance<>( e.getValue() ) ) );
         this.capabilityProviders = Objects.requireNonNull( capabilityProviders );
+        this.config = Objects.requireNonNull( config );
     }
 
     public Collection<Capability<?>> declaredCapabilities()
     {
-        return capabilities.values().stream().map( CapabilityInstance::capability ).collect( Collectors.toList() );
+        // filter out blocked entries
+        var blocked = config.get( CapabilitiesSettings.dbms_capabilities_blocked );
+
+        return capabilities.values().stream()
+                           .map( CapabilityInstance::capability )
+                           .filter( capability -> !capability.name().matches( blocked ) )
+                           .collect( Collectors.toList() );
     }
 
     @Override
     @SuppressWarnings( "unchecked" )
     public <T> T get( @Nonnull Capability<T> capability )
     {
-        var instance = (CapabilityInstance<T>) capabilities.getOrDefault( capability.name(), null );
-        if ( instance == null )
-        {
-            return null;
-        }
-        return instance.get();
+        return (T) get( capability.name() );
     }
 
     @Override
     public Object get( @Nonnull Name name )
     {
+        // check if it's blocked
+        if ( name.matches( config.get( CapabilitiesSettings.dbms_capabilities_blocked ) ) )
+        {
+            return null;
+        }
+
         var instance = capabilities.getOrDefault( name, null );
         if ( instance == null )
         {
@@ -184,13 +195,13 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
         }
     }
 
-    public static CapabilitiesService newCapabilities()
+    public static CapabilitiesService newCapabilities( Config config )
     {
         Collection<Class<? extends CapabilityDeclaration>> declarationClasses =
                 Services.loadAll( CapabilityDeclaration.class ).stream().map( CapabilityDeclaration::getClass )
                         .collect( Collectors.toList() );
         Collection<CapabilityProvider> capabilityProviders = Services.loadAll( CapabilityProvider.class );
-        return new CapabilitiesService( declarationClasses, capabilityProviders );
+        return new CapabilitiesService( declarationClasses, capabilityProviders, config );
     }
 
     private static Map<Name,Capability<?>> getDeclaredCapabilities( Collection<Class<? extends CapabilityDeclaration>> declarationClasses )

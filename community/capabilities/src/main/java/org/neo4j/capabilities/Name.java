@@ -19,19 +19,25 @@
  */
 package org.neo4j.capabilities;
 
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.StringUtils.contains;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 /**
  * Used for hierarchical naming of capabilities, each namespace component separated by '.'.
  */
 public final class Name
 {
+    private static final Predicate<String> NAME_VALIDATOR = Pattern.compile( "^\\w+(\\.\\w+)*$" ).asMatchPredicate();
+    private static final String SINGLE_ENTRY_PATTERN = "\\w{0,}";
+    private static final String MULTIPLE_ENTRY_PATTERN = "(\\w{0,}(\\.)?){0,}";
     private static final String SEPARATOR = ".";
 
     private final String fullName;
@@ -62,12 +68,12 @@ public final class Name
     @Nonnull
     public Name child( @Nonnull String name )
     {
-        if ( StringUtils.isBlank( name ) || StringUtils.contains( name, SEPARATOR ) )
+        if ( isBlank( name ) || contains( name, SEPARATOR ) )
         {
             throw new IllegalArgumentException( String.format( "'%s' is not a valid name", name ) );
         }
 
-        if ( StringUtils.isBlank( this.fullName ) )
+        if ( isBlank( this.fullName ) )
         {
             return new Name( name );
         }
@@ -85,7 +91,7 @@ public final class Name
     {
         var validated = validateName( namespace );
 
-        if ( StringUtils.isBlank( validated ) || validated.equals( fullName ) )
+        if ( isBlank( validated ) || validated.equals( fullName ) )
         {
             return true;
         }
@@ -102,6 +108,21 @@ public final class Name
     public boolean isIn( @Nonnull Name name )
     {
         return isIn( name.fullName );
+    }
+
+    public boolean matches( @Nonnull String pattern )
+    {
+        var transformed = pattern
+                .replace( ".", "\\." ) // escape dots
+                .replace( "**", MULTIPLE_ENTRY_PATTERN ) // convert ** into multiple entry pattern
+                .replace( "*", SINGLE_ENTRY_PATTERN ); // convert * into single entry pattern
+
+        return Pattern.matches( transformed, fullName );
+    }
+
+    public boolean matches( @Nonnull List<String> patterns )
+    {
+        return patterns.stream().anyMatch( this::matches );
     }
 
     @Override
@@ -136,14 +157,16 @@ public final class Name
     @Nonnull
     private static String validateName( @Nonnull String fullName )
     {
-        var comps = StringUtils.split( fullName, SEPARATOR );
-        var invalid = Arrays.stream( comps ).anyMatch( StringUtils::isWhitespace );
+        if ( isEmpty( fullName ) )
+        {
+            return fullName;
+        }
 
-        if ( invalid )
+        var valid = NAME_VALIDATOR.test( fullName );
+        if ( !valid )
         {
             throw new IllegalArgumentException( format( "'%s' is not a valid name.", fullName ) );
         }
-
         return fullName;
     }
 
