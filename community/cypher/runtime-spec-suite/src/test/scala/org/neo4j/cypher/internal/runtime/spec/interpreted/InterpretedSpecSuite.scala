@@ -148,7 +148,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.UnwindTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UserDefinedAggregationSupport
 import org.neo4j.cypher.internal.runtime.spec.tests.ValueHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.WriteProcedureCallTestBase
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
 
 object InterpretedSpecSuite {
@@ -240,7 +239,6 @@ class InterpretedExpressionTest extends ExpressionTestBase(COMMUNITY.EDITION, In
                                 with ThreadUnsafeExpressionTests[CommunityRuntimeContext]
                                 with ExpressionWithTxStateChangesTests[CommunityRuntimeContext]
 class InterpretedProcedureCallTest extends ProcedureCallTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-                                   with WriteProcedureCallTestBase[CommunityRuntimeContext]
 class InterpretedShortestPathTest extends ShortestPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedUnionTest extends UnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedOrderedUnionTest extends OrderedUnionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

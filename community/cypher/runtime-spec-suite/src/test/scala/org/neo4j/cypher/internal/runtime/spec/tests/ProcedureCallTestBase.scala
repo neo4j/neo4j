@@ -61,7 +61,12 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
         RawIterator.empty[Array[AnyValue], ProcedureException]()
       }
     },
-
+    new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "writeNonVoidProc").mode(Mode.WRITE).out("i", Neo4jTypes.NTInteger).build()) {
+      override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
+        ctx.graphDatabaseAPI().executeTransactionally("CREATE (n:INPROC)")
+        RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(42)), Array(Values.of(42)))
+      }
+    },
     new BasicProcedure(ProcedureSignature.procedureSignature(Array[String](), "readIntProc").mode(Mode.READ).out("i", Neo4jTypes.NTInteger).build()) {
       override def apply(ctx: Context, input: Array[AnyValue], resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
         testVar += 1
@@ -314,10 +319,6 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("two", "x").withRows(Seq(Array(1,1), Array(1,2), Array(1,3), Array(2,1), Array(2,2), Array(2,3)))
   }
-}
-
-trait WriteProcedureCallTestBase[CONTEXT <: RuntimeContext] {
-  self: ProcedureCallTestBase[CONTEXT] =>
 
   test("should call write void procedure") {
     // given
@@ -336,6 +337,36 @@ trait WriteProcedureCallTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(nodes))
+
+    // and when
+    val verificationQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeByLabelScan("x", "INPROC", IndexOrderNone)
+      .build()
+
+    val verificationResult = execute(verificationQuery, runtime)
+
+    // then
+    verificationResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
+
+  test("should call write non-void procedure") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint, "OUTPROC")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .procedureCall("writeNonVoidProc() YIELD i AS i")
+      .nodeByLabelScan("x", "OUTPROC", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("i").withRows(singleColumn(Seq.fill(2 * sizeHint)(42)))
 
     // and when
     val verificationQuery = new LogicalQueryBuilder(this)
