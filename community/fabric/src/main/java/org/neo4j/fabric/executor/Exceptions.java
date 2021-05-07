@@ -46,9 +46,17 @@ public class Exceptions
         // or try to preserve  at least the original status
         if ( unwrapped instanceof Status.HasStatus )
         {
-            if ( unwrapped instanceof RuntimeException && queryId.isEmpty() )
+            if ( unwrapped instanceof RuntimeException )
             {
-                return (RuntimeException) unwrapped;
+                if ( queryId == null )
+                {
+                    return (RuntimeException) unwrapped;
+                }
+                else if ( unwrapped instanceof HasQuery )
+                {
+                    ((HasQuery) unwrapped).setQuery( queryId );
+                    return (RuntimeException) unwrapped;
+                }
             }
 
             return new FabricException( ((Status.HasStatus) unwrapped).status(), message, unwrapped, queryId );
