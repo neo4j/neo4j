@@ -30,6 +30,11 @@ object Rewriter {
   val noop: Rewriter = Rewriter.lift(PartialFunction.empty)
 }
 
+object RewriterWithParent {
+  def lift(f: PartialFunction[(AnyRef, Option[AnyRef]), AnyRef]): RewriterWithParent =
+    f.orElse({ case (x, _) => x })
+}
+
 object Rewritable {
   implicit class IteratorEq[A <: AnyRef](val iterator: Iterator[A]) {
     def eqElements[B <: AnyRef](that: Iterator[B]): Boolean = {
@@ -106,6 +111,12 @@ object Rewritable {
       val result = rewriter.apply(that)
       result
     }
+
+    def rewrite(rewriter: RewriterWithParent, parent: Option[AnyRef]): AnyRef = {
+      val result = rewriter.apply((that, parent))
+      result
+    }
+
     def endoRewrite(rewriter: Rewriter): T = rewrite(rewriter).asInstanceOf[T]
   }
 }
@@ -177,6 +188,55 @@ object topDown {
 
   def apply(rewriter: Rewriter, stopper: AnyRef => Boolean = _ => false): Rewriter =
     new TopDownRewriter(rewriter, stopper)
+}
+
+object topDownWithParent {
+  private class TopDownWithParentRewriter(rewriter: RewriterWithParent, val stopper: AnyRef => Boolean)
+    extends Rewriter {
+    override def apply(that: AnyRef): AnyRef = {
+      val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
+
+    @tailrec
+    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          val (job :: jobs, doneJobs) = stack.pop()
+          val doneJob = Rewritable.dupAny(job, newChildren)
+          stack.push((jobs, doneJobs += doneJob))
+          rec(stack)
+        }
+      } else {
+        val (newJob :: jobs, doneJobs) = stack.pop()
+        if (stopper(newJob)) {
+          stack.push((jobs, doneJobs += newJob))
+        } else {
+          val maybeParent = {
+            if (stack.isEmpty) {
+              None
+            } else {
+              val (parentJobs, _) = stack.top
+              parentJobs.headOption
+            }
+          }
+          val rewrittenJob = newJob.rewrite(rewriter, maybeParent)
+          stack.push((rewrittenJob :: jobs, doneJobs))
+          stack.push((rewrittenJob.treeChildren.toList, new mutable.MutableList()))
+        }
+        rec(stack)
+      }
+    }
+  }
+
+  def apply(rewriter: RewriterWithParent, stopper: AnyRef => Boolean = _ => false): Rewriter =
+    new TopDownWithParentRewriter(rewriter, stopper)
 }
 
 object bottomUp {
