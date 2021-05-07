@@ -29,6 +29,7 @@ import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
+import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -50,9 +51,11 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
@@ -215,13 +218,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("getNodesByLabel closes underlying cursor") {
     // GIVEN
-    createLabeledNodesAndRels
+    createLabeledNodesAndRels()
 
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.getNodesByLabel(0, IndexOrderNone)
+
+    val iteratorA = context.getNodesByLabel(tokenReadSession(tx), 0, IndexOrderNone)
 
     // WHEN
     iteratorA.next()
@@ -233,13 +237,13 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("getNodesByLabelPrimitive closes underlying cursor") {
     // GIVEN
-    createLabeledNodesAndRels
+    createLabeledNodesAndRels()
 
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val monitor = QueryStateHelper.trackClosedMonitor
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager(monitor))(indexSearchMonitor)
-    val iteratorA = context.getNodesByLabelPrimitive(0, IndexOrderNone)
+    val iteratorA = context.getNodesByLabelPrimitive(tokenReadSession(tx), 0, IndexOrderNone)
 
     // WHEN
     iteratorA.next()
@@ -251,7 +255,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("nodeOps.all closes underlying cursor") {
     // GIVEN
-    createLabeledNodesAndRels
+    createLabeledNodesAndRels()
 
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
@@ -269,7 +273,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("nodeOps.allPrimitive closes underlying cursor") {
     // GIVEN
-    createLabeledNodesAndRels
+    createLabeledNodesAndRels()
 
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
@@ -287,7 +291,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("relationshipOps.all closes underlying cursor") {
     // GIVEN
-    createLabeledNodesAndRels
+    createLabeledNodesAndRels()
 
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
@@ -305,7 +309,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("relationshipOps.allPrimitive closes underlying cursor") {
     // GIVEN
-    createLabeledNodesAndRels
+    createLabeledNodesAndRels()
 
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
@@ -475,6 +479,11 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     finally {
       tx.close()
     }
+  }
+
+  private def tokenReadSession(tx: InternalTransaction): TokenReadSession = {
+    val index = tx.kernelTransaction().schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE)).next()
+    tx.kernelTransaction().dataRead().tokenReadSession(index)
   }
 
   private def createLabeledNodesAndRels(): Unit = {
