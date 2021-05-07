@@ -27,6 +27,7 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -64,6 +65,12 @@ import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
+import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
+import org.neo4j.procedure.builtin.routing.RoutingOption;
+import org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider;
+import org.neo4j.procedure.builtin.routing.ServerSideRoutingTableProvider;
+import org.neo4j.procedure.builtin.routing.SimpleClientRoutingDomainChecker;
+import org.neo4j.procedure.builtin.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.time.SystemNanoClock;
 
@@ -103,14 +110,22 @@ public abstract class AbstractEditionModule
         registerTemporalFunctions( globalProcedures, procedureConfig );
 
         registerEditionSpecificProcedures( globalProcedures, databaseManager );
-        AbstractRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller( globalModule, databaseManager );
+        AbstractRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller( globalModule, databaseManager,
+                                                                                                       createClientRoutingDomainChecker( globalModule ) );
         routingProcedureInstaller.install( globalProcedures );
+    }
+
+    protected ClientRoutingDomainChecker createClientRoutingDomainChecker( GlobalModule globalModule )
+    {
+        Config config = globalModule.getGlobalConfig();
+        return SimpleClientRoutingDomainChecker.fromConfig( config, globalModule.getLogService().getInternalLogProvider() );
     }
 
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager )
             throws KernelException;
 
-    protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager );
+    protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
+                                                                                          ClientRoutingDomainChecker clientRoutingDomainChecker );
 
     public abstract <DB extends DatabaseContext> DatabaseManager<DB> createDatabaseManager( GlobalModule globalModule );
 
@@ -199,4 +214,13 @@ public abstract class AbstractEditionModule
 
     public abstract DbmsRuntimeRepository createAndRegisterDbmsRuntimeRepository( GlobalModule globalModule, DatabaseManager<?> databaseManager,
             Dependencies dependencies, DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent );
+
+    protected ServerSideRoutingTableProvider serverSideRoutingTableProvider( GlobalModule globalModule )
+    {
+        ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
+        Config config = globalModule.getGlobalConfig();
+        LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
+        RoutingTableTTLProvider ttlProvider = RoutingTableTTLProvider.ttlFromConfig( config );
+        return new SingleAddressRoutingTableProvider( portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlProvider );
+    }
 }

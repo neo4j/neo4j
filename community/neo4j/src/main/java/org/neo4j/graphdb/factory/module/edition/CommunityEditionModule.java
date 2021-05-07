@@ -73,6 +73,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
+import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -217,12 +218,13 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
-    protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager )
+    protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
+                                                                                 ClientRoutingDomainChecker clientRoutingDomainChecker )
     {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
         LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
-        return new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, config, logProvider );
+        return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider );
     }
 
     @Override

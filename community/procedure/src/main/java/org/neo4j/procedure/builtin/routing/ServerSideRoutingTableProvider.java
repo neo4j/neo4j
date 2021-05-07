@@ -19,14 +19,11 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import java.util.Optional;
 
-public interface RoutingTableProcedureValidator
+import org.neo4j.configuration.helpers.SocketAddress;
+
+public interface ServerSideRoutingTableProvider
 {
-    void isValidForServerSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException;
-
-    void isValidForClientSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException;
-
-    void assertDatabaseExists( NamedDatabaseId namedDatabaseId ) throws ProcedureException;
+    RoutingResult getServerSideRoutingTable( Optional<SocketAddress> clientProvidedAddress );
 }

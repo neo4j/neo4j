@@ -33,14 +33,16 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
 
     private final DatabaseManager<?> databaseManager;
+    private final ClientRoutingDomainChecker clientRoutingDomainChecker;
     private final ConnectorPortRegister portRegister;
     private final Config config;
     private final LogProvider logProvider;
 
-    public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister,
-            Config config, LogProvider logProvider )
+    public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ClientRoutingDomainChecker clientRoutingDomainChecker,
+                                                    ConnectorPortRegister portRegister, Config config, LogProvider logProvider )
     {
         this.databaseManager = databaseManager;
+        this.clientRoutingDomainChecker = clientRoutingDomainChecker;
         this.portRegister = portRegister;
         this.config = config;
         this.logProvider = logProvider;
@@ -53,6 +55,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
         SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig( config ) );
 
-        return new GetRoutingTableProcedure( namespace, DESCRIPTION, databaseManager, validator, routingTableProvider, config, logProvider );
+        return new GetRoutingTableProcedure( namespace, DESCRIPTION, databaseManager, validator, routingTableProvider, clientRoutingDomainChecker,
+                                             config, logProvider );
     }
 }

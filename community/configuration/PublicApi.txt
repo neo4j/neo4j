@@ -35,6 +35,11 @@ org.neo4j.configuration.GraphDatabaseSettings.Mode::READ_REPLICA org.neo4j.confi
 org.neo4j.configuration.GraphDatabaseSettings.Mode::SINGLE org.neo4j.configuration.GraphDatabaseSettings.Mode public static final
 org.neo4j.configuration.GraphDatabaseSettings.Mode::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.Mode public static
 org.neo4j.configuration.GraphDatabaseSettings.Mode::values() org.neo4j.configuration.GraphDatabaseSettings.Mode[] public static
+org.neo4j.configuration.GraphDatabaseSettings.RoutingMode public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.RoutingMode>
+org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::CLIENT org.neo4j.configuration.GraphDatabaseSettings.RoutingMode public static final
+org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::SERVER org.neo4j.configuration.GraphDatabaseSettings.RoutingMode public static final
+org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.RoutingMode public static
+org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::values() org.neo4j.configuration.GraphDatabaseSettings.RoutingMode[] public static
 org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex>
 org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::NATIVE30 org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex public static final
 org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::NATIVE_BTREE10 org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex public static final
@@ -82,6 +87,7 @@ org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_time org.neo
 org.neo4j.configuration.GraphDatabaseSettings::check_point_interval_tx org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_iops_limit org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::check_point_policy org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy> public static final
+org.neo4j.configuration.GraphDatabaseSettings::client_side_router_enforce_for_domains org.neo4j.graphdb.config.Setting<java.util.Set<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::csv_buffer_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::csv_legacy_quote_escaping org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::cypher_hints_error org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -168,6 +174,7 @@ org.neo4j.configuration.GraphDatabaseSettings::reconciler_may_retry org.neo4j.gr
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_minimum_backoff org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::record_format org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_advertised_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
+org.neo4j.configuration.GraphDatabaseSettings::routing_default_router org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.RoutingMode> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_api org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.DriverApi> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_connect_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_connection_acquisition_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final

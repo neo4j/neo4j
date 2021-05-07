@@ -19,11 +19,16 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.values.virtual.MapValue;
+import java.util.Set;
 
-public interface RoutingTableProvider
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingChangeListener;
+import org.neo4j.configuration.helpers.SocketAddress;
+
+public interface ClientRoutingDomainChecker extends SettingChangeListener<Set<String>>
 {
-    RoutingResult getRoutingResultForClientSideRouting( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
+    boolean shouldGetClientRouting( SocketAddress address );
+
+    boolean isEmpty();
 }

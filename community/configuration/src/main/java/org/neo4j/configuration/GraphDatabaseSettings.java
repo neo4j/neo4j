@@ -187,6 +187,15 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster. Only SINGLE mode is allowed in Community" )
     public static final Setting<Mode> mode = newBuilder( "dbms.mode", ofEnum( Mode.class ), Mode.SINGLE ).build();
 
+    @Description( "Use server side routing by default for neo4j:// protocol connections" )
+    public static final Setting<RoutingMode> routing_default_router = newBuilder( "dbms.routing.default_router", ofEnum( RoutingMode.class ),
+                                                                                  RoutingMode.CLIENT ).build();
+
+    @Description( "Always use client side routing (regardless of the default router) for neo4j:// protocol connections to these domains. " +
+                  "A comma seperated list of domains. Wildcards (*) are supported." )
+    public static final Setting<Set<String>> client_side_router_enforce_for_domains = newBuilder( "dbms.routing.client_side.enforce_for_domains",
+                                                                                                  setOf( STRING ), Set.of() ).dynamic().build();
+
     // Cypher settings
 
     public enum CypherParserVersion
@@ -1047,5 +1056,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     {
         RX,
         ASYNC
+    }
+
+    public enum RoutingMode
+    {
+        SERVER,
+        CLIENT
     }
 }

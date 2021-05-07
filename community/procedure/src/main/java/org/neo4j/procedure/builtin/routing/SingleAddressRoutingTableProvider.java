@@ -21,6 +21,7 @@ package org.neo4j.procedure.builtin.routing;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -40,22 +41,22 @@ import static org.neo4j.procedure.builtin.routing.RoutingTableProcedureHelpers.f
  * It will prefer to return the address provided by the client in the routingContext. If it cannot find that address it will use the address of the instance's
  * bolt server.
  */
-public class SingleAddressRoutingTableProvider implements RoutingTableProvider
+public class SingleAddressRoutingTableProvider implements ClientSideRoutingTableProvider, ServerSideRoutingTableProvider
 {
     private final ConnectorPortRegister portRegister;
     private final RoutingOption routingOption;
+    private final RoutingTableTTLProvider routingTableTTLProvider;
     private final Config config;
     private final Log log;
-    private final RoutingTableTTLProvider routingTableTTLProvider;
 
     public SingleAddressRoutingTableProvider( ConnectorPortRegister portRegister, RoutingOption routingOption, Config config, LogProvider logProvider,
             RoutingTableTTLProvider ttlProvider )
     {
         this.portRegister = portRegister;
         this.routingOption = routingOption;
+        this.routingTableTTLProvider = ttlProvider;
         this.config = config;
         this.log = logProvider.getLog( getClass() );
-        this.routingTableTTLProvider = ttlProvider;
     }
 
     @Override
@@ -75,15 +76,16 @@ public class SingleAddressRoutingTableProvider implements RoutingTableProvider
 
     private SocketAddress findBoltAddressToUse( MapValue routingContext ) throws ProcedureException
     {
-        var addressToUse = findClientProvidedAddress( routingContext, BoltConnector.DEFAULT_PORT, log )
-                .filter( c -> c.getPort() > 0 )
-                .orElse( config.get( BoltConnector.advertised_address ) );
+        var addressToUse = findClientProvidedAddress( routingContext, BoltConnector.DEFAULT_PORT, log );
 
         return ensureBoltAddressIsUsable( addressToUse );
     }
 
-    private SocketAddress ensureBoltAddressIsUsable( SocketAddress addressToUse )
+    private SocketAddress ensureBoltAddressIsUsable( Optional<SocketAddress> address )
     {
+        var addressToUse = address.filter( c -> c.getPort() > 0 )
+                                  .orElse( config.get( BoltConnector.advertised_address ) );
+
         if ( addressToUse.getPort() <= 0 )
         {
             // advertised address with a negative or zero port is not useful for callers of the routing procedure
@@ -95,5 +97,11 @@ public class SingleAddressRoutingTableProvider implements RoutingTableProvider
             }
         }
         return addressToUse;
+    }
+
+    public RoutingResult getServerSideRoutingTable( Optional<SocketAddress> clientProvidedAddress )
+    {
+        SocketAddress address = ensureBoltAddressIsUsable( clientProvidedAddress );
+        return createSingleAddressRoutingResult( address, routingTableTTLProvider.nextTTL().toMillis(), routingOption );
     }
 }

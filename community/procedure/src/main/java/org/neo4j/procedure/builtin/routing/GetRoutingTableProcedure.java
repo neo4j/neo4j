@@ -20,10 +20,14 @@
 package org.neo4j.procedure.builtin.routing;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -60,21 +64,37 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     private final ProcedureSignature signature;
     private final DatabaseManager<?> databaseManager;
 
-    protected final Config config;
     protected final Log log;
     private final RoutingTableProcedureValidator validator;
-    private final RoutingTableProvider routingTableProvider;
+    private final ClientSideRoutingTableProvider clientSideRoutingTableProvider;
+    private final ServerSideRoutingTableProvider serverSideRoutingTableProvider;
+    private final ClientRoutingDomainChecker clientRoutingDomainChecker;
+    private final String defaultDatabaseName;
+    private final Supplier<GraphDatabaseSettings.RoutingMode> defaultRouterSupplier;
+    private final Supplier<Boolean> boltEnabled;
 
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
-                                     RoutingTableProcedureValidator validator, RoutingTableProvider routingTableProvider,
+                                     RoutingTableProcedureValidator validator, SingleAddressRoutingTableProvider routingTableProvider,
+                                     ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider )
+    {
+        this( namespace, description, databaseManager, validator, routingTableProvider, routingTableProvider, clientRoutingDomainChecker, config, logProvider );
+    }
+
+    public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
+                                     RoutingTableProcedureValidator validator, ClientSideRoutingTableProvider clientSideRoutingTableProvider,
+                                     ServerSideRoutingTableProvider serverSideRoutingTableProvider, ClientRoutingDomainChecker clientRoutingDomainChecker,
                                      Config config, LogProvider logProvider )
     {
         this.signature = buildSignature( namespace, description );
         this.databaseManager = databaseManager;
-        this.config = config;
         this.log = logProvider.getLog( getClass() );
         this.validator = validator;
-        this.routingTableProvider = routingTableProvider;
+        this.clientSideRoutingTableProvider = clientSideRoutingTableProvider;
+        this.serverSideRoutingTableProvider = serverSideRoutingTableProvider;
+        this.clientRoutingDomainChecker = clientRoutingDomainChecker;
+        this.defaultDatabaseName = config.get( default_database );
+        this.defaultRouterSupplier = () -> config.get( GraphDatabaseSettings.routing_default_router );
+        this.boltEnabled = () -> config.get( BoltConnector.enabled );
     }
 
     @Override
@@ -108,8 +128,18 @@ public final class GetRoutingTableProcedure implements CallableProcedure
 
     private RoutingResult invoke( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException
     {
-        validator.isValidForClientSideRouting( databaseId );
-        return routingTableProvider.getRoutingResultForClientSideRouting( databaseId, routingContext );
+        var clientProvidedAddress = RoutingTableProcedureHelpers.findClientProvidedAddress( routingContext, BoltConnector.DEFAULT_PORT, log );
+        var defaultRouter = defaultRouterSupplier.get();
+        if ( shouldGetClientSideRouting( defaultRouter, clientProvidedAddress ) )
+        {
+            validator.isValidForClientSideRouting( databaseId );
+            return clientSideRoutingTableProvider.getRoutingResultForClientSideRouting( databaseId, routingContext );
+        }
+        else
+        {
+            validator.isValidForServerSideRouting( databaseId );
+            return serverSideRoutingTableProvider.getServerSideRoutingTable( clientProvidedAddress );
+        }
     }
 
     private NamedDatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
@@ -118,7 +148,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         final String databaseName;
         if ( arg == Values.NO_VALUE )
         {
-            databaseName = config.get( default_database );
+            databaseName = defaultDatabaseName;
         }
         else if ( arg instanceof TextValue )
         {
@@ -173,9 +203,24 @@ public final class GetRoutingTableProcedure implements CallableProcedure
                 .build();
     }
 
+    private boolean shouldGetClientSideRouting( GraphDatabaseSettings.RoutingMode defaultRouter, Optional<SocketAddress> clientProvidedAddress )
+    {
+        switch ( defaultRouter )
+        {
+        case CLIENT:
+            // in client mode everyone gets client routing behaviour all the time
+            return true;
+        case SERVER:
+            // in server mode specific domains can be opted-in to client routing based on server configuration
+            return clientProvidedAddress.isEmpty() || clientRoutingDomainChecker.shouldGetClientRouting( clientProvidedAddress.get() );
+        default:
+            throw new IllegalStateException( "Unexpected value: " + defaultRouter );
+        }
+    }
+
     private void assertBoltConnectorEnabled( NamedDatabaseId namedDatabaseId ) throws ProcedureException
     {
-        if ( !config.get( BoltConnector.enabled ) )
+        if ( !boltEnabled.get() )
         {
             throw new ProcedureException( ProcedureCallFailed, "Cannot get routing table for " + namedDatabaseId.name() +
                                                                " because Bolt is not enabled. Please update your configuration for '" +

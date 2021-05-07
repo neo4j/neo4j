@@ -21,12 +21,9 @@ package org.neo4j.procedure.builtin.routing;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.values.virtual.MapValue;
 
-public interface RoutingTableProcedureValidator
+public interface ClientSideRoutingTableProvider
 {
-    void isValidForServerSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException;
-
-    void isValidForClientSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException;
-
-    void assertDatabaseExists( NamedDatabaseId namedDatabaseId ) throws ProcedureException;
+    RoutingResult getRoutingResultForClientSideRouting( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
 }

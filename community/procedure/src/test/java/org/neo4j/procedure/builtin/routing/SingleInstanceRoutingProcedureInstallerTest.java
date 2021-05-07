@@ -49,9 +49,12 @@ class SingleInstanceRoutingProcedureInstallerTest
     {
         DatabaseManager<?> databaseManager = mock( DatabaseManager.class );
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
+        ClientRoutingDomainChecker clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
         Config config = Config.defaults();
         LogProvider logProvider = nullLogProvider();
-        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, config, logProvider );
+
+        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker,
+                                                                                                         portRegister, config, logProvider );
         GlobalProcedures procedures = spy( new GlobalProceduresRegistry() );
 
         installer.install( procedures );

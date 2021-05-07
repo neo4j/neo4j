@@ -36,6 +36,11 @@ public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedu
         super( databaseManager );
     }
 
+    public void isValidForServerSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException
+    {
+        assertDatabaseIsOperational( namedDatabaseId );
+    }
+
     @Override
     public void isValidForClientSideRouting( NamedDatabaseId namedDatabaseId ) throws ProcedureException
     {
