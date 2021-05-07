@@ -989,14 +989,14 @@ public class ForsetiClient implements Locks.Client
         {
             waitedUpon.addAll( nextWaitedUpon );
             collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-            if ( nextOwners.contains( this ) && !lock.isClosed() )
+            if ( nextOwners.contains( this ) && lock.detectDeadlock( id() ) != NO_CLIENT_ID  )
             {
                 // Worrying... let's take a deep breath
                 nextOwners.clear();
                 LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
                 // ... and check again
                 collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-                if ( nextOwners.contains( this ) && !lock.isClosed() )
+                if ( nextOwners.contains( this ) && lock.detectDeadlock( id() ) != NO_CLIENT_ID )
                 {
                     // Yes, this deadlock looks real.
                     return true;

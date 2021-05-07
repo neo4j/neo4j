@@ -258,7 +258,7 @@ class SharedLock implements ForsetiLockManager.Lock
     @Override
     public boolean isClosed()
     {
-        return refCount.get() == 0;
+        return numberOfHolders() == 0;
     }
 
     @Override
