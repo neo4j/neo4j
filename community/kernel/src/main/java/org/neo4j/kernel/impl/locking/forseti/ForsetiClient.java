@@ -979,6 +979,16 @@ public class ForsetiClient implements Locks.Client
 
     private boolean isDeadlockReal( ForsetiLockManager.Lock lock )
     {
+        if ( isDeadlockRealInternal( lock ) )
+        {
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+            return isDeadlockRealInternal( lock );
+        }
+        return false;
+    }
+
+    private boolean isDeadlockRealInternal( ForsetiLockManager.Lock lock )
+    {
         Set<ForsetiLockManager.Lock> waitedUpon = new HashSet<>();
         Set<ForsetiClient> owners = new HashSet<>();
         Set<ForsetiLockManager.Lock> nextWaitedUpon = new HashSet<>();
@@ -991,16 +1001,7 @@ public class ForsetiClient implements Locks.Client
             collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
             if ( nextOwners.contains( this ) && lock.detectDeadlock( id() ) != NO_CLIENT_ID  )
             {
-                // Worrying... let's take a deep breath
-                nextOwners.clear();
-                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
-                // ... and check again
-                collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-                if ( nextOwners.contains( this ) && lock.detectDeadlock( id() ) != NO_CLIENT_ID )
-                {
-                    // Yes, this deadlock looks real.
-                    return true;
-                }
+                return true;
             }
             owners.clear();
             Set<ForsetiClient> ownersTmp = owners;
