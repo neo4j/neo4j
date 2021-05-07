@@ -22,7 +22,6 @@ package org.neo4j.fabric.executor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -97,7 +96,7 @@ public class FabricKernelTransaction
                 // all exception thrown from execution engine are wrapped in QueryExecutionKernelException,
                 // let's see if there is something better hidden in it
                 Throwable cause = e.getCause() == null ? e : e.getCause();
-                throw Exceptions.transform( Status.Statement.ExecutionFailed, cause, OptionalLong.of( executionContext.executingQuery().internalQueryId() ) );
+                throw Exceptions.transform( Status.Statement.ExecutionFailed, cause, executionContext.executingQuery().internalQueryId() );
             }
         };
     }

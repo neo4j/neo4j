@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.util.OptionalLong;
 import java.util.UUID;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -37,9 +36,9 @@ public class Neo4jError
     private final Throwable cause;
     private final UUID reference;
     private final boolean fatal;
-    private final OptionalLong queryId;
+    private final Long queryId;
 
-    private Neo4jError( Status status, String message, Throwable cause, boolean fatal, OptionalLong queryId )
+    private Neo4jError( Status status, String message, Throwable cause, boolean fatal, Long queryId )
     {
         this.status = status;
         this.message = message;
@@ -51,10 +50,10 @@ public class Neo4jError
 
     private Neo4jError( Status status, String message, boolean fatal )
     {
-        this( status, message, null, fatal, OptionalLong.empty() );
+        this( status, message, null, fatal, null );
     }
 
-    private Neo4jError( Status status, Throwable cause, boolean fatal, OptionalLong queryId )
+    private Neo4jError( Status status, Throwable cause, boolean fatal, Long queryId )
     {
         this( status, status.code().description(), cause, fatal, queryId );
     }
@@ -79,7 +78,7 @@ public class Neo4jError
         return reference;
     }
 
-    public OptionalLong queryId()
+    public Long queryId()
     {
         return queryId;
     }
@@ -157,7 +156,7 @@ public class Neo4jError
     {
         for ( Throwable cause = any; cause != null; cause = cause.getCause() )
         {
-            OptionalLong queryId = OptionalLong.empty();
+            Long queryId = null;
             if ( cause instanceof HasQuery )
             {
                 queryId = ((HasQuery) cause).query();
@@ -183,7 +182,7 @@ public class Neo4jError
         // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
         // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
 
-        return new Neo4jError( Status.General.UnknownError, any != null ? any.getMessage() : null, any, isFatal, OptionalLong.empty() );
+        return new Neo4jError( Status.General.UnknownError, any != null ? any.getMessage() : null, any, isFatal, null );
     }
 
     public static Neo4jError from( Status status, String message )

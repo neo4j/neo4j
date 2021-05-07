@@ -22,20 +22,20 @@ package org.neo4j.fabric.executor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.stream.IntStream;
 
+import org.neo4j.kernel.api.exceptions.HasQuery;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class Exceptions
 {
     public static RuntimeException transform( Status defaultStatus, Throwable t )
     {
-        return Exceptions.transform( defaultStatus, t, OptionalLong.empty() );
+        return Exceptions.transform( defaultStatus, t, null );
     }
 
-    public static RuntimeException transform( Status defaultStatus, Throwable t, OptionalLong queryId )
+    public static RuntimeException transform( Status defaultStatus, Throwable t, Long queryId )
     {
         var unwrapped = reactor.core.Exceptions.unwrap( t );
         unwrapped = transformComposite( unwrapped );

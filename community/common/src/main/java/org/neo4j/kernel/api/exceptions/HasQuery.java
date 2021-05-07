@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import java.util.OptionalLong;
-
 public interface HasQuery
 {
-    OptionalLong query();
+    Long query();
+
+    void setQuery( Long queryId );
 }

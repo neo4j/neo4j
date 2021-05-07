@@ -60,10 +60,10 @@ class ErrorReporter
         if ( error.status().code().classification() == DatabaseError )
         {
             String message;
-            if ( error.queryId().isPresent() )
+            if ( error.queryId() != null )
             {
                 message = format( "Client triggered an unexpected error [%s]: %s, reference %s, queryId: %s.",
-                                  error.status().code().serialize(), error.message(), error.reference(), error.queryId().getAsLong() );
+                                  error.status().code().serialize(), error.message(), error.reference(), error.queryId() );
             }
             else
             {
