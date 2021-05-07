@@ -43,9 +43,6 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider w
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
-  override def wouldCreatePlan(indexMatch: IndexMatch): Boolean =
-    predicateSetToSolve(indexMatch).nonEmpty
-
   private def predicateSetToSolve(indexMatch: IndexMatch): Option[PredicateSet] = {
     val predicateSet = indexMatch.predicateSet(predicatesForIndexSeek(indexMatch.propertyPredicates), exactPredicatesCanGetValue = true)
     if (predicateSet.propertyPredicates.forall(_.isExists))
@@ -56,10 +53,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider w
 
   private def doCreatePlans(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], context: LogicalPlanningContext): Set[LogicalPlan] = {
     val predicateSet = predicateSetToSolve(indexMatch)
-    predicateSet.fold(Set.empty[LogicalPlan]) { predicateSet =>
-      val plan = constructPlan(predicateSet, indexMatch, hints, argumentIds, context)
-      Set(plan)
-    }
+    predicateSet.map(constructPlan(_, indexMatch, hints, argumentIds, context)).toSet
   }
 
   private def constructPlan(predicateSet: PredicateSet,
@@ -85,5 +79,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider w
       context = context,
     )
   }
-}
 
+  override def wouldCreatePlan(indexMatch: IndexMatch): Boolean =
+    predicateSetToSolve(indexMatch).nonEmpty
+}

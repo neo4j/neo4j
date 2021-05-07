@@ -116,7 +116,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       planner.plan(s"MATCH (a:A)-[r:REL]-(b) USING INDEX r:REL(prop) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
           .produceResults("r")
-          .filterExpression(hasLabels("a", "A")) // TODO change to .filter("a:A") after https://github.com/neo-technology/neo4j/pull/9823 is merged
+          .filterExpression(hasLabels("a", "A"))
           .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)")
           .build()
       )

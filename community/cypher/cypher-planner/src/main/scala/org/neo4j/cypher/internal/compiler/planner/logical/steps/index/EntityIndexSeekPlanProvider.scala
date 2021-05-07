@@ -57,9 +57,9 @@ object EntityIndexSeekPlanProvider {
   }
 
   def mergeQueryExpressionsToSingleOne(predicates: Seq[IndexCompatiblePredicate]): QueryExpression[Expression] =
-    if (predicates.length == 1)
+    if (predicates.length == 1) {
       predicates.head.queryExpression
-    else {
+    } else {
       CompositeQueryExpression(predicates.map(_.queryExpression))
     }
 }

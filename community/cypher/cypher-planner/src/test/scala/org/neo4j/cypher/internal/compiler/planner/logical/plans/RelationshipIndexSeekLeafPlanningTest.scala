@@ -111,7 +111,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     }
   }
 
-  test("index seek (IN predicate) when there is an index on the property") {
+  test("index seek (IN predicate) when there is an index on the property for when matching on undirected relationship") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rPropInLit42)
@@ -184,7 +184,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     }
   }
 
-  test("index seek with values (< predicate) when there is an index on the property") {
+  test("index seek with values (< predicate) when there is an index on the property which can provide values") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rPropLessThanLit42)
@@ -267,11 +267,11 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         selections = Selections(predicates.flatMap(_.asPredicates)),
         patternRelationships = Set(
           PatternRelationship(
-          relName,
-          (startNodeName, endNodeName),
-          BOTH,
-          Seq(relTypeName(relTypeName)),
-          SimplePatternLength),
+            relName,
+            (startNodeName, endNodeName),
+            BOTH,
+            Seq(relTypeName(relTypeName)),
+            SimplePatternLength),
           PatternRelationship(
             x,
             (startNodeName, endNodeName),

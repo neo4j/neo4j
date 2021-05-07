@@ -41,5 +41,5 @@ trait RelationshipIndexPlanProviderPeek {
 }
 
 object RelationshipIndexPlanProviderPeek {
-  val default: RelationshipIndexPlanProviderPeek = (_: RelationshipIndexLeafPlanner.IndexMatch) => false
+  val default: RelationshipIndexPlanProviderPeek = _ => false
 }
