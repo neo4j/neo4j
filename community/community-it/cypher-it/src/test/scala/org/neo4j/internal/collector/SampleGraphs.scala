@@ -20,13 +20,18 @@
 package org.neo4j.internal.collector
 
 import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 trait SampleGraphs {
   self: ExecutionEngineFunSuite =>
 
   protected def createSteelfaceGraph(): Unit = {
+    graph.withTx( tx => {
+      tx.schema().getIndexes.iterator().asScala.foreach(index => index.drop())
+      tx.commit()
+    })
+
     val users = (0 until 1000).map(i => createLabeledNode(Map("email" -> s"user$i@mail.com"), "User"))
     graph.withTx( tx => {
         users.take(500).foreach(user => tx.getNodeById(user.getId).setProperty("lastName", "Steelface"+user.getId))

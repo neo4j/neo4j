@@ -23,13 +23,23 @@ import org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_e
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.GraphIcing
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
+
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite with GraphIcing with SampleGraphs {
 
   // Make sure that background sampling is disabled so we can test `updatesSinceEstimation`
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() + (index_background_sampling_enabled -> java.lang.Boolean.FALSE)
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() + (index_background_sampling_enabled -> java.lang.Boolean.FALSE) +
+    (RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes -> java.lang.Boolean.TRUE)
 
   test("retrieve empty") {
+    // setup
+    graph.withTx( tx => {
+      tx.schema().getIndexes.iterator().asScala.foreach(index => index.drop())
+      tx.commit()
+    })
+
     // when
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
 
@@ -115,11 +125,11 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
                                                "L2",
                                                "R0",
                                                "R1",
-                                               "p0",
-                                               "p1",
-                                               "p2",
-                                               "p3",
-                                               "p4"))
+                                               "p10",
+                                               "p11",
+                                               "p12",
+                                               "p13",
+                                               "p14"))
   }
 
   case class TokenNames(User: String,

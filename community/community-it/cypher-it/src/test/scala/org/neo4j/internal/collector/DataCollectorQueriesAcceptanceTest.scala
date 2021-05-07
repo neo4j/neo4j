@@ -20,20 +20,25 @@
 package org.neo4j.internal.collector
 
 import java.nio.file.Files
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.collector.DataCollectorMatchers.beCypher
 import org.neo4j.internal.collector.DataCollectorMatchers.beListWithoutOrder
 import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 import scala.collection.mutable.ArrayBuffer
 
 class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
+
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() + (index_background_sampling_enabled -> java.lang.Boolean.FALSE) +
+    (RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes -> java.lang.Boolean.TRUE)
 
   test("should collect and retrieve queries") {
     // given
@@ -522,7 +527,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // then
     res.toList should beListWithoutOrder(
       querySection("MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
-      querySection("MATCH ({p1: 42}), ({p0: 43}) RETURN 1")
+      querySection("MATCH ({p11: 42}), ({p10: 43}) RETURN 1")
     )
   }
 
