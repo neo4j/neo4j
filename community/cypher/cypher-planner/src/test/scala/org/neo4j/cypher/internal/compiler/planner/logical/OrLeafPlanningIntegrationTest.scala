@@ -54,6 +54,18 @@ class OrLeafPlanningIntegrationTest
       .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
 
+  // This config favors linear plans without union/distinct in most cases.
+  private def hintPlannerConfig(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    plannerBuilder()
+      .setAllNodesCardinality(1)
+      .setLabelCardinality("L", 1)
+      .setLabelCardinality("P", 1)
+      .setAllRelationshipsCardinality(2)
+      .setRelationshipCardinality("()-[:REL1]->()", 1)
+      .setRelationshipCardinality("()-[:REL2]->()", 1)
+      .enablePlanningRelationshipIndexes()
+      .enableRelationshipByTypeLookup()
+
   test("should work with index seeks of property disjunctions") {
     val cfg = plannerConfig()
       .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
@@ -182,19 +194,19 @@ class OrLeafPlanningIntegrationTest
   }
 
   test("should work with index seeks of property disjunctions with label conjunction and solve single index hint") {
-    val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
-      .addNodeIndex("L", Seq("p2"), 0.5, 0.5)
+    val cfg = hintPlannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 1.0)
+      .addNodeIndex("L", Seq("p2"), 1.0, 1.0)
       .build()
 
-    val plan = cfg.plan(
-      """MATCH (n:L:P)
-        |USING INDEX n:L(p1)
-        |WHERE n.p1 = 1 OR n.p2 = 2
-        |RETURN n""".stripMargin
+    def plan(withHint: Boolean = true) = cfg.plan(
+      s"""MATCH (n:L:P)
+         |${if (withHint) "" else "//"} USING INDEX n:L(p1)
+         |WHERE n.p1 = 1 OR n.p2 = 2
+         |RETURN n""".stripMargin
     )
 
-    plan should (equal(
+    plan() should (equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
@@ -214,6 +226,44 @@ class OrLeafPlanningIntegrationTest
         .nodeIndexOperator("n:L(p2 = 2)")
         .build()
     ))
+    plan() should not equal plan(withHint = false)
+  }
+
+  test("should work with index seeks of property disjunctions with label conjunction and solve two index hints") {
+    val cfg = hintPlannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 1.0)
+      .addNodeIndex("L", Seq("p2"), 1.0, 1.0)
+      .build()
+
+    def plan(withHint: Boolean = true)= cfg.plan(
+      s"""MATCH (n:L:P)
+        |${if (withHint) "" else "//"} USING INDEX n:L(p1)
+        |${if (withHint) "" else "//"} USING INDEX n:L(p2)
+        |WHERE n.p1 = 1 OR n.p2 = 2
+        |RETURN n""".stripMargin
+    )
+
+    plan() should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.filterExpression(hasLabels("n", "P"))
+        .|.nodeIndexOperator("n:L(p2 = 2)")
+        .filterExpression(hasLabels("n", "P"))
+        .nodeIndexOperator("n:L(p1 = 1)")
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .filterExpression(hasLabels("n", "P"))
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:L(p1 = 1)")
+        .nodeIndexOperator("n:L(p2 = 2)")
+        .build()
+    ))
+    plan() should not equal plan(withHint = false)
   }
 
   test("should work with index seeks of property disjunctions with label conjunction, where every combination is indexed") {
@@ -284,19 +334,19 @@ class OrLeafPlanningIntegrationTest
   }
 
   test("should work with relationship index seeks of property disjunctions and solve single index hint") {
-    val cfg = plannerConfig()
-      .addRelationshipIndex("REL1", Seq("p1"), 0.5, 0.5)
-      .addRelationshipIndex("REL1", Seq("p2"), 0.5, 0.5)
+    val cfg = hintPlannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 1.0)
+      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 1.0)
       .build()
 
-    val plan = cfg.plan(
-      """MATCH (a)-[r:REL1]-(b)
-        |USING INDEX r:REL1(p1)
+    def plan(withHint: Boolean = true) = cfg.plan(
+      s"""MATCH (a)-[r:REL1]-(b)
+        |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
         |WHERE r.p1 = 1 OR r.p2 = 2
         |RETURN r""".stripMargin
     )
 
-    plan should (equal(
+    plan() should (equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -313,6 +363,41 @@ class OrLeafPlanningIntegrationTest
         .relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)")
         .build()
     ))
+    plan() should not equal plan(withHint = false)
+  }
+
+  test("should work with relationship index seeks of property disjunctions and solve two index hints") {
+    val cfg = hintPlannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 1.0)
+      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 1.0)
+      .build()
+
+    def plan(withHint: Boolean = true) = cfg.plan(
+      s"""MATCH (a)-[r:REL1]-(b)
+        |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
+        |${if (withHint) "" else "//"} USING INDEX r:REL1(p2)
+        |WHERE r.p1 = 1 OR r.p2 = 2
+        |RETURN r""".stripMargin
+    )
+
+    plan() should (equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)")
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL1(p2 = 2)]-(b)")
+        .build()
+    ))
+    plan() should not equal plan(withHint = false)
   }
 
   test("should work with index seeks of label disjunctions") {
@@ -348,9 +433,9 @@ class OrLeafPlanningIntegrationTest
   }
 
   test("should work with index seeks of label disjunctions and solve single index hint") {
-    val cfg = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 0.5, 0.5, providesOrder = IndexOrderCapability.BOTH)
-      .addNodeIndex("P", Seq("p1"), 0.5, 0.5, providesOrder = IndexOrderCapability.BOTH)
+    val cfg = hintPlannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("P", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
       .build()
 
     val plan = cfg.plan(
@@ -361,6 +446,42 @@ class OrLeafPlanningIntegrationTest
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
+    // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:P(p1 = 1)")
+        .nodeIndexOperator("n:L(p1 = 1)")
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:L(p1 = 1)")
+        .nodeIndexOperator("n:P(p1 = 1)")
+        .build()
+    ))
+  }
+
+  test("should work with index seeks of label disjunctions and solve two index hints") {
+    val cfg = hintPlannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("P", Seq("p1"), 1.0, 1.0, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |USING INDEX n:L(p1)
+        |USING INDEX n:P(p1)
+        |WHERE (n:L OR n:P) AND (n.p1 = 1)
+        |RETURN n""".stripMargin
+    )
+
+    // Possible improvement: We could have planned this as OrderedDistinct
+    // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
     plan should (equal(
       cfg.planBuilder()
         .produceResults("n")
@@ -445,20 +566,20 @@ class OrLeafPlanningIntegrationTest
   }
 
   test("should work with relationship index seeks of relationship type disjunctions and solve single index hint") {
-    val cfg = plannerConfig()
-      .addRelationshipIndex("REL1", Seq("p1"), 0.5, 0.5)
-      .addRelationshipIndex("REL2", Seq("p1"), 0.5, 0.5)
+    val cfg = hintPlannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 1.0)
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 1.0)
       .build()
 
-    val plan = cfg.plan(
-      """MATCH (a)-[r]-(b)
-        |USING INDEX r:REL2(p1)
+    def plan(withHint: Boolean = true) = cfg.plan(
+      s"""MATCH (a)-[r]-(b)
+        |${if (withHint) "" else "//"} USING INDEX r:REL2(p1)
         |WHERE (r:REL1 OR r:REL2) AND (r.p1 = 1)
         |RETURN r""".stripMargin
     )
 
     // Possible improvement: We could have planned this as OrderedDistinct
-    plan should (equal(
+    plan() should (equal(
       cfg.planBuilder()
         .produceResults("r")
         .distinct("r AS r", "a AS a", "b AS b")
@@ -475,6 +596,42 @@ class OrLeafPlanningIntegrationTest
         .relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)")
         .build()
     ))
+    plan() should not equal plan(withHint = false)
+  }
+
+  test("should work with relationship index seeks of relationship type disjunctions and solve two index hints") {
+    val cfg = hintPlannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 1.0)
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 1.0)
+      .build()
+
+    def plan(withHint: Boolean = true) = cfg.plan(
+      s"""MATCH (a)-[r]-(b)
+        |${if (withHint) "" else "//"} USING INDEX r:REL1(p1)
+        |${if (withHint) "" else "//"} USING INDEX r:REL2(p1)
+        |WHERE (r:REL1 OR r:REL2) AND (r.p1 = 1)
+        |RETURN r""".stripMargin
+    )
+
+    // Possible improvement: We could have planned this as OrderedDistinct
+    plan() should (equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)")
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL1(p1 = 1)]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL2(p1 = 1)]-(b)")
+        .build()
+    ))
+    plan() should not equal plan(withHint = false)
   }
 
   test("should work with label scans of label disjunctions only") {
@@ -505,8 +662,8 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  test("should work with index seeks of label disjunctions only and solve single scan hint") {
-    val cfg = plannerConfig().build()
+  test("should work with label scans of label disjunctions only and solve single scan hint") {
+    val cfg = hintPlannerConfig().build()
 
     val plan = cfg.plan(
       """MATCH (n)
@@ -515,6 +672,38 @@ class OrLeafPlanningIntegrationTest
         |RETURN n""".stripMargin
     )
 
+    // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .orderedDistinct(Seq("n"), "n AS n")
+        .orderedUnion(Seq(Ascending("n")))
+        .|.nodeByLabelScan("n", "P", IndexOrderAscending)
+        .nodeByLabelScan("n", "L", IndexOrderAscending)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .orderedDistinct(Seq("n"), "n AS n")
+        .orderedUnion(Seq(Ascending("n")))
+        .|.nodeByLabelScan("n", "L", IndexOrderAscending)
+        .nodeByLabelScan("n", "P", IndexOrderAscending)
+        .build()
+    ))
+  }
+
+  test("should work with label scans of label disjunctions only and solve two scan hints") {
+    val cfg = hintPlannerConfig().build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |USING SCAN n:L
+        |USING SCAN n:P
+        |WHERE n:L OR n:P
+        |RETURN n""".stripMargin
+    )
+
+    // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
     plan should (equal(
       cfg.planBuilder()
         .produceResults("n")
@@ -563,16 +752,16 @@ class OrLeafPlanningIntegrationTest
   }
 
   test("should work with relationship type scans of relationship type disjunctions only and solve single scan hint") {
-    val cfg = plannerConfig().build()
+    val cfg = hintPlannerConfig().build()
 
-    val plan = cfg.plan(
-      """MATCH (a)-[r]-(b)
-        |USING SCAN r:REL2
+    def plan(withHint: Boolean = true) = cfg.plan(
+      s"""MATCH (a)-[r]-(b)
+        |${if (withHint) "" else "//"} USING SCAN r:REL2
         |WHERE (r:REL1 OR r:REL2)
         |RETURN r""".stripMargin
     )
 
-    plan should (equal(
+    plan() should (equal(
       cfg.planBuilder()
         .produceResults("r")
         .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
@@ -589,6 +778,38 @@ class OrLeafPlanningIntegrationTest
         .relationshipTypeScan("(a)-[r:REL2]-(b)", indexOrder = IndexOrderAscending)
         .build()
     ))
+    plan() should not equal plan(withHint = false)
+  }
+
+  test("should work with relationship type scans of relationship type disjunctions only and solve two scan hint") {
+    val cfg = hintPlannerConfig().build()
+
+    def plan(withHint: Boolean = true) = cfg.plan(
+      s"""MATCH (a)-[r]-(b)
+        |${if (withHint) "" else "//"} USING SCAN r:REL1
+        |${if (withHint) "" else "//"} USING SCAN r:REL2
+        |WHERE (r:REL1 OR r:REL2)
+        |RETURN r""".stripMargin
+    )
+
+    plan() should (equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
+        .orderedUnion(Seq(Ascending("r")))
+        .|.relationshipTypeScan("(a)-[r:REL2]-(b)", indexOrder = IndexOrderAscending)
+        .relationshipTypeScan("(a)-[r:REL1]-(b)", indexOrder = IndexOrderAscending)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
+        .orderedUnion(Seq(Ascending("r")))
+        .|.relationshipTypeScan("(a)-[r:REL1]-(b)", indexOrder = IndexOrderAscending)
+        .relationshipTypeScan("(a)-[r:REL2]-(b)", indexOrder = IndexOrderAscending)
+        .build()
+    ))
+    plan() should not equal plan(withHint = false)
   }
 
   test("should work with relationship type scans of inlined relationship type disjunctions only") {
