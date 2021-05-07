@@ -683,10 +683,10 @@ public class ForsetiClient implements Locks.Client
         releaseAllLocks();
         userTransactionId = INVALID_TRANSACTION_ID;
         memoryTracker = null;
-        clientPool.release( this );
         // This exclusive lock instance has been used for all exclusive locks held by this client for this transaction.
         // Close it to mark it not participate in deadlock detection anymore
         myExclusiveLock.close();
+        clientPool.release( this );
     }
 
     private void releaseAllLocks()
