@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -57,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -101,7 +103,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
-class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
+                                              with LogicalPlanningTestSupport2
+                                              with LogicalPlanningIntegrationTestSupport {
 
   override val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.withSettings(
     Map(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes -> java.lang.Boolean.TRUE)
@@ -591,6 +595,34 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                  RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  NodeIndexSeek("n", _, _, _, SetExtractor(argumentName), _), _
                 ) if collectionName == argumentName => ()
+    }
+  }
+
+  test("should solve pattern comprehension for relationship index seek") {
+    val planner = plannerBuilder()
+      .enablePlanningRelationshipIndexes()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .build()
+
+    val q =
+      """
+        |MATCH ()-[r:REL]->()
+        |WHERE r.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
+        |RETURN r
+      """.stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan should beLike {
+      case Apply
+        (RollUpApply
+          (Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
+        DirectedRelationshipIndexSeek("r", _, _, _, _, _, SetExtractor(argumentName), _),
+        _
+        ) if collectionName == argumentName => ()
     }
   }
 
