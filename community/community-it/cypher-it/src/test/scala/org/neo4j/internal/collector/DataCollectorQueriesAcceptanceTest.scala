@@ -37,7 +37,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
 
-  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() + (index_background_sampling_enabled -> java.lang.Boolean.FALSE) +
+  override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() +
     (RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes -> java.lang.Boolean.TRUE)
 
   test("should collect and retrieve queries") {
