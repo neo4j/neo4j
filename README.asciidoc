@@ -6,7 +6,7 @@ Learn more on the https://neo4j.com[Neo4j website].
 
 https://discord.gg/neo4j[image:https://img.shields.io/discord/787399249741479977?label=Chat&logo=discord&style=for-the-badge[Discord]]
 
-https://community.neo4j.com[image:https://img.shields.io/discourse/users?label=Forums&server=https%3A%2F%2Fcommunity.neo4j.com&style=for-the-badge[Discourse users]]
+https://community.neo4j.com[image:https://img.shields.io/discourse/users?label=Forums&logo=discourse&server=https%3A%2F%2Fcommunity.neo4j.com&style=for-the-badge[Discourse users]]
 
 == Using Neo4j ==
 
