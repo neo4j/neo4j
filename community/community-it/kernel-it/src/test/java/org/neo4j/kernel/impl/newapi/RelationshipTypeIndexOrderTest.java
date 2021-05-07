@@ -19,13 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.BeforeEach;
-
-import java.util.concurrent.TimeUnit;
-
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -33,40 +28,11 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<RelationshipTypeIndexCursor>
 {
-    @Override
-    public WriteTestSupport newTestSupport()
-    {
-        return new WriteTestSupport()
-        {
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-            {
-                builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-                return super.configure( builder );
-            }
-        };
-    }
-
-    @BeforeEach
-    public void setupRelTypeIndex()
-    {
-        // KernelAPIWriteTestBase removes all indexes after creating the database so need to recreate the relation type index.
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "rti" ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-        }
-    }
 
     @Override
     protected long entityWithToken( KernelTransaction tx, String name ) throws Exception
@@ -93,7 +59,7 @@ public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<Rela
     @Override
     protected void tokenScan( IndexOrder indexOrder, KernelTransaction tx, int label, RelationshipTypeIndexCursor cursor ) throws KernelException
     {
-        IndexDescriptor index = tx.schemaRead().indexGetForName( "rti" );
+        IndexDescriptor index = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) ).next();
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
         tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ) );
     }
@@ -102,11 +68,6 @@ public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<Rela
     protected int tokenByName( KernelTransaction tx, String name )
     {
         return tx.tokenRead().relationshipType( name );
-    }
-
-    @Override
-    protected void prepareForTokenScans( KernelTransaction tx )
-    {
     }
 
 }

@@ -21,25 +21,41 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.security.AnonymousContext.read;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configuration" )
 class NodeScanIT
 {
     @Inject
     private Kernel kernel;
 
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+    }
+
     @Test
-    void trackPageCacheAccessOnNodeLabelScan() throws TransactionFailureException
+    void trackPageCacheAccessOnNodeLabelScan() throws KernelException
     {
         var testLabel = Label.label( "testLabel" );
         try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, read() ) )
@@ -47,10 +63,16 @@ class NodeScanIT
             var cursorContext = tx.cursorContext();
             assertThat( cursorContext.getCursorTracer().pins() ).isZero();
 
-            var labelId = tx.tokenRead().nodeLabel( testLabel.name() );
-            tx.dataRead().nodeLabelScan( labelId );
+            var label = tx.tokenRead().nodeLabel( testLabel.name() );
 
-            assertThat( cursorContext.getCursorTracer().pins() ).isNotZero();
+            IndexDescriptor index = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) ).next();
+            TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( cursorContext ) )
+            {
+                tx.dataRead().nodeLabelScan( tokenReadSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( label ) );
+
+                assertThat( cursorContext.getCursorTracer().pins() ).isNotZero();
+            }
         }
     }
 }

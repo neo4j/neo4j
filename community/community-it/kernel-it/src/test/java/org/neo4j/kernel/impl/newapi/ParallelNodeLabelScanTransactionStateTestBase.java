@@ -64,14 +64,6 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
 {
     private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
 
-    abstract void doAssertBackingNodeLabelStructureExists() throws KernelException;
-
-    @BeforeEach
-    private void assertBackingNodeLabelStructureExists() throws KernelException
-    {
-        doAssertBackingNodeLabelStructureExists();
-    }
-
     @Test
     void shouldHandleEmptyDatabase() throws KernelException
     {

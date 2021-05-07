@@ -37,10 +37,4 @@ public class ParallelNodeLabelScanTransactionStateTest extends ParallelNodeLabel
             }
         };
     }
-
-    @Override
-    void doAssertBackingNodeLabelStructureExists()
-    {
-        // No-op, labelScanStore should exist already
-    }
 }

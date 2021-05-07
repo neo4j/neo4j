@@ -19,16 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.common.EntityType;
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 
 public class ParallelNodeLabelScanTransactionStateSSTITest extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport>
 {
@@ -44,16 +36,5 @@ public class ParallelNodeLabelScanTransactionStateSSTITest extends ParallelNodeL
                 return super.configure( builder );
             }
         };
-    }
-
-    @Override
-    void doAssertBackingNodeLabelStructureExists() throws KernelException
-    {
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            IndexPrototype prototype = forSchema( forAnyEntityTokens( EntityType.NODE ) ).withIndexType( IndexType.LOOKUP );
-            tx.schemaWrite().indexCreate( prototype );
-            tx.commit();
-        }
     }
 }

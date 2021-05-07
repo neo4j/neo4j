@@ -23,11 +23,8 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -67,9 +64,6 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
     @Test
     void shouldFindNodesByLabel() throws Exception
     {
-        // GIVEN
-        createNLS();
-
         long toDelete;
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -138,9 +132,6 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
     @Test
     void shouldFindNodesByLabelInTx() throws Exception
     {
-
-        createNLS();
-
         long inStore;
         long deletedInTx;
         long createdInTx;
@@ -174,20 +165,6 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
                 // then
                 assertNodes( cursor, uniqueIds, inStore, createdInTx );
             }
-        }
-    }
-
-    private void createNLS()
-    {
-        try ( var tx = graphDb.beginTx() )
-        {
-            tx.schema().indexFor( AnyTokens.ANY_LABELS ).create();
-            tx.commit();
-        }
-
-        try ( var tx = graphDb.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
         }
     }
 
