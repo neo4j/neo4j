@@ -35,7 +35,12 @@ public class Stage
 
     public Stage( String name, String part, Configuration config, int orderingGuarantees )
     {
-        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees );
+        this( name, part, config, orderingGuarantees, StageExecution.DEFAULT_PANIC_MONITOR );
+    }
+
+    public Stage( String name, String part, Configuration config, int orderingGuarantees, StageExecution.PanicMonitor panicMonitor )
+    {
+        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees, panicMonitor );
     }
 
     protected StageControl control()

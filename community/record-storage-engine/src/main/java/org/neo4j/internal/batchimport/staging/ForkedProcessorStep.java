@@ -134,7 +134,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     public long receive( long ticket, T batch )
     {
         long time = nanoTime();
-        while ( queuedBatches.get() >= maxQueueLength )
+        while ( queuedBatches.get() >= maxQueueLength && !isPanic() )
         {
             PARK.park( receiverThread = Thread.currentThread() );
         }
@@ -227,36 +227,43 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
         @Override
         public void run()
         {
-            Unit current = tail.get();
-            while ( !isCompleted() )
+            try
             {
-                Unit candidate = current.next;
-                if ( candidate != null && candidate.isCompleted() )
+                Unit current = tail.get();
+                while ( !isCompleted() && !isPanic() )
                 {
-                    if ( downstream != null )
+                    Unit candidate = current.next;
+                    if ( candidate != null && candidate.isCompleted() )
                     {
-                        sendDownstream( candidate );
+                        if ( downstream != null )
+                        {
+                            sendDownstream( candidate );
+                        }
+                        else
+                        {
+                            control.recycle( candidate.batch );
+                        }
+                        current = candidate;
+                        tail.set( current );
+                        queuedBatches.decrementAndGet();
+                        doneBatches.incrementAndGet();
+                        totalProcessingTime.add( candidate.processingTime );
+                        checkNotifyEndDownstream();
                     }
                     else
                     {
-                        control.recycle( candidate.batch );
+                        Thread receiver = ForkedProcessorStep.this.receiverThread;
+                        if ( receiver != null )
+                        {
+                            PARK.unpark( receiver );
+                        }
+                        PARK.park( this );
                     }
-                    current = candidate;
-                    tail.set( current );
-                    queuedBatches.decrementAndGet();
-                    doneBatches.incrementAndGet();
-                    totalProcessingTime.add( candidate.processingTime );
-                    checkNotifyEndDownstream();
                 }
-                else
-                {
-                    Thread receiver = ForkedProcessorStep.this.receiverThread;
-                    if ( receiver != null )
-                    {
-                        PARK.unpark( receiver );
-                    }
-                    PARK.park( this );
-                }
+            }
+            catch ( Throwable e )
+            {
+                issuePanic( e, false );
             }
         }
     }
@@ -284,7 +291,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
         {
             try
             {
-                while ( !isCompleted() )
+                while ( !isCompleted() && !isPanic() )
                 {
                     Unit candidate = current.next;
                     if ( candidate != null )

@@ -38,13 +38,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ResourceLock( Resources.SYSTEM_OUT )
 class LonelyProcessingStepTest
 {
-
     @Test
     @Timeout( 10 )
     void issuePanicBeforeCompletionOnError() throws Exception
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
-        FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest( stepsPipeline );
+        TrackingPanicMonitor panicMonitor = new TrackingPanicMonitor();
+        FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest( stepsPipeline, panicMonitor );
         stepsPipeline.add( faultyStep );
 
         faultyStep.receive( 1, null );
@@ -56,6 +56,7 @@ class LonelyProcessingStepTest
         assertTrue( faultyStep.isPanic() );
         assertFalse( faultyStep.stillWorking() );
         assertTrue( faultyStep.isCompleted() );
+        assertTrue( panicMonitor.hasReceivedPanic() );
     }
 
     private static class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
@@ -63,9 +64,9 @@ class LonelyProcessingStepTest
         private volatile boolean endOfUpstreamCalled;
         private volatile boolean panicOnEndUpstream;
 
-        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine )
+        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine, TrackingPanicMonitor panicMonitor )
         {
-            super( new StageExecution( "Faulty", null, Configuration.DEFAULT, pipeLine, 0 ),
+            super( new StageExecution( "Faulty", null, Configuration.DEFAULT, pipeLine, 0, panicMonitor ),
                     "Faulty", Configuration.DEFAULT );
         }
 

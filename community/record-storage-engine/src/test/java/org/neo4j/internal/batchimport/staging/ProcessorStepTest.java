@@ -38,6 +38,7 @@ import org.neo4j.test.rule.OtherThreadRule;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -187,7 +188,8 @@ class ProcessorStepTest
         String exceptionMessage = "Failing just for fun";
         Configuration configuration = Configuration.DEFAULT;
         CountDownLatch latch = new CountDownLatch( 1 );
-        Stage stage = new Stage( "Test", "Part", configuration, ORDER_SEND_DOWNSTREAM );
+        TrackingPanicMonitor panicMonitor = new TrackingPanicMonitor();
+        Stage stage = new Stage( "Test", "Part", configuration, ORDER_SEND_DOWNSTREAM, panicMonitor );
         stage.add( intProducer( configuration, stage, configuration.maxNumberOfProcessors() * 2 ) );
         ProcessorStep<Integer> failingProcessor = null;
         for ( int i = 0; i < numProcessors; i++ )
@@ -232,6 +234,7 @@ class ProcessorStepTest
         {
             stage.close();
         }
+        assertTrue( panicMonitor.hasReceivedPanic() );
     }
 
     private static ProducerStep intProducer( Configuration configuration, Stage stage, int batches )
