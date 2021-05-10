@@ -34,6 +34,7 @@ import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.server.security.auth.Neo4jPrincipal;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
@@ -77,7 +78,7 @@ public class SystemGraphRealmHelper
             }
             catch ( NotFoundException e )
             {
-                id = null;
+                id = Neo4jPrincipal.NO_ID;
             }
 
             boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );

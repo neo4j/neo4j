@@ -19,6 +19,7 @@
  */
 package org.neo4j.security;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
@@ -45,10 +47,13 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -61,17 +66,22 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_single_automatic_upgrade;
+import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
@@ -87,13 +97,25 @@ class UserSecurityGraphComponentTest
     private static GraphDatabaseFacade system;
     private static SystemGraphComponents systemGraphComponents;
     private static UserSecurityGraphComponent userSecurityGraphComponent;
+    private static AuthManager authManager;
 
     @BeforeAll
     static void setup() throws IOException, InvalidArgumentsException
     {
-        dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() ).impermanent().noOpSystemGraphInitializer().build();
+        Config cfg = Config.newBuilder()
+                           .set( auth_enabled, TRUE )
+                           .set( allow_single_automatic_upgrade, FALSE )
+                           .build();
+
+        dbms = new TestDatabaseManagementServiceBuilder( directory.homePath() )
+                .impermanent()
+                .setConfig( cfg )
+                .noOpSystemGraphInitializer()
+                .build();
         system = (GraphDatabaseFacade) dbms.database( SYSTEM_DATABASE_NAME );
-        systemGraphComponents = system.getDependencyResolver().resolveDependency( SystemGraphComponents.class );
+        DependencyResolver resolver = system.getDependencyResolver();
+        systemGraphComponents = resolver.resolveDependency( SystemGraphComponents.class );
+        authManager = resolver.resolveDependency( AuthManager.class );
 
         // Insert a custom SecurityUserComponent instead of the default one,
         // in order to have a handle on it and to migrate a 3.5 user
@@ -114,7 +136,7 @@ class UserSecurityGraphComponentTest
     }
 
     @BeforeEach
-    static void clear() throws Exception
+    void clear() throws Exception
     {
         inTx( tx -> tx.getAllNodes().stream().forEach( n ->
         {
@@ -127,6 +149,16 @@ class UserSecurityGraphComponentTest
     static void tearDown()
     {
         dbms.shutdown();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "supportedPreviousVersions" )
+    void shouldAuthenticate( UserSecurityGraphComponentVersion version ) throws Exception
+    {
+        initializeLatestSystem();
+        initUserSecurityComponent( version );
+        LoginContext loginContext = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ),  EMBEDDED_CONNECTION);
+        Assertions.assertThat( loginContext.subject().getAuthenticationResult() ).isEqualTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
     }
 
     @Test
