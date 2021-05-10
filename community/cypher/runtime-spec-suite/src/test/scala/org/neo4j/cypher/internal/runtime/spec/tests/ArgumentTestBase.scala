@@ -70,28 +70,4 @@ abstract class ArgumentTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("y").withRows(singleColumn(Seq(0, 0, 1, 1, 2, 2, 3, 3, 4, 4)))
   }
-
-  test("should handle argument + expand on the rhs of an apply") {
-    val (nodes, _) = given {
-      circleGraph(sizeHint, "L")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nonFuseable()
-      .apply()
-      .|.expand("(x)-->(y)")
-      .|.argument("x", "y")
-      .nonFuseable()
-      .expand("(x)-->(y)")
-      .nonFuseable()
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
-  }
 }
