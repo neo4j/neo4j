@@ -298,6 +298,7 @@ TOKEN [IGNORE_CASE] :
     | < BAR: "|" >
     | < BRIEF: "BRIEF" >
     | < BTREE: "BTREE" >
+    | < BUILT: "BUILT" >
     | < BY: "BY" >
     | < CALL: "CALL" >
     | < CASE: "CASE" >
@@ -317,6 +318,7 @@ TOKEN [IGNORE_CASE] :
     | < DATABASES: "DATABASES">
     | < DBMS: "DBMS">
     | < DEFAULT_TOKEN: "DEFAULT">
+    | < DEFINED: "DEFINED">
     | < DELETE: "DELETE" >
     | < DESC: "DESC" ("ENDING")? >
     | < DESTROY: "DESTROY">
@@ -343,6 +345,8 @@ TOKEN [IGNORE_CASE] :
     | < FOREACH: "FOREACH" >
     | < FROM: "FROM" >
     | < FULLTEXT: "FULLTEXT" >
+    | < FUNCTION: "FUNCTION" >
+    | < FUNCTIONS: "FUNCTIONS" >
     | < GE: ">=" >
     | < GRANT: "GRANT">
     | < GRAPH: "GRAPH" >
@@ -2675,25 +2679,27 @@ List<String> SymbolicNameList1() :
 STATEMENT ShowCommand( USE_CLAUSE useClause ) :
 {
     Token start = null;
-    Token schemaType = null;
+    Token showCommandType = null;
     STATEMENT statement = null;
 }
 {
     start=<SHOW>
     (
-        schemaType=<ALL> statement=ShowAllCommand( start, useClause, schemaType.image )
+        showCommandType=<ALL> statement=ShowAllCommand( start, useClause, showCommandType.image )
         | <POPULATED> statement=ShowRoles( start, useClause, false )
-        | schemaType=<BTREE> statement = ShowIndexesAllowBrief( start, useClause, schemaType.image )
-        | schemaType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, schemaType.image )
-        | schemaType=<LOOKUP> statement = ShowIndexesNoBrief( start, useClause, schemaType.image )
-        | schemaType=<UNIQUE> statement = ShowConstraintsAllowBriefAndYield( start, useClause, schemaType.image )
-        | schemaType=<NODE> statement = ShowNodeCommand( start, useClause, schemaType.image )
-        | schemaType=<PROPERTY> statement = ShowPropertyCommand( start, useClause, schemaType.image )
-        | schemaType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, schemaType.image )
-        | schemaType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, schemaType.image )
-        | schemaType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, schemaType.image )
-        | schemaType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause, schemaType.image )
-        | schemaType=<REL> statement=ShowRelCommand( start, useClause, schemaType.image )
+        | showCommandType=<BTREE> statement = ShowIndexesAllowBrief( start, useClause, showCommandType.image )
+        | showCommandType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, showCommandType.image )
+        | showCommandType=<LOOKUP> statement = ShowIndexesNoBrief( start, useClause, showCommandType.image )
+        | showCommandType=<UNIQUE> statement = ShowConstraintsAllowBriefAndYield( start, useClause, showCommandType.image )
+        | showCommandType=<NODE> statement = ShowNodeCommand( start, useClause, showCommandType.image )
+        | showCommandType=<PROPERTY> statement = ShowPropertyCommand( start, useClause, showCommandType.image )
+        | showCommandType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, showCommandType.image )
+        | showCommandType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, showCommandType.image )
+        | showCommandType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, showCommandType.image )
+        | showCommandType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause, showCommandType.image )
+        | showCommandType=<REL> statement=ShowRelCommand( start, useClause, showCommandType.image )
+        | showCommandType=<BUILT> <IN> statement=ShowFunctions( start, useClause, showCommandType.image )
+        | showCommandType=<USER> <DEFINED> statement=ShowFunctions( start, useClause, showCommandType.image )
         | statement=ShowRoles( start, useClause, true )
         | statement=ShowIndexesAllowBrief( start, useClause, "ALL" ) // <ALL>.image
         | statement=ShowDatabase( start, useClause )
@@ -2701,21 +2707,23 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | statement=ShowCurrentUser( start, useClause )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, "ALL" ) // <ALL>.image
         | statement=ShowProcedures( start, useClause )
+        | statement=ShowFunctions( start, useClause, "ALL" ) // <ALL>.image
     )
     {
         return statement;
     }
 }
 
-STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause, String schemaType ) :
+STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause, String showCommandType ) :
 {
     STATEMENT statement = null;
 }
 {
     (
         statement = ShowRoles( start, useClause, true )
-        | statement = ShowIndexesAllowBrief( start, useClause, schemaType )
-        | statement = ShowConstraintsAllowBriefAndYield( start, useClause, schemaType )
+        | statement = ShowIndexesAllowBrief( start, useClause, showCommandType )
+        | statement = ShowConstraintsAllowBriefAndYield( start, useClause, showCommandType )
+        | statement = ShowFunctions( start, useClause, showCommandType )
     )
     {
         return statement;
@@ -2807,7 +2815,7 @@ YIELD YieldClause():
     }
 }
 
-STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String schemaType ):
+STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String indexType ):
 {
     // all and btree indexes
     List<CLAUSE> clauses = new ArrayList<>();
@@ -2831,7 +2839,7 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String schem
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, brief, verbose, where, true ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, true ) );
             clauses.add( yieldClause );
             if ( returnClause != null )
             {
@@ -2840,13 +2848,13 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String schem
         }
         else
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, brief, verbose, where, false ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, false ) );
         }
         return astFactory.newSingleQuery( clauses );
     }
 }
 
-STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String schemaType):
+STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String indexType):
 {
   // fulltext and lookup indexes
   List<CLAUSE> clauses = new ArrayList<>();
@@ -2863,7 +2871,7 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String schemaTyp
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, false, false, where, true ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, true ) );
             clauses.add( yieldClause );
             if ( returnClause != null )
             {
@@ -2872,7 +2880,7 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String schemaTyp
         }
         else
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, false, false, where, false ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, false ) );
         }
         return astFactory.newSingleQuery( clauses );
     }
@@ -2992,9 +3000,9 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
 {
     ( <PROCEDURE> | <PROCEDURES> )
     (
-        <EXECUTABLE> { currentUser = true; } (<BY>
+        <EXECUTABLE> { currentUser = true; } ( <BY>
         ( <CURRENT> <USER> { currentUser = true; }
-        | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ))?
+        | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ) )?
     )?
     (
         ( yieldClause = YieldClause() ( returnClause=ReturnClause() ) ? )
@@ -3013,6 +3021,51 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
         else
         {
             clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, false ) );
+        }
+        return astFactory.newSingleQuery( clauses );
+    }
+}
+
+STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, String functionType ):
+{
+    List<CLAUSE> clauses = new ArrayList<>();
+    if (useClause != null)
+    {
+        clauses.add( useClause );
+    }
+
+    boolean currentUser = false;
+    Token userToken = null;
+    String user = null;
+
+    EXPRESSION where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
+}
+{
+    ( <FUNCTION> | <FUNCTIONS> )
+    (
+        <EXECUTABLE> { currentUser = true; } ( <BY>
+        ( <CURRENT> <USER> { currentUser = true; }
+        | userToken=SymbolicNameString() { user = userToken.image; currentUser = false; } ) )?
+    )?
+    (
+        ( yieldClause = YieldClause() ( returnClause=ReturnClause() ) ? )
+        | where = Where()
+    )?
+    {
+        if ( yieldClause != null )
+        {
+            clauses.add( astFactory.showFunctionClause( pos( start ), functionType, currentUser, user, where, true ) );
+            clauses.add( yieldClause );
+            if ( returnClause != null )
+            {
+                clauses.add( returnClause );
+            }
+        }
+        else
+        {
+            clauses.add( astFactory.showFunctionClause( pos( start ), functionType, currentUser, user, where, false ) );
         }
         return astFactory.newSingleQuery( clauses );
     }
@@ -3645,6 +3698,7 @@ Token SymbolicNameString() :
         | t=<ASSERT>
         | t=<BRIEF>
         | t=<BTREE>
+        | t=<BUILT>
         | t=<BY>
         | t=<CALL>
         | t=<CASE>
@@ -3664,6 +3718,7 @@ Token SymbolicNameString() :
         | t=<DATABASES>
         | t=<DBMS>
         | t=<DEFAULT_TOKEN>
+        | t=<DEFINED>
         | t=<DELETE>
         | t=<DESC>
         | t=<DESTROY>
@@ -3686,6 +3741,8 @@ Token SymbolicNameString() :
         | t=<FOREACH>
         | t=<FROM>
         | t=<FULLTEXT>
+        | t=<FUNCTION>
+        | t=<FUNCTIONS>
         | t=<GRANT>
         | t=<GRAPH>
         | t=<HEADERS>

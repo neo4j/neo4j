@@ -30,4 +30,8 @@ public interface FunctionInformation
     String getCategory();
 
     java.lang.Boolean isAggregationFunction();
+
+    String returnType();
+
+    java.util.List<java.util.Map<String, String>> inputSignature();
 }

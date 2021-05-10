@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BUILT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CALL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CASE
@@ -49,6 +50,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DBMS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFAULT_TOKEN
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFINED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DELETE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESTROY
@@ -72,6 +74,8 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FILTER
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOREACH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FROM
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FULLTEXT
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FUNCTION
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FUNCTIONS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRANT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS
@@ -167,6 +171,7 @@ object IdentifierTokens {
     ASSERT,
     BRIEF,
     BTREE,
+    BUILT,
     BY,
     CALL,
     CASE,
@@ -186,6 +191,7 @@ object IdentifierTokens {
     DATABASES,
     DBMS,
     DEFAULT_TOKEN,
+    DEFINED,
     DELETE,
     DESC,
     DESTROY,
@@ -208,6 +214,8 @@ object IdentifierTokens {
     FOREACH,
     FROM,
     FULLTEXT,
+    FUNCTION,
+    FUNCTIONS,
     GRANT,
     GRAPH,
     HEADERS,

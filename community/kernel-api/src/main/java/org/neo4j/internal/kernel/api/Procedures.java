@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -29,6 +30,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.values.AnyValue;
 
 public interface Procedures
@@ -41,11 +43,23 @@ public interface Procedures
     UserFunctionHandle functionGet( QualifiedName name );
 
     /**
+     * Fetch all non-aggregating functions
+     * @return all non-aggregating functions
+     */
+    Stream<UserFunctionSignature> functionGetAll( );
+
+    /**
      * Get a handle to the given aggregation function
      * @param name the name of the function
      * @return A handle to the function or null if no function was found.
      */
     UserFunctionHandle aggregationFunctionGet( QualifiedName name );
+
+    /**
+     * Fetch all aggregating functions
+     * @return all aggregating functions
+     */
+    Stream<UserFunctionSignature> aggregationFunctionGetAll( );
 
     /**
      * Fetch a procedure handle

@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.ExecutableBy
 import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -468,8 +467,11 @@ case class DefaultOrAllShowColumns(useAllColumns: Boolean, brief: Set[ShowColumn
   def columns: Set[ShowColumn] = if (useAllColumns) brief ++ verbose else brief
 }
 
-sealed trait FellowshipOfClauseAllowedOnSystem
-sealed trait CommandClauseAllowedOnSystem extends FellowshipOfClauseAllowedOnSystem
+// For a query to be allowed to run on system it needs to consist of:
+// - only ClauseAllowedOnSystem clauses
+// - at least one CommandClauseAllowedOnSystem clause
+sealed trait ClauseAllowedOnSystem
+sealed trait CommandClauseAllowedOnSystem extends ClauseAllowedOnSystem
 
 case class ShowIndexesClause(unfilteredColumns: DefaultOrAllShowColumns, indexType: ShowIndexType, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)
                             (val position: InputPosition) extends CommandClause {
@@ -556,18 +558,33 @@ object ShowProceduresClause {
 
     ShowProceduresClause(DefaultOrAllShowColumns(hasYield, briefCols, verboseCols), executable, where, hasYield)(position)
   }
+}
 
-  sealed trait ExecutableBy {
-    val description: String
-  }
-  object ExecutableBy {
-    val defaultDescription: String = "proceduresForUser(all)"
-  }
-  case object CurrentUser extends ExecutableBy {
-    override val description: String = "proceduresForUser(current)"
-  }
-  case class User(name: String) extends ExecutableBy {
-    override val description: String = s"proceduresForUser($name)"
+case class ShowFunctionsClause(unfilteredColumns: DefaultOrAllShowColumns, functionType: ShowFunctionType, executable: Option[ExecutableBy], where: Option[Where], hasYield: Boolean)
+                               (val position: InputPosition) extends CommandClause with CommandClauseAllowedOnSystem {
+  override def name: String = "SHOW FUNCTIONS"
+
+  override def moveWhereToYield: CommandClause = copy(where = None, hasYield = true)(position)
+}
+
+object ShowFunctionsClause {
+  def apply(functionType: ShowFunctionType, executable: Option[ExecutableBy], where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowFunctionsClause = {
+    val briefCols = Set(
+      ShowColumn("name")(position),
+      ShowColumn("category")(position),
+      ShowColumn("description")(position),
+    )
+    val verboseCols = Set(
+      ShowColumn("signature")(position),
+      ShowColumn("isBuiltIn", CTBoolean)(position),
+      ShowColumn("argumentDescription", CTList(CTMap))(position),
+      ShowColumn("returnDescription")(position),
+      ShowColumn("aggregating", CTBoolean)(position),
+      ShowColumn("rolesExecution", CTList(CTString))(position),
+      ShowColumn("rolesBoostedExecution", CTList(CTString))(position)
+    )
+
+    ShowFunctionsClause(DefaultOrAllShowColumns(hasYield, briefCols, verboseCols), functionType, executable, where, hasYield)(position)
   }
 }
 
@@ -900,7 +917,7 @@ case class Return(distinct: Boolean,
                   orderBy: Option[OrderBy],
                   skip: Option[Skip],
                   limit: Option[Limit],
-                  excludedNames: Set[String] = Set.empty)(val position: InputPosition) extends ProjectionClause with FellowshipOfClauseAllowedOnSystem {
+                  excludedNames: Set[String] = Set.empty)(val position: InputPosition) extends ProjectionClause with ClauseAllowedOnSystem {
 
   override def name = "RETURN"
 
@@ -936,7 +953,7 @@ case class Yield(returnItems: ReturnItems,
                  orderBy: Option[OrderBy],
                  skip: Option[Skip],
                  limit: Option[Limit],
-                 where: Option[Where])(val position: InputPosition) extends ProjectionClause with FellowshipOfClauseAllowedOnSystem {
+                 where: Option[Where])(val position: InputPosition) extends ProjectionClause with ClauseAllowedOnSystem {
   override def distinct: Boolean = false
 
   override def name: String = "YIELD"

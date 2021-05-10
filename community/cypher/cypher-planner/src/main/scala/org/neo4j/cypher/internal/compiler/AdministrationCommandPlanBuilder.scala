@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
-import org.neo4j.cypher.internal.ast.FellowshipOfClauseAllowedOnSystem
+import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphPrivilege
@@ -419,7 +419,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
       // Currently doesn't allow WITH, is this a problem for rewrites?
       case q@Query(None, SingleQuery(clauses))
-        if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(_.isInstanceOf[FellowshipOfClauseAllowedOnSystem]) =>
+        if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(_.isInstanceOf[ClauseAllowedOnSystem]) =>
         Some(plans.AllowedNonAdministrationCommands(q))
 
       case _ => None

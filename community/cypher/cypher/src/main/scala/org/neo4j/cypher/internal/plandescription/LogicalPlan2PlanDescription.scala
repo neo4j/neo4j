@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.ExecutableBy
+import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -187,6 +187,7 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
+import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
@@ -461,9 +462,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         PlanDescriptionImpl(id, "ShowConstraints", NoChildren, Seq(Details(pretty"$typeDescription, $colsDescription")), variables, withRawCardinalities)
 
       case s: ShowProcedures =>
-        val executableDescription = s.executableBy.map(e => asPrettyString.raw(e.description)).getOrElse(asPrettyString.raw(ExecutableBy.defaultDescription))
+        val executableDescription = s.executableBy.map(e => asPrettyString.raw(e.description("procedures"))).getOrElse(asPrettyString.raw(ExecutableBy.defaultDescription("procedures")))
         val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
         PlanDescriptionImpl(id, "ShowProcedures", NoChildren, Seq(Details(pretty"$executableDescription, $colsDescription")), variables, withRawCardinalities)
+
+      case s: ShowFunctions =>
+        val typeDescription = asPrettyString.raw(s.functionType.description)
+        val executableDescription = s.executableBy.map(e => asPrettyString.raw(e.description("functions"))).getOrElse(pretty"functionsForUser(all)")
+        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        PlanDescriptionImpl(id, "ShowFunctions", NoChildren, Seq(Details(pretty"$typeDescription, $executableDescription, $colsDescription")), variables, withRawCardinalities)
 
       case SystemProcedureCall(procedureName, _, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables, withRawCardinalities)

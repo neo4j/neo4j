@@ -23,12 +23,15 @@ import org.neo4j.common.EntityType
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.BtreeIndexes
+import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
@@ -54,8 +57,6 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.CurrentUser
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.User
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -63,7 +64,9 @@ import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UniqueConstraints
+import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
+import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.And
@@ -265,6 +268,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
+import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
@@ -895,6 +899,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(ShowProcedures(Some(User("foo")), verbose = false, Set.empty), 1.0),
       planDescription(id, "ShowProcedures", NoChildren, Seq(details("proceduresForUser(foo), defaultColumns")), Set.empty))
+  }
+
+  test("ShowFunctions") {
+    assertGood(attach(ShowFunctions(AllFunctions, None, verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowFunctions", NoChildren, Seq(details("allFunctions, functionsForUser(all), defaultColumns")), Set.empty))
+
+    assertGood(attach(ShowFunctions(BuiltInFunctions, Some(CurrentUser), verbose = true, Set.empty), 1.0),
+      planDescription(id, "ShowFunctions", NoChildren, Seq(details("builtInFunctions, functionsForUser(current), allColumns")), Set.empty))
+
+    assertGood(attach(ShowFunctions(UserDefinedFunctions, Some(User("foo")), verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowFunctions", NoChildren, Seq(details("userDefinedFunctions, functionsForUser(foo), defaultColumns")), Set.empty))
   }
 
   test("Aggregation") {

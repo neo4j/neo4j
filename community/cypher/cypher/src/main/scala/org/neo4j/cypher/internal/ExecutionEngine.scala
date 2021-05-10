@@ -46,6 +46,7 @@ import org.neo4j.values.virtual.MapValue
 
 import java.lang
 import java.time.Clock
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
 /**
@@ -342,6 +343,13 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
   override def getSignature: String = f.getSignatureAsString
 
   override def isAggregationFunction: lang.Boolean = f.isAggregationFunction
+
+  override def returnType: String = f.outputType.toNeoTypeString
+
+  override def inputSignature: java.util.List[java.util.Map[String, String]] = f.names.zip(f.argumentTypes ++ f.optionalTypes).map { case (name, cType) =>
+    val typeString = cType.toNeoTypeString
+    Map("name" -> name, "type" -> typeString, "description" -> s"$name :: $typeString").asJava
+  }.asJava
 }
 
 object ExecutionEngine {

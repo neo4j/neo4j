@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AllDbmsAction
+import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexActions
@@ -47,6 +48,7 @@ import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
+import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
@@ -72,6 +74,7 @@ import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabasePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.DbmsAction
@@ -207,6 +210,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -214,8 +218,6 @@ import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.CurrentUser
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.User
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
@@ -247,7 +249,9 @@ import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
+import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
@@ -364,6 +368,7 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
@@ -384,7 +389,6 @@ import org.scalacheck.Gen.some
 import org.scalacheck.util.Buildable
 
 import java.nio.charset.StandardCharsets
-import org.neo4j.cypher.internal.util.symbols.CTMap
 
 object AstGenerator {
   val OR_MORE_UPPER_BOUND = 3
@@ -1254,7 +1258,24 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     Query(None, SingleQuery(fullClauses)(pos))(pos)
   }
 
-  def _showCommands: Gen[Query] = oneOf(_showIndexes, _showConstraints, _showProcedures)
+  def _showFunctions: Gen[Query] = for {
+    name     <- _identifier
+    funcType <- oneOf(AllFunctions, BuiltInFunctions, UserDefinedFunctions)
+    exec     <- option(oneOf(CurrentUser, User(name)))
+    yields   <- _eitherYieldOrWhere
+    use      <- option(_use)
+  } yield {
+    val showClauses = yields match {
+      case Some(Right(w))           => Seq(ShowFunctionsClause(funcType, exec, Some(w), hasYield = false)(pos))
+      case Some(Left((y, Some(r)))) => Seq(ShowFunctionsClause(funcType, exec, None, hasYield = true)(pos), y, r)
+      case Some(Left((y, None)))    => Seq(ShowFunctionsClause(funcType, exec, None, hasYield = true)(pos), y)
+      case _                        => Seq(ShowFunctionsClause(funcType, exec, None, hasYield = false)(pos))
+    }
+    val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
+    Query(None, SingleQuery(fullClauses)(pos))(pos)
+  }
+
+  def _showCommands: Gen[Query] = oneOf(_showIndexes, _showConstraints, _showProcedures, _showFunctions)
 
   // Schema commands
   // ----------------------------------

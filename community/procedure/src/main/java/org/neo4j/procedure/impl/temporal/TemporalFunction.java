@@ -104,7 +104,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 new QualifiedName( new String[0], basename.toLowerCase() ),
                 INPUT_SIGNATURE, result, null, ALLOWED,
                 description == null ? null : description.value(),
-                TEMPORAL_CATEGORY, true );
+                TEMPORAL_CATEGORY, true, true );
         this.defaultZone = defaultZone;
     }
 
@@ -203,7 +203,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             this.function = base;
             this.signature = new UserFunctionSignature(
                     new QualifiedName( new String[] {base.signature.name().name()}, name ),
-                    input, base.signature.outputType(), null, ALLOWED,  description, TEMPORAL_CATEGORY, true );
+                    input, base.signature.outputType(), null, ALLOWED,  description, TEMPORAL_CATEGORY, true, true );
         }
 
         @Override

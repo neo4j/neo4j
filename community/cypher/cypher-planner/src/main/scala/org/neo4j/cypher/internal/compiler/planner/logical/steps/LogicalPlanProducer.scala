@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -189,6 +190,7 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
+import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -1064,6 +1066,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         ShowConstraints(s.constraintType, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
       case s: ShowProceduresClause =>
         ShowProcedures(s.executable, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+      case s: ShowFunctionsClause =>
+        ShowFunctions(s.functionType, s.executable, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
     }
 
     annotate(plan, solved, ProvidedOrder.empty, context)

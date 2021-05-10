@@ -126,6 +126,7 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
+import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -164,6 +165,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Shorte
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowFunctionsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowProceduresCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
@@ -401,6 +403,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case ShowConstraints(constraintType, verbose, columns) => CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns))(id)
 
       case ShowProcedures(executableBy, verbose, columns) => CommandPipe(ShowProceduresCommand(executableBy, verbose, columns))(id)
+
+      case ShowFunctions(functionType, executableBy, verbose, columns) => CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

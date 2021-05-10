@@ -765,6 +765,61 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |  ORDER BY name ASCENDING
         |  SKIP 1
         |  LIMIT 1""".stripMargin,
+
+    // show functions
+
+    "show function" ->
+      "SHOW ALL FUNCTIONS",
+
+    "show all function" ->
+      "SHOW ALL FUNCTIONS",
+
+    "show built in function" ->
+      "SHOW BUILT IN FUNCTIONS",
+
+    "show user defined function" ->
+      "SHOW USER DEFINED FUNCTIONS",
+
+    "show funcTIONs" ->
+      "SHOW ALL FUNCTIONS",
+
+    "show functions executable" ->
+      "SHOW ALL FUNCTIONS EXECUTABLE BY CURRENT USER",
+
+    "show all functions executable BY cuRRent USer" ->
+      "SHOW ALL FUNCTIONS EXECUTABLE BY CURRENT USER",
+
+    "show functions executable BY USer" ->
+      "SHOW ALL FUNCTIONS EXECUTABLE BY USer",
+
+    "show built in \nfunction\n executable" ->
+      "SHOW BUILT IN FUNCTIONS EXECUTABLE BY CURRENT USER",
+
+    "show funcTIONs WHERE name = 'my.proc'" ->
+      """SHOW ALL FUNCTIONS
+        |  WHERE name = "my.proc"""".stripMargin,
+
+    "show function  YIELD *" ->
+      """SHOW ALL FUNCTIONS
+        |YIELD *""".stripMargin,
+
+    "show user defined function  YIELD * Return DISTINCT mode" ->
+      """SHOW USER DEFINED FUNCTIONS
+        |YIELD *
+        |RETURN DISTINCT mode""".stripMargin,
+
+    "show function YIELD * where name = 'neo4j' Return *" ->
+      """SHOW ALL FUNCTIONS
+        |YIELD *
+        |  WHERE name = "neo4j"
+        |RETURN *""".stripMargin,
+
+    "show function yield name order by name skip 1 limit 1" ->
+      """SHOW ALL FUNCTIONS
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](

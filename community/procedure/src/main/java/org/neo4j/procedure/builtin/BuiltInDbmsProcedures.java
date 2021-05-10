@@ -233,9 +233,10 @@ public class BuiltInDbmsProcedures
                 .map( ProcedureResult::new );
     }
 
+    @Deprecated( since = "4.3.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all functions in the DBMS." )
-    @Procedure( name = "dbms.functions", mode = DBMS )
+    @Procedure( name = "dbms.functions", mode = DBMS, deprecatedBy = "SHOW FUNCTIONS command" )
     public Stream<FunctionResult> listFunctions()
     {
         securityContext.assertCredentialsNotExpired();

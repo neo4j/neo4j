@@ -582,8 +582,6 @@ trait AdministrationCommand extends Parser
 
   private def PasswordKeyword: Rule0 = keyword("PASSWORDS") | keyword("PASSWORD")
 
-  private def FunctionKeyword: Rule0 = keyword("FUNCTIONS") | keyword("FUNCTION")
-
   private def AdminKeyword: Rule0 = keyword("ADMINISTRATOR") | keyword("ADMIN")
 
   private def CommandKeyword: Rule0 = keyword("COMMANDS") | keyword("COMMAND")

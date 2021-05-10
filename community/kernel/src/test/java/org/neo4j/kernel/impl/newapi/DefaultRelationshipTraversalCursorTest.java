@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
@@ -42,6 +43,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -432,7 +434,19 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public Stream<UserFunctionSignature> functionGetAll( )
+        {
+            return null;
+        }
+
+        @Override
         public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
+        {
+            return null;
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> aggregationFunctionGetAll( )
         {
             return null;
         }

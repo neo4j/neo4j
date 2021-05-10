@@ -430,6 +430,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL showFunctionClause( NULL p, String functionType, boolean currentUser, String user, Object where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showFunctionClause is not a literal" );
+    }
+
+    @Override
     public NULL grantRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
     {
         throw new UnsupportedOperationException( "grantRoles is not a literal" );

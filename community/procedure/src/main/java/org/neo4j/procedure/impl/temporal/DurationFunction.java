@@ -57,6 +57,7 @@ class DurationFunction implements CallableUserFunction
                     Neo4jTypes.NTDuration, null, new String[0],
                     DurationFunction.class.getAnnotation( Description.class ).value(),
                     CATEGORY,
+                    true,
                     true );
 
     static void register( GlobalProcedures globalProcedures ) throws ProcedureException
@@ -145,7 +146,7 @@ class DurationFunction implements CallableUserFunction
                     new QualifiedName( new String[] {"duration"}, unit ),
                     SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
                     String.format(
-                            DESCRIPTION, unitString ), CATEGORY, true );
+                            DESCRIPTION, unitString ), CATEGORY, true, true );
         }
 
         @Override

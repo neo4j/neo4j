@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstrai
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
@@ -66,6 +67,7 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
+import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FunctionAllQualifier
 import org.neo4j.cypher.internal.ast.FunctionQualifier
@@ -140,13 +142,12 @@ import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivilegeScope
 import org.neo4j.cypher.internal.ast.ShowPrivileges
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.CurrentUser
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.User
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
@@ -167,6 +168,7 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
@@ -550,6 +552,7 @@ case class Prettifier(
       case s: ShowIndexesClause     => asString(s)
       case s: ShowConstraintsClause => asString(s)
       case s: ShowProceduresClause  => asString(s)
+      case s: ShowFunctionsClause  => asString(s)
       case s: SetClause             => asString(s)
       case r: Remove                => asString(r)
       case d: Delete                => asString(d)
@@ -724,14 +727,24 @@ case class Prettifier(
     }
 
     def asString(s: ShowProceduresClause): String = {
-      val executable = s.executable match {
-        case Some(CurrentUser) => " EXECUTABLE BY CURRENT USER"
-        case Some(User(name))  => s" EXECUTABLE BY ${ExpressionStringifier.backtick(name)}"
-        case None              => ""
-      }
+      val executable = getExecutablePart(s.executable)
       val ind = indented()
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
       s"${s.name}$executable$where"
+    }
+
+    def asString(s: ShowFunctionsClause): String = {
+      val functionType = s.functionType.prettyPrint
+      val executable = getExecutablePart(s.executable)
+      val ind = indented()
+      val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
+      s"SHOW $functionType FUNCTIONS$executable$where"
+    }
+
+    private def getExecutablePart(executable: Option[ExecutableBy]): String = executable match {
+      case Some(CurrentUser) => " EXECUTABLE BY CURRENT USER"
+      case Some(User(name))  => s" EXECUTABLE BY ${ExpressionStringifier.backtick(name)}"
+      case None              => ""
     }
 
     def asString(s: SetClause): String = {

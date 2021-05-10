@@ -26,11 +26,17 @@ trait ShowCommand extends Parser
                   with GraphSelection
                   with CommandHelper {
 
-  def ShowSchemaCommand: Rule1[ast.Query] = rule(ShowIndexes | ShowConstraints | ShowProcedures)
+  def ShowSchemaCommand: Rule1[ast.Query] = rule(ShowIndexes | ShowConstraints | ShowProcedures | ShowFunctions)
 
   private def briefVerboseOutput: Rule1[Boolean] = rule("type of show output") {
     keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
     keyword("BRIEF") ~~ optional(keyword("OUTPUT")) ~~~> (_ => false)
+  }
+
+  private def ExecutableByClause: Rule1[ast.ExecutableBy] = rule("EXECUTABLE BY") {
+    keyword("EXECUTABLE BY CURRENT USER") ~~~> (_ => ast.CurrentUser) |
+      keyword("EXECUTABLE BY") ~~ SymbolicNameString ~~>> (name => _ => ast.User(name)) |
+      keyword("EXECUTABLE") ~~~> (_ => ast.CurrentUser)
   }
 
   // SHOW INDEXES
@@ -148,15 +154,42 @@ trait ShowCommand extends Parser
     keyword("SHOW") ~~ ProcedureKeyword ~~~> (pos => Seq(ast.ShowProceduresClause(None, None, hasYield = false)(pos)))
   }
 
-  private def ExecutableByClause: Rule1[ast.ShowProceduresClause.ExecutableBy] = rule("EXECUTABLE BY") {
-    keyword("EXECUTABLE BY CURRENT USER") ~~~> (_ => ast.ShowProceduresClause.CurrentUser) |
-    keyword("EXECUTABLE BY") ~~ SymbolicNameString ~~>> (name => _ => ast.ShowProceduresClause.User(name)) |
-    keyword("EXECUTABLE") ~~~> (_ => ast.ShowProceduresClause.CurrentUser)
-  }
-
-  private def showProcClauses(executableBy: Option[ast.ShowProceduresClause.ExecutableBy], clauses: Either[(ast.Yield, Option[ast.Return]), ast.Where], pos: InputPosition): Seq[ast.Clause] = clauses match {
+  private def showProcClauses(executableBy: Option[ast.ExecutableBy], clauses: Either[(ast.Yield, Option[ast.Return]), ast.Where], pos: InputPosition): Seq[ast.Clause] = clauses match {
     case Right(where)       => Seq(ast.ShowProceduresClause(executableBy, Some(where), hasYield = false)(pos))
     case Left((y, Some(r))) => Seq(ast.ShowProceduresClause(executableBy, None, hasYield = true)(pos), y, r)
     case Left((y, None))    => Seq(ast.ShowProceduresClause(executableBy, None, hasYield = true)(pos), y)
+  }
+
+  // SHOW FUNCTIONS
+
+  private def ShowFunctions: Rule1[ast.Query] = rule("SHOW FUNCTIONS") {
+    UseGraph ~~ ShowFunctionsClauses ~~>> ((use, show) => pos => ast.Query(None, ast.SingleQuery(use +: show)(pos))(pos)) |
+    ShowFunctionsClauses ~~>> (show => pos => ast.Query(None, ast.SingleQuery(show)(pos))(pos))
+  }
+
+  private def ShowFunctionsClauses: Rule1[Seq[ast.Clause]] = rule("SHOW FUNCTIONS YIELD / WHERE / RETURN") {
+    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~ ExecutableByClause ~~ ShowCommandClauses ~~>>
+      ((functionType, executable, clauses) => pos => showFuncClauses(functionType, Some(executable), clauses, pos)) |
+    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~ ExecutableByClause ~~>>
+      ((functionType, executable) => pos => Seq(ast.ShowFunctionsClause(functionType, Some(executable), None, hasYield = false)(pos))) |
+    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~ ShowCommandClauses ~~>>
+      ((functionType, clauses) => pos => showFuncClauses(functionType, None, clauses, pos)) |
+    keyword("SHOW") ~~ FunctionType ~~ FunctionKeyword ~~>>
+      (functionType => pos => Seq(ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(pos)))
+  }
+
+  private def FunctionType: Rule1[ast.ShowFunctionType] = rule("type of functions") {
+    keyword("BUILT IN") ~~~> (_ => ast.BuiltInFunctions) |
+      keyword("USER DEFINED") ~~~> (_ => ast.UserDefinedFunctions) |
+      optional(keyword("ALL")) ~~~> (_ => ast.AllFunctions)
+  }
+
+  private def showFuncClauses(functionType: ast.ShowFunctionType,
+                              executableBy: Option[ast.ExecutableBy],
+                              clauses: Either[(ast.Yield, Option[ast.Return]), ast.Where],
+                              pos: InputPosition): Seq[ast.Clause] = clauses match {
+    case Right(where)       => Seq(ast.ShowFunctionsClause(functionType, executableBy, Some(where), hasYield = false)(pos))
+    case Left((y, Some(r))) => Seq(ast.ShowFunctionsClause(functionType, executableBy, None, hasYield = true)(pos), y, r)
+    case Left((y, None))    => Seq(ast.ShowFunctionsClause(functionType, executableBy, None, hasYield = true)(pos), y)
   }
 }

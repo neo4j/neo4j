@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowIndexType
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.ExecutableBy
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
@@ -30,3 +31,6 @@ case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumn
 case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
 case class ShowProcedures(executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
+
+case class ShowFunctions(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: Set[ShowColumn])
+                        (implicit idGen: IdGen) extends CommandLogicalPlan(idGen)

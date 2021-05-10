@@ -24,15 +24,18 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.BtreeIndexes
+import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.Delete
@@ -103,10 +106,9 @@ import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.CurrentUser
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.User
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -124,6 +126,8 @@ import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.User
+import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -906,6 +910,23 @@ class Neo4jASTFactory(query: String)
     // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
     val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
     ShowProceduresClause(executableBy, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+  }
+
+  override def showFunctionClause(p: InputPosition,
+                                  functionTypeString: String,
+                                  currentUser: Boolean,
+                                  user: String,
+                                  where: Expression,
+                                  hasYield: Boolean): Clause = {
+    val functionType = functionTypeString.toUpperCase match {
+      case "ALL"   => AllFunctions
+      case "BUILT" => BuiltInFunctions
+      case "USER"  => UserDefinedFunctions
+    }
+
+    // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
+    val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
+    ShowFunctionsClause(functionType, executableBy, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
 
   // Administration Commands

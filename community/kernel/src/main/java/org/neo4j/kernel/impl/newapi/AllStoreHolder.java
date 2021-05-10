@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
@@ -49,6 +50,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -884,6 +886,13 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public Stream<UserFunctionSignature> functionGetAll( )
+    {
+        ktx.assertOpen();
+        return globalProcedures.getAllNonAggregatingFunctions();
+    }
+
+    @Override
     public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
     {
         ktx.assertOpen();
@@ -902,6 +911,13 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         return globalProcedures.aggregationFunction( name );
+    }
+
+    @Override
+    public Stream<UserFunctionSignature> aggregationFunctionGetAll( )
+    {
+        ktx.assertOpen();
+        return globalProcedures.getAllAggregatingFunctions();
     }
 
     @Override

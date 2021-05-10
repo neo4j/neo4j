@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.CurrentUser
-import org.neo4j.cypher.internal.ast.ShowProceduresClause.User
+import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
@@ -131,6 +131,7 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
       """Invalid input 'EXECUTABLE': expected
         |  "ALL"
         |  "BTREE"
+        |  "BUILT"
         |  "CONSTRAINT"
         |  "CONSTRAINTS"
         |  "CURRENT"
@@ -141,6 +142,8 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
         |  "EXISTENCE"
         |  "EXISTS"
         |  "FULLTEXT"
+        |  "FUNCTION"
+        |  "FUNCTIONS"
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
@@ -154,6 +157,7 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
         |  "RELATIONSHIP"
         |  "ROLES"
         |  "UNIQUE"
+        |  "USER"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
   }
 
@@ -206,65 +210,11 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
   }
 
   test("SHOW user PROCEDURE") {
-    assertJavaCCException(testName,
-      """Invalid input 'user': expected
-        |  "ALL"
-        |  "BTREE"
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "EXIST"
-        |  "EXISTENCE"
-        |  "EXISTS"
-        |  "FULLTEXT"
-        |  "HOME"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "LOOKUP"
-        |  "NODE"
-        |  "POPULATED"
-        |  "PROCEDURE"
-        |  "PROCEDURES"
-        |  "PROPERTY"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "ROLES"
-        |  "UNIQUE"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+    assertJavaCCException(testName, """Invalid input 'PROCEDURE': expected "DEFINED" (line 1, column 11 (offset: 10))""")
   }
 
   test("SHOW USER user PROCEDURE") {
-    assertJavaCCException(testName,
-      """Invalid input 'USER': expected
-        |  "ALL"
-        |  "BTREE"
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "EXIST"
-        |  "EXISTENCE"
-        |  "EXISTS"
-        |  "FULLTEXT"
-        |  "HOME"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "LOOKUP"
-        |  "NODE"
-        |  "POPULATED"
-        |  "PROCEDURE"
-        |  "PROCEDURES"
-        |  "PROPERTY"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "ROLES"
-        |  "UNIQUE"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+    assertJavaCCException(testName, """Invalid input 'user': expected "DEFINED" (line 1, column 11 (offset: 10))""")
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY USER user") {

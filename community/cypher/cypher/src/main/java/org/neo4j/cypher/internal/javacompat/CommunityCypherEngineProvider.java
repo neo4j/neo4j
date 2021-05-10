@@ -67,8 +67,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider
         if ( isSystemDatabase )
         {
             CypherPlannerConfiguration innerPlannerConfig = CypherPlannerConfiguration.fromCypherConfiguration( cypherConfig, spi.config(), false );
-            CommunityCompilerFactory innerCompilerFactory =
-                    new CommunityCompilerFactory( queryService,spi.monitors(), cacheFactory, spi.logProvider(), innerPlannerConfig, runtimeConfig );
+            CompilerFactory innerCompilerFactory = makeCompilerFactory( queryService, spi, innerPlannerConfig, runtimeConfig );
             return new SystemExecutionEngine( queryService, cacheFactory, spi.logProvider(), compilerFactory, innerCompilerFactory );
         }
         else if ( spi.config().get( GraphDatabaseInternalSettings.snapshot_query ) )
