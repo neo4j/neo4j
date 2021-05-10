@@ -232,12 +232,11 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    void shouldWarnOnDynamicPropertyLookupWithBothStaticAndDynamicProperties()
+    void shouldNotNotifyOnDynamicPropertyWhenIndexIsUsedForVariableAnyway()
     {
         db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
         db.executeTransactionally( "Call db.awaitIndexes()" );
-        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
-                containsItem( dynamicPropertyWarning ) );
+        shouldNotNotifyInStream( "EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n" );
     }
 
     @Test
@@ -251,6 +250,15 @@ class NotificationAcceptanceTest extends NotificationTestSupport
             tx.commit();
         }
         shouldNotNotifyInStream( "EXPLAIN MATCH (n:Foo) WHERE n['key-' + n.name] = 'value' RETURN n" );
+    }
+
+    @Test
+    void shouldNotifyOnDynamicPropertyLookupWithPredicateHavingNoIndex()
+    {
+        db.executeTransactionally( "CREATE INDEX FOR (n:Person) ON (n.name)" );
+        db.executeTransactionally( "Call db.awaitIndexes()" );
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n:Person) WHERE n.foo = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
+                containsItem( dynamicPropertyWarning ) );
     }
 
     @Test
