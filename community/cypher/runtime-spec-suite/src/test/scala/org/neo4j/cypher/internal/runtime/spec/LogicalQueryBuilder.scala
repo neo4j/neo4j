@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.PeriodicCommitInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -36,7 +37,9 @@ import org.neo4j.cypher.internal.util.attribution.Default
 /**
  * Test help utility for hand-writing logical queries.
  */
-class LogicalQueryBuilder(tokenResolver: Resolver)
+class LogicalQueryBuilder(tokenResolver: Resolver,
+                          hasLoadCsv: Boolean = false,
+                          periodicCommitBatchSize: Option[Long] = None)
   extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver) {
 
   private var semanticTable = new SemanticTable()
@@ -88,8 +91,8 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
                  effectiveCardinalities,
                  providedOrders,
                  leveragedOrders,
-                 hasLoadCSV = false,
-                 None,
+                 hasLoadCsv,
+                 periodicCommitBatchSize.map(size => PeriodicCommitInfo(Some(size))),
                  idGen,
                  doProfile = false)
   }
