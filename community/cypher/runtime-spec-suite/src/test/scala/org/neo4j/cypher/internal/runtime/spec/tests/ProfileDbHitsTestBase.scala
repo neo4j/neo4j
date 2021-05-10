@@ -59,7 +59,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
                                                                  cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
                                                                  canFuseOverPipelines: Boolean,
-                                                                 createsRelValueInExpand: Boolean
+                                                                 createsRelValueInExpand: Boolean,
+                                                                 val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile dbHits of all nodes scan") {
@@ -1157,34 +1158,6 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     deleteNodeResultsProfile.dbHits() shouldBe nodeCount
   }
 
-  test("should profile db hits on remove labels") {
-    // given
-    val nodeCount = sizeHint
-    given {
-      nodeGraph(nodeCount - 3, "Label", "OtherLabel", "ThirdLabel")
-      nodeGraph(1, "Label")
-      nodeGraph(1, "OtherLabel")
-      nodeGraph(1, "ThirdLabel")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("n")
-      .removeLabels("n", "Label", "OtherLabel")
-      .allNodeScan("n")
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-
-    val removeLabelsProfile = queryProfile.operatorProfile(1)
-    val expectedLabelLookups = 2
-    removeLabelsProfile.dbHits() shouldBe (expectedLabelLookups + nodeCount)
-  }
-
   test("should profile db hits on create nodes with labels and properties") {
     val createCount = 9
     val labels = Seq("A", "B", "C")
@@ -1337,6 +1310,76 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     foreachProfile.rows() shouldBe sizeHint
     foreachProfile.dbHits() shouldBe sizeHint
+  }
+
+  test("should profile db hits on set labels") {
+    // given
+    val emptyNodes = 2
+    val nodesWithLabel = sizeHint - emptyNodes
+    val label = "ExistingLabel"
+    val newLabels= Seq("Label", "OtherLabel")
+    val labelsSet = label +: newLabels
+
+    given {
+      nodeGraph(emptyNodes)
+      nodeGraph(nodesWithLabel, label)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("l")
+      .projection("labels(n) AS l")
+      .setLabels("n", labelsSet: _*)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val setLabelsProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(2)
+
+    val setLabelsToNodeDbHits = if (useWritesWithProfiling) {
+      emptyNodes * 3 + nodesWithLabel * 2
+    } else {
+      sizeHint
+    }
+
+    val labelTokenLookup = labelsSet.size
+
+    setLabelsProfile.dbHits() shouldBe setLabelsToNodeDbHits + labelTokenLookup
+  }
+
+  test("should profile db hits on remove labels") {
+    // given
+    val nodeCount = sizeHint
+    given {
+      nodeGraph(nodeCount - 3, "Label", "OtherLabel", "ThirdLabel")
+      nodeGraph(1, "Label")
+      nodeGraph(1, "OtherLabel")
+      nodeGraph(1, "ThirdLabel")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .removeLabels("n", "Label", "OtherLabel")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+    val removeLabelsProfile = runtimeResult.runtimeResult.queryProfile().operatorProfile(1)
+
+    val expectedLabelLookups = 2
+
+    val labelsRemovedFromNodeDbHits = if (useWritesWithProfiling) {
+      (nodeCount - 3) * Seq("Label", "OtherLabel").size + 1 * Seq("Label").size + 1 * Seq("OtherLabel").size
+    } else {
+      nodeCount
+    }
+
+    removeLabelsProfile.dbHits() shouldBe labelsRemovedFromNodeDbHits + expectedLabelLookups
   }
 
   protected def propertiesString(properties: Map[String, Any]): String = {

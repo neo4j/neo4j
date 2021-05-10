@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.lock.LockType
 import org.neo4j.lock.ResourceType
+import org.neo4j.lock.ResourceTypes
 import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.AnyValue
@@ -300,7 +301,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher
     private var maybeStatisticts: Option[QueryStatisticsMatcher] = None
-    private var maybeLockedNodes: Option[LockNodesMatcher] = None
+    private var maybeLockedNodes: Option[LockResourceMatcher] = None
+    private var maybeLockedRelationships: Option[LockResourceMatcher] = None
     private var maybeLocks: Option[LockMatcher] = None
 
     def withNoUpdates(): RuntimeResultMatcher = withStatistics()
@@ -317,7 +319,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
 
     def withLockedNodes(nodeIds: Set[Long]): RuntimeResultMatcher = {
-      maybeLockedNodes = Some(new LockNodesMatcher(nodeIds))
+      maybeLockedNodes = Some(new LockResourceMatcher(nodeIds, ResourceTypes.NODE))
+      this
+    }
+
+    def withLockedRelationships(relationshipId: Set[Long]): RuntimeResultMatcher = {
+      maybeLockedRelationships = Some(new LockResourceMatcher(relationshipId, ResourceTypes.RELATIONSHIP))
       this
     }
 
@@ -357,10 +364,15 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                   .map(_.apply(()))
                   .filter(_.matches == false)
                   .getOrElse {
-                    rowsMatcher.matches(columns, rows) match {
-                      case RowsMatch => MatchResult(matches = true, "", "")
-                      case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
-                    }
+                    maybeLockedRelationships
+                      .map(_.apply(()))
+                      .filter(_.matches == false)
+                      .getOrElse {
+                        rowsMatcher.matches(columns, rows) match {
+                          case RowsMatch => MatchResult(matches = true, "", "")
+                          case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
+                        }
+                      }
                   }
               }
           }
@@ -371,18 +383,19 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   /*
    * locks.accept() does not keep the order of when the locks was taken, therefore we don't assert on the order of the locks.
    */
-  class LockNodesMatcher(expectedLocked: Set[Long]) extends Matcher[Unit] {
+  class LockResourceMatcher(expectedLocked: Set[Long], expectedResourceType: ResourceType) extends Matcher[Unit] {
      override def apply(left: Unit): MatchResult = {
       val locksList = new util.ArrayList[Long]
       runtimeTestSupport.locks.accept(
-        (_: LockType, _: ResourceType, _: Long, resourceId: Long, _: String, _: Long, _: Long) =>
-          locksList.add(resourceId)
+        (_: LockType, resourceType: ResourceType, _: Long, resourceId: Long, _: String, _: Long, _: Long) => {
+          if (resourceType == expectedResourceType) locksList.add(resourceId)
+        }
       )
 
       val actualLocked = locksList.asScala.toSet
       MatchResult(
         matches = actualLocked == expectedLocked,
-        rawFailureMessage = s"expected nodesLocked=$expectedLocked but was $actualLocked",
+        rawFailureMessage = s"expected ${expectedResourceType.name} locked=$expectedLocked but was $actualLocked",
         rawNegatedFailureMessage = ""
       )
     }

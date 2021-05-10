@@ -77,15 +77,15 @@ abstract class ExecutionEngineFunSuite
   case class haveLabels(expectedLabels: String*) extends Matcher[Node] {
     def apply(left: Node): MatchResult = {
 
-      val labels = graph.inTx {
-        left.getLabels.asScala.map(_.name()).toSet
+      val labels = graph.withTx { tx =>
+        tx.getNodeById(left.getId).getLabels.asScala.map(_.name()).toSet
       }
 
       val result = expectedLabels.forall(labels)
 
       MatchResult(
         result,
-        s"Expected node to have labels $expectedLabels, but it was ${labels.mkString}",
+        s"Expected node to have labels $expectedLabels, but it was ${labels.mkString(":")}",
         s"Expected node to not have labels $expectedLabels, but it did."
       )
     }

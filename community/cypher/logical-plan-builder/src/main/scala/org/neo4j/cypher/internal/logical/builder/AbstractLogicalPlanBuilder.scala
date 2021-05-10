@@ -166,6 +166,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
@@ -567,6 +568,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def detachDeleteExpression(expression: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteExpression(lp, Parser.parseExpression(expression))(_)))
     self
+  }
+
+  def setLabels(nodeVariable:String, labels: String*): IMPL = {
+    val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE))
+    appendAtCurrentIndent(UnaryOperator(lp => SetLabels(lp, nodeVariable, labelNames)(_)))
   }
 
   def removeLabels(nodeVariable: String, labels: String*): IMPL = {

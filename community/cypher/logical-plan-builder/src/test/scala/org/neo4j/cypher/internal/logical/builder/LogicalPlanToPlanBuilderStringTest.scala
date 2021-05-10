@@ -1083,6 +1083,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument("n")
       .build())
 
+
+  testPlan("setLabels",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .setLabels("n", "Label", "OtherLabel")
+      .argument("n")
+      .build())
+
   testPlan("loadCSV",
     new TestPlanBuilder()
       .produceResults("x", "var")
