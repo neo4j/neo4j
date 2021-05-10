@@ -36,8 +36,10 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.virtual.MapValue
 
-class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, source: Option[ExecutionPlan] = None,
-                                  onViolation: (MapValue, SecurityContext) => Exception) extends AdministrationChainedExecutionPlan(source) {
+class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean,
+                             source: Option[ExecutionPlan] = None,
+                             violationAction: Option[SecurityContext => Unit] = None,
+                             onViolation: (MapValue, SecurityContext) => Exception) extends AdministrationChainedExecutionPlan(source) {
   override def runSpecific(originalCtx: SystemUpdateCountingQueryContext,
                            executionMode: ExecutionMode,
                            params: MapValue,
@@ -48,6 +50,10 @@ class PredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, 
     if (predicate(params, securityContext)) {
       NoRuntimeResult(subscriber)
     } else {
+      violationAction match {
+        case Some(action) => action(securityContext)
+        case None => //nop
+      }
       throw onViolation(params, securityContext)
     }
   }

@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -51,7 +52,7 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
     val tx = state.query.transactionalContext.transaction
     val securityContext = tx.securityContext()
     val (userRoles, alwaysExecutable) =
-      if (!isCommunity) ShowProcFuncCommandHelper.getRolesForUser(securityContext, systemGraph, executableBy, "SHOW PROCEDURES")
+      if (!isCommunity) ShowProcFuncCommandHelper.getRolesForUser(securityContext,  tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW PROCEDURES")
       else (Set.empty[String], true)
     val allowShowRoles = if (!isCommunity && verbose) securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)) else false
 
@@ -70,6 +71,33 @@ case class ShowProceduresCommand(executableBy: Option[ExecutableBy], verbose: Bo
     }.filter(m => m.nonEmpty)
 
     ClosingIterator.apply(rows.iterator)
+  }
+
+  private def getRolesForUser(securityContext: SecurityContext, securityHandler:SecurityAuthorizationHandler, systemGraph: Option[GraphDatabaseService]): (Set[String], Boolean) = executableBy match {
+    case Some(CurrentUser) if securityContext.subject().equals(AuthSubject.AUTH_DISABLED) => (Set.empty[String], true)
+    case Some(User(name)) if !securityContext.subject().hasUsername(name) =>
+      // EXECUTABLE BY not_current_user
+      val allowedShowUser = securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_USER, DatabaseScope.ALL, Segment.ALL))
+      if (!allowedShowUser) {
+        val violationMessage: String = "Permission denied for SHOW PROCEDURES, requires SHOW USER privilege. " +
+          "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
+          "In case of missing privileges, they need to be granted (See GRANT). In case of denied privileges, they need to be revoked (See REVOKE) and granted."
+        throw securityHandler.logAndGetAuthorizationException(securityContext, violationMessage)
+      }
+      val stx = systemGraph.get.beginTx() // Will be Some(_: GraphDatabaseService) since executableBy.isDefined
+      val rolesResult = stx.execute(s"SHOW USERS YIELD user, roles WHERE user = '$name' RETURN roles").columnAs[util.List[String]]("roles")
+      val rolesSet = if (rolesResult.hasNext) {
+        // usernames are unique so we only get one result back
+        rolesResult.next().asScala.toSet
+      } else {
+        // non-existing users have no roles
+        Set.empty[String]
+      }
+      stx.commit()
+      (rolesSet, false)
+
+    case Some(_) => (securityContext.roles().asScala.toSet, false)
+    case None    => (Set.empty[String], false)
   }
 
   private def getResultMap(proc: ProcedureSignature,

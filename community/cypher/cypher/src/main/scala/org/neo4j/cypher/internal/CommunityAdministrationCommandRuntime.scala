@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
+import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
@@ -45,7 +46,6 @@ import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NameValidator
-import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.RenameUser
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
@@ -70,6 +70,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.Transaction
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
@@ -128,7 +129,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertAllowedDbmsActions(maybeSource, actions) => context =>
       AuthorizationPredicateExecutionPlan((_, securityContext) => actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationMessage = "Permission denied for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText, //sorting is important to keep error messages stable
+      }, violationAction = (securityContext:SecurityContext, message:String) =>  {
+        val securityLog:AbstractSecurityLog = resolver.resolveDependency(classOf[AbstractSecurityLog])
+        securityLog.error(securityContext, message)
+      },
+        violationMessage = "Permission denied for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText, //sorting is important to keep error messages stable
         source = maybeSource match {
           case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
           case _            => None
@@ -139,6 +144,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case AssertAllowedDbmsActionsOrSelf(user, actions) => _ =>
       AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeStringValue(user, params)) || actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
+      }, violationAction = (securityContext:SecurityContext, message:String) =>  {
+        val securityLog:AbstractSecurityLog = resolver.resolveDependency(classOf[AbstractSecurityLog])
+        securityLog.error(securityContext, message)
       }, violationMessage = "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
@@ -151,8 +159,12 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Check Admin Rights for some Database commands
     case AssertAllowedDatabaseAction(action, database, maybeSource) => context =>
       AuthorizationPredicateExecutionPlan((params, securityContext) =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeStringValue(database, params)), Segment.ALL)),
-        violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText,
+        securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action),
+          new DatabaseScope(runtimeStringValue(database, params)), Segment.ALL)),
+        violationAction = (securityContext:SecurityContext, message:String) =>  {
+          val securityLog:AbstractSecurityLog = resolver.resolveDependency(classOf[AbstractSecurityLog])
+          securityLog.error(securityContext, message)
+        }, violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText,
         source = maybeSource match {
           case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
           case _            => None
@@ -191,7 +203,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
 
       def failWithError(command: String) : PredicateExecutionPlan = {
-        new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
+        new PredicateExecutionPlan((_, _) => false, sourcePlan, None, (params, _) => {
           val user = runtimeStringValue(userName, params)
           throw new CantCompileQueryException(s"Failed to create the specified user '$user': '$command' is not available in community edition.")
         })
@@ -221,7 +233,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
 
       def failWithError(command: String) : PredicateExecutionPlan = {
-        new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
+        new PredicateExecutionPlan((_, _) => false, sourcePlan, None, (params, _) => {
           val user = runtimeStringValue(userName, params)
           throw new CantCompileQueryException(s"Failed to alter the specified user '$user': '$command' is not available in community edition.")
         })

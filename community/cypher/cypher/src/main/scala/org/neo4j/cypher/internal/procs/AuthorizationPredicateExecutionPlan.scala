@@ -26,5 +26,9 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.values.virtual.MapValue
 
 case class AuthorizationPredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, source: Option[ExecutionPlan] = None,
+                                               violationAction: (SecurityContext, String) => Unit,
                                                violationMessage: String = PERMISSION_DENIED)
-  extends PredicateExecutionPlan(predicate, source, (_, _) => new AuthorizationViolationException(violationMessage))
+  extends PredicateExecutionPlan(predicate,
+    source,
+    Some(violationAction(_, violationMessage)),
+    (_, _) => new AuthorizationViolationException(violationMessage))
