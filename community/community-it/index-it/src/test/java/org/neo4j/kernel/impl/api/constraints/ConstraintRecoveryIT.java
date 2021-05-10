@@ -124,7 +124,7 @@ class ConstraintRecoveryIT
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
         }
 
         try ( Transaction transaction = db.beginTx() )

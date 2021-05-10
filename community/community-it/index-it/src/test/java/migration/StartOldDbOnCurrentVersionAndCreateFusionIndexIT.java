@@ -42,16 +42,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -92,7 +91,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private static final String KEY2 = "key2";
     private DatabaseManagementService managementService;
     // number of new indexes dbms will create on its own for internal purposes, like system database
-    private static final int NUMBER_OF_SYSTEM_INDEXES = 2;
+    // and two token indexes for system database.
+    private static final int NUMBER_OF_SYSTEM_INDEXES = 2 + 2;
 
     private enum Provider
     {
@@ -315,10 +315,11 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
 
         // when
+        indexRecoveryTracker = new IndexRecoveryTracker();
         managementService = setupDb( storeDir, indexRecoveryTracker );
         try
         {
-            int numberNewIndexes = 4;
+            int numberNewIndexes = 2;
             verifyInitialState( indexRecoveryTracker, expectedNumberOfIndexes + numberNewIndexes + NUMBER_OF_SYSTEM_INDEXES, InternalIndexState.ONLINE );
         }
         finally
