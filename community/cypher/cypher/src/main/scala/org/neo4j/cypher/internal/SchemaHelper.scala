@@ -44,50 +44,72 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
     tc.kernelTransaction().schemaRead().schemaStateGetOrCreate(schemaStateKey, creator)
   }
 
-  def lockLabels(schemaTokenBefore: SchemaToken,
-                 executionPlan: ExecutableQuery,
-                 tc: TransactionalContext): LockedLabels = {
+  def lockEntities(schemaTokenBefore: SchemaToken,
+                   executionPlan: ExecutableQuery,
+                   tc: TransactionalContext): LockedLabels = {
+    // Lock all used indexes
     val labelIds: Array[Long] = executionPlan.labelIdsOfUsedIndexes
-    lockPlanLabels(tc, labelIds)
-
+    val relationshipIds = executionPlan.relationshipsOfUsedIndexes
     val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
-    lookupTypes.foreach(lockLookupType(tc, _))
+    acquireLocks(tc, labelIds, relationshipIds.keys.toArray, lookupTypes)
 
-    if (lookupTypes.nonEmpty || labelIds.nonEmpty) {
+    if (lookupTypes.nonEmpty || labelIds.nonEmpty || relationshipIds.nonEmpty) {
       val schemaTokenAfter = readSchemaToken(tc)
       // Need to check if index has been dropped because we can still acquire and get the lock
-      val indexDropped = lookupTypes.exists(!hasLookupIndex(tc, _))
+      val indexDropped = !indexExists(tc, Map.empty, relationshipIds, lookupTypes)
 
       // if the schema has changed while taking all locks OR if the lookup index has been dropped we release locks and return false
       if (schemaTokenBefore != schemaTokenAfter || indexDropped) {
-        releasePlanLabels(tc, labelIds)
-        lookupTypes.foreach(releaseLookupType(tc, _))
+        releaseLocks(tc, labelIds, relationshipIds.keys.toArray, lookupTypes)
         return LockedLabels(successful = false, needsReplan = indexDropped)
       }
     }
     LockedLabels(successful = true, needsReplan = false)
   }
 
-  private def releasePlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit = {
-    if (labelIds.nonEmpty) {
-      tc.kernelTransaction.locks().releaseSharedLabelLock(labelIds: _*)
-    }
-  }
-
-  private def lockPlanLabels(tc: TransactionalContext, labelIds: Array[Long]): Unit = {
+  private def acquireLocks(tc: TransactionalContext, labelIds: Array[Long], relationshipIds: Array[Long], lookupTypes: Seq[EntityType]): Unit = {
     if (labelIds.nonEmpty) {
       tc.kernelTransaction.locks().acquireSharedLabelLock(labelIds: _*)
     }
+
+    if (relationshipIds.nonEmpty) {
+      tc.kernelTransaction.locks().acquireSharedRelationshipTypeLock(relationshipIds: _*)
+    }
+
+    lookupTypes.foreach(tc.kernelTransaction.locks().acquireSharedLookupLock(_))
   }
 
-  private def lockLookupType(tc: TransactionalContext, entityType: EntityType): Unit =
-    tc.kernelTransaction.locks().acquireSharedLookupLock( entityType )
+  private def releaseLocks(tc: TransactionalContext, labelIds: Array[Long], relationshipIds: Array[Long], lookupTypes: Seq[EntityType]): Unit = {
+    if (labelIds.nonEmpty) {
+      tc.kernelTransaction.locks().releaseSharedLabelLock(labelIds: _*)
+    }
 
-  private def releaseLookupType(tc: TransactionalContext, entityType: EntityType): Unit =
-    tc.kernelTransaction.locks().releaseSharedLookupLock( entityType )
+    if (relationshipIds.nonEmpty) {
+      tc.kernelTransaction.locks().releaseSharedRelationshipTypeLock(relationshipIds: _*)
+    }
+
+    lookupTypes.foreach(tc.kernelTransaction.locks().releaseSharedLookupLock(_))
+  }
+
+  private def indexExists(tc: TransactionalContext, labelIndexes: Map[Long, Array[Int]], relIndexes: Map[Long, Array[Int]],
+                          lookupEntities: Seq[EntityType]): Boolean = {
+    labelIndexes.forall { case (label, properties) => hasLabelIndex(tc, label, properties) } &&
+      relIndexes.forall { case (relType, properties) => hasRelationshipTypeIndex(tc, relType, properties) } &&
+      lookupEntities.forall(hasLookupIndex(tc, _))
+  }
 
   private def hasLookupIndex(tc: TransactionalContext, entityType: EntityType): Boolean =
-      tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(entityType)).hasNext
+    tc.kernelTransaction.schemaRead().indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(entityType)).hasNext
+
+  private def hasRelationshipTypeIndex(tc: TransactionalContext, relType: Long, properties: Array[Int]): Boolean =
+    tc.kernelTransaction
+      .schemaRead()
+      .indexForSchemaNonTransactional(SchemaDescriptor.forRelType(relType.toInt, properties: _*)).hasNext
+
+  private def hasLabelIndex(tc: TransactionalContext, label: Long, properties: Array[Int]): Boolean =
+    tc.kernelTransaction
+      .schemaRead()
+      .indexForSchemaNonTransactional(SchemaDescriptor.forLabel(label.toInt, properties: _*)).hasNext
 
   case class LockedLabels(successful: Boolean, needsReplan: Boolean)
 }

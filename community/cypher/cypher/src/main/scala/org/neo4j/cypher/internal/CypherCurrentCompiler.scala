@@ -29,8 +29,9 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexLookupUsage
-import org.neo4j.cypher.internal.logical.plans.SchemaIndexScanUsage
-import org.neo4j.cypher.internal.logical.plans.SchemaIndexSeekUsage
+import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexScanUsage
+import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexSeekUsage
+import org.neo4j.cypher.internal.logical.plans.SchemaRelationshipIndexScanUsage
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
@@ -71,6 +72,7 @@ import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -195,15 +197,19 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                 runtimeName: RuntimeName,
                                 scanStoreAsTokenIndexEnabled: Boolean): CompilerInfo = {
     val (lookupIndexes, schemaIndexes) = logicalPlan.indexUsage(scanStoreAsTokenIndexEnabled).partition(_.isInstanceOf[SchemaIndexLookupUsage])
-    val schemaIndexUsage = schemaIndexes.map {
-      case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-      case SchemaIndexScanUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+    val schemaIndexUsage = schemaIndexes.collect {
+      case SchemaLabelIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+      case SchemaLabelIndexScanUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+    }.asJava
+    val relationshipTypeIndexUsage = schemaIndexes.collect {
+      case SchemaRelationshipIndexScanUsage(identifier, relTypeId, relType, propertyKeys) =>
+        new RelationshipTypeIndexUsage(identifier, relTypeId, relType, propertyKeys.map(_.nameId.id).toArray, propertyKeys.map(_.name).toArray)
     }.asJava
     val lookupIndexUsage = lookupIndexes.map {
       case SchemaIndexLookupUsage(identifier, entityType) => new LookupIndexUsage(identifier, entityType)
     }.asJava
 
-    new CompilerInfo(plannerName.name, runtimeName.name, schemaIndexUsage, lookupIndexUsage)
+    new CompilerInfo(plannerName.name, runtimeName.name, schemaIndexUsage, relationshipTypeIndexUsage, lookupIndexUsage)
   }
 
   private def getQueryType(planState: LogicalPlanState): InternalQueryType = {

@@ -166,12 +166,12 @@ class QueryExecutionLocksIT
         String query = "MATCH ()-[r:" + relType.name() + "]-() where r." + propertyKey + " = \"v\" RETURN r ";
 
         List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
-        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 0 );
-//
-//        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
-//        assertTrue( operationRecord.acquisition );
-//        assertFalse( operationRecord.exclusive );
-//        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+
+        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
+        assertTrue( operationRecord.acquisition );
+        assertFalse( operationRecord.exclusive );
+        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
     }
 
     @Test

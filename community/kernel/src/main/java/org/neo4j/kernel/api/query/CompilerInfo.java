@@ -29,22 +29,25 @@ public class CompilerInfo
     private final String planner;
     private final String runtime;
     private final List<SchemaIndexUsage> indexes;
+    private final List<RelationshipTypeIndexUsage> relationshipTypeIndexes;
     private final List<LookupIndexUsage> lookupIndexes;
 
     public CompilerInfo( @Nonnull String planner,
                          @Nonnull String runtime,
                          @Nonnull List<SchemaIndexUsage> indexes,
+                         @Nonnull List<RelationshipTypeIndexUsage> relationshipTypeIndexes,
                          @Nonnull List<LookupIndexUsage> lookupIndexes )
     {
         this.planner = planner;
         this.runtime = runtime;
         this.indexes = indexes;
+        this.relationshipTypeIndexes = relationshipTypeIndexes;
         this.lookupIndexes = lookupIndexes;
     }
 
     public CompilerInfo( @Nonnull String planner, @Nonnull String runtime, @Nonnull List<SchemaIndexUsage> indexes )
     {
-        this( planner, runtime, indexes, Collections.emptyList() );
+        this( planner, runtime, indexes, Collections.emptyList(), Collections.emptyList() );
     }
 
     public String planner()
@@ -60,6 +63,11 @@ public class CompilerInfo
     public List<SchemaIndexUsage> indexes()
     {
         return indexes;
+    }
+
+    public List<RelationshipTypeIndexUsage> relationshipTypeIndexes()
+    {
+        return relationshipTypeIndexes;
     }
 
     public List<LookupIndexUsage> lookupIndexes()

@@ -23,6 +23,7 @@ import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.util.Foldable
@@ -190,17 +191,24 @@ abstract class LogicalPlan(idGen: IdGen)
   def indexUsage(lookupIndexAvailable: Boolean): Seq[IndexUsage] = {
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, properties, _, _, _) =>
-        acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
+        acc => acc :+ SchemaLabelIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case NodeUniqueIndexSeek(idName, label, properties, _, _, _) =>
-        acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
+        acc => acc :+ SchemaLabelIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case NodeIndexScan(idName, label, properties, _, _) =>
-        acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
+        acc => acc :+ SchemaLabelIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case MultiNodeIndexSeek(indexPlans) =>
         acc => acc ++ indexPlans.flatMap(_.indexUsage(lookupIndexAvailable))
-      case NodeByLabelScan(idName, _, _, _) if lookupIndexAvailable => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
-      case DirectedRelationshipTypeScan(idName, _, _, _, _, _) => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
-      case UndirectedRelationshipTypeScan(idName, _, _, _, _, _) => acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
-      }
+      case NodeByLabelScan(idName, _, _, _) if lookupIndexAvailable =>
+        acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
+      case DirectedRelationshipTypeScan(idName, _, _, _, _, _) =>
+        acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
+      case UndirectedRelationshipTypeScan(idName, _, _, _, _, _) =>
+        acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
+      case DirectedRelationshipIndexScan(idName, _, _, typeToken, properties, _, _) =>
+        acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, properties.map(_.propertyKeyToken))
+      case UndirectedRelationshipIndexScan(idName, _, _, typeToken, properties, _, _) =>
+        acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, properties.map(_.propertyKeyToken))
+    }
   }
 }
 
@@ -345,6 +353,7 @@ sealed trait IndexUsage {
   def identifier:String
 }
 
-final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
-final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
+final case class SchemaLabelIndexSeekUsage(identifier: String, labelId: Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
+final case class SchemaLabelIndexScanUsage(identifier: String, labelId: Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
+final case class SchemaRelationshipIndexScanUsage(identifier: String, relTypeId: Int, relType: String, propertyTokens: Seq[PropertyKeyToken]) extends IndexUsage
 final case class SchemaIndexLookupUsage(identifier: String, entityType: EntityType) extends IndexUsage

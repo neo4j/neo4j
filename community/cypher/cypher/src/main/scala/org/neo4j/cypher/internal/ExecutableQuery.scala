@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
@@ -81,6 +82,14 @@ trait ExecutableQuery extends CacheabilityInfo {
     * for very fast queries.
     */
   val labelIdsOfUsedIndexes: Array[Long] = compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }.toArray
+
+  /**
+   * Returns the relationship type id paired with the property keys of the indexes used by this executable query. Precomputed to reduce execution latency
+   * for very fast queries.
+   */
+  val relationshipsOfUsedIndexes: Map[Long, Array[Int]] = compilerInfo.relationshipTypeIndexes().asScala
+    .collect { case item: RelationshipTypeIndexUsage => (item.getRelationshipTypeId.toLong -> item.getPropertyKeyIds )}
+    .toMap
 
   /**
    * Lookup entity types used by this executable query.

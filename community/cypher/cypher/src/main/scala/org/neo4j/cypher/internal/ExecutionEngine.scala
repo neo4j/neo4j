@@ -282,7 +282,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           inputQuery.options.queryOptions.replan,
           inputQuery.description)
 
-        val lockedLabels = schemaHelper.lockLabels(schemaToken, executableQuery, tc)
+        val lockedLabels = schemaHelper.lockEntities(schemaToken, executableQuery, tc)
 
         if (lockedLabels.successful) {
           return executableQuery
