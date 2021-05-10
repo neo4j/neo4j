@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.collector
 
-import java.time.ZonedDateTime
-
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
@@ -28,9 +26,11 @@ import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.parser.CypherParser
+import org.scalatest.Matchers.equal
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import java.time.ZonedDateTime
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.Manifest
 
@@ -101,7 +101,7 @@ object DataCollectorMatchers {
                   case m: Matcher[AnyRef] =>
                     val matchResult = m.apply(value)
                     if (!matchResult.matches)
-                      errors += s"Error matching value for key '$key': \n" + matchResult.rawFailureMessage
+                      errors += s"Error matching value for key '$key': \n" + matchResult.failureMessage
                   case expectedValue =>
                     if (!arraySafeEquals(value, expectedValue))
                       errors += s"Expected value '$expectedValue' for key '$key', but got '$value'"
@@ -131,7 +131,7 @@ object DataCollectorMatchers {
    * Note that any expected value that is a matcher will be used as such, while other expected values will
    * be asserted on using regular equality.
    */
-  def beListWithoutOrder(expected: Any*) = WithoutOrderMatcher(expected)
+  def beListWithoutOrder(expected: Any*): WithoutOrderMatcher = WithoutOrderMatcher(expected)
 
   case class WithoutOrderMatcher(expected: Seq[Any]) extends Matcher[AnyRef] {
 
@@ -140,32 +140,23 @@ object DataCollectorMatchers {
       left match {
         case values: Seq[AnyRef] =>
           for (expectedValue <- expected) {
-            val iterator = values.iterator
-            var found = false
-            while (iterator.hasNext && !found) {
-              val value = iterator.next()
-              found = found ||
-                (expectedValue match {
-                  case m: Matcher[AnyRef] =>
-                    m.apply(value).matches
-                  case something =>
-                    arraySafeEquals(value, something)
-                })
-            }
-            if (!found)
+            val contained = contains(values, expectedValue)
+            if (contained.isLeft) {
               errors +=
                 (expectedValue match {
-                  case m: Matcher[AnyRef] => s"No value matching $m"
-                  case x => s"Expected value '$expectedValue' in list, but wasn't there"
+                  case _: Matcher[AnyRef] => s"No value matching ${contained.left}"
+                  case _ => s"Expected value '$expectedValue' in list, but wasn't there"
                 })
+            }
           }
         case x =>
           errors += s"Expected list but got '$x'"
       }
       MatchResult(
         matches = errors.isEmpty,
-        rawFailureMessage = "Encountered a bunch of errors: \n" + errors.mkString("\n"),
-        rawNegatedFailureMessage = "BAH"
+        rawFailureMessage = s"Encountered following mismatches in $left:\n{0}",
+        rawNegatedFailureMessage = s"All matchers matched on $left",
+        args = IndexedSeq(errors.mkString("\n")),
       )
     }
 
@@ -219,6 +210,47 @@ object DataCollectorMatchers {
     }
 
     override def toString(): String = s"list in order(${expected.mkString(", ")})"
+  }
+
+  def contains(left: AnyRef, expected: Any): Either[String, AnyRef] = {
+    var error = ""
+    var matchedElement: Option[AnyRef] = None
+    left match {
+      case values: Seq[AnyRef] =>
+        val matcher: Matcher[AnyRef] = expected match {
+          case m: Matcher[AnyRef] => m
+          case expectedValue => equal(expectedValue)
+        }
+        matchedElement = values.find(matcher(_).matches)
+        if (matchedElement.isEmpty) {
+          error = s"Expected value '$values' to contain $matcher, but did not"
+        }
+
+      case x =>
+        error = s"Expected list but got '$x'"
+    }
+    if (matchedElement.isDefined) {
+      Right(matchedElement.get)
+    } else {
+      Left(error)
+    }
+  }
+
+  def containListElement(expected: Any): ContainListElementMatcher = ContainListElementMatcher(expected)
+
+  case class ContainListElementMatcher(expected: Any) extends Matcher[AnyRef] {
+
+    override def apply(left: AnyRef): MatchResult = {
+      val result = contains(left, expected)
+      MatchResult(
+        matches = result.isRight,
+        rawFailureMessage = s"Encountered following mismatches in $left:\n{0}",
+        rawNegatedFailureMessage = s"the following element in $left was found, which matches:\n{1}",
+        args = IndexedSeq(result.left.getOrElse(""), result.right.getOrElse("")),
+      )
+    }
+
+    override def toString(): String = s"list containing($expected)"
   }
 
   /**
