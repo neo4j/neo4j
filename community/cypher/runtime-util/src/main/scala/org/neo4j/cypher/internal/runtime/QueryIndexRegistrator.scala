@@ -80,22 +80,21 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
   }
 
   def result(): QueryIndexes = {
+    // We need to use firstOrNull because the indexes might have have been dropped while creating the plan
     val indexes =
       indexReferences.map {
         case InternalIndexReference(LabelId(token), properties) =>
           Iterators.first(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)))
         case InternalIndexReference(RelTypeId(token), properties) =>
-          Iterators.first(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forRelType(token, properties: _*)))
+          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forRelType(token, properties: _*)))
         case _ => throw new IllegalStateException()
       }.toArray
 
     val labelTokenIndex = if (labelScan) {
-      //TODO once we switched over to new API this should do Iterators first just as the others
       Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE))))
     } else None
 
     val typeTokenIndex = if (typeScan) {
-      //TODO once we switched over to new API this should do Iterators first just as the others
       Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))))
     } else None
 
