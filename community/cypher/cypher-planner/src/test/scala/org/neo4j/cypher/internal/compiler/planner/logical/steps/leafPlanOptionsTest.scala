@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CandidateSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlannerList
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -61,7 +62,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
         // cost(AllNodesScan) < cost(NodeByLabelScan)
         // cost(Sort(AllNodesScan)) > cost(NodeByLabelScan)
-        override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X] = {
+        override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = {
           val logicalPlans = input.map(i => (i, projector(i))).toSeq
               .sortBy{
                 case (_, _: AllNodesScan) => 10
@@ -186,7 +187,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val queryPlanConfig = QueryPlannerConfiguration(
       pickBestCandidate = _ =>
         new CandidateSelector {
-          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X] = input.headOption
+          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = input.headOption
         },
       applySelections = (_, _, _, _) => plan,
       optionalSolvers = Seq.empty,

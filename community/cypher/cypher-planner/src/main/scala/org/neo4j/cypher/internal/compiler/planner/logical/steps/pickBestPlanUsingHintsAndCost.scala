@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.CandidateSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait CandidateSelectorFactory {
@@ -29,16 +30,16 @@ trait CandidateSelectorFactory {
 }
 
 object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
-  private val baseOrdering = implicitly[Ordering[(Int, Double)]]
+  private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
   override def apply(context: LogicalPlanningContext): CandidateSelector =
     new CandidateSelector {
-      override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X] = {
+      override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = {
 
         val inputOrdering = new Ordering[X] {
           override def compare(x: X, y: X): Int = {
-            val xCost = score(projector, x, context)
-            val yCost = score(projector, y, context)
+            val xCost = score(projector, x, heuristic, context)
+            val yCost = score(projector, y, heuristic, context)
             baseOrdering.compare(xCost, yCost)
           }
         }
@@ -49,10 +50,12 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
       }
     }
 
-  private def score[X](projector: X => LogicalPlan, input: X, context: LogicalPlanningContext) = {
+  private def score[X](projector: X => LogicalPlan, input: X, heuristic: SelectorHeuristic, context: LogicalPlanningContext) = {
     val costs = context.cost
     val plan = projector(input)
-    (-context.planningAttributes.solveds.get(plan.id).numHints,
-      costs.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, CostModelMonitor.DEFAULT).gummyBears)
+    val cost = costs.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, CostModelMonitor.DEFAULT).gummyBears
+    val hints = context.planningAttributes.solveds.get(plan.id).numHints
+    val tieBreaker = heuristic.tieBreaker(plan)
+    (-hints, cost, -tieBreaker)
   }
 }

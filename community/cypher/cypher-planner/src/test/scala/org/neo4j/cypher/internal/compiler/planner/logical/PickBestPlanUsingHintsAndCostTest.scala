@@ -50,7 +50,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val a = fakeLogicalPlanFor("a")
     val b = fakeLogicalPlanFor("b")
 
-    assertTopPlan(winner = b, newStubbedPlanningAttributes, a, b)(new given {
+    assertTopPlan(winner = b, newStubbedPlanningAttributes, Seq(a, b))(new given {
       cost = {
         case (p, _, _, _) if p == a => Cost(100)
         case (p, _, _, _) if p == b => Cost(50)
@@ -65,7 +65,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, SinglePlannerQuery.empty)
 
-    assertTopPlan(winner = a, PlanningAttributes(solveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders), a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = a, PlanningAttributes(solveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders), Seq(a, b))(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints") {
@@ -75,7 +75,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, SinglePlannerQuery.empty.amendQueryGraph(_.addHints(Set(hint1, hint2))))
 
-    assertTopPlan(winner = b, PlanningAttributes(solveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders), a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, PlanningAttributes(solveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders), Seq(a, b))(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints in tails") {
@@ -85,10 +85,71 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, SinglePlannerQuery.empty.withTail(SinglePlannerQuery.empty.amendQueryGraph(_.addHints(Set(hint1, hint2)))))
 
-    assertTopPlan(winner = b, PlanningAttributes(solveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders), a, b)(GIVEN_FIXED_COST)
+    assertTopPlan(winner = b, PlanningAttributes(solveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders), Seq(a, b))(GIVEN_FIXED_COST)
   }
 
-  private def assertTopPlan(winner: LogicalPlan, planningAttributes: PlanningAttributes, candidates: LogicalPlan*)(GIVEN: given): Unit = {
+  test("Orders by heuristic on ties") {
+    val a = fakeLogicalPlanFor("a")
+    val b = fakeLogicalPlanFor("b")
+    val c = fakeLogicalPlanFor("c")
+    val d = fakeLogicalPlanFor("d")
+
+    def preferPlanB(p: LogicalPlan): Int = p match {
+      case `a` => 3
+      case `b` => 4
+      case `c` => 1
+      case `d` => 2
+    }
+
+    assertTopPlan(winner = b, newStubbedPlanningAttributes, Seq(a, b, c, d), preferPlanB)(GIVEN_FIXED_COST)
+  }
+
+  test("Orders by hints before heuristic") {
+    val a = fakeLogicalPlanFor("a")
+    val b = fakeLogicalPlanFor("b")
+    val c = fakeLogicalPlanFor("c")
+    val d = fakeLogicalPlanFor("d")
+
+    val solveds = new Solveds
+    solveds.set(a.id, SinglePlannerQuery.empty.amendQueryGraph(_.addHints(Some(hint1))))
+    solveds.set(b.id, SinglePlannerQuery.empty)
+    solveds.set(c.id, SinglePlannerQuery.empty)
+    solveds.set(d.id, SinglePlannerQuery.empty)
+
+    def preferPlanB(p: LogicalPlan): Int = p match {
+      case `a` => 3
+      case `b` => 4
+      case `c` => 1
+      case `d` => 2
+    }
+
+    assertTopPlan(winner = a, newStubbedPlanningAttributes.copy(solveds = solveds), Seq(a, b, c, d), preferPlanB)(GIVEN_FIXED_COST)
+  }
+
+  test("Orders by cost before heuristic") {
+    val a = fakeLogicalPlanFor("a")
+    val b = fakeLogicalPlanFor("b")
+    val c = fakeLogicalPlanFor("c")
+    val d = fakeLogicalPlanFor("d")
+
+    def preferPlanB(p: LogicalPlan): Int = p match {
+      case `a` => 3
+      case `b` => 4
+      case `c` => 1
+      case `d` => 2
+    }
+
+    assertTopPlan(winner = d, newStubbedPlanningAttributes, Seq(a, b, c, d), preferPlanB)(new given {
+      cost = {
+        case (`a`, _, _, _) => Cost(100)
+        case (`b`, _, _, _) => Cost(100)
+        case (`c`, _, _, _) => Cost(100)
+        case (`d`, _, _, _) => Cost(99)
+      }
+    })
+  }
+
+  private def assertTopPlan(winner: LogicalPlan, planningAttributes: PlanningAttributes, candidates: Seq[LogicalPlan], heuristic: SelectorHeuristic = SelectorHeuristic.constant)(GIVEN: given): Unit = {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.statistics, GIVEN.expressionEvaluator, cypherCompilerConfig, ExecutionModel.default)
     val producer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
@@ -104,8 +165,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default)
-    pickBestPlanUsingHintsAndCost(context)(candidates, "").get shouldBe theSameInstanceAs(winner)
-    pickBestPlanUsingHintsAndCost(context)(candidates.reverse, "").get shouldBe theSameInstanceAs(winner)
+    pickBestPlanUsingHintsAndCost(context)(candidates, heuristic, "").get shouldBe theSameInstanceAs(winner)
+    pickBestPlanUsingHintsAndCost(context)(candidates.reverse, heuristic, "").get shouldBe theSameInstanceAs(winner)
   }
 }
 

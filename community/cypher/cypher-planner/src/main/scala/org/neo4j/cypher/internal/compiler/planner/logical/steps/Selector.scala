@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanSelector
+import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -68,8 +69,9 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
             s"greedily cheapest selection candidate for ${stringifiedSolvedPredicates(stillUnsolvedPredicates)}",
             plan => "Solved predicates: " + stringifiedSolvedPredicates(candidates.collectFirst {
               case SelectionCandidate(`plan`, solvedPredicates) => solvedPredicates
-            }.get
-            )) match {
+            }.get),
+            SelectorHeuristic.constant
+          ) match {
             case Some(SelectionCandidate(plan, solvedPredicates)) => selectIt(plan, stillUnsolvedPredicates -- solvedPredicates)
             case None => plan
           }

@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait ProjectingSelector[P] {
-  def apply(plans: Iterable[P], resolved: => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "")
-  def applyWithResolvedPerPlan(plans: Iterable[P], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, resolvedPerPlan)
-  def apply[X](projector: X => P, input: Iterable[X], resolved: => String): Option[X] = applyWithResolvedPerPlan[X](projector, input, resolved, _ => "")
+  def apply(plans: Iterable[P], resolved: => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "", SelectorHeuristic.constant)
+  def apply(plans: Iterable[P], heuristic: SelectorHeuristic, resolved: => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, _ => "", heuristic)
+  def applyWithResolvedPerPlan(plans: Iterable[P], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[P] = applyWithResolvedPerPlan[P](identity, plans, resolved, resolvedPerPlan, SelectorHeuristic.constant)
+  def apply[X](projector: X => P, input: Iterable[X], resolved: => String): Option[X] = applyWithResolvedPerPlan[X](projector, input, resolved, _ => "", SelectorHeuristic.constant)
 
-  def applyWithResolvedPerPlan[X](projector: X => P, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String): Option[X]
+  def applyWithResolvedPerPlan[X](projector: X => P, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X]
 
   def ofBestResults(plans: Iterable[BestResults[P]], resolved: => String, resolvedPerPan: LogicalPlan => String): Option[BestResults[P]] = {
     val best = applyWithResolvedPerPlan(plans.map(_.bestResult), s"overall $resolved", resolvedPerPan)
@@ -35,3 +36,14 @@ trait ProjectingSelector[P] {
     best.map(BestResults(_, bestFulfillingReq))
   }
 }
+
+
+object SelectorHeuristic {
+  val constant: SelectorHeuristic = (_: LogicalPlan) => 0
+}
+
+
+trait SelectorHeuristic {
+  def tieBreaker(plan: LogicalPlan): Int
+}
+
