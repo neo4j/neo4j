@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.AbstractNodeIndexSeekPlanProvider
@@ -33,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.macros.AssertMacros
 
 /*
  * Plan the following type of plan
@@ -49,16 +49,24 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 object mergeUniqueIndexSeekLeafPlanner extends NodeIndexLeafPlanner(Seq(nodeSingleUniqueIndexSeekPlanProvider), LeafPlanRestrictions.NoRestrictions) {
 
   override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg, interestingOrderConfig, context)
-    val grouped: Map[String, Set[LeafPlansForVariable]] = resultPlans.groupBy(_.id)
+    def solvedQueryGraph(plan: LogicalPlan): QueryGraph = context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
+
+    val resultPlans: Seq[LogicalPlan] = super.apply(qg, interestingOrderConfig, context)
+
+    val grouped: Map[String, Seq[LogicalPlan]] = resultPlans.groupBy { p =>
+      val solvedQG = solvedQueryGraph(p)
+      val patternNodes = solvedQG.patternNodes
+
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(patternNodes.size == 1, "Node unique index plan solved more than one pattern node.")
+      patternNodes.head
+    }
 
     grouped.map {
       case (id, plans) =>
-        plans.flatMap(_.plans).reduce[LogicalPlan] {
+        plans.reduce[LogicalPlan] {
           case (p1, p2) => context.logicalPlanProducer.planAssertSameNode(id, p1, p2, context)
         }
     }.toSeq
-
   }
 }
 

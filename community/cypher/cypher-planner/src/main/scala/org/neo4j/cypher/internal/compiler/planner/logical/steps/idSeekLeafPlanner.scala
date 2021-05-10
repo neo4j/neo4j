@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpression
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
@@ -44,54 +42,51 @@ import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NodeNameGenerator
 
-case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
+case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  override def producePlanFor(e: Expression,
-                              qg: QueryGraph,
-                              interestingOrderConfig: InterestingOrderConfig,
-                              context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
-    val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
-    val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
-      // MATCH (a)-[r]-(b) WHERE id(r) IN expr
-      // MATCH a WHERE id(a) IN {param}
-      case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
-        Some((predicate, seekable.ident, seekable.args))
-      case _ => None
-    }
+  override def apply(queryGraph: QueryGraph,
+                     interestingOrderConfig: InterestingOrderConfig,
+                     context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    queryGraph.selections.flatPredicates.flatMap { e =>
+      val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(n => Variable(n)(null))
+      val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
+        // MATCH (a)-[r]-(b) WHERE id(r) IN expr
+        // MATCH a WHERE id(a) IN {param}
+        case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
+          Some((predicate, seekable.ident, seekable.args))
+        case _ => None
+      }
 
-    idSeekPredicates flatMap {
-      case (predicate, variable@Variable(id), idValues) if !qg.argumentIds.contains(id) =>
+      idSeekPredicates flatMap {
+        case (predicate, variable@Variable(id), idValues) if !queryGraph.argumentIds.contains(id) =>
 
-        if (skipIDs.contains(id)) None
-        else {
-          qg.patternRelationships.find(_.name == id) match {
-            case Some(relationship) if relationship.coveredIds.intersect(qg.argumentIds).isEmpty =>
-              val types = relationship.types.toList
-              val seekPlan = planRelationshipByIdSeek(relationship, relationship.nodes, idValues, Seq(predicate), qg.argumentIds, context)
-              Some(LeafPlansForVariable(id, Set(planRelTypeFilter(seekPlan, variable, types, context))))
+          if (skipIDs.contains(id)) {
+            None
+          } else {
+            queryGraph.patternRelationships.find(_.name == id) match {
+              case Some(relationship) if relationship.coveredIds.intersect(queryGraph.argumentIds).isEmpty =>
+                val types = relationship.types.toList
+                val seekPlan = planRelationshipByIdSeek(relationship, relationship.nodes, idValues, Seq(predicate), queryGraph.argumentIds, context)
+                Some(planRelTypeFilter(seekPlan, variable, types, context))
 
-            // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
-            case Some(relationship) =>
-              val types = relationship.types.toList
-              val oldNodes = relationship.nodes
-              val newNodes = generateNewStartEndNodes(oldNodes, qg.argumentIds, variable.position)
-              val nodePredicates = buildNodePredicates(oldNodes, newNodes)
+              // if start/end node variables are already bound, generate new variable names and plan a Selection after the seek
+              case Some(relationship) =>
+                val types = relationship.types.toList
+                val oldNodes = relationship.nodes
+                val newNodes = generateNewStartEndNodes(oldNodes, queryGraph.argumentIds, variable.position)
+                val nodePredicates = buildNodePredicates(oldNodes, newNodes)
 
-              val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), qg.argumentIds, context)
-              val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
-              val nodesSelectionPlan = context.logicalPlanProducer.planHiddenSelection(nodePredicates, relTypeSelectionPlan, context)
-              Some(LeafPlansForVariable(id, Set(nodesSelectionPlan)))
+                val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), queryGraph.argumentIds, context)
+                val relTypeSelectionPlan = planRelTypeFilter(seekPlan, variable, types, context)
+                Some(context.logicalPlanProducer.planHiddenSelection(nodePredicates, relTypeSelectionPlan, context))
 
-            case None =>
-              val plan = context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), qg.argumentIds, context)
-              Some(LeafPlansForVariable(id, Set(plan)))
+              case None =>
+                Some(context.logicalPlanProducer.planNodeByIdSeek(variable, idValues, Seq(predicate), queryGraph.argumentIds, context))
+            }
           }
-        }
+      }
     }
   }
-
-  override def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    queryGraph.selections.flatPredicates.flatMap(e => producePlanFor(e, queryGraph, interestingOrderConfig, context).toSeq.flatMap(_.plans))
 
   private def planRelationshipByIdSeek(relationship: PatternRelationship,
                                        nodes: (String, String),

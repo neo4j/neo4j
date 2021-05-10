@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
@@ -34,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -45,10 +45,10 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   )
 
   private val leafPlanner = new EntityIndexLeafPlanner {
-    override def producePlanFor(predicates: Set[Expression],
-                                qg: QueryGraph,
-                                interestingOrderConfig: InterestingOrderConfig,
-                                context: LogicalPlanningContext): Set[LeafPlansForVariable] = ???
+
+    override def apply(queryGraph: QueryGraph,
+                       interestingOrderConfig: InterestingOrderConfig,
+                       context: LogicalPlanningContext): Seq[LogicalPlan] = ???
 
     override protected def implicitIndexCompatiblePredicates(context: LogicalPlanningContext,
                                                              predicates: Set[Expression],

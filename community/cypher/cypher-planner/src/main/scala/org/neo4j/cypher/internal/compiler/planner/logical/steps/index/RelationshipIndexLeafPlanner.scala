@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
@@ -52,32 +51,29 @@ import org.neo4j.cypher.internal.util.RelTypeId
 
 case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlanProvider], restrictions: LeafPlanRestrictions) extends EntityIndexLeafPlanner {
 
-  override def producePlanFor(predicates: Set[Expression],
-                              qg: QueryGraph,
-                              interestingOrderConfig: InterestingOrderConfig,
-                              context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
-
+  override def apply(qg: QueryGraph,
+                     interestingOrderConfig: InterestingOrderConfig,
+                     context: LogicalPlanningContext): Seq[LogicalPlan] = {
     if (!context.enablePlanningRelationshipIndexes)
-      return Set.empty
+      return Seq.empty
 
+    val predicates = qg.selections.flatPredicates.toSet
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
       case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if pattern.coveredIds.intersect(qg.argumentIds).isEmpty => name -> pattern
     }).toMap
 
     // Find plans solving given property predicates together with any label predicates from QG
-    val resultFromPropertyPredicates = if (patternRelationshipsMap.isEmpty) Set.empty[LeafPlansForVariable] else {
+    if (patternRelationshipsMap.isEmpty) Seq.empty[LogicalPlan] else {
       val compatiblePropertyPredicates = findIndexCompatiblePredicates(predicates, qg.argumentIds, context, patternRelationshipsMap.values)
 
       for {
         propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
         variableName = propertyPredicates._1
-        patternRelationship <- patternRelationshipsMap.get(variableName)
+        patternRelationship <- patternRelationshipsMap.get(variableName).toSeq
         plan <- producePlanForSpecificVariable(variableName, propertyPredicates._2, patternRelationship, qg.hints, qg.argumentIds, context,
-        interestingOrderConfig)
+          interestingOrderConfig)
       } yield plan
-    }
-
-    resultFromPropertyPredicates.toSet
+    }.toSeq
   }
 
   override protected def implicitIndexCompatiblePredicates(context: LogicalPlanningContext,
@@ -113,7 +109,7 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
                                      hints: Set[Hint],
                                      argumentIds: Set[String],
                                      context: LogicalPlanningContext,
-                                     interestingOrderConfig: InterestingOrderConfig): Option[LeafPlansForVariable] = {
+                                     interestingOrderConfig: InterestingOrderConfig): Seq[LogicalPlan] = {
     val relTypeName = patternRelationship.types.head
     val indexMatches = for {
       relTypeId <- context.semanticTable.id(relTypeName).toSet[RelTypeId]
@@ -124,15 +120,10 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
       predicatesForIndex.providedOrder,
       predicatesForIndex.indexOrder,
       indexDescriptor)
-    val plans: Seq[LogicalPlan] = for {
+    for {
       provider <- planProviders
       plan <- provider.createPlans(indexMatches, hints, argumentIds, restrictions, context)
     } yield plan
-    if (plans.nonEmpty) {
-      Some(LeafPlansForVariable(variableName, plans.toSet))
-    } else {
-      None
-    }
   }
 }
 

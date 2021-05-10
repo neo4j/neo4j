@@ -20,42 +20,34 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.UsingScanHint
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpression
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with LeafPlanFromExpression {
+case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  override def producePlanFor(e: Expression,
-                              qg: QueryGraph,
-                              interestingOrderConfig: InterestingOrderConfig,
-                              context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
-    e match {
+  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    qg.selections.flatPredicates.flatMap {
       case labelPredicate@HasLabels(variable@Variable(varName), labels) if !skipIDs.contains(varName) && context.planContext.canLookupNodesByLabel =>
-        if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
-          val labelName = labels.head
-          val hint = qg.hints.collectFirst {
-            case hint@UsingScanHint(`variable`, LabelOrRelTypeName(labelName.name)) => hint
-          }
-          val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
-          val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, providedOrder, context)
-          Some(LeafPlansForVariable(varName, Set(plan)))
-        } else
-          None
+      if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
+        val labelName = labels.head
+        val hint = qg.hints.collectFirst {
+          case hint@UsingScanHint(`variable`, LabelOrRelTypeName(labelName.name)) => hint
+        }
+        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
+        val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, providedOrder, context)
+        Some(plan)
+      } else {
+        None
+      }
       case _ =>
         None
     }
   }
-
-  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] =
-    qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg, interestingOrderConfig, context).toSeq.flatMap(_.plans))
 }

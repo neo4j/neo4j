@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -38,37 +37,6 @@ trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner {
   def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan]
-}
-
-object LeafPlansForVariable {
-  def maybeLeafPlans(id: String, plans: Set[LogicalPlan]): Option[LeafPlansForVariable] =
-    if (plans.isEmpty) None else Some(LeafPlansForVariable(id, plans))
-}
-
-case class LeafPlansForVariable(id: String, plans: Set[LogicalPlan]) {
-  require(plans.nonEmpty)
-}
-
-trait LeafPlanFromExpressions {
-  def producePlanFor(predicates: Set[Expression],
-                     qg: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Set[LeafPlansForVariable]
-}
-
-trait LeafPlanFromExpression extends LeafPlanFromExpressions {
-
-  def producePlanFor(e: Expression,
-                     qg: QueryGraph,
-                     interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Option[LeafPlansForVariable]
-
-  override def producePlanFor(predicates: Set[Expression],
-                              qg: QueryGraph,
-                              interestingOrderConfig: InterestingOrderConfig,
-                              context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
-    predicates.flatMap(p => producePlanFor(p, qg, interestingOrderConfig, context))
-  }
 }
 
 /**

@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
-import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.DynamicPropertyNotifier
@@ -32,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.getValueBehaviors
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.implicitExistsPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.predicatesForIndex
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.IndexCandidateHasLabelsPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.IndexMatch
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -58,37 +55,23 @@ import org.neo4j.cypher.internal.util.LabelId
 
 case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restrictions: LeafPlanRestrictions) extends EntityIndexLeafPlanner {
 
-  override def producePlanFor(predicates: Set[Expression],
-                              qg: QueryGraph,
-                              interestingOrderConfig: InterestingOrderConfig,
-                              context: LogicalPlanningContext): Set[LeafPlansForVariable] = {
+  override def apply(qg: QueryGraph,
+                     interestingOrderConfig: InterestingOrderConfig,
+                     context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    val predicates = qg.selections.flatPredicates.toSet
     val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
 
     // Find plans solving given property predicates together with any label predicates from QG
-    val resultFromPropertyPredicates = if (allLabelPredicatesMap.isEmpty) Set.empty[LeafPlansForVariable] else {
+    val result: Seq[LogicalPlan] = if (allLabelPredicatesMap.isEmpty) Seq.empty[LogicalPlan] else {
       val compatiblePropertyPredicates: Set[IndexCompatiblePredicate] = findIndexCompatiblePredicates(predicates, qg.argumentIds, context)
-      compatiblePropertyPredicates.map(_.name).flatMap { variableName =>
-        val labelPredicates = allLabelPredicatesMap.getOrElse(variableName, Set.empty)
-        val propertyPredicates = compatiblePropertyPredicates.filter(p => p.name == variableName)
-        val plansForVariable = producePlansForSpecificVariable(variableName, propertyPredicates, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrderConfig)
-        maybeLeafPlans(variableName, plansForVariable)
-      }
-    }
 
-    // Find plans solving given label predicates together with any property predicates from QG
-    val resultFromLabelPredicates = {
-      lazy val allIndexCompatibles: Set[IndexCompatiblePredicate] = findIndexCompatiblePredicates(qg.selections.flatPredicates.toSet, qg.argumentIds, context)
-      val candidateLabelPredicates = predicates.collect { case p@HasLabels(v: LogicalVariable, _) => IndexCandidateHasLabelsPredicate(v.name, p) }
-      candidateLabelPredicates.flatMap { candidate =>
-        val name = candidate.name
-        val labelPredicates = Set(candidate.hasLabels)
-        val propertyPredicates = allIndexCompatibles.filter(p => p.name == name)
-        val plansForVariable = producePlansForSpecificVariable(name, propertyPredicates, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrderConfig)
-        maybeLeafPlans(name, plansForVariable)
-      }
-    }
-
-    val result = resultFromPropertyPredicates ++ resultFromLabelPredicates
+      for {
+        propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
+        variableName = propertyPredicates._1
+        labelPredicates = allLabelPredicatesMap.getOrElse(variableName, Set.empty)
+        plan <- producePlansForSpecificVariable(variableName, propertyPredicates._2, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrderConfig)
+      } yield plan
+    }.toSeq
 
     issueNotifications(result, qg, context)
 
@@ -118,13 +101,12 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
                                               hints: Set[Hint],
                                               argumentIds: Set[String],
                                               context: LogicalPlanningContext,
-                                              interestingOrderConfig: InterestingOrderConfig): Set[LogicalPlan] = {
+                                              interestingOrderConfig: InterestingOrderConfig): Seq[LogicalPlan] = {
     val indexMatches = findIndexMatches(idName, indexCompatiblePredicates, labelPredicates, interestingOrderConfig, context)
-    val plans = for {
+    for {
       provider <- planProviders
       plan <- provider.createPlans(indexMatches, hints, argumentIds, restrictions, context)
     } yield plan
-    plans.toSet
   }
 
   private def findIndexMatches(
@@ -154,7 +136,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
   private def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.indexesGetForLabel(labelId)
 
-  private def issueNotifications(result: Set[LeafPlansForVariable], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
+  private def issueNotifications(result: Seq[LogicalPlan], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
     if (result.isEmpty) {
       val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
       DynamicPropertyNotifier.process(nonSolvable, IndexLookupUnfulfillableNotification, qg, context)
