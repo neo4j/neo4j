@@ -124,7 +124,10 @@ public class StatementProcessorTxManager implements TransactionManager
     @Override
     public void interrupt( String txReference )
     {
-        statementProcessors.get( txReference ).markCurrentTransactionForTermination();
+        if ( txReference != null && statementProcessors.containsKey( txReference ) )
+        {
+            statementProcessors.get( txReference ).markCurrentTransactionForTermination();
+        }
     }
 
     @Override
@@ -170,11 +173,6 @@ public class StatementProcessorTxManager implements TransactionManager
     public void initialize( InitializeContext initializeContext )
     {
         statementProcessorProviders.computeIfAbsent( initializeContext.connectionId(), key -> initializeContext.statementProcessorProvider() );
-    }
-
-    public void addNewStatementProcessorProvider( String connectionId, StatementProcessorProvider statementProcessorProvider )
-    {
-        statementProcessorProviders.computeIfAbsent( connectionId, key -> statementProcessorProvider );
     }
 
     public void removeStatementProcessorProvider( String connectionId )

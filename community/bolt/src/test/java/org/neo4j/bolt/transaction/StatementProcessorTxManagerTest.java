@@ -41,6 +41,7 @@ import org.neo4j.values.virtual.MapValue;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -63,7 +64,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -77,7 +78,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -93,7 +94,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -110,7 +111,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -126,7 +127,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         var transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                              "connectionId" );
@@ -144,7 +145,7 @@ class StatementProcessorTxManagerTest
         doThrow( mock( KernelException.class ) ).when( statementProcessor ).run( any(), any() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -187,7 +188,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -204,7 +205,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         ProgramResultReference programResultReference = txManager.runProgram( "neo4j", "RETURN 1", MapValue.EMPTY, emptyList(),
                                                                               false, Map.of(), Duration.ofMillis( 100 ), "connectionId" );
@@ -218,7 +219,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         // finds the statement processor
         txManager.runProgram( "neo4j", "RETURN 1", MapValue.EMPTY, emptyList(),
@@ -249,7 +250,7 @@ class StatementProcessorTxManagerTest
            .streamResult( anyInt(), any( ResultConsumer.class ) );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         ProgramResultReference programResultReference = txManager.runProgram( "neo4j", "RETURN 1", MapValue.EMPTY, emptyList(), false,
                                                                               Map.of(), Duration.ofMillis( 100 ), "connectionId" );
@@ -280,7 +281,7 @@ class StatementProcessorTxManagerTest
         ResultConsumer resultConsumer = mock( ResultConsumer.class );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -300,7 +301,7 @@ class StatementProcessorTxManagerTest
         ResultConsumer resultConsumer = mock( ResultConsumer.class );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -322,7 +323,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementMetadata ).when( statementProcessor ).run( any(), any() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -342,7 +343,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -358,7 +359,7 @@ class StatementProcessorTxManagerTest
         doReturn( statementProcessor ).when( statementProcessorProvider ).getStatementProcessor( anyString(), anyString() );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -375,7 +376,7 @@ class StatementProcessorTxManagerTest
         doReturn( Status.General.InvalidArguments ).when( statementProcessor ).validateTransaction();
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -413,7 +414,7 @@ class StatementProcessorTxManagerTest
            .streamResult( anyInt(), any( ResultConsumer.class ) );
 
         StatementProcessorTxManager txManager = new StatementProcessorTxManager();
-        txManager.addNewStatementProcessorProvider( "connectionId", statementProcessorProvider );
+        txManager.initialize( new InitializeContext( "connectionId", statementProcessorProvider ) );
 
         String transactionId = txManager.begin( "neo4j", emptyList(), false, Collections.emptyMap(), Duration.ZERO,
                                                 "connectionId" );
@@ -422,5 +423,12 @@ class StatementProcessorTxManagerTest
 
         var transactionStatus = txManager.transactionStatus( transactionId );
         assertThat( transactionStatus.value() ).isEqualTo( TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT );
+    }
+
+    @Test
+    void shouldNotThrowWhenInterruptingNullTxId() throws Throwable
+    {
+        StatementProcessorTxManager txManager = new StatementProcessorTxManager();
+        assertDoesNotThrow( () -> txManager.interrupt( null ) );
     }
 }
