@@ -29,22 +29,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_THREAD;
 
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
 class LonelyProcessingStepTest
 {
-
     @Test
     @Timeout( 10 )
     void issuePanicBeforeCompletionOnError() throws Exception
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
-        FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest( stepsPipeline );
+        TrackingPanicMonitor panicMonitor = new TrackingPanicMonitor();
+        FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest( stepsPipeline, panicMonitor );
         stepsPipeline.add( faultyStep );
 
         faultyStep.receive( 1, null );
@@ -56,6 +58,7 @@ class LonelyProcessingStepTest
         assertTrue( faultyStep.isPanic() );
         assertFalse( faultyStep.stillWorking() );
         assertTrue( faultyStep.isCompleted() );
+        assertTrue( panicMonitor.hasReceivedPanic() );
     }
 
     private static class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
@@ -63,9 +66,9 @@ class LonelyProcessingStepTest
         private volatile boolean endOfUpstreamCalled;
         private volatile boolean panicOnEndUpstream;
 
-        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine )
+        FaultyLonelyProcessingStepTest( List<Step<?>> pipeLine, TrackingPanicMonitor panicMonitor )
         {
-            super( new StageExecution( "Faulty", null, Configuration.DEFAULT, pipeLine, 0 ),
+            super( new StageExecution( "Faulty", null, Configuration.DEFAULT, pipeLine, 0, SPAWN_THREAD, panicMonitor ),
                     "Faulty", Configuration.DEFAULT );
         }
 

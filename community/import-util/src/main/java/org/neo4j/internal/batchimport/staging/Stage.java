@@ -36,12 +36,13 @@ public class Stage
 
     public Stage( String name, String part, Configuration config, int orderingGuarantees )
     {
-        this( name, part, config, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD );
+        this( name, part, config, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD, StageExecution.DEFAULT_PANIC_MONITOR );
     }
 
-    public Stage( String name, String part, Configuration config, int orderingGuarantees, ProcessorScheduler scheduler )
+    public Stage( String name, String part, Configuration config, int orderingGuarantees, ProcessorScheduler scheduler,
+            StageExecution.PanicMonitor panicMonitor )
     {
-        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees, scheduler );
+        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees, scheduler, panicMonitor );
     }
 
     protected StageControl control()

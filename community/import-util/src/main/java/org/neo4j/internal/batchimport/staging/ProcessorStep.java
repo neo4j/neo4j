@@ -150,6 +150,13 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     }
 
     @Override
+    public void receivePanic( Throwable cause )
+    {
+        super.receivePanic( cause );
+        executor.receivePanic( cause );
+    }
+
+    @Override
     public int processors( int delta )
     {
         return executor.processors( delta );

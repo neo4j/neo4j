@@ -29,7 +29,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -39,11 +38,13 @@ import org.neo4j.test.rule.OtherThreadRule;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_THREAD;
 import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
@@ -153,7 +154,7 @@ class ProcessorStepTest
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
-        when( control.scheduler() ).thenReturn( ProcessorScheduler.SPAWN_THREAD );
+        when( control.scheduler() ).thenReturn( SPAWN_THREAD );
         try ( MyProcessorStep step = new MyProcessorStep( control, 0 ) )
         {
             step.start( ORDER_SEND_DOWNSTREAM );
@@ -190,7 +191,8 @@ class ProcessorStepTest
         String exceptionMessage = "Failing just for fun";
         Configuration configuration = Configuration.DEFAULT;
         CountDownLatch latch = new CountDownLatch( 1 );
-        Stage stage = new Stage( "Test", "Part", configuration, ORDER_SEND_DOWNSTREAM );
+        TrackingPanicMonitor panicMonitor = new TrackingPanicMonitor();
+        Stage stage = new Stage( "Test", "Part", configuration, ORDER_SEND_DOWNSTREAM, SPAWN_THREAD, panicMonitor );
         stage.add( intProducer( configuration, stage, configuration.maxNumberOfProcessors() * 2 ) );
         ProcessorStep<Integer> failingProcessor = null;
         for ( int i = 0; i < numProcessors; i++ )
@@ -235,6 +237,7 @@ class ProcessorStepTest
         {
             stage.close();
         }
+        assertTrue( panicMonitor.hasReceivedPanic() );
     }
 
     private static ProducerStep intProducer( Configuration configuration, Stage stage, int batches )

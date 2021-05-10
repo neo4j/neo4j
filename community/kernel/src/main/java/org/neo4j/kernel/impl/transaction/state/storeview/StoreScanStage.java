@@ -29,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.staging.Stage;
+import org.neo4j.internal.batchimport.staging.StageExecution;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
@@ -42,6 +43,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
+import static org.neo4j.internal.batchimport.staging.StageExecution.DEFAULT_PANIC_MONITOR;
 import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.internal.batchimport.stats.Keys.total_processing_wall_clock_time;
 
@@ -58,7 +60,7 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour, LongFunction<Lock> lockFunction, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( "IndexPopulation store scan", null, config, parallelWrite ? 0 : ORDER_SEND_DOWNSTREAM, runInJobScheduler( scheduler ) );
+        super( "IndexPopulation store scan", null, config, parallelWrite ? 0 : ORDER_SEND_DOWNSTREAM, runInJobScheduler( scheduler ), DEFAULT_PANIC_MONITOR );
         int parallelism = dbConfig.get( GraphDatabaseInternalSettings.index_population_workers );
         long maxBatchByteSize = dbConfig.get( GraphDatabaseInternalSettings.index_population_batch_max_byte_size );
         // Read from entity iterator --> long[]

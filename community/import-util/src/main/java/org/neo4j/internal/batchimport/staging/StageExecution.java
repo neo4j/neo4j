@@ -38,6 +38,8 @@ import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
  */
 public class StageExecution implements StageControl, AutoCloseable
 {
+    public static final PanicMonitor DEFAULT_PANIC_MONITOR = cause -> System.err.println( "Critical error occurred! Shutting down the import..." );
+
     private final String stageName;
     private final String part;
     private final Configuration config;
@@ -46,15 +48,16 @@ public class StageExecution implements StageControl, AutoCloseable
     private volatile Throwable panic;
     private final boolean shouldRecycle;
     private final ProcessorScheduler scheduler;
+    private final PanicMonitor panicMonitor;
     private final ConcurrentLinkedQueue<Object> recycled;
 
     public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees )
     {
-        this( stageName, part, config, pipeline, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD );
+        this( stageName, part, config, pipeline, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD, DEFAULT_PANIC_MONITOR );
     }
 
     public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees,
-            ProcessorScheduler scheduler )
+            ProcessorScheduler scheduler, PanicMonitor panicMonitor )
     {
         this.stageName = stageName;
         this.part = part;
@@ -63,6 +66,7 @@ public class StageExecution implements StageControl, AutoCloseable
         this.orderingGuarantees = orderingGuarantees;
         this.shouldRecycle = (orderingGuarantees & Step.RECYCLE_BATCHES) != 0;
         this.scheduler = scheduler;
+        this.panicMonitor = panicMonitor;
         this.recycled = shouldRecycle ? new ConcurrentLinkedQueue<>() : null;
     }
 
@@ -150,6 +154,7 @@ public class StageExecution implements StageControl, AutoCloseable
     {
         if ( panic == null )
         {
+            panicMonitor.receivedPanic( cause );
             panic = cause;
             for ( Step<?> step : pipeline )
             {
@@ -237,5 +242,10 @@ public class StageExecution implements StageControl, AutoCloseable
         {
             recycled.clear();
         }
+    }
+
+    interface PanicMonitor
+    {
+        void receivedPanic( Throwable cause );
     }
 }
