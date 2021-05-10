@@ -38,6 +38,8 @@ public interface Locks
 
     void acquireSharedRelationshipLock( long... ids );
 
+    void acquireSharedRelationshipTypeLock( long... ids );
+
     void acquireSharedLabelLock( long... ids );
 
     void releaseSharedNodeLock( long... ids );
@@ -45,6 +47,8 @@ public interface Locks
     void releaseSharedRelationshipLock( long... ids );
 
     void releaseSharedLabelLock( long... ids );
+
+    void releaseSharedRelationshipTypeLock( long... ids );
 
     void acquireSharedLookupLock( EntityType entityType );
 

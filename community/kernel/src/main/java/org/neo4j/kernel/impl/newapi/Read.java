@@ -433,6 +433,13 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public void acquireSharedRelationshipTypeLock( long... ids )
+    {
+        acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
     public void acquireSharedLabelLock( long... ids )
     {
         acquireSharedLock( ResourceTypes.LABEL, ids );
@@ -459,6 +466,13 @@ abstract class Read implements TxStateHolder,
     public void releaseSharedLabelLock( long... ids )
     {
         releaseSharedLock( ResourceTypes.LABEL, ids );
+        ktx.assertOpen();
+    }
+
+    @Override
+    public void releaseSharedRelationshipTypeLock( long... ids )
+    {
+        releaseSharedLock( ResourceTypes.RELATIONSHIP_TYPE, ids );
         ktx.assertOpen();
     }
 

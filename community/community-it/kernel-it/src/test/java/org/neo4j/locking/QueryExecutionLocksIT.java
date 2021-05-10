@@ -32,9 +32,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
@@ -107,7 +109,9 @@ class QueryExecutionLocksIT
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
+               .setConfig( GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes, true )
+               .setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
     @Test
@@ -142,6 +146,32 @@ class QueryExecutionLocksIT
         assertTrue( operationRecord.acquisition );
         assertFalse( operationRecord.exclusive );
         assertEquals( ResourceTypes.LABEL, operationRecord.resourceType );
+    }
+
+    @Test
+    void takeRelationshipTypeLockForQueryWithIndexUsages() throws Exception
+    {
+        RelationshipType relType = RelationshipType.withName( "REL" );
+        String propertyKey = "name";
+        createRelationshipIndex( relType, propertyKey );
+
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = transaction.createNode(  );
+            Node node2 = transaction.createNode(  );
+            node1.createRelationshipTo( node2, relType ).setProperty( propertyKey, "v" );
+            transaction.commit();
+        }
+
+        String query = "MATCH ()-[r:" + relType.name() + "]-() where r." + propertyKey + " = \"v\" RETURN r ";
+
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 0 );
+//
+//        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
+//        assertTrue( operationRecord.acquisition );
+//        assertFalse( operationRecord.exclusive );
+//        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
     }
 
     @Test
@@ -222,6 +252,19 @@ class QueryExecutionLocksIT
         try ( Transaction transaction = db.beginTx() )
         {
             transaction.schema().indexFor( label ).on( propertyKey ).create();
+            transaction.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+        }
+    }
+
+    private void createRelationshipIndex( RelationshipType relType, String propertyKey )
+    {
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.schema().indexFor( relType ).on( propertyKey ).create();
             transaction.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -507,6 +550,13 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public void acquireSharedRelationshipTypeLock( long... ids )
+        {
+            record( false, true, ResourceTypes.RELATIONSHIP_TYPE, ids );
+            delegate.acquireSharedLabelLock( ids );
+        }
+
+            @Override
         public void releaseSharedNodeLock( long... ids )
         {
             record( false, false, ResourceTypes.NODE, ids );
@@ -525,6 +575,13 @@ class QueryExecutionLocksIT
         {
             record( false, false, ResourceTypes.LABEL, ids );
             delegate.releaseSharedLabelLock( ids );
+        }
+
+        @Override
+        public void releaseSharedRelationshipTypeLock( long... ids )
+        {
+            record( false, false, ResourceTypes.RELATIONSHIP_TYPE, ids );
+            delegate.releaseSharedRelationshipLock( ids );
         }
 
         @Override
