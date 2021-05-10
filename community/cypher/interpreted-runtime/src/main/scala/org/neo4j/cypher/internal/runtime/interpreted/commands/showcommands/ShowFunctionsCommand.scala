@@ -54,8 +54,11 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
     val tx = state.query.transactionalContext.transaction
     val securityContext = tx.securityContext()
     val (userRoles, alwaysExecutable) =
-      if (!isCommunity) ShowProcFuncCommandHelper.getRolesForUser(securityContext, systemGraph, executableBy, "SHOW FUNCTIONS")
-      else (Set.empty[String], true)
+      if (!isCommunity) {
+        ShowProcFuncCommandHelper.getRolesForUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW FUNCTIONS")
+      } else {
+        (Set.empty[String], true)
+      }
     val allowShowRoles = if (!isCommunity && verbose) securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)) else false
 
     // gets you all functions provided by the query language

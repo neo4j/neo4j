@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.AuthSubject
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.string.Globbing
@@ -49,7 +50,7 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 
 object ShowProcFuncCommandHelper {
 
-  def getRolesForUser(securityContext: SecurityContext, systemGraph: Option[GraphDatabaseService], executableBy: Option[ExecutableBy], command: String): (Set[String], Boolean) = executableBy match {
+  def getRolesForUser(securityContext: SecurityContext, securityHandler: SecurityAuthorizationHandler, systemGraph: Option[GraphDatabaseService], executableBy: Option[ExecutableBy], command: String): (Set[String], Boolean) = executableBy match {
     case Some(CurrentUser) if securityContext.subject().equals(AuthSubject.AUTH_DISABLED) => (Set.empty[String], true)
     case Some(User(name)) if !securityContext.subject().hasUsername(name) =>
       // EXECUTABLE BY not_current_user
@@ -58,7 +59,7 @@ object ShowProcFuncCommandHelper {
         val violationMessage: String = s"Permission denied for $command, requires SHOW USER privilege. " +
           "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
           "In case of missing privileges, they need to be granted (See GRANT). In case of denied privileges, they need to be revoked (See REVOKE) and granted."
-        throw new AuthorizationViolationException(violationMessage)
+        throw securityHandler.logAndGetAuthorizationException(securityContext, violationMessage)
       }
       val stx = systemGraph.get.beginTx() // Will be Some(_: GraphDatabaseService) since executableBy.isDefined
       val rolesResult = stx.execute(s"SHOW USERS YIELD user, roles WHERE user = '$name' RETURN roles").columnAs[util.List[String]]("roles")

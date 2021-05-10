@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.functions.Category.STRING
 import org.neo4j.cypher.internal.expressions.functions.Category.TEMPORAL
 import org.neo4j.cypher.internal.expressions.functions.Category.TRIGONOMETRIC
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.api.security.AuthManager
@@ -693,7 +694,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
 
   def executeAs(username: String, password: String, queryText: String, params: Map[String, Any] = Map.empty): RewindableExecutionResult = {
     val authManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
-    val login = authManager.login(SecurityTestUtils.authToken(username, password))
+    val login = authManager.login(SecurityTestUtils.authToken(username, password), ClientConnectionInfo.EMBEDDED_CONNECTION)
     val tx = graph.beginTransaction(Type.EXPLICIT, login)
     try {
       val result = execute(queryText, params, tx)
