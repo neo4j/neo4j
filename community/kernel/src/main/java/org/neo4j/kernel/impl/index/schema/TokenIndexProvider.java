@@ -51,7 +51,9 @@ import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.storageengine.migration.TokenIndexMigrator;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
@@ -135,7 +137,7 @@ public class TokenIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return StoreMigrationParticipant.NOT_PARTICIPATING;
+        return new TokenIndexMigrator( "Token indexes", fs, storageEngineFactory, databaseLayout );
     }
 
     @Override
