@@ -285,8 +285,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
       testRange.map { i => Map("p1" -> s"${testValueOffset + i}", "p2" -> s"${testValueOffset*2 + i}", "p3" -> s"${testValueOffset*3 + i}") }
   }
 
-  // TODO: Support periodic commit in runtime spec suite
-  ignore("should load csv create node with properties with periodic commit") {
+  test("should load csv create node with properties with periodic commit") {
     // given an empty data base
     val url = multipleColumnCsvFile(withHeaders = true)
 
@@ -302,15 +301,38 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
-    //runtimeTestSupport.stopTx() // Periodic commit cannot run in transaction
-
-    // TODO: Fix execute method that works with periodic commit
-    val runtimeResult = execute(executablePlan, readOnly = false)
+    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
     consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("n")
       .withRows(RowCount(testRange.size))
+      .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
+  }
+
+  test("should load csv create node with properties with periodic commit and eager aggregation") {
+    // given an empty data base
+    val url = multipleColumnCsvFile(withHeaders = true)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this,
+                                               hasLoadCsv = true,
+                                               periodicCommitBatchSize = Some(testRange.size / 5))
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(n) AS count"))
+      .create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
+      .loadCSV(url, variableName = "line", HasHeaders)
+      .argument()
+      .build(readOnly = false)
+
+    val executablePlan = buildPlan(logicalQuery, runtime)
+
+    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("count")
+      .withSingleRow(testRange.size.toLong)
       .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
   }
 }

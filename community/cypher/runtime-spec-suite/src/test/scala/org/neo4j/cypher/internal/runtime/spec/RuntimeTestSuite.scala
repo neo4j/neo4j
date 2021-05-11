@@ -214,7 +214,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                                 profileAssertion: Option[QueryProfile => Unit] = None
                                                ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters, profileAssertion)
 
-  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult = runtimeTestSupport.execute(executablePlan, readOnly)
+  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean, periodicCommit: Boolean): RecordingRuntimeResult =
+    runtimeTestSupport.execute(executablePlan, readOnly, periodicCommit)
 
   override def buildPlan(logicalQuery: LogicalQuery,
                          runtime: CypherRuntime[CONTEXT]): ExecutionPlan = runtimeTestSupport.buildPlan(logicalQuery, runtime)

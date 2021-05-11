@@ -119,6 +119,13 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
+  def restartPeriodicCommitTx(): Unit = {
+    _txContext.close()
+    _tx.commit()
+    _tx = cypherGraphDb.beginTransaction(Type.IMPLICIT, LoginContext.AUTH_DISABLED)
+    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+  }
+
   def stopTx(): Unit = {
     _txContext.close()
     _tx.close()
@@ -142,9 +149,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                    runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT) =
     compileWithTx(logicalQuery, runtime, newQueryContext(_txContext, logicalQuery.readOnly))
 
-  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean = true): RecordingRuntimeResult = {
+  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean = true, periodicCommit: Boolean = false): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
-    val result = run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false, readOnly)
+    val result = run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false, readOnly, periodicCommit = periodicCommit)
     RecordingRuntimeResult(result, subscriber)
   }
 
@@ -266,7 +273,11 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   subscriber: QuerySubscriber,
                   profile: Boolean,
                   readOnly: Boolean,
-                  parameters: Map[String, Any] = Map.empty): RESULT = {
+                  parameters: Map[String, Any] = Map.empty,
+                  periodicCommit: Boolean = false): RESULT = {
+    if (periodicCommit) {
+      restartPeriodicCommitTx()
+    }
     runWithTx(executableQuery, input, resultMapper, subscriber, profile, readOnly, parameters, _tx, _txContext)
   }
 
