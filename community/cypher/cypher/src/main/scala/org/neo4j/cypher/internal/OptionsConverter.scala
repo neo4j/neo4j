@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.evaluator.Evaluator
 import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
@@ -42,15 +46,17 @@ import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
-import org.neo4j.values.storable.StringValue
+import org.neo4j.values.storable.NoValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Collections
 import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 trait OptionsConverter[T] {
 
@@ -60,7 +66,26 @@ trait OptionsConverter[T] {
       evaluator.evaluate(expression, params)
   }
 
-  def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): T
+  def convert(options: Options, params: MapValue): Option[T] = options match {
+    case NoOptions => None
+    case OptionsMap(map) => Some(convert(VirtualValues.map(
+      map.keys.map(_.toLowerCase).toArray,
+      map.mapValues(evaluate(_, params)).values.toArray)))
+    case OptionsParam(parameter) =>
+      val opsMap = params.get(parameter.name)
+      opsMap match {
+        case mv: MapValue =>
+          val builder = new MapValueBuilder()
+          mv.foreach((k, v) => builder.add(k.toLowerCase(), v))
+          Some(convert(builder.build()))
+        case _ =>
+          throw new InvalidArgumentsException(s"Could not ${operation} with options '$opsMap'. Expected a map value.")
+      }
+  }
+
+  def operation: String
+
+  def convert(options: MapValue): T
 }
 
 case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDatabaseOptions] {
@@ -71,20 +96,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   //existing Data values
   val USE_EXISTING_DATA = "use"
 
-  def convert(e:AnyValue): CreateDatabaseOptions = {
-    e match {
-      case mv: MapValue => mapValueToCreateDatabaseOptions(mv)
-      case _ =>
-        throw new InvalidArgumentsException(s"Could not create database with options '$e'. Expected a map value.")
-    }
-  }
-
-  def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateDatabaseOptions = {
-    val a = options.mapValues(evaluate(_, params))
-    mapValueToCreateDatabaseOptions(VirtualValues.map(a.keys.toArray, a.values.toArray))
-  }
-
-  private def mapValueToCreateDatabaseOptions(map: MapValue): CreateDatabaseOptions = {
+  override def convert(map: MapValue): CreateDatabaseOptions = {
       var dbSeed: Option[String] = None
       map.foreach { case (key, value) =>
       //existingData
@@ -111,39 +123,51 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
     }
     CreateDatabaseOptions(USE_EXISTING_DATA, dbSeed)
   }
+
+  override def operation: String = "create database"
 }
 
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   implicit class MapValueExists(mv: MapValue) {
-    def exists(f: (Any, Any) => Boolean): Boolean = {
+    def exists(f: (String, Any) => Boolean): Boolean = {
       var result = false
       mv.foreach { case (k, v) => if (f(k, v)) result = true }
       result
     }
+
+    def getOption(key: String): Option[AnyValue] = mv.get(key) match {
+      case _: NoValue => None
+      case value => Some(value)
+    }
   }
 
-  def getOptionsParts(options: Map[String, Expression], params: MapValue, schemaType: String): (Option[Expression], IndexConfig) = {
-    val lowerCaseOptions = options.map { case (k, v) => (k.toLowerCase, v) }
-    val maybeIndexProvider = lowerCaseOptions.get("indexprovider")
-    val maybeConfig = lowerCaseOptions.get("indexconfig")
+  def getOptionsParts(options: MapValue, schemaType: String): (Option[AnyValue], IndexConfig) = {
 
-    val configMap: java.util.Map[String, Object] = maybeConfig.map(assertValidAndTransformConfig(_, params, schemaType)).getOrElse(Collections.emptyMap())
+    if (options.keySet().asScala.exists(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig"))) {
+      throw new InvalidArgumentsException(s"Failed to create $schemaType: Invalid option provided, valid options are `indexProvider` and `indexConfig`.")
+    }
+    val maybeIndexProvider = options.getOption("indexprovider")
+    val maybeConfig = options.getOption("indexconfig")
+
+    val configMap: java.util.Map[String, Object] = maybeConfig.map(assertValidAndTransformConfig(_, schemaType).asInstanceOf[java.util.Map[String, Object]])
+      .getOrElse(Collections.emptyMap())
     val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
+
     (maybeIndexProvider, indexConfig)
   }
 
-  def assertValidAndTransformConfig(config: Expression, params: MapValue, schemaType: String): java.util.Map[String, Object]
+  def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object]
 }
 
 case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOptionsConverter[CreateBtreeIndexOptions] {
 
-  override def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateBtreeIndexOptions =  {
-    val (maybeIndexProvider, indexConfig) = getOptionsParts(options, params, schemaType)
-    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, params, schemaType))
+  override def convert(options: MapValue): CreateBtreeIndexOptions = {
+    val (maybeIndexProvider, indexConfig) = getOptionsParts(options, schemaType)
+    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
     CreateBtreeIndexOptions(indexProvider, indexConfig)
   }
 
-  private def assertValidIndexProvider(indexProvider: Expression, params: MapValue, schemaType: String): String = evaluate(indexProvider, params) match {
+  private def assertValidIndexProvider(indexProvider: AnyValue): String = indexProvider match {
     case indexProviderValue: TextValue =>
       val indexProviderString = indexProviderValue.stringValue()
       if (indexProviderString.equalsIgnoreCase(FulltextIndexProviderFactory.DESCRIPTOR.name()))
@@ -158,10 +182,10 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOpt
       indexProviderString
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '${indexProvider.asCanonicalStringVal}'. Expected String value.")
+      throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProvider'. Expected String value.")
   }
 
-  override def assertValidAndTransformConfig(config: Expression, params: MapValue, schemaType: String): java.util.Map[String, Object] = {
+  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
@@ -172,9 +196,9 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOpt
     // for indexProvider BTREE:
     //    current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
     //    current values: Double[]
-    evaluate(config, params) match {
+    config match {
       case itemsMap: MapValue =>
-        if (itemsMap.exists { case (p: String, _) => p.equalsIgnoreCase(FULLTEXT_ANALYZER.getSettingName) || p.equalsIgnoreCase(FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName) }) {
+        if (itemsMap.exists { case (p, _) => p.equalsIgnoreCase(FULLTEXT_ANALYZER.getSettingName) || p.equalsIgnoreCase(FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName) }) {
           val pp = new PrettyPrinter()
           itemsMap.writeTo(pp)
           throw new InvalidArgumentsException(
@@ -197,17 +221,19 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOpt
         throw exceptionWrongType(unknown)
     }
   }
+
+  override def operation: String = s"create $schemaType"
 }
 
 case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[CreateFulltextIndexOptions] {
 
-  override def convert(options: Map[String, Expression], params: MapValue = MapValue.EMPTY): CreateFulltextIndexOptions =  {
-    val (maybeIndexProvider, indexConfig) = getOptionsParts(options, params, "fulltext index")
-    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, params))
+  override def convert(options: MapValue): CreateFulltextIndexOptions =  {
+    val (maybeIndexProvider, indexConfig) = getOptionsParts(options, "fulltext index")
+    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
     CreateFulltextIndexOptions(indexProvider, indexConfig)
   }
 
-  private def assertValidIndexProvider(indexProvider: Expression, params: MapValue): IndexProviderDescriptor = evaluate(indexProvider, params) match {
+  private def assertValidIndexProvider(indexProvider: AnyValue): IndexProviderDescriptor = indexProvider match {
     case indexProviderValue: TextValue =>
       val indexProviderString = indexProviderValue.stringValue()
       if (indexProviderString.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) ||
@@ -222,10 +248,10 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
       FulltextIndexProviderFactory.DESCRIPTOR
 
     case _ =>
-      throw new InvalidArgumentsException(s"Could not create fulltext index with specified index provider '${indexProvider.asCanonicalStringVal}'. Expected String value.")
+      throw new InvalidArgumentsException(s"Could not create fulltext index with specified index provider '$indexProvider'. Expected String value.")
   }
 
-  override def assertValidAndTransformConfig(config: Expression, params: MapValue, schemaType: String): java.util.Map[String, Object] = {
+  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
@@ -236,7 +262,7 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
     // for indexProvider FULLTEXT:
     //    current keys: fulltext.analyzer and fulltext.eventually_consistent
     //    current values: string and boolean
-    evaluate(config, params) match {
+    config match {
       case itemsMap: MapValue =>
         if (itemsMap.exists { case (p: String, _) =>
           p.equalsIgnoreCase(SPATIAL_CARTESIAN_MIN.getSettingName) ||
@@ -257,7 +283,7 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
 
         val hm = new java.util.HashMap[String, Object]()
         itemsMap.foreach {
-          case (p: String, e: StringValue)  =>
+          case (p: String, e: TextValue)  =>
             hm.put(p, e.stringValue())
           case (p: String, e: BooleanValue) =>
             hm.put(p, java.lang.Boolean.valueOf(e.booleanValue()))
@@ -268,6 +294,8 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
         throw exceptionWrongType(unknown)
     }
   }
+
+  override def operation: String = "create fulltext index"
 }
 
 case class CreateBtreeIndexOptions(provider: Option[String], config: IndexConfig)

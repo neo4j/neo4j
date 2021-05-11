@@ -21,6 +21,10 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
@@ -378,13 +382,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForLookupIndex(entityType, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(lookupIndexInfo(nameOption, entityType))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
 
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
@@ -396,7 +400,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case DropIndex(labelName, propertyKeyNames) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(btreeIndexInfo(None, Left(labelName), propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(btreeIndexInfo(None, Left(labelName), propertyKeyNames, NoOptions))), variables, withRawCardinalities)
 
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables, withRawCardinalities)
@@ -1171,7 +1175,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     if (caches.isEmpty) pretty"" else caches.map(asPrettyString(_)).mkPrettyString(", ", ", ", "")
   }
 
-  private def btreeIndexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
+  private def btreeIndexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Options): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
@@ -1188,7 +1192,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     pretty"INDEX$name FOR $pattern ON $propertyString${prettyOptions(options)}"
   }
 
-  private def fulltextIndexInfo(nameOption: Option[String], entityNames: Either[List[LabelName], List[RelTypeName]], properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
+  private def fulltextIndexInfo(nameOption: Option[String], entityNames: Either[List[LabelName], List[RelTypeName]], properties: Seq[PropertyKeyName], options: Options): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
@@ -1222,7 +1226,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
                              entityName: Either[LabelName, RelTypeName],
                              properties: Seq[Property],
                              assertion: Either[String, String],
-                             options: Map[String, Expression] = Map.empty): PrettyString = {
+                             options: Options = NoOptions): PrettyString = {
     val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
     val (leftAssertion, rightAssertion) = assertion match {
       case scala.util.Left(a) => (asPrettyString.raw(a), pretty"")
@@ -1238,8 +1242,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     pretty"CONSTRAINT$name ON $entityInfo ASSERT $leftAssertion$propertyString$rightAssertion${prettyOptions(options)}"
   }
 
-  private def prettyOptions(options: Map[String, Expression]): PrettyString =
-    if (options.nonEmpty) pretty" OPTIONS ${options.map({ case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}" }).mkPrettyString("{", SEPARATOR, "}")}" else pretty""
+  private def prettyOptions(options: Options): PrettyString = options match {
+    case NoOptions => pretty""
+    case OptionsParam(parameter) => pretty" OPTIONS ${asPrettyString(parameter)}"
+    case OptionsMap(options)  => pretty" OPTIONS ${options.map({ case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}" }).mkPrettyString("{", SEPARATOR, "}")}"
+  }
 
   private def setPropertyInfo(idName: PrettyString,
                               expression: Expression,

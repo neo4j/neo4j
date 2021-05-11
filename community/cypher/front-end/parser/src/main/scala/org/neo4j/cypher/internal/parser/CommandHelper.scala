@@ -38,10 +38,6 @@ trait CommandHelper extends Parser
 
   def FunctionKeyword: Rule0 = keyword("FUNCTIONS") | keyword("FUNCTION")
 
-  def options: Rule1[Map[String, Expression]] = rule {
-    keyword("OPTIONS") ~~ optionsMap
-  }
-
   def optionsMapOrParameter: Rule1[Options] = rule {
     keyword("OPTIONS") ~~ optionsMap ~~> (map => OptionsMap(map)) |
     keyword("OPTIONS") ~~ MapParameter ~~> (mapParam => OptionsParam(mapParam))

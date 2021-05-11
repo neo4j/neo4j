@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -137,7 +138,7 @@ class FabricPlannerTest
 
       parse(remote.query)
         .shouldEqual(
-          CreateBtreeNodeIndex(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"), IfExistsThrowError, Map.empty)(pos)
+          CreateBtreeNodeIndex(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"), IfExistsThrowError, NoOptions)(pos)
         )
     }
 

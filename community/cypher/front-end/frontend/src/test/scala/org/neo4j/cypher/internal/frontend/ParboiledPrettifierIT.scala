@@ -229,7 +229,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
     "CREATE index FOR (n:Person) on (n.name) OPtiONS {}" ->
-      """CREATE INDEX FOR (n:Person) ON (n.name)""",
+      """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {}""",
 
     "create or REPLACE INDEX FOR (n:A) ON (n.p)" ->
       "CREATE OR REPLACE INDEX FOR (n:A) ON (n.p)",
@@ -271,7 +271,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
     "CREATE index FOR ()<-[n:R]-() on (n.name) OPtiONS {}" ->
-      """CREATE INDEX FOR ()-[n:R]-() ON (n.name)""",
+      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {}""",
 
     "create or REPLACE INDEX FOR ()-[n:R]-() ON (n.p)" ->
       "CREATE OR REPLACE INDEX FOR ()-[n:R]-() ON (n.p)",
@@ -295,7 +295,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "CREATE LOOKUP INDEX IF NOT EXISTS FOR (n) ON EACH labels(n)",
 
     "CREATE OR REPLACE lookup INDEX foo FOR (n) ON each labels(n) OPTIONS {}" ->
-      "CREATE OR REPLACE LOOKUP INDEX foo FOR (n) ON EACH labels(n)",
+      "CREATE OR REPLACE LOOKUP INDEX foo FOR (n) ON EACH labels(n) OPTIONS {}",
 
     "CREATE LOOKUP index FOR (n) ON each labels(n) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
       """CREATE LOOKUP INDEX FOR (n) ON EACH labels(n) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
@@ -310,7 +310,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "CREATE LOOKUP INDEX IF NOT EXISTS FOR ()-[r]-() ON EACH type(r)",
 
     "CREATE OR REPLACE lookup INDEX foo FOR ()-[r]-() ON type(r) OPTIONS {}" ->
-      "CREATE OR REPLACE LOOKUP INDEX foo FOR ()-[r]-() ON EACH type(r)",
+      "CREATE OR REPLACE LOOKUP INDEX foo FOR ()-[r]-() ON EACH type(r) OPTIONS {}",
 
     "CREATE LOOKUP index FOR ()-[r]-() ON each type(r) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
       """CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(r) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
@@ -340,7 +340,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """CREATE FULLTEXT INDEX FOR (n:Person) ON EACH [n.name] OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
     "CREATE fulltext index FOR (n:Person) on EACH [n.name] OPtiONS {}" ->
-      """CREATE FULLTEXT INDEX FOR (n:Person) ON EACH [n.name]""",
+      """CREATE FULLTEXT INDEX FOR (n:Person) ON EACH [n.name] OPTIONS {}""",
 
     "create or REPLACE FULLTEXT INDEX FOR (n:A) ON EACH [n.p]" ->
       "CREATE OR REPLACE FULLTEXT INDEX FOR (n:A) ON EACH [n.p]",
@@ -379,7 +379,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name] OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
     "CREATE fulltext index FOR ()<-[n:R]-() on EACH [n.name] OPtiONS {}" ->
-      """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name]""",
+      """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name] OPTIONS {}""",
 
     "create or REPLACE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.p]" ->
       "CREATE OR REPLACE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.p]",
@@ -456,7 +456,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
     "CREATE constraint ON (n:A) ASSERT (n.p) IS NODE KEY OPtiONS {}" ->
-      """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY""",
+      """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY OPTIONS {}""",
 
     "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
       "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
@@ -495,7 +495,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
     "CREATE constraint ON (n:A) ASSERT (n.p) IS UNIQUE OPtiONS {}" ->
-      """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE""",
+      """CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE OPTIONS {}""",
 
     "create CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
       "CREATE CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",

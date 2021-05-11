@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
@@ -35,12 +36,12 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   override val availableSymbols: Set[String] = Set.empty
 }
 
-case class CreateNodeKeyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateNodeKeyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateUniquePropertyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateUniquePropertyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
@@ -57,7 +58,7 @@ case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, pr
 
 case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateBtreeIndex(source: Option[DoNothingIfExistsForBtreeIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateBtreeIndex(source: Option[DoNothingIfExistsForBtreeIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 
@@ -65,7 +66,7 @@ case class CreateLookupIndex(source: Option[DoNothingIfExistsForLookupIndex], en
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateFulltextIndex(source: Option[DoNothingIfExistsForFulltextIndex], entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateFulltextIndex(source: Option[DoNothingIfExistsForFulltextIndex], entityNames: Either[List[LabelName], List[RelTypeName]], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
 

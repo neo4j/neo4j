@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -97,14 +99,14 @@ trait SchemaCommand extends Parser
     group((keyword("CREATE BTREE INDEX") | keyword("CREATE INDEX")) ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
   }
 
-  private def BtreeNodeIndexPatternSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
-    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ options) |
-    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => Map.empty)
+  private def BtreeNodeIndexPatternSyntax: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
+    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ optionsMapOrParameter) |
+    group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => NoOptions)
   }
 
-  private def BtreeRelationshipIndexPatternSyntax: Rule4[Variable, RelTypeName, Seq[Property], Map[String, Expression]] = rule {
-    group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ options) |
-    group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => Map.empty)
+  private def BtreeRelationshipIndexPatternSyntax: Rule4[Variable, RelTypeName, Seq[Property], Options] = rule {
+    group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ optionsMapOrParameter) |
+    group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => NoOptions)
   }
 
   private def CreateLookupIndex: Rule1[ast.CreateIndex] = rule {
@@ -127,14 +129,14 @@ trait SchemaCommand extends Parser
     group(keyword("CREATE LOOKUP INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
   }
 
-  private def LookupNodeIndexPatternSyntax: Rule3[Variable, expressions.FunctionInvocation, Map[String, Expression]] = rule {
-    group("(" ~~ Variable ~~ ")" ~~ keyword("ON EACH") ~~ lookupIndexFunctions ~~ options) |
-    group("(" ~~ Variable ~~ ")" ~~ keyword("ON EACH") ~~ lookupIndexFunctions) ~> (_ => Map.empty)
+  private def LookupNodeIndexPatternSyntax: Rule3[Variable, expressions.FunctionInvocation, Options] = rule {
+    group("(" ~~ Variable ~~ ")" ~~ keyword("ON EACH") ~~ lookupIndexFunctions ~~ optionsMapOrParameter) |
+    group("(" ~~ Variable ~~ ")" ~~ keyword("ON EACH") ~~ lookupIndexFunctions) ~> (_ => NoOptions)
   }
 
-  private def LookupRelationshipIndexPatternSyntax: Rule3[Variable, expressions.FunctionInvocation, Map[String, Expression]] = rule {
-    group(LookupRelationshipPatternSyntax ~~ keyword("ON") ~~ optional(keyword("EACH")) ~~ lookupIndexFunctions ~~ options) |
-    group(LookupRelationshipPatternSyntax ~~ keyword("ON") ~~ optional(keyword("EACH")) ~~ lookupIndexFunctions) ~> (_ => Map.empty)
+  private def LookupRelationshipIndexPatternSyntax: Rule3[Variable, expressions.FunctionInvocation, Options] = rule {
+    group(LookupRelationshipPatternSyntax ~~ keyword("ON") ~~ optional(keyword("EACH")) ~~ lookupIndexFunctions ~~ optionsMapOrParameter) |
+    group(LookupRelationshipPatternSyntax ~~ keyword("ON") ~~ optional(keyword("EACH")) ~~ lookupIndexFunctions) ~> (_ => NoOptions)
   }
 
   private def LookupRelationshipPatternSyntax: Rule1[Variable] = rule(
@@ -167,9 +169,9 @@ trait SchemaCommand extends Parser
       group(keyword("CREATE FULLTEXT INDEX") ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
   }
 
-  private def FulltextNodeIndexPatternSyntax: Rule4[Variable, List[LabelName], List[Property], Map[String, Expression]] = rule {
-    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ options) |
-    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => Map.empty)
+  private def FulltextNodeIndexPatternSyntax: Rule4[Variable, List[LabelName], List[Property], Options] = rule {
+    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ optionsMapOrParameter) |
+    group("(" ~~ Variable ~~ FulltextNodeLabels ~~ ")" ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => NoOptions)
   }
 
   private def FulltextNodeLabels: Rule1[List[LabelName]] = rule(
@@ -177,9 +179,9 @@ trait SchemaCommand extends Parser
     NodeLabel ~~>> (label => _ => List(label))
   )
 
-  private def FulltextRelationshipIndexPatternSyntax: Rule4[Variable, List[RelTypeName], List[Property], Map[String, Expression]] = rule {
-    group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ options) |
-      group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => Map.empty)
+  private def FulltextRelationshipIndexPatternSyntax: Rule4[Variable, List[RelTypeName], List[Property], Options] = rule {
+    group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection ~~ optionsMapOrParameter) |
+      group(FulltextRelationshipPatternSyntax ~~ keyword("ON") ~~ FulltextPropertyProjection) ~> (_ => NoOptions)
   }
 
   private def FulltextRelationshipPatternSyntax: Rule2[Variable, List[RelTypeName]] = rule(
@@ -263,25 +265,25 @@ trait SchemaCommand extends Parser
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
-  private def NodeKeyConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
-    NodeKeyConstraintSyntax ~~ options |
-    NodeKeyConstraintSyntax ~> (_ => Map.empty)
+  private def NodeKeyConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
+    NodeKeyConstraintSyntax ~~ optionsMapOrParameter |
+    NodeKeyConstraintSyntax ~> (_ => NoOptions)
   }
 
   private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ VariablePropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def UniqueConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Property, Map[String, Expression]] = rule {
-    UniqueConstraintSyntax ~~ options |
-    UniqueConstraintSyntax ~> (_ => Map.empty)
+  private def UniqueConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Property, Options] = rule {
+    UniqueConstraintSyntax ~~ optionsMapOrParameter |
+    UniqueConstraintSyntax ~> (_ => NoOptions)
   }
 
   private def UniqueCompositeConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
 
-  private def UniqueCompositeConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
-    UniqueCompositeConstraintSyntax ~~ options |
-    UniqueCompositeConstraintSyntax ~> (_ => Map.empty)
+  private def UniqueCompositeConstraintWithOptionsSyntax: Rule4[Variable, LabelName, Seq[Property], Options] = rule {
+    UniqueCompositeConstraintSyntax ~~ optionsMapOrParameter |
+    UniqueCompositeConstraintSyntax ~> (_ => NoOptions)
   }
 
   private def OldNodePropertyExistenceConstraintSyntax: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
@@ -290,11 +292,11 @@ trait SchemaCommand extends Parser
   private def NodePropertyExistenceConstraintSyntax: Rule3[Variable, LabelName, Property] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
-  private def NodePropertyExistenceConstraintWithOptionsSyntax: Rule5[Variable, LabelName, Property, Option[Map[String, Expression]], Boolean] = rule {
-    OldNodePropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => true) |
-    OldNodePropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => true) |
-    NodePropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => false) |
-    NodePropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => false)
+  private def NodePropertyExistenceConstraintWithOptionsSyntax: Rule5[Variable, LabelName, Property, Options, Boolean] = rule {
+    OldNodePropertyExistenceConstraintSyntax ~~ optionsMapOrParameter ~> (_ => true) |
+    OldNodePropertyExistenceConstraintSyntax ~> (_ => NoOptions) ~> (_ => true) |
+    NodePropertyExistenceConstraintSyntax ~~ optionsMapOrParameter ~> (_ => false) |
+    NodePropertyExistenceConstraintSyntax ~> (_ => NoOptions) ~> (_ => false)
   }
 
   private def OldRelationshipPropertyExistenceConstraintSyntax: Rule3[Variable, RelTypeName, Property] = RelationshipPatternSyntax ~~
@@ -303,10 +305,10 @@ trait SchemaCommand extends Parser
   private def RelationshipPropertyExistenceConstraintSyntax: Rule3[Variable, RelTypeName, Property] =  RelationshipPatternSyntax ~~
     keyword("ASSERT") ~~ group(group("(" ~~ VariablePropertyExpression ~~ ")") | VariablePropertyExpression) ~~ keyword("IS NOT NULL")
 
-  private def RelationshipPropertyExistenceConstraintWithOptionsSyntax: Rule5[Variable, RelTypeName, Property, Option[Map[String, Expression]], Boolean] = rule {
-    OldRelationshipPropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => true) |
-    OldRelationshipPropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => true) |
-    RelationshipPropertyExistenceConstraintSyntax ~~ options ~~> (o => Some(o)) ~> (_ => false) |
-    RelationshipPropertyExistenceConstraintSyntax ~> (_ => None) ~> (_ => false)
+  private def RelationshipPropertyExistenceConstraintWithOptionsSyntax: Rule5[Variable, RelTypeName, Property, Options, Boolean] = rule {
+    OldRelationshipPropertyExistenceConstraintSyntax ~~ optionsMapOrParameter ~> (_ => true) |
+    OldRelationshipPropertyExistenceConstraintSyntax ~> (_ => NoOptions) ~> (_ => true) |
+    RelationshipPropertyExistenceConstraintSyntax ~~ optionsMapOrParameter ~> (_ => false) |
+    RelationshipPropertyExistenceConstraintSyntax ~> (_ => NoOptions) ~> (_ => false)
   }
 }

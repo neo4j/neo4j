@@ -50,6 +50,8 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
@@ -324,6 +326,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -666,35 +669,38 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // BTREE
 
-    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), None, Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForBtreeIndex(Left(label("Label")), List(key("prop")), None)),
-      Left(label("Label")), List(key("prop")), None, Map.empty), 63.2),
+      Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty)
       ), Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), None, Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForBtreeIndex(Right(relType("Label")), List(key("prop")), None)),
-      Right(relType("Label")), List(key("prop")), None, Map.empty), 63.2),
+      Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
       ), Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsParam(parameter("options", CTMap))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")), Set.empty))
 
     // LOOKUP
 
@@ -716,35 +722,38 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     // FULLTEXT
 
-    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX `$indexName` FOR (:Label) ON EACH [prop]")), Set.empty))
 
-    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop1"), key("prop2")), None, Map.empty), 63.2),
+    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop1"), key("prop2")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX FOR (:Label) ON EACH [prop1, prop2]")), Set.empty))
 
-    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label1"), label("Label2"))), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("fulltext-1.0"))), 63.2),
+    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label1"), label("Label2"))), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("fulltext-1.0")))), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("""FULLTEXT INDEX `$indexName` FOR (:Label1|Label2) ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(Some(DoNothingIfExistsForFulltextIndex(Left(List(label("Label"))), List(key("prop")), None)),
-      Left(List(label("Label"))), List(key("prop")), None, Map.empty), 63.2),
+      Left(List(label("Label"))), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("FULLTEXT INDEX FOR (:Label) ON EACH [prop]")), Set.empty)
       ), Seq(details("FULLTEXT INDEX FOR (:Label) ON EACH [prop]")), Set.empty))
 
-    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
 
-    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"), relType("Type"))), List(key("prop1"), key("prop2")), None, Map.empty), 63.2),
+    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"), relType("Type"))), List(key("prop1"), key("prop2")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX FOR ()-[:Label|Type]-() ON EACH [prop1, prop2]")), Set.empty))
 
-    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("fulltext-1.0"))), 63.2),
+    assertGood(attach(CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("fulltext-1.0")))), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("""FULLTEXT INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateFulltextIndex(Some(DoNothingIfExistsForFulltextIndex(Right(List(relType("Label"))), List(key("prop")), None)),
-      Right(List(relType("Label"))), List(key("prop")), None, Map.empty), 63.2),
+      Right(List(relType("Label"))), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("FULLTEXT INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty)
       ), Seq(details("FULLTEXT INDEX FOR ()-[:Label]-() ON EACH [prop]")), Set.empty))
+
+    assertGood(attach(CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some("$indexName"), OptionsParam(parameter("ops", CTMap))), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("FULLTEXT INDEX `$indexName` FOR (:Label) ON EACH [prop] OPTIONS $ops")), Set.empty))
   }
 
   test("DropIndex") {
@@ -778,40 +787,46 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateUniquePropertyConstraint") {
-    assertGood(attach(CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, Map.empty), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop")), Some("constraintName"), Map.empty), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop")), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), Map.empty), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` ON (x:Label) ASSERT (x.prop) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateUniquePropertyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), Uniqueness, None)),
-      " x", label("Label"), Seq(prop(" x", "prop")), None, Map.empty), 63.2),
+      " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
         planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty)
       ), Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE")), Set.empty))
+
+    assertGood(attach(CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, OptionsParam(parameter("options", CTMap))), 63.2),
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS UNIQUE OPTIONS $options")), Set.empty))
   }
 
   test("CreateNodeKeyConstraint") {
-    assertGood(attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, Map.empty), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
 
-    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), Map.empty), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName ON (x:Label) ASSERT (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
 
-    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` ON (x:Label) ASSERT (x.prop) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateNodeKeyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodeKey, Some("constraintName"))),
-      " x", label("Label"), Seq(prop(" x", "prop")), Some("constraintName"), Map.empty), 63.2),
+      " x", label("Label"), Seq(prop(" x", "prop")), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", SingleChild(
         planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty)
       ), Seq(details("CONSTRAINT constraintName ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY")), Set.empty))
+
+    assertGood(attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, OptionsParam(parameter("options", CTMap))), 63.2),
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop) IS NODE KEY OPTIONS $options")), Set.empty))
   }
 
   test("CreateNodePropertyExistenceConstraint") {

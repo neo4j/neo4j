@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NewSyntax
+import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
@@ -88,7 +89,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Creating node key constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT ... IS NODE KEY OPTIONS {...}
-      case c@CreateNodeKeyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
+      case c@CreateNodeKeyConstraint(_, _, _, _, _, options, _) if options != NoOptions =>
         throw cypherExceptionFactory.syntaxException("Creating node key constraint with options is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON ... IS UNIQUE
@@ -100,7 +101,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint using `IF NOT EXISTS` is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT ... IS UNIQUE OPTIONS {...}
-      case c@CreateUniquePropertyConstraint(_, _, _, _, _, options, _) if options.nonEmpty =>
+      case c@CreateUniquePropertyConstraint(_, _, _, _, _, options, _) if options != NoOptions =>
         throw cypherExceptionFactory.syntaxException("Creating uniqueness constraint with options is not supported in this Cypher version.", c.position)
 
       // CREATE CONSTRAINT name ON () ... EXISTS

@@ -100,6 +100,7 @@ import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
+import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
@@ -211,7 +212,7 @@ case class Prettifier(
   def backtick(s: String) = expr.backtick(s)
 
   def optionsToString(options: Map[String, Expression]) =
-    if (options.nonEmpty) s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}" else ""
+    if (options.nonEmpty) s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}" else " OPTIONS {}"
 
   def asString(command: SchemaCommand): String = {
     def btreePropertiesToString(properties: Seq[Property]): String = properties.map(propertyToString).mkString("(", ", ", ")")
@@ -237,28 +238,28 @@ case class Prettifier(
 
       case CreateBtreeNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${btreePropertiesToString(properties)}${optionsToString(options)}"
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${btreePropertiesToString(properties)}${asString(options)}"
 
       case CreateBtreeRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${btreePropertiesToString(properties)}${optionsToString(options)}"
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${btreePropertiesToString(properties)}${asString(options)}"
 
       case CreateLookupIndex(Variable(variable), isNodeIndex, function, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "LOOKUP INDEX")
         val pattern = if(isNodeIndex) s"(${backtick(variable)})" else s"()-[${backtick(variable)}]-()"
         // can't use `expr(functions)` since that might add extra () we can't parse: labels((n))
         val functionString = function.name + "(" + function.args.map(e => backtick(e.asCanonicalStringVal)).mkString(", ") + ")"
-        s"${startOfCommand}FOR $pattern ON EACH $functionString${optionsToString(options)}"
+        s"${startOfCommand}FOR $pattern ON EACH $functionString${asString(options)}"
 
       case CreateFulltextNodeIndex(Variable(variable), labels, properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "FULLTEXT INDEX")
         val pattern = labels.map(l => backtick(l.name)).mkString(":", "|", "")
-        s"${startOfCommand}FOR (${backtick(variable)}$pattern) ON EACH ${fulltextPropertiesToString(properties)}${optionsToString(options)}"
+        s"${startOfCommand}FOR (${backtick(variable)}$pattern) ON EACH ${fulltextPropertiesToString(properties)}${asString(options)}"
 
       case CreateFulltextRelationshipIndex(Variable(variable), relTypes, properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "FULLTEXT INDEX")
         val pattern = relTypes.map(r => backtick(r.name)).mkString(":", "|", "")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}$pattern]-() ON EACH ${fulltextPropertiesToString(properties)}${optionsToString(options)}"
+        s"${startOfCommand}FOR ()-[${backtick(variable)}$pattern]-() ON EACH ${fulltextPropertiesToString(properties)}${asString(options)}"
 
       case DropIndex(LabelName(label), properties, _) =>
         s"DROP INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
@@ -269,14 +270,14 @@ case class Prettifier(
 
       case CreateNodeKeyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${btreePropertiesToString(properties)} IS NODE KEY${optionsToString(options)}"
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${btreePropertiesToString(properties)} IS NODE KEY${asString(options)}"
 
       case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${btreePropertiesToString(properties)} IS NODE KEY"
 
       case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
-        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${btreePropertiesToString(properties)} IS UNIQUE${optionsToString(options)}"
+        s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT ${btreePropertiesToString(properties)} IS UNIQUE${asString(options)}"
 
       case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
         s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${btreePropertiesToString(properties)} IS UNIQUE"
@@ -284,7 +285,7 @@ case class Prettifier(
       case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, ifExistsDo, oldSyntax, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = propertyToStringExistenceConstraint(property, oldSyntax)
-        val optionsString = options.map(o => if (o.nonEmpty) optionsToString(o) else " OPTIONS {}").getOrElse("")
+        val optionsString = asString(options)
         s"${startOfCommand}ON (${backtick(variable)}:${backtick(label)}) ASSERT $propertyString$optionsString"
 
       case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
@@ -293,7 +294,7 @@ case class Prettifier(
       case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, ifExistsDo, oldSyntax, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = propertyToStringExistenceConstraint(property, oldSyntax)
-        val optionsString = options.map(o => if (o.nonEmpty) optionsToString(o) else " OPTIONS {}").getOrElse("")
+        val optionsString = asString(options)
         s"${startOfCommand}ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT $propertyString$optionsString"
 
       case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
@@ -470,11 +471,7 @@ case class Prettifier(
         s"${x.name}$optionalName$y$r"
 
       case x @ CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
-        val formattedOptions = options match {
-          case NoOptions => ""
-          case OptionsParam(parameter) => s" OPTIONS ${expr(parameter)}"
-          case OptionsMap(map) => optionsToString(map)
-        }
+        val formattedOptions = asString(options)
         ifExistsDo match {
           case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(dbName)} IF NOT EXISTS$formattedOptions${waitUntilComplete.name}"
           case _                                               => s"${x.name} ${Prettifier.escapeName(dbName)}$formattedOptions${waitUntilComplete.name}"
@@ -499,6 +496,12 @@ case class Prettifier(
 
   private def asString(use: Option[GraphSelection]) = {
     use.filter(_ => useInCommands).map(u => base.dispatch(u) + NL).getOrElse("")
+  }
+
+  private def asString(options: Options) = options match {
+    case NoOptions => ""
+    case OptionsParam(parameter) => s" OPTIONS ${expr(parameter)}"
+    case OptionsMap(map) => optionsToString(map)
   }
 
   case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {

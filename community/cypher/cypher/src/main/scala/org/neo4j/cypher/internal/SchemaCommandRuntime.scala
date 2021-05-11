@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.internal.schema.IndexConfig
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -88,8 +89,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   val logicalToExecutable: PartialFunction[LogicalPlan, RuntimeContext => ExecutionPlan] = {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
     case CreateNodeKeyConstraint(source, _, label, props, name, options) => context =>
-      SchemaExecutionPlan("CreateNodeKeyConstraint", (ctx, _) => {
-        val CreateBtreeIndexOptions(indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("node key constraint").convert(options)
+      SchemaExecutionPlan("CreateNodeKeyConstraint", (ctx, params) => {
+        val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("node key constraint").convert(options, params) match {
+          case None => (None, IndexConfig.empty())
+          case Some(CreateBtreeIndexOptions(provider, config)) => (provider, config)
+        }
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
         ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
@@ -108,8 +112,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
     case CreateUniquePropertyConstraint(source, _, label, props, name, options) => context =>
-      SchemaExecutionPlan("CreateUniqueConstraint", (ctx, _) => {
-        val CreateBtreeIndexOptions(indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("uniqueness constraint").convert(options)
+      SchemaExecutionPlan("CreateUniqueConstraint", (ctx, params) => {
+        val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("uniqueness constraint").convert(options, params) match {
+          case None => (None, IndexConfig.empty())
+          case Some(CreateBtreeIndexOptions(provider, config)) => (provider, config)
+        }
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
         ctx.createUniqueConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
@@ -168,8 +175,15 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateBtreeIndex(source, entityName, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val CreateBtreeIndexOptions(indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter("btree index").convert(options, params)
         val (entityId, entityType) = getEntityInfo(entityName, ctx)
+        val schemaType = entityType match {
+          case EntityType.NODE => "btree node index"
+          case EntityType.RELATIONSHIP =>"btree relationship index"
+        }
+        val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter(schemaType).convert(options, params) match {
+          case None => (None, IndexConfig.empty())
+          case Some(CreateBtreeIndexOptions(provider, config)) => (provider, config)
+        }
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
         ctx.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
@@ -187,7 +201,10 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON EACH (n.prop) [OPTIONS {...}]
     case CreateFulltextIndex(source, entityNames, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val CreateFulltextIndexOptions(indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter.convert(options, params)
+        val (indexProvider, indexConfig) = CreateFulltextIndexOptionsConverter.convert(options, params) match {
+          case None => (None, IndexConfig.empty())
+          case Some(CreateFulltextIndexOptions(provider, config)) => (provider, config)
+        }
         val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
         ctx.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, name, indexProvider, indexConfig)

@@ -1298,7 +1298,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props             <- _listOfProperties
     name              <- option(_identifier)
     ifExistsDo        <- _ifExistsDo
-    options           <- _mapStringKeys
+    options           <- _optionsMapAsEither
     use               <- option(_use)
     btreeNodeIndex    = CreateBtreeNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     btreeRelIndex     = CreateBtreeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
@@ -1331,14 +1331,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     name                <- option(_identifier)
     ifExistsDo          <- _ifExistsDo
     oldExistenceSyntax  <- boolean
-    options             <- _mapStringKeys
-    existenceOption     <- frequency(8 -> const(None), 2 -> some(options))
+    options             <- _optionsMapAsEither
     use                 <- option(_use)
     nodeKey             = CreateNodeKeyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     uniqueness          = CreateUniquePropertyConstraint(variable, labelName, Seq(prop), name, ifExistsDo, options, use)(pos)
     compositeUniqueness = CreateUniquePropertyConstraint(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, oldExistenceSyntax, existenceOption, use)(pos)
-    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, oldExistenceSyntax, existenceOption, use)(pos)
+    nodeExistence       = CreateNodePropertyExistenceConstraint(variable, labelName, prop, name, ifExistsDo, oldExistenceSyntax, options, use)(pos)
+    relExistence        = CreateRelationshipPropertyExistenceConstraint(variable, relTypeName, prop, name, ifExistsDo, oldExistenceSyntax, options, use)(pos)
     command             <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
   } yield command
 

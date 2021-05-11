@@ -840,11 +840,6 @@ sealed trait WaitableAdministrationCommand extends WriteAdministrationCommand {
   }
 }
 
-sealed trait Options
-case object NoOptions extends Options
-case class OptionsParam(parameter: Parameter) extends Options
-case class OptionsMap(map: Map[String, Expression]) extends Options
-
 final case class CreateDatabase(dbName: Either[String, Parameter],
                                 ifExistsDo: IfExistsDo,
                                 options: Options,
