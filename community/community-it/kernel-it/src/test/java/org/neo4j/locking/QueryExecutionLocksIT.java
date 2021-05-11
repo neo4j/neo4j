@@ -36,6 +36,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -164,6 +165,32 @@ class QueryExecutionLocksIT
         }
 
         String query = "MATCH ()-[r:" + relType.name() + "]-() where r." + propertyKey + " = \"v\" RETURN r ";
+
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+
+        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
+        assertTrue( operationRecord.acquisition );
+        assertFalse( operationRecord.exclusive );
+        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+    }
+
+    @Test
+    void takeRelationshipTypeLockForQueryWithContainsScanIndexUsages() throws Exception
+    {
+        RelationshipType relType = RelationshipType.withName( "REL" );
+        String propertyKey = "name";
+        createRelationshipIndex( relType, propertyKey );
+        Relationship rel;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = transaction.createNode(  );
+            Node node2 = transaction.createNode(  );
+            rel = node1.createRelationshipTo( node2, relType );
+            rel.setProperty( propertyKey, "v" );
+            transaction.commit();
+        }
+        String query = "MATCH ()-[r:REL]->() WHERE r.name CONTAINS 'v' RETURN r.prop";
 
         List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
         assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
