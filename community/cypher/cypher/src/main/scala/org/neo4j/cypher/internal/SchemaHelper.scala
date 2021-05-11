@@ -56,6 +56,7 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
     if (lookupTypes.nonEmpty || labelIds.nonEmpty || relationshipIds.nonEmpty) {
       val schemaTokenAfter = readSchemaToken(tc)
       // Need to check if index has been dropped because we can still acquire and get the lock
+      // TODO: Fix for label indexes
       val indexDropped = !indexExists(tc, Map.empty, relationshipIds, lookupTypes)
 
       // if the schema has changed while taking all locks OR if the lookup index has been dropped we release locks and return false
