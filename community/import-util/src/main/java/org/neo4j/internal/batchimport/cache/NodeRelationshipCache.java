@@ -25,12 +25,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.idmapping.string.BigIdTracker;
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.helpers.Numbers.safeCastIntToUnsignedShort;
-import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 
 /**
  * Caches of parts of node store and relationship group store. A crucial part of batch import where
@@ -81,7 +80,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
     private static final int COUNT_FLAGS_MASKS = DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK | BIG_COUNT_MASK;
     private static final int COUNT_MASK = ~COUNT_FLAGS_MASKS;
 
-    private static final int TYPE_SIZE = 2;
+    private static final int TYPE_SIZE = 3;
     public static final int GROUP_ENTRY_SIZE = TYPE_SIZE + ID_SIZE/*next*/ +
             ID_AND_COUNT_SIZE * Direction.values().length;
 
@@ -619,7 +618,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
 
         int getTypeId( ByteArray array, long index )
         {
-            return unsignedShortToInt( array.getShort( index, TYPE_OFFSET ) );
+            return array.get3ByteInt( index, TYPE_OFFSET );
         }
 
         /**
@@ -675,8 +674,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, Auto
             long rebasedIndex = rebase( index );
             ByteArray array = this.array.at( rebasedIndex );
             clearIndex( array, rebasedIndex );
-            short shortTypeId = safeCastIntToUnsignedShort( typeId );
-            array.setShort( rebasedIndex, TYPE_OFFSET, shortTypeId );
+            array.set3ByteInt( rebasedIndex, TYPE_OFFSET, Numbers.safeCheck3ByteInt( typeId ) );
             return index;
         }
 
