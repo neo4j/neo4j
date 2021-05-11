@@ -32,8 +32,14 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.annotations.Description;
 import org.neo4j.annotations.Public;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 
 import static java.lang.String.format;
@@ -42,11 +48,13 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
 {
     private final Map<Name,CapabilityInstance<?>> capabilities;
     private final Collection<CapabilityProvider> capabilityProviders;
-    private final Config config;
+    private final DependencyResolver resolver;
+    private final Configuration config;
 
     CapabilitiesService( @Nonnull Collection<Class<? extends CapabilityDeclaration>> declarationClasses,
                          @Nonnull Collection<CapabilityProvider> capabilityProviders,
-                         @Nonnull Config config )
+                         @Nonnull Configuration config,
+                         @Nonnull DependencyResolver resolver )
     {
         this.capabilities =
                 getDeclaredCapabilities( Objects.requireNonNull( declarationClasses ) )
@@ -55,6 +63,7 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
                         .collect( Collectors.toMap( Map.Entry::getKey, e -> new CapabilityInstance<>( e.getValue() ) ) );
         this.capabilityProviders = Objects.requireNonNull( capabilityProviders );
         this.config = Objects.requireNonNull( config );
+        this.resolver = Objects.requireNonNull( resolver );
     }
 
     public Collection<Capability<?>> declaredCapabilities()
@@ -123,7 +132,12 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
 
     void processProviders()
     {
-        capabilityProviders.forEach( p -> p.register( new NamespaceAwareCapabilityRegistry( p.namespace() ) ) );
+        var dependencies = new CapabilityProviderDependencies();
+        dependencies.register( Configuration.class, () -> resolver.resolveDependency( Configuration.class ) );
+        dependencies.register( Log.class, () -> resolver.resolveDependency( LogService.class ).getUserLog( Capabilities.class ) );
+        dependencies.register( DatabaseManagementService.class, () -> resolver.resolveDependency( DatabaseManagementService.class ) );
+
+        capabilityProviders.forEach( p -> p.register( new CapabilityProviderContext( dependencies ), new NamespaceAwareCapabilityRegistry( p.namespace() ) ) );
     }
 
     @Override
@@ -195,13 +209,13 @@ public class CapabilitiesService extends LifecycleAdapter implements Capabilitie
         }
     }
 
-    public static CapabilitiesService newCapabilities( Config config )
+    public static CapabilitiesService newCapabilities( Configuration config, DependencyResolver resolver )
     {
         Collection<Class<? extends CapabilityDeclaration>> declarationClasses =
                 Services.loadAll( CapabilityDeclaration.class ).stream().map( CapabilityDeclaration::getClass )
                         .collect( Collectors.toList() );
         Collection<CapabilityProvider> capabilityProviders = Services.loadAll( CapabilityProvider.class );
-        return new CapabilitiesService( declarationClasses, capabilityProviders, config );
+        return new CapabilitiesService( declarationClasses, capabilityProviders, config, resolver );
     }
 
     private static Map<Name,Capability<?>> getDeclaredCapabilities( Collection<Class<? extends CapabilityDeclaration>> declarationClasses )

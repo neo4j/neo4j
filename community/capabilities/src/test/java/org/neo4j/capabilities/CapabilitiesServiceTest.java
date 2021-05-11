@@ -27,7 +27,10 @@ import java.util.List;
 
 import org.neo4j.annotations.Description;
 import org.neo4j.annotations.Public;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.config.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -41,7 +44,7 @@ class CapabilitiesServiceTest
     @Test
     void shouldAllowEmptyDeclarations()
     {
-        var capabilities = new CapabilitiesService( Collections.emptyList(), Collections.emptyList(), Config.defaults() );
+        var capabilities = new CapabilitiesService( Collections.emptyList(), Collections.emptyList(), Config.defaults(), newDependencies() );
 
         assertThat( capabilities.declaredCapabilities() ).isEmpty();
     }
@@ -50,7 +53,8 @@ class CapabilitiesServiceTest
     void shouldDiscoverGivenDeclarations()
     {
         var capabilities =
-                new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class ), Collections.emptyList(), Config.defaults() );
+                new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class ), Collections.emptyList(), Config.defaults(),
+                                         newDependencies() );
         var declared = capabilities.declaredCapabilities();
 
         assertThat( declared ).containsExactlyInAnyOrder(
@@ -72,14 +76,17 @@ class CapabilitiesServiceTest
     {
         assertThatThrownBy( () -> new CapabilitiesService(
                 List.of( TestCoreCapabilities.class, TestCypherCapabilities.class, TestDuplicateCapabilities.class ),
-                Collections.emptyList(), Config.defaults() ) ).isInstanceOf( UnsupportedOperationException.class )
-                                                              .hasMessage( "duplicate capability dbms.cypher.version" );
+                Collections.emptyList(),
+                Config.defaults(),
+                newDependencies() ) ).isInstanceOf( UnsupportedOperationException.class )
+                                     .hasMessage( "duplicate capability dbms.cypher.version" );
     }
 
     @Test
     void shouldReturnAnUnmodifiableInstance()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults(), newDependencies() );
         var unmodifiable = capabilities.unmodifiable();
 
         assertThat( unmodifiable ).isInstanceOf( Capabilities.class );
@@ -89,7 +96,8 @@ class CapabilitiesServiceTest
     @Test
     void shouldSetAndGetStaticValues()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults(), newDependencies() );
 
         capabilities.set( TestCoreCapabilities.dbms_instance_version, "4.3.0" );
         capabilities.set( TestCoreCapabilities.dbms_instance_internal_version, "4.3.0-drop03" );
@@ -103,7 +111,8 @@ class CapabilitiesServiceTest
     @Test
     void shouldSetAndGetDynamicValues()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults(), newDependencies() );
 
         capabilities.supply( TestCoreCapabilities.dbms_instance_version, () -> "4.3.0" );
         capabilities.supply( TestCoreCapabilities.dbms_instance_internal_version, () -> "4.3.0-drop03" );
@@ -117,7 +126,8 @@ class CapabilitiesServiceTest
     @Test
     void shouldReturnNullForUnsetCapabilities()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults(), newDependencies() );
 
         assertThat( capabilities.get( TestCoreCapabilities.dbms_instance_version ) ).isNull();
     }
@@ -125,7 +135,8 @@ class CapabilitiesServiceTest
     @Test
     void shouldReturnNullForUnregisteredCapabilities()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults(), newDependencies() );
 
         assertThat( capabilities.get( Name.of( "dbms.instance.unregistered" ) ) ).isNull();
     }
@@ -133,7 +144,8 @@ class CapabilitiesServiceTest
     @Test
     void shouldThrowWhileSettingUnknownCapabilities()
     {
-        var capabilities = new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults() );
+        var capabilities =
+                new CapabilitiesService( List.of( TestCoreCapabilities.class ), Collections.emptyList(), Config.defaults(), newDependencies() );
 
         assertThatThrownBy( () -> capabilities.set( TestCypherCapabilities.dbms_cypher_version, "4.3.0" ) ).isInstanceOf( IllegalArgumentException.class );
         assertThatThrownBy( () -> capabilities.supply( TestCypherCapabilities.dbms_cypher_version, () -> "4.3.0" ) )
@@ -144,7 +156,8 @@ class CapabilitiesServiceTest
     void shouldProcessProviders()
     {
         var capabilities =
-                new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderA(), new TestProviderB() ), Config.defaults() );
+                new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderA(), new TestProviderB() ), Config.defaults(),
+                                         newDependencies() );
 
         capabilities.processProviders();
 
@@ -155,11 +168,24 @@ class CapabilitiesServiceTest
     }
 
     @Test
+    void shouldProcessProvidersWithContext()
+    {
+        var config = Config.defaults( GraphDatabaseSettings.default_database, "my-db" );
+        var capabilities =
+                new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderBFromConfig() ), config,
+                                         newDependencies( config ) );
+
+        capabilities.processProviders();
+
+        assertThat( capabilities.get( TestProviderCapabilities.component_b_db_name ) ).isEqualTo( "my-db" );
+    }
+
+    @Test
     void shouldThrowWhenNamespaceOutOfRange()
     {
         var capabilities =
                 new CapabilitiesService( List.of( TestProviderCapabilities.class ), List.of( new TestProviderA(), new TestProviderNamespaceError() ),
-                                         Config.defaults() );
+                                         Config.defaults(), newDependencies() );
 
         assertThatThrownBy( capabilities::processProviders ).isInstanceOf( IllegalArgumentException.class ).hasMessage(
                 "provided capability org.example.componentB.version is not in declared namespace org.example.component" );
@@ -168,13 +194,13 @@ class CapabilitiesServiceTest
     @Test
     void shouldRemoveBlockedFromDeclaredCapabilities()
     {
+        var config = Config.newBuilder().set(
+                CapabilitiesSettings.dbms_capabilities_blocked,
+                List.of( "org.example.**", "**.version" )
+        ).build();
         var capabilities =
                 new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class, TestProviderCapabilities.class ),
-                                         Collections.emptyList(),
-                                         Config.newBuilder().set(
-                                                 CapabilitiesSettings.dbms_capabilities_blocked,
-                                                 List.of( "org.example.**", "**.version" )
-                                         ).build() );
+                                         Collections.emptyList(), config, newDependencies( config ) );
 
         assertThat( capabilities.declaredCapabilities() )
                 .doesNotContain( TestProviderCapabilities.component_a_version, TestProviderCapabilities.component_a_authentication_supported,
@@ -185,13 +211,13 @@ class CapabilitiesServiceTest
     @Test
     void shouldNotReturnBlockedCapabilities()
     {
+        var config = Config.newBuilder().set(
+                CapabilitiesSettings.dbms_capabilities_blocked,
+                List.of( "org.example.componentA.**", "dbms.**.version" )
+        ).build();
         var capabilities =
                 new CapabilitiesService( List.of( TestCoreCapabilities.class, TestCypherCapabilities.class, TestProviderCapabilities.class ),
-                                         List.of( new TestProviderA(), new TestProviderB() ),
-                                         Config.newBuilder().set(
-                                                 CapabilitiesSettings.dbms_capabilities_blocked,
-                                                 List.of( "org.example.componentA.**", "dbms.**.version" )
-                                         ).build() );
+                                         List.of( new TestProviderA(), new TestProviderB() ), config, newDependencies( config ) );
 
         capabilities.processProviders();
 
@@ -212,6 +238,17 @@ class CapabilitiesServiceTest
         assertThat( capabilities.get( TestCypherCapabilities.dbms_cypher_runtimes ) ).containsExactly( "a", "b" );
         assertThat( capabilities.get( TestProviderCapabilities.component_b_version ) ).isEqualTo( "2.3" );
         assertThat( capabilities.get( TestProviderCapabilities.component_b_supported_versions ) ).containsExactly( "2.0", "2.1", "2.2" );
+    }
+
+    private static Dependencies newDependencies( Object... dependencies )
+    {
+        var deps = new Dependencies();
+        deps.satisfyDependencies( dependencies );
+        if ( !deps.containsDependency( Configuration.class ) )
+        {
+            deps.satisfyDependency( Config.defaults() );
+        }
+        return deps;
     }
 
     private static class TestCoreCapabilities implements CapabilityDeclaration
@@ -262,6 +299,10 @@ class CapabilitiesServiceTest
         @Description( "component b supported list of versions" )
         public static final Capability<Collection<String>> component_b_supported_versions =
                 new Capability<>( Name.of( "org.example.componentB.supported_versions" ), listOf( STRING ) );
+
+        @Public
+        @Description( "component b database name" )
+        public static final Capability<String> component_b_db_name = new Capability<>( Name.of( "org.example.componentB.db_name" ), STRING );
     }
 
     private static class TestProviderA implements CapabilityProvider
@@ -274,7 +315,7 @@ class CapabilitiesServiceTest
         }
 
         @Override
-        public void register( CapabilitiesRegistry registry )
+        public void register( CapabilityProviderContext ctx, CapabilitiesRegistry registry )
         {
             registry.set( TestProviderCapabilities.component_a_version, "5.2" );
             registry.supply( TestProviderCapabilities.component_a_authentication_supported, () -> true );
@@ -291,10 +332,26 @@ class CapabilitiesServiceTest
         }
 
         @Override
-        public void register( CapabilitiesRegistry registry )
+        public void register( CapabilityProviderContext ctx, CapabilitiesRegistry registry )
         {
             registry.set( TestProviderCapabilities.component_b_version, "2.3" );
             registry.supply( TestProviderCapabilities.component_b_supported_versions, () -> List.of( "2.0", "2.1", "2.2" ) );
+        }
+    }
+
+    private static class TestProviderBFromConfig implements CapabilityProvider
+    {
+
+        @Override
+        public String namespace()
+        {
+            return "org.example.componentB";
+        }
+
+        @Override
+        public void register( CapabilityProviderContext ctx, CapabilitiesRegistry registry )
+        {
+            registry.set( TestProviderCapabilities.component_b_db_name, ctx.config().get( GraphDatabaseSettings.default_database ) );
         }
     }
 
@@ -308,7 +365,7 @@ class CapabilitiesServiceTest
         }
 
         @Override
-        public void register( CapabilitiesRegistry registry )
+        public void register( CapabilityProviderContext ctx, CapabilitiesRegistry registry )
         {
             registry.set( TestProviderCapabilities.component_b_version, "2.3" );
             registry.supply( TestProviderCapabilities.component_b_supported_versions, () -> List.of( "2.0", "2.1", "2.2" ) );

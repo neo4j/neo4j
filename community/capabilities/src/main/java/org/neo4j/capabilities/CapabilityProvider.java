@@ -38,7 +38,8 @@ public interface CapabilityProvider
     /**
      * Registers capabilities into the registry.
      *
+     * @param ctx      the context which can be used to access DBMS components during capability registration.
      * @param registry the capabilities registry instance.
      */
-    void register( CapabilitiesRegistry registry );
+    void register( CapabilityProviderContext ctx, CapabilitiesRegistry registry );
 }
