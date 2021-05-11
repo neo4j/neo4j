@@ -183,7 +183,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Set this to enable relationship indexes in the Cypher runtime." )
     public static final Setting<Boolean> cypher_enable_planning_relationship_indexes =
-            newBuilder( "unsupported.cypher.enable_planning_relationship_indexes", BOOL, false ).build();
+            newBuilder( "unsupported.cypher.enable_planning_relationship_indexes", BOOL, true ).build();
 
     @Internal
     @Description( "Enable tracing of pipelined runtime scheduler." )
