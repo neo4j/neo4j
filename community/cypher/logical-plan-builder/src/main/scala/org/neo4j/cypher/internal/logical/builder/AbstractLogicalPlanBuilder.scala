@@ -1038,7 +1038,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
               variableName: String,
               format: CSVFormat,
               fieldTerminator: Option[String] = None): IMPL = {
-    val urlExpr = StringLiteral(url)(pos)
+    val urlExpr = Parser.parseExpression(url)
     appendAtCurrentIndent(UnaryOperator(lp => LoadCSV(
       lp,
       urlExpr,

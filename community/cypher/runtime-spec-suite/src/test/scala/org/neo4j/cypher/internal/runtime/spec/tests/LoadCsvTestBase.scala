@@ -44,27 +44,31 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
                                                        ) extends RuntimeTestSuite[CONTEXT](edition, runtime)
   with CreateTempFileTestSupport {
 
-  private val testRange: immutable.Seq[Int] = 0 until sizeHint
+  private val testRange: immutable.Seq[Int] = 0 until sizeHint/2
   private val testValueOffset = 10000
 
+  private def wrapInQuotations(c: String): String = "\"" + c + "\""
+
   def singleColumnCsvFile(withHeaders: Boolean = false): String = {
-    createCSVTempFileURL({ writer: PrintWriter =>
+    val url = createCSVTempFileURL({ writer: PrintWriter =>
       if (withHeaders)
         writer.println("a")
       testRange.foreach { i =>
         writer.println(s"${testValueOffset + i}")
       }
     }).cypherEscape
+    wrapInQuotations(url)
   }
 
   def multipleColumnCsvFile(withHeaders: Boolean = false): String = {
-    createCSVTempFileURL({ writer: PrintWriter =>
+    val url = createCSVTempFileURL({ writer: PrintWriter =>
       if (withHeaders)
         writer.println("a,b,c")
       testRange.foreach { i =>
         writer.println(s"${testValueOffset + i},${testValueOffset*2 + i},${testValueOffset*3 + i}")
       }
     }).cypherEscape
+    wrapInQuotations(url)
   }
 
   test("should load csv file") {
@@ -143,6 +147,118 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
 
+  test("should load csv file with aggregation") {
+    // given
+    val url = singleColumnCsvFile()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(x) AS count"))
+      .projection("line[0] as x")
+      .loadCSV(url, variableName = "line", NoHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("count").withSingleRow(testRange.size.toLong)
+  }
+
+  test("should load csv file on RHS of apply") {
+    // given
+    val url = singleColumnCsvFile()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.projection("line[0] as x")
+      .|.loadCSV(url, variableName = "line", NoHeaders)
+      .|.argument()
+      .unwind("[1, 2, 3] as i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected1 = testRange.map { i => Array(s"${testValueOffset + i}") }.toArray
+    val expected = Array.fill(3)(expected1).flatten
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("should load csv file on RHS of apply with aggregation") {
+    // given
+    val url = singleColumnCsvFile()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(x) AS count"))
+      .|.projection("line[0] as x")
+      .|.loadCSV(url, variableName = "line", NoHeaders)
+      .|.argument()
+      .unwind("[1, 2, 3] as i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Array.fill(3)(Array(testRange.size.toLong))
+    runtimeResult should beColumns("count").withRows(expected)
+  }
+
+  test("should load csv file on RHS of apply with aggregation on top") {
+    // given
+    val url = singleColumnCsvFile()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(x) AS count"))
+      .apply()
+      .|.projection("line[0] as x")
+      .|.loadCSV(url, variableName = "line", NoHeaders)
+      .|.argument()
+      .unwind("[1, 2, 3] as i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("count").withSingleRow(testRange.size.toLong * 3)
+  }
+
+  test("should load csv file with value hash join") {
+    // given
+    val url1 = multipleColumnCsvFile(withHeaders = true)
+    val url2 = multipleColumnCsvFile()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "a", "b")
+      .valueHashJoin("x = y")
+      .|.projection("rline[0] as y",  "rline[2] as b")
+      .|.loadCSV(url2, variableName = "rline", NoHeaders)
+      .|.argument()
+      .projection("lline.a as x", "lline.b as a")
+      .loadCSV(url1, variableName = "lline", HasHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = testRange.map { i =>
+      Array(s"${testValueOffset + i}", s"${testValueOffset + i}", s"${testValueOffset*2 + i}", s"${testValueOffset*3 + i}") }.toArray
+    runtimeResult should beColumns("x", "y", "a", "b").withRows(expected)
+  }
+
   test("should load csv create node with properties") {
     // given an empty data base
     val url = multipleColumnCsvFile(withHeaders = true)
@@ -165,16 +281,12 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
       .withRows(expected)
       .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
 
-    // TODO: Fix unordered assertion
-    var i = 0
-    nodes.foreach { n =>
-      n.getAllProperties.asScala should equal(Map("p1" -> s"${testValueOffset + i}", "p2" -> s"${testValueOffset*2 + i}", "p3" -> s"${testValueOffset*3 + i}"))
-      i += 1
-    }
-    i should equal(testRange.size)
+    nodes.map { _.getAllProperties.asScala } should contain theSameElementsAs
+      testRange.map { i => Map("p1" -> s"${testValueOffset + i}", "p2" -> s"${testValueOffset*2 + i}", "p3" -> s"${testValueOffset*3 + i}") }
   }
 
-  test("should load csv create node with properties with periodic commit") {
+  // TODO: Support periodic commit in runtime spec suite
+  ignore("should load csv create node with properties with periodic commit") {
     // given an empty data base
     val url = multipleColumnCsvFile(withHeaders = true)
 
