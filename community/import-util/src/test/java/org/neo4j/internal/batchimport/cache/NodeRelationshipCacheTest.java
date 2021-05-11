@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.After;
@@ -42,6 +44,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Math.max;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -522,6 +525,43 @@ public class NodeRelationshipCacheTest
         {
             // then good
         }
+    }
+
+    @Test
+    public void shouldAllocateRelationshipGroupWithHighTypeId()
+    {
+        // given
+        int denseNodeThreshold = 1;
+        long nodeId = 99;
+        cache = new NodeRelationshipCache( NumberArrayFactories.HEAP, denseNodeThreshold, INSTANCE );
+        cache.setNodeCount( nodeId + 1 );
+        for ( int i = 0; i < denseNodeThreshold * 2; i++ )
+        {
+            cache.incrementCount( nodeId );
+        }
+        assertThat( cache.isDense( nodeId ) ).isTrue();
+
+        // when
+        int typeId1 = 0xFFFF + 1_000;
+        int typeId2 = 0xFFFF + 10_000;
+        long firstRelId1 = 2134;
+        long firstRelId2 = 34873;
+        assertThat( cache.getAndPutRelationship( nodeId, typeId1, OUTGOING, firstRelId1, true ) ).isEqualTo( -1 );
+        assertThat( cache.getAndPutRelationship( nodeId, typeId2, INCOMING, firstRelId2, true ) ).isEqualTo( -1 );
+
+        // then
+        MutableIntObjectMap<long[]> expectedGroups = IntObjectMaps.mutable.empty();
+        expectedGroups.put( typeId1, new long[]{firstRelId1, -1, -1} );
+        expectedGroups.put( typeId2, new long[]{-1, firstRelId2, -1} );
+        cache.getFirstRel( nodeId, ( groupNodeId, typeId, out, in, loop ) ->
+        {
+            assertThat( groupNodeId ).isEqualTo( nodeId );
+            long[] group = expectedGroups.remove( typeId );
+            assertThat( group ).isNotNull();
+            assertThat( group ).isEqualTo( new long[]{out, in, loop} );
+            return 0;
+        } );
+        assertThat( expectedGroups.isEmpty() ).isTrue();
     }
 
     private void testNode( NodeRelationshipCache link, long node, Direction direction )

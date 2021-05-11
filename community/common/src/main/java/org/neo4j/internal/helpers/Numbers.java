@@ -137,6 +137,15 @@ public final class Numbers
         return (byte) value;
     }
 
+    public static int safeCheck3ByteInt( int value )
+    {
+        if ( (value & ~0xFFFFFF) != 0 )
+        {
+            throw new ArithmeticException( getOverflowMessage( value, "3-byte int" ) );
+        }
+        return value;
+    }
+
     public static int unsignedShortToInt( short value )
     {
         return value & 0xFFFF;
