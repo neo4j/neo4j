@@ -25,10 +25,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -199,9 +202,31 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException
+    public StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException
     {
         return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
+    }
+
+    @Override
+    public void setStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext, StoreId storeId,
+            long upgradeTxChecksum, long upgradeTxCommitTimestamp ) throws IOException
+    {
+        MetaDataStore.setStoreId( pageCache, databaseLayout.metadataStore(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp,
+                databaseLayout.getDatabaseName(), cursorContext );
+    }
+
+    @Override
+    public Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
+    {
+        try ( MetadataProvider metadataProvider = transactionMetaDataStore( fs, databaseLayout,
+                Config.defaults( GraphDatabaseSettings.read_only_database_default, true ), pageCache, PageCacheTracer.NULL ) )
+        {
+            return metadataProvider.getDatabaseIdUuid( cursorContext );
+        }
+        catch ( IOException e )
+        {
+            return Optional.empty();
+        }
     }
 
     @Override

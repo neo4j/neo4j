@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -417,19 +418,30 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp, databaseName, cursorContext );
     }
 
+    @Override
     public void setDatabaseIdUuid( UUID uuid, CursorContext cursorContext )
     {
         assertNotClosed();
         setRecord( DATABASE_ID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursorContext );
         setRecord( DATABASE_ID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursorContext );
+        refreshFields();
     }
 
-    public static Optional<UUID> getDatabaseId( PageCache pageCache, Path neoStore, String dabaseName, CursorContext cursorContext )
+    @Override
+    public Optional<UUID> getDatabaseIdUuid( CursorContext cursorContext )
     {
         try
         {
-            var msb = getRecord( pageCache, neoStore, Position.DATABASE_ID_MOST_SIGN_BITS, dabaseName, cursorContext );
-            var lsb = getRecord( pageCache, neoStore, Position.DATABASE_ID_LEAST_SIGN_BITS, dabaseName, cursorContext );
+            long msb = FIELD_NOT_INITIALIZED;
+            long lsb = FIELD_NOT_INITIALIZED;
+            try ( PageCursor cursor = openPageCursorForReading( 0, cursorContext ) )
+            {
+                if ( cursor.next() )
+                {
+                    msb = getRecordValue( cursor, Position.DATABASE_ID_MOST_SIGN_BITS, FIELD_NOT_INITIALIZED );
+                    lsb = getRecordValue( cursor, DATABASE_ID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
+                }
+            }
             var uuid = new UUID( msb, lsb );
             if ( isNotInitializedUUID( uuid ) || (msb == FIELD_NOT_PRESENT && lsb == FIELD_NOT_PRESENT) )
             {
@@ -440,7 +452,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 return Optional.of( uuid );
             }
         }
-        catch ( IOException ignored )
+        catch ( IOException e )
         {
             return Optional.empty();
         }

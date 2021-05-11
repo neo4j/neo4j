@@ -73,7 +73,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -784,9 +783,9 @@ class MetaDataStoreTest
         try ( MetaDataStore ignored = newMetaDataStore( pageCacheTracer ) )
         {
             assertThat( pageCacheTracer.faults() ).isOne();
-            assertThat( pageCacheTracer.pins() ).isEqualTo( 19 );
-            assertThat( pageCacheTracer.unpins() ).isEqualTo( 19 );
-            assertThat( pageCacheTracer.hits() ).isEqualTo( 18 );
+            assertThat( pageCacheTracer.pins() ).isEqualTo( 20 );
+            assertThat( pageCacheTracer.unpins() ).isEqualTo( 20 );
+            assertThat( pageCacheTracer.hits() ).isEqualTo( 19 );
         }
     }
 
@@ -951,7 +950,7 @@ class MetaDataStoreTest
         //then
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            var storedDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, DEFAULT_DATABASE_NAME, NULL );
+            var storedDatabaseId = store.getDatabaseIdUuid( NULL );
             assertThat( storedDatabaseId ).hasValue( databaseIdUuid );
         }
     }
@@ -963,7 +962,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             // when
-            var storeDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, DEFAULT_DATABASE_NAME, NULL );
+            var storeDatabaseId = store.getDatabaseIdUuid( NULL );
 
             // then
             assertThat( storeDatabaseId ).isEmpty();

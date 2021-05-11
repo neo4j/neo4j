@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.Service;
@@ -142,7 +143,12 @@ public interface StorageEngineFactory
     MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             PageCacheTracer cacheTracer ) throws IOException;
 
-    StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
+    StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
+
+    void setStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext,
+            StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp ) throws IOException;
+
+    Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext );
 
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker );

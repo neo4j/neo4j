@@ -19,12 +19,14 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 
-@FunctionalInterface
 public interface DatabaseIdStore
 {
+    Optional<UUID> getDatabaseIdUuid( CursorContext cursorTracer );
+
     void setDatabaseIdUuid( UUID uuid, CursorContext cursorContext );
 }
