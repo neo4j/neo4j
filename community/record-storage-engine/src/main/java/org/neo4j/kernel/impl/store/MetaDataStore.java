@@ -238,6 +238,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         assertNotClosed();
         checkInitialized( kernelVersion );
+
+        if ( kernelVersion == FIELD_NOT_PRESENT )
+        {
+            throw new IllegalStateException( "KernelVersion unavailable. KernelVersion is not present in pre-4.3 stores" );
+        }
         return KernelVersion.getForVersion( Numbers.safeCastLongToByte( kernelVersion ) );
     }
 
