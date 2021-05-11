@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexLookupUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexScanUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexSeekUsage
-import org.neo4j.cypher.internal.logical.plans.SchemaRelationshipIndexScanUsage
+import org.neo4j.cypher.internal.logical.plans.SchemaRelationshipIndexUsage
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
@@ -202,7 +202,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case SchemaLabelIndexScanUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
     }.asJava
     val relationshipTypeIndexUsage = schemaIndexes.collect {
-      case SchemaRelationshipIndexScanUsage(identifier, relTypeId, relType, propertyKeys) =>
+      case SchemaRelationshipIndexUsage(identifier, relTypeId, relType, propertyKeys) =>
         new RelationshipTypeIndexUsage(identifier, relTypeId, relType, propertyKeys.map(_.nameId.id).toArray, propertyKeys.map(_.name).toArray)
     }.asJava
     val lookupIndexUsage = lookupIndexes.map {
