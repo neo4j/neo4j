@@ -198,12 +198,16 @@ class CheckPointerIntegrationTest
                 .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
+        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+        getCheckPointer( databaseAPI ).forceCheckPoint( new SimpleTriggerInfo( "given" ) );
+
+        var checkPointsBefore = checkPointInTxLog( db ).size();
         // when
 
         // nothing happens
 
         triggerCheckPointAttempt( db );
-        assertThat( checkPointInTxLog( db ) ).isEmpty();
+        assertThat( checkPointInTxLog( db ) ).hasSize( checkPointsBefore );
         managementService.shutdown();
 
         managementService = builder.build();
@@ -211,7 +215,7 @@ class CheckPointerIntegrationTest
         {
             // then - 1 check point has been written in the log
             var checkPoints = checkPointsInTxLog( managementService.database( DEFAULT_DATABASE_NAME ) );
-            assertEquals( 1, checkPoints.size() );
+            assertEquals( checkPointsBefore + 1, checkPoints.size() );
         }
         finally
         {
