@@ -202,6 +202,58 @@ class QueryExecutionLocksIT
     }
 
     @Test
+    void takeRelationshipTypeLockForQueryWithEndsWithScanIndexUsages() throws Exception
+    {
+        RelationshipType relType = RelationshipType.withName( "REL" );
+        String propertyKey = "name";
+        createRelationshipIndex( relType, propertyKey );
+        Relationship rel;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = transaction.createNode(  );
+            Node node2 = transaction.createNode(  );
+            rel = node1.createRelationshipTo( node2, relType );
+            rel.setProperty( propertyKey, "v" );
+            transaction.commit();
+        }
+        String query = "MATCH ()-[r:REL]->() WHERE r.name ENDS WITH 'v' RETURN r.prop";
+
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+
+        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
+        assertTrue( operationRecord.acquisition );
+        assertFalse( operationRecord.exclusive );
+        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+    }
+
+    @Test
+    void takeRelationshipTypeLockForQueryWithSeekIndexUsages() throws Exception
+    {
+        RelationshipType relType = RelationshipType.withName( "REL" );
+        String propertyKey = "name";
+        createRelationshipIndex( relType, propertyKey );
+        Relationship rel;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = transaction.createNode(  );
+            Node node2 = transaction.createNode(  );
+            rel = node1.createRelationshipTo( node2, relType );
+            rel.setProperty( propertyKey, "v" );
+            transaction.commit();
+        }
+        String query = "MATCH ()-[r:REL]->() WHERE r.name = 'v' RETURN r.prop";
+
+        List<LockOperationRecord> lockOperationRecords = traceQueryLocks( query );
+        assertThat( lockOperationRecords ).as( "Observed list of lock operations is: " + lockOperationRecords ).hasSize( 1 );
+
+        LockOperationRecord operationRecord = lockOperationRecords.get( 0 );
+        assertTrue( operationRecord.acquisition );
+        assertFalse( operationRecord.exclusive );
+        assertEquals( ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType );
+    }
+
+    @Test
     void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception
     {
         String labelName = "Robot";

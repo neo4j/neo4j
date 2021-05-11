@@ -212,6 +212,16 @@ abstract class LogicalPlan(idGen: IdGen)
         acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
       case UndirectedRelationshipIndexContainsScan(idName, _, _, typeToken, property, _, _, _) =>
         acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
+      case DirectedRelationshipIndexEndsWithScan(idName, _, _, typeToken, property, _, _, _) =>
+        acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
+      case UndirectedRelationshipIndexEndsWithScan(idName, _, _, typeToken, property, _, _, _) =>
+        acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
+      case DirectedRelationshipIndexEndsWithScan(idName, _, _, typeToken, property, _, _, _) =>
+        acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
+      case UndirectedRelationshipIndexSeek(idName, _, _, typeToken, property, _, _, _) =>
+        acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, property.map(_.propertyKeyToken))
+      case DirectedRelationshipIndexSeek(idName, _, _, typeToken, property, _, _, _) =>
+        acc => acc :+ SchemaRelationshipIndexScanUsage(idName, typeToken.nameId.id, typeToken.name, property.map(_.propertyKeyToken))
     }
   }
 }
