@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -41,7 +42,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
 
   override val pushdownPropertyReads: Boolean = false
 
@@ -278,6 +279,137 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
              Expand(
                Selection(_, _: Argument), _, _, _, _, _, _)) => ()
     }
+  }
+
+  test("should prefer label scan to node index scan from existence constraint with same cardinality") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val plan = planner.plan(s"MATCH (n:Label) RETURN n")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("n")
+                            .nodeByLabelScan("n", "Label")
+                            .build()
+  }
+
+  test("should prefer label scan to node index scan from existence constraint with same cardinality, when filtered") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val plan = planner.plan(s"MATCH (n:Label) WHERE n.x = 1 RETURN n")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("n")
+                            .filter("n.x = 1")
+                            .nodeByLabelScan("n", "Label")
+                            .build()
+  }
+
+  test("should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val plan = planner.plan(s"MATCH (n:Label) RETURN n.prop AS p")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("p")
+                            .projection("n.prop AS p")
+                            .nodeIndexOperator("n:Label(prop)")
+                            .build()
+  }
+
+  test("should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used, when filtered") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val plan = planner.plan(s"MATCH (n:Label) WHERE n.x = 1 RETURN n.prop AS p")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("p")
+                            .projection("n.prop AS p")
+                            .filter("n.x = 1")
+                            .nodeIndexOperator("n:Label(prop)")
+                            .build()
+  }
+
+  test("should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeIndex("Label", Seq("counted"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val plan = planner.plan(s"MATCH (n:Label) RETURN count(n.counted) AS c")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("c")
+                            .aggregation(Seq(), Seq("count(n.counted) AS c"))
+                            .nodeIndexOperator("n:Label(counted)")
+                            .build()
+  }
+
+  test("should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality, when filtered") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeIndex("Label", Seq("counted"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val plan = planner.plan(s"MATCH (n:Label) WHERE n.x = 1 RETURN count(n.counted) AS c")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("c")
+                            .aggregation(Seq(), Seq("count(n.counted) AS c"))
+                            .filter("n.x = 1")
+                            .nodeIndexOperator("n:Label(counted)")
+                            .build()
+  }
+
+  test("should prefer node index scan for aggregated property, even if other property is referenced") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000)
+      .addNodeIndex("Label", Seq("prop"), 1.0, 1.0)
+      .addNodeIndex("Label", Seq("counted"), 1.0, 1.0)
+      .addNodeExistenceConstraint("Label", "prop")
+      .build()
+
+    val plan = planner.plan(s"MATCH (n:Label) WHERE n.prop <> 1 AND n.x = 1 RETURN count(n.counted) AS c")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("c")
+                            .aggregation(Seq(), Seq("count(n.counted) AS c"))
+                            .filter("not n.prop = 1", "n.x = 1")
+                            .nodeIndexOperator("n:Label(counted)")
+                            .build()
   }
 
 }

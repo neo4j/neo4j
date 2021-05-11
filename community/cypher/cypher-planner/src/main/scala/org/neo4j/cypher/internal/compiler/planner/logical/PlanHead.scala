@@ -19,18 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
-import org.neo4j.cypher.internal.compiler.planner.logical.PlanHead.addAggregatedPropertiesToContext
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.countStorePlanner
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
-import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-
-import scala.annotation.tailrec
 
 /**
  * Solves the first query graph and its horizon of a SinglePlannerQuery.
@@ -40,7 +34,11 @@ case class PlanHead(planPart: MatchPlanner = planMatch,
                     planUpdates: UpdatesPlanner = PlanUpdates) extends HeadPlanner {
 
   override def apply(headQuery: SinglePlannerQuery, context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
-    val updatedContext = addAggregatedPropertiesToContext(headQuery, context)
+    val aggregationPropertyAccesses = PropertyAccessHelper.findAggregationPropertyAccesses(headQuery)
+    val localPropertyAccesses = PropertyAccessHelper.findLocalPropertyAccesses(headQuery)
+    val updatedContext = context
+      .withAggregationProperties(aggregationPropertyAccesses)
+      .withAccessedProperties(localPropertyAccesses ++ aggregationPropertyAccesses)
 
     val plans = countStorePlanner(headQuery, updatedContext) match {
       case Some(plan) =>
@@ -70,45 +68,6 @@ case class PlanHead(planPart: MatchPlanner = planMatch,
         context.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, context)
       case None => planWithUpdates
     }
-  }
-}
-
-object PlanHead {
-  /*
-   * Extract all properties over which aggregation is performed, where we potentially could use a NodeIndexScan.
-   */
-  def addAggregatedPropertiesToContext(currentQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlanningContext = {
-
-    // The renamings map is used to keep track of any projections changing the name of the property,
-    // as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
-    @tailrec
-    def rec(currentQuery: SinglePlannerQuery, context: LogicalPlanningContext, renamings: Map[String, Expression]): LogicalPlanningContext = {
-      // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
-      if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return context
-
-      currentQuery.horizon match {
-        case aggr: AggregatingQueryProjection =>
-          if (aggr.groupingExpressions.isEmpty) // needed here to not enter next case
-            AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
-              case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
-              case _ => context
-            }
-          else context
-        case proj: QueryProjection =>
-          currentQuery.tail match {
-            case Some(tail) =>
-              rec(tail, context, renamings ++ proj.projections)
-            case _ => context
-          }
-        case _ =>
-          currentQuery.tail match {
-            case Some(tail) => rec(tail, context, renamings)
-            case _ => context
-          }
-      }
-    }
-
-    rec(currentQuery, context, Map.empty)
   }
 }
 

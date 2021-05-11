@@ -22,10 +22,21 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFinder
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.logical.plans.IndexedPropertyProvidingPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.RelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.Selection
+
+import scala.annotation.tailrec
 
 object leafPlanOptions extends LeafPlanFinder {
 
@@ -47,17 +58,42 @@ object leafPlanOptions extends LeafPlanFinder {
       .groupBy(_.availableSymbols)
       .values
       .map { bucket =>
-      val bestPlan = pickBest(bucket, s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
+        val bestPlan = pickBest(bucket, leafPlanHeuristic(context), s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
 
-      if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
-        val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
-        val bestSortedPlan = pickBest(sortedLeaves, s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}")
-        BestResults(bestPlan, bestSortedPlan)
-      } else {
-        BestResults(bestPlan, None)
+        if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
+          val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
+          val bestSortedPlan = pickBest(sortedLeaves, s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}")
+          BestResults(bestPlan, bestSortedPlan)
+        } else {
+          BestResults(bestPlan, None)
+        }
       }
-    }
 
     bestPlansPerAvailableSymbols.map(_.map(context.leafPlanUpdater.apply))
   }
+
+  type NodeIndexPlan = NodeLogicalLeafPlan with IndexedPropertyProvidingPlan
+  type RelIndexPlan = RelationshipLogicalLeafPlan with IndexedPropertyProvidingPlan
+
+  def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new SelectorHeuristic {
+    @tailrec
+    override def tieBreaker(plan: LogicalPlan): Int = plan match {
+      case s: Selection                                                                  => tieBreaker(s.source)
+      case p: NodeIndexPlan if hasAggregatingProperties(p.idName, p.properties, context) => 3
+      case p: RelIndexPlan if hasAggregatingProperties(p.idName, p.properties, context)  => 3
+      case p: NodeIndexPlan if hasAccessedProperties(p.idName, p.properties, context)    => 2
+      case p: RelIndexPlan if hasAccessedProperties(p.idName, p.properties, context)     => 2
+      case _: NodeByLabelScan                                                            => 1
+      case _: RelationshipTypeScan                                                       => 1
+      case _                                                                             => 0
+    }
+  }
+
+  private def hasAggregatingProperties(varName: String, properties: Seq[IndexedProperty], context: LogicalPlanningContext): Boolean =
+    properties.exists(prop => context.aggregatingProperties.contains((varName, prop.propertyKeyToken.name)))
+
+  private def hasAccessedProperties(varName: String, properties: Seq[IndexedProperty], context: LogicalPlanningContext): Boolean =
+    properties.exists(prop => context.accessedProperties.contains((varName, prop.propertyKeyToken.name)))
+
+
 }

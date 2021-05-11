@@ -215,6 +215,11 @@ trait UpdatingPlan extends LogicalUnaryPlan {
   override def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
 }
 
+// Marker trait for relationship type scans
+trait RelationshipTypeScan {
+  def idName: String
+}
+
 abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   final def lhs: Option[LogicalPlan] = Some(left)
   final def rhs: Option[LogicalPlan] = Some(right)

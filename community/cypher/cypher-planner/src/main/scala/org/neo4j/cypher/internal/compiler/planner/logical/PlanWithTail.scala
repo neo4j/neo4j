@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -37,8 +38,11 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
                      tailQuery: SinglePlannerQuery,
                      previousInterestingOrder: InterestingOrder,
                      context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
-    val rhsPlan = planRhs(tailQuery, context.withOuterPlan(lhsPlans.bestResult))
-    planApply(lhsPlans, rhsPlan, previousInterestingOrder, tailQuery, context)
+    val updatedContext = context
+      .withAccessedProperties(PropertyAccessHelper.findLocalPropertyAccesses(tailQuery))
+
+    val rhsPlan = planRhs(tailQuery, updatedContext.withOuterPlan(lhsPlans.bestResult))
+    planApply(lhsPlans, rhsPlan, previousInterestingOrder, tailQuery, updatedContext)
   }
 
   private def planRhs(tailQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {

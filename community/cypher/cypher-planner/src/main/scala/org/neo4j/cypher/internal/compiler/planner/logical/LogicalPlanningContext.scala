@@ -65,6 +65,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                    * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
                                    */
                                   aggregatingProperties: Set[(String, String)] = Set.empty,
+                                  accessedProperties: Set[(String, String)] = Set.empty,
                                   idGen: IdGen,
                                   executionModel: ExecutionModel,
                                   debugOptions: CypherDebugOptions,
@@ -76,6 +77,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def withAggregationProperties(properties: Set[(String, String)]): LogicalPlanningContext =
     copy(aggregatingProperties = properties)
+
+  def withAccessedProperties(properties: Set[(String, String)]): LogicalPlanningContext =
+    copy(accessedProperties = properties)
 
   def withUpdatedLabelInfo(plan: LogicalPlan): LogicalPlanningContext =
     copy(input = input.withUpdatedLabelInfo(plan, planningAttributes.solveds))
