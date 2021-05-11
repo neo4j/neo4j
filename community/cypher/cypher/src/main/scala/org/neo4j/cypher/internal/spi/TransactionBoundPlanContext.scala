@@ -208,7 +208,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
           }
         }
         if (reference.getIndexType != IndexType.BTREE || behaviours.contains(EventuallyConsistent)) {
-          // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
+          // Ignore IndexType.FULLTEXT indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None
         } else {

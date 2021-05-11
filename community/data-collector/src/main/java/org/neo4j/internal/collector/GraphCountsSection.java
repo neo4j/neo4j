@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.token.api.NamedToken;
@@ -143,6 +144,14 @@ final class GraphCountsSection
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
+            IndexType indexType = index.getIndexType();
+            if ( indexType == IndexType.FULLTEXT )
+            {
+                /* For full text indexes, we currently do not return its options, which makes returning information on
+                 * this index not useful and if the index type is ignored, this would even be misleading.
+                 */
+                continue;
+            }
             EntityType entityType = index.schema().entityType();
             Map<String,Object> data = new HashMap<>();
 
@@ -166,6 +175,7 @@ final class GraphCountsSection
             data.put( "totalSize", indexSample.indexSize() );
             data.put( "updatesSinceEstimation", indexSample.updates() );
             data.put( "estimatedUniqueSize", indexSample.uniqueValues() );
+            data.put( "indexType", indexType.name() );
 
             indexes.add( data );
         }

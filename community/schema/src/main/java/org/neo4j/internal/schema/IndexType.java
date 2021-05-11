@@ -72,4 +72,9 @@ public enum IndexType
             throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
         }
     }
+
+    public boolean isLookup()
+    {
+        return this == LOOKUP;
+    }
 }
