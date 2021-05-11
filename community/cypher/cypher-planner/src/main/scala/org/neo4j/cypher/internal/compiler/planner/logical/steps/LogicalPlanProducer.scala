@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
+import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
@@ -641,7 +641,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                         properties: Seq[IndexedProperty],
                         valueExpr: QueryExpression[Expression],
                         solvedPredicates: Seq[Expression] = Seq.empty,
-                        solvedPredicatesForCardinalityEstimation: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[String],
                         providedOrder: ProvidedOrder,
@@ -652,19 +651,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
-    // We know solvedPredicates is a subset of solvedPredicatesForCardinalityEstimation
+
     val solved = RegularSinglePlannerQuery(queryGraph = queryGraph)
-    val solvedForCardinalityEstimation = RegularSinglePlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
 
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
     val rewrittenValueExpr = valueExpr.map(solver.solve(_))
     val newArguments = solver.newArguments
+
     val plan = NodeIndexSeek(idName, label, properties, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder)
-    val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
-    solveds.set(plan.id, solved)
-    cardinalities.set(plan.id, cardinality)
-    providedOrders.set(plan.id, providedOrder)
-    solver.rewriteLeafPlan(plan)
+    val annotatedPlan = annotate(plan, solved, providedOrder, context)
+
+    solver.rewriteLeafPlan(annotatedPlan)
   }
 
   def planNodeIndexScan(idName: String,
@@ -736,7 +733,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                               properties: Seq[IndexedProperty],
                               valueExpr: QueryExpression[Expression],
                               solvedPredicates: Seq[Expression] = Seq.empty,
-                              solvedPredicatesForCardinalityEstimation: Seq[Expression] = Seq.empty,
                               solvedHint: Option[UsingIndexHint] = None,
                               argumentIds: Set[String],
                               providedOrder: ProvidedOrder,
@@ -747,19 +743,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
-    // We know solvedPredicates is a subset of solvedPredicatesForCardinalityEstimation
+
     val solved = RegularSinglePlannerQuery(queryGraph = queryGraph)
-    val solvedForCardinalityEstimation = RegularSinglePlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
 
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, context)
     val rewrittenValueExpr = valueExpr.map(solver.solve(_))
     val newArguments = solver.newArguments
+
     val plan = NodeUniqueIndexSeek(idName, label, properties, rewrittenValueExpr, argumentIds ++ newArguments, indexOrder)
-    val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
-    solveds.set(plan.id, solved)
-    cardinalities.set(plan.id, cardinality)
-    providedOrders.set(plan.id, providedOrder)
-    solver.rewriteLeafPlan(plan)
+    val annotatedPlan = annotate(plan, solved, providedOrder, context)
+
+    solver.rewriteLeafPlan(annotatedPlan)
+
   }
 
   def planAssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {

@@ -46,7 +46,6 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     solvedPredicates: Seq[Expression],
-    predicatesForCardinalityEstimation: Seq[Expression],
   )
 
 
@@ -66,11 +65,6 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
 
       val hint = predicateSet.matchingHints(hints).headOption
 
-      val originalPredicates = indexMatch.propertyPredicates
-
-      // TODO: This seems very unfair if there is a tail of non-seekable predicates
-      val predicatesForCardinalityEstimation = originalPredicates.map(p => p.predicate) :+ indexMatch.labelPredicate
-
       Some(Solution(
         indexMatch.variableName,
         indexMatch.labelToken,
@@ -82,7 +76,6 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         indexMatch.providedOrder,
         indexMatch.indexOrder,
         predicateSet.allSolvedPredicates,
-        predicatesForCardinalityEstimation,
       ))
     }
   }

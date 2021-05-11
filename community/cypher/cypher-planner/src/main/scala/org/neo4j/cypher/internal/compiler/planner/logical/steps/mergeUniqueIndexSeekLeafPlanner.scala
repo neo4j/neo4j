@@ -84,7 +84,6 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
       solution.properties,
       solution.valueExpr,
       solution.solvedPredicates,
-      solution.predicatesForCardinalityEstimation,
       solution.hint,
       solution.argumentIds,
       solution.providedOrder,

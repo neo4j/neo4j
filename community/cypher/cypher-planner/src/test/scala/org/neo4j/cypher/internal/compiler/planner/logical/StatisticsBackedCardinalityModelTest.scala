@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelIntegrationTest
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
@@ -457,5 +458,49 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
 
     queryShouldHaveCardinality(config, s"MATCH (a:A)-[r]->() WHERE r:R AND r.prop IS NOT NULL",
       inboundCardinality * whereSelectivity)
+  }
+
+  test ("should use distance seekable predicate for cardinality estimation") {
+    val labelCardinality = 50
+    val propSelectivity = 0.5
+    val config = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", labelCardinality)
+      .addNodeIndex("Person", Seq("prop"), propSelectivity, 1)
+      .build()
+
+    val query = "MATCH (n:Person) WHERE distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5"
+
+    val planState = config.planState(query + " RETURN n")
+    val plan = planState.logicalPlan
+    val cardinalities = planState.planningAttributes.effectiveCardinalities
+    val nodeIndexSeekCardinality = plan.flatten.collectFirst{case lp:NodeIndexSeek => cardinalities.get(lp.id)}.get
+
+    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
+
+    queryShouldHaveCardinality(config, query,
+      labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
+  }
+
+  test ("should only use predicates marked as solved for cardinality estimation of node index seek") {
+    val labelCardinality = 50
+    val propSelectivity = 0.5
+    val config = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", labelCardinality)
+      .addNodeIndex("Person", Seq("prop1", "prop2"), propSelectivity, 1)
+      .build()
+
+    val query = "MATCH (n:Person) WHERE n.prop1 > 0 AND n.prop2 = 0"
+
+    val planState = config.planState(query + " RETURN n")
+    val plan = planState.logicalPlan
+    val cardinalities = planState.planningAttributes.effectiveCardinalities
+    val nodeIndexSeekCardinality = plan.flatten.collectFirst{case lp:NodeIndexSeek => cardinalities.get(lp.id)}.get
+
+    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * DEFAULT_RANGE_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY)
+
+    queryShouldHaveCardinality(config, query,
+      labelCardinality * DEFAULT_RANGE_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
   }
 }

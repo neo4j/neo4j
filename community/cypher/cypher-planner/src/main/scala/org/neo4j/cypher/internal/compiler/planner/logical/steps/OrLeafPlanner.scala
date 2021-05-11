@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialPredicateWrapper
+import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -119,7 +119,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
 
   private def coveringPredicates(plan: LogicalPlan, solveds: Solveds): Seq[Expression] = {
     solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph.selections.flatPredicates.map {
-      case PartialPredicateWrapper(coveredPredicate, coveringPredicate) => coveringPredicate
+      case p: PartialPredicate[_] => p.coveringPredicate
       case predicate => predicate
     }
   }

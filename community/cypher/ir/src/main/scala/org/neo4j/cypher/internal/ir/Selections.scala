@@ -143,9 +143,9 @@ object Selections {
   def apply(): Selections = new Selections(Set.empty)
 
   /**
-   * Create a new Selections from a set of Predicate:s
+   * Create a new Selections from a set of predicates
    *
-   * Any PartialPredicate:s where the covering predicate is itself a predicate in the set are removed
+   * Any PartialPredicate where the covering predicate is itself a predicate in the set is removed
    */
   def apply(predicates: Set[Predicate]): Selections = {
 

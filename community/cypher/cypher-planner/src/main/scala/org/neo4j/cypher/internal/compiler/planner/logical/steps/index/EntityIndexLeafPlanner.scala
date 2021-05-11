@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSeekWrapper
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -120,7 +121,7 @@ abstract class EntityIndexLeafPlanner extends LeafPlanner with LeafPlanFromExpre
       case predicate@AsDistanceSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
         Set(IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(context.semanticTable),
-          predicateExactness = NotExactPredicate, solvedPredicate = None, dependencies = seekable.dependencies))
+          predicateExactness = NotExactPredicate, solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)), dependencies = seekable.dependencies))
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>

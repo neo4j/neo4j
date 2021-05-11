@@ -1021,4 +1021,27 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan shouldEqual expectedPlan
   }
+
+  test("should plan additional filter after nodeIndexSeek with distance seekable predicate") {
+    val pb = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Person", 50)
+      .addNodeIndex("Person", Seq("prop"), 0.5, 1)
+      .build()
+
+    val query =
+        """MATCH (n:Person)
+          |WHERE distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5
+          |RETURN n
+          |""".stripMargin
+
+    val plan = pb.plan(query).stripProduceResults
+
+    val expectedPlan = pb.subPlanBuilder()
+      .filter("distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5")
+      .pointDistanceNodeIndexSeek("n", "Person", "prop", "{x: 1.1, y: 5.4}", 0.5, indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
 }

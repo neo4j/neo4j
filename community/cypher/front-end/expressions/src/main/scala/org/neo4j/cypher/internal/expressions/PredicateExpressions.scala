@@ -152,6 +152,12 @@ object PartialPredicate {
   final case class PartialPredicateWrapper[P <: Expression](coveredPredicate: P, coveringPredicate: Expression) extends PartialPredicate[P] {
     override def position: InputPosition = coveredPredicate.position
   }
+
+  final case class PartialDistanceSeekWrapper[P <: Expression](predicate: P) extends PartialPredicate[P] {
+    override def coveredPredicate: P = predicate
+    override def coveringPredicate: Expression = predicate
+    override def position: InputPosition = coveredPredicate.position
+  }
 }
 
 case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends BooleanExpression with BinaryOperatorExpression {
