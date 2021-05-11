@@ -190,12 +190,6 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def indexUsage(lookupIndexAvailable: Boolean): Seq[IndexUsage] = {
     this.fold(Seq.empty[IndexUsage]) {
-      case NodeIndexSeek(idName, label, properties, _, _, _) =>
-        acc => acc :+ SchemaLabelIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
-      case NodeUniqueIndexSeek(idName, label, properties, _, _, _) =>
-        acc => acc :+ SchemaLabelIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
-      case NodeIndexScan(idName, label, properties, _, _) =>
-        acc => acc :+ SchemaLabelIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case MultiNodeIndexSeek(indexPlans) =>
         acc => acc ++ indexPlans.flatMap(_.indexUsage(lookupIndexAvailable))
       case NodeByLabelScan(idName, _, _, _) if lookupIndexAvailable =>
@@ -212,6 +206,15 @@ abstract class LogicalPlan(idGen: IdGen)
               relIndexScan.typeToken.nameId.id,
               relIndexScan.typeToken.name,
               relIndexScan.properties.map(_.propertyKeyToken)
+            )
+      case nodeIndexPlan: NodeIndexLeafPlan =>
+        acc =>
+          acc :+
+            SchemaLabelIndexScanUsage(
+              nodeIndexPlan.idName,
+              nodeIndexPlan.label.nameId.id,
+              nodeIndexPlan.label.name,
+              nodeIndexPlan.properties.map(_.propertyKeyToken.name)
             )
     }
   }
