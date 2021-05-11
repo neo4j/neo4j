@@ -204,24 +204,15 @@ abstract class LogicalPlan(idGen: IdGen)
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
       case UndirectedRelationshipTypeScan(idName, _, _, _, _, _) =>
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
-      case DirectedRelationshipIndexScan(idName, _, _, typeToken, properties, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, properties.map(_.propertyKeyToken))
-      case UndirectedRelationshipIndexScan(idName, _, _, typeToken, properties, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, properties.map(_.propertyKeyToken))
-      case DirectedRelationshipIndexContainsScan(idName, _, _, typeToken, property, _, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
-      case UndirectedRelationshipIndexContainsScan(idName, _, _, typeToken, property, _, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
-      case DirectedRelationshipIndexEndsWithScan(idName, _, _, typeToken, property, _, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
-      case UndirectedRelationshipIndexEndsWithScan(idName, _, _, typeToken, property, _, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
-      case DirectedRelationshipIndexEndsWithScan(idName, _, _, typeToken, property, _, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, Seq(property.propertyKeyToken))
-      case UndirectedRelationshipIndexSeek(idName, _, _, typeToken, property, _, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, property.map(_.propertyKeyToken))
-      case DirectedRelationshipIndexSeek(idName, _, _, typeToken, property, _, _, _) =>
-        acc => acc :+ SchemaRelationshipIndexUsage(idName, typeToken.nameId.id, typeToken.name, property.map(_.propertyKeyToken))
+      case relIndexScan: RelationshipIndexLeafPlan =>
+        acc =>
+          acc :+
+            SchemaRelationshipIndexUsage(
+              relIndexScan.idName,
+              relIndexScan.typeToken.nameId.id,
+              relIndexScan.typeToken.name,
+              relIndexScan.properties.map(_.propertyKeyToken)
+            )
     }
   }
 }
