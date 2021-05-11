@@ -258,8 +258,8 @@ public final class Recovery
         requireNonNull( storageEngineFactory );
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
-        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, StorageEngineFactory.defaultStorageEngine(), forceRunRecovery, NullLogProvider.getInstance(),
-                new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
+        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, StorageEngineFactory.defaultStorageEngine(), forceRunRecovery,
+                NullLogProvider.getInstance(), new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
     }
 
     /**
