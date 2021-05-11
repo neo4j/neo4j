@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
+import org.neo4j.cypher.internal.frontend.phases.extractSensitiveLiterals
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
@@ -138,7 +139,10 @@ object CompilationPhases {
     parsingBase(config) andThen
       AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
       SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_3AfterRewrite) andThen
-      LiteralExtraction(config.literalExtractionStrategy, config.obfuscateLiterals)
+      If( (_: BaseState) => config.obfuscateLiterals) (
+        extractSensitiveLiterals
+      ) andThen
+      LiteralExtraction(config.literalExtractionStrategy)
   }
 
   // Phase 1 (Fabric)
@@ -146,6 +150,9 @@ object CompilationPhases {
     parsingBase(config) andThen
       ExpandStarRewriter andThen
       TryRewriteProcedureCalls(resolver) andThen
+      If( (_: BaseState) => config.obfuscateLiterals) (
+        extractSensitiveLiterals
+      ) andThen
       ObfuscationMetadataCollection andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
@@ -154,7 +161,7 @@ object CompilationPhases {
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
-      LiteralExtraction(config.literalExtractionStrategy, config.obfuscateLiterals) andThen
+      LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 
