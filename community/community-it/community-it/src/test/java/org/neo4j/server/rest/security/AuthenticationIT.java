@@ -42,13 +42,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class AuthenticationIT extends CommunityWebContainerTestBase
 {
     @RegisterExtension
-    public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
+    TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @Test
     @Documented( "Missing authorization\n" +
                  "\n" +
                  "If an +Authorization+ header is not supplied, the server will reply with an error." )
-    public void missing_authorization() throws JsonParseException, IOException
+    void missing_authorization() throws JsonParseException, IOException
     {
         // Given
         startServerWithConfiguredUser();
@@ -72,7 +72,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
                  "Authenticate by sending a username and a password to Neo4j using HTTP Basic Auth.\n" +
                  "Requests should include an +Authorization+ header, with a value of +Basic <payload>+,\n" +
                  "where \"payload\" is a base64 encoded string of \"username:password\"." )
-    public void successful_authentication() throws JsonParseException, IOException
+    void successful_authentication() throws JsonParseException, IOException
     {
         // Given
         startServerWithConfiguredUser();
@@ -91,7 +91,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     @Documented( "Incorrect authentication\n" +
                  "\n" +
                  "If an incorrect username or password is provided, the server replies with an error." )
-    public void incorrect_authentication() throws JsonParseException, IOException
+    void incorrect_authentication() throws JsonParseException, IOException
     {
         // Given
         startServerWithConfiguredUser();
@@ -117,7 +117,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
                  "a new password. The database will signal that a new password is required and deny access.\n" +
                  "\n" +
                  "See <<rest-api-security-user-status-and-password-changing>> for how to set a new password." )
-    public void password_change_required() throws JsonParseException, IOException
+    void password_change_required() throws JsonParseException, IOException
     {
         // Given
         startServer( true );
@@ -149,7 +149,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldSayMalformedHeaderIfMalformedAuthorization() throws Exception
+    void shouldSayMalformedHeaderIfMalformedAuthorization() throws Exception
     {
         // Given
         startServerWithConfiguredUser();
@@ -164,7 +164,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAllowDataAccess() throws Exception
+    void shouldAllowDataAccess() throws Exception
     {
         // Given
         startServerWithConfiguredUser();
@@ -178,7 +178,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAllowAllAccessIfAuthenticationIsDisabled() throws Exception
+    void shouldAllowAllAccessIfAuthenticationIsDisabled() throws Exception
     {
         // Given
         startServer( false );
@@ -190,7 +190,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldReplyNicelyToTooManyFailedAuthAttempts() throws Exception
+    void shouldReplyNicelyToTooManyFailedAuthAttempts() throws Exception
     {
         // Given
         startServerWithConfiguredUser();
@@ -221,7 +221,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldNotAllowDataAccessWhenPasswordChangeRequired() throws Exception
+    void shouldNotAllowDataAccessWhenPasswordChangeRequired() throws Exception
     {
         // Given
         startServer( true ); // The user should not have read access before changing the password

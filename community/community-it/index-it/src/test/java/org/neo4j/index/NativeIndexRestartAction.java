@@ -26,9 +26,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.test.rule.DbmsRule;
 
-abstract class NativeIndexRestartAction implements DbmsRule.RestartAction
+abstract class NativeIndexRestartAction
 {
     private static final IndexProviderDescriptor DEFAULT_PROVIDER_DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;
     final IndexProviderDescriptor providerDescriptor;
@@ -43,7 +42,6 @@ abstract class NativeIndexRestartAction implements DbmsRule.RestartAction
         this.providerDescriptor = providerDescriptor;
     }
 
-    @Override
     public void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout ) throws IOException
     {
         IndexDirectoryStructure indexDirectoryStructure = nativeIndexDirectoryStructure( databaseLayout, providerDescriptor );

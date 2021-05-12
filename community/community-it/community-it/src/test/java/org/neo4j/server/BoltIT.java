@@ -19,10 +19,8 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.http.HttpRequest;
@@ -43,15 +41,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
-public class BoltIT extends ExclusiveWebContainerTestBase
+class BoltIT extends ExclusiveWebContainerTestBase
 {
-    @Rule
-    public TemporaryFolder tmpDir = new TemporaryFolder();
-
     private TestWebContainer testWebContainer;
 
-    @After
-    public void stopTheServer()
+    @AfterEach
+    void stopTheServer()
     {
         if ( testWebContainer != null )
         {
@@ -60,7 +55,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldLaunchBolt() throws Throwable
+    void shouldLaunchBolt() throws Throwable
     {
         // When I run Neo4j with Bolt enabled
         startServerWithBoltEnabled();
@@ -72,7 +67,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldBeAbleToSpecifyHostAndPort() throws Throwable
+    void shouldBeAbleToSpecifyHostAndPort() throws Throwable
     {
         // When
         startServerWithBoltEnabled();
@@ -83,7 +78,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void boltAddressShouldComeFromConnectorAdvertisedAddress() throws Throwable
+    void boltAddressShouldComeFromConnectorAdvertisedAddress() throws Throwable
     {
         // Given
         String host = "neo4j.com";
@@ -112,7 +107,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
                 .withProperty( BoltConnector.encryption_level.name(), "DISABLED" )
                 .withProperty( BoltConnector.advertised_address.name(), advertisedHost + ":" + advertisedPort )
                 .withProperty( BoltConnector.listen_address.name(), listenHost + ":" + listenPort )
-                .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
+                .usingDataDir( testDirectory.homePath().toString() ).build();
     }
 
     private static void assertEventuallyServerResponds( String host, int port ) throws Exception

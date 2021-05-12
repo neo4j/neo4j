@@ -19,35 +19,39 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.PageCacheConfig;
-import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
-@RunWith( Parameterized.class )
+@ExtendWith( RandomExtension.class )
 public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
 {
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+
     private static final String STORE = "store";
     private static final int INITIAL_KEY_COUNT = 10_000;
     private static final int PAGE_SIZE_8K = (int) ByteUnit.kibiBytes( 8 );
@@ -66,49 +70,47 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     private static final String CURRENT_FIXED_SIZE_FORMAT_4M_ZIP = "current-format_4M.zip";
     private static final String CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP = "current-dynamic-format_4M.zip";
 
-    @Parameters( name = "{1}" )
-    public static List<Object[]> data()
+    private TestLayout<KEY,VALUE> layout;
+    private String zipName;
+
+    private static Stream<Arguments> data()
     {
-        return asList(
-                // 8k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K},
+        return Stream.of(
+                Arguments.of( longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K ),
+                Arguments.of( new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_8k_ZIP, PAGE_SIZE_8K ),
                 // 16k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K},
+                Arguments.of( longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K ),
+                Arguments.of( new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_16k_ZIP, PAGE_SIZE_16K ),
                 // 32k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K},
+                Arguments.of( longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K ),
+                Arguments.of( new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP, PAGE_SIZE_32K ),
                 // 64k
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K},
+                Arguments.of( longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K ),
+                Arguments.of( new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP, PAGE_SIZE_64K ),
                 // 4M
-                new Object[]{longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M},
-                new Object[]{new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M}
+                Arguments.of( longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M ),
+                Arguments.of( new SimpleByteArrayLayout( 4000, 99 ), CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP, PAGE_SIZE_4M )
         );
     }
 
-    private final TestLayout<KEY,VALUE> layout;
-    private final String zipName;
-    private final int pageSize;
+    @Override
+    public void shouldDetectFormatChange()
+    {
+        // Nothing
+    }
 
-    public GBPTreeFormatTest( TestLayout<KEY,VALUE> layout, String zipName, int pageSize )
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void shouldDetectFormatChange( TestLayout<KEY,VALUE> layout, String zipName, int pageSize ) throws Throwable
+    {
+        init( layout, zipName, pageSize );
+        super.shouldDetectFormatChange();
+    }
+
+    private void init( TestLayout<KEY,VALUE> layout, String zipName, int pageSize )
     {
         this.layout = layout;
         this.zipName = zipName;
-        this.pageSize = pageSize;
-    }
-
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final RandomRule random = new RandomRule();
-    private final List<Long> initialKeys = initialKeys();
-    private final List<Long> keysToAdd = keysToAdd();
-    private List<Long> allKeys;
-    private PageCache pageCache;
-
-    @Before
-    public void setup()
-    {
         allKeys = new ArrayList<>();
         allKeys.addAll( initialKeys );
         allKeys.addAll( keysToAdd );
@@ -118,11 +120,16 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
         {
             overriddenConfig.withMemory( "16MiB" );
         }
-        pageCache = pageCacheRule.getPageCache( globalFs, overriddenConfig );
+        pageCache = pageCacheExtension.getPageCache( globalFs, overriddenConfig );
     }
 
-    @Rule
-    public final RuleChain chain = RuleChain.outerRule( random ).around( pageCacheRule );
+    @Inject
+    private RandomRule random;
+
+    private final List<Long> initialKeys = initialKeys();
+    private final List<Long> keysToAdd = keysToAdd();
+    private List<Long> allKeys;
+    private PageCache pageCache;
 
     @Override
     protected String zipName()
@@ -276,7 +283,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
 
     private static <KEY,VALUE> void assertHit( Seeker<KEY,VALUE> cursor, TestLayout<KEY,VALUE> layout, Long expectedKey ) throws IOException
     {
-        assertTrue( "Had no next when expecting key " + expectedKey, cursor.next() );
+        assertTrue( cursor.next(), "Had no next when expecting key " + expectedKey );
         assertEquals( expectedKey.longValue(), layout.keySeed( cursor.key() ) );
         assertEquals( value( expectedKey ), layout.valueSeed( cursor.value() ) );
     }

@@ -62,8 +62,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DROP;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
@@ -160,7 +160,7 @@ class FulltextProceduresTestSupport
             score = nextScore;
             if ( num < ids.length )
             {
-                assertEquals( format( "Result returned id %d, expected %d", nextId, ids[num] ), ids[num], nextId.longValue() );
+                assertEquals( ids[num], nextId.longValue(), format( "Result returned id %d, expected %d", nextId, ids[num] ) );
             }
             else
             {
@@ -168,7 +168,7 @@ class FulltextProceduresTestSupport
             }
             num++;
         }
-        assertEquals( "Number of results differ from expected", ids.length, num );
+        assertEquals( ids.length, num, "Number of results differ from expected" );
     }
 
     static void assertQueryFindsIds( GraphDatabaseService db, boolean queryNodes, String index, String query, LongHashSet ids )

@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import common.Neo4jAlgoTestCase;
-import common.SimpleGraphBuilder;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.CommonEvaluators;
+import org.neo4j.graphalgo.Neo4jAlgoTestCase;
+import org.neo4j.graphalgo.SimpleGraphBuilder;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Transaction;

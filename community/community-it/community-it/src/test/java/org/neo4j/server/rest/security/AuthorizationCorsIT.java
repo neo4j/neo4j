@@ -39,10 +39,10 @@ import static org.neo4j.server.web.HttpMethod.PATCH;
 import static org.neo4j.server.web.HttpMethod.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class AuthorizationCorsIT extends CommunityWebContainerTestBase
+class AuthorizationCorsIT extends CommunityWebContainerTestBase
 {
     @Test
-    public void shouldAddCorsHeaderWhenAuthDisabled() throws Exception
+    void shouldAddCorsHeaderWhenAuthDisabled() throws Exception
     {
         startServer( false );
 
@@ -54,7 +54,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAddCorsHeaderWhenAuthEnabledAndPasswordChangeRequired() throws Exception
+    void shouldAddCorsHeaderWhenAuthEnabledAndPasswordChangeRequired() throws Exception
     {
         startServer( true );
 
@@ -66,7 +66,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAddCorsHeaderWhenAuthEnabledAndPasswordChangeNotRequired() throws Exception
+    void shouldAddCorsHeaderWhenAuthEnabledAndPasswordChangeNotRequired() throws Exception
     {
         startServer( true );
         HTTP.Response passwordChangeResponse = changePassword( "neo4j", "neo4j", "newPassword" );
@@ -81,7 +81,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAddCorsHeaderWhenAuthEnabledAndIncorrectPassword() throws Exception
+    void shouldAddCorsHeaderWhenAuthEnabledAndIncorrectPassword() throws Exception
     {
         startServer( true );
 
@@ -93,7 +93,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAddCorsMethodsHeader() throws Exception
+    void shouldAddCorsMethodsHeader() throws Exception
     {
         startServer( false );
 
@@ -104,7 +104,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAddCorsHeaderWhenConfigured() throws Exception
+    void shouldAddCorsHeaderWhenConfigured() throws Exception
     {
         String origin = "https://example.com:7687";
         startServer( false, origin );
@@ -116,7 +116,7 @@ public class AuthorizationCorsIT extends CommunityWebContainerTestBase
     }
 
     @Test
-    public void shouldAddCorsRequestHeaders() throws Exception
+    void shouldAddCorsRequestHeaders() throws Exception
     {
         startServer( false );
 

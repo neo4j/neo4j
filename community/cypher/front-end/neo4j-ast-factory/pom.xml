@@ -121,6 +121,11 @@
         </dependency>
 
         <!-- shared versions are defined in the parent pom -->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- scala -->
 

@@ -19,27 +19,35 @@
  */
 package org.neo4j.test.server;
 
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.concurrent.Callable;
 
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
+@TestDirectoryExtension
+@ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
 public class ExclusiveWebContainerTestBase
 {
-    @Rule
-    public TestDirectory folder = TestDirectory.testDirectory( );
-    @Rule
-    public SuppressOutput suppressOutput = suppressAll();
-    @Rule
-    public TestName name = new TestName();
+    @Inject
+    protected TestDirectory testDirectory;
+    @Inject
+    protected SuppressOutput suppressOutput;
+    protected String methodName;
 
-    @BeforeClass
+    @BeforeAll
     public static void ensureServerNotRunning() throws Exception
     {
         System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );
@@ -48,6 +56,12 @@ public class ExclusiveWebContainerTestBase
             WebContainerHolder.ensureNotRunning();
             return null;
         } );
+    }
+
+    @BeforeEach
+    public void init( TestInfo testInfo )
+    {
+        methodName = testInfo.getTestMethod().get().getName();
     }
 
     protected static String txEndpoint()

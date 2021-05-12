@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,16 +59,16 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
@@ -79,33 +79,42 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
-public class IndexWorkSyncTransactionApplicationStressIT
+@PageCacheExtension
+class IndexWorkSyncTransactionApplicationStressIT
 {
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private static final LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 0, 0 );
+
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private PageCache pageCache;
+
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( directory )
-                                          .around( fileSystemRule )
-                                          .around( pageCacheRule )
-                                          .around( storageEngineRule );
+    @BeforeEach
+    void setUp() throws Throwable
+    {
+        storageEngineRule.before();
+    }
 
-    private final LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( 0, 0 );
+    @AfterEach
+    void tearDown() throws Throwable
+    {
+        storageEngineRule.after( false );
+    }
 
     @Test
-    public void shouldApplyIndexUpdatesInWorkSyncedBatches() throws Exception
+    void shouldApplyIndexUpdatesInWorkSyncedBatches() throws Exception
     {
         // GIVEN
         long duration = parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "2s" ) );
         int numThreads = Integer.getInteger( getClass().getName() + ".numThreads",
                 Runtime.getRuntime().availableProcessors() );
-        DefaultFileSystemAbstraction fs = fileSystemRule.get();
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
         CollectingIndexUpdateListener index = new CollectingIndexUpdateListener();
         RecordStorageEngine storageEngine = storageEngineRule
-                .getWith( fs, pageCache, DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) ) )
+                .getWith( fileSystem, pageCache, DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) ) )
                 .indexUpdateListener( index )
                 .build();
         storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), EXTERNAL );
@@ -139,7 +148,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         return tx;
     }
 
-    private class Worker implements Runnable
+    private static class Worker implements Runnable
     {
         private final int id;
         private final AtomicBoolean end;

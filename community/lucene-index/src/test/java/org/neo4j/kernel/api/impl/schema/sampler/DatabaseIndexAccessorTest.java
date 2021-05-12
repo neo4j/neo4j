@@ -19,22 +19,21 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
@@ -44,6 +43,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
@@ -57,8 +57,9 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.ThreadingExtension;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.Arrays.asList;
@@ -66,8 +67,8 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
@@ -83,21 +84,17 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
-@RunWith( Parameterized.class )
+@ExtendWith( ThreadingExtension.class )
 public class DatabaseIndexAccessorTest
 {
     private static final int PROP_ID = 1;
 
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
-    @ClassRule
-    public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    @Inject
+    private ThreadingRule threading;
 
-    @Parameterized.Parameter( 0 )
-    public IndexDescriptor index;
-    @Parameterized.Parameter( 1 )
-    public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
+    private static EphemeralFileSystemAbstraction fileSystem;
 
+    private IndexDescriptor index;
     private LuceneIndexAccessor accessor;
     private final long nodeId = 1;
     private final long nodeId2 = 2;
@@ -108,61 +105,73 @@ public class DatabaseIndexAccessorTest
     private static final IndexDescriptor UNIQUE_INDEX = IndexPrototype.uniqueForSchema( forLabel( 1, PROP_ID ) ).withName( "b" ).materialise( 1 );
     private static final Config CONFIG = Config.defaults();
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> implementations()
+    public static Stream<Arguments> implementations()
     {
         final Path dir = Path.of( "dir" );
-        return Arrays.asList(
-                arg( GENERAL_INDEX, dirFactory1 ->
-                {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( GENERAL_INDEX, writable(), CONFIG )
-                            .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( dir.resolve( "1" ) )
-                            .build();
+        return Stream.of(
+                Arguments.of(
+                        GENERAL_INDEX,
+                        (IOFunction<DirectoryFactory,LuceneIndexAccessor>) dirFactory1 ->
+                        {
+                            SchemaIndex index = LuceneSchemaIndexBuilder.create( GENERAL_INDEX, writable(), CONFIG )
+                                    .withFileSystem( fileSystem )
+                                    .withDirectoryFactory( dirFactory1 )
+                                    .withIndexRootFolder( dir.resolve( "1" ) )
+                                    .build();
 
-                    index.create();
-                    index.open();
-                    return new LuceneIndexAccessor( index, GENERAL_INDEX, SIMPLE_TOKEN_LOOKUP );
-                } ),
-                arg( UNIQUE_INDEX, dirFactory1 ->
-                {
-                    SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_INDEX, writable(), CONFIG )
-                            .withFileSystem( fileSystemRule.get() )
-                            .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( dir.resolve( "testIndex" ) )
-                            .build();
+                            index.create();
+                            index.open();
+                            return new LuceneIndexAccessor( index, GENERAL_INDEX, SIMPLE_TOKEN_LOOKUP );
+                        }
+                ),
+                Arguments.of(
+                        UNIQUE_INDEX,
+                        (IOFunction<DirectoryFactory,LuceneIndexAccessor>) dirFactory1 ->
+                        {
+                            SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_INDEX, writable(), CONFIG )
+                                    .withFileSystem( fileSystem )
+                                    .withDirectoryFactory( dirFactory1 )
+                                    .withIndexRootFolder( dir.resolve( "testIndex" ) )
+                                    .build();
 
-                    index.create();
-                    index.open();
-                    return new LuceneIndexAccessor( index, UNIQUE_INDEX, SIMPLE_TOKEN_LOOKUP );
-                } )
+                            index.create();
+                            index.open();
+                            return new LuceneIndexAccessor( index, UNIQUE_INDEX, SIMPLE_TOKEN_LOOKUP );
+                        }
+                )
         );
     }
 
-    private static Object[] arg(
-            IndexDescriptor index,
-            IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
+    @BeforeAll
+    static void beforeAll()
     {
-        return new Object[]{index, foo};
+        fileSystem = new EphemeralFileSystemAbstraction();
     }
 
-    @Before
-    public void before() throws IOException
+    @AfterAll
+    static void afterAll() throws IOException
     {
+        fileSystem.close();
+    }
+
+    void init( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws IOException
+    {
+        this.index = index;
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         accessor = accessorFactory.apply( dirFactory );
     }
 
-    @After
-    public void after() throws IOException
+    @AfterEach
+    void after() throws IOException
     {
         closeAll( accessor, dirFactory );
     }
 
-    @Test
-    public void indexReaderShouldSupportScan() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void indexReaderShouldSupportScan( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
         // GIVEN
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
         var reader = accessor.newValueReader();
@@ -177,9 +186,12 @@ public class DatabaseIndexAccessorTest
         reader.close();
     }
 
-    @Test
-    public void indexStringRangeQuery() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void indexStringRangeQuery( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         updateAndCommit( asList( add( PROP_ID, "A" ), add( 2, "B" ), add( 3, "C" ), add( 4, "" ) ) );
 
         var reader = accessor.newValueReader();
@@ -209,9 +221,12 @@ public class DatabaseIndexAccessorTest
         assertThat( nullInclusive ).contains( PROP_ID, 2, 3, 4 );
     }
 
-    @Test
-    public void indexNumberRangeQueryMustThrow() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void indexNumberRangeQueryMustThrow( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         updateAndCommit( asList( add( 1, "1" ), add( 2, "2" ), add( 3, "3" ), add( 4, "4" ), add( 5, "Double.NaN" ) ) );
 
         var reader = accessor.newValueReader();
@@ -227,9 +242,12 @@ public class DatabaseIndexAccessorTest
         }
     }
 
-    @Test
-    public void indexReaderShouldHonorRepeatableReads() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void indexReaderShouldHonorRepeatableReads( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         // GIVEN
         updateAndCommit( singletonList( add( nodeId, value ) ) );
         var reader = accessor.newValueReader();
@@ -242,9 +260,13 @@ public class DatabaseIndexAccessorTest
         reader.close();
     }
 
-    @Test
-    public void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void multipleIndexReadersFromDifferentPointsInTimeCanSeeDifferentResults( IndexDescriptor index,
+            IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         // WHEN
         updateAndCommit( singletonList( add( nodeId, value ) ) );
         var firstReader = accessor.newValueReader();
@@ -260,9 +282,12 @@ public class DatabaseIndexAccessorTest
         secondReader.close();
     }
 
-    @Test
-    public void canAddNewData() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void canAddNewData( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         // WHEN
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
         var reader = accessor.newValueReader();
@@ -272,9 +297,12 @@ public class DatabaseIndexAccessorTest
         reader.close();
     }
 
-    @Test
-    public void canChangeExistingData() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void canChangeExistingData( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         // GIVEN
         updateAndCommit( singletonList( add( nodeId, value ) ) );
 
@@ -288,9 +316,12 @@ public class DatabaseIndexAccessorTest
         reader.close();
     }
 
-    @Test
-    public void canRemoveExistingData() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void canRemoveExistingData( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         // GIVEN
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
 
@@ -304,9 +335,12 @@ public class DatabaseIndexAccessorTest
         reader.close();
     }
 
-    @Test
-    public void shouldStopSamplingWhenIndexIsDropped() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "implementations" )
+    void shouldStopSamplingWhenIndexIsDropped( IndexDescriptor index, IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory ) throws Exception
     {
+        init( index, accessorFactory );
+
         // given
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
 
@@ -328,7 +362,7 @@ public class DatabaseIndexAccessorTest
         try ( var reader = indexReader /* do not inline! */;
               IndexSampler sampler = indexSampler /* do not inline! */ )
         {
-           futures.add( threading.execute( (IOFunction<Void,Void>) nothing ->
+           futures.add( threading.execute( nothing ->
             {
                 try
                 {
@@ -346,7 +380,7 @@ public class DatabaseIndexAccessorTest
                 return nothing;
             }, null ) );
 
-            futures.add( threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
+            futures.add( threading.executeAndAwait( nothing ->
             {
                 dropLatch.await(); //need to wait for the sampling to start before we drop
                 accessor.drop();

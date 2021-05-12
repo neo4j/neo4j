@@ -51,7 +51,7 @@ import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTestBase
+class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTestBase
 {
     @Test
     void webServerShouldNotStartWithoutAnyModule()
@@ -71,7 +71,7 @@ public class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTest
         response = GET( testWebContainer.getBaseUri().resolve( "/" ).toString() );
 
         assertThat( response.status() ).isEqualTo( 200 );
-        assertThat( response.<Map>content() ).containsKey( "transaction" );
+        assertThat( response.<Map<String,Object>>content() ).containsKey( "transaction" );
     }
 
     private static Stream<Arguments> disabledModuleAndURIs()

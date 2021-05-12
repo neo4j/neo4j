@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphalgo.path;
 
-import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.BasicEvaluationContext;
 import org.neo4j.graphalgo.EvaluationContext;
+import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;

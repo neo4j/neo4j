@@ -47,7 +47,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -157,7 +157,7 @@ public abstract class IndexProviderApprovalTest
 
         String errorMessage = currentValue.toString();
 
-        assertEquals( errorMessage, noIndexResult, indexResult );
+        assertEquals( noIndexResult, indexResult, errorMessage );
     }
 
     private static Map<TestValue, Set<Object>> runFindByLabelAndProperty( GraphDatabaseService db )

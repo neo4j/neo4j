@@ -20,11 +20,7 @@
 package org.neo4j.server.web.logging;
 
 import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -41,7 +37,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.net.http.HttpClient.Redirect.NORMAL;
@@ -55,18 +50,10 @@ import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
+class HTTPLoggingIT extends ExclusiveWebContainerTestBase
 {
-    private final ExpectedException exception = ExpectedException.none();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final TestName testName = new TestName();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( exception )
-                                          .around( testName ).around( testDirectory );
-
     @Test
-    public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
+    void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
     {
         // given
         var query = "?implicitlyDisabled" + randomString();
@@ -90,7 +77,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
+    void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
         var query = "?explicitlyEnabled=" + randomString();
@@ -114,7 +101,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogWithoutQueryString() throws Exception
+    void givenExplicitlyEnabledServerLoggingConfigurationShouldLogWithoutQueryString() throws Exception
     {
         // given
         var path = "/foo/bar/baz";
@@ -140,7 +127,7 @@ public class HTTPLoggingIT extends ExclusiveWebContainerTestBase
 
     private TestWebContainer createWebContainer( String httpLoggingEnabledValue ) throws IOException
     {
-        var directoryPrefix = testName.getMethodName();
+        var directoryPrefix = methodName;
         var logDirectory = testDirectory.directory( directoryPrefix + "-logdir" );
 
         return serverOnRandomPorts().withDefaultDatabaseTuning().persistent()

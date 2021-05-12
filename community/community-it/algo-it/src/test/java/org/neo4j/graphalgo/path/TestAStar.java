@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo.path;
 
-import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -33,6 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphalgo.BasicEvaluationContext;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.EvaluationContext;
+import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.TraversalAStar;

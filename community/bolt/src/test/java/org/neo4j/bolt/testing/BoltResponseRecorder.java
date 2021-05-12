@@ -29,7 +29,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.bolt.messaging.BoltResponseMessage.FAILURE;
 import static org.neo4j.bolt.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.messaging.BoltResponseMessage.SUCCESS;
@@ -103,7 +103,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     public RecordedBoltResponse nextResponse() throws InterruptedException
     {
         RecordedBoltResponse response = responses.poll( 3, SECONDS );
-        assertNotNull( "No message arrived after 3s", response );
+        assertNotNull( response, "No message arrived after 3s" );
         return response;
     }
 

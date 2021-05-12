@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -44,19 +44,19 @@ import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.eclipse.jetty.http.HttpHeader.SERVER;
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
-public class HttpHeadersIT extends ExclusiveWebContainerTestBase
+class HttpHeadersIT extends ExclusiveWebContainerTestBase
 {
     private static final String HSTS_HEADER_VALUE = "max-age=31536000; includeSubDomains; preload";
 
     private TestWebContainer testWebContainer;
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown()
     {
         if ( testWebContainer != null )
         {
@@ -65,35 +65,35 @@ public class HttpHeadersIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldNotSendJettyVersionWithHttpResponseHeaders() throws Exception
+    void shouldNotSendJettyVersionWithHttpResponseHeaders() throws Exception
     {
         startServer();
         testNoJettyVersionInResponseHeaders( httpUri() );
     }
 
     @Test
-    public void shouldNotSendJettyVersionWithHttpsResponseHeaders() throws Exception
+    void shouldNotSendJettyVersionWithHttpsResponseHeaders() throws Exception
     {
         startServer();
         testNoJettyVersionInResponseHeaders( httpsUri() );
     }
 
     @Test
-    public void shouldNotSendHstsHeaderWithHttpResponse() throws Exception
+    void shouldNotSendHstsHeaderWithHttpResponse() throws Exception
     {
         startServer( HSTS_HEADER_VALUE );
         assertNull( runRequestAndGetHstsHeaderValue( httpUri() ) );
     }
 
     @Test
-    public void shouldSendHstsHeaderWithHttpsResponse() throws Exception
+    void shouldSendHstsHeaderWithHttpsResponse() throws Exception
     {
         startServer( HSTS_HEADER_VALUE );
         assertEquals( HSTS_HEADER_VALUE, runRequestAndGetHstsHeaderValue( httpsUri() ) );
     }
 
     @Test
-    public void shouldNotSendHstsHeaderWithHttpsResponseWhenNotConfigured() throws Exception
+    void shouldNotSendHstsHeaderWithHttpsResponseWhenNotConfigured() throws Exception
     {
         startServer();
         assertNull( runRequestAndGetHstsHeaderValue( httpsUri() ) );
@@ -113,7 +113,7 @@ public class HttpHeadersIT extends ExclusiveWebContainerTestBase
     {
         var builder = serverOnRandomPorts()
                 .withHttpsEnabled()
-                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() );
+                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() );
 
         if ( hstsValue != null )
         {

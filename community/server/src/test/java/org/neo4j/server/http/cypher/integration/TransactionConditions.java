@@ -39,18 +39,18 @@ import org.neo4j.test.server.HTTP;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 /**
  * Matchers and assertion methods for the transactional endpoint.
  */
-public class TransactionConditions
+public final class TransactionConditions
 {
     private TransactionConditions()
     {
@@ -163,9 +163,9 @@ public class TransactionConditions
 
                 int nodeCounter = 0;
                 int relCounter = 0;
-                assertTrue( "Expected to find a JSON node, but there was none", meta.hasNext() );
+                assertTrue( meta.hasNext(), "Expected to find a JSON node, but there was none" );
                 JsonNode node = meta.next();
-                assertTrue( "Expected the node to be a list (for a path)", node.isArray() );
+                assertTrue( node.isArray(), "Expected the node to be a list (for a path)" );
                 for ( JsonNode inner : node )
                 {
                     String type = inner.get( "type" ).asText();
@@ -223,15 +223,13 @@ public class TransactionConditions
                     String type = node.get( "type" ).asText();
                     if ( type.equals( element ) )
                     {
-                        assertEquals( "Expected " + element + " to be at indexes " + Arrays.toString( indexes ) +
-                                      ", but found it at " + metaIndex, indexes[i], metaIndex );
+                        assertEquals( indexes[i], metaIndex,
+                                "Expected " + element + " to be at indexes " + Arrays.toString( indexes ) + ", but found it at " + metaIndex );
                         ++i;
                     }
                     else
                     {
-                        assertNotEquals( "Expected " + element + " at index " + metaIndex + ", but found " + type,
-                                indexes[i],
-                                metaIndex );
+                        assertNotEquals( indexes[i], metaIndex, "Expected " + element + " at index " + metaIndex + ", but found " + type );
                     }
                 }
             }
@@ -310,7 +308,7 @@ public class TransactionConditions
                         deleted++;
                     }
                 }
-                assertEquals( format( "Expected to see %d deleted elements but %d was encountered.", amount, deleted ), amount, deleted );
+                assertEquals( amount, deleted, format( "Expected to see %d deleted elements but %d was encountered.", amount, deleted ) );
             }
             catch ( JsonParseException e )
             {

@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule.concurrent;
+package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import org.neo4j.test.extension.StatefulFieldExtension;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 public class ThreadingExtension extends StatefulFieldExtension<ThreadingRule>
         implements BeforeEachCallback, AfterEachCallback, AfterAllCallback

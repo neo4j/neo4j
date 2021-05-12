@@ -26,10 +26,14 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BoltTestUtil
+public final class BoltTestUtil
 {
+    private BoltTestUtil()
+    {
+    }
+
     public static BoltChannel newTestBoltChannel()
     {
         return newTestBoltChannel( "bolt-1" );

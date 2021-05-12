@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -98,6 +99,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -131,13 +134,15 @@ import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.util.concurrent.Futures.combine;
 
+@ExtendWith( OtherThreadExtension.class )
 class KernelTransactionsTest
 {
     private static final NamedDatabaseId DEFAULT_DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
     private static final SystemNanoClock clock = Clocks.nanoClock();
-    private final OtherThreadRule t2 = new OtherThreadRule();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    @Inject
+    private OtherThreadRule t2;
 
     @BeforeEach
     void setUp() throws Exception
@@ -145,14 +150,12 @@ class KernelTransactionsTest
         databaseAvailabilityGuard = new DatabaseAvailabilityGuard( DEFAULT_DATABASE_ID, clock, NullLog.getInstance(), 0,
                 mock( CompositeDatabaseAvailabilityGuard.class ) );
         databaseAvailabilityGuard.init();
-        t2.init( "T2-" + getClass().getName() );
     }
 
     @AfterEach
     void tearDown()
     {
         executorService.shutdownNow();
-        t2.close();
     }
 
     @Test

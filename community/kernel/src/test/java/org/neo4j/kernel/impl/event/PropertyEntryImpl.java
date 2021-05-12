@@ -23,10 +23,10 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class PropertyEntryImpl<T> implements PropertyEntry<T>
 {
@@ -88,7 +88,7 @@ class PropertyEntryImpl<T> implements PropertyEntry<T>
         assertNull( value() );
     }
 
-    void basicCompareTo( PropertyEntry<T> entry )
+    private void basicCompareTo( PropertyEntry<T> entry )
     {
         assertEquals( entry.entity(), entity() );
         assertEquals( entry.key(), key() );
@@ -103,16 +103,16 @@ class PropertyEntryImpl<T> implements PropertyEntry<T>
                 + valueBeforeTx + "]";
     }
 
-    public static <T> void assertEqualsMaybeNull( Object o1, Object o2, T entity, String key )
+    private static <T> void assertEqualsMaybeNull( Object o1, Object o2, T entity, String key )
     {
         String entityDescription = "For " + entity + " and " + key;
         if ( o1 == null || o2 == null )
         {
-            assertSame( entityDescription + ". " + Strings.prettyPrint( o1 ) + " != " + Strings.prettyPrint( o2 ), o1, o2 );
+            assertSame( o1, o2, entityDescription + ". " + Strings.prettyPrint( o1 ) + " != " + Strings.prettyPrint( o2 ) );
         }
         else
         {
-            assertEquals( entityDescription, Values.of( o1 ) , Values.of( o2 ) );
+            assertEquals( Values.of( o1 ) , Values.of( o2 ), entityDescription );
         }
     }
 }

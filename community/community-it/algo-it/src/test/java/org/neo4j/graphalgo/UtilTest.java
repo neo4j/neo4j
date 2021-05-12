@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo;
 
-import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;

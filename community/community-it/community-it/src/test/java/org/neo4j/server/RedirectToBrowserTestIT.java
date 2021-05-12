@@ -19,9 +19,9 @@
  */
 package org.neo4j.server;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -37,20 +37,20 @@ import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.LOCATION;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RedirectToBrowserTestIT extends ExclusiveWebContainerTestBase
+class RedirectToBrowserTestIT extends ExclusiveWebContainerTestBase
 {
     private static TestWebContainer webContainer;
 
-    @BeforeClass
-    public static void startServer() throws Exception
+    @BeforeAll
+    static void startServer() throws Exception
     {
         webContainer = WebContainerHelper.createNonPersistentContainer();
     }
 
-    @AfterClass
-    public static void stopServer()
+    @AfterAll
+    static void stopServer()
     {
         if ( webContainer != null )
         {
@@ -59,7 +59,7 @@ public class RedirectToBrowserTestIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldRedirectToBrowser() throws Exception
+    void shouldRedirectToBrowser() throws Exception
     {
         var response = sendGetRequest( ACCEPT, TEXT_HTML );
 
@@ -68,7 +68,7 @@ public class RedirectToBrowserTestIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception
+    void shouldRedirectToBrowserUsingXForwardedHeaders() throws Exception
     {
         var response = sendGetRequest( ACCEPT, TEXT_HTML, "X-Forwarded-Host", "foo.bar:8734", "X-Forwarded-Proto", "https" );
 

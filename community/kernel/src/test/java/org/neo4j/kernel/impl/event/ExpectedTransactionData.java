@@ -32,9 +32,9 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.values.storable.Values.of;
 
@@ -253,75 +253,75 @@ class ExpectedTransactionData
             assertTrue( expectedCreatedNodes.remove( node ) );
             assertFalse( data.isDeleted( node ) );
         }
-        assertTrue( "Expected some created nodes that weren't seen: " + expectedCreatedNodes,
-                expectedCreatedNodes.isEmpty() );
+        assertTrue( expectedCreatedNodes.isEmpty(),
+                "Expected some created nodes that weren't seen: " + expectedCreatedNodes );
 
         for ( Relationship rel : data.createdRelationships() )
         {
             assertTrue( expectedCreatedRelationships.remove( rel ) );
             assertFalse( data.isDeleted( rel ) );
         }
-        assertTrue( "Expected created relationships not encountered " + expectedCreatedRelationships,
-                expectedCreatedRelationships.isEmpty() );
+        assertTrue( expectedCreatedRelationships.isEmpty(),
+                "Expected created relationships not encountered " + expectedCreatedRelationships );
 
         for ( Node node : data.deletedNodes() )
         {
-            assertTrue( "Unexpected deleted node " + node, expectedDeletedNodes.remove( node ) );
+            assertTrue( expectedDeletedNodes.remove( node ), "Unexpected deleted node " + node );
             assertTrue( data.isDeleted( node ) );
         }
-        assertTrue( "Expected deleted nodes: " + expectedDeletedNodes, expectedDeletedNodes.isEmpty() );
+        assertTrue( expectedDeletedNodes.isEmpty(), "Expected deleted nodes: " + expectedDeletedNodes );
 
         for ( Relationship rel : data.deletedRelationships() )
         {
             assertTrue( expectedDeletedRelationships.remove( rel ) );
             assertTrue( data.isDeleted( rel ) );
         }
-        assertTrue( "Expected deleted relationships not encountered " + expectedDeletedRelationships,
-                expectedDeletedRelationships.isEmpty() );
+        assertTrue( expectedDeletedRelationships.isEmpty(),
+                "Expected deleted relationships not encountered " + expectedDeletedRelationships );
 
         for ( PropertyEntry<Node> entry : data.assignedNodeProperties() )
         {
             checkAssigned( expectedAssignedNodeProperties, entry );
             assertFalse( data.isDeleted( entry.entity() ) );
         }
-        assertTrue( "Expected assigned node properties not encountered " + expectedAssignedNodeProperties,
-                expectedAssignedNodeProperties.isEmpty() );
+        assertTrue( expectedAssignedNodeProperties.isEmpty(),
+                "Expected assigned node properties not encountered " + expectedAssignedNodeProperties );
 
         for ( PropertyEntry<Relationship> entry : data.assignedRelationshipProperties() )
         {
             checkAssigned( expectedAssignedRelationshipProperties, entry );
             assertFalse( data.isDeleted( entry.entity() ) );
         }
-        assertTrue( "Expected assigned relationship properties not encountered " + expectedAssignedRelationshipProperties,
-                expectedAssignedRelationshipProperties.isEmpty() );
+        assertTrue( expectedAssignedRelationshipProperties.isEmpty(),
+                "Expected assigned relationship properties not encountered " + expectedAssignedRelationshipProperties );
 
         for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
         {
             checkRemoved( expectedRemovedNodeProperties, entry );
         }
-        assertTrue( "Expected removed node properties not encountered " + expectedRemovedNodeProperties,
-                expectedRemovedNodeProperties.isEmpty() );
+        assertTrue( expectedRemovedNodeProperties.isEmpty(),
+                "Expected removed node properties not encountered " + expectedRemovedNodeProperties );
 
         for ( PropertyEntry<Relationship> entry : data.removedRelationshipProperties() )
         {
             checkRemoved( expectedRemovedRelationshipProperties, entry );
         }
-        assertTrue( "Expected removed relationship properties not encountered " + expectedRemovedRelationshipProperties,
-                expectedRemovedRelationshipProperties.isEmpty() );
+        assertTrue( expectedRemovedRelationshipProperties.isEmpty(),
+                "Expected removed relationship properties not encountered " + expectedRemovedRelationshipProperties );
 
         for ( LabelEntry entry : data.assignedLabels() )
         {
             check( expectedAssignedLabels, entry );
         }
-        assertTrue( "Expected assigned labels not encountered " + expectedAssignedLabels,
-                expectedAssignedLabels.isEmpty() );
+        assertTrue( expectedAssignedLabels.isEmpty(),
+                "Expected assigned labels not encountered " + expectedAssignedLabels );
 
         for ( LabelEntry entry : data.removedLabels() )
         {
             check( expectedRemovedLabels, entry );
         }
-        assertTrue( "Expected removed labels not encountered " + expectedRemovedLabels,
-                expectedRemovedLabels.isEmpty() );
+        assertTrue( expectedRemovedLabels.isEmpty(),
+                "Expected removed labels not encountered " + expectedRemovedLabels );
     }
 
     private static Map<Node,Set<String>> cloneLabelData( Map<Node,Set<String>> map )
@@ -343,14 +343,14 @@ class ExpectedTransactionData
         {
             return;
         }
-        assertTrue( "Unexpected node " + node, hasEntity );
+        assertTrue( hasEntity, "Unexpected node " + node );
         Set<String> labels = expected.get( node );
         boolean hasLabel = labels.remove( labelName );
         if ( !hasLabel && ignoreAdditionalData )
         {
             return;
         }
-        assertTrue( "Unexpected label " + labelName + " for " + node, hasLabel );
+        assertTrue( hasLabel, "Unexpected label " + labelName + " for " + node );
         if ( labels.isEmpty() )
         {
             expected.remove( node );
@@ -394,14 +394,14 @@ class ExpectedTransactionData
         {
             return null;
         }
-        assertTrue( "Unexpected entity " + entry, hasEntity );
+        assertTrue( hasEntity, "Unexpected entity " + entry );
         Map<String, PropertyEntryImpl<T>> innerMap = map.get( entity );
         PropertyEntryImpl<T> expectedEntry = innerMap.remove( entry.key() );
         if ( expectedEntry == null && ignoreAdditionalData )
         {
             return null;
         }
-        assertNotNull( "Unexpected property entry " + entry, expectedEntry );
+        assertNotNull( expectedEntry, "Unexpected property entry " + entry );
         if ( innerMap.isEmpty() )
         {
             map.remove( entity );

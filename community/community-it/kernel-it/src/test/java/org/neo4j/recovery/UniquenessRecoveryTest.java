@@ -19,10 +19,12 @@
  */
 package org.neo4j.recovery;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -47,18 +50,20 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Boolean.getBoolean;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.rule.SuppressOutput.suppress;
 
-@RunWith( Parameterized.class )
+@TestDirectoryExtension
+@ResourceLock( Resources.SYSTEM_OUT )
+@ExtendWith( SuppressOutputExtension.class )
 public class UniquenessRecoveryTest
 {
     /** This test can be configured (via system property) to use cypher or the core API to exercise the db. */
@@ -82,11 +87,11 @@ public class UniquenessRecoveryTest
         return UniquenessRecoveryTest.class.getName() + "." + name;
     }
 
-    @Rule
-    public final SuppressOutput muted = suppress( SuppressOutput.System.out );
-    @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
-    private final Configuration config;
+    @Inject
+    public SuppressOutput muted;
+
+    @Inject
+    public TestDirectory dir;
 
     private static final Field PID;
 
@@ -95,7 +100,7 @@ public class UniquenessRecoveryTest
         Field pid;
         try
         {
-            pid = Class.forName( "java.lang.UNIXProcess" ).getDeclaredField( "pid" );
+            pid = Class.forName( "java.lang.ProcessImpl" ).getDeclaredField( "pid" );
             pid.setAccessible( true );
         }
         catch ( Throwable ex )
@@ -106,10 +111,11 @@ public class UniquenessRecoveryTest
     }
 
     /** This test uses sub-processes, the code in here is the orchestration of those processes. */
-    @Test
-    public void shouldUpholdConstraintEvenAfterRestart() throws Exception
+    @ParameterizedTest
+    @MethodSource( "configurations" )
+    public void shouldUpholdConstraintEvenAfterRestart( Configuration config ) throws Exception
     {
-        assumeNotNull( PID ); // this test can only run on UNIX
+        assumeTrue( PID != null ); // this test can only run on UNIX
 
         // given
         Path path = dir.absolutePath();
@@ -224,9 +230,9 @@ public class UniquenessRecoveryTest
         try ( Transaction tx = db.beginTx() )
         {
             ConstraintDefinition constraint = Iterables.single( tx.schema().getConstraints() );
-            assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
-            assertEquals( "Person", constraint.getLabel().name() );
-            assertEquals( "name", Iterables.single( constraint.getPropertyKeys() ) );
+            Assertions.assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
+            Assertions.assertEquals( "Person", constraint.getLabel().name() );
+            Assertions.assertEquals( "name", Iterables.single( constraint.getPropertyKeys() ) );
 
             tx.commit();
         }
@@ -244,7 +250,7 @@ public class UniquenessRecoveryTest
                     Object name = person.next().getProperty( "name", null );
                     if ( name != null )
                     {
-                        assertTrue( "non-unique name: " + name, names.add( name ) );
+                        Assertions.assertTrue( names.add( name ), "non-unique name: " + name );
                     }
                 }
             }
@@ -315,25 +321,24 @@ public class UniquenessRecoveryTest
 
     // PARAMETERIZATION
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Object[]> configurations()
+    private static Stream<Configuration> configurations()
     {
-        List<Object[]> configurations = new ArrayList<>();
+        List<Configuration> configurations = new ArrayList<>();
         if ( EXHAUSTIVE )
         {
             for ( int killSignal : KILL_SIGNALS )
             {
                 configurations
-                        .add( new Configuration().force_create_constraint( true ).kill_signal( killSignal ).build() );
+                        .add( new Configuration().force_create_constraint( true ).kill_signal( killSignal ) );
                 configurations
-                        .add( new Configuration().force_create_constraint( false ).kill_signal( killSignal ).build() );
+                        .add( new Configuration().force_create_constraint( false ).kill_signal( killSignal ) );
             }
         }
         else
         {
-            configurations.add( new Configuration().build() );
+            configurations.add( new Configuration() );
         }
-        return configurations;
+        return configurations.stream();
     }
 
     public static class Configuration
@@ -345,11 +350,6 @@ public class UniquenessRecoveryTest
         {
             this.force_create_constraint = force_create_constraint;
             return this;
-        }
-
-        public Object[] build()
-        {
-            return new Object[]{this};
         }
 
         public Configuration kill_signal( int kill_signal )
@@ -367,11 +367,6 @@ public class UniquenessRecoveryTest
                    ", kill_signal=" + kill_signal +
                    '}';
         }
-    }
-
-    public UniquenessRecoveryTest( Configuration config )
-    {
-        this.config = config;
     }
 
     // UTILITIES for process management

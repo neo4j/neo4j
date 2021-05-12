@@ -20,33 +20,24 @@
 package org.neo4j.server.web.logging;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.web.Jetty9WebServer;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
+class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
 {
-    @Rule
-    public SuppressOutput suppressOutput = suppressAll();
-    @Rule
-    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-
     private Jetty9WebServer webServer;
 
     @Test
-    public void shouldBeAbleToUsePortZero() throws Exception
+    void shouldBeAbleToUsePortZero() throws Exception
     {
         // Given
         webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) );
@@ -60,7 +51,7 @@ public class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldBeAbleToRestart() throws Throwable
+    void shouldBeAbleToRestart() throws Throwable
     {
         // given
         webServer = new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) );
@@ -75,13 +66,13 @@ public class Jetty9WebServerIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
+    void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
         new Jetty9WebServer( NullLogProvider.getInstance(), Config.defaults(), NetworkConnectionTracker.NO_OP, mock( ByteBufferPool.class ) ).stop();
     }
 
-    @After
-    public void cleanup()
+    @AfterEach
+    void cleanup()
     {
         if ( webServer != null )
         {

@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;

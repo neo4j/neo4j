@@ -31,6 +31,7 @@ import java.util.Optional;
 
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RandomRule.Seed;
+import org.neo4j.values.storable.RandomValues;
 
 import static java.lang.String.format;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
@@ -39,6 +40,18 @@ public class RandomExtension extends StatefulFieldExtension<RandomRule> implemen
 {
     private static final String RANDOM = "random";
     private static final Namespace RANDOM_NAMESPACE = Namespace.create( RANDOM );
+
+    private final RandomValues.Configuration config;
+
+    public RandomExtension()
+    {
+        this( new RandomValues.Default() );
+    }
+
+    public RandomExtension( RandomValues.Default config )
+    {
+        this.config = config;
+    }
 
     @Override
     protected String getFieldKey()
@@ -61,7 +74,7 @@ public class RandomExtension extends StatefulFieldExtension<RandomRule> implemen
     @Override
     protected RandomRule createField( ExtensionContext extensionContext )
     {
-        RandomRule randomRule = new RandomRule();
+        RandomRule randomRule = new RandomRule().withConfiguration( config );
         randomRule.setSeed( System.currentTimeMillis() );
         return randomRule;
     }

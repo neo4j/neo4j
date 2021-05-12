@@ -19,9 +19,8 @@
  */
 package org.neo4j.test;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,12 +29,13 @@ import java.nio.file.Path;
 
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * A little trick to automatically tell whether or not store format was changed without
@@ -43,13 +43,13 @@ import static org.junit.Assert.fail;
  * On failure this test will fail saying that the format version needs update and also update the zipped
  * store with the new version.
  */
+@TestDirectoryExtension
 public abstract class FormatCompatibilityVerifier
 {
-    private final TestDirectory globalDir = TestDirectory.testDirectory();
-    protected final DefaultFileSystemRule globalFs = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain globalRuleChain = RuleChain.outerRule( globalFs ).around( globalDir );
+    @Inject
+    private TestDirectory globalDir;
+    @Inject
+    protected FileSystemAbstraction globalFs;
 
     @Test
     public void shouldDetectFormatChange() throws Throwable
@@ -78,11 +78,10 @@ public abstract class FormatCompatibilityVerifier
         {
             // First time this test is run, eh?
             createStoreFile( storeFile );
-            ZipUtils.zip( globalFs.get(), storeFile, globalDir.file( zipName ) );
+            ZipUtils.zip( globalFs, storeFile, globalDir.file( zipName ) );
             tellDeveloperToCommitThisFormatVersion( zipName );
         }
-        assertTrue( zipName + " seems to be missing from resources directory",
-                ((FileSystemAbstraction) globalFs.get()).fileExists( storeFile ) );
+        assertTrue( globalFs.fileExists( storeFile ),  zipName + " seems to be missing from resources directory" );
 
         // Verify format
         try
@@ -94,9 +93,9 @@ public abstract class FormatCompatibilityVerifier
             // Good actually, or?
             assertThat( e.getMessage() ).contains( "format version" );
 
-            ((FileSystemAbstraction) globalFs.get()).deleteFile( storeFile );
+            globalFs.deleteFile( storeFile );
             createStoreFile( storeFile );
-            ZipUtils.zip( globalFs.get(), storeFile, globalDir.file( zipName ) );
+            ZipUtils.zip( globalFs, storeFile, globalDir.file( zipName ) );
 
             tellDeveloperToCommitThisFormatVersion( zipName );
         }

@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -33,6 +32,8 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,21 +49,11 @@ import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_T
 import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
+@ExtendWith( OtherThreadExtension.class )
 class ProcessorStepTest
 {
-    private final OtherThreadRule t2 = new OtherThreadRule();
-
-    @BeforeEach
-    void setUp()
-    {
-        t2.init("processor-step");
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        t2.close();
-    }
+    @Inject
+    private OtherThreadRule t2;
 
     @Test
     void shouldUpholdProcessOrderingGuarantee() throws Exception

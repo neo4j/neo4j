@@ -39,14 +39,14 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 
-class FusionIndexTestHelp
+final class FusionIndexTestHelp
 {
     private static final LabelSchemaDescriptor INDEX_KEY = SchemaDescriptor.forLabel( 0, 0 );
     private static final LabelSchemaDescriptor COMPOSITE_INDEX_KEY = SchemaDescriptor.forLabel( 0, 0, 1 );
@@ -87,6 +87,10 @@ class FusionIndexTestHelp
                     } ),
                     Values.NO_VALUE
             };
+
+    private FusionIndexTestHelp()
+    {
+    }
 
     static Value[] valuesSupportedByLucene()
     {

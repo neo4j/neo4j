@@ -27,9 +27,9 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StoreAssertions
+public final class StoreAssertions
 {
     private StoreAssertions()
     {
@@ -42,7 +42,6 @@ public class StoreAssertions
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                 databaseLayout, configuration, ProgressMonitorFactory.NONE, logger, false );
 
-        assertTrue( "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize(),
-                result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize() );
     }
 }

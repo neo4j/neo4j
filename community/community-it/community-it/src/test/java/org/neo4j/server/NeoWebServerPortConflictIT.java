@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,16 +32,16 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.builder;
 
-public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
+class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
 {
 
     @Test
-    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
+    void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         try ( ServerSocket socket = new ServerSocket( 0, 0, InetAddress.getLocalHost() ) )
         {
@@ -52,7 +52,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
             {
                 testWebContainer = builder( logProvider )
                         .onAddress( contestedAddress )
-                        .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
+                        .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
                         .build();
                 fail( "Should have reported failure to start" );
             }
@@ -75,7 +75,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException
+    void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException
     {
         try ( ServerSocket httpsSocket = new ServerSocket( 0, 0, InetAddress.getLocalHost() ) )
         {
@@ -89,7 +89,7 @@ public class NeoWebServerPortConflictIT extends ExclusiveWebContainerTestBase
                     .onAddress( unContestedAddress )
                     .onHttpsAddress( httpsAddress )
                     .withHttpsEnabled()
-                    .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
+                    .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
                     .build();
                 fail( "Should have reported failure to start" );
             }

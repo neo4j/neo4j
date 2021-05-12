@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +33,8 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.apache.commons.lang3.ArrayUtils.toObject;
@@ -44,21 +45,11 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
+@ExtendWith( OtherThreadExtension.class )
 class RelationshipIT extends KernelIntegrationTest
 {
-    private final OtherThreadRule otherThread = new OtherThreadRule();
-
-    @BeforeEach
-    void setUp()
-    {
-        otherThread.init( "t2" );
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        otherThread.close();
-    }
+    @Inject
+    private OtherThreadRule otherThread;
 
     @Test
     void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception

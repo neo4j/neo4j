@@ -37,7 +37,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -52,7 +51,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
 {
     private DatabaseManagementServiceBuilder databaseBuilder;
     private GraphDatabaseAPI database;
-    private DatabaseLayout databaseLayout;
     private boolean startEagerly = true;
     private final Map<Setting<?>, Object> globalConfig = new HashMap<>();
     private final Monitors monitors = new Monitors();
@@ -263,7 +261,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         {
             managementService = databaseBuilder.build();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-            databaseLayout = database.databaseLayout();
         }
     }
 
@@ -324,36 +321,14 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         return this;
     }
 
-    public interface RestartAction
-    {
-        void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout ) throws IOException;
-
-        RestartAction EMPTY = ( fs, storeDirectory ) ->
-        {
-            // duh
-        };
-    }
-
     public GraphDatabaseAPI restartDatabase() throws IOException
     {
-        return restartDatabase( RestartAction.EMPTY, Map.of() );
+        return restartDatabase( Map.of() );
     }
 
     public GraphDatabaseAPI restartDatabase( Map<Setting<?>,Object> configChanges ) throws IOException
     {
-        return restartDatabase( RestartAction.EMPTY, configChanges );
-    }
-
-    public GraphDatabaseAPI restartDatabase( RestartAction action ) throws IOException
-    {
-        return restartDatabase( action, Map.of() );
-    }
-
-    public GraphDatabaseAPI restartDatabase( RestartAction action, Map<Setting<?>,Object> configChanges ) throws IOException
-    {
-        FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         managementService.shutdown();
-        action.run( fs, databaseLayout );
         database = null;
         // This DatabaseBuilder has already been configured with the global settings as well as any test-specific settings,
         // so just apply these additional settings.

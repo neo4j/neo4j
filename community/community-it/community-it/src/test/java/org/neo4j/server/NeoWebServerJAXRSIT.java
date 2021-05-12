@@ -20,8 +20,8 @@
 package org.neo4j.server;
 
 import org.dummy.web.service.DummyThirdPartyWebService;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -40,14 +40,14 @@ import static java.net.http.HttpClient.Redirect.NORMAL;
 import static java.net.http.HttpClient.newBuilder;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
+class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
 {
     private TestWebContainer testWebContainer;
 
-    @After
-    public void stopServer()
+    @AfterEach
+    void stopServer()
     {
         if ( testWebContainer != null )
         {
@@ -56,7 +56,7 @@ public class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception
+    void shouldMakeJAXRSClassesAvailableViaHTTP() throws Exception
     {
         var serverBuilder = CommunityWebContainerBuilder.builder();
         testWebContainer = WebContainerHelper.createNonPersistentContainer( serverBuilder );
@@ -69,12 +69,12 @@ public class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldLoadThirdPartyJaxRsClasses() throws Exception
+    void shouldLoadThirdPartyJaxRsClasses() throws Exception
     {
         testWebContainer = CommunityWebContainerBuilder.serverOnRandomPorts()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
-                .usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() )
+                .usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() )
                 .build();
 
         var httpClient = newBuilder().followRedirects( NORMAL ).build();
@@ -91,7 +91,7 @@ public class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
                 new URI( testWebContainer.getBaseUri() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
         request = HttpRequest.newBuilder( thirdPartyServiceUri ).GET().build();
         response = httpClient.send( request, ofString() ).body();
-        assertEquals( response, String.valueOf( nodesCreated ), response );
+        assertEquals( String.valueOf( nodesCreated ), response, response );
     }
 
     private static int createSimpleDatabase( final GraphDatabaseAPI graph )

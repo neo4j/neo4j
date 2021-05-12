@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Before;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,15 +69,10 @@ abstract class GBPTreeITBase<KEY,VALUE>
     private GBPTree<KEY,VALUE> index;
     private PageCache pageCache;
 
-    @Before
-    public void setup()
-    {
-        ratioToKeepInLeftOnSplit = random.nextBoolean() ? InternalTreeLogic.DEFAULT_SPLIT_RATIO : random.nextDouble();
-    }
-
     @BeforeEach
     void setUp()
     {
+        ratioToKeepInLeftOnSplit = random.nextBoolean() ? InternalTreeLogic.DEFAULT_SPLIT_RATIO : random.nextDouble();
         int pageSize = 512;
         layout = getLayout( random, pageSize );
         pageCache = PageCacheSupportExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );

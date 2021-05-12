@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher
 
-import java.util.regex.Pattern
-
-import org.junit.Assert.assertTrue
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
+import java.util.regex.Pattern
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
 class ExecutionResultTest extends ExecutionEngineFunSuite {
@@ -45,7 +44,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val pattern = Pattern.compile(regex)
 
     val stringDump = graph.withTx(tx => tx.execute(q).resultAsString())
-    assertTrue( "Columns did not appear in the expected order: \n" + stringDump, pattern.matcher(stringDump).find() )
+    assertTrue( pattern.matcher(stringDump).find(), "Columns did not appear in the expected order: \n" + stringDump )
   }
 
   test("correctLabelStatisticsForCreate") {

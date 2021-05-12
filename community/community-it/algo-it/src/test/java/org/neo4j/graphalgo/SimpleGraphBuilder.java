@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package common;
+package org.neo4j.graphalgo;
 
 import java.util.Collections;
 import java.util.HashMap;

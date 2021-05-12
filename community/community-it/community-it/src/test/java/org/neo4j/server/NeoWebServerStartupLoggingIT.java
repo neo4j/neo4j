@@ -19,9 +19,9 @@
  */
 package org.neo4j.server;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.net.http.HttpClient;
@@ -37,26 +37,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.server.AbstractNeoWebServer.NEO4J_IS_STARTING_MESSAGE;
 import static org.neo4j.server.helpers.WebContainerHelper.createNonPersistentContainer;
 
-public class NeoWebServerStartupLoggingIT extends ExclusiveWebContainerTestBase
+class NeoWebServerStartupLoggingIT extends ExclusiveWebContainerTestBase
 {
     private static ByteArrayOutputStream out;
     private static TestWebContainer webContainer;
 
-    @BeforeClass
-    public static void setupServer() throws Exception
+    @BeforeAll
+    static void setupServer() throws Exception
     {
         out = new ByteArrayOutputStream();
         webContainer = createNonPersistentContainer( new Log4jLogProvider( out ) );
     }
 
-    @AfterClass
-    public static void stopServer()
+    @AfterAll
+    static void stopServer()
     {
         webContainer.shutdown();
     }
 
     @Test
-    public void shouldLogStartup() throws Exception
+    void shouldLogStartup() throws Exception
     {
         // Check the logs
         var logContent = out.toString();

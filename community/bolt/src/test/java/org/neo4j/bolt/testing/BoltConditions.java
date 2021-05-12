@@ -40,15 +40,15 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.bolt.messaging.BoltResponseMessage.FAILURE;
 import static org.neo4j.bolt.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.runtime.statemachine.impl.BoltV4MachineRoom.newMachine;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class BoltConditions
+public final class BoltConditions
 {
     private BoltConditions()
     {

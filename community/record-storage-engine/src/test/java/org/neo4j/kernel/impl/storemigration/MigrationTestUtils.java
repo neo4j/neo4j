@@ -35,8 +35,8 @@ import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -46,8 +46,7 @@ public final class MigrationTestUtils
     {
     }
 
-    public static void changeVersionNumber( FileSystemAbstraction fileSystem, Path storeFile, String versionString )
-            throws IOException
+    static void changeVersionNumber( FileSystemAbstraction fileSystem, Path storeFile, String versionString ) throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
         try ( StoreChannel fileChannel = fileSystem.write( storeFile ) )
@@ -70,7 +69,7 @@ public final class MigrationTestUtils
         workingFs.copyRecursively( resourceDirectory, workingDirectory );
     }
 
-    public static Path findFormatStoreDirectoryForVersion( String version, Path targetDir ) throws IOException
+    static Path findFormatStoreDirectoryForVersion( String version, Path targetDir ) throws IOException
     {
         if ( StandardV3_4.STORE_VERSION.equals( version ) )
         {
@@ -131,7 +130,7 @@ public final class MigrationTestUtils
                         byte[] otherBytes = new byte[buffer.limit()];
                         buffer.get( otherBytes );
 
-                        assertArrayEquals( "Different content in " + originalFile, originalBytes, otherBytes );
+                        assertArrayEquals( originalBytes, otherBytes, "Different content in " + originalFile );
                     }
                 }
             }

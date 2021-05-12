@@ -49,9 +49,9 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 @ResourceLock( SHARED_RESOURCE )
@@ -141,13 +141,11 @@ abstract class TraversalTestBase
             {
                 current = levels.pop();
             }
-            assertTrue( "Should not contain node (" + nodeName
-                    + ") at level " + (3 - levels.size()),
-                    current.remove( nodeName ) );
+            assertTrue( current.remove( nodeName ), "Should not contain node (" + nodeName + ") at level " + (3 - levels.size()) );
         }
 
-        assertTrue( "Should have no more levels", levels.isEmpty() );
-        assertTrue( "Should be empty", current.isEmpty() );
+        assertTrue( levels.isEmpty(), "Should have no more levels" );
+        assertTrue( current.isEmpty(), "Should be empty" );
     }
 
     static final Representation<Entity> NAME_PROPERTY_REPRESENTATION = new PropertyRepresentation( "name" );
@@ -228,20 +226,20 @@ abstract class TraversalTestBase
         }
     }
 
-    protected static <T> void expect( Iterable<? extends T> items,
+    private static <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, String... expected )
     {
         expect( items, representation, new HashSet<>( Arrays.asList( expected ) ) );
     }
 
-    protected static <T> void expect( Iterable<? extends T> items,
+    private static <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, Set<String> expected )
     {
         Collection<String> encounteredItems = new ArrayList<>();
         for ( T item : items )
         {
             String repr = representation.represent( item );
-            assertTrue( repr + " not expected ", expected.remove( repr ) );
+            assertTrue( expected.remove( repr ), repr + " not expected " );
             encounteredItems.add( repr );
         }
 
@@ -274,7 +272,7 @@ abstract class TraversalTestBase
                 NAME_PROPERTY_REPRESENTATION ), expected );
     }
 
-    public static <E> void assertContains( Iterable<E> actual, E... expected )
+    static <E> void assertContains( Iterable<E> actual, E... expected )
     {
         Set<E> expectation = new HashSet<>( Arrays.asList( expected ) );
         for ( E element : actual )
@@ -295,7 +293,7 @@ abstract class TraversalTestBase
         T... expectedItems )
     {
         String collectionString = join( ", ", collection.toArray() );
-        assertEquals( collectionString, expectedItems.length, collection.size() );
+        assertEquals( expectedItems.length, collection.size(), collectionString );
         Iterator<T> itr = collection.iterator();
         for ( int i = 0; itr.hasNext(); i++ )
         {
@@ -309,7 +307,7 @@ abstract class TraversalTestBase
         assertContainsInOrder( Iterables.asCollection( collection ), expectedItems );
     }
 
-    public static <T> String join( String delimiter, T... items )
+    private static <T> String join( String delimiter, T... items )
     {
         StringBuilder buffer = new StringBuilder();
         for ( T item : items )

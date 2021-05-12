@@ -28,27 +28,20 @@ import org.neo4j.bolt.messaging.BoltResponseMessage;
 import org.neo4j.values.AnyValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class RecordedBoltResponse
 {
-    private List<AnyValue[]> records;
+    private final List<AnyValue[]> records = new ArrayList<>();
+    private final Map<String,AnyValue> metadata = new HashMap<>();
     private BoltResponseMessage response;
-    private Map<String,AnyValue> metadata;
 
-    public RecordedBoltResponse()
-    {
-        records = new ArrayList<>();
-        response = null;
-        metadata = new HashMap<>();
-    }
-
-    public void addFields( AnyValue[] fields )
+    void addFields( AnyValue[] fields )
     {
         records.add( fields );
     }
 
-    public void addMetadata( String key, AnyValue value )
+    void addMetadata( String key, AnyValue value )
     {
         metadata.put( key, value );
     }

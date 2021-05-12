@@ -19,9 +19,9 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.security.SecureRandom;
 import javax.net.ssl.HttpsURLConnection;
@@ -38,32 +38,32 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.InsecureTrustManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class HttpsAccessIT extends ExclusiveWebContainerTestBase
+class HttpsAccessIT extends ExclusiveWebContainerTestBase
 {
     private SSLSocketFactory originalSslSocketFactory;
     private TestWebContainer testWebContainer;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         originalSslSocketFactory = HttpsURLConnection.getDefaultSSLSocketFactory();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         HttpsURLConnection.setDefaultSSLSocketFactory( originalSslSocketFactory );
         testWebContainer.shutdown();
     }
 
     @Test
-    public void serverShouldSupportSsl() throws Exception
+    void serverShouldSupportSsl() throws Exception
     {
         startServer();
 
@@ -72,7 +72,7 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void txEndpointShouldReplyWithHttpsWhenItReturnsURLs() throws Exception
+    void txEndpointShouldReplyWithHttpsWhenItReturnsURLs() throws Exception
     {
         startServer();
 
@@ -84,7 +84,7 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldExposeBaseUriWhenHttpEnabledAndHttpsDisabled() throws Exception
+    void shouldExposeBaseUriWhenHttpEnabledAndHttpsDisabled() throws Exception
     {
         startServer( true, false );
         shouldInstallConnector( "http" );
@@ -92,7 +92,7 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldExposeBaseUriWhenHttpDisabledAndHttpsEnabled() throws Exception
+    void shouldExposeBaseUriWhenHttpDisabledAndHttpsEnabled() throws Exception
     {
         startServer( false, true );
         shouldInstallConnector( "https" );
@@ -123,7 +123,7 @@ public class HttpsAccessIT extends ExclusiveWebContainerTestBase
 
     private void startServer( boolean httpEnabled, boolean httpsEnabled ) throws Exception
     {
-        CommunityWebContainerBuilder serverBuilder = serverOnRandomPorts().usingDataDir( folder.directory( name.getMethodName() ).toAbsolutePath().toString() );
+        CommunityWebContainerBuilder serverBuilder = serverOnRandomPorts().usingDataDir( testDirectory.directory( methodName ).toAbsolutePath().toString() );
         if ( !httpEnabled )
         {
             serverBuilder.withHttpDisabled();

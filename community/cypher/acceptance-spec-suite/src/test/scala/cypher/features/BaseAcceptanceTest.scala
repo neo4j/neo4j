@@ -19,7 +19,7 @@
  */
 package cypher.features
 
-import org.junit.Assert.fail
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
 import org.opencypher.tools.tck.api.Scenario
 

@@ -19,39 +19,38 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.function.Function;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.PageCachedNumberArrayFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLog;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@RunWith( Parameterized.class )
-public class StringCollisionValuesTest
+@PageCacheExtension
+class StringCollisionValuesTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
-    @Rule
-    public final RandomRule random = new RandomRule().withConfiguration( new RandomValues.Default()
+    @RegisterExtension
+    static final RandomExtension randomExtension = new RandomExtension( new RandomValues.Default()
     {
         @Override
         public int stringMaxLength()
@@ -60,26 +59,32 @@ public class StringCollisionValuesTest
         }
     } );
 
-    @Parameters
-    public static Collection<Function<PageCacheAndDependenciesRule,NumberArrayFactory>> data()
+    @Inject
+    private RandomRule random;
+
+    @Inject
+    private TestDirectory testDirectory;
+
+    @Inject
+    private PageCache pageCache;
+
+    private static Stream<BiFunction<PageCache,Path,NumberArrayFactory>> data()
     {
-        return Arrays.asList(
-                storage -> NumberArrayFactories.HEAP,
-                storage -> NumberArrayFactories.OFF_HEAP,
-                storage -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
-                storage -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
-                storage -> new PageCachedNumberArrayFactory( storage.pageCache(), PageCacheTracer.NULL, storage.directory().homePath(),
+        return Stream.of(
+                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.HEAP,
+                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.OFF_HEAP,
+                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
+                ( PageCache pageCache, Path homePath ) -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
+                ( PageCache pageCache, Path homePath ) -> new PageCachedNumberArrayFactory( pageCache, PageCacheTracer.NULL, homePath,
                         NullLog.getInstance(), DEFAULT_DATABASE_NAME ) );
     }
 
-    @Parameter( 0 )
-    public Function<PageCacheAndDependenciesRule,NumberArrayFactory> factory;
-
-    @Test
-    public void shouldStoreAndLoadStrings()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    void shouldStoreAndLoadStrings( BiFunction<PageCache,Path,NumberArrayFactory> factory )
     {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000, INSTANCE ) )
+        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( pageCache, testDirectory.homePath() ), 10_000, INSTANCE ) )
         {
             // when
             long[] offsets = new long[100];
@@ -99,11 +104,12 @@ public class StringCollisionValuesTest
         }
     }
 
-    @Test
-    public void shouldMoveOverToNextChunkOnNearEnd()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    void shouldMoveOverToNextChunkOnNearEnd( BiFunction<PageCache,Path,NumberArrayFactory> factory )
     {
         // given
-        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( storage ), 10_000, INSTANCE ) )
+        try ( StringCollisionValues values = new StringCollisionValues( factory.apply( pageCache, testDirectory.homePath() ), 10_000, INSTANCE ) )
         {
             char[] chars = new char[PAGE_SIZE - 3];
             Arrays.fill( chars, 'a' );

@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphalgo.path;
 
-import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.Iterator;
 
 import org.neo4j.graphalgo.CommonEvaluators;
+import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.Dijkstra;

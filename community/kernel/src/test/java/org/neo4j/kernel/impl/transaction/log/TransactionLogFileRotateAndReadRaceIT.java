@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -49,6 +47,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -66,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * since it's non-deterministic.
  */
 @Neo4jLayoutExtension
-@ExtendWith( LifeExtension.class )
+@ExtendWith( {LifeExtension.class, OtherThreadExtension.class} )
 class TransactionLogFileRotateAndReadRaceIT
 {
     @Inject
@@ -75,24 +74,12 @@ class TransactionLogFileRotateAndReadRaceIT
     private FileSystemAbstraction fs;
     @Inject
     private DatabaseLayout databaseLayout;
-
-    private final OtherThreadRule t2 = new OtherThreadRule();
+    @Inject
+    private OtherThreadRule t2;
 
     // If any of these limits are reached the test ends, that or if there's a failure of course
     private static final int LIMIT_ROTATIONS = 100;
     private static final int LIMIT_READS = 1_000;
-
-    @BeforeEach
-    void setUp()
-    {
-        t2.init( getClass().getName() + "-T2" );
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        t2.close();
-    }
 
     @Test
     void shouldNotSeeEmptyLogFileWhenReadingTransactionStream() throws Exception

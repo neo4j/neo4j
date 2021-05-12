@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -45,7 +45,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.test.FormatCompatibilityVerifier;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -65,14 +65,14 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 
 public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
 {
-    @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
     private static final int ENTITY_ID = 19570320;
     private static final int NUMBER_OF_SLOTS = 2;
     private List<Value> values;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         values = new ArrayList<>();
@@ -287,7 +287,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     private void withCursor( Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException
     {
         ImmutableSet<OpenOption> openOptions = create ? immutable.of( WRITE, CREATE) : immutable.of( WRITE );
-        try ( PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( globalFs );
               PagedFile pagedFile = pageCache.map( storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions );
               PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL ) )
         {

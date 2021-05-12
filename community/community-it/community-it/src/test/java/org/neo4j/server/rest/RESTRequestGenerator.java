@@ -42,8 +42,8 @@ import static java.net.http.HttpRequest.BodyPublishers.ofString;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RESTRequestGenerator
 {
@@ -257,7 +257,7 @@ public class RESTRequestGenerator
             {
                 var name = headerField.first();
                 var verifier = headerField.other();
-                assertTrue( "Wrong headers: " + responseHeaders, verifier.test( responseHeaders.firstValue( name ).orElseThrow() ) );
+                assertTrue( verifier.test( responseHeaders.firstValue( name ).orElseThrow() ), "Wrong headers: " + responseHeaders );
             }
 
             assertEquals( responseCode, response.statusCode() );
@@ -282,7 +282,7 @@ public class RESTRequestGenerator
         private final String entity;
         private final JaxRsResponse response;
 
-        public ResponseEntity( HttpResponse<String> response )
+        ResponseEntity( HttpResponse<String> response )
         {
             this.response = new JaxRsResponse( response );
             this.entity = response.body();

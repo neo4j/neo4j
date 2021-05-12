@@ -27,6 +27,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -42,13 +43,36 @@ public class DependenciesCollector extends ClassVisitor
     private final FieldVisitor fieldVisitor;
 
     private final Set<String> descriptors = new HashSet<>();
+    private final Set<String> seenClasses = new HashSet<>();
+    private final Deque<String> classes;
 
-    DependenciesCollector()
+    DependenciesCollector( Deque<String> classes )
     {
         super( API_VERSION );
+        this.classes = classes;
         this.annotationVisitor = new AnnotationClassCollectorVisitor( API_VERSION, descriptors );
         this.methodVisitor = new MethodClassCollectorVisitor( API_VERSION, descriptors, annotationVisitor );
         this.fieldVisitor = new FieldClassCollectorVisitor( API_VERSION, descriptors, annotationVisitor );
+    }
+
+    @Override
+    public void visit( int version, int access, String name, String signature, String superName, String[] interfaces )
+    {
+        if ( superName != null && seenClasses.add( superName ) )
+        {
+            classes.push( superName );
+        }
+        super.visit( version, access, name, signature, superName, interfaces );
+    }
+
+    @Override
+    public void visitInnerClass( String name, String outerName, String innerName, int access )
+    {
+        if ( seenClasses.add( name ) )
+        {
+            classes.push( name );
+        }
+        super.visitInnerClass( name, outerName, innerName, access );
     }
 
     @Override

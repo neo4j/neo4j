@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.server.helpers.TestWebContainer;
@@ -32,13 +32,12 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
-public class AuthorizationDisabledIT extends ExclusiveWebContainerTestBase
+class AuthorizationDisabledIT extends ExclusiveWebContainerTestBase
 {
-
     private TestWebContainer testWebContainer;
 
     @Test
-    public void shouldAllowDisablingAuthorization() throws Exception
+    void shouldAllowDisablingAuthorization() throws Exception
     {
         // Given
         testWebContainer = serverOnRandomPorts()
@@ -59,8 +58,8 @@ public class AuthorizationDisabledIT extends ExclusiveWebContainerTestBase
         assertThat( responseBody ).contains( "My Node" );
     }
 
-    @After
-    public void cleanup()
+    @AfterEach
+    void cleanup()
     {
         if ( testWebContainer != null )
         {

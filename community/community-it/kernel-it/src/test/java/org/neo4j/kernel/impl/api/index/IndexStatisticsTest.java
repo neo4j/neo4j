@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,10 +53,15 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsController;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.util.concurrent.Futures;
 import org.neo4j.values.storable.Values;
@@ -67,9 +69,9 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -85,7 +87,9 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
  * The area around when the index population is done is controlled using a {@link Barrier} so that we can assert sample data
  * with 100% accuracy against the updates we know that the test has done during the time the index was populating.
  */
-public class IndexStatisticsTest
+@ExtendWith( RandomExtension.class )
+@DbmsExtension( configurationCallback = "configure" )
+class IndexStatisticsTest
 {
     private static final String[] NAMES = new String[]{
             "Andres", "Davide", "Jakub", "Chris", "Tobias", "Stefan", "Petra", "Rickard", "Mattias", "Emil", "Chris",
@@ -93,33 +97,37 @@ public class IndexStatisticsTest
     };
     private static final double UNIQUE_NAMES = Arrays.stream( NAMES ).distinct().count();
 
-    private static final int CREATION_MULTIPLIER =
-            Integer.getInteger( IndexStatisticsTest.class.getName() + ".creationMultiplier", 1_000 );
+    private static final int CREATION_MULTIPLIER = Integer.getInteger( IndexStatisticsTest.class.getName() + ".creationMultiplier", 1_000 );
     private static final String PERSON_LABEL = "Person";
     private static final String NAME_PROPERTY = "name";
 
-    @Rule
-    public final DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, false )
-            .withSetting( GraphDatabaseInternalSettings.index_population_print_debug, true )
-            .startLazily();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private DbmsController dbmsController;
+
+    @Inject
+    private GraphDatabaseAPI db;
+
+    @Inject
+    private RandomRule random;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, false );
+        builder.setConfig( GraphDatabaseInternalSettings.index_population_print_debug, true );
+
+        int batchSize = random.nextInt( 1, 5 );
+        builder.setConfig(  GraphDatabaseInternalSettings.index_population_queue_threshold, batchSize );
+
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( indexOnlineMonitor );
+        builder.setMonitors( monitors );
+    }
 
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
-    @Before
-    public void before()
-    {
-        int batchSize = random.nextInt( 1, 5 );
-        db.withSetting( GraphDatabaseInternalSettings.index_population_queue_threshold, batchSize );
-        db.getGraphDatabaseAPI().getDependencyResolver()
-                .resolveDependency( Monitors.class )
-                .addMonitorListener( indexOnlineMonitor );
-    }
-
     @Test
-    public void shouldProvideIndexStatisticsForDataCreatedWhenPopulationBeforeTheIndexIsOnline() throws KernelException
+    void shouldProvideIndexStatisticsForDataCreatedWhenPopulationBeforeTheIndexIsOnline() throws KernelException
     {
         // given
         indexOnlineMonitor.initialize( 0 );
@@ -136,7 +144,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldUpdateIndexStatisticsForDataCreatedAfterCleanRestart() throws KernelException, IOException
+    void shouldUpdateIndexStatisticsForDataCreatedAfterCleanRestart() throws KernelException
     {
         // given
         indexOnlineMonitor.initialize( 0 );
@@ -146,7 +154,7 @@ public class IndexStatisticsTest
         long indexUpdatesBeforeRestart = indexUpdates( index );
 
         // when
-        db.restartDatabase();
+        dbmsController.restartDatabase( db.databaseName() );
         createSomePersons();
 
         // then
@@ -154,7 +162,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldNotSeeDataCreatedAfterPopulation() throws KernelException
+    void shouldNotSeeDataCreatedAfterPopulation() throws KernelException
     {
         // given
         indexOnlineMonitor.initialize( 0 );
@@ -171,8 +179,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsForDataSeenDuringPopulationAndIgnoreDataCreatedAfterPopulation()
-            throws KernelException
+    void shouldProvideIndexStatisticsForDataSeenDuringPopulationAndIgnoreDataCreatedAfterPopulation() throws KernelException
     {
         // given
         indexOnlineMonitor.initialize( 0 );
@@ -190,7 +197,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldRemoveIndexStatisticsAfterIndexIsDeleted() throws KernelException
+    void shouldRemoveIndexStatisticsAfterIndexIsDeleted() throws KernelException
     {
         // given
         indexOnlineMonitor.initialize( 0 );
@@ -221,7 +228,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexSelectivityWhenThereAreManyDuplicates() throws Exception
+    void shouldProvideIndexSelectivityWhenThereAreManyDuplicates() throws Exception
     {
         // given some initial data
         indexOnlineMonitor.initialize( 0 );
@@ -238,7 +245,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditions() throws Exception
+    void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditions() throws Exception
     {
         // given some initial data
         indexOnlineMonitor.initialize( 1 );
@@ -258,7 +265,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndDeletions() throws Exception
+    void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndDeletions() throws Exception
     {
         // given some initial data
         indexOnlineMonitor.initialize( 1 );
@@ -281,7 +288,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChanges() throws Exception
+    void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChanges() throws Exception
     {
         // given some initial data
         indexOnlineMonitor.initialize( 1 );
@@ -304,7 +311,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChangesAndDeletions() throws Exception
+    void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChangesAndDeletions() throws Exception
     {
         // given some initial data
         indexOnlineMonitor.initialize( 1 );
@@ -327,7 +334,7 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldWorkWhileHavingHeavyConcurrentUpdates() throws Exception
+    void shouldWorkWhileHavingHeavyConcurrentUpdates() throws Exception
     {
         // given some initial data
         final long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER );
@@ -731,7 +738,7 @@ public class IndexStatisticsTest
         String message = format(
                 "Expected number of index updates to not differ (expected: %d actual: %d). %s",
                 expected, actual, info );
-        Assertions.assertThat( Math.abs( expected - actual ) ).as( message ).isLessThanOrEqualTo( actual / 10 );
+        assertThat( Math.abs( expected - actual ) ).as( message ).isLessThanOrEqualTo( actual / 10 );
     }
 
     private void assertCorrectIndexSelectivity( IndexDescriptor index, long numberOfEntries ) throws KernelException
@@ -743,7 +750,7 @@ public class IndexStatisticsTest
         String message = format(
                 "Expected number of entries to not differ (expected: %f actual: %f)",
                 expected, actual );
-        assertEquals( message, expected, actual, maxDelta );
+        assertEquals( expected, actual, maxDelta, message );
     }
 
     private class IndexOnlineMonitor extends IndexingService.MonitorAdapter

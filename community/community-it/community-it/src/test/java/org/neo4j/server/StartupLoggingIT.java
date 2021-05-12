@@ -20,8 +20,7 @@
 package org.neo4j.server;
 
 import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -38,8 +37,6 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 
 import static java.util.Arrays.asList;
@@ -49,21 +46,15 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.AbstractNeoWebServer.NEO4J_IS_STARTING_MESSAGE;
 
-public class StartupLoggingIT extends ExclusiveWebContainerTestBase
+class StartupLoggingIT extends ExclusiveWebContainerTestBase
 {
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-
     @Test
-    public void shouldLogHelpfulStartupMessages()
+    void shouldLogHelpfulStartupMessages()
     {
         CommunityBootstrapper bootstrapper = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
 
-        bootstrapper.start( testDir.homePath(), Path.of( "nonexistent-file.conf" ), propertyPairs, false);
+        bootstrapper.start( testDirectory.homePath(), Path.of( "nonexistent-file.conf" ), propertyPairs, false);
         var resolver = getDependencyResolver( bootstrapper.getDatabaseManagementService() );
         URI uri = resolver.resolveDependency( AbstractNeoWebServer.class ).getBaseUri();
         bootstrapper.stop();
@@ -89,8 +80,8 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
     {
         Map<String,String> properties = new HashMap<>();
 
-        properties.put( GraphDatabaseSettings.data_directory.name(), testDir.homePath().toString() );
-        properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.homePath().toString() );
+        properties.put( GraphDatabaseSettings.data_directory.name(), testDirectory.homePath().toString() );
+        properties.put( GraphDatabaseSettings.logs_directory.name(), testDirectory.homePath().toString() );
         properties.put( GraphDatabaseSettings.allow_upgrade.name(), TRUE );
 
         properties.put( HttpConnector.listen_address.name(), "localhost:0" );
@@ -103,7 +94,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         properties.put( BoltConnector.listen_address.name(), "localhost:0" );
         properties.put( BoltConnector.encryption_level.name(), "DISABLED" );
 
-        properties.put( GraphDatabaseInternalSettings.databases_root_path.name(), testDir.absolutePath().toString() );
+        properties.put( GraphDatabaseInternalSettings.databases_root_path.name(), testDirectory.absolutePath().toString() );
         return properties;
     }
 

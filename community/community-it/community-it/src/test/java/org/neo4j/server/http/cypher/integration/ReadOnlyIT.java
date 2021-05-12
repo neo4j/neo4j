@@ -20,39 +20,35 @@
 package org.neo4j.server.http.cypher.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.server.helpers.TestWebContainer;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.server.helpers.WebContainerHelper.cleanTheDatabase;
 import static org.neo4j.server.helpers.WebContainerHelper.createReadOnlyContainer;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class ReadOnlyIT extends ExclusiveWebContainerTestBase
+class ReadOnlyIT extends ExclusiveWebContainerTestBase
 {
-    @Rule
-    public TestDirectory dir = TestDirectory.testDirectory();
     private TestWebContainer readOnlyContainer;
     private HTTP.Builder http;
 
-    @Before
-    public void setup() throws Exception
+    @BeforeEach
+    void setup() throws Exception
     {
         cleanTheDatabase( readOnlyContainer );
-        readOnlyContainer = createReadOnlyContainer( dir.homePath() );
+        readOnlyContainer = createReadOnlyContainer( testDirectory.homePath() );
         http = HTTP.withBaseUri( readOnlyContainer.getBaseUri() );
     }
 
-    @After
-    public void teardown()
+    @AfterEach
+    void teardown()
     {
         if ( readOnlyContainer != null )
         {
@@ -61,7 +57,7 @@ public class ReadOnlyIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception
+    void shouldReturnReadOnlyStatusWhenCreatingNodes() throws Exception
     {
         // Given
         HTTP.Response response = http.POST( txEndpoint(),
@@ -77,7 +73,7 @@ public class ReadOnlyIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldReturnReadOnlyStatusWhenCreatingNodesWhichTransitivelyCreateTokens() throws Exception
+    void shouldReturnReadOnlyStatusWhenCreatingNodesWhichTransitivelyCreateTokens() throws Exception
     {
         // Given
         // When

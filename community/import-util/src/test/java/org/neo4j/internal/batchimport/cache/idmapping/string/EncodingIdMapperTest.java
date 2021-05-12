@@ -19,11 +19,9 @@
  */
 package org.neo4j.internal.batchimport.cache.idmapping.string;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
+import java.util.stream.Stream;
 
 import org.neo4j.function.Factory;
 import org.neo4j.internal.batchimport.PropertyValueLookup;
@@ -45,12 +44,14 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Math.toIntExact;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -63,38 +64,33 @@ import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@RunWith( Parameterized.class )
+@ExtendWith( RandomExtension.class )
 public class EncodingIdMapperTest
 {
-    @Parameters( name = "processors:{0}" )
-    public static Collection<Object[]> data()
+    @Inject
+    private RandomRule random;
+
+    private final Groups groups = new Groups();
+
+    private static Stream<Integer> data()
     {
-        Collection<Object[]> data = new ArrayList<>();
-        data.add( new Object[]{1} );
-        data.add( new Object[]{2} );
+        Collection<Integer> data = new ArrayList<>();
+        data.add( 1 );
+        data.add( 2 );
         int bySystem = Runtime.getRuntime().availableProcessors() - 1;
         if ( bySystem > 2 )
         {
-            data.add( new Object[]{bySystem} );
+            data.add( bySystem );
         }
-        return data;
+        return data.stream();
     }
 
-    private final int processors;
-    private final Groups groups = new Groups();
-    @Rule
-    public final RandomRule random = new RandomRule();
-
-    public EncodingIdMapperTest( int processors )
-    {
-        this.processors = processors;
-    }
-
-    @Test
-    public void shouldHandleGreatAmountsOfStuff()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldHandleGreatAmountsOfStuff( int processors )
     {
         // GIVEN
-        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
         PropertyValueLookup inputIdLookup = String::valueOf;
         int count = 300_000;
 
@@ -117,11 +113,12 @@ public class EncodingIdMapperTest
         }
     }
 
-    @Test
-    public void shouldReturnExpectedValueForNotFound()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldReturnExpectedValueForNotFound( int processors )
     {
         // GIVEN
-        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
         idMapper.prepare( null, mock( Collector.class ), NONE );
 
         // WHEN
@@ -131,11 +128,12 @@ public class EncodingIdMapperTest
         assertEquals( IdMapper.ID_NOT_FOUND, id );
     }
 
-    @Test
-    public void shouldReportyProgressForSortAndDetect()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldReportyProgressForSortAndDetect( int processors )
     {
         // GIVEN
-        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
         ProgressListener progress = mock( ProgressListener.class );
         idMapper.prepare( null, mock( Collector.class ), progress );
 
@@ -148,11 +146,12 @@ public class EncodingIdMapperTest
         verify( progress, times( 3 ) ).done();
     }
 
-    @Test
-    public void shouldEncodeShortStrings()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldEncodeShortStrings( int processors )
     {
         // GIVEN
-        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
 
         // WHEN
         mapper.put( "123", 0, Group.GLOBAL );
@@ -164,13 +163,14 @@ public class EncodingIdMapperTest
         assertEquals( 0L, mapper.get( "123", Group.GLOBAL ) );
     }
 
-    @Test
-    public void shouldEncodeSmallSetOfRandomData()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldEncodeSmallSetOfRandomData( int processors )
     {
         // GIVEN
         int size = random.nextInt( 10_000 ) + 2;
         ValueType type = ValueType.values()[random.nextInt( ValueType.values().length )];
-        IdMapper mapper = mapper( type.encoder(), type.radix(), EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( type.encoder(), type.radix(), EncodingIdMapper.NO_MONITOR, processors );
 
         // WHEN
         ValueGenerator values = new ValueGenerator( type.data( random.random() ) );
@@ -184,15 +184,16 @@ public class EncodingIdMapperTest
         for ( int nodeId = 0; nodeId < size; nodeId++ )
         {
             Object value = values.values.get( nodeId );
-            assertEquals( "Expected " + value + " to map to " + nodeId, nodeId, mapper.get( value, Group.GLOBAL ) );
+            assertEquals( nodeId, mapper.get( value, Group.GLOBAL ), "Expected " + value + " to map to " + nodeId );
         }
     }
 
-    @Test
-    public void shouldReportCollisionsForSameInputId()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldReportCollisionsForSameInputId( int processors )
     {
         // GIVEN
-        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
         PropertyValueLookup values = values( "10", "9", "10" );
         for ( int i = 0; i < 3; i++ )
         {
@@ -208,14 +209,15 @@ public class EncodingIdMapperTest
         verifyNoMoreInteractions( collector );
     }
 
-    @Test
-    public void shouldCopeWithCollisionsBasedOnDifferentInputIds()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldCopeWithCollisionsBasedOnDifferentInputIds( int processors )
     {
         // GIVEN
         EncodingIdMapper.Monitor monitor = mock( EncodingIdMapper.Monitor.class );
         Encoder encoder = mock( Encoder.class );
         when( encoder.encode( any() ) ).thenReturn( 12345L );
-        IdMapper mapper = mapper( encoder, Radix.STRING, monitor );
+        IdMapper mapper = mapper( encoder, Radix.STRING, monitor, processors );
         PropertyValueLookup ids = values( "10", "9" );
         for ( int i = 0; i < 2; i++ )
         {
@@ -237,8 +239,9 @@ public class EncodingIdMapperTest
         verify( progress, times( 7 ) ).done();
     }
 
-    @Test
-    public void shouldCopeWithMixedActualAndAccidentalCollisions()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldCopeWithMixedActualAndAccidentalCollisions( int processors )
     {
         // GIVEN
         EncodingIdMapper.Monitor monitor = mock( EncodingIdMapper.Monitor.class );
@@ -258,7 +261,7 @@ public class EncodingIdMapperTest
         when( encoder.encode( f ) ).thenReturn( 1L );
         Group groupA = groups.getOrCreate( "A" );
         Group groupB = groups.getOrCreate( "B" );
-        IdMapper mapper = mapper( encoder, Radix.STRING, monitor );
+        IdMapper mapper = mapper( encoder, Radix.STRING, monitor, processors );
         PropertyValueLookup ids = values( "a", "b", "c", "a", "e", "f" );
         Group[] groups = new Group[] {groupA, groupA, groupA, groupB, groupB, groupB};
 
@@ -287,14 +290,15 @@ public class EncodingIdMapperTest
         assertEquals( 5L, mapper.get( f, groupB ) );
     }
 
-    @Test
-    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups( int processors )
     {
         // GIVEN
         EncodingIdMapper.Monitor monitor = mock( EncodingIdMapper.Monitor.class );
         Group firstGroup = groups.getOrCreate( "first" );
         Group secondGroup = groups.getOrCreate( "second" );
-        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, monitor, processors );
         PropertyValueLookup ids = values( "10", "9", "10" );
         int id = 0;
         // group 0
@@ -314,14 +318,15 @@ public class EncodingIdMapperTest
         assertFalse( mapper.leftOverDuplicateNodesIds().hasNext() );
     }
 
-    @Test
-    public void shouldOnlyFindInputIdsInSpecificGroup()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldOnlyFindInputIdsInSpecificGroup( int processors )
     {
         // GIVEN
         Group firstGroup = groups.getOrCreate( "first" );
         Group secondGroup = groups.getOrCreate( "second" );
         Group thirdGroup = groups.getOrCreate( "third" );
-        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
         PropertyValueLookup ids = values( "8", "9", "10" );
         int id = 0;
         mapper.put( ids.lookupProperty( id ), id++, firstGroup );
@@ -343,8 +348,9 @@ public class EncodingIdMapperTest
         assertEquals( 2L, mapper.get( "10", thirdGroup ) );
     }
 
-    @Test
-    public void shouldHandleManyGroups()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldHandleManyGroups( int processors )
     {
         // GIVEN
         int size = 256; // which results in GLOBAL (0) + 1-256 = 257 groups, i.e. requiring two bytes
@@ -352,7 +358,7 @@ public class EncodingIdMapperTest
         {
             groups.getOrCreate( "" + i );
         }
-        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR, processors );
 
         // WHEN
         for ( int i = 0; i < size; i++ )
@@ -369,8 +375,9 @@ public class EncodingIdMapperTest
         }
     }
 
-    @Test
-    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups( int processors )
     {
         // GIVEN
         final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
@@ -381,7 +388,7 @@ public class EncodingIdMapperTest
             groups.getOrCreate( "Group " + i );
         }
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
-                                  numberOfCollisions -> new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE ) );
+                                  numberOfCollisions -> new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE ), processors );
         final AtomicReference<Group> group = new AtomicReference<>();
         PropertyValueLookup ids = nodeId ->
         {
@@ -426,11 +433,12 @@ public class EncodingIdMapperTest
         assertFalse( mapper.leftOverDuplicateNodesIds().hasNext() );
     }
 
-    @Test
-    public void shouldHandleHolesInIdSequence()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldHandleHolesInIdSequence( int processors )
     {
         // GIVEN
-        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR, processors );
         List<Object> ids = new ArrayList<>();
         for ( int i = 0; i < 100; i++ )
         {
@@ -452,11 +460,12 @@ public class EncodingIdMapperTest
         }
     }
 
-    @Test
-    public void shouldHandleLargeAmountsOfDuplicateNodeIds()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldHandleLargeAmountsOfDuplicateNodeIds( int processors )
     {
         // GIVEN
-        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, EncodingIdMapper.NO_MONITOR, processors );
         long nodeId = 0;
         int high = 10;
         // a list of input ids
@@ -484,11 +493,12 @@ public class EncodingIdMapperTest
         assertEquals( high, count( mapper.leftOverDuplicateNodesIds() ) );
     }
 
-    @Test
-    public void shouldDetectLargeAmountsOfCollisions()
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldDetectLargeAmountsOfCollisions( int processors )
     {
         // GIVEN
-        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
         int count = 20_000;
         List<Object> ids = new ArrayList<>();
         long id = 0;
@@ -512,11 +522,12 @@ public class EncodingIdMapperTest
         assertEquals( count, collector.count );
     }
 
-    @Test
-    public void shouldPutFromMultipleThreads() throws Throwable
+    @ParameterizedTest( name = "processors:{0}" )
+    @MethodSource( "data" )
+    public void shouldPutFromMultipleThreads( int processors ) throws Throwable
     {
         // GIVEN
-        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors );
         AtomicLong highNodeId = new AtomicLong();
         int batchSize = 1234;
         Race race = new Race();
@@ -565,19 +576,19 @@ public class EncodingIdMapperTest
         return value -> values[toIntExact( value )];
     }
 
-    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor )
+    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, int processors )
     {
         return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups, autoDetect( encoder ),
                                      1_000, processors, ParallelSort.DEFAULT, INSTANCE );
     }
 
-    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, ParallelSort.Comparator comparator )
+    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, ParallelSort.Comparator comparator, int processors )
     {
-        return mapper( encoder, radix, monitor, comparator, autoDetect( encoder ) );
+        return mapper( encoder, radix, monitor, comparator, autoDetect( encoder ), processors );
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, ParallelSort.Comparator comparator,
-            LongFunction<CollisionValues> collisionValuesFactory )
+            LongFunction<CollisionValues> collisionValuesFactory, int processors )
     {
         return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
                                      collisionValuesFactory, 1_000, processors, comparator, INSTANCE );

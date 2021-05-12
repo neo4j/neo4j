@@ -59,13 +59,13 @@ public class ThreadingRule extends ExternalResource
     };
 
     @Override
-    protected void before()
+    public void before()
     {
         executor = Executors.newCachedThreadPool();
     }
 
     @Override
-    protected void after()
+    public void after()
     {
         try
         {

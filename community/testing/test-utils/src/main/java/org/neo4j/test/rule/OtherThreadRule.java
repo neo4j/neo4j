@@ -44,14 +44,9 @@ public class OtherThreadRule implements TestRule
         this( null );
     }
 
-    public OtherThreadRule( String name )
+    private OtherThreadRule( String name )
     {
         set( name, 60, SECONDS );
-    }
-
-    public OtherThreadRule( long timeout, TimeUnit unit )
-    {
-        set( null, timeout, unit );
     }
 
     public void set( long timeout, TimeUnit unit )

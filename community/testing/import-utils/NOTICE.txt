@@ -54,8 +54,6 @@ Eclipse Public License v2.0
   JUnit Jupiter API
   JUnit Jupiter Params
   JUnit Platform Commons
-  JUnit Platform Engine API
-  JUnit Vintage Engine
 
 GNU Lesser General Public License, Version 2.1
   Java Native Access

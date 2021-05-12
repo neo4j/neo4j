@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import common.Neo4jAlgoTestCase;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
+import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
 

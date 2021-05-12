@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;

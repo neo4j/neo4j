@@ -38,17 +38,17 @@ import org.neo4j.test.server.SharedWebContainerTestBase;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase implements GraphHolder
 {
     @RegisterExtension
-    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this ) );
+    TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this ) );
 
     @RegisterExtension
-    public TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
+    protected TestData<RESTRequestGenerator> gen = TestData.producedThrough( RESTRequestGenerator.PRODUCER );
 
     @Override
     public GraphDatabaseService graphdb()
@@ -61,7 +61,7 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
         return ((GraphDatabaseAPI)graphdb()).getDependencyResolver().resolveDependency( cls );
     }
 
-    protected static String defaultDatabaseUri()
+    private static String defaultDatabaseUri()
     {
         return databaseUri( "neo4j" );
     }
@@ -111,21 +111,21 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
         return defaultDatabaseUri() + "tx/" + txId;
     }
 
-    public static long extractTxId( HTTP.Response response )
+    protected static long extractTxId( HTTP.Response response )
     {
         int lastSlash = response.location().lastIndexOf( '/' );
         String txIdString = response.location().substring( lastSlash + 1 );
         return Long.parseLong( txIdString );
     }
 
-    public static int getLocalHttpPort()
+    protected static int getLocalHttpPort()
     {
         GraphDatabaseAPI database = container().getDefaultDatabase();
         ConnectorPortRegister connectorPortRegister = database.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 
-    public static HTTP.Response runQuery( String query, String... contentTypes )
+    protected static HTTP.Response runQuery( String query, String... contentTypes )
     {
         String resultDataContents = "";
         if ( contentTypes.length > 0 )
@@ -136,18 +136,18 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
         return POST( txCommitUri(), quotedJson( format( "{'statements': [{'statement': '%s'%s}]}", query, resultDataContents) ) );
     }
 
-    public static void assertNoErrors( HTTP.Response response ) throws JsonParseException
+    protected static void assertNoErrors( HTTP.Response response ) throws JsonParseException
     {
         assertEquals( "[]", response.get( "errors" ).toString() );
         assertEquals( 0, response.get( "errors" ).size() );
     }
 
-    public static void assertHasTxLocation( HTTP.Response begin )
+    protected static void assertHasTxLocation( HTTP.Response begin )
     {
         assertThat( begin.location() ).matches( txUri() + "/\\d+" );
     }
 
-    public static void assertHasTxLocation( HTTP.Response begin, String txUri )
+    protected static void assertHasTxLocation( HTTP.Response begin, String txUri )
     {
         assertThat( begin.location() ).matches( format( "http://localhost:\\d+/%s/\\d+", txUri ) );
     }

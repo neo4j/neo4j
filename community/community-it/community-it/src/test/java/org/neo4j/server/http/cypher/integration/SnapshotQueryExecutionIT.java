@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -41,13 +41,13 @@ import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 import static org.neo4j.snapshot.TestVersionContext.testCursorContext;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
+class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
 {
     private TestTransactionVersionContextSupplier testContextSupplier;
     private TestWebContainer testWebContainer;
@@ -55,8 +55,8 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     private final CopyOnWriteArrayList<TestVersionContext> contexts = new CopyOnWriteArrayList<>();
     private final LongSupplier idSupplier = () -> lastTransactionIdSource.getAsLong();
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         testContextSupplier = new TestTransactionVersionContextSupplier();
         var dependencies = new Dependencies();
@@ -89,8 +89,8 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
         }
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( testWebContainer != null )
         {
@@ -99,7 +99,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void executeQueryWithSingleRetry()
+    void executeQueryWithSingleRetry()
     {
         lastTransactionIdSource = new ArrayBasedLongSupplier();
         HTTP.Response response = executeOverHTTP( "MATCH (n) RETURN n.c" );
@@ -111,7 +111,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
+    void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
     {
         lastTransactionIdSource = () -> 1;
         HTTP.Response response = executeOverHTTP( "MATCH (n:toRetry) CREATE () RETURN n.c" );

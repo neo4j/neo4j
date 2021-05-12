@@ -19,25 +19,25 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityWebContainerBuilder.serverOnRandomPorts;
 
-public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
+class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
 {
     private TestWebContainer testWebContainer;
 
     @Test
-    public void shouldWhitelistBrowser() throws Exception
+    void shouldWhitelistBrowser() throws Exception
     {
         // Given
         assumeTrue( browserIsLoaded() );
@@ -50,7 +50,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldNotWhitelistConsoleService() throws Exception
+    void shouldNotWhitelistConsoleService() throws Exception
     {
         // Given
         testWebContainer = serverOnRandomPorts()
@@ -62,7 +62,7 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
     }
 
     @Test
-    public void shouldNotWhitelistDB() throws Exception
+    void shouldNotWhitelistDB() throws Exception
     {
         // Given
         testWebContainer = serverOnRandomPorts()
@@ -73,8 +73,8 @@ public class AuthorizationWhitelistIT extends ExclusiveWebContainerTestBase
         assertThat( response.status() ).isEqualTo( 401 );
     }
 
-    @After
-    public void cleanup()
+    @AfterEach
+    void cleanup()
     {
         if ( testWebContainer != null )
         {

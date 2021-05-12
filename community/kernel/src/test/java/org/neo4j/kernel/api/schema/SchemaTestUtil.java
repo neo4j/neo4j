@@ -23,9 +23,9 @@ import org.neo4j.common.TokenNameLookup;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SchemaTestUtil
+public final class SchemaTestUtil
 {
     private SchemaTestUtil()
     {
@@ -33,8 +33,8 @@ public class SchemaTestUtil
 
     public static void assertEquality( Object o1, Object o2 )
     {
-        assertEquals( o1.getClass().getSimpleName() + "s are not equal", o1, o2 );
-        assertEquals( o1.getClass().getSimpleName() + "s do not have the same hashcode", o1.hashCode(), o2.hashCode() );
+        assertEquals( o1, o2, o1.getClass().getSimpleName() + "s are not equal" );
+        assertEquals( o1.hashCode(), o2.hashCode(), o1.getClass().getSimpleName() + "s do not have the same hashcode" );
     }
 
     static void assertArray( int[] values, int... expected )
@@ -42,7 +42,7 @@ public class SchemaTestUtil
         assertThat( values.length ).isEqualTo( expected.length );
         for ( int i = 0; i < values.length; i++ )
         {
-            assertEquals( format( "Expected %d, got %d at index %d", expected[i], values[i], i ), values[i], expected[i] );
+            assertEquals( values[i], expected[i], format( "Expected %d, got %d at index %d", expected[i], values[i], i ) );
         }
     }
 

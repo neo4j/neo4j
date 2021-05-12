@@ -19,19 +19,15 @@
  */
 package org.neo4j.upgrade;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
@@ -73,14 +69,15 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
@@ -88,30 +85,24 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasFormatVersion;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@RunWith( Parameterized.class )
+@TestDirectoryExtension
 public class StoreUpgraderInterruptionTestIT
 {
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
-
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( directory )
-                                          .around( fileSystemRule ).around( pageCacheRule );
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private FileSystemAbstraction fs;
 
-    @Parameterized.Parameter
-    public String version;
-
-    @Parameters( name = "{0}" )
-    public static Collection<String> versions()
+    private static Stream<Arguments> versions()
     {
-        return Collections.singletonList( StandardV3_4.STORE_VERSION );
+        return Stream.of( Arguments.of( StandardV3_4.STORE_VERSION ) );
     }
 
-    private final FileSystemAbstraction fs = fileSystemRule.get();
     private JobScheduler jobScheduler;
     private Neo4jLayout neo4jLayout;
     private DatabaseLayout workingDatabaseLayout;
@@ -121,29 +112,30 @@ public class StoreUpgraderInterruptionTestIT
     private RecordFormats baselineFormat;
     private RecordFormats successorFormat;
 
-    @Before
-    public void setUpLabelScanStore()
+    public void init( String version )
     {
         jobScheduler = new ThreadPoolJobScheduler();
         neo4jLayout = Neo4jLayout.of( directory.homePath() );
         workingDatabaseLayout = neo4jLayout.databaseLayout( DEFAULT_DATABASE_NAME );
         prepareDirectory = directory.directory( "prepare" );
         legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
-        pageCache = pageCacheRule.getPageCache( fs );
+        pageCache = pageCacheExtension.getPageCache( fs );
         baselineFormat = RecordFormatSelector.selectForVersion( version );
         successorFormat = RecordFormatSelector.findLatestFormatInFamily( baselineFormat ).orElse( baselineFormat );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         jobScheduler.close();
     }
 
-    @Test
-    public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration()
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMigration( String version )
             throws IOException, ConsistencyCheckIncompleteException
     {
+        init( version );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
@@ -193,9 +185,11 @@ public class StoreUpgraderInterruptionTestIT
                 StorageEngineFactory.defaultStorageEngine(), true );
     }
 
-    @Test
-    public void tracePageCacheAccessOnIdStoreUpgrade() throws IOException, ConsistencyCheckIncompleteException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    public void tracePageCacheAccessOnIdStoreUpgrade( String version ) throws IOException, ConsistencyCheckIncompleteException
     {
+        init( version );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
@@ -226,10 +220,12 @@ public class StoreUpgraderInterruptionTestIT
         assertEquals( 226, recordMigratorTracer.unpins() );
     }
 
-    @Test
-    public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMovingFiles()
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    public void shouldSucceedWithUpgradeAfterPreviousAttemptDiedDuringMovingFiles( String version )
             throws IOException, ConsistencyCheckIncompleteException
     {
+        init( version );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );

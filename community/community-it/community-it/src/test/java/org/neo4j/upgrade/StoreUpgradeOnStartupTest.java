@@ -19,17 +19,13 @@
  */
 package org.neo4j.upgrade;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -49,13 +45,13 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -63,65 +59,60 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoSt
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgraderTest.removeCheckPointFromTxLog;
 
-@RunWith( Parameterized.class )
+@PageCacheExtension
 public class StoreUpgradeOnStartupTest
 {
-    private final TestDirectory testDir = TestDirectory.testDirectory();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir )
-            .around( fileSystemRule ).around( pageCacheRule );
-
-    @Parameterized.Parameter( 0 )
-    public String version;
-
+    @Inject
+    private TestDirectory testDir;
+    @Inject
+    private PageCache pageCache;
+    @Inject
     private FileSystemAbstraction fileSystem;
+
     private DatabaseLayout workingDatabaseLayout;
     private StoreVersionCheck check;
     private Path workingHomeDir;
     private DatabaseManagementService managementService;
-    private RecordFormats baselineFormat;
     private RecordFormats successorFormat;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<String> versions()
+    private static Stream<Arguments> versions()
     {
-        return Collections.singletonList( StandardV3_4.STORE_VERSION );
+        return Stream.of( Arguments.of( StandardV3_4.STORE_VERSION ) );
     }
 
-    @Before
-    public void setup() throws IOException
+    private void init( String version ) throws IOException
     {
-        fileSystem = fileSystemRule.get();
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         workingHomeDir = testDir.homePath( "working_" + version );
         workingDatabaseLayout = Neo4jLayout.of( workingHomeDir ).databaseLayout( DEFAULT_DATABASE_NAME );
         check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), NULL );
         Path prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
-        baselineFormat = RecordFormatSelector.selectForVersion( version );
+        RecordFormats baselineFormat = RecordFormatSelector.selectForVersion( version );
         successorFormat = RecordFormatSelector.findLatestFormatInFamily( baselineFormat ).orElse( baselineFormat );
     }
 
-    @Test
-    public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws ConsistencyCheckIncompleteException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    public void shouldUpgradeAutomaticallyOnDatabaseStartup( String version ) throws ConsistencyCheckIncompleteException, IOException
     {
+        init( version );
+
         // when
         createGraphDatabaseService();
         managementService.shutdown();
 
         // then
-        assertTrue( "Some store files did not have the correct version",
-                checkNeoStoreHasFormatVersion( check, successorFormat ) );
+        assertTrue( checkNeoStoreHasFormatVersion( check, successorFormat ), "Some store files did not have the correct version" );
         assertConsistentStore( workingDatabaseLayout );
     }
 
-    @Test
-    public void shouldAbortOnNonCleanlyShutdown() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    public void shouldAbortOnNonCleanlyShutdown( String version ) throws Throwable
     {
+        init( version );
+
         // given
         removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory() );
         GraphDatabaseAPI database = createGraphDatabaseService();

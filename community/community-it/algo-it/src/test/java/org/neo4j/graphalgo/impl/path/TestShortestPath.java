@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import common.Neo4jAlgoTestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +32,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.graphalgo.BasicEvaluationContext;
 import org.neo4j.graphalgo.EvaluationContext;
+import org.neo4j.graphalgo.Neo4jAlgoTestCase;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -49,13 +49,13 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.memory.EmptyMemoryTracker;
 
-import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
+import static org.neo4j.graphalgo.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;

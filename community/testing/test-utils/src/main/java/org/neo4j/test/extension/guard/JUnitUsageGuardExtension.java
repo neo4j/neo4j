@@ -25,8 +25,10 @@ import org.junit.platform.commons.JUnitException;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 
@@ -71,11 +73,26 @@ public class JUnitUsageGuardExtension implements BeforeAllCallback
         return newJunitClasses.size() == testClasses.size();
     }
 
-    private static Set<String> collectUsedTestClasses( Class<?> clazz ) throws IOException
+    private static Set<String> collectUsedTestClasses( Class<?> clazz )
     {
-        ClassReader classReader = new ClassReader( clazz.getName() );
-        DependenciesCollector dependenciesCollector = new DependenciesCollector();
-        classReader.accept( dependenciesCollector, SKIP_DEBUG | SKIP_FRAMES );
+        Deque<String> classes = new ArrayDeque<>();
+        classes.push( clazz.getName() );
+
+        DependenciesCollector dependenciesCollector = new DependenciesCollector( classes );
+
+        while ( !classes.isEmpty() )
+        {
+            try
+            {
+                ClassReader classReader = new ClassReader( classes.pop() );
+                classReader.accept( dependenciesCollector, SKIP_DEBUG | SKIP_FRAMES );
+            }
+            catch ( IOException ignored )
+            {
+                // Some classes will not be able to load, e.g. org.junit.platform.testkit.engine.*, just ignore
+            }
+        }
+
         return dependenciesCollector.getJunitTestClasses();
     }
 }

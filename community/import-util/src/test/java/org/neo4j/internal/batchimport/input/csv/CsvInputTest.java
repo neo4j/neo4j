@@ -22,12 +22,9 @@ package org.neo4j.internal.batchimport.input.csv;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.assertj.core.api.Assertions;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -42,7 +39,6 @@ import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
@@ -74,6 +70,9 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -86,17 +85,16 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -124,33 +122,25 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@RunWith( Parameterized.class )
-public class CsvInputTest
+@TestDirectoryExtension
+@ExtendWith( RandomExtension.class )
+class CsvInputTest
 {
-    @Parameters
-    public static Collection<Boolean> data()
-    {
-        // multi-line fields
-        return asList(
-                Boolean.TRUE,
-                Boolean.FALSE );
-    }
+    @Inject
+    private RandomRule random;
+    @Inject
+    private TestDirectory directory;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
     private final Extractors extractors = new Extractors( ',' );
-    @Parameter
-    public Boolean allowMultilineFields;
 
     private final InputEntity visitor = new InputEntity();
     private final Groups groups = new Groups();
     private InputChunk chunk;
     private InputIterator referenceData;
 
-    @Test
-    public void shouldProvideNodesFromCsvInput() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldProvideNodesFromCsvInput( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         IdType idType = ACTUAL;
@@ -160,7 +150,7 @@ public class CsvInputTest
                 header( entry( null, Type.ID, CsvInput.idExtractor( idType, extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ),
                         entry( "labels", Type.LABEL, extractors.string() ) ),
-                datas(), defaultFormatRelationshipFileHeader(), idType, config(), NO_MONITOR, INSTANCE );
+                datas(), defaultFormatRelationshipFileHeader(), idType, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN/THEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -170,8 +160,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldProvideRelationshipsFromCsvInput() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldProvideRelationshipsFromCsvInput( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         IdType idType = IdType.STRING;
@@ -183,7 +174,7 @@ public class CsvInputTest
                 header( entry( "from", Type.START_ID, CsvInput.idExtractor( idType, extractors ) ),
                         entry( "to", Type.END_ID, CsvInput.idExtractor( idType, extractors ) ),
                         entry( "type", Type.TYPE, extractors.string() ),
-                        entry( "since", Type.PROPERTY, extractors.long_() ) ), idType, config(), NO_MONITOR, INSTANCE );
+                        entry( "since", Type.PROPERTY, extractors.long_() ) ), idType, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN/THEN
         try ( InputIterator relationships = input.relationships( EMPTY ).iterator() )
@@ -193,8 +184,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldCloseDataIteratorsInTheEnd() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldCloseDataIteratorsInTheEnd( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         CapturingDataFactories nodeData = new CapturingDataFactories( config -> charReader( "1" ), NO_DECORATOR );
@@ -208,7 +200,7 @@ public class CsvInputTest
                 relationshipData, header(
                         entry( null, Type.START_ID, CsvInput.idExtractor( idType, extractors ) ),
                         entry( null, Type.END_ID, CsvInput.idExtractor( idType, extractors ) ) ),
-                idType, config(), NO_MONITOR, INSTANCE );
+                idType, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator iterator = input.nodes( EMPTY ).iterator() )
@@ -238,8 +230,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldCopeWithLinesThatHasTooFewValuesButStillValidates() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldCopeWithLinesThatHasTooFewValuesButStillValidates( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         Iterable<DataFactory> data = dataIterable( data( "1,ultralisk,ZERG,10\n" +
@@ -252,7 +245,7 @@ public class CsvInputTest
                       entry( "unit", Type.PROPERTY, extractors.string() ),
                       entry( "type", Type.LABEL, extractors.string() ),
                       entry( "kills", Type.PROPERTY, extractors.int_() ) ),
-                datas(), defaultFormatRelationshipFileHeader(), ACTUAL, config(), NO_MONITOR, INSTANCE );
+                datas(), defaultFormatRelationshipFileHeader(), ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -265,8 +258,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldIgnoreValuesAfterHeaderEntries() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldIgnoreValuesAfterHeaderEntries( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         Iterable<DataFactory> data = dataIterable( data( "1,zergling,bubble,bobble\n" +
@@ -276,7 +270,7 @@ public class CsvInputTest
                 header(
                       entry( null, Type.ID, extractors.long_() ),
                       entry( "name", Type.PROPERTY, extractors.string() ) ),
-                datas(), defaultFormatRelationshipFileHeader(), ACTUAL, config(), NO_MONITOR, INSTANCE );
+                datas(), defaultFormatRelationshipFileHeader(), ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -288,8 +282,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldHandleMultipleInputGroups() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldHandleMultipleInputGroups( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN multiple input groups, each with their own, specific, header
         DataFactory group1 = data( ":ID,name,kills:int,health:int\n" +
@@ -301,7 +296,7 @@ public class CsvInputTest
         Iterable<DataFactory> data = dataIterable( group1, group2 );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
                                     datas(), defaultFormatRelationshipFileHeader(),
-                IdType.STRING, config(), NO_MONITOR, INSTANCE );
+                IdType.STRING, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN iterating over them, THEN the expected data should come out
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -314,8 +309,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldProvideAdditiveLabels() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldProvideAdditiveLabels( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         String[] addedLabels = {"Two", "AddTwo"};
@@ -326,7 +322,7 @@ public class CsvInputTest
                                  InputEntityDecorators.additiveLabels( addedLabels ) );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(),
-                datas(), defaultFormatRelationshipFileHeader(), ACTUAL, config(), NO_MONITOR, INSTANCE );
+                datas(), defaultFormatRelationshipFileHeader(), ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN/THEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -341,8 +337,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldProvideDefaultRelationshipType() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldProvideDefaultRelationshipType( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         String defaultType = "DEFAULT";
@@ -354,7 +351,7 @@ public class CsvInputTest
                 InputEntityDecorators.defaultRelationshipType( defaultType ) );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( datas(), defaultFormatNodeFileHeader(),
-                dataIterable, defaultFormatRelationshipFileHeader(), ACTUAL, config(), NO_MONITOR, INSTANCE );
+                dataIterable, defaultFormatRelationshipFileHeader(), ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN/THEN
         try ( InputIterator relationships = input.relationships( EMPTY ).iterator() )
@@ -366,8 +363,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldAllowNodesWithoutIdHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldAllowNodesWithoutIdHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -376,7 +374,7 @@ public class CsvInputTest
                 "Johan,2\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                IdType.STRING, config(), NO_MONITOR, INSTANCE );
+                IdType.STRING, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -388,8 +386,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldAllowSomeNodesToBeAnonymous() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldAllowSomeNodesToBeAnonymous( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -398,7 +397,7 @@ public class CsvInputTest
                 ",Johan,2\n" ); // this node is anonymous
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                IdType.STRING, config(), NO_MONITOR, INSTANCE );
+                IdType.STRING, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -410,8 +409,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldAllowNodesToBeAnonymousEvenIfIdHeaderIsNamed() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldAllowNodesToBeAnonymousEvenIfIdHeaderIsNamed( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -420,7 +420,7 @@ public class CsvInputTest
                 ",Johan,2\n" ); // this node is anonymous
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                IdType.STRING, config(), NO_MONITOR, INSTANCE );
+                IdType.STRING, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -432,8 +432,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldNotHaveIdSetAsPropertyIfIdHeaderEntryIsNamedForActualIds() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldNotHaveIdSetAsPropertyIfIdHeaderEntryIsNamedForActualIds( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -443,7 +444,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(),
                 datas(), defaultFormatRelationshipFileHeader(), ACTUAL,
-                config(), NO_MONITOR, INSTANCE );
+                config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -455,8 +456,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldIgnoreEmptyPropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldIgnoreEmptyPropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -465,7 +467,7 @@ public class CsvInputTest
                 "1,Johan,Additional\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -477,8 +479,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldIgnoreEmptyIntPropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldIgnoreEmptyIntPropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -487,7 +490,7 @@ public class CsvInputTest
                 "1,Johan,10\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -499,8 +502,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParsePointPropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParsePointPropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -509,7 +513,7 @@ public class CsvInputTest
                 "1,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2 } \"\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -523,14 +527,15 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldNotParsePointPropertyValuesWithDuplicateKeys() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldNotParsePointPropertyValuesWithDuplicateKeys( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data( ":ID,name,point:Point\n" + "1,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2, latitude : 4.2 } \"\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -545,8 +550,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParsePointPropertyValuesWithCRSInHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParsePointPropertyValuesWithCRSInHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -554,7 +560,7 @@ public class CsvInputTest
                         "0,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2 } \"\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -566,8 +572,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldUseHeaderInformationToParsePoint() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldUseHeaderInformationToParsePoint( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -575,7 +582,7 @@ public class CsvInputTest
                         "0,Johan,\" { x :1 ,y:2 } \"\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -587,8 +594,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseDatePropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseDatePropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -598,7 +606,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -612,8 +620,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseTimePropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseTimePropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -624,7 +633,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -640,8 +649,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseTimePropertyValuesWithTimezoneInHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseTimePropertyValuesWithTimezoneInHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -652,7 +662,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -668,8 +678,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseDateTimePropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseDateTimePropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -681,7 +692,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -697,8 +708,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseDateTimePropertyValuesWithTimezoneInHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseDateTimePropertyValuesWithTimezoneInHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -710,7 +722,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -726,8 +738,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseLocalTimePropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseLocalTimePropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -737,7 +750,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -751,8 +764,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseLocalDateTimePropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseLocalDateTimePropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -762,7 +776,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -776,8 +790,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldParseDurationPropertyValues() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldParseDurationPropertyValues( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         DataFactory data = data(
@@ -787,7 +802,7 @@ public class CsvInputTest
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
                 defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -801,14 +816,15 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldFailOnArrayDelimiterBeingSameAsDelimiter()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldFailOnArrayDelimiterBeingSameAsDelimiter( boolean allowMultilineFields )
     {
         // WHEN
         try
         {
             new CsvInput( null, null, null, null, ACTUAL,
-                    config().toBuilder().withDelimiter( ',' ).withArrayDelimiter( ',' ).build(), NO_MONITOR, INSTANCE );
+                    config( allowMultilineFields ).toBuilder().withDelimiter( ',' ).withArrayDelimiter( ',' ).build(), NO_MONITOR, INSTANCE );
 
             fail( "Should not be possible" );
         }
@@ -819,14 +835,15 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldFailOnQuotationCharacterBeingSameAsDelimiter()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldFailOnQuotationCharacterBeingSameAsDelimiter( boolean allowMultilineFields )
     {
         // WHEN
         try
         {
             new CsvInput( null, null, null, null, ACTUAL,
-                    config().toBuilder()
+                    config( allowMultilineFields ).toBuilder()
                             .withDelimiter( ',' )
                             .withArrayDelimiter( ';' )
                             .withQuotationCharacter( ',' ).build(), NO_MONITOR, INSTANCE );
@@ -840,14 +857,15 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldFailOnQuotationCharacterBeingSameAsArrayDelimiter()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldFailOnQuotationCharacterBeingSameAsArrayDelimiter( boolean allowMultilineFields )
     {
         // WHEN
         try
         {
             new CsvInput( null, null, null, null, ACTUAL,
-                    config().toBuilder().withQuotationCharacter( ';' ).build(), NO_MONITOR, INSTANCE );
+                    config( allowMultilineFields ).toBuilder().withQuotationCharacter( ';' ).build(), NO_MONITOR, INSTANCE );
             fail( "Should not be possible" );
         }
         catch ( IllegalArgumentException e )
@@ -858,8 +876,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldHaveNodesBelongToGroupSpecifiedInHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldHaveNodesBelongToGroupSpecifiedInHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         IdType idType = IdType.INTEGER;
@@ -872,7 +891,7 @@ public class CsvInputTest
                 data,
                 header( entry( null, Type.ID, group.name(), CsvInput.idExtractor( idType, extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ) ),
-                datas(), defaultFormatRelationshipFileHeader(), idType, config(), NO_MONITOR, INSTANCE );
+                datas(), defaultFormatRelationshipFileHeader(), idType, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN/THEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -883,8 +902,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldHaveRelationshipsSpecifyStartEndNodeIdGroupsInHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldHaveRelationshipsSpecifyStartEndNodeIdGroupsInHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         IdType idType = IdType.INTEGER;
@@ -902,7 +922,7 @@ public class CsvInputTest
                 header( entry( null, Type.START_ID, startNodeGroup.name(), CsvInput.idExtractor( idType, extractors ) ),
                         entry( null, Type.TYPE, extractors.string() ),
                         entry( null, Type.END_ID, endNodeGroup.name(), CsvInput.idExtractor( idType, extractors ) ) ),
-                idType, config(), NO_MONITOR, INSTANCE );
+                idType, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN/THEN
         try ( InputIterator relationships = input.relationships( EMPTY ).iterator() )
@@ -913,8 +933,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldDoWithoutRelationshipTypeHeaderIfDefaultSupplied() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldDoWithoutRelationshipTypeHeaderIfDefaultSupplied( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN relationship data w/o :TYPE header
         String defaultType = "HERE";
@@ -924,7 +945,7 @@ public class CsvInputTest
                 "2,3,Second\n", InputEntityDecorators.defaultRelationshipType( defaultType ) );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( datas(), defaultFormatNodeFileHeader(), dataIterable, defaultFormatRelationshipFileHeader(),
-                ACTUAL, config(), NO_MONITOR, INSTANCE );
+                ACTUAL, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator relationships = input.relationships( EMPTY ).iterator() )
@@ -936,8 +957,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldIgnoreNodeEntriesMarkedIgnoreUsingHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldIgnoreNodeEntriesMarkedIgnoreUsingHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         Iterable<DataFactory> data = datas( CsvInputTest.data(
@@ -946,7 +968,7 @@ public class CsvInputTest
                 "2,Johan,111,Person\n" +
                 "3,Emil,12,Person" ) );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(), datas(), defaultFormatNodeFileHeader(), IdType.INTEGER,
-                config(), NO_MONITOR, INSTANCE );
+                config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -958,8 +980,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldIgnoreRelationshipEntriesMarkedIgnoreUsingHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldIgnoreRelationshipEntriesMarkedIgnoreUsingHeader( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         Iterable<DataFactory> data = datas( CsvInputTest.data(
@@ -968,7 +991,7 @@ public class CsvInputTest
                 "2,KNOWS,3,Johan,111\n" +
                 "3,KNOWS,4,Emil,12" ) );
         Input input = new CsvInput( datas(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
-                config(), NO_MONITOR, INSTANCE );
+                config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator relationships = input.relationships( EMPTY ).iterator() )
@@ -980,8 +1003,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldPropagateExceptionFromFailingDecorator() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldPropagateExceptionFromFailingDecorator( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         RuntimeException failure = new RuntimeException( "FAILURE" );
@@ -989,7 +1013,7 @@ public class CsvInputTest
                 datas( CsvInputTest.data( ":ID,name\n1,Mattias",
                         new FailingNodeDecorator( failure ) ) );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(), datas(), defaultFormatNodeFileHeader(), IdType.INTEGER,
-                config(), NO_MONITOR, INSTANCE );
+                config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -1003,8 +1027,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldNotIncludeEmptyArraysInEntities() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldNotIncludeEmptyArraysInEntities( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         Iterable<DataFactory> data = datas( CsvInputTest.data(
@@ -1013,7 +1038,7 @@ public class CsvInputTest
                 "2,a;b,10;20"
                 ) );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(), datas(), defaultFormatNodeFileHeader(), IdType.INTEGER,
-                config(), NO_MONITOR, INSTANCE );
+                config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN/THEN
         try ( InputIterator nodes = input.nodes( EMPTY ).iterator() )
@@ -1025,14 +1050,15 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldTreatEmptyQuotedStringsAsNullIfConfiguredTo() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldTreatEmptyQuotedStringsAsNullIfConfiguredTo( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         Iterable<DataFactory> data = datas( CsvInputTest.data(
                 ":ID,one,two,three\n" +
                 "1,\"\",,value" ) );
-        Configuration config = config().toBuilder().withEmptyQuotedStringsAsNull( true ).build();
+        Configuration config = config( allowMultilineFields ).toBuilder().withEmptyQuotedStringsAsNull( true ).build();
 
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
                 datas(), defaultFormatRelationshipFileHeader(), IdType.INTEGER, config, NO_MONITOR, INSTANCE );
@@ -1046,8 +1072,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldIgnoreEmptyExtraColumns() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldIgnoreEmptyExtraColumns( boolean allowMultilineFields ) throws Exception
     {
         // GIVEN
         Iterable<DataFactory> data = datas( CsvInputTest.data(
@@ -1058,7 +1085,7 @@ public class CsvInputTest
         // WHEN
         Collector collector = mock( Collector.class );
         Input input = new CsvInput( data, defaultFormatNodeFileHeader(),
-                datas(), defaultFormatRelationshipFileHeader(), IdType.INTEGER, config(), NO_MONITOR, INSTANCE );
+                datas(), defaultFormatRelationshipFileHeader(), IdType.INTEGER, config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // THEN
         try ( InputIterator nodes = input.nodes( collector ).iterator() )
@@ -1073,15 +1100,16 @@ public class CsvInputTest
         verify( collector ).collectExtraColumns( anyString(), eq( 2L ), eq( "additional" ) );
     }
 
-    @Test
-    public void shouldSkipRelationshipValidationIfToldTo() throws Exception
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldSkipRelationshipValidationIfToldTo( boolean allowMultilineFields ) throws Exception
     {
      // GIVEN
         Iterable<DataFactory> data = datas( CsvInputTest.data(
                 ":START_ID,:END_ID,:TYPE\n" +
                 ",," ) );
         Input input = new CsvInput( datas(), defaultFormatNodeFileHeader(), data, defaultFormatRelationshipFileHeader(), IdType.INTEGER,
-                config(), NO_MONITOR, INSTANCE );
+                config( allowMultilineFields ), NO_MONITOR, INSTANCE );
 
         // WHEN
         try ( InputIterator relationships = input.relationships( EMPTY ).iterator() )
@@ -1093,8 +1121,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldFailOnUnparsableNodeHeader()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldFailOnUnparsableNodeHeader()
     {
         // given
         Iterable<DataFactory> data = datas( data( ":SOMETHING,abcde#rtg:123," ) );
@@ -1112,8 +1141,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldFailOnUnparsableRelationshipHeader()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldFailOnUnparsableRelationshipHeader()
     {
         // given
         Iterable<DataFactory> data = datas( data( ":SOMETHING,abcde#rtg:123," ) );
@@ -1131,8 +1161,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldFailOnUndefinedGroupInRelationshipHeader()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldFailOnUndefinedGroupInRelationshipHeader()
     {
         // given
         Iterable<DataFactory> nodeData = datas( data( ":ID(left)" ), data( ":ID(right)" ) );
@@ -1152,8 +1183,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader()
     {
         // given
         Iterable<DataFactory> nodeData = datas( data( ":ID(left)" ), data( ":ID(right)" ) );
@@ -1173,8 +1205,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldReportDuplicateNodeSourceFiles()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldReportDuplicateNodeSourceFiles()
     {
         // given
         String sourceDescription = "The single data source";
@@ -1203,8 +1236,9 @@ public class CsvInputTest
         verify( monitor ).duplicateSourceFile( sourceDescription );
     }
 
-    @Test
-    public void shouldReportDuplicateRelationshipSourceFiles()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldReportDuplicateRelationshipSourceFiles()
     {
         // given
         String sourceDescription = "The single data source";
@@ -1233,8 +1267,9 @@ public class CsvInputTest
         verify( monitor ).duplicateSourceFile( sourceDescription );
     }
 
-    @Test
-    public void shouldReportDuplicateSourceFileUsedAsBothNodeAndRelationshipSourceFile()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldReportDuplicateSourceFileUsedAsBothNodeAndRelationshipSourceFile()
     {
         // given
         String sourceDescription = "The single data source";
@@ -1291,8 +1326,9 @@ public class CsvInputTest
         };
     }
 
-    @Test
-    public void shouldNormalizeTypes() throws IOException
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldNormalizeTypes() throws IOException
     {
         // given
         Iterable<DataFactory> nodeData = datas(
@@ -1315,8 +1351,9 @@ public class CsvInputTest
         verifyNoMoreInteractions( monitor );
     }
 
-    @Test
-    public void shouldCalculateCorrectEstimatesForZippedInputFile() throws IOException
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldCalculateCorrectEstimatesForZippedInputFile() throws IOException
     {
         // GIVEN
         IdType idType = STRING;
@@ -1332,8 +1369,9 @@ public class CsvInputTest
         assertEstimatesEquals( uncompressedEstimates, compressedEstimates, 0 );
     }
 
-    @Test
-    public void shouldCalculateCorrectEstimatesForGZippedInputFile() throws IOException
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldCalculateCorrectEstimatesForGZippedInputFile() throws IOException
     {
         // GIVEN
         IdType idType = STRING;
@@ -1351,8 +1389,9 @@ public class CsvInputTest
         assertEstimatesEquals( uncompressedEstimates, compressedEstimates, 0.01 );
     }
 
-    @Test
-    public void shouldReportNoNodeLabels()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldReportNoNodeLabels()
     {
         // given
         String sourceDescription = "source";
@@ -1380,8 +1419,9 @@ public class CsvInputTest
         verify( monitor ).noNodeLabelsSpecified( sourceDescription );
     }
 
-    @Test
-    public void shouldNotReportNoNodeLabelsIfDecorated()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldNotReportNoNodeLabelsIfDecorated()
     {
         // given
         String sourceDescription = "source";
@@ -1409,8 +1449,9 @@ public class CsvInputTest
         verify( monitor, never() ).noRelationshipTypeSpecified( sourceDescription );
     }
 
-    @Test
-    public void shouldReportNoRelationshipType()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldReportNoRelationshipType()
     {
         // given
         String sourceDescription = "source";
@@ -1438,8 +1479,9 @@ public class CsvInputTest
         verify( monitor ).noRelationshipTypeSpecified( sourceDescription );
     }
 
-    @Test
-    public void shouldNotReportNoRelationshipTypeIfDecorated()
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldNotReportNoRelationshipTypeIfDecorated()
     {
         // given
         String sourceDescription = "source";
@@ -1467,8 +1509,9 @@ public class CsvInputTest
         verify( monitor, never() ).noRelationshipTypeSpecified( sourceDescription );
     }
 
-    @Test
-    public void shouldReportDuplicateNodeHeader() throws FileNotFoundException
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldReportDuplicateNodeHeader() throws FileNotFoundException
     {
         // GIVEN
         Path file = directory.file( "node-header" );
@@ -1491,8 +1534,9 @@ public class CsvInputTest
         }
     }
 
-    @Test
-    public void shouldReportDuplicateRelationshipHeader() throws FileNotFoundException
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldReportDuplicateRelationshipHeader() throws FileNotFoundException
     {
         // GIVEN
         Path file = directory.file( "relationship-header" );
@@ -1793,7 +1837,7 @@ public class CsvInputTest
         }
     }
 
-    private Configuration config()
+    private static Configuration config( boolean allowMultilineFields )
     {
         return COMMAS.toBuilder().withMultilineFields( allowMultilineFields ).build();
     }
