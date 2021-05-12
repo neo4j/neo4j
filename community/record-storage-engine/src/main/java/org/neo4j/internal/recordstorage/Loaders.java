@@ -44,14 +44,23 @@ import static java.lang.Math.toIntExact;
 
 public class Loaders implements AutoCloseable
 {
-    private final RecordLoader<NodeRecord,Void> nodeLoader;
-    private final RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader;
-    private final RecordLoader<RelationshipRecord,Void> relationshipLoader;
-    private final RecordLoader<RelationshipGroupRecord,Integer> relationshipGroupLoader;
-    private final RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader;
-    private final RecordLoader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
-    private final RecordLoader<LabelTokenRecord,Void> labelTokenLoader;
-    private final RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
+    private final RecordStore<NodeRecord> nodeStore;
+    private final PropertyStore propertyStore;
+    private final RecordStore<RelationshipRecord> relationshipStore;
+    private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
+    private final RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
+    private final RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
+    private final RecordStore<LabelTokenRecord> labelTokenStore;
+    private final SchemaStore schemaStore;
+    private final CursorContext cursorContext;
+    private RecordLoader<NodeRecord,Void> nodeLoader;
+    private RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader;
+    private RecordLoader<RelationshipRecord,Void> relationshipLoader;
+    private RecordLoader<RelationshipGroupRecord,Integer> relationshipGroupLoader;
+    private RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader;
+    private RecordLoader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
+    private RecordLoader<LabelTokenRecord,Void> labelTokenLoader;
+    private RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
 
     public Loaders( NeoStores neoStores, CursorContext cursorContext )
     {
@@ -78,14 +87,15 @@ public class Loaders implements AutoCloseable
             SchemaStore schemaStore,
             CursorContext cursorContext )
     {
-        nodeLoader = nodeLoader( nodeStore, cursorContext );
-        propertyLoader = propertyLoader( propertyStore, cursorContext );
-        relationshipLoader = relationshipLoader( relationshipStore, cursorContext );
-        relationshipGroupLoader = relationshipGroupLoader( relationshipGroupStore, cursorContext );
-        schemaRuleLoader = schemaRuleLoader( schemaStore, cursorContext );
-        propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore, cursorContext );
-        labelTokenLoader = labelTokenLoader( labelTokenStore, cursorContext );
-        relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore, cursorContext );
+        this.nodeStore = nodeStore;
+        this.propertyStore = propertyStore;
+        this.relationshipStore = relationshipStore;
+        this.relationshipGroupStore = relationshipGroupStore;
+        this.propertyKeyTokenStore = propertyKeyTokenStore;
+        this.relationshipTypeTokenStore = relationshipTypeTokenStore;
+        this.labelTokenStore = labelTokenStore;
+        this.schemaStore = schemaStore;
+        this.cursorContext = cursorContext;
     }
 
     @Override
@@ -97,41 +107,73 @@ public class Loaders implements AutoCloseable
 
     public Loader<NodeRecord,Void> nodeLoader()
     {
+        if ( nodeLoader == null )
+        {
+            nodeLoader = nodeLoader( nodeStore, cursorContext );
+        }
         return nodeLoader;
     }
 
     public Loader<PropertyRecord,PrimitiveRecord> propertyLoader()
     {
+        if ( propertyLoader == null )
+        {
+            propertyLoader = propertyLoader( propertyStore, cursorContext );
+        }
         return propertyLoader;
     }
 
     public Loader<RelationshipRecord,Void> relationshipLoader()
     {
+        if ( relationshipLoader == null )
+        {
+            relationshipLoader = relationshipLoader( relationshipStore, cursorContext );
+        }
         return relationshipLoader;
     }
 
     public Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader()
     {
+        if ( relationshipGroupLoader == null )
+        {
+            relationshipGroupLoader = relationshipGroupLoader( relationshipGroupStore, cursorContext );
+        }
         return relationshipGroupLoader;
     }
 
     public Loader<SchemaRecord,SchemaRule> schemaRuleLoader()
     {
+        if ( schemaRuleLoader == null )
+        {
+            schemaRuleLoader = schemaRuleLoader( schemaStore, cursorContext );
+        }
         return schemaRuleLoader;
     }
 
     public Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader()
     {
+        if ( propertyKeyTokenLoader == null )
+        {
+            propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore, cursorContext );
+        }
         return propertyKeyTokenLoader;
     }
 
     public Loader<LabelTokenRecord,Void> labelTokenLoader()
     {
+        if ( labelTokenLoader == null )
+        {
+            labelTokenLoader = labelTokenLoader( labelTokenStore, cursorContext );
+        }
         return labelTokenLoader;
     }
 
     public Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader()
     {
+        if ( relationshipTypeTokenLoader == null )
+        {
+            relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore, cursorContext );
+        }
         return relationshipTypeTokenLoader;
     }
 
