@@ -758,7 +758,8 @@ public class SingleFilePageSwapper implements PageSwapper
             NativeCallResult result = access.tryPreallocateSpace( channel.getFileDescriptor(), newFileSize );
             if ( result.isError() )
             {
-                throw new IOException( result.getErrorMessage() );
+                throw new IOException( "Fail to preallocate additional space for store file at: " + path + ". " +
+                        "Requested file size: " + newFileSize + ". Call error: " + result );
             }
         }
     }
