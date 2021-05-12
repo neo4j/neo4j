@@ -131,6 +131,9 @@ object CompilationPhases {
     parseAndCompatibilityCheck andThen
       SyntaxDeprecationWarnings(Deprecations.V2) andThen
       PreparatoryRewriting(Deprecations.V2) andThen
+      If( (_: BaseState) => config.obfuscateLiterals) (
+        extractSensitiveLiterals
+      ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 
@@ -139,9 +142,6 @@ object CompilationPhases {
     parsingBase(config) andThen
       AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
       SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_3AfterRewrite) andThen
-      If( (_: BaseState) => config.obfuscateLiterals) (
-        extractSensitiveLiterals
-      ) andThen
       LiteralExtraction(config.literalExtractionStrategy)
   }
 
@@ -150,9 +150,6 @@ object CompilationPhases {
     parsingBase(config) andThen
       ExpandStarRewriter andThen
       TryRewriteProcedureCalls(resolver) andThen
-      If( (_: BaseState) => config.obfuscateLiterals) (
-        extractSensitiveLiterals
-      ) andThen
       ObfuscationMetadataCollection andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
