@@ -25,10 +25,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.runtime.ReadyState;
@@ -127,8 +127,8 @@ public class BoltConditions
         return new Condition<>( stateMachine ->
         {
             var machine = (AbstractBoltStateMachine) stateMachine;
-            var txManager = machine.transactionManager();
-            return txManager != null && ((StatementProcessorTxManager) txManager).getCurrentNoOfOpenTx() > 0;
+            var statementProcessor = machine.statementProcessor();
+            return statementProcessor != null && statementProcessor.hasTransaction();
         }, "State machine has transaction." );
     }
 
@@ -137,7 +137,8 @@ public class BoltConditions
         return new Condition<>( stateMachine ->
         {
             var machine = (AbstractBoltStateMachine) stateMachine;
-            return ((StatementProcessorTxManager) machine.transactionManager()).getCurrentNoOfOpenTx() == 0;
+            var statementProcessor = machine.statementProcessor();
+            return statementProcessor == StatementProcessor.EMPTY || !statementProcessor.hasTransaction();
         }, "State machine has no transaction." );
     }
 
@@ -190,7 +191,7 @@ public class BoltConditions
         }
     }
 
-    public static void verifyOneResponse( ThrowingBiConsumer<BoltStateMachine,BoltResponseRecorder,BoltConnectionFatality> transition )
+    public static void verifyOneResponse( ThrowingBiConsumer<BoltStateMachine,BoltResponseRecorder,BoltConnectionFatality> transition ) throws Exception
     {
         BoltStateMachine machine = newMachine();
         BoltResponseRecorder recorder = new BoltResponseRecorder();

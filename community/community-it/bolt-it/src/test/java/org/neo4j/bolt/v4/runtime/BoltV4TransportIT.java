@@ -83,7 +83,7 @@ public class BoltV4TransportIT
     private static Stream<Arguments> argumentsProvider()
     {
         return Stream.of( Arguments.of( SocketConnection.class ), Arguments.of( WebSocketConnection.class ),
-                          Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
+                Arguments.of( SecureSocketConnection.class ), Arguments.of( SecureWebSocketConnection.class ) );
     }
 
     @BeforeEach

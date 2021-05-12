@@ -55,14 +55,10 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
     }
 
     protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
-                                                                                 StatementProcessorReleaseManager resourceReleaseManager,
-                                                                                 String transactionId )
-            throws BoltIOException;
+            StatementProcessorReleaseManager resourceReleaseManger ) throws BoltIOException;
 
     @Override
-    public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName,
-                                                                     StatementProcessorReleaseManager resourceReleaseManager,
-                                                                     String transactionId )
+    public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
             throws BoltProtocolBreachFatality, BoltIOException
     {
         String selectedDatabaseName = selectDatabaseName( databaseName );
@@ -70,7 +66,7 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
         try
         {
             var boltGraphDatabaseServiceSPI = boltGraphDatabaseManagementServiceSPI.database( selectedDatabaseName, memoryTracker );
-            return newTransactionStateMachineSPI( boltGraphDatabaseServiceSPI, resourceReleaseManager, transactionId );
+            return newTransactionStateMachineSPI( boltGraphDatabaseServiceSPI, resourceReleaseManger );
         }
         catch ( DatabaseNotFoundException e )
         {

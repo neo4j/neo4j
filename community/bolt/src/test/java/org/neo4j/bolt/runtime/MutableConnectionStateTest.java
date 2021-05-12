@@ -22,7 +22,10 @@ package org.neo4j.bolt.runtime;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
+import org.neo4j.graphdb.TransactionTerminatedException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -31,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
+import static org.neo4j.kernel.api.exceptions.Status.Request.Invalid;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class MutableConnectionStateTest
@@ -245,27 +249,50 @@ class MutableConnectionStateTest
     }
 
     @Test
-    void shouldGetAndSetTransactionId() throws BoltProtocolBreachFatality
+    void shouldSetAndGetStatementProcessor() throws Throwable
     {
-        state.setCurrentTransactionId( "123" );
-        assertEquals( "123", state.getCurrentTransactionId() );
+        StatementProcessor processor = mock( StatementProcessor.class );
+        state.setStatementProcessor( processor );
+
+        assertThat( state.getStatementProcessor() ).isEqualTo( processor );
     }
 
     @Test
-    void shouldThrowIfTransactionIdIsReplaceWithoutFirstClearing() throws BoltProtocolBreachFatality
+    void shouldThrowErrorWhenSetStatementProcessorAndThereIsPendingTerminationError() throws Throwable
     {
-        state.setCurrentTransactionId( "123" );
-        assertThrows( BoltProtocolBreachFatality.class, () -> state.setCurrentTransactionId( "456" ) );
+        state.setPendingTerminationNotice( Invalid );
+        StatementProcessor processor = mock( StatementProcessor.class );
+        TransactionTerminatedException error =
+                assertThrows( TransactionTerminatedException.class, () -> state.setStatementProcessor( processor ) );
+        assertThat( error.status() ).isEqualTo( Invalid );
+
+        // The second set shall be fine
+        state.setStatementProcessor( processor );
+        assertThat( state.getStatementProcessor() ).isEqualTo( processor );
     }
 
     @Test
-    void shouldClearTransactionId() throws BoltProtocolBreachFatality
+    void shouldThrowErrorWhenGetStatementProcessorAndThereIsPendingTerminationError() throws Throwable
     {
-        state.setCurrentTransactionId( "123" );
-        assertEquals( "123", state.getCurrentTransactionId() );
+        state.setPendingTerminationNotice( Invalid );
+        TransactionTerminatedException error = assertThrows( TransactionTerminatedException.class, state::getStatementProcessor );
+        assertThat( error.status() ).isEqualTo( Invalid );
 
-        state.clearCurrentTransactionId();
+        // The second get shall be fine
+        assertThat( state.getStatementProcessor() ).isEqualTo( StatementProcessor.EMPTY );
+    }
 
-        assertNull( state.getCurrentTransactionId() );
+    @Test
+    void shouldClearResetStatmentProcessorToEmpty() throws Throwable
+    {
+        // Given
+        StatementProcessor processor = mock( StatementProcessor.class );
+        state.setStatementProcessor( processor );
+        assertThat( state.getStatementProcessor() ).isEqualTo( processor );
+
+        // When
+        state.clearStatementProcessor();
+        // Then
+        assertThat( state.getStatementProcessor() ).isEqualTo( StatementProcessor.EMPTY );
     }
 }

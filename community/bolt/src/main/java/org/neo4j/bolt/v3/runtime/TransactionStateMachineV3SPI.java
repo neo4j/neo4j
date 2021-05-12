@@ -47,9 +47,9 @@ public class TransactionStateMachineV3SPI extends AbstractTransactionStateMachin
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStateMachineV3SPI.class );
 
     public TransactionStateMachineV3SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                         StatementProcessorReleaseManager resourceReleaseManager, String transactionId )
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
-        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
     }
 
     @Override

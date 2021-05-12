@@ -19,16 +19,15 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
-import org.neo4j.values.storable.Values;
-
-import static org.neo4j.values.storable.Values.stringArray;
 import org.neo4j.memory.HeapEstimator;
 
 /**
@@ -53,47 +52,24 @@ public class ReadyState extends org.neo4j.bolt.v3.runtime.ReadyState
         return null;
     }
 
-    private String extractDatabaseName( TransactionInitiatingMessage message )
+    @Override
+    protected StatementProcessor getStatementProcessor( TransactionInitiatingMessage message, StateMachineContext context )
+            throws BoltProtocolBreachFatality, BoltIOException
     {
+        String databaseName;
         if ( message instanceof RunMessage )
         {
-            return ((RunMessage) message).databaseName();
+            databaseName = ((RunMessage) message).databaseName();
         }
         else if ( message instanceof BeginMessage )
         {
-            return ((BeginMessage) message).databaseName();
+            databaseName = ((BeginMessage) message).databaseName();
         }
         else
         {
             throw new IllegalStateException( "Expected either a BoltV4 RUN message or BEGIN message, but got: " + message.getClass() );
         }
-    }
 
-    @Override
-    protected BoltStateMachineState processRunMessage( org.neo4j.bolt.v3.messaging.request.RunMessage message, StateMachineContext context ) throws Exception
-    {
-        long start = context.clock().millis();
-        var runResult = context.getTransactionManager().runProgram( extractDatabaseName( message ), message.statement(), message.params(),
-                                                                    message.bookmarks(), message.getAccessMode().equals( AccessMode.READ ),
-                                                                    message.transactionMetadata(), message.transactionTimeout(), context.connectionId() );
-        long end = context.clock().millis();
-
-        context.connectionState().setCurrentTransactionId( runResult.transactionId() );
-
-        context.connectionState().onMetadata( FIELDS_KEY, stringArray( runResult.statementMetadata().fieldNames() ) );
-        context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
-
-        return streamingState;
-    }
-
-    @Override
-    protected BoltStateMachineState processBeginMessage( org.neo4j.bolt.v3.messaging.request.BeginMessage message, StateMachineContext context )
-            throws Exception
-    {
-        String transactionId = context.getTransactionManager().begin( extractDatabaseName( message ), message.bookmarks(),
-                                                                      message.getAccessMode().equals( AccessMode.READ ), message.transactionMetadata(),
-                                                                      message.transactionTimeout(), context.connectionId() );
-        context.connectionState().setCurrentTransactionId( transactionId );
-        return txReadyState;
+        return context.setCurrentStatementProcessorForDatabase( databaseName );
     }
 }

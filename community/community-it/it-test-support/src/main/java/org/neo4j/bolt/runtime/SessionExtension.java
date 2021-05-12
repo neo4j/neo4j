@@ -37,7 +37,6 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
@@ -120,7 +119,6 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ) );
         Config config = resolver.resolveDependency( Config.class );
-        StatementProcessorTxManager statementProcessorTxManager = new StatementProcessorTxManager();
         SystemNanoClock clock = Clocks.nanoClock();
         DefaultDatabaseResolver defaultDatabaseResolver =
                 new CommunityDefaultDatabaseResolver( config, () -> managementService.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) );
@@ -132,8 +130,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
                 clock,
                 config,
                 NullLogService.getInstance(),
-                defaultDatabaseResolver,
-                statementProcessorTxManager
+                defaultDatabaseResolver
         );
     }
 

@@ -29,13 +29,15 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.routing.RoutingTableGetter;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
@@ -165,8 +167,8 @@ class RouteMessageHandleStateDecoratorTest
         var decoratedState = RouteMessageHandleStateDecorator.decorate( state, failedState, routingTableGetter );
         var context = mock( StateMachineContext.class );
         var connectionState = mockMutableConnectionState( context );
-        var transactionManager = mockTransactionManager( context );
-        var routingTable = mockRoutingTable( routingMessage, routingTableGetter, transactionManager );
+        var statementProcessor = mockStatementProcessor( routingMessage, context );
+        var routingTable = mockRoutingTable( routingMessage, routingTableGetter, statementProcessor );
 
         var nextState = decoratedState.process( routingMessage, context );
 
@@ -183,9 +185,8 @@ class RouteMessageHandleStateDecoratorTest
         var routingTableGetter = mock( RoutingTableGetter.class );
         var decoratedState = RouteMessageHandleStateDecorator.decorate( state, failedState, routingTableGetter );
         var context = mock( StateMachineContext.class );
-        doReturn( "123" ).when( context ).connectionId();
-        var transactionManager = mockTransactionManager( context );
-        var runtimeException = mockCompletedRuntimeException( routingMessage, routingTableGetter, transactionManager );
+        var statementProcessor = mockStatementProcessor( routingMessage, context );
+        var runtimeException = mockCompletedRuntimeException( routingMessage, routingTableGetter, statementProcessor );
 
         var nextState = decoratedState.process( routingMessage, context );
 
@@ -202,9 +203,8 @@ class RouteMessageHandleStateDecoratorTest
         var routingTableGetter = mock( RoutingTableGetter.class );
         var decoratedState = RouteMessageHandleStateDecorator.decorate( state, failedState, routingTableGetter );
         var context = mock( StateMachineContext.class );
-        doReturn( "123" ).when( context ).connectionId();
-        var transactionManager = mockTransactionManager( context );
-        var runtimeException = mockRuntimeException( routingMessage, routingTableGetter, transactionManager );
+        var statementProcessor = mockStatementProcessor( routingMessage, context );
+        var runtimeException = mockRuntimeException( routingMessage, routingTableGetter, statementProcessor );
 
         var nextState = decoratedState.process( routingMessage, context );
 
@@ -212,23 +212,22 @@ class RouteMessageHandleStateDecoratorTest
         verify( context ).handleFailure( runtimeException, false );
     }
 
-    private RuntimeException mockRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, TransactionManager transactionManager )
+    private RuntimeException mockRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, StatementProcessor statementProcessor )
     {
         var runtimeException = new RuntimeException( "Something happened" );
         doThrow( runtimeException )
                 .when( routingTableGetter )
-                .get( transactionManager, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName(), "123" );
-
+                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName() );
         return runtimeException;
     }
 
     private RuntimeException mockCompletedRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter,
-                                                            TransactionManager transactionManager )
+                                                            StatementProcessor statementProcessor )
     {
         var runtimeException = new RuntimeException( "Something happened" );
         doReturn( CompletableFuture.failedFuture( runtimeException ) )
                 .when( routingTableGetter )
-                .get( transactionManager, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName(), "123" );
+                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName() );
         return runtimeException;
     }
 
@@ -236,27 +235,26 @@ class RouteMessageHandleStateDecoratorTest
     {
         var connectionState = mock( MutableConnectionState.class );
         doReturn( connectionState ).when( context ).connectionState();
-        doReturn( "123" ).when( context ).connectionId();
         return connectionState;
     }
 
-    private MapValue mockRoutingTable( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, TransactionManager transactionManager )
+    private MapValue mockRoutingTable( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, StatementProcessor statementProcessor )
     {
         var routingTable = routingTable();
         doReturn( CompletableFuture.completedFuture( routingTable ) )
                 .when( routingTableGetter )
-                .get( transactionManager, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName(), "123" );
-
+                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName() );
         return routingTable;
     }
 
-    private TransactionManager mockTransactionManager( StateMachineContext context )
+    private StatementProcessor mockStatementProcessor( RouteMessage routingMessage, StateMachineContext context )
+            throws BoltProtocolBreachFatality, BoltIOException
     {
-        var transactionManager = mock( TransactionManager.class );
-        doReturn( transactionManager )
+        var statementProcessor = mock( StatementProcessor.class );
+        doReturn( statementProcessor )
                 .when( context )
-                .getTransactionManager();
-        return transactionManager;
+                .setCurrentStatementProcessorForDatabase( routingMessage.getDatabaseName() );
+        return statementProcessor;
     }
 
     private BoltStateMachineState mockStateWithName()

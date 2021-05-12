@@ -21,5 +21,5 @@ package org.neo4j.bolt.runtime.statemachine;
 
 public interface StatementProcessorReleaseManager
 {
-    void releaseStatementProcessor( String transactionId );
+    void releaseStatementProcessor();
 }

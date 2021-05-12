@@ -45,9 +45,9 @@ public class TransactionStateMachineV4SPI extends AbstractTransactionStateMachin
     private final NamedDatabaseId namedDatabaseId;
 
     public TransactionStateMachineV4SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                         StatementProcessorReleaseManager resourceReleaseManager, String transactionId )
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
-        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+        super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
         this.namedDatabaseId = boltGraphDatabaseServiceSPI.getNamedDatabaseId();
     }
 

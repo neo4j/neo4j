@@ -39,30 +39,14 @@ public class AutoCommitState extends AbstractStreamingState
     }
 
     @Override
-    protected BoltStateMachineState processStreamPullResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                    StateMachineContext context, long noToPull ) throws Throwable
+    protected BoltStateMachineState processStreamResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
-        Bookmark bookmark = context.getTransactionManager().pullData( context.connectionState().getCurrentTransactionId(), statementId,
-                                                                      noToPull, resultConsumer );
-        bookmark.attachTo( context.connectionState() );
+        Bookmark bookmark = context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
         if ( resultConsumer.hasMore() )
         {
             return this;
         }
-        return readyState;
-    }
-
-    @Override
-    protected BoltStateMachineState processStreamDiscardResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                       StateMachineContext context, long noToDiscard ) throws Throwable
-    {
-        var bookmark = context.getTransactionManager().discardData( context.connectionState().getCurrentTransactionId(), statementId,
-                                                                    noToDiscard, resultConsumer );
         bookmark.attachTo( context.connectionState() );
-        if ( resultConsumer.hasMore() )
-        {
-            return this;
-        }
         return readyState;
     }
 }

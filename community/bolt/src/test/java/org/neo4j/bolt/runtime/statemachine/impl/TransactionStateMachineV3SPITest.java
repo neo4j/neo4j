@@ -54,7 +54,7 @@ class TransactionStateMachineV3SPITest
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         var spi = new TestAbstractTransactionStateMachineSPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                                                              mock( StatementProcessorReleaseManager.class ), "123" );
+                mock( StatementProcessorReleaseManager.class ) );
 
         var bookmarks = List.<Bookmark>of( new BookmarkWithPrefix( 42L ) );
 
@@ -74,7 +74,7 @@ class TransactionStateMachineV3SPITest
 
         when( tx.getBookmarkMetadata() ).thenReturn( new BookmarkMetadata( 42L ) );
         var spi = new TestAbstractTransactionStateMachineSPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                                                              mock( StatementProcessorReleaseManager.class ), "123" );
+                mock( StatementProcessorReleaseManager.class ) );
 
         // When
         var bookmark = spi.newestBookmark( tx );
@@ -90,7 +90,7 @@ class TransactionStateMachineV3SPITest
     {
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         var spi = new TestAbstractTransactionStateMachineSPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
-                                                              mock( StatementProcessorReleaseManager.class ), "123" );
+                mock( StatementProcessorReleaseManager.class ) );
 
         var bookmarks = List.<Bookmark>of( new BookmarkWithPrefix( 42L ), new BookmarkWithPrefix( 4242L ) );
 
@@ -101,9 +101,9 @@ class TransactionStateMachineV3SPITest
     private static class TestAbstractTransactionStateMachineSPI extends TransactionStateMachineV3SPI
     {
         TestAbstractTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                                StatementProcessorReleaseManager resourceReleaseManager, String txId )
+                StatementProcessorReleaseManager resourceReleaseManger )
         {
-            super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, txId );
+            super( boltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
         }
 
         @Override

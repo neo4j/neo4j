@@ -25,8 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
@@ -145,13 +143,13 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         machine.process( pullAll(), new BoltResponseHandler()
         {
             @Override
-            public boolean onPullRecords( BoltResult result, long size )
+            public boolean onPullRecords( BoltResult result, long size ) throws Throwable
             {
                 throw new RuntimeException( "Ooopsies!" );
             }
 
             @Override
-            public boolean onDiscardRecords( BoltResult result, long size )
+            public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
             {
                 throw new RuntimeException( "Not this one!" );
             }
@@ -190,8 +188,8 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
     void shouldBeAbleToCleanlyRunMultipleSessionsInSingleThread() throws Throwable
     {
         // Given
-        var firstMachine = newStateMachineAfterAuth( "conn1" );
-        var secondMachine = newStateMachineAfterAuth( "conn2" );
+        var firstMachine = newStateMachineAfterAuth();
+        var secondMachine = newStateMachineAfterAuth();
 
         // And given I've started a transaction in one session
         firstMachine.process( begin(), nullResponseHandler() );
@@ -397,8 +395,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
 
     private static boolean hasTransaction( BoltStateMachine machine )
     {
-        TransactionManager txManager = ((AbstractBoltStateMachine) machine).stateMachineContext().getTransactionManager();
-        return ((StatementProcessorTxManager) txManager).getCurrentNoOfOpenTx() > 0;
+        return ((AbstractBoltStateMachine) machine).statementProcessor().hasTransaction();
     }
 
     private String createLocalIrisData( BoltStateMachine machine ) throws Exception

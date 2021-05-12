@@ -39,7 +39,6 @@ import javax.net.ssl.SSLException;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
@@ -104,7 +103,6 @@ public class BoltServer extends LifecycleAdapter
     private final MemoryPools memoryPools;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
     private final CentralBufferMangerHolder centralBufferMangerHolder;
-    private final TransactionManager transactionManager;
 
     // edition specific dependencies are resolved dynamically
     private final DependencyResolver dependencyResolver;
@@ -118,8 +116,7 @@ public class BoltServer extends LifecycleAdapter
                        DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
                        Monitors monitors, LogService logService, DependencyResolver dependencyResolver,
                        AuthManager externalAuthManager, AuthManager internalAuthManager, AuthManager loopbackAuthManager, MemoryPools memoryPools,
-                       DefaultDatabaseResolver defaultDatabaseResolver, CentralBufferMangerHolder centralBufferMangerHolder,
-                       TransactionManager transactionManager )
+                       DefaultDatabaseResolver defaultDatabaseResolver, CentralBufferMangerHolder centralBufferMangerHolder )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
@@ -137,7 +134,6 @@ public class BoltServer extends LifecycleAdapter
         this.memoryPools = memoryPools;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.centralBufferMangerHolder = centralBufferMangerHolder;
-        this.transactionManager = transactionManager;
     }
 
     @Override
@@ -156,10 +152,9 @@ public class BoltServer extends LifecycleAdapter
                 life.setLast( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory(),
                         jobScheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory = createConnectionFactory( config, boltSchedulerProvider, logService, clock );
-
-        var externalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( externalAuthManager ), clock, transactionManager );
-        var internalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( internalAuthManager ), clock, transactionManager );
-        var loopbackBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( loopbackAuthManager ), clock, transactionManager );
+        BoltStateMachineFactory externalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( externalAuthManager ), clock );
+        BoltStateMachineFactory internalBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( internalAuthManager ), clock );
+        BoltStateMachineFactory loopbackBoltStateMachineFactory = createBoltStateMachineFactory( createAuthentication( loopbackAuthManager ), clock );
 
         BoltProtocolFactory externalBoltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, externalBoltStateMachineFactory, throttleGroup,
                                                                                      clock, config.get( BoltConnectorInternalSettings.connection_keep_alive ) );
@@ -429,10 +424,9 @@ public class BoltServer extends LifecycleAdapter
                 databaseIdRepository, customBookmarkParser, throttleGroup, clock, keepAliveInterval );
     }
 
-    private BoltStateMachineFactory createBoltStateMachineFactory( Authentication authentication, SystemNanoClock clock, TransactionManager transactionManager )
+    private BoltStateMachineFactory createBoltStateMachineFactory( Authentication authentication, SystemNanoClock clock )
     {
-        return new BoltStateMachineFactoryImpl( boltGraphDatabaseManagementServiceSPI, authentication, clock, config,
-                                                logService, defaultDatabaseResolver, transactionManager );
+        return new BoltStateMachineFactoryImpl( boltGraphDatabaseManagementServiceSPI, authentication, clock, config, logService, defaultDatabaseResolver );
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter

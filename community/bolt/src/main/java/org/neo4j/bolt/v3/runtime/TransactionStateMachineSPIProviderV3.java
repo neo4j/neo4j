@@ -41,10 +41,9 @@ public class TransactionStateMachineSPIProviderV3 extends AbstractTransactionSta
 
     @Override
     protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
-                                                                        StatementProcessorReleaseManager resourceReleaseManager,
-                                                                        String transactionId )
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
         memoryTracker.allocateHeap( TransactionStateMachineV3SPI.SHALLOW_SIZE );
-        return new TransactionStateMachineV3SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManager, transactionId );
+        return new TransactionStateMachineV3SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
     }
 }

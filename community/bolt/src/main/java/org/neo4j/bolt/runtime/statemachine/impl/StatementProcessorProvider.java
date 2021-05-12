@@ -36,7 +36,7 @@ public class StatementProcessorProvider
     private final Clock clock;
     private final AuthenticationResult authResult;
     private final TransactionStateMachineSPIProvider spiProvider;
-    private final StatementProcessorReleaseManager resourceReleaseManager;
+    private final StatementProcessorReleaseManager resourceReleaseManger;
     private final RoutingContext routingContext;
     private final MemoryTracker memoryTracker;
 
@@ -46,17 +46,17 @@ public class StatementProcessorProvider
         this.authResult = authResult;
         this.spiProvider = transactionSpiProvider;
         this.clock = clock;
-        this.resourceReleaseManager = releaseManager;
+        this.resourceReleaseManger = releaseManager;
         this.routingContext = routingContext;
         this.memoryTracker = memoryTracker;
     }
 
-    public StatementProcessor getStatementProcessor( String databaseName, String txId ) throws BoltProtocolBreachFatality, BoltIOException
+    public StatementProcessor getStatementProcessor( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
     {
         memoryTracker.allocateHeap( TransactionStateMachine.SHALLOW_SIZE );
 
-        TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName, resourceReleaseManager, txId );
-        return new TransactionStateMachine( databaseName, transactionSPI, authResult, clock, routingContext, txId );
+        TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName, resourceReleaseManger );
+        return new TransactionStateMachine( databaseName, transactionSPI, authResult, clock, routingContext );
     }
 
     public void releaseStatementProcessor()

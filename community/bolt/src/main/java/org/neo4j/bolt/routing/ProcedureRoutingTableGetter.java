@@ -25,17 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.bolt.transaction.ProgramResultReference;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
-
-import static java.util.Collections.emptyList;
 
 /**
  * Implementation of @{@link RoutingTableGetter} which uses the `dbms.routing.getRoutingTable` procedure.
@@ -47,8 +46,7 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
     private static final String DATABASE_NAME_PARAM = "databaseName";
 
     @Override
-    public CompletableFuture<MapValue> get( TransactionManager transactionManager, MapValue routingContext,
-                                            List<Bookmark> bookmarks, String databaseName, String connectionId )
+    public CompletableFuture<MapValue> get( StatementProcessor statementProcessor, MapValue routingContext, List<Bookmark> bookmarks, String databaseName )
     {
         var params = getParams( routingContext, databaseName );
 
@@ -56,12 +54,10 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
 
         try
         {
-            ProgramResultReference programResultReference =
-                    transactionManager.runProgram( "system", GET_ROUTING_TABLE_STATEMENT, params, emptyList(),
-                                                   true, Map.of(), null, connectionId );
+            StatementMetadata statementMetadata =
+                    statementProcessor.run( GET_ROUTING_TABLE_STATEMENT, params, bookmarks, null, AccessMode.READ, Map.of() );
 
-            transactionManager.pullData( programResultReference.transactionId(), programResultReference.statementMetadata().queryId(), -1,
-                                         new RoutingTableConsumer( future ) );
+            statementProcessor.streamResult( statementMetadata.queryId(), new RoutingTableConsumer( future ) );
         }
         catch ( Throwable throwable )
         {

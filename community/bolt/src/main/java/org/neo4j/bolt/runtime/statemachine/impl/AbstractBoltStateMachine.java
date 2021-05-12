@@ -35,14 +35,12 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.transaction.CleanUpContext;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
-import org.neo4j.bolt.transaction.TransactionStatus;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.MemoryTracker;
@@ -73,7 +71,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     private final BoltStateMachineState failedState;
 
     public AbstractBoltStateMachine( BoltStateMachineSPI spi, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
-                                     MemoryTracker memoryTracker, TransactionManager transactionManager )
+                                     MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( BoltStateMachineContextImpl.SHALLOW_SIZE );
 
@@ -82,8 +80,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         this.spi = spi;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.connectionState = new MutableConnectionState();
-        this.context = new BoltStateMachineContextImpl( this, boltChannel, spi, connectionState, clock,
-                                                        defaultDatabaseResolver, memoryTracker, transactionManager );
+        this.context = new BoltStateMachineContextImpl( this, boltChannel, spi, connectionState, clock, defaultDatabaseResolver, memoryTracker );
 
         States states = buildStates( memoryTracker );
         this.state = states.initial;
@@ -183,23 +180,22 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     public void interrupt()
     {
         connectionState.incrementInterruptCounter();
-        if ( connectionState.getCurrentTransactionId() != null )
-        {
-            transactionManager().interrupt( connectionState.getCurrentTransactionId() );
-        }
+        statementProcessor().markCurrentTransactionForTermination();
     }
 
     /**
      * When this is invoked, the machine will check whether the related transaction is
      * marked for termination and releasing the related transactional resources.
+     * If the transaction
      */
     @Override
     public void validateTransaction() throws KernelException
     {
-        var status = transactionManager().transactionStatus( connectionState.getCurrentTransactionId() );
-        if ( status.value().equals( TransactionStatus.Value.INTERRUPTED ) )
+        Status status = statementProcessor().validateTransaction();
+        if ( status != null )
         {
-            connectionState().setPendingTerminationNotice( status.error() );
+            // only set the status if there is a new status
+            connectionState().setPendingTerminationNotice( status );
         }
     }
 
@@ -238,7 +234,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         {
             connectionState.markClosed();
             // However a new transaction may have been created so we must always to reset
-            resetTransactionState();
+            resetStatementProcessor();
         }
     }
 
@@ -257,9 +253,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
          * thread will close down the connection eventually.
          */
         connectionState.markTerminated();
-        transactionManager().interrupt( connectionState.getCurrentTransactionId() );
-
-        transactionManager().cleanUp( new CleanUpContext( context.connectionId() ) );
+        statementProcessor().markCurrentTransactionForTermination();
     }
 
     @Override
@@ -269,29 +263,13 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         // We should not switch threads when there's an active statement (executing/streaming)
         // Also, we're currently sticking to the thread when there's an open transaction due to
         // cursor errors we receive when a transaction is picked up by another thread linearly.
-        if ( connectionState.getCurrentTransactionId() == null )
-        {
-            return false;
-        }
-        else
-        {
-            var transactionState = transactionManager().transactionStatus( connectionState.getCurrentTransactionId() );
-            return transactionState.value().equals( TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT );
-        }
+        return statementProcessor().hasTransaction() || statementProcessor().hasOpenStatement();
     }
 
     @Override
     public boolean hasOpenStatement()
     {
-        if ( connectionState.getCurrentTransactionId() == null )
-        {
-            return false;
-        }
-        else
-        {
-            var transactionState = transactionManager().transactionStatus( connectionState.getCurrentTransactionId() );
-            return transactionState.value().equals( TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT );
-        }
+        return statementProcessor().hasOpenStatement();
     }
 
     @Override
@@ -299,7 +277,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     {
         try
         {
-            resetTransactionState();
+            resetStatementProcessor();
             return true;
         }
         catch ( Throwable t )
@@ -340,19 +318,14 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         return state;
     }
 
-    public TransactionManager transactionManager()
+    public StatementProcessor statementProcessor()
     {
-        return context.getTransactionManager();
+        return connectionState.getStatementProcessor();
     }
 
     public MutableConnectionState connectionState()
     {
         return connectionState;
-    }
-
-    public StateMachineContext stateMachineContext()
-    {
-        return context;
     }
 
     private void fail( Neo4jError neo4jError )
@@ -368,17 +341,13 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         }
     }
 
-    private void resetTransactionState()
+    private void resetStatementProcessor()
     {
         try
         {
-            if ( connectionState.getCurrentTransactionId() != null )
-            {
-                transactionManager().rollback( connectionState.getCurrentTransactionId() );
-                connectionState.clearCurrentTransactionId();
-            }
+            statementProcessor().reset();
         }
-        catch ( TransactionNotFoundException e )
+        catch ( TransactionFailureException e )
         {
             throw new RuntimeException( e );
         }

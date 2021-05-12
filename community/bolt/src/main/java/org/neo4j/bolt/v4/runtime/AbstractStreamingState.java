@@ -43,18 +43,15 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
     @Override
     protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
-        context.connectionState().ensureNoPendingTerminationNotice();
-
         if ( message instanceof PullMessage )
         {
             PullMessage pullMessage = (PullMessage) message;
-            return processStreamPullResultMessage( pullMessage.statementId(), new PullResultConsumer( context, pullMessage.n() ), context, pullMessage.n() );
+            return processStreamResultMessage( pullMessage.statementId(), new PullResultConsumer( context, pullMessage.n() ), context );
         }
         if ( message instanceof DiscardMessage )
         {
             DiscardMessage discardMessage = (DiscardMessage) message;
-            return processStreamDiscardResultMessage( discardMessage.statementId(), new DiscardResultConsumer( context, discardMessage.n() ),
-                                                      context, discardMessage.n() );
+            return processStreamResultMessage( discardMessage.statementId(), new DiscardResultConsumer( context, discardMessage.n() ), context );
         }
         return null;
     }
@@ -64,12 +61,7 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
         this.readyState = readyState;
     }
 
-    protected abstract BoltStateMachineState processStreamPullResultMessage( int statementId, ResultConsumer resultConsumer,
-                                                                             StateMachineContext context, long numberToPull )
-            throws Throwable;
-
-    protected abstract BoltStateMachineState processStreamDiscardResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context,
-                                                                                long noToDiscard )
+    protected abstract BoltStateMachineState processStreamResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context )
             throws Throwable;
 
     @Override

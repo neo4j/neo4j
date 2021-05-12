@@ -20,10 +20,8 @@
 package org.neo4j.bolt.v4.runtime;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.time.Duration;
-import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
@@ -45,7 +43,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -63,11 +60,10 @@ class TransactionStateMachineSPIProviderV4Test
     void shouldReturnTransactionStateMachineSPIIfDatabaseExists() throws Throwable
     {
         String databaseName = "database";
-        String txId = "123";
         DatabaseManagementService managementService = managementService( databaseName );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( databaseName, mock( StatementProcessorReleaseManager.class ), txId );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( databaseName, mock( StatementProcessorReleaseManager.class ) );
         assertThat( spi ).isInstanceOf( TransactionStateMachineV4SPI.class );
     }
 
@@ -75,14 +71,11 @@ class TransactionStateMachineSPIProviderV4Test
     void shouldReturnDefaultTransactionStateMachineSPIWithEmptyDatabasename() throws Throwable
     {
         String databaseName = "neo4j";
-        String txId = "123";
-
         DatabaseManagementService managementService = managementService( databaseName );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
         when( mockBoltChannel.defaultDatabase() ).thenReturn( "neo4j" );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class, RETURNS_MOCKS ), txId );
-
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class, RETURNS_MOCKS ) );
         assertThat( spi ).isInstanceOf( TransactionStateMachineV4SPI.class );
     }
 
@@ -91,13 +84,11 @@ class TransactionStateMachineSPIProviderV4Test
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         var databaseName = "database";
-        String txId = "123";
-
         when( managementService.database( databaseName ) ).thenThrow( new DatabaseNotFoundException( databaseName ) );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
 
         BoltIOException error = assertThrows( BoltIOException.class, () ->
-                spiProvider.getTransactionStateMachineSPI( databaseName, mock( StatementProcessorReleaseManager.class ), txId ) );
+                spiProvider.getTransactionStateMachineSPI( databaseName, mock( StatementProcessorReleaseManager.class ) ) );
         assertThat( error.status() ).isEqualTo( Status.Database.DatabaseNotFound );
         assertThat( error.getMessage() ).contains( "Database does not exist. Database name: 'database'." );
     }
@@ -106,7 +97,6 @@ class TransactionStateMachineSPIProviderV4Test
     void shouldAllocateMemoryForTransactionStateMachineSPI() throws BoltProtocolBreachFatality, BoltIOException
     {
         String databaseName = "neo4j";
-        String txId = "123";
         var clock = mock( SystemNanoClock.class );
 
         DatabaseManagementService managementService = managementService( databaseName );
@@ -119,14 +109,11 @@ class TransactionStateMachineSPIProviderV4Test
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
         var spiProvider = new TransactionStateMachineSPIProviderV4( dbProvider, mockBoltChannel, clock, memoryTracker );
 
-        spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ), txId );
-
-        ArgumentCaptor<Long> allocations = ArgumentCaptor.forClass( Long.class );
+        spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
 
         verify( memoryTracker ).getScopedMemoryTracker();
-        verify( scopedMemoryTracker, times( 2 ) ).allocateHeap( allocations.capture() );
-        assertEquals( List.of( TransactionStateMachineV4SPI.SHALLOW_SIZE, BoltKernelGraphDatabaseServiceProvider.SHALLOW_SIZE),
-                      allocations.getAllValues() );
+        verify( scopedMemoryTracker ).allocateHeap( TransactionStateMachineV4SPI.SHALLOW_SIZE );
+        verify( scopedMemoryTracker ).allocateHeap( BoltKernelGraphDatabaseServiceProvider.SHALLOW_SIZE );
         verify( scopedMemoryTracker ).getScopedMemoryTracker();
         verifyNoMoreInteractions( memoryTracker );
         verifyNoMoreInteractions( scopedMemoryTracker );

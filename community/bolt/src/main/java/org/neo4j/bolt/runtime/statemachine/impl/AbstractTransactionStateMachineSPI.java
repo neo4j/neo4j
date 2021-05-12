@@ -53,16 +53,14 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     private final Clock clock;
     private final BoltChannel boltChannel;
     private final StatementProcessorReleaseManager resourceReleaseManager;
-    private final String transactionId;
 
     public AbstractTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, SystemNanoClock clock,
-                                               StatementProcessorReleaseManager resourceReleaseManager, String transactionId )
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
         this.boltGraphDatabaseServiceSPI = boltGraphDatabaseServiceSPI;
         this.boltChannel = boltChannel;
         this.clock = clock;
-        this.resourceReleaseManager = resourceReleaseManager;
-        this.transactionId = transactionId;
+        this.resourceReleaseManager = resourceReleaseManger;
     }
 
     @Override
@@ -110,7 +108,7 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     public void transactionClosed()
     {
         boltGraphDatabaseServiceSPI.freeTransaction();
-        resourceReleaseManager.releaseStatementProcessor( transactionId );
+        resourceReleaseManager.releaseStatementProcessor();
     }
 
     protected abstract BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor );
