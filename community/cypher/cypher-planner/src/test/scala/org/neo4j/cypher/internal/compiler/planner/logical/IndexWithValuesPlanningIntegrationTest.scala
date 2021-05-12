@@ -61,7 +61,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   // or planner between two indexes
 
-  test("in an OR index plan should not use cached values outside union for range predicates") {
+  test("in an OR index plan should use cached values outside union for range predicates") {
     val plan = new given {
       indexOn("Awesome", "prop1").providesValues()
       indexOn("Awesome", "prop2").providesValues()
@@ -107,7 +107,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     }.toSeq should contain(plan._2)
   }
 
-  test("in an OR index plan should not use cached values outside union for equality predicates") {
+  test("in an OR index plan should use cached values outside union for equality predicates") {
     val plan = new given {
       indexOn("Awesome", "prop1").providesValues()
       indexOn("Awesome", "prop2").providesValues()
