@@ -439,7 +439,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
 
     assertGood(
-      attach(nodeIndexSeek("x:Label(Prop)", getValue = GetValue), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop)", getValue = _ => GetValue), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL, cache[x.Prop]")), Set("x")))
 
     assertGood(
@@ -447,7 +447,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL")), Set("x")))
 
     assertGood(
-      attach(nodeIndexSeek("x:Label(Prop,Foo)", getValue = GetValue), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop,Foo)", getValue = _ => GetValue), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren,
         Seq(details("x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL, cache[x.Prop], cache[x.Foo]")), Set("x")))
 
@@ -456,7 +456,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
 
     assertGood(
-      attach(nodeIndexSeek("x:Label(Prop = 'Andres')", getValue = GetValue), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 'Andres')", getValue = _ => GetValue), 23.0),
       planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]")), Set("x")))
 
     assertGood(
@@ -536,10 +536,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "UndirectedRelationshipIndexScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
 
     assertGood(
-      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = GetValue), 23.0),
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = _ => GetValue), 23.0),
       planDescription(id, "DirectedRelationshipIndexSeek", NoChildren, Seq(details("r:R(Prop) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
     assertGood(
-      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = GetValue), 23.0),
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = _ => GetValue), 23.0),
       planDescription(id, "UndirectedRelationshipIndexSeek", NoChildren, Seq(details("r:R(Prop) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
 
     assertGood(

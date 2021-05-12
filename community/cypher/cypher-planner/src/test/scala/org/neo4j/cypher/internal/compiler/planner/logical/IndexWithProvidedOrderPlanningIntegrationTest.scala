@@ -327,7 +327,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .partialSort(Seq(sortOrder("r.prop")), Seq(Ascending("r.foo")))
         .projection("r.foo AS `r.foo`")
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -351,7 +351,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .partialSort(Seq(sortOrder("r.prop")), Seq(Ascending("r.foo")))
         .projection("r.foo AS `r.foo`")
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)-[r:REL(prop > 123)]->(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop > 123)]->(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -531,7 +531,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(planner.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -553,7 +553,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(planner.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -575,7 +575,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(planner.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'sub')]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'sub')]-(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -597,7 +597,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(planner.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'sub')]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'sub')]-(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -678,7 +678,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .projection("cacheR[r.prop] AS `r.prop`")
         .apply()
         .|.relationshipIndexOperator("(c)-[r2:REL2(prop = ???)]-(d)", paramExpr = Some(cachedRelProp("r", "prop")), argumentIds = Set("a", "r", "b"))
-        .relationshipIndexOperator("(a)-[r:REL(prop > 'foo')]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop > 'foo')]-(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -1050,7 +1050,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(planner.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = plannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -1067,7 +1067,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.prop]"), "cache[a.prop] AS `a.prop`")
-        .nodeIndexOperator("a:A(prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .nodeIndexOperator("a:A(prop)", indexOrder = expectedPlannedOrder, getValue = _ => GetValue)
         .build()
 
       plan shouldEqual expectedPlan
@@ -1085,7 +1085,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.prop]"), "a.foo AS `a.foo`", "cache[a.prop] AS `a.prop`")
-        .nodeIndexOperator("a:A(prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .nodeIndexOperator("a:A(prop)", indexOrder = expectedPlannedOrder, getValue = _ => GetValue)
         .build()
 
       plan shouldEqual expectedPlan
@@ -1103,7 +1103,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.foo]", "cache[a.prop]"), "cache[a.foo] AS `a.foo`", "cache[a.prop] AS `a.prop`")
-        .nodeIndexOperator("a:A(foo, prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .nodeIndexOperator("a:A(foo, prop)", indexOrder = expectedPlannedOrder, getValue = _ => GetValue)
         .build()
 
       plan shouldEqual expectedPlan
@@ -1121,7 +1121,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .orderedDistinct(Seq("cache[a.foo]", "cache[a.prop]"), "cache[a.foo] AS `a.foo`", "cache[a.prop] AS `a.prop`")
-        .nodeIndexOperator("a:A(foo, prop)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .nodeIndexOperator("a:A(foo, prop)", indexOrder = expectedPlannedOrder, getValue = _ => GetValue)
         .build()
 
       plan shouldEqual expectedPlan
@@ -1140,7 +1140,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
         .sort(Seq(sortOrder("c")))
         .orderedAggregation(Seq("cache[a.prop] AS `a.prop`"), Seq("count(*) AS c"), Seq("cache[a.prop]"))
-        .nodeIndexOperator("a:A(prop > 0)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .nodeIndexOperator("a:A(prop > 0)", indexOrder = expectedPlannedOrder, getValue = _ => GetValue)
         .build()
 
       plan shouldEqual expectedPlan
@@ -1167,7 +1167,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should equal(planner.subPlanBuilder()
         .sort(Seq(sortOrder("c")))
         .orderedAggregation(Seq("cacheR[r.prop] AS `r.prop`"), Seq("count(*) AS c"), Seq("cacheR[r.prop]"))
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = expectedPlannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -1193,7 +1193,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should equal(planner.subPlanBuilder()
         .sort(Seq(sortOrder("c")))
         .orderedAggregation(Seq("cacheR[r.prop] AS `r.prop`"), Seq("count(*) AS c"), Seq("cacheR[r.prop]"))
-        .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", indexOrder = expectedPlannedOrder, getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop > 123)]-(b)", indexOrder = expectedPlannedOrder, getValue = _ => GetValue)
         .build()
       )
     }
@@ -1249,7 +1249,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         } getLogicalPlanFor query
 
         // Then
-        val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder, getValue = GetValue)
+        val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
         plan._2 should equal {
           if (shouldPartialSort)
             PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
@@ -1302,7 +1302,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Projection(
               Selection(
                 ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3))),
-                nodeIndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder, getValue = GetValue)
+                nodeIndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder, getValue = _ => GetValue)
               ),
               Map(
                 "n.prop1" -> cachedNodeProp("n", "prop1"),
@@ -1422,7 +1422,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         } getLogicalPlanFor query
 
         // Then
-        val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = GetValue)
+        val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = _ => GetValue)
         plan._2 should equal {
           if (fullSort)
             Sort(Projection(Selection(expr, leafPlan), projectionsAll), sortItems)
@@ -1487,7 +1487,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         } getLogicalPlanFor query
 
         // Then
-        val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = GetValue)
+        val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = _ => GetValue)
         plan._2 should equal {
           if (sort)
             Projection(PartialSort(Projection(Selection(expr, leafPlan), projections), alreadySorted, toSort), projectionsAfterSort)
@@ -1658,7 +1658,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           } getLogicalPlanFor query
 
           // Then
-          val leafPlan = nodeIndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = GetValue)
+          val leafPlan = nodeIndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
           plan._2 should equal {
             if (shouldSort)
               PartialSort(Projection(leafPlan, projection), alreadySorted, toBeSorted)
@@ -1707,7 +1707,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           } getLogicalPlanFor query
 
           // Then
-          val leafPlan = Selection(ands(equals(cachedNodeProp("n", "prop2"), literalInt(3))), nodeIndexSeek("n:Label(prop1 <= 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue))
+          val leafPlan = Selection(ands(equals(cachedNodeProp("n", "prop2"), literalInt(3))), nodeIndexSeek("n:Label(prop1 <= 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue))
           plan._2 should equal {
             if (shouldSort)
               Sort(Projection(leafPlan, projection), toBeSorted)
@@ -1755,7 +1755,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
           } getLogicalPlanFor query
 
-          plan._2 should equal(Projection(nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = GetValue), projection))
+          plan._2 should equal(Projection(nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue), projection))
         }
     }
   }
@@ -1844,7 +1844,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         Optional(
           Limit(
             Projection(
-              nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+              nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
@@ -1862,7 +1862,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         Optional(
           Limit(
             Projection(
-              nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+              nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
@@ -1886,7 +1886,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Optional(
             Limit(
               Projection(
-                nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+                nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1)
@@ -1906,7 +1906,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Optional(
             Limit(
               Projection(
-                nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+                nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1)
@@ -1930,7 +1930,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         Optional(
           Limit(
             Projection(
-              nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+              nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
               Map("agg" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
@@ -1946,7 +1946,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan._2 should equal(
         Aggregation(
-          nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = IndexOrderNone, getValue = GetValue),
+          nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = IndexOrderNone, getValue = _ => GetValue),
           Map.empty,
           Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")),
             "count(n.prop)" -> count(cachedNodeProp("n", "prop")))
@@ -1989,7 +1989,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                .optional()
                .limit(1)
                .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
-               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = _ => GetValue, indexOrder = plannedOrder)
                .build()
     }
 
@@ -2005,7 +2005,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         planner.planBuilder()
                .produceResults(s"`$functionName(r.prop)`")
                .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
-               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = GetValue)
+               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = _ => GetValue)
                .build()
 
     }
@@ -2026,7 +2026,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                .optional()
                .limit(1)
                .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
-               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = _ => GetValue, indexOrder = plannedOrder)
                .build()
     }
 
@@ -2044,7 +2044,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                .optional()
                .limit(1)
                .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
-               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = _ => GetValue, indexOrder = plannedOrder)
                .build()
     }
 
@@ -2068,7 +2068,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                .optional()
                .limit(1)
                .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
-               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = _ => GetValue, indexOrder = plannedOrder)
                .build()
     }
 
@@ -2087,7 +2087,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                .optional()
                .limit(1)
                .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")
-               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = _ => GetValue, indexOrder = plannedOrder)
                .build()
     }
 
@@ -2109,7 +2109,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                .optional()
                .limit(1)
                .projection(s"cacheR[r.prop] AS agg")
-               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = plannedOrder)
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = _ => GetValue, indexOrder = plannedOrder)
                .build()
     }
 
@@ -2125,7 +2125,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         planner.planBuilder()
                .produceResults(s"`$functionName(r.prop)`", "`count(r.prop)`")
                .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`", "count(cacheR[r.prop]) AS `count(r.prop)`"))
-               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue, indexOrder = IndexOrderNone)
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = _ => GetValue, indexOrder = IndexOrderNone)
                .build()
     }
 
@@ -2161,7 +2161,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan._2 should equal(
         Aggregation(
-          nodeIndexSeek("n:Awesome(prop > 0)", getValue = GetValue),
+          nodeIndexSeek("n:Awesome(prop > 0)", getValue = _ => GetValue),
           Map.empty,
           Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
         )
@@ -2180,7 +2180,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         planner.planBuilder()
                .produceResults(s"`$functionName(r.prop)`")
                .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
-               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = GetValue)
+               .relationshipIndexOperator("(n)-[r:REL(prop)]->(m)", getValue = _ => GetValue)
                .build()
     }
 
@@ -2196,7 +2196,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         planner.planBuilder()
                .produceResults(s"`$functionName(r.prop)`")
                .aggregation(Seq(), Seq(s"$functionName(cacheR[r.prop]) AS `$functionName(r.prop)`"))
-               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = GetValue)
+               .relationshipIndexOperator("(n)-[r:REL(prop > 0)]->(m)", getValue = _ => GetValue)
                .build()
     }
 

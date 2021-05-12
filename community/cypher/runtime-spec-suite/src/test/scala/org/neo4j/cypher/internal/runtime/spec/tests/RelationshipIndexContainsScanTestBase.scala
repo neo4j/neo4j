@@ -185,7 +185,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "text")
       .projection("cacheR[r.text] AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]->(y)", GetValue)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]->(y)", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -209,7 +209,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "text")
       .projection("cacheR[r.text] AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]-(y)", GetValue)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]-(y)", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

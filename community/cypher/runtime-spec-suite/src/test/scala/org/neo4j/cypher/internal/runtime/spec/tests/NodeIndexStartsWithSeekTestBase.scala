@@ -134,7 +134,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
       .projection("cache[x.text] AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH '1')", GetValue)
+      .nodeIndexOperator("x:Label(text STARTS WITH '1')", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -156,7 +156,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
       .projection("cache[x.text] AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH '1')", GetValue)
+      .nodeIndexOperator("x:Label(text STARTS WITH '1')", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

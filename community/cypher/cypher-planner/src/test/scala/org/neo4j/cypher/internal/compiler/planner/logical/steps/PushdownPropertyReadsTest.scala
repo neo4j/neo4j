@@ -648,7 +648,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .produceResults("n", "m")
       .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
-      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withEffectiveCardinality(90)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -660,7 +660,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .produceResults("n", "o")
       .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .expand("(n)-->(o)").withEffectiveCardinality(235)
-      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = CanGetValue).withEffectiveCardinality(90)
+      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -735,7 +735,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
-      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withEffectiveCardinality(90)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -748,7 +748,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .filter("mysteryRel.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("r AS mysteryRel").withEffectiveCardinality(235).newVar("mysteryRel", CTRelationship)
       .expand("(n)-->(0)").withEffectiveCardinality(235)
-      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = CanGetValue).withEffectiveCardinality(90)
+      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)

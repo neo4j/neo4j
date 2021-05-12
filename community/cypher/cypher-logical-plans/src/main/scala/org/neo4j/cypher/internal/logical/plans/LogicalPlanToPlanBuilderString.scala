@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
@@ -482,15 +483,9 @@ object LogicalPlanToPlanBuilderString {
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
     val uniqueStr = s", unique = $unique"
-    val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
-      (v1, v2) =>
-        if (v1 == v2) {
-          v1
-        } else {
-          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
-        }
-    }
-    val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
+
+    val getValueBehaviors = indexedPropertyGetValueBehaviors(properties)
+    val getValueStr = s", getValue = $getValueBehaviors"
     s""" "$indexStr"$indexOrderStr$argStr$getValueStr$uniqueStr """.trim
   }
 
@@ -507,16 +502,16 @@ object LogicalPlanToPlanBuilderString {
     val indexStr = s"($start)-[$idName:${typeToken.name}($parenthesesContent)]$rarrow($end)"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
-    val getValueBehavior = properties.map(_.getValueFromIndex).reduce {
-      (v1, v2) =>
-        if (v1 == v2) {
-          v1
-        } else {
-          throw new UnsupportedOperationException("Index operators with different getValueFromIndex behaviors not supported.")
-        }
-    }
-    val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
+
+    val getValueBehaviors = indexedPropertyGetValueBehaviors(properties)
+    val getValueStr = s", getValue = $getValueBehaviors"
     s""" "$indexStr"$indexOrderStr$argStr$getValueStr """.trim
+  }
+
+  private def indexedPropertyGetValueBehaviors(properties: Seq[IndexedProperty]): String = {
+    properties.map {
+      case IndexedProperty(PropertyKeyToken(name, _), getValueBehavior, _) => s"${wrapInQuotations(name)} -> ${objectName(getValueBehavior)}"
+    }.mkString("Map(", ", ", ")")
   }
 
   private def createNodeToString(createNode: CreateNode) = createNode match {

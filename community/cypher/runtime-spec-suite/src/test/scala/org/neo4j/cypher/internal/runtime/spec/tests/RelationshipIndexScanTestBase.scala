@@ -173,7 +173,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "foo")
       .projection("cacheR[r.prop] AS foo")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", GetValue)
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -202,7 +202,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "foo")
       .projection("cacheR[r.prop] AS foo")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", GetValue)
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -409,7 +409,7 @@ test("scan on inexact predicate if argument ids not provided") {
       planner.planBuilder()
         .produceResults("r")
         .filter("r.prop = b.prop")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
         .build()
     )
   }
@@ -463,7 +463,7 @@ test("scan on inexact predicate if argument ids not provided") {
         .filterExpression(hasLabels("c", "C"), isNotNull(prop("r2", "prop")))
         .expandAll("(b)<-[r2:REL2]-(c)")
         .filterExpression(hasLabels("b", "B"), hasLabels("a", "A"))
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
         .build()
     )
   }
@@ -496,9 +496,9 @@ test("scan on inexact predicate if argument ids not provided") {
         .produceResults("r", "r2")
         .nodeHashJoin("b")
         .|.filterExpression(hasLabels("c", "C"))
-        .|.relationshipIndexOperator("(c)-[r2:REL2(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .|.relationshipIndexOperator("(c)-[r2:REL2(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
         .filterExpression(hasLabels("b", "B"), hasLabels("a", "A"))
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
         .build()
     )
   }

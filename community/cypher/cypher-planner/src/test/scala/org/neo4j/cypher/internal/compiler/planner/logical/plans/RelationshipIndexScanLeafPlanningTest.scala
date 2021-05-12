@@ -308,7 +308,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -327,7 +327,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -348,7 +348,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -388,7 +388,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -570,7 +570,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -591,7 +591,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]->($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]->($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -612,7 +612,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -633,10 +633,10 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = _ => CanGetValue)
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop CONTAINS '$bepa')]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop CONTAINS '$bepa')]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
 
@@ -677,7 +677,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -704,7 +704,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop CONTAINS '$apa')]-($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -756,7 +756,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -777,7 +777,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]->($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]->($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -798,7 +798,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -826,10 +826,10 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = _ => CanGetValue)
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop ENDS WITH '$bepa')]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop ENDS WITH '$bepa')]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       solvedPredicates(resultPlans.head, ctx) should equal(Set(
@@ -869,7 +869,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -896,7 +896,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = DoNotGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop ENDS WITH '$apa')]-($endNodeName)", getValue = _ => DoNotGetValue)
           .build()
       ))
       val plan = resultPlans.head

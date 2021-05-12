@@ -162,9 +162,9 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
-import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
@@ -716,7 +716,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def nodeIndexOperator(indexSeekString: String,
-                        getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                        getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                         indexOrder: IndexOrder = IndexOrderNone,
                         paramExpr: Option[Expression] = None,
                         argumentIds: Set[String] = Set.empty,
@@ -731,7 +731,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def relationshipIndexOperator(indexSeekString: String,
-                                getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                                 indexOrder: IndexOrder = IndexOrderNone,
                                 paramExpr: Option[Expression] = None,
                                 argumentIds: Set[String] = Set.empty,
@@ -745,7 +745,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def nodeIndexSeek(indexSeekString: String,
-                    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                     indexOrder: IndexOrder = IndexOrderNone,
                     paramExpr: Option[Expression] = None,
                     argumentIds: Set[String] = Set.empty,
@@ -765,7 +765,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def relationshipIndexSeek(indexSeekString: String,
-                            getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                            getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                             indexOrder: IndexOrder = IndexOrderNone,
                             paramExpr: Option[Expression] = None,
                             argumentIds: Set[String] = Set.empty,

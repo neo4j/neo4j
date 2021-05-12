@@ -452,7 +452,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x")
-      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = GetValue)
+      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
       .build()
 
     plan should equal(expectedPlan)
@@ -2007,7 +2007,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val expectedPlan = cfg.subPlanBuilder()
       .sort(Seq(Ascending("other")))
       .orderedDistinct(Seq("cache[n.prop]"), "cache[n.prop] AS prop", "n.otherProp AS other")
-      .nodeIndexOperator("n:N(prop)", getValue = GetValue, indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("n:N(prop)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
       .build()
 
     plan shouldEqual expectedPlan

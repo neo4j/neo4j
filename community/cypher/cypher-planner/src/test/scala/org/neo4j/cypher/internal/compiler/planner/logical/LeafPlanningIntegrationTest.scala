@@ -179,7 +179,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' AND a.name = 'prefix1' RETURN a")._2 should equal(
       Selection(ands(startsWith(cachedNodeProp("a", "name"), literalString("prefix"))),
-        nodeIndexSeek("a:Person(name = 'prefix1')", GetValue)
+        nodeIndexSeek("a:Person(name = 'prefix1')", _ => GetValue)
       ))
   }
 
@@ -357,7 +357,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan._2 should equal(
       Selection(ands(isNotNull(cachedNodeProp("n", "prop"))),
-        nodeIndexSeek("n:Awesome(prop = 42)", GetValue)
+        nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue)
       ))
   }
 
@@ -607,8 +607,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
 
-    val seek1 = nodeIndexSeek("n:Awesome(prop1 = 42)", DoNotGetValue)
-    val seek2 = nodeIndexSeek("n:Awesome(prop2 = 3)", DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
+    val seek1 = nodeIndexSeek("n:Awesome(prop1 = 42)", _ => DoNotGetValue)
+    val seek2 = nodeIndexSeek("n:Awesome(prop2 = 3)", _ => DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
     val alt1 = Distinct(Union(seek2, seek1), Map("n" -> varFor("n")))
     val alt2 = Distinct(Union(seek1, seek2), Map("n" -> varFor("n")))
 
@@ -703,8 +703,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n")._2
 
-    val seek1 = nodeIndexSeek("n:Awesome(prop1 = 42)", DoNotGetValue)
-    val seek2 = nodeIndexSeek("n:Awesome(prop2 = 'apa')", DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
+    val seek1 = nodeIndexSeek("n:Awesome(prop1 = 42)", _ => DoNotGetValue)
+    val seek2 = nodeIndexSeek("n:Awesome(prop2 = 'apa')", _ => DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
     val alt1 = Distinct(Union(seek2, seek1), Map("n" -> varFor("n")))
     val alt2 = Distinct(Union(seek1, seek2), Map("n" -> varFor("n")))
 
@@ -734,8 +734,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val labelPredicate1 = hasLabels("n", "Label1")
     val labelPredicate2 = hasLabels("n", "Label2")
 
-    val seek1 = nodeIndexSeek("n:Label1(prop1 = 'val')", DoNotGetValue)
-    val seek2 = nodeIndexSeek("n:Label2(prop2 = 'val')", DoNotGetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
+    val seek1 = nodeIndexSeek("n:Label1(prop1 = 'val')", _ => DoNotGetValue)
+    val seek2 = nodeIndexSeek("n:Label2(prop2 = 'val')", _ => DoNotGetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
 
     val alt1 = Selection(Seq(labelPredicate1, labelPredicate2), Distinct(Union(seek2, seek1), Map("n" -> varFor("n"))))
     val alt2 = Selection(Seq(labelPredicate1, labelPredicate2), Distinct(Union(seek1, seek2), Map("n" -> varFor("n"))))
@@ -754,10 +754,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val hasLabel1 = hasLabels("n", "Label1")
     val hasLabel2 = hasLabels("n", "Label2")
 
-    val seekLabel1Prop1 = nodeIndexSeek("n:Label1(prop1 = 'val')", DoNotGetValue)
-    val seekLabel1Prop2 = nodeIndexSeek("n:Label1(prop2 = 'val')", DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
-    val seekLabel2Prop1 = nodeIndexSeek("n:Label2(prop1 = 'val')", DoNotGetValue, labelId = 1)
-    val seekLabel2Prop2 = nodeIndexSeek("n:Label2(prop2 = 'val')", DoNotGetValue, labelId = 1, propIds = Some(Map("prop2" -> 1)))
+    val seekLabel1Prop1 = nodeIndexSeek("n:Label1(prop1 = 'val')", _ => DoNotGetValue)
+    val seekLabel1Prop2 = nodeIndexSeek("n:Label1(prop2 = 'val')", _ => DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
+    val seekLabel2Prop1 = nodeIndexSeek("n:Label2(prop1 = 'val')", _ => DoNotGetValue, labelId = 1)
+    val seekLabel2Prop2 = nodeIndexSeek("n:Label2(prop2 = 'val')", _ => DoNotGetValue, labelId = 1, propIds = Some(Map("prop2" -> 1)))
 
     val coveringCombinations = Seq(
       (Seq(seekLabel1Prop1, seekLabel1Prop2), hasLabel2),

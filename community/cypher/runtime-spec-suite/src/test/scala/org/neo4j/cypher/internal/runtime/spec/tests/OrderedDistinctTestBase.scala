@@ -266,7 +266,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .orderedDistinct(Seq("cache[x.prop]"), "cache[x.prop] AS prop")
-      .nodeIndexOperator(s"x:A(prop > ${sizeHint / 2})", GetValue, indexOrder = IndexOrderAscending)
+      .nodeIndexOperator(s"x:A(prop > ${sizeHint / 2})", _ => GetValue, indexOrder = IndexOrderAscending)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

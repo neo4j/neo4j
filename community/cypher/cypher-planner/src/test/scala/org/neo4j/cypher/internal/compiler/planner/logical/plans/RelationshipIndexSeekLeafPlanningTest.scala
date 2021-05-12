@@ -123,7 +123,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ${lit42.stringVal})]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ${lit42.stringVal})]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -141,7 +141,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop = ${lit42.stringVal})]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop = ${lit42.stringVal})]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -159,7 +159,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ${lit42.stringVal})]->($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ${lit42.stringVal})]->($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -197,7 +197,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop < ${lit42.stringVal})]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop < ${lit42.stringVal})]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -222,7 +222,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???)]-($endNodeName)",
             paramExpr = Some(x),
             argumentIds = Set("x"),
-            getValue = CanGetValue)
+            getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -294,7 +294,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???)]-($endNodeName)",
             paramExpr = Some(xProp),
             argumentIds = Set(x),
-            getValue = CanGetValue)
+            getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -356,19 +356,19 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42, foo = ???)]-($endNodeName)",
             paramExpr = Some(xProp),
             argumentIds = Set(x),
-            getValue = CanGetValue)
+            getValue = _ => CanGetValue)
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???, foo = 42)]-($endNodeName)",
             paramExpr = Some(xProp),
             argumentIds = Set(x),
-            getValue = CanGetValue)
+            getValue = _ => CanGetValue)
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???, foo = ???)]-($endNodeName)",
             paramExpr = Some(xProp),
             argumentIds = Set(x),
-            getValue = CanGetValue)
+            getValue = _ => CanGetValue)
           .build(),
       ))
     }
@@ -441,12 +441,12 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 6 OR 42)]-($endNodeName)",
-            getValue = CanGetValue,
+            getValue = _ => CanGetValue,
             argumentIds = Set(x))
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42)]-($endNodeName)",
-            getValue = CanGetValue,
+            getValue = _ => CanGetValue,
             argumentIds = Set(x))
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
@@ -457,7 +457,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???)]-($endNodeName)",
             paramExpr = Some(xProp),
             argumentIds = Set(x),
-            getValue = CanGetValue)
+            getValue = _ => CanGetValue)
           .build()
       ))
     }
@@ -476,7 +476,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42)]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       val plan = resultPlans.head
@@ -497,7 +497,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       // then
       resultPlans should equal(Seq(
         new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42)]-($endNodeName)", getValue = CanGetValue)
+          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
       ))
       val plan = resultPlans.head

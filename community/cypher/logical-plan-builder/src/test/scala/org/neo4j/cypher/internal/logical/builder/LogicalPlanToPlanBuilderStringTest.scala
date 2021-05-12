@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import java.lang.reflect.Modifier
-
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -53,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
+import java.lang.reflect.Modifier
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -784,17 +783,22 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.nodeIndexOperator("x:Honey(prop >= 20)", indexOrder = IndexOrderNone)
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = DoNotGetValue)
+      .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = _ => DoNotGetValue)
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = GetValue)
+      .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = {case "prop" => GetValue})
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '20')", indexOrder = IndexOrderDescending)
+      .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '20')", indexOrder = IndexOrderDescending, getValue = Map("prop" -> GetValue, "prop2" -> DoNotGetValue))
       .apply()
       .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"))
       .apply()
       .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending)
-      .apply()
-      .|.nodeIndexOperator("x:Honey(prop2 = 10, prop)")
+      .nodeIndexOperator("x:Honey(prop2 = 10, prop)")
+      .build()
+  })
+
+  // Split into 2 tests to avoid StackOverflow exceptions on too long method call chains.
+  testPlan("nodeIndexOperator 2", {
+    val builder = new TestPlanBuilder().produceResults("r")
 
     // NodeUniqueIndexSeek
     builder
@@ -807,22 +811,26 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.nodeIndexOperator("x:Honey(prop >= 20)", indexOrder = IndexOrderNone, unique = true)
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = DoNotGetValue, unique = true)
+      .|.nodeIndexOperator("x:Honey(prop < 20)", getValue = _ => DoNotGetValue, unique = true)
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = GetValue, unique = true)
+      .|.nodeIndexOperator("x:Honey(prop <= 20)", getValue = _ => GetValue, unique = true)
       .apply()
       .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '20')", indexOrder = IndexOrderDescending, unique = true)
       .apply()
       .|.nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", argumentIds = Set("a", "b"), unique = true)
-      .apply()
-      .|.nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending, unique = true)
+      .nodeIndexOperator("x:Label(text STARTS WITH 'as')", indexOrder = IndexOrderAscending, unique = true)
+      .build()
+  })
+
+  testPlan("nodeIndexOperator - scans", {
+    val builder = new TestPlanBuilder().produceResults("r")
 
     // NodeIndexScan
     builder
       .apply()
       .|.nodeIndexOperator("x:Honey(calories)")
       .apply()
-      .|.nodeIndexOperator("x:Honey(calories, taste)", getValue = GetValue)
+      .|.nodeIndexOperator("x:Honey(calories, taste)", getValue = _ => GetValue)
       .apply()
       .|.nodeIndexOperator("x:Honey(calories, taste)", indexOrder = IndexOrderDescending)
       .apply()
@@ -833,7 +841,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.nodeIndexOperator("x:Label(text CONTAINS 'as')")
       .apply()
-      .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", getValue = GetValue)
+      .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", getValue = _ => GetValue)
       .apply()
       .|.nodeIndexOperator("x:Honey(text CONTAINS 'as')", indexOrder = IndexOrderDescending)
       .apply()
@@ -844,7 +852,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.nodeIndexOperator("x:Label(text ENDS WITH 'as')")
       .apply()
-      .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", getValue = GetValue)
+      .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", getValue = _ => GetValue)
       .apply()
       .|.nodeIndexOperator("x:Honey(text ENDS WITH 'as')", indexOrder = IndexOrderDescending)
       .nodeIndexOperator("x:Honey(text ENDS WITH 'as')", argumentIds = Set("a", "b"))
@@ -876,15 +884,20 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(prop >= 20)]->(y)", indexOrder = IndexOrderNone)
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)->(y)", getValue = DoNotGetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)->(y)", getValue = _ => DoNotGetValue)
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)->(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)->(y)", getValue = _ => GetValue)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10, prop2 = '20')->(y)", indexOrder = IndexOrderDescending)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')->(y)", argumentIds = Set("a", "b"))
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')->(y)", indexOrder = IndexOrderAscending)
+      .relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')->(y)", indexOrder = IndexOrderAscending)
+      .build()
+  })
+
+  // Split into 2 tests to avoid StackOverflow exceptions on too long method call chains.
+  testPlan("relationshipIndexOperator 2", {
+    val builder = new TestPlanBuilder().produceResults("r")
 
     // undirected RelationshipIndexSeek
     builder
@@ -905,44 +918,52 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(prop >= 20)]-(y)", indexOrder = IndexOrderNone)
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)-(y)", getValue = DoNotGetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)-(y)", getValue = _ => DoNotGetValue)
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)-(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)-(y)", getValue = _ => GetValue)
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10, prop2 = '20')-(y)", indexOrder = IndexOrderDescending)
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10, prop2 = '20')-(y)", indexOrder = IndexOrderDescending, getValue = {case "prop" => GetValue; case "prop2" => DoNotGetValue})
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')-(y)", argumentIds = Set("a", "b"))
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')-(y)", indexOrder = IndexOrderAscending)
+      .relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')-(y)", indexOrder = IndexOrderAscending)
+      .build()
+  })
 
-    // directed relationship indexScan
+  testPlan("relationshipIndexOperator - scan", {
+    val builder = new TestPlanBuilder().produceResults("r")
+
+    // directed indexScan
     builder
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(calories)->(y)")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", getValue = {case "calories" => GetValue; case _ => DoNotGetValue})
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", indexOrder = IndexOrderDescending)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", argumentIds = Set("a", "b"))
 
-    // undirected relationship indexScan
+    // undirected indexScan
     builder
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(calories)-(y)")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", getValue = _ => GetValue)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", indexOrder = IndexOrderDescending)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", argumentIds = Set("a", "b"))
+      .relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", argumentIds = Set("a", "b"))
+      .build()
+  })
+
+  testPlan("relationshipIndexOperator - contains", {
+    val builder = new TestPlanBuilder().produceResults("r")
 
     // directed contains scan
     builder
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')->(y)")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", getValue = _ => GetValue)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", indexOrder = IndexOrderDescending)
       .apply()
@@ -953,19 +974,22 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')-(y)")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", getValue = _ => GetValue)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", indexOrder = IndexOrderDescending)
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", argumentIds = Set("a", "b"))
+      .relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", argumentIds = Set("a", "b"))
+      .build()
+  })
 
+  testPlan("relationshipIndexOperator - ends with", {
+    val builder = new TestPlanBuilder().produceResults("r")
 
     // directed ends with scan
     builder
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')->(y)")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", getValue = _ => GetValue)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", indexOrder = IndexOrderDescending)
       .apply()
@@ -976,7 +1000,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')-(y)")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", getValue = GetValue)
+      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", getValue = _ => GetValue)
       .apply()
       .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", indexOrder = IndexOrderDescending)
       .relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", argumentIds = Set("a", "b"))

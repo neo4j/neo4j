@@ -909,7 +909,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop")
       .projection("cache[x.prop] AS prop")
-      .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", GetValue)
+      .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -932,7 +932,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop", "prop2")
       .projection("cache[x.prop] AS prop", "cache[x.prop2] AS prop2")
-      .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", GetValue)
+      .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -954,7 +954,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop = ???)", GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
+      .|.nodeIndexOperator("x:Honey(prop = ???)", _ => GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
       .input(variables = Seq("value"))
       .build()
 
@@ -1294,7 +1294,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop")
       .projection("cache[x.prop] AS prop")
-      .nodeIndexOperator("x:Honey(prop = 10)", GetValue, unique = true)
+      .nodeIndexOperator("x:Honey(prop = 10)", _ => GetValue, unique = true)
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1349,7 +1349,7 @@ trait EnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .projection("'borked' AS borked")
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", unique = true, getValue = GetValue, argumentIds = Set("a"))
+      .|.nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", unique = true, getValue = _ => GetValue, argumentIds = Set("a"))
       .distinct("a AS a")
       .nodeByLabelScan("a", "Milk", IndexOrderAscending)
       .build()

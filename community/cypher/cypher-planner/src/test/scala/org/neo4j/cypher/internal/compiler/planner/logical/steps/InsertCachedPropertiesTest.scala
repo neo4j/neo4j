@@ -35,18 +35,15 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
@@ -57,11 +54,9 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
-import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CachedNodeProperty
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -98,13 +93,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
-  def nodeIndexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property)", getValueFromIndex)
-  def nodeIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex)
-  def nodeUniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex, unique = true)
-  def nodeIndexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", getValueFromIndex)
-  def nodeIndexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValueFromIndex)
+  def nodeIndexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property)", _ => getValueFromIndex)
+  def nodeIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", _ => getValueFromIndex)
+  def nodeUniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", _ => getValueFromIndex, unique = true)
+  def nodeIndexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", _ => getValueFromIndex)
+  def nodeIndexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", _ => getValueFromIndex)
 
-  def relationshipIndexScan(rel: String, typ: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): RelationshipIndexLeafPlan = IndexSeek.relationshipIndexSeek(s"(x)-[$rel:$typ($property)]->(y)", getValueFromIndex)
+  def relationshipIndexScan(rel: String, typ: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): RelationshipIndexLeafPlan = IndexSeek.relationshipIndexSeek(s"(x)-[$rel:$typ($property)]->(y)", _ => getValueFromIndex)
 
   for((indexOperator, name) <- Seq((nodeIndexScan _, "indexScan"),
                                   (nodeIndexSeek _, "indexSeek"),

@@ -103,7 +103,7 @@ object IndexSeek {
    * Construct a node index seek/scan operator by parsing a string.
    */
   def nodeIndexSeek(indexSeekString: String,
-                    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                     indexOrder: IndexOrder = IndexOrderNone,
                     paramExpr: Option[Expression] = None,
                     argumentIds: Set[String] = Set.empty,
@@ -154,7 +154,7 @@ object IndexSeek {
    * Construct a relationship index seek/scan operator by parsing a string.
    */
   def relationshipIndexSeek(indexSeekString: String,
-                            getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                            getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                             indexOrder: IndexOrder = IndexOrderNone,
                             paramExpr: Option[Expression] = None,
                             argumentIds: Set[String] = Set.empty,
@@ -220,7 +220,7 @@ object IndexSeek {
 
   private def createPlan[T <: LogicalLeafPlan](predicates: Array[String],
                                                entityType: EntityType,
-                                               getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                               getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                                                paramExpr: Option[Expression],
                                                propIds: Option[PartialFunction[String, Int]],
                                                customQueryExpression: Option[QueryExpression[Expression]],
@@ -247,7 +247,7 @@ object IndexSeek {
           nextPropId()
         }
 
-      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue, entityType)
+      IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue(prop), entityType)
     }
 
     def value(value: String): Expression =
