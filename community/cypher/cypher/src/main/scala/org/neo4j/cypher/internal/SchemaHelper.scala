@@ -48,20 +48,19 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
                    executionPlan: ExecutableQuery,
                    tc: TransactionalContext): LockedEntities = {
     // Lock all used indexes
-    val labelIds: Array[Long] = executionPlan.labelIdsOfUsedIndexes
+    val labelIds = executionPlan.labelIdsOfUsedIndexes
     val relationshipIds = executionPlan.relationshipsOfUsedIndexes
     val lookupTypes: Array[EntityType] = executionPlan.lookupEntityTypes
-    acquireLocks(tc, labelIds, relationshipIds.keys.toArray, lookupTypes)
+    acquireLocks(tc, labelIds.keys.toArray, relationshipIds.keys.toArray, lookupTypes)
 
     if (lookupTypes.nonEmpty || labelIds.nonEmpty || relationshipIds.nonEmpty) {
       val schemaTokenAfter = readSchemaToken(tc)
       // Need to check if index has been dropped because we can still acquire and get the lock
-      // TODO: Fix for label indexes
-      val indexDropped = !indexExists(tc, Map.empty, relationshipIds, lookupTypes)
+      val indexDropped = !indexExists(tc, labelIds, relationshipIds, lookupTypes)
 
       // if the schema has changed while taking all locks OR if the lookup index has been dropped we release locks and return false
       if (schemaTokenBefore != schemaTokenAfter || indexDropped) {
-        releaseLocks(tc, labelIds, relationshipIds.keys.toArray, lookupTypes)
+        releaseLocks(tc, labelIds.keys.toArray, relationshipIds.keys.toArray, lookupTypes)
         return LockedEntities(successful = false, needsReplan = indexDropped)
       }
     }

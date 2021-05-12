@@ -198,8 +198,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                 scanStoreAsTokenIndexEnabled: Boolean): CompilerInfo = {
     val (lookupIndexes, schemaIndexes) = logicalPlan.indexUsage(scanStoreAsTokenIndexEnabled).partition(_.isInstanceOf[SchemaIndexLookupUsage])
     val schemaIndexUsage = schemaIndexes.collect {
-      case SchemaLabelIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-      case SchemaLabelIndexScanUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+      case SchemaLabelIndexSeekUsage(identifier, labelId, label, propertyKeys) =>
+        new SchemaIndexUsage(identifier, labelId, label, propertyKeys.map(_.nameId.id).toArray, propertyKeys.map(_.name): _*)
+      case SchemaLabelIndexScanUsage(identifier, labelId, label, propertyKeys) =>
+        new SchemaIndexUsage(identifier, labelId, label, propertyKeys.map(_.nameId.id).toArray, propertyKeys.map(_.name): _*)
     }.asJava
     val relationshipTypeIndexUsage = schemaIndexes.collect {
       case SchemaRelationshipIndexUsage(identifier, relTypeId, relType, propertyKeys) =>

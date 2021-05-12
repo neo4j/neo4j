@@ -26,19 +26,31 @@ public class SchemaIndexUsage extends IndexUsage
 {
     private final String label;
     private final String[] propertyKeys;
+    private final int[] propertyKeyIds;
     private final int labelId;
 
-    public SchemaIndexUsage( String identifier, int labelId, String label, String... propertyKeys )
+    public SchemaIndexUsage( String identifier, int labelId, String label, int[] propertyKeyIds, String... propertyKeys )
     {
         super( identifier );
         this.label = label;
         this.labelId = labelId;
         this.propertyKeys = propertyKeys;
+        this.propertyKeyIds = propertyKeyIds;
+    }
+
+    public SchemaIndexUsage( String identifier, int labelId, String label, String... propertyKeys )
+    {
+        this( identifier, labelId, label, new int[0], propertyKeys );
     }
 
     public int getLabelId()
     {
         return labelId;
+    }
+
+    public int[] getPropertyKeys()
+    {
+        return propertyKeyIds;
     }
 
     @Override

@@ -84,7 +84,7 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
     val indexes =
       indexReferences.map {
         case InternalIndexReference(LabelId(token), properties) =>
-          Iterators.first(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)))
+          Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)))
         case InternalIndexReference(RelTypeId(token), properties) =>
           Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forRelType(token, properties: _*)))
         case _ => throw new IllegalStateException()
