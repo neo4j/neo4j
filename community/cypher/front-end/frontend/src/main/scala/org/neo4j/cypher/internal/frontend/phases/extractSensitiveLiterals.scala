@@ -16,14 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
-import org.neo4j.cypher.internal.util.Foldable
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
@@ -33,22 +28,13 @@ import org.neo4j.cypher.internal.util.bottomUp
  * Extracts all literals of the query and replaces them with `SensitiveLiteral`
  */
 case object extractSensitiveLiterals extends Phase[BaseContext, BaseState, BaseState] with Step {
-  type LiteralReplacements = IdentityMap[Expression, Expression]
-  private val literalMatcher: PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
-    case l: Literal => acc => SkipChildren(acc + (l -> l.asSensitiveLiteral))
-    case _ => acc => TraverseChildren(acc)
-  }
-
-  private def rewriter(replacements: LiteralReplacements): Rewriter = bottomUp(Rewriter.lift {
-    case e: Expression if replacements.contains(e) =>
-      replacements(e)
-  })
 
   override def process(from: BaseState,
                        context: BaseContext): BaseState = {
-    val original = from.statement()
-    val replaceableLiterals = original.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
-    from.withStatement(original.endoRewrite(rewriter(replaceableLiterals)))
+    val rewriter: Rewriter = bottomUp(Rewriter.lift {
+      case l: Literal => l.asSensitiveLiteral
+    })
+    from.withStatement(from.statement().endoRewrite(rewriter))
   }
 
   override def phase = AST_REWRITE
