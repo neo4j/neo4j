@@ -20,14 +20,11 @@
 package org.neo4j.shell.cli;
 
 import jline.console.ConsoleReader;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -36,32 +33,30 @@ import org.neo4j.shell.log.Logger;
 
 import static java.lang.System.getProperty;
 import static java.nio.file.Files.isDirectory;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class FileHistorianTest
+class FileHistorianTest
 {
+    private final Logger logger = mock( Logger.class );
+    private final ConsoleReader reader = mock( ConsoleReader.class );
 
-    @Rule
-    public TemporaryFolder temp = new TemporaryFolder();
+    @TempDir
+    Path temp;
 
-    private Logger logger = mock( Logger.class );
-    private InputStream mockedInput = mock( InputStream.class );
-    private ConsoleReader reader = mock( ConsoleReader.class );
-
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         doReturn( System.out ).when( logger ).getOutputStream();
     }
 
     @Test
-    public void defaultHistoryFile() throws Exception
+    void defaultHistoryFile()
     {
         Path expectedPath = Paths.get( getProperty( "user.home" ), ".neo4j", ".neo4j_history" );
 
@@ -70,9 +65,9 @@ public class FileHistorianTest
     }
 
     @Test
-    public void noHistoryFileGivesMemoryHistory() throws Exception
+    void noHistoryFileGivesMemoryHistory() throws Exception
     {
-        Path historyFile = Paths.get( temp.newFolder().getAbsolutePath(), "asfasd", "zxvses", "fanjtaacf" );
+        Path historyFile = temp.resolve( Path.of( "asfasd", "zxvses", "fanjtaacf" ) );
         assertFalse( isDirectory( historyFile.getParent() ) );
         assertFalse( isDirectory( historyFile.getParent().getParent() ) );
         Historian historian = FileHistorian.setupHistory( reader, logger, historyFile.toFile() );

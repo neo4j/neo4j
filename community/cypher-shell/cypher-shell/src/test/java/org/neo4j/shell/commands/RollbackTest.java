@@ -19,43 +19,32 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class RollbackTest
+class RollbackTest
 {
+    private final TransactionHandler mockShell = mock( TransactionHandler.class );
+    private final Command rollbackCommand = new Rollback( mockShell );
 
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-    private Command rollbackCommand;
-    private TransactionHandler mockShell = mock( TransactionHandler.class );
-
-    @Before
-    public void setup()
+    @Test
+    void shouldNotAcceptArgs()
     {
-        this.rollbackCommand = new Rollback( mockShell );
+        CommandException exception = assertThrows( CommandException.class, () -> rollbackCommand.execute( "bob" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void shouldNotAcceptArgs() throws CommandException
-    {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( containsString( "Incorrect number of arguments" ) );
-
-        rollbackCommand.execute( "bob" );
-    }
-
-    @Test
-    public void rollbackTransaction() throws CommandException
+    void rollbackTransaction() throws CommandException
     {
         rollbackCommand.execute( "" );
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.state;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,13 +57,13 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
@@ -78,29 +78,29 @@ import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 
-public class BoltStateHandlerTest
+class BoltStateHandlerTest
 {
     private final Logger logger = mock( Logger.class );
     private final Driver mockDriver = mock( Driver.class );
     private final OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler( mockDriver );
     private final ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         when( mockDriver.session( any() ) ).thenReturn( new FakeSession() );
         doReturn( System.out ).when( logger ).getOutputStream();
     }
 
     @Test
-    public void versionIsEmptyBeforeConnect()
+    void versionIsEmptyBeforeConnect()
     {
         assertFalse( boltStateHandler.isConnected() );
         assertEquals( "", boltStateHandler.getServerVersion() );
     }
 
     @Test
-    public void versionIsEmptyIfDriverReturnsNull() throws CommandException
+    void versionIsEmptyIfDriverReturnsNull() throws CommandException
     {
         RecordingDriverProvider provider = new RecordingDriverProvider()
         {
@@ -118,7 +118,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void versionIsNotEmptyAfterConnect() throws CommandException
+    void versionIsNotEmptyAfterConnect() throws CommandException
     {
         Driver driverMock = stubResultSummaryInAnOpenSession( mock( Result.class ), mock( Session.class ), "Neo4j/9.4.1-ALPHA" );
 
@@ -129,7 +129,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void actualDatabaseNameIsNotEmptyAfterConnect() throws CommandException
+    void actualDatabaseNameIsNotEmptyAfterConnect() throws CommandException
     {
         Driver driverMock =
                 stubResultSummaryInAnOpenSession( mock( Result.class ), mock( Session.class ), "Neo4j/9.4.1-ALPHA", "my_default_db" );
@@ -141,7 +141,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void exceptionFromRunQueryDoesNotResetActualDatabaseNameToUnresolved() throws CommandException
+    void exceptionFromRunQueryDoesNotResetActualDatabaseNameToUnresolved() throws CommandException
     {
         Session sessionMock = mock( Session.class );
         Result resultMock = mock( Result.class );
@@ -170,7 +170,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void closeTransactionAfterRollback() throws CommandException
+    void closeTransactionAfterRollback() throws CommandException
     {
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
@@ -183,7 +183,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void exceptionsFromSilentDisconnectAreSuppressedToReportOriginalErrors()
+    void exceptionsFromSilentDisconnectAreSuppressedToReportOriginalErrors()
     {
         Session session = mock( Session.class );
         Result resultMock = mock( Result.class );
@@ -210,7 +210,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void closeTransactionAfterCommit() throws CommandException
+    void closeTransactionAfterCommit() throws CommandException
     {
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
@@ -222,7 +222,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void beginNeedsToBeConnected()
+    void beginNeedsToBeConnected()
     {
         assertFalse( boltStateHandler.isConnected() );
 
@@ -231,7 +231,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void commitNeedsToBeConnected()
+    void commitNeedsToBeConnected()
     {
         assertFalse( boltStateHandler.isConnected() );
 
@@ -240,7 +240,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void beginNeedsToInitialiseTransactionStatements() throws CommandException
+    void beginNeedsToInitialiseTransactionStatements() throws CommandException
     {
         boltStateHandler.connect();
 
@@ -249,7 +249,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void whenInTransactionHandlerLetsTransactionDoTheWork() throws CommandException
+    void whenInTransactionHandlerLetsTransactionDoTheWork() throws CommandException
     {
         Transaction transactionMock = mock( Transaction.class );
         Session sessionMock = mock( Session.class );
@@ -272,7 +272,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void rollbackNeedsToBeConnected()
+    void rollbackNeedsToBeConnected()
     {
         assertFalse( boltStateHandler.isConnected() );
 
@@ -281,23 +281,23 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void executeNeedsToBeConnected()
+    void executeNeedsToBeConnected()
     {
         var exception = assertThrows( CommandException.class, () -> boltStateHandler.runCypher( "", Collections.emptyMap() ) );
         assertThat( exception.getMessage(), containsString( "Not connected to Neo4j" ) );
     }
 
     @Test
-    public void shouldExecuteInTransactionIfOpen() throws CommandException
+    void shouldExecuteInTransactionIfOpen() throws CommandException
     {
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
 
-        assertTrue( "Expected a transaction", boltStateHandler.isTransactionOpen() );
+        assertTrue( boltStateHandler.isTransactionOpen(), "Expected a transaction" );
     }
 
     @Test
-    public void shouldRunCypherQuery() throws CommandException
+    void shouldRunCypherQuery() throws CommandException
     {
         Session sessionMock = mock( Session.class );
         Result resultMock = mock( Result.class );
@@ -324,7 +324,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void triesAgainOnSessionExpired() throws Exception
+    void triesAgainOnSessionExpired() throws Exception
     {
         Session sessionMock = mock( Session.class );
         Result resultMock = mock( Result.class );
@@ -354,15 +354,15 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void shouldExecuteInSessionByDefault() throws CommandException
+    void shouldExecuteInSessionByDefault() throws CommandException
     {
         boltStateHandler.connect();
 
-        assertFalse( "Did not expect a transaction", boltStateHandler.isTransactionOpen() );
+        assertFalse( boltStateHandler.isTransactionOpen(), "Did not expect a transaction" );
     }
 
     @Test
-    public void canOnlyConnectOnce() throws CommandException
+    void canOnlyConnectOnce() throws CommandException
     {
         boltStateHandler.connect();
         var exception = assertThrows( CommandException.class, boltStateHandler::connect );
@@ -370,7 +370,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void resetSessionOnReset() throws Exception
+    void resetSessionOnReset() throws Exception
     {
         // given
         Session sessionMock = mock( Session.class );
@@ -389,7 +389,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void silentDisconnectCleansUp() throws Exception
+    void silentDisconnectCleansUp() throws Exception
     {
         // given
         boltStateHandler.connect();
@@ -408,7 +408,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void turnOffEncryptionIfRequested() throws CommandException
+    void turnOffEncryptionIfRequested() throws CommandException
     {
         RecordingDriverProvider provider = new RecordingDriverProvider();
         BoltStateHandler handler = new BoltStateHandler( provider, false );
@@ -418,7 +418,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void turnOnEncryptionIfRequested() throws CommandException
+    void turnOnEncryptionIfRequested() throws CommandException
     {
         RecordingDriverProvider provider = new RecordingDriverProvider();
         BoltStateHandler handler = new BoltStateHandler( provider, false );
@@ -428,28 +428,28 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void fallbackToBolt() throws CommandException
+    void fallbackToBolt() throws CommandException
     {
         fallbackTest( "neo4j", "bolt", () -> { throw new ServiceUnavailableException( "Please fall back" ); } );
         fallbackTest( "neo4j", "bolt", () -> { throw new SessionExpiredException( "Please fall back" ); } );
     }
 
     @Test
-    public void fallbackToBoltSSC() throws CommandException
+    void fallbackToBoltSSC() throws CommandException
     {
         fallbackTest( "neo4j+ssc", "bolt+ssc", () -> { throw new ServiceUnavailableException( "Please fall back" ); } );
         fallbackTest( "neo4j+ssc", "bolt+ssc", () -> { throw new SessionExpiredException( "Please fall back" ); } );
     }
 
     @Test
-    public void fallbackToBoltS() throws CommandException
+    void fallbackToBoltS() throws CommandException
     {
         fallbackTest( "neo4j+s", "bolt+s", () -> { throw new ServiceUnavailableException( "Please fall back" ); } );
         fallbackTest( "neo4j+s", "bolt+s", () -> { throw new SessionExpiredException( "Please fall back" ); } );
     }
 
     @Test
-    public void fallbackToLegacyPing() throws CommandException
+    void fallbackToLegacyPing() throws CommandException
     {
         //given
         Session sessionMock = mock( Session.class );
@@ -470,7 +470,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void shouldChangePasswordAndKeepSystemDbBookmark() throws CommandException
+    void shouldChangePasswordAndKeepSystemDbBookmark() throws CommandException
     {
         // Given
         ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME );
@@ -505,7 +505,7 @@ public class BoltStateHandlerTest
 
     @SuppressWarnings( "OptionalGetWithoutIsPresent" )
     @Test
-    public void shouldKeepOneBookmarkPerDatabase() throws CommandException
+    void shouldKeepOneBookmarkPerDatabase() throws CommandException
     {
         ConnectionConfig config = new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, "database1" );
         Bookmark db1Bookmark = InternalBookmark.parse( "db1" );
@@ -579,7 +579,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void provideUserAgentstring() throws CommandException
+    void provideUserAgentstring() throws CommandException
     {
         RecordingDriverProvider provider = new RecordingDriverProvider()
         {
@@ -597,7 +597,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void handleErrorsOnCommit() throws CommandException
+    void handleErrorsOnCommit() throws CommandException
     {
         reset( mockDriver );
         var mockSession = spy( FakeSession.class );
@@ -613,7 +613,7 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void handleErrorsOnRollback() throws CommandException
+    void handleErrorsOnRollback() throws CommandException
     {
         reset( mockDriver );
         var mockSession = spy( FakeSession.class );
@@ -696,7 +696,7 @@ public class BoltStateHandlerTest
 
     private static class RecordingDriverProvider implements TriFunction<String, AuthToken, Config, Driver>
     {
-        public Config config;
+        Config config;
 
         @Override
         public Driver apply( String uri, AuthToken authToken, Config config )

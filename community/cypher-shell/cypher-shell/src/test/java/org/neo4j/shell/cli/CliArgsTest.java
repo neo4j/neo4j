@@ -19,27 +19,21 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CliArgsTest
+class CliArgsTest
 {
-    private CliArgs cliArgs;
-
-    @Before
-    public void setup()
-    {
-        cliArgs = new CliArgs();
-    }
+    private final CliArgs cliArgs = new CliArgs();
 
     @Test
-    public void setHost() throws Exception
+    void setHost()
     {
         cliArgs.setHost( "foo", "bar" );
         assertEquals( "foo", cliArgs.getHost() );
@@ -49,14 +43,14 @@ public class CliArgsTest
     }
 
     @Test
-    public void setPort() throws Exception
+    void setPort()
     {
         cliArgs.setPort( 999 );
         assertEquals( 999, cliArgs.getPort() );
     }
 
     @Test
-    public void setUsername() throws Exception
+    void setUsername()
     {
         cliArgs.setUsername( "foo", "bar" );
         assertEquals( "foo", cliArgs.getUsername() );
@@ -66,7 +60,7 @@ public class CliArgsTest
     }
 
     @Test
-    public void setPassword() throws Exception
+    void setPassword()
     {
         cliArgs.setPassword( "foo", "bar" );
         assertEquals( "foo", cliArgs.getPassword() );
@@ -76,7 +70,7 @@ public class CliArgsTest
     }
 
     @Test
-    public void setFailBehavior() throws Exception
+    void setFailBehavior()
     {
         // default
         assertEquals( FailBehavior.FAIL_FAST, cliArgs.getFailBehavior() );
@@ -86,7 +80,7 @@ public class CliArgsTest
     }
 
     @Test
-    public void getNumSampleRows() throws Exception
+    void getNumSampleRows()
     {
         assertEquals( 1000, CliArgs.DEFAULT_NUM_SAMPLE_ROWS );
         assertEquals( CliArgs.DEFAULT_NUM_SAMPLE_ROWS, cliArgs.getNumSampleRows() );
@@ -102,7 +96,7 @@ public class CliArgsTest
     }
 
     @Test
-    public void setFormat() throws Exception
+    void setFormat()
     {
         // default
         assertEquals( Format.AUTO, cliArgs.getFormat() );
@@ -115,14 +109,13 @@ public class CliArgsTest
     }
 
     @Test
-    public void setCypher() throws Exception
+    void setCypher()
     {
         // default
         assertFalse( cliArgs.getCypher().isPresent() );
 
         cliArgs.setCypher( "foo" );
         assertTrue( cliArgs.getCypher().isPresent() );
-        //noinspection OptionalGetWithoutIsPresent
         assertEquals( "foo", cliArgs.getCypher().get() );
 
         cliArgs.setCypher( null );
@@ -130,7 +123,7 @@ public class CliArgsTest
     }
 
     @Test
-    public void getParameters()
+    void getParameters()
     {
         // Parameters are set only through the Action from the CliArgHelper, bypassing CliArgs
         // so setting them cannot be tested here.
@@ -138,7 +131,7 @@ public class CliArgsTest
     }
 
     @Test
-    public void setInputFile()
+    void setInputFile()
     {
         cliArgs.setInputFilename( "foo" );
         assertEquals( "foo", cliArgs.getInputFilename() );

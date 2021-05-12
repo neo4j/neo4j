@@ -19,13 +19,10 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.cypher.internal.evaluator.EvaluationException;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
@@ -35,34 +32,29 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
-import static org.neo4j.shell.util.Versions.version;
 
-public class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
+class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
+    private final StringLinePrinter linePrinter = new StringLinePrinter();
 
-    private StringLinePrinter linePrinter = new StringLinePrinter();
-
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         linePrinter.clear();
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
         connect( "neo" );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         shell.execute( "MATCH (n) DETACH DELETE (n)" );
     }
 
     @Test
-    public void periodicCommitWorks() throws CommandException
+    void periodicCommitWorks() throws CommandException
     {
         shell.execute( "USING PERIODIC COMMIT\n" +
                        "LOAD CSV FROM 'https://neo4j.com/docs/cypher-refcard/3.2/csv/artists.csv' AS line\n" +
@@ -75,7 +67,7 @@ public class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     }
 
     @Test
-    public void cypherWithProfileStatements() throws CommandException
+    void cypherWithProfileStatements() throws CommandException
     {
         //when
         shell.execute( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" );
@@ -94,13 +86,11 @@ public class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     }
 
     @Test
-    public void cypherWithProfileWithMemory() throws CommandException
+    void cypherWithProfileWithMemory() throws CommandException
     {
         // given
-
-        String serverVersion = shell.getServerVersion();
         // Memory profile are only available from 4.1
-        assumeThat( version( serverVersion ), greaterThanOrEqualTo( version( "4.1" ) ) );
+        assumeTrue( runningAtLeast( "4.1" ) );
 
         //when
         shell.execute( "CYPHER RUNTIME=INTERPRETED PROFILE RETURN null" );
@@ -112,7 +102,7 @@ public class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     }
 
     @Test
-    public void cypherWithExplainStatements() throws CommandException
+    void cypherWithExplainStatements() throws CommandException
     {
         //when
         shell.execute( "CYPHER RUNTIME=INTERPRETED EXPLAIN RETURN null" );
@@ -127,7 +117,7 @@ public class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest
     }
 
     @Test
-    public void shouldUseParamFromCLIArgs() throws EvaluationException, CommandException
+    void shouldUseParamFromCLIArgs() throws CommandException
     {
         // given a CLI arg
         ShellParameterMap parameterMap = new ShellParameterMap();

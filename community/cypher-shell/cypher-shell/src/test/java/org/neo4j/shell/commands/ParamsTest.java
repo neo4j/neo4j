@@ -19,10 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
@@ -32,23 +30,22 @@ import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.state.ParamValue;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class ParamsTest
+class ParamsTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     private HashMap<String, ParamValue> vars;
     private Logger logger;
     private Params cmd;
 
-    @Before
-    public void setup() throws CommandException
+    @BeforeEach
+    void setup() throws CommandException
     {
         vars = new HashMap<>();
         logger = mock( Logger.class );
@@ -58,25 +55,25 @@ public class ParamsTest
     }
 
     @Test
-    public void descriptionNotNull()
+    void descriptionNotNull()
     {
         assertNotNull( cmd.getDescription() );
     }
 
     @Test
-    public void usageNotNull()
+    void usageNotNull()
     {
         assertNotNull( cmd.getUsage() );
     }
 
     @Test
-    public void helpNotNull()
+    void helpNotNull()
     {
         assertNotNull( cmd.getHelp() );
     }
 
     @Test
-    public void runCommand() throws CommandException
+    void runCommand() throws CommandException
     {
         // given
         String var = "var";
@@ -90,7 +87,7 @@ public class ParamsTest
     }
 
     @Test
-    public void runCommandAlignment() throws CommandException
+    void runCommandAlignment() throws CommandException
     {
         // given
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
@@ -104,7 +101,7 @@ public class ParamsTest
     }
 
     @Test
-    public void runCommandWithArg() throws CommandException
+    void runCommandWithArg() throws CommandException
     {
         // given
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
@@ -117,7 +114,7 @@ public class ParamsTest
     }
 
     @Test
-    public void runCommandWithArgWithExtraSpace() throws CommandException
+    void runCommandWithArgWithExtraSpace() throws CommandException
     {
         // given
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
@@ -130,7 +127,7 @@ public class ParamsTest
     }
 
     @Test
-    public void runCommandWithArgWithBackticks() throws CommandException
+    void runCommandWithArgWithBackticks() throws CommandException
     {
         // given
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
@@ -143,7 +140,7 @@ public class ParamsTest
     }
 
     @Test
-    public void runCommandWithSpecialCharacters() throws CommandException
+    void runCommandWithSpecialCharacters() throws CommandException
     {
         // given
         vars.put( "var `", new ParamValue( String.valueOf( 9 ), 9 ) );
@@ -156,23 +153,20 @@ public class ParamsTest
     }
 
     @Test
-    public void runCommandWithUnknownArg() throws CommandException
+    void runCommandWithUnknownArg()
     {
-        // then
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( containsString( "Unknown parameter: bob" ) );
         // given
         vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
+
         // when
-        cmd.execute( "bob" );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );
+        assertThat( exception.getMessage(), containsString( "Unknown parameter: bob" ) );
     }
 
     @Test
-    public void shouldNotAcceptMoreThanOneArgs() throws CommandException
+    void shouldNotAcceptMoreThanOneArgs()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( containsString( "Incorrect number of arguments" ) );
-
-        cmd.execute( "bob sob" );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob sob" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 }

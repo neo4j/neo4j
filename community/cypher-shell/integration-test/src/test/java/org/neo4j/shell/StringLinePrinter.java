@@ -24,8 +24,7 @@ import org.neo4j.shell.prettyprint.OutputFormatter;
 
 public class StringLinePrinter implements LinePrinter
 {
-
-    private StringBuilder sb = new StringBuilder();
+    private final StringBuilder sb = new StringBuilder();
 
     @Override
     public void printOut( String line )

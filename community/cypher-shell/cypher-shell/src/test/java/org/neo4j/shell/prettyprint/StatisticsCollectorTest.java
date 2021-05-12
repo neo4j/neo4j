@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.SummaryCounters;
@@ -30,11 +30,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class StatisticsCollectorTest
+class StatisticsCollectorTest
 {
 
     @Test
-    public void returnEmptyStringForPlainFormatting() throws Exception
+    void returnEmptyStringForPlainFormatting()
     {
         // given
         ResultSummary result = mock( ResultSummary.class );
@@ -47,7 +47,7 @@ public class StatisticsCollectorTest
     }
 
     @Test
-    public void returnStatisticsForDefaultFormatting() throws Exception
+    void returnStatisticsForDefaultFormatting()
     {
         // given
         ResultSummary resultSummary = mock( ResultSummary.class );

@@ -23,8 +23,7 @@ import javax.annotation.Nonnull;
 
 public class ToStringLinePrinter implements LinePrinter
 {
-
-    final StringBuilder sb;
+    private final StringBuilder sb;
 
     public ToStringLinePrinter()
     {

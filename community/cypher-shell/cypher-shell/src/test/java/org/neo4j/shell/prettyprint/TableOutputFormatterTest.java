@@ -20,7 +20,7 @@
 package org.neo4j.shell.prettyprint;
 
 import org.apache.commons.io.IOUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -65,19 +65,18 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
 @SuppressWarnings( "ArraysAsListWithZeroOrOneArgument" )
-public class TableOutputFormatterTest
+class TableOutputFormatterTest
 {
-
     private final PrettyPrinter verbosePrinter = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 100 ) );
 
     @Test
-    public void prettyPrintPlanInformation() throws IOException
+    void prettyPrintPlanInformation() throws IOException
     {
         // given
         ResultSummary resultSummary = mock( ResultSummary.class );
@@ -106,8 +105,8 @@ public class TableOutputFormatterTest
         when( resultSummary.hasProfile() ).thenReturn( true );
         when( resultSummary.plan() ).thenReturn( plan );
         when( resultSummary.profile() ).thenReturn( plan );
-        when( resultSummary.resultAvailableAfter( anyObject() ) ).thenReturn( 5L );
-        when( resultSummary.resultConsumedAfter( anyObject() ) ).thenReturn( 7L );
+        when( resultSummary.resultAvailableAfter( any() ) ).thenReturn( 5L );
+        when( resultSummary.resultConsumedAfter( any() ) ).thenReturn( 7L );
         when( resultSummary.queryType() ).thenReturn( QueryType.READ_ONLY );
         when( plan.arguments() ).thenReturn( argumentMap );
 
@@ -123,7 +122,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void prettyPrintPoint()
+    void prettyPrintPoint()
     {
         // given
         List<String> keys = asList( "p1", "p2" );
@@ -141,7 +140,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void prettyPrintDuration()
+    void prettyPrintDuration()
     {
         // given
         List<String> keys = asList( "d" );
@@ -157,7 +156,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void prettyPrintDurationWithNoTrailingZeroes()
+    void prettyPrintDurationWithNoTrailingZeroes()
     {
         // given
         List<String> keys = asList( "d" );
@@ -173,7 +172,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void prettyPrintNode()
+    void prettyPrintNode()
     {
         // given
         List<String> labels = asList( "label1", "label2" );
@@ -193,7 +192,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void prettyPrintRelationships()
+    void prettyPrintRelationships()
     {
         // given
         List<String> keys = asList( "rel" );
@@ -215,7 +214,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void prettyPrintPath()
+    void prettyPrintPath()
     {
         // given
         List<String> keys = asList( "path" );
@@ -224,27 +223,27 @@ public class TableOutputFormatterTest
         when( n1.id() ).thenReturn( 1L );
         List<String> labels = asList( "L1" );
         when( n1.labels() ).thenReturn( labels );
-        when( n1.asMap( anyObject() ) ).thenReturn( Collections.emptyMap() );
+        when( n1.asMap( any() ) ).thenReturn( Collections.emptyMap() );
 
         Relationship r1 = mock( Relationship.class );
         when( r1.startNodeId() ).thenReturn( 2L );
         when( r1.type() ).thenReturn( "R1" );
-        when( r1.asMap( anyObject() ) ).thenReturn( Collections.emptyMap() );
+        when( r1.asMap( any() ) ).thenReturn( Collections.emptyMap() );
 
         Node n2 = mock( Node.class );
         when( n2.id() ).thenReturn( 2L );
         when( n2.labels() ).thenReturn( asList( "L2" ) );
-        when( n2.asMap( anyObject() ) ).thenReturn( Collections.emptyMap() );
+        when( n2.asMap( any() ) ).thenReturn( Collections.emptyMap() );
 
         Relationship r2 = mock( Relationship.class );
         when( r2.startNodeId() ).thenReturn( 2L );
         when( r2.type() ).thenReturn( "R2" );
-        when( r2.asMap( anyObject() ) ).thenReturn( Collections.emptyMap() );
+        when( r2.asMap( any() ) ).thenReturn( Collections.emptyMap() );
 
         Node n3 = mock( Node.class );
         when( n3.id() ).thenReturn( 3L );
         when( n3.labels() ).thenReturn( asList( "L3" ) );
-        when( n3.asMap( anyObject() ) ).thenReturn( Collections.emptyMap() );
+        when( n3.asMap( any() ) ).thenReturn( Collections.emptyMap() );
 
         Path.Segment s1 = mock( Path.Segment.class );
         when( s1.relationship() ).thenReturn( r1 );
@@ -272,7 +271,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void printRelationshipsAndNodesWithEscapingForSpecialCharacters()
+    void printRelationshipsAndNodesWithEscapingForSpecialCharacters()
     {
         // given
         Record record = mock( Record.class );
@@ -299,7 +298,7 @@ public class TableOutputFormatterTest
         when( record.get( 0 ) ).thenReturn( relVal );
         when( record.get( 1 ) ).thenReturn( nodeVal );
 
-        when( record.<Value>asMap( anyObject() ) ).thenReturn( recordMap );
+        when( record.<Value>asMap( any() ) ).thenReturn( recordMap );
 
         when( record.values() ).thenReturn( asList( relVal, nodeVal ) );
 
@@ -313,7 +312,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void basicTable()
+    void basicTable()
     {
         // GIVEN
         Result result = mockResult( asList( "c1", "c2" ), "a", 42 );
@@ -325,7 +324,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void twoRowsWithNumbersAllSampled()
+    void twoRowsWithNumbersAllSampled()
     {
         // GIVEN
         Result result = mockResult( asList( "c1", "c2" ), "a", 42, "b", 43 );
@@ -337,7 +336,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void fiveRowsWithNumbersNotAllSampled()
+    void fiveRowsWithNumbersNotAllSampled()
     {
         // GIVEN
         Result result = mockResult( asList( "c1", "c2" ), "a", 42, "b", 43, "c", 44, "d", 45, "e", 46 );
@@ -352,7 +351,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void wrapStringContent()
+    void wrapStringContent()
     {
         // GIVEN
         Result result = mockResult( asList( "c1" ), "a", "bb", "ccc", "dddd", "eeeee" );
@@ -378,7 +377,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void wrapStringContentWithTwoColumns()
+    void wrapStringContentWithTwoColumns()
     {
         // GIVEN
         Result result = mockResult( asList( "c1", "c2" ), "a", "b",
@@ -414,7 +413,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void wrapNumberContentWithLongSize()
+    void wrapNumberContentWithLongSize()
     {
         // GIVEN
         Result result = mockResult( asList( "c1" ), 345, 12, 978623, 132456798, 9223372036854775807L );
@@ -437,7 +436,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void truncateContent()
+    void truncateContent()
     {
         // GIVEN
         Result result = mockResult( asList( "c1" ), "a", "bb", "ccc", "dddd", "eeeee" );
@@ -460,7 +459,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void formatCollections()
+    void formatCollections()
     {
         // GIVEN
         Result result = mockResult( asList( "a", "b", "c" ), singletonMap( "a", 42 ), asList( 12, 13 ),
@@ -472,7 +471,7 @@ public class TableOutputFormatterTest
     }
 
     @Test
-    public void formatEntities()
+    void formatEntities()
     {
         // GIVEN
         Map<String, Value> properties = singletonMap( "name", Values.value( "Mark" ) );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,10 +43,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.internal.summary.InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE;
 
-public class OutputFormatterTest
+class OutputFormatterTest
 {
     @Test
-    public void shouldReportTotalDBHits()
+    void shouldReportTotalDBHits()
     {
         Value labelScan = buildOperator( "NodeByLabelScan", 1002L, 1001L, null );
         Value filter = buildOperator( "Filter", 1402, 280, labelScan );

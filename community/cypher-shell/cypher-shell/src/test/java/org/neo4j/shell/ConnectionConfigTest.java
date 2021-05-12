@@ -19,99 +19,90 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
 import org.neo4j.shell.cli.Encryption;
-import org.neo4j.shell.log.Logger;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
-public class ConnectionConfigTest
+class ConnectionConfigTest
 {
-
-    @Rule
-    public final EnvironmentVariables environmentVariables
-            = new EnvironmentVariables();
-
-    private Logger logger = mock( Logger.class );
-    private ConnectionConfig config = new ConnectionConfig( "bolt", "localhost", 1, "bob",
-                                                            "pass", Encryption.DEFAULT, "db" );
+    private final ConnectionConfig config = new ConnectionConfig( "bolt", "localhost", 1, "bob",
+            "pass", Encryption.DEFAULT, "db" );
 
     @Test
-    public void scheme()
+    void scheme()
     {
         assertEquals( "bolt", config.scheme() );
     }
 
     @Test
-    public void host()
+    void host()
     {
         assertEquals( "localhost", config.host() );
     }
 
     @Test
-    public void port()
+    void port()
     {
         assertEquals( 1, config.port() );
     }
 
     @Test
-    public void username()
+    void username()
     {
         assertEquals( "bob", config.username() );
     }
 
     @Test
-    public void usernameDefaultsToEnvironmentVar()
+    @SetEnvironmentVariable( key = ConnectionConfig.USERNAME_ENV_VAR, value = "alice" )
+    void usernameDefaultsToEnvironmentVar()
     {
-        environmentVariables.set( ConnectionConfig.USERNAME_ENV_VAR, "alice" );
         ConnectionConfig configWithEmptyParams = new ConnectionConfig( "bolt", "localhost", 1, "",
                                                                        "", Encryption.DEFAULT, ABSENT_DB_NAME );
         assertEquals( "alice", configWithEmptyParams.username() );
     }
 
     @Test
-    public void password()
+    void password()
     {
         assertEquals( "pass", config.password() );
     }
 
     @Test
-    public void passwordDefaultsToEnvironmentVar()
+    @SetEnvironmentVariable( key = ConnectionConfig.PASSWORD_ENV_VAR, value = "ssap" )
+    void passwordDefaultsToEnvironmentVar()
     {
-        environmentVariables.set( ConnectionConfig.PASSWORD_ENV_VAR, "ssap" );
         ConnectionConfig configWithEmptyParams = new ConnectionConfig( "bolt", "localhost", 1, "",
                                                                        "", Encryption.DEFAULT, ABSENT_DB_NAME );
         assertEquals( "ssap", configWithEmptyParams.password() );
     }
 
     @Test
-    public void database()
+    void database()
     {
         assertEquals( "db", config.database() );
     }
 
     @Test
-    public void databaseDefaultsToEnvironmentVar()
+    @SetEnvironmentVariable( key = ConnectionConfig.DATABASE_ENV_VAR, value = "funnyDB" )
+    void databaseDefaultsToEnvironmentVar()
     {
-        environmentVariables.set( ConnectionConfig.DATABASE_ENV_VAR, "funnyDB" );
         ConnectionConfig configWithEmptyParams = new ConnectionConfig( "bolt", "localhost", 1, "",
                                                                        "", Encryption.DEFAULT, ABSENT_DB_NAME );
         assertEquals( "funnyDB", configWithEmptyParams.database() );
     }
 
     @Test
-    public void driverUrlDefaultScheme()
+    void driverUrlDefaultScheme()
     {
         assertEquals( "bolt://localhost:1", config.driverUrl() );
     }
 
     @Test
-    public void encryption()
+    void encryption()
     {
         assertEquals( Encryption.DEFAULT, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME ).encryption() );
         assertEquals( Encryption.TRUE, new ConnectionConfig( "bolt", "", -1, "", "", Encryption.TRUE, ABSENT_DB_NAME ).encryption() );

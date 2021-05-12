@@ -19,10 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -30,41 +28,29 @@ import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.Logger;
 
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HistoryTest
+class HistoryTest
 {
+    private final Logger logger = mock( Logger.class );
+    private final Historian historian = mock( Historian.class );
+    private final Command cmd = new History( logger, historian );
 
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    private Logger logger = mock( Logger.class );
-    private Historian historian = mock( Historian.class );
-    private Command cmd;
-
-    @Before
-    public void setup()
+    @Test
+    void shouldNotAcceptArgs()
     {
-        this.cmd = new History( logger, historian );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void shouldNotAcceptArgs() throws CommandException
-    {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( containsString( "Incorrect number of arguments" ) );
-
-        cmd.execute( "bob" );
-        fail( "Should not accept args" );
-    }
-
-    @Test
-    public void shouldPrintHistoryCorrectlyNumberedFrom1() throws CommandException
+    void shouldPrintHistoryCorrectlyNumberedFrom1() throws CommandException
     {
         when( historian.getHistory() ).thenReturn( Arrays.asList( ":help", ":exit" ) );
 

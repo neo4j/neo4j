@@ -19,10 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,49 +30,36 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class HelpTest
+class HelpTest
 {
+    private final Logger logger = mock( Logger.class );
+    private final CommandHelper cmdHelper = mock( CommandHelper.class );
+    private final Command cmd = new Help( logger, cmdHelper );
 
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-    private Logger logger = mock( Logger.class );
-    private CommandHelper cmdHelper = mock( CommandHelper.class );
-
-    private Command cmd;
-
-    @Before
-    public void setup()
+    @Test
+    void shouldAcceptNoArgs()
     {
-
-        this.cmd = new Help( logger, cmdHelper );
+        assertDoesNotThrow( () -> cmd.execute( "" ) );
     }
 
     @Test
-    public void shouldAcceptNoArgs() throws CommandException
+    void shouldNotAcceptTooManyArgs()
     {
-        cmd.execute( "" );
-        // Should not throw
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob alice" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void shouldNotAcceptTooManyArgs() throws CommandException
-    {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( containsString( "Incorrect number of arguments" ) );
-
-        cmd.execute( "bob alice" );
-        fail( "Should not accept too many args" );
-    }
-
-    @Test
-    public void helpListing() throws CommandException
+    void helpListing() throws CommandException
     {
         // given
         List<Command> commandList = new ArrayList<>();
@@ -99,7 +83,7 @@ public class HelpTest
     }
 
     @Test
-    public void helpForCommand() throws CommandException
+    void helpForCommand() throws CommandException
     {
         // given
         doReturn( new FakeCommand( "bob" ) ).when( cmdHelper ).getCommand( eq( "bob" ) );
@@ -113,18 +97,14 @@ public class HelpTest
     }
 
     @Test
-    public void helpForNonExistingCommandThrows() throws CommandException
+    void helpForNonExistingCommandThrows()
     {
-        // then
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "No such command: notacommandname" );
-
-        // when
-        cmd.execute( "notacommandname" );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "notacommandname" ) );
+        assertThat( exception.getMessage(), containsString( "No such command: notacommandname" ) );
     }
 
     @Test
-    public void helpForCommandHasOptionalColon() throws CommandException
+    void helpForCommandHasOptionalColon() throws CommandException
     {
         // given
         doReturn( new FakeCommand( ":bob" ) ).when( cmdHelper ).getCommand( eq( ":bob" ) );
@@ -137,7 +117,7 @@ public class HelpTest
                                    + "\nhelp for :bob\n" );
     }
 
-    private class FakeCommand implements Command
+    private static class FakeCommand implements Command
     {
         private final String name;
 

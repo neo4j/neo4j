@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -49,12 +49,12 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -64,7 +64,7 @@ import static org.neo4j.shell.Main.EXIT_FAILURE;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
-public class MainIntegrationTest
+class MainIntegrationTest
 {
     private static final String USER = "neo4j";
     private static final String PASSWORD = "neo";
@@ -78,8 +78,8 @@ public class MainIntegrationTest
     private InputStream inputStream;
     private ByteBuffer inputBuffer;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         // given
         inputBuffer = ByteBuffer.allocate( 256 );
@@ -138,7 +138,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void promptsOnWrongAuthenticationIfInteractive() throws Exception
+    void promptsOnWrongAuthenticationIfInteractive() throws Exception
     {
         // when
         assertEquals( "", connectionConfig.username() );
@@ -156,7 +156,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void promptsOnPasswordChangeRequired() throws Exception
+    void promptsOnPasswordChangeRequired() throws Exception
     {
         int majorVersion = getVersionAndCreateUserWithPasswordChangeRequired();
 
@@ -198,7 +198,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void allowUserToUpdateExpiredPasswordInteractivelyWithoutBeingPrompted() throws Exception
+    void allowUserToUpdateExpiredPasswordInteractivelyWithoutBeingPrompted() throws Exception
     {
         //given a user that require a password change
         int majorVersion = getVersionAndCreateUserWithPasswordChangeRequired();
@@ -218,7 +218,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldFailIfNonInteractivelySettingPasswordOnNonSystemDb() throws Exception
+    void shouldFailIfNonInteractivelySettingPasswordOnNonSystemDb() throws Exception
     {
         //given a user that require a password change
         int majorVersion = getVersionAndCreateUserWithPasswordChangeRequired();
@@ -232,7 +232,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldBePromptedIfRunningNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
+    void shouldBePromptedIfRunningNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
     {
         //given a user that require a password change
         int majorVersion = getVersionAndCreateUserWithPasswordChangeRequired();
@@ -256,7 +256,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldNotBePromptedIfRunningWithExplicitNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
+    void shouldNotBePromptedIfRunningWithExplicitNonInteractiveCypherThatDoesntUpdatePassword() throws Exception
     {
         //given a user that require a password change
         int majorVersion = getVersionAndCreateUserWithPasswordChangeRequired();
@@ -274,7 +274,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void doesNotPromptToStdOutOnWrongAuthenticationIfOutputRedirected() throws Exception
+    void doesNotPromptToStdOutOnWrongAuthenticationIfOutputRedirected() throws Exception
     {
         // when
         assertEquals( "", connectionConfig.username() );
@@ -311,7 +311,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void wrongPortWithBolt()
+    void wrongPortWithBolt()
     {
         // given
         CliArgs cliArgs = new CliArgs();
@@ -328,7 +328,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void wrongPortWithNeo4j()
+    void wrongPortWithNeo4j()
     {
         // given
         CliArgs cliArgs = new CliArgs();
@@ -344,7 +344,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldAskForCredentialsWhenConnectingWithAFile() throws Exception
+    void shouldAskForCredentialsWhenConnectingWithAFile() throws Exception
     {
         //given
 
@@ -366,19 +366,19 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldReadSingleCypherStatementsFromFile()
+    void shouldReadSingleCypherStatementsFromFile()
     {
         assertEquals( format( "result%n42%n" ), executeFileNonInteractively( fileFromResource( "single.cypher" ) ) );
     }
 
     @Test
-    public void shouldReadEmptyCypherStatementsFile()
+    void shouldReadEmptyCypherStatementsFile()
     {
         assertEquals( "", executeFileNonInteractively( fileFromResource( "empty.cypher" ) ) );
     }
 
     @Test
-    public void shouldReadMultipleCypherStatementsFromFile()
+    void shouldReadMultipleCypherStatementsFromFile()
     {
         assertEquals( format( "result%n42%n" +
                               "result%n1337%n" +
@@ -386,7 +386,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldFailIfInputFileDoesntExist()
+    void shouldFailIfInputFileDoesntExist()
     {
         //given
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -400,7 +400,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldHandleInvalidCypherFromFile()
+    void shouldHandleInvalidCypherFromFile()
     {
         //given
         Logger logger = mock( Logger.class );
@@ -415,7 +415,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldReadSingleCypherStatementsFromFileInteractively() throws Exception
+    void shouldReadSingleCypherStatementsFromFileInteractively() throws Exception
     {
         // given
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
@@ -430,7 +430,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldReadMultipleCypherStatementsFromFileInteractively() throws Exception
+    void shouldReadMultipleCypherStatementsFromFileInteractively() throws Exception
     {
         // given
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
@@ -447,7 +447,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldReadEmptyCypherStatementsFromFileInteractively() throws Exception
+    void shouldReadEmptyCypherStatementsFromFileInteractively() throws Exception
     {
         // given
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
@@ -462,7 +462,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldHandleInvalidCypherStatementsFromFileInteractively() throws Exception
+    void shouldHandleInvalidCypherStatementsFromFileInteractively() throws Exception
     {
         // given
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
@@ -474,7 +474,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void shouldFailIfInputFileDoesntExistInteractively() throws Exception
+    void shouldFailIfInputFileDoesntExistInteractively() throws Exception
     {
         // given
         ToStringLinePrinter linePrinter = new ToStringLinePrinter();
@@ -487,7 +487,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void doesNotStartWhenDefaultDatabaseUnavailableIfInteractive() throws Exception
+    void doesNotStartWhenDefaultDatabaseUnavailableIfInteractive() throws Exception
     {
         shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
         inputBuffer.put( String.format( "neo4j%nneo%n" ).getBytes() );
@@ -534,7 +534,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void startsAgainstSystemDatabaseWhenDefaultDatabaseUnavailableIfInteractive() throws Exception
+    void startsAgainstSystemDatabaseWhenDefaultDatabaseUnavailableIfInteractive() throws Exception
     {
         shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
 
@@ -586,7 +586,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void switchingToUnavailableDatabaseIfInteractive() throws Exception
+    void switchingToUnavailableDatabaseIfInteractive() throws Exception
     {
         shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
         inputBuffer.put( String.format( "neo4j%nneo%n" ).getBytes() );
@@ -631,7 +631,7 @@ public class MainIntegrationTest
     }
 
     @Test
-    public void switchingToUnavailableDefaultDatabaseIfInteractive() throws Exception
+    void switchingToUnavailableDefaultDatabaseIfInteractive() throws Exception
     {
         shell.setCommandHelper( new CommandHelper( mock( Logger.class ), Historian.empty, shell ) );
         inputBuffer.put( String.format( "neo4j%nneo%n" ).getBytes() );

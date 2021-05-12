@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,12 +39,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
-public class TablePlanFormatterTest
+class TablePlanFormatterTest
 {
-    TablePlanFormatter tablePlanFormatter = new TablePlanFormatter();
+    private final TablePlanFormatter tablePlanFormatter = new TablePlanFormatter();
 
     @Test
-    public void withNoDetails()
+    void withNoDetails()
     {
         Plan plan = mock( Plan.class );
         Map<String, Value> args = Collections.singletonMap( "EstimatedRows", new FloatValue( 55 ) );
@@ -60,10 +60,10 @@ public class TablePlanFormatterTest
     }
 
     @Test
-    public void withEmptyDetails()
+    void withEmptyDetails()
     {
         Plan plan = mock( Plan.class );
-        Map<String, Value> args = new HashMap<String, Value>( 2 )
+        Map<String, Value> args = new HashMap<>( 2 )
         {{
             put( "EstimatedRows", new FloatValue( 55 ) );
             put( "Details", new StringValue( "" ) );
@@ -80,7 +80,7 @@ public class TablePlanFormatterTest
     }
 
     @Test
-    public void renderShortDetails()
+    void renderShortDetails()
     {
         Plan plan = mock( Plan.class );
         Map<String, Value> args = Collections.singletonMap( "Details", new StringValue( "x.prop AS prop" ) );
@@ -96,7 +96,7 @@ public class TablePlanFormatterTest
     }
 
     @Test
-    public void renderExactMaxLengthDetails()
+    void renderExactMaxLengthDetails()
     {
         Plan plan = mock( Plan.class );
         String details = stringOfLength( TablePlanFormatter.MAX_DETAILS_COLUMN_WIDTH );
@@ -108,7 +108,7 @@ public class TablePlanFormatterTest
     }
 
     @Test
-    public void multiLineDetails()
+    void multiLineDetails()
     {
         Plan argumentPlan = mock( Plan.class );
         when( argumentPlan.arguments() ).thenReturn( Collections.emptyMap() );
@@ -162,13 +162,6 @@ public class TablePlanFormatterTest
 
     private static String stringOfLength( int length )
     {
-        StringBuilder strBuilder = new StringBuilder();
-
-        for ( int i = 0; i < length; i++ )
-        {
-            strBuilder.append( 'a' );
-        }
-
-        return strBuilder.toString();
+        return "a".repeat( Math.max( 0, length ) );
     }
 }

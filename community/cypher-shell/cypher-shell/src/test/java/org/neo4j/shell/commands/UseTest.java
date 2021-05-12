@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.exception.CommandException;
@@ -32,19 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class UseTest
+class UseTest
 {
     private final DatabaseManager mockShell = mock( DatabaseManager.class );
-    private Command cmd;
-
-    @Before
-    public void setup()
-    {
-        this.cmd = new Use( mockShell );
-    }
+    private final Command cmd = new Use( mockShell );
 
     @Test
-    public void setAbsentDatabaseOnNoArgument() throws CommandException
+    void setAbsentDatabaseOnNoArgument() throws CommandException
     {
         cmd.execute( "" );
 
@@ -52,14 +46,14 @@ public class UseTest
     }
 
     @Test
-    public void shouldFailIfMoreThanOneArg()
+    void shouldFailIfMoreThanOneArg()
     {
         var expection = assertThrows( CommandException.class, () -> cmd.execute( "db1 db2" ) );
         assertThat( expection.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void setActiveDatabase() throws CommandException
+    void setActiveDatabase() throws CommandException
     {
         cmd.execute( "db1" );
 
@@ -67,21 +61,21 @@ public class UseTest
     }
 
     @Test
-    public void printUsage()
+    void printUsage()
     {
         String usage = cmd.getUsage();
         assertEquals( usage, "database" );
     }
 
     @Test
-    public void setActiveDatabaseWithBackticks() throws CommandException
+    void setActiveDatabaseWithBackticks() throws CommandException
     {
         cmd.execute( "`hello-world`" );
         verify( mockShell ).setActiveDatabase( "hello-world" );
     }
 
     @Test
-    public void setActiveDatabaseWithoutBackticks() throws CommandException
+    void setActiveDatabaseWithoutBackticks() throws CommandException
     {
         cmd.execute( "hello-world" );
         verify( mockShell ).setActiveDatabase( "hello-world" );

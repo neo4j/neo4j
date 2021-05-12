@@ -19,15 +19,15 @@
  */
 package org.neo4j.shell.log;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AnsiFormattedTextTest
+class AnsiFormattedTextTest
 {
 
     @Test
-    public void simpleString()
+    void simpleString()
     {
         AnsiFormattedText st = AnsiFormattedText.from( "hello" );
         assertEquals( "hello", st.plainString() );
@@ -35,7 +35,7 @@ public class AnsiFormattedTextTest
     }
 
     @Test
-    public void noStyleShouldBePlain() throws Exception
+    void noStyleShouldBePlain()
     {
         AnsiFormattedText st = AnsiFormattedText.s()
                                                 .colorDefault()
@@ -47,7 +47,7 @@ public class AnsiFormattedTextTest
     }
 
     @Test
-    public void withFormatting() throws Exception
+    void withFormatting()
     {
         AnsiFormattedText st = AnsiFormattedText.s()
                                                 .bold()
@@ -62,7 +62,7 @@ public class AnsiFormattedTextTest
     }
 
     @Test
-    public void nestedFormattingWorks() throws Exception
+    void nestedFormattingWorks()
     {
         AnsiFormattedText st = AnsiFormattedText.s()
                                                 .colorDefault()
@@ -77,7 +77,7 @@ public class AnsiFormattedTextTest
     }
 
     @Test
-    public void outerAttributeTakesColorPrecedence() throws Exception
+    void outerAttributeTakesColorPrecedence()
     {
         AnsiFormattedText st = AnsiFormattedText.s().colorRed().append( "inner" );
 
@@ -89,7 +89,7 @@ public class AnsiFormattedTextTest
     }
 
     @Test
-    public void outerAttributeTakesBoldPrecedence() throws Exception
+    void outerAttributeTakesBoldPrecedence()
     {
         AnsiFormattedText st = AnsiFormattedText.s().colorRed().bold().append( "inner" );
 
@@ -101,7 +101,7 @@ public class AnsiFormattedTextTest
     }
 
     @Test
-    public void shouldAppend() throws Exception
+    void shouldAppend()
     {
         AnsiFormattedText st = AnsiFormattedText.from( "hello" );
 

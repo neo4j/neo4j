@@ -19,18 +19,18 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class UserMessagesHandlerTest
+class UserMessagesHandlerTest
 {
     private final ConnectionConfig connectionConfig = mock( ConnectionConfig.class );
 
     @Test
-    public void welcomeMessageTest()
+    void welcomeMessageTest()
     {
         when( connectionConfig.username() ).thenReturn( "bob" );
         when( connectionConfig.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
@@ -43,7 +43,7 @@ public class UserMessagesHandlerTest
     }
 
     @Test
-    public void exitMessageTest()
+    void exitMessageTest()
     {
         when( connectionConfig.username() ).thenReturn( "bob" );
         when( connectionConfig.driverUrl() ).thenReturn( "bolt://some.place.com:99" );

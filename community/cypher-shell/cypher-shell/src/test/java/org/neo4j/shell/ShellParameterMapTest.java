@@ -19,34 +19,27 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.exception.ParameterException;
 import org.neo4j.shell.state.ParamValue;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings( "OptionalGetWithoutIsPresent" )
-public class ShellParameterMapTest
+class ShellParameterMapTest
 {
-    private ParameterMap parameterMap;
-
-    @Before
-    public void setup()
-    {
-        parameterMap = new ShellParameterMap();
-    }
+    private final ParameterMap parameterMap = new ShellParameterMap();
 
     @Test
-    public void newParamMapShouldBeEmpty()
+    void newParamMapShouldBeEmpty()
     {
         assertTrue( parameterMap.allParameterValues().isEmpty() );
     }
 
     @Test
-    public void setParamShouldAddParamWithSpecialCharactersAndValue() throws ParameterException
+    void setParamShouldAddParamWithSpecialCharactersAndValue() throws ParameterException
     {
         Object result = parameterMap.setParameter( "`bo``b`", "99" );
         assertEquals( 99L, result );
@@ -54,7 +47,7 @@ public class ShellParameterMapTest
     }
 
     @Test
-    public void setParamShouldAddParam() throws ParameterException
+    void setParamShouldAddParam() throws ParameterException
     {
         Object result = parameterMap.setParameter( "`bob`", "99" );
         assertEquals( 99L, result );
@@ -62,7 +55,7 @@ public class ShellParameterMapTest
     }
 
     @Test
-    public void getUserInput() throws ParameterException
+    void getUserInput() throws ParameterException
     {
         parameterMap.setParameter( "`bob`", "99" );
         assertEquals( new ParamValue( "99", 99L ), parameterMap.getAllAsUserInput().get( "bob" ) );

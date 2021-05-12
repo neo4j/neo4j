@@ -19,49 +19,33 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public class ExitTest
+class ExitTest
 {
+    private final Logger logger = mock( Logger.class );
+    private final Exit cmd = new Exit( logger );
 
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    Logger logger = mock( Logger.class );
-    private Exit cmd;
-
-    @Before
-    public void setup()
+    @Test
+    void shouldNotAcceptArgs()
     {
-        this.cmd = new Exit( logger );
+        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void shouldNotAcceptArgs() throws CommandException
+    void shouldExitShell()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( containsString( "Incorrect number of arguments" ) );
-
-        cmd.execute( "bob" );
-        fail( "Should not accept args" );
-    }
-
-    @Test
-    public void shouldExitShell() throws CommandException
-    {
-        thrown.expect( ExitException.class );
-
-        cmd.execute( "" );
+        assertThrows( ExitException.class, () -> cmd.execute( "" ) );
     }
 }

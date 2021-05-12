@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.FileNotFoundException;
 
@@ -31,44 +31,37 @@ import org.neo4j.shell.parser.ShellStatementParser;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class SourceTest
+class SourceTest
 {
-    private Source cmd;
-    private CypherShell shell;
-
-    @Before
-    public void setup()
-    {
-        shell = mock( CypherShell.class );
-        cmd = new Source( shell, new ShellStatementParser() );
-    }
+    private final CypherShell shell = mock( CypherShell.class );
+    private final Source cmd = new Source( shell, new ShellStatementParser() );
 
     @Test
-    public void descriptionNotNull()
+    void descriptionNotNull()
     {
         assertNotNull( cmd.getDescription() );
     }
 
     @Test
-    public void usageNotNull()
+    void usageNotNull()
     {
         assertNotNull( cmd.getUsage() );
     }
 
     @Test
-    public void helpNotNull()
+    void helpNotNull()
     {
         assertNotNull( cmd.getHelp() );
     }
 
     @Test
-    public void runCommand() throws CommandException
+    void runCommand() throws CommandException
     {
         // given
         cmd.execute( fileFromResource( "test.cypher" ) );
@@ -77,7 +70,7 @@ public class SourceTest
     }
 
     @Test
-    public void shouldFailIfFileNotThere()
+    void shouldFailIfFileNotThere()
     {
         var exception = assertThrows( CommandException.class, () -> cmd.execute( "not.there" ) );
         assertThat( exception.getMessage(), containsString( "Cannot find file: 'not.there'" ) );
@@ -85,21 +78,21 @@ public class SourceTest
     }
 
     @Test
-    public void shouldNotAcceptMoreThanOneArgs()
+    void shouldNotAcceptMoreThanOneArgs()
     {
         var exception = assertThrows( CommandException.class, () -> cmd.execute( "bob sob" ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void shouldNotAcceptZeroArgs()
+    void shouldNotAcceptZeroArgs()
     {
         var exception = assertThrows( CommandException.class, () -> cmd.execute( "" ) );
         assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void shouldTryToExecuteIncompleteStatements() throws CommandException
+    void shouldTryToExecuteIncompleteStatements() throws CommandException
     {
         cmd.execute( fileFromResource( "invalid.cypher" ) );
         verify( shell ).execute( "INVALID CYPHER\nWITHOUT SEMICOLON" );

@@ -19,32 +19,22 @@
  */
 package org.neo4j.shell.parser;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ShellStatementParserTest
+class ShellStatementParserTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    private ShellStatementParser parser;
-
-    @Before
-    public void setup()
-    {
-        parser = new ShellStatementParser();
-    }
+    private final ShellStatementParser parser = new ShellStatementParser();
 
     @Test
-    public void parseEmptyLineDoesNothing() throws Exception
+    void parseEmptyLineDoesNothing()
     {
         // when
         parser.parseMoreText( "\n" );
@@ -56,7 +46,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void parseAShellCommand() throws Exception
+    void parseAShellCommand()
     {
         // when
         parser.parseMoreText( "  :help exit bob snob  " );
@@ -75,7 +65,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void parseAShellCommandWithNewLine() throws Exception
+    void parseAShellCommandWithNewLine()
     {
         // when
         parser.parseMoreText( ":help exit bob snob\n" );
@@ -94,7 +84,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void parseIncompleteCypher() throws Exception
+    void parseIncompleteCypher()
     {
         // when
         parser.parseMoreText( "CREATE ()\n" );
@@ -106,7 +96,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void parseCompleteCypher() throws Exception
+    void parseCompleteCypher()
     {
         // when
         parser.parseMoreText( "CREATE (n)\n" );
@@ -127,7 +117,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void parseMultipleCypherSingleLine() throws Exception
+    void parseMultipleCypherSingleLine()
     {
         // when
         parser.parseMoreText( "RETURN 1;RETURN 2;" );
@@ -147,7 +137,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void parseMultipleCypherMultipleLine() throws Exception
+    void parseMultipleCypherMultipleLine()
     {
         // when
         parser.parseMoreText( "RETURN 1;" );
@@ -168,7 +158,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void singleQuotedSemicolon() throws Exception
+    void singleQuotedSemicolon()
     {
         // when
         parser.parseMoreText( "hello '\n" );
@@ -190,7 +180,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void backtickQuotedSemicolon() throws Exception
+    void backtickQuotedSemicolon()
     {
         // when
         parser.parseMoreText( "hello `\n" );
@@ -212,7 +202,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void doubleQuotedSemicolon() throws Exception
+    void doubleQuotedSemicolon()
     {
         // when
         parser.parseMoreText( "hello \"\n" );
@@ -234,7 +224,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void escapedChars() throws Exception
+    void escapedChars()
     {
         // when
         parser.parseMoreText( "one \\;\n" );
@@ -256,7 +246,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void nestedQuoting() throws Exception
+    void nestedQuoting()
     {
         // when
         parser.parseMoreText( "go `tick;'single;\"double;\n" );
@@ -276,7 +266,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void mixCommandAndCypherWithSpacingsAdded() throws Exception
+    void mixCommandAndCypherWithSpacingsAdded()
     {
         // when
         parser.parseMoreText( " :help me \n" );
@@ -301,7 +291,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void commentHandlingIfSemicolon() throws Exception
+    void commentHandlingIfSemicolon()
     {
         // when
         parser.parseMoreText( " first // ;\n" );
@@ -322,7 +312,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void backslashDeadInBlockQuote() throws Exception
+    void backslashDeadInBlockQuote()
     {
         // when
         parser.parseMoreText( "/* block \\*/\nCREATE ();" );
@@ -341,7 +331,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void commentInQuote() throws Exception
+    void commentInQuote()
     {
         // when
         parser.parseMoreText( "` here // comment `;" );
@@ -360,7 +350,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void blockCommentInQuote() throws Exception
+    void blockCommentInQuote()
     {
         // when
         parser.parseMoreText( "` here /* comment `;" );
@@ -379,7 +369,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void quoteInComment() throws Exception
+    void quoteInComment()
     {
         // when
         parser.parseMoreText( "// `;\n;" );
@@ -398,7 +388,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void quoteInBlockomment() throws Exception
+    void quoteInBlockomment()
     {
         // when
         parser.parseMoreText( "/* `;\n;*/\n;" );
@@ -417,7 +407,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void testReset() throws Exception
+    void testReset()
     {
         // given
         parser.parseMoreText( "/* `;\n;*/\n;" );
@@ -434,7 +424,7 @@ public class ShellStatementParserTest
     }
 
     @Test
-    public void commentsBeforeBegin() throws Exception
+    void commentsBeforeBegin()
     {
         // when
         parser.parseMoreText( "//comment \n" );

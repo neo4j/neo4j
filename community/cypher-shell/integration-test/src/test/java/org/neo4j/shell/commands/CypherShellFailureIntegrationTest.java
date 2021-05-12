@@ -19,39 +19,35 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
-import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 
-public class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
+    private final StringLinePrinter linePrinter = new StringLinePrinter();
 
-    private StringLinePrinter linePrinter = new StringLinePrinter();
-
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         linePrinter.clear();
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
     }
 
     @Test
-    public void cypherWithNoPasswordShouldReturnValidError() throws CommandException
+    void cypherWithNoPasswordShouldReturnValidError()
     {
-        thrown.expect( AuthenticationException.class );
-        thrown.expectMessage( "The client is unauthorized due to authentication failure." );
-
-        connect( "" );
+        AuthenticationException exception = assertThrows( AuthenticationException.class, () -> connect( "" ) );
+        assertThat( exception.getMessage(), containsString( "The client is unauthorized due to authentication failure." ) );
     }
 }

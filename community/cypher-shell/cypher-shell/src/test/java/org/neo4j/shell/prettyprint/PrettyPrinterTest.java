@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,26 +43,24 @@ import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.ListBoltResult;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Iterables.map;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
 @SuppressWarnings( "ArraysAsListWithZeroOrOneArgument" )
-public class PrettyPrinterTest
+class PrettyPrinterTest
 {
-
     private final PrettyPrinter plainPrinter = new PrettyPrinter( new PrettyConfig( Format.PLAIN, false, 100 ) );
     private final PrettyPrinter verbosePrinter = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 100 ) );
 
     @Test
-    public void returnStatisticsForEmptyRecords()
+    void returnStatisticsForEmptyRecords()
     {
         // given
         ResultSummary resultSummary = mock( ResultSummary.class );
@@ -81,7 +79,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintProfileInformation()
+    void prettyPrintProfileInformation()
     {
         // given
         ResultSummary resultSummary = mock( ResultSummary.class );
@@ -93,8 +91,8 @@ public class PrettyPrinterTest
         when( resultSummary.hasProfile() ).thenReturn( true );
         when( resultSummary.plan() ).thenReturn( plan );
         when( resultSummary.profile() ).thenReturn( plan );
-        when( resultSummary.resultAvailableAfter( anyObject() ) ).thenReturn( 5L );
-        when( resultSummary.resultConsumedAfter( anyObject() ) ).thenReturn( 7L );
+        when( resultSummary.resultAvailableAfter( any() ) ).thenReturn( 5L );
+        when( resultSummary.resultConsumedAfter( any() ) ).thenReturn( 7L );
         when( resultSummary.queryType() ).thenReturn( QueryType.READ_ONLY );
         Map<String, Value> argumentMap = Values.parameters( "Version", "3.1",
                                                             "Planner", "COST",
@@ -122,7 +120,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintProfileInformationIfGlobalMemoryIsMissing()
+    void prettyPrintProfileInformationIfGlobalMemoryIsMissing()
     {
         // given
         ResultSummary resultSummary = mock( ResultSummary.class );
@@ -134,8 +132,8 @@ public class PrettyPrinterTest
         when( resultSummary.hasProfile() ).thenReturn( true );
         when( resultSummary.plan() ).thenReturn( plan );
         when( resultSummary.profile() ).thenReturn( plan );
-        when( resultSummary.resultAvailableAfter( anyObject() ) ).thenReturn( 5L );
-        when( resultSummary.resultConsumedAfter( anyObject() ) ).thenReturn( 7L );
+        when( resultSummary.resultAvailableAfter( any() ) ).thenReturn( 5L );
+        when( resultSummary.resultConsumedAfter( any() ) ).thenReturn( 7L );
         when( resultSummary.queryType() ).thenReturn( QueryType.READ_ONLY );
         Map<String, Value> argumentMap = Values.parameters( "Version", "3.1",
                                                             "Planner", "COST",
@@ -162,7 +160,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintExplainInformation()
+    void prettyPrintExplainInformation()
     {
         // given
         ResultSummary resultSummary = mock( ResultSummary.class );
@@ -173,8 +171,8 @@ public class PrettyPrinterTest
         when( resultSummary.hasPlan() ).thenReturn( true );
         when( resultSummary.hasProfile() ).thenReturn( false );
         when( resultSummary.plan() ).thenReturn( plan );
-        when( resultSummary.resultAvailableAfter( anyObject() ) ).thenReturn( 5L );
-        when( resultSummary.resultConsumedAfter( anyObject() ) ).thenReturn( 7L );
+        when( resultSummary.resultAvailableAfter( any() ) ).thenReturn( 5L );
+        when( resultSummary.resultConsumedAfter( any() ) ).thenReturn( 7L );
         when( resultSummary.queryType() ).thenReturn( QueryType.READ_ONLY );
         Map<String, Value> argumentMap = Values.parameters( "Version", "3.1", "Planner", "COST", "Runtime", "INTERPRETED" ).asMap( v -> v );
         when( plan.arguments() ).thenReturn( argumentMap );
@@ -196,7 +194,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintList()
+    void prettyPrintList()
     {
         // given
         Record record1 = mock( Record.class );
@@ -222,7 +220,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintMaps()
+    void prettyPrintMaps()
     {
         checkMapForPrettyPrint( map(), "map" + NEWLINE + "{}" + NEWLINE );
         checkMapForPrettyPrint( map( "abc", "def" ), "map" + NEWLINE + "{abc: def}" + NEWLINE );
@@ -236,7 +234,8 @@ public class PrettyPrinterTest
 
         when( value.type() ).thenReturn( InternalTypeSystem.TYPE_SYSTEM.MAP() );
 
-        when( value.asMap( (Function<Value, String>) anyObject() ) ).thenReturn( map );
+        //noinspection unchecked
+        when( value.asMap( (Function<Value, String>) any() ) ).thenReturn( map );
 
         when( record.keys() ).thenReturn( asList( "map" ) );
         when( record.values() ).thenReturn( asList( value ) );
@@ -251,7 +250,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintNode()
+    void prettyPrintNode()
     {
         // given
         Record record = mock( Record.class );
@@ -266,7 +265,7 @@ public class PrettyPrinterTest
 
         when( value.asNode() ).thenReturn( node );
         when( node.labels() ).thenReturn( asList( "label1", "label2" ) );
-        when( node.asMap( anyObject() ) ).thenReturn( unmodifiableMap( propertiesAsMap ) );
+        when( node.asMap( any() ) ).thenReturn( unmodifiableMap( propertiesAsMap ) );
 
         when( record.keys() ).thenReturn( asList( "col1", "col2" ) );
         when( record.values() ).thenReturn( asList( value ) );
@@ -282,7 +281,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintRelationships()
+    void prettyPrintRelationships()
     {
         // given
         Record record = mock( Record.class );
@@ -297,7 +296,7 @@ public class PrettyPrinterTest
 
         when( value.asRelationship() ).thenReturn( relationship );
         when( relationship.type() ).thenReturn( "RELATIONSHIP_TYPE" );
-        when( relationship.asMap( anyObject() ) ).thenReturn( unmodifiableMap( propertiesAsMap ) );
+        when( relationship.asMap( any() ) ).thenReturn( unmodifiableMap( propertiesAsMap ) );
 
         when( record.keys() ).thenReturn( asList( "rel" ) );
         when( record.values() ).thenReturn( asList( value ) );
@@ -313,7 +312,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void printRelationshipsAndNodesWithEscapingForSpecialCharacters()
+    void printRelationshipsAndNodesWithEscapingForSpecialCharacters()
     {
         // given
         Record record = mock( Record.class );
@@ -336,11 +335,11 @@ public class PrettyPrinterTest
 
         when( relVal.asRelationship() ).thenReturn( relationship );
         when( relationship.type() ).thenReturn( "RELATIONSHIP,TYPE" );
-        when( relationship.asMap( anyObject() ) ).thenReturn( unmodifiableMap( relProp ) );
+        when( relationship.asMap( any() ) ).thenReturn( unmodifiableMap( relProp ) );
 
         when( nodeVal.asNode() ).thenReturn( node );
         when( node.labels() ).thenReturn( asList( "label `1", "label2" ) );
-        when( node.asMap( anyObject() ) ).thenReturn( unmodifiableMap( nodeProp ) );
+        when( node.asMap( any() ) ).thenReturn( unmodifiableMap( nodeProp ) );
 
         when( record.keys() ).thenReturn( asList( "rel", "node" ) );
         when( record.values() ).thenReturn( asList( relVal, nodeVal ) );
@@ -358,7 +357,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintPaths()
+    void prettyPrintPaths()
     {
         // given
         Record record = mock( Record.class );
@@ -400,8 +399,8 @@ public class PrettyPrinterTest
         when( value.type() ).thenReturn( InternalTypeSystem.TYPE_SYSTEM.PATH() );
         when( value.asPath() ).thenReturn( path );
         when( path.iterator() ).thenReturn( asList( segment1, segment2 ).iterator() );
-        when( start.asMap( anyObject() ) ).thenReturn( unmodifiableMap( startProperties ) );
-        when( end.asMap( anyObject() ) ).thenReturn( unmodifiableMap( endProperties ) );
+        when( start.asMap( any() ) ).thenReturn( unmodifiableMap( startProperties ) );
+        when( end.asMap( any() ) ).thenReturn( unmodifiableMap( endProperties ) );
 
         when( record.keys() ).thenReturn( asList( "path" ) );
         when( record.values() ).thenReturn( asList( value ) );
@@ -418,7 +417,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintSingleNodePath()
+    void prettyPrintSingleNodePath()
     {
         // given
         Record record = mock( Record.class );
@@ -461,7 +460,7 @@ public class PrettyPrinterTest
     }
 
     @Test
-    public void prettyPrintThreeSegmentPath()
+    void prettyPrintThreeSegmentPath()
     {
         // given
         Record record = mock( Record.class );
@@ -512,7 +511,7 @@ public class PrettyPrinterTest
         when( record.keys() ).thenReturn( asList( "path" ) );
         when( record.values() ).thenReturn( asList( value ) );
 
-        BoltResult result = new ListBoltResult( singletonList( record ), mock( ResultSummary.class ) );
+        BoltResult result = new ListBoltResult( asList( record ), mock( ResultSummary.class ) );
 
         // when
         String actual = plainPrinter.format( result );

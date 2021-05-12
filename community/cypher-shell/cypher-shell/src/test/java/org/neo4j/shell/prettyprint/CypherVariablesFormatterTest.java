@@ -19,38 +19,40 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.escape;
+import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.unescapedCypherVariable;
 
-public class CypherVariablesFormatterTest
+class CypherVariablesFormatterTest
 {
 
     @Test
-    public void escapeNonAlphanumericStrings() throws Exception
+    void escapeNonAlphanumericStrings()
     {
-        assertThat( CypherVariablesFormatter.escape( "abc12_A" ), is( "abc12_A" ) );
-        assertThat( CypherVariablesFormatter.escape( "Åbc12_A" ), is( "Åbc12_A" ) );
-        assertThat( CypherVariablesFormatter.escape( "\0" ), is( "`\0`" ) );
-        assertThat( CypherVariablesFormatter.escape( "\n" ), is( "`\n`" ) );
-        assertThat( CypherVariablesFormatter.escape( "comma, separated" ), is( "`comma, separated`" ) );
-        assertThat( CypherVariablesFormatter.escape( "escaped content `back ticks #" ), is( "`escaped content ``back ticks #`" ) );
-        assertThat( CypherVariablesFormatter.escape( "escaped content two `back `ticks" ),
+        assertThat( escape( "abc12_A" ), is( "abc12_A" ) );
+        assertThat( escape( "Åbc12_A" ), is( "Åbc12_A" ) );
+        assertThat( escape( "\0" ), is( "`\0`" ) );
+        assertThat( escape( "\n" ), is( "`\n`" ) );
+        assertThat( escape( "comma, separated" ), is( "`comma, separated`" ) );
+        assertThat( escape( "escaped content `back ticks #" ), is( "`escaped content ``back ticks #`" ) );
+        assertThat( escape( "escaped content two `back `ticks" ),
                     is( "`escaped content two ``back ``ticks`" ) );
     }
 
     @Test
-    public void reEscapeNonAlphanumericStrings() throws Exception
+    void reEscapeNonAlphanumericStrings() throws Exception
     {
-        assertThat( CypherVariablesFormatter.unescapedCypherVariable( "abc12_A" ), is( "abc12_A" ) );
-        assertThat( CypherVariablesFormatter.unescapedCypherVariable( "Åbc12_A" ), is( "Åbc12_A" ) );
-        assertThat( CypherVariablesFormatter.unescapedCypherVariable( "`\0`" ), is( "\0" ) );
-        assertThat( CypherVariablesFormatter.unescapedCypherVariable( "`\n`" ), is( "\n" ) );
-        assertThat( CypherVariablesFormatter.unescapedCypherVariable( "`comma, separated`" ), is( "comma, separated" ) );
-        assertThat( CypherVariablesFormatter.unescapedCypherVariable( "`escaped content ``back ticks #`" ),
+        assertThat( unescapedCypherVariable( "abc12_A" ), is( "abc12_A" ) );
+        assertThat( unescapedCypherVariable( "Åbc12_A" ), is( "Åbc12_A" ) );
+        assertThat( unescapedCypherVariable( "`\0`" ), is( "\0" ) );
+        assertThat( unescapedCypherVariable( "`\n`" ), is( "\n" ) );
+        assertThat( unescapedCypherVariable( "`comma, separated`" ), is( "comma, separated" ) );
+        assertThat( unescapedCypherVariable( "`escaped content ``back ticks #`" ),
                     is( "escaped content `back ticks #" ) );
-        assertThat( CypherVariablesFormatter.unescapedCypherVariable( "`escaped content two ``back ``ticks`" ),
+        assertThat( unescapedCypherVariable( "`escaped content two ``back ``ticks`" ),
                     is( "escaped content two `back `ticks" ) );
     }
 }

@@ -19,11 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.ConnectionConfig;
@@ -38,26 +35,24 @@ import org.neo4j.shell.prettyprint.PrettyConfig;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
-public class CypherShellMultiDatabaseIntegrationTest
+class CypherShellMultiDatabaseIntegrationTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    private StringLinePrinter linePrinter = new StringLinePrinter();
+    private final StringLinePrinter linePrinter = new StringLinePrinter();
     private Command useCommand;
     private Command beginCommand;
     private Command rollbackCommand;
     private CypherShell shell;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         linePrinter.clear();
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
@@ -71,13 +66,8 @@ public class CypherShellMultiDatabaseIntegrationTest
         assumeTrue( majorVersion( shell.getServerVersion() ) >= 4 );
     }
 
-    @After
-    public void tearDown() throws Exception
-    {
-    }
-
     @Test
-    public void switchingToSystemDatabaseWorks() throws CommandException
+    void switchingToSystemDatabaseWorks() throws CommandException
     {
         useCommand.execute( SYSTEM_DB_NAME );
 
@@ -86,7 +76,7 @@ public class CypherShellMultiDatabaseIntegrationTest
     }
 
     @Test
-    public void switchingToSystemDatabaseIsNotCaseSensitive() throws CommandException
+    void switchingToSystemDatabaseIsNotCaseSensitive() throws CommandException
     {
         useCommand.execute( "SyStEm" );
 
@@ -95,7 +85,7 @@ public class CypherShellMultiDatabaseIntegrationTest
     }
 
     @Test
-    public void switchingToSystemDatabaseAndBackToNeo4jWorks() throws CommandException
+    void switchingToSystemDatabaseAndBackToNeo4jWorks() throws CommandException
     {
         useCommand.execute( SYSTEM_DB_NAME );
         useCommand.execute( DEFAULT_DEFAULT_DB_NAME );
@@ -105,7 +95,7 @@ public class CypherShellMultiDatabaseIntegrationTest
     }
 
     @Test
-    public void switchingToSystemDatabaseAndBackToDefaultWorks() throws CommandException
+    void switchingToSystemDatabaseAndBackToDefaultWorks() throws CommandException
     {
         useCommand.execute( SYSTEM_DB_NAME );
         useCommand.execute( ABSENT_DB_NAME );
@@ -115,17 +105,15 @@ public class CypherShellMultiDatabaseIntegrationTest
     }
 
     @Test
-    public void switchingDatabaseInOpenTransactionShouldFail() throws CommandException
+    void switchingDatabaseInOpenTransactionShouldFail() throws CommandException
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "There is an open transaction." );
-
         beginCommand.execute( "" );
-        useCommand.execute( "another_database" );
+        CommandException exception = assertThrows( CommandException.class, () -> useCommand.execute( "another_database" ) );
+        assertThat( exception.getMessage(), containsString( "There is an open transaction." ) );
     }
 
     @Test
-    public void switchingDatabaseAfterRollbackTransactionWorks() throws CommandException
+    void switchingDatabaseAfterRollbackTransactionWorks() throws CommandException
     {
         beginCommand.execute( "" );
         rollbackCommand.execute( "" );
@@ -136,7 +124,7 @@ public class CypherShellMultiDatabaseIntegrationTest
     }
 
     @Test
-    public void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServer() throws CommandException
+    void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServer() throws CommandException
     {
         useCommand.execute( SYSTEM_DB_NAME );
 
@@ -153,7 +141,7 @@ public class CypherShellMultiDatabaseIntegrationTest
     }
 
     @Test
-    public void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServerInteractive() throws CommandException
+    void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServerInteractive() throws CommandException
     {
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.PLAIN, true, 1000 ), true, new ShellParameterMap() );
         useCommand = new Use( shell );
@@ -188,10 +176,8 @@ public class CypherShellMultiDatabaseIntegrationTest
         assertThat( linePrinter.output(), containsString( "system" ) );
     }
 
-    private void assertOnNoValidDB() throws CommandException
+    private void assertOnNoValidDB()
     {
-        thrown.expect( ClientException.class );
-        thrown.expectMessage( "Database does not exist" );
-        shell.execute( "RETURN 1" );
+        assertThrows( ClientException.class, () -> shell.execute( "RETURN 1" ) );
     }
 }

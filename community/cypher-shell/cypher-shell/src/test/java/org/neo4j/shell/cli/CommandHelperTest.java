@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
@@ -31,42 +31,37 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
 
-public class CommandHelperTest
+class CommandHelperTest
 {
 
     @Test
-    public void emptyStringIsNoArgs() throws CommandException
+    void emptyStringIsNoArgs() throws CommandException
     {
         assertEquals( 0, simpleArgParse( "", 0, "", "" ).length );
     }
 
     @Test
-    public void whitespaceStringIsNoArgs() throws CommandException
+    void whitespaceStringIsNoArgs() throws CommandException
     {
         assertEquals( 0, simpleArgParse( "    \t  ", 0, "", "" ).length );
     }
 
     @Test
-    public void oneArg()
+    void oneArg()
     {
-        try
-        {
-            assertEquals( 0, simpleArgParse( "bob", 0, "", "" ) );
-            fail();
-        }
-        catch ( CommandException e )
-        {
-            assertTrue( e.getMessage().contains( "Incorrect number of arguments" ) );
-        }
+        CommandException exception = assertThrows( CommandException.class, () -> simpleArgParse( "bob", 0, "", "" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
-    public void shouldIgnoreCaseForCommands()
+    void shouldIgnoreCaseForCommands()
     {
         // Given
         AnsiLogger logger = new AnsiLogger( false );

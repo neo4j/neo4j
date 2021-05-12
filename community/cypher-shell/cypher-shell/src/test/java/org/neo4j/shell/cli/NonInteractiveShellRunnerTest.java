@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 
@@ -33,7 +33,7 @@ import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.doReturn;
@@ -43,15 +43,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class NonInteractiveShellRunnerTest
+class NonInteractiveShellRunnerTest
 {
     private final Logger logger = mock( Logger.class );
     private final StatementExecuter cmdExecuter = mock( StatementExecuter.class );
     private StatementParser statementParser;
     private ClientException badLineError;
 
-    @Before
-    public void setup() throws CommandException
+    @BeforeEach
+    void setup() throws CommandException
     {
         statementParser = new ShellStatementParser();
         badLineError = new ClientException( "Found a bad line" );
@@ -60,7 +60,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void testSimple()
+    void testSimple()
     {
         String input = "good1;\n" +
                        "good2;\n";
@@ -71,12 +71,12 @@ public class NonInteractiveShellRunnerTest
                 new ByteArrayInputStream( input.getBytes() ) );
         int code = runner.runUntilEnd();
 
-        assertEquals( "Exit code incorrect", 0, code );
+        assertEquals( 0, code, "Exit code incorrect" );
         verify( logger, times( 0 ) ).printError( anyString() );
     }
 
     @Test
-    public void testFailFast()
+    void testFailFast()
     {
         String input =
                 "good1;\n" +
@@ -90,12 +90,12 @@ public class NonInteractiveShellRunnerTest
 
         int code = runner.runUntilEnd();
 
-        assertEquals( "Exit code incorrect", 1, code );
+        assertEquals( 1, code, "Exit code incorrect" );
         verify( logger ).printError( badLineError );
     }
 
     @Test
-    public void testFailAtEnd()
+    void testFailAtEnd()
     {
         String input =
                 "good1;\n" +
@@ -109,12 +109,12 @@ public class NonInteractiveShellRunnerTest
 
         int code = runner.runUntilEnd();
 
-        assertEquals( "Exit code incorrect", 1, code );
+        assertEquals( 1, code, "Exit code incorrect" );
         verify( logger, times( 2 ) ).printError( badLineError );
     }
 
     @Test
-    public void runUntilEndExitsImmediatelyOnParseError()
+    void runUntilEndExitsImmediatelyOnParseError()
     {
         // given
         StatementParser statementParser = mock( StatementParser.class );
@@ -140,7 +140,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void runUntilEndExitsImmediatelyOnExitCommand() throws Exception
+    void runUntilEndExitsImmediatelyOnExitCommand() throws Exception
     {
         // given
         String input =
@@ -165,7 +165,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void nonInteractiveHasNoHistory()
+    void nonInteractiveHasNoHistory()
     {
         // given
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
@@ -178,7 +178,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void shouldTryToExecuteIncompleteStatements() throws CommandException
+    void shouldTryToExecuteIncompleteStatements() throws CommandException
     {
         String input = "good1;\nno semicolon here\n// A comment at end";
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
@@ -188,7 +188,7 @@ public class NonInteractiveShellRunnerTest
                 new ByteArrayInputStream( input.getBytes() ) );
         int code = runner.runUntilEnd();
 
-        assertEquals( "Exit code incorrect", 0, code );
+        assertEquals( 0, code, "Exit code incorrect" );
         verify( logger, times( 0 ) ).printError( anyString() );
         verify( cmdExecuter ).execute( "good1;" );
         verify( cmdExecuter ).execute( "no semicolon here" );

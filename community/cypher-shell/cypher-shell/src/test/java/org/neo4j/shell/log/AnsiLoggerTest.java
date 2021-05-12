@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.log;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
 
@@ -28,30 +28,21 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.contains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class AnsiLoggerTest
+class AnsiLoggerTest
 {
-
-    private PrintStream out;
-    private PrintStream err;
-    private AnsiLogger logger;
-
-    @Before
-    public void setup()
-    {
-        out = mock( PrintStream.class );
-        err = mock( PrintStream.class );
-        logger = new AnsiLogger( false, Format.VERBOSE, out, err );
-    }
+    private final PrintStream out = mock( PrintStream.class );
+    private final PrintStream err = mock( PrintStream.class );
+    private AnsiLogger logger = new AnsiLogger( false, Format.VERBOSE, out, err );
 
     @Test
-    public void defaultStreams() throws Exception
+    void defaultStreams()
     {
         Logger logger = new AnsiLogger( false );
 
@@ -60,28 +51,28 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void customStreams() throws Exception
+    void customStreams()
     {
         assertEquals( out, logger.getOutputStream() );
         assertEquals( err, logger.getErrorStream() );
     }
 
     @Test
-    public void printError() throws Exception
+    void printError()
     {
         logger.printError( "bob" );
         verify( err ).println( "bob" );
     }
 
     @Test
-    public void printException() throws Exception
+    void printException()
     {
         logger.printError( new Throwable( "bam" ) );
         verify( err ).println( "bam" );
     }
 
     @Test
-    public void printExceptionWithDebug() throws Exception
+    void printExceptionWithDebug()
     {
         Logger logger = new AnsiLogger( true, Format.VERBOSE, out, err );
         logger.printError( new Throwable( "bam" ) );
@@ -90,14 +81,14 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void printOut() throws Exception
+    void printOut()
     {
         logger.printOut( "sob" );
         verify( out ).println( "sob" );
     }
 
     @Test
-    public void printOutManyShouldNotBuildState() throws Exception
+    void printOutManyShouldNotBuildState()
     {
         logger.printOut( "bob" );
         logger.printOut( "nob" );
@@ -109,7 +100,7 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void printErrManyShouldNotBuildState() throws Exception
+    void printErrManyShouldNotBuildState()
     {
         logger.printError( "bob" );
         logger.printError( "nob" );
@@ -121,7 +112,7 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void printIfVerbose() throws Exception
+    void printIfVerbose()
     {
         logger = new AnsiLogger( false, Format.VERBOSE, out, err );
 
@@ -134,7 +125,7 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void printIfPlain() throws Exception
+    void printIfPlain()
     {
         logger = new AnsiLogger( false, Format.PLAIN, out, err );
 
@@ -147,7 +138,7 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void printIfDebug() throws Exception
+    void printIfDebug()
     {
         logger = new AnsiLogger( true, Format.PLAIN, out, err );
 
@@ -161,20 +152,20 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void testSimple()
+    void testSimple()
     {
         assertEquals( "@|RED yahoo|@", logger.getFormattedMessage( new NullPointerException( "yahoo" ) ) );
     }
 
     @Test
-    public void testNested()
+    void testNested()
     {
         assertEquals( "@|RED outer|@", logger.getFormattedMessage( new ClientException( "outer",
                                                                                         new CommandException( "nested" ) ) ) );
     }
 
     @Test
-    public void testNestedDeep()
+    void testNestedDeep()
     {
         assertEquals( "@|RED outer|@", logger.getFormattedMessage(
                 new ClientException( "outer",
@@ -183,7 +174,7 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void testNullMessage()
+    void testNullMessage()
     {
         assertEquals( "@|RED ClientException|@", logger.getFormattedMessage( new ClientException( null ) ) );
         assertEquals( "@|RED outer|@",
@@ -191,7 +182,7 @@ public class AnsiLoggerTest
     }
 
     @Test
-    public void testExceptionGetsFormattedMessage()
+    void testExceptionGetsFormattedMessage()
     {
         AnsiLogger logger = spy( this.logger );
         logger.printError( new NullPointerException( "yahoo" ) );

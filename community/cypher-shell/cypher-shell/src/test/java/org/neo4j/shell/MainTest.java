@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayInputStream;
@@ -37,10 +37,10 @@ import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.system.Utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class MainTest
+class MainTest
 {
     private CypherShell shell;
     private ConnectionConfig connectionConfig;
@@ -56,8 +56,8 @@ public class MainTest
     private AuthenticationException authException;
     private Neo4jException passwordChangeRequiredException;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         out = mock( PrintStream.class );
         shell = mock( CypherShell.class );
@@ -72,7 +72,7 @@ public class MainTest
     }
 
     @Test
-    public void nonEndedStringFails() throws Exception
+    void nonEndedStringFails() throws Exception
     {
         String inputString = "no newline";
         InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
@@ -86,7 +86,7 @@ public class MainTest
     }
 
     @Test
-    public void unrelatedErrorDoesNotPrompt() throws Exception
+    void unrelatedErrorDoesNotPrompt() throws Exception
     {
         doThrow( new RuntimeException( "bla" ) ).when( shell ).connect( connectionConfig, null );
 
@@ -97,7 +97,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsForUsernameAndPasswordIfNoneGivenIfInteractive() throws Exception
+    void promptsForUsernameAndPasswordIfNoneGivenIfInteractive() throws Exception
     {
         when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
 
@@ -119,7 +119,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsSilentlyForUsernameAndPasswordIfNoneGivenIfOutputRedirected() throws Exception
+    void promptsSilentlyForUsernameAndPasswordIfNoneGivenIfOutputRedirected() throws Exception
     {
         if ( Utils.isWindows() )
         {
@@ -162,7 +162,7 @@ public class MainTest
     }
 
     @Test
-    public void doesNotPromptIfInputRedirected() throws Exception
+    void doesNotPromptIfInputRedirected() throws Exception
     {
         when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
 
@@ -186,7 +186,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsForUserIfPassExistsIfInteractive() throws Exception
+    void promptsForUserIfPassExistsIfInteractive() throws Exception
     {
         when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
         when( connectionConfig.password() ).thenReturn( "secret" );
@@ -208,7 +208,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsSilentlyForUserIfPassExistsIfOutputRedirected() throws Exception
+    void promptsSilentlyForUserIfPassExistsIfOutputRedirected() throws Exception
     {
         if ( Utils.isWindows() )
         {
@@ -250,7 +250,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsForPassBeforeConnectIfUserExistsIfInteractive() throws Exception
+    void promptsForPassBeforeConnectIfUserExistsIfInteractive() throws Exception
     {
         doReturn( "bob" ).when( connectionConfig ).username();
 
@@ -271,7 +271,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsSilentlyForPassIfUserExistsIfOutputRedirected() throws Exception
+    void promptsSilentlyForPassIfUserExistsIfOutputRedirected() throws Exception
     {
         if ( Utils.isWindows() )
         {
@@ -313,7 +313,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsForNewPasswordIfPasswordChangeRequired() throws Exception
+    void promptsForNewPasswordIfPasswordChangeRequired() throws Exception
     {
         // Use a real ConnectionConfig instead of the mock in this test
         ConnectionConfig connectionConfig = new ConnectionConfig( "", "", 0, "", "", Encryption.DEFAULT, "" );
@@ -342,7 +342,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsForNewPasswordIfPasswordChangeRequiredCannotBeEmpty() throws Exception
+    void promptsForNewPasswordIfPasswordChangeRequiredCannotBeEmpty() throws Exception
     {
         // Use a real ConnectionConfig instead of the mock in this test
         ConnectionConfig connectionConfig = new ConnectionConfig( "", "", 0, "", "", Encryption.DEFAULT, "" );
@@ -372,7 +372,7 @@ public class MainTest
     }
 
     @Test
-    public void promptsHandlesBang() throws Exception
+    void promptsHandlesBang() throws Exception
     {
         when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
 
@@ -394,7 +394,7 @@ public class MainTest
     }
 
     @Test
-    public void triesOnlyOnceIfUserPassExists() throws Exception
+    void triesOnlyOnceIfUserPassExists() throws Exception
     {
         doThrow( authException ).doThrow( new RuntimeException( "second try" ) ).when( shell ).connect( connectionConfig, null );
         doReturn( "bob" ).when( connectionConfig ).username();
@@ -420,7 +420,7 @@ public class MainTest
     }
 
     @Test
-    public void repromptsIfUserIsNotProvidedIfInteractive() throws Exception
+    void repromptsIfUserIsNotProvidedIfInteractive() throws Exception
     {
         when( shell.connect( connectionConfig, null ) ).thenThrow( authException ).thenReturn( connectionConfig );
 
@@ -442,7 +442,7 @@ public class MainTest
     }
 
     @Test
-    public void doesNotRepromptIfUserIsNotProvidedIfOutputRedirected() throws Exception
+    void doesNotRepromptIfUserIsNotProvidedIfOutputRedirected() throws Exception
     {
         if ( Utils.isWindows() )
         {
@@ -484,7 +484,7 @@ public class MainTest
     }
 
     @Test
-    public void printsVersionAndExits()
+    void printsVersionAndExits()
     {
         CliArgs args = new CliArgs();
         args.setVersion( true );
@@ -501,7 +501,7 @@ public class MainTest
     }
 
     @Test
-    public void printsDriverVersionAndExits()
+    void printsDriverVersionAndExits()
     {
         CliArgs args = new CliArgs();
         args.setDriverVersion( true );

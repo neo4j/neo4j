@@ -19,10 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.ShellParameterMap;
@@ -35,19 +33,17 @@ import org.neo4j.shell.state.ErrorWhileInTransactionException;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
+class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     private final StringLinePrinter linePrinter = new StringLinePrinter();
     private Command rollbackCommand;
     private Command commitCommand;
     private Command beginCommand;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         linePrinter.clear();
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
@@ -60,7 +56,7 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
     }
 
     @Test
-    public void rollbackScenario() throws CommandException
+    void rollbackScenario() throws CommandException
     {
         //given
         shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
@@ -80,21 +76,20 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
     }
 
     @Test
-    public void failureInTxScenario() throws CommandException
+    void failureInTxScenario() throws CommandException
     {
         // given
         beginCommand.execute( "" );
 
         // then
-        thrown.expect( ErrorWhileInTransactionException.class );
-        thrown.expectMessage( "/ by zero" );
-        thrown.expectMessage( "An error occurred while in an open transaction. The transaction will be rolled back and terminated." );
-
-        shell.execute( "RETURN 1/0" );
+        ErrorWhileInTransactionException exception = assertThrows( ErrorWhileInTransactionException.class, () -> shell.execute( "RETURN 1/0" ) );
+        assertThat( exception.getMessage(), containsString( "/ by zero" ) );
+        assertThat( exception.getMessage(),
+                containsString( "An error occurred while in an open transaction. The transaction will be rolled back and terminated." ) );
     }
 
     @Test
-    public void failureInTxScenarioWithCypherFollowing() throws CommandException
+    void failureInTxScenarioWithCypherFollowing() throws CommandException
     {
         // given
         beginCommand.execute( "" );
@@ -115,7 +110,7 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
     }
 
     @Test
-    public void failureInTxScenarioWithCommitFollowing() throws CommandException
+    void failureInTxScenarioWithCommitFollowing() throws CommandException
     {
         // given
         beginCommand.execute( "" );
@@ -128,16 +123,13 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
             // This is OK
         }
 
-        // then
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "There is no open transaction to commit" );
-
-        // when
-        commitCommand.execute( "" );
+        // then / when
+        CommandException exception = assertThrows( CommandException.class, () -> commitCommand.execute( "" ) );
+        assertThat( exception.getMessage(), containsString( "There is no open transaction to commit" ) );
     }
 
     @Test
-    public void failureInTxScenarioWithRollbackFollowing() throws CommandException
+    void failureInTxScenarioWithRollbackFollowing() throws CommandException
     {
         // given
         beginCommand.execute( "" );
@@ -150,16 +142,13 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
             // This is OK
         }
 
-        // then
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "There is no open transaction to rollback" );
-
-        // when
-        rollbackCommand.execute( "" );
+        //  then / when
+        CommandException exception = assertThrows( CommandException.class, () -> rollbackCommand.execute( "" ) );
+        assertThat( exception.getMessage(), containsString( "There is no open transaction to rollback" ) );
     }
 
     @Test
-    public void resetInFailedTxScenario() throws CommandException
+    void resetInFailedTxScenario() throws CommandException
     {
         //when
         beginCommand.execute( "" );
@@ -183,7 +172,7 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
     }
 
     @Test
-    public void resetInTxScenario() throws CommandException
+    void resetInTxScenario() throws CommandException
     {
         //when
         beginCommand.execute( "" );
@@ -200,7 +189,7 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
     }
 
     @Test
-    public void commitScenario() throws CommandException
+    void commitScenario() throws CommandException
     {
         beginCommand.execute( "" );
         shell.execute( "CREATE (:TestPerson {name: \"Joe Smith\"})" );

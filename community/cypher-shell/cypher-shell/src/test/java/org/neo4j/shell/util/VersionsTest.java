@@ -19,14 +19,14 @@
  */
 package org.neo4j.shell.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class VersionsTest
+class VersionsTest
 {
     @Test
-    public void shouldWorkForEmptyString() throws Exception
+    void shouldWorkForEmptyString()
     {
         assertEquals( 0, Versions.version( "" ).compareTo( Versions.version( "0.0.0" ) ) );
         assertEquals( 0, Versions.majorVersion( "" ) );
@@ -35,7 +35,7 @@ public class VersionsTest
     }
 
     @Test
-    public void shouldWorkForReleaseVersion() throws Exception
+    void shouldWorkForReleaseVersion()
     {
         String versionString = "3.4.5";
         assertEquals( 0, Versions.version( versionString ).compareTo( Versions.version( "3.4.5" ) ) );
@@ -45,7 +45,7 @@ public class VersionsTest
     }
 
     @Test
-    public void shouldWorkForPreReleaseVersion() throws Exception
+    void shouldWorkForPreReleaseVersion()
     {
         String versionString = "3.4.55-beta99";
         assertEquals( 0, Versions.version( versionString ).compareTo( Versions.version( "3.4.55" ) ) );

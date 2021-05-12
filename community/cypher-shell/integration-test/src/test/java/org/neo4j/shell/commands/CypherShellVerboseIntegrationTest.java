@@ -19,13 +19,10 @@
  */
 package org.neo4j.shell.commands;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.cypher.internal.evaluator.EvaluationException;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
@@ -37,23 +34,18 @@ import org.neo4j.shell.prettyprint.TablePlanFormatter;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.util.Versions.majorVersion;
-import static org.neo4j.shell.util.Versions.version;
 
-public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
+class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
+    private final StringLinePrinter linePrinter = new StringLinePrinter();
 
-    private StringLinePrinter linePrinter = new StringLinePrinter();
-
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         linePrinter.clear();
         shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
@@ -61,14 +53,14 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
         connect( "neo" );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         shell.execute( "MATCH (n) DETACH DELETE (n)" );
     }
 
     @Test
-    public void parseDuration() throws CommandException
+    void parseDuration() throws CommandException
     {
         //when
         shell.execute( "RETURN duration({months:0.75})" );
@@ -78,7 +70,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void cypherWithNoReturnStatements() throws CommandException
+    void cypherWithNoReturnStatements() throws CommandException
     {
         //when
         shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
@@ -88,7 +80,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void cypherWithReturnStatements() throws CommandException
+    void cypherWithReturnStatements() throws CommandException
     {
         //when
         shell.execute( "CREATE (jane :TestPerson {name: \"Jane Smith\"}) RETURN jane" );
@@ -101,17 +93,15 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void connectTwiceThrows() throws CommandException
+    void connectTwiceThrows()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "Already connected" );
-
-        assertTrue( "Shell should already be connected", shell.isConnected() );
-        connect( "neo" );
+        assertTrue( shell.isConnected(), "Shell should already be connected" );
+        CommandException exception = assertThrows( CommandException.class, () -> connect( "neo" ) );
+        assertThat( exception.getMessage(), containsString( "Already connected" ) );
     }
 
     @Test
-    public void resetOutOfTxScenario() throws CommandException
+    void resetOutOfTxScenario() throws CommandException
     {
         //when
         shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
@@ -128,7 +118,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void paramsAndListVariables() throws EvaluationException, CommandException
+    void paramsAndListVariables() throws CommandException
     {
         assertTrue( shell.getParameterMap().allParameterValues().isEmpty() );
 
@@ -148,7 +138,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void paramsAndListVariablesWithSpecialCharacters() throws EvaluationException, CommandException
+    void paramsAndListVariablesWithSpecialCharacters() throws CommandException
     {
         assertTrue( shell.getParameterMap().allParameterValues().isEmpty() );
 
@@ -165,11 +155,10 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void cypherWithOrder() throws CommandException
+    void cypherWithOrder() throws CommandException
     {
         // given
-        String serverVersion = shell.getServerVersion();
-        assumeThat( version( serverVersion ), greaterThanOrEqualTo( version( "3.6" ) ) );
+        assumeTrue( runningAtLeast( "3.6" ) );
 
         // Make sure we are creating a new NEW index
         try
@@ -194,11 +183,10 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void cypherWithQueryDetails() throws CommandException
+    void cypherWithQueryDetails() throws CommandException
     {
         // given
-        String serverVersion = shell.getServerVersion();
-        assumeThat( version( serverVersion ), greaterThanOrEqualTo( version( "4.1" ) ) );
+        assumeTrue( runningAtLeast( "4.1" ) );
 
         //when
         shell.execute( "EXPLAIN MATCH (n) with n.age AS age RETURN age" );
@@ -211,11 +199,10 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void cypherWithoutQueryDetails() throws CommandException
+    void cypherWithoutQueryDetails() throws CommandException
     {
         // given
-        String serverVersion = shell.getServerVersion();
-        assumeThat( version( serverVersion ), not( greaterThanOrEqualTo( version( "4.1" ) ) ) );
+        assumeTrue( !runningAtLeast( "4.1" ) );
 
         //when
         shell.execute( "EXPLAIN MATCH (n) with n.age AS age RETURN age" );
@@ -227,7 +214,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void cypherWithExplainAndRulePlanner() throws CommandException
+    void cypherWithExplainAndRulePlanner() throws CommandException
     {
         //given (there is no rule planner in neo4j 4.0)
         assumeTrue( majorVersion( shell.getServerVersion() ) < 4 );
@@ -244,13 +231,11 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void cypherWithProfileWithMemory() throws CommandException
+    void cypherWithProfileWithMemory() throws CommandException
     {
         // given
-
-        String serverVersion = shell.getServerVersion();
         // Memory profile are only available from 4.1
-        assumeThat( version( serverVersion ), greaterThanOrEqualTo( version( "4.1" ) ) );
+        assumeTrue( runningAtLeast( "4.1" ) );
 
         //when
         shell.execute( "CYPHER RUNTIME=INTERPRETED PROFILE WITH 1 AS x RETURN DISTINCT x" );
@@ -259,11 +244,11 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
         String actual = linePrinter.output();
         assertThat( actual.replace( " ", "" ), containsString( "|Plan|Statement|Version|Planner|Runtime|Time|DbHits|Rows|Memory(Bytes)|" ) ); // First table
         assertThat( actual.replace( " ", "" ),
-                    containsString( "|Operator|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|" ) ); // Second table
+                containsString( "|Operator|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|" ) ); // Second table
     }
 
     @Test
-    public void shouldShowTheNumberOfRows() throws CommandException
+    void shouldShowTheNumberOfRows() throws CommandException
     {
         //when
         shell.execute( "UNWIND [1,2,3] AS row RETURN row" );
@@ -274,7 +259,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
     }
 
     @Test
-    public void shouldNotContainUnnecessaryNewLines() throws CommandException
+    void shouldNotContainUnnecessaryNewLines() throws CommandException
     {
         //when
         shell.execute( "UNWIND [1,2,3] AS row RETURN row" );

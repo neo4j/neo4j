@@ -19,11 +19,9 @@
  */
 package org.neo4j.shell.cli;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import sun.misc.Signal;
 
 import java.io.ByteArrayInputStream;
@@ -67,7 +65,8 @@ import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -79,13 +78,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.cli.InteractiveShellRunner.DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT;
 
-public class InteractiveShellRunnerTest
+class InteractiveShellRunnerTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    @Rule
-    public TemporaryFolder temp = new TemporaryFolder();
+    @TempDir
+    File temp;
 
     private Logger logger;
     private StatementExecuter cmdExecuter;
@@ -97,8 +93,8 @@ public class InteractiveShellRunnerTest
     private UserMessagesHandler userMessagesHandler;
     private ConnectionConfig connectionConfig;
 
-    @Before
-    public void setup() throws Exception
+    @BeforeEach
+    void setup() throws Exception
     {
         statementParser = new ShellStatementParser();
         logger = mock( Logger.class );
@@ -106,7 +102,7 @@ public class InteractiveShellRunnerTest
         txHandler = mock( TransactionHandler.class );
         databaseManager = mock( DatabaseManager.class );
         connectionConfig = mock( ConnectionConfig.class );
-        historyFile = temp.newFile();
+        historyFile = new File( temp, "test" );
         badLineError = new ClientException( "Found a bad line" );
         userMessagesHandler = mock( UserMessagesHandler.class );
         when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
@@ -118,7 +114,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testSimple() throws Exception
+    void testSimple() throws Exception
     {
         String input = "good1;\n" +
                        "good2;\n";
@@ -134,7 +130,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void runUntilEndShouldKeepGoingOnErrors() throws IOException, CommandException
+    void runUntilEndShouldKeepGoingOnErrors() throws IOException, CommandException
     {
         String input = "good1;\n" +
                        "bad1;\n" +
@@ -147,7 +143,7 @@ public class InteractiveShellRunnerTest
 
         int code = runner.runUntilEnd();
 
-        assertEquals( "Wrong exit code", 0, code );
+        assertEquals( 0, code, "Wrong exit code" );
 
         verify( cmdExecuter ).execute( "good1;" );
         verify( cmdExecuter ).execute( "\nbad1;" );
@@ -161,7 +157,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void runUntilEndShouldStopOnExitExceptionAndReturnCode() throws IOException, CommandException
+    void runUntilEndShouldStopOnExitExceptionAndReturnCode() throws IOException, CommandException
     {
         String input = "good1;\n" +
                        "bad1;\n" +
@@ -177,7 +173,7 @@ public class InteractiveShellRunnerTest
 
         int code = runner.runUntilEnd();
 
-        assertEquals( "Wrong exit code", 1234, code );
+        assertEquals( 1234, code, "Wrong exit code" );
 
         verify( cmdExecuter ).execute( "good1;" );
         verify( cmdExecuter ).execute( "\nbad1;" );
@@ -190,7 +186,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void historyIsRecorded() throws Exception
+    void historyIsRecorded() throws Exception
     {
         // given
 
@@ -222,7 +218,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void unescapedBangWorks() throws Exception
+    void unescapedBangWorks() throws Exception
     {
         // given
         PrintStream mockedErr = mock( PrintStream.class );
@@ -240,7 +236,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void escapedBangWorks() throws Exception
+    void escapedBangWorks() throws Exception
     {
         // given
         PrintStream mockedErr = mock( PrintStream.class );
@@ -258,11 +254,8 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void justNewLineThrowsNoMoreInput() throws Exception
+    void justNewLineThrowsNoMoreInput() throws Exception
     {
-        // then
-        thrown.expect( NoMoreInputException.class );
-
         // given
         String inputString = "\n";
         InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
@@ -270,15 +263,12 @@ public class InteractiveShellRunnerTest
                                                                     historyFile, userMessagesHandler, connectionConfig );
 
         // when
-        runner.readUntilStatement();
+        assertThrows( NoMoreInputException.class, runner::readUntilStatement );
     }
 
     @Test
-    public void emptyStringThrowsNoMoreInput() throws Exception
+    void emptyStringThrowsNoMoreInput() throws Exception
     {
-        // then
-        thrown.expect( NoMoreInputException.class );
-
         // given
         String inputString = "";
         InputStream inputStream = new ByteArrayInputStream( inputString.getBytes() );
@@ -286,11 +276,11 @@ public class InteractiveShellRunnerTest
                                                                     historyFile, userMessagesHandler, connectionConfig );
 
         // when
-        runner.readUntilStatement();
+        assertThrows( NoMoreInputException.class, runner::readUntilStatement );
     }
 
     @Test
-    public void emptyLineIsIgnored() throws Exception
+    void emptyLineIsIgnored() throws Exception
     {
         // given
         String inputString = "     \nCREATE (n:Person) RETURN n;\n";
@@ -307,7 +297,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testPrompt() throws Exception
+    void testPrompt() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -338,7 +328,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testPromptShowDatabaseAsSetByUserWhenServerReportNull() throws Exception
+    void testPromptShowDatabaseAsSetByUserWhenServerReportNull() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -357,7 +347,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testPromptShowDatabaseAsSetByUserWhenServerReportAbsent() throws Exception
+    void testPromptShowDatabaseAsSetByUserWhenServerReportAbsent() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -376,7 +366,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testPromptShowUnresolvedDefaultDatabaseWhenServerReportNull() throws Exception
+    void testPromptShowUnresolvedDefaultDatabaseWhenServerReportNull() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -395,7 +385,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testPromptShowUnresolvedDefaultDatabaseWhenServerReportAbsent() throws Exception
+    void testPromptShowUnresolvedDefaultDatabaseWhenServerReportAbsent() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -414,7 +404,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testLongPrompt() throws Exception
+    void testLongPrompt() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -447,7 +437,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testPromptInTx() throws Exception
+    void testPromptInTx() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -478,7 +468,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void multilineRequiresNewLineOrSemicolonToEnd() throws Exception
+    void multilineRequiresNewLineOrSemicolonToEnd() throws Exception
     {
         // given
         String inputString = "  \\   \nCREATE (n:Person) RETURN n\n";
@@ -495,7 +485,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void printsWelcomeAndExitMessage() throws Exception
+    void printsWelcomeAndExitMessage() throws Exception
     {
         // given
         String inputString = "\nCREATE (n:Person) RETURN n\n;\n";
@@ -513,7 +503,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void multilineEndsOnSemicolonOnNewLine() throws Exception
+    void multilineEndsOnSemicolonOnNewLine() throws Exception
     {
         // given
         String inputString = "\nCREATE (n:Person) RETURN n\n;\n";
@@ -529,7 +519,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void multilineEndsOnSemicolonOnSameLine() throws Exception
+    void multilineEndsOnSemicolonOnSameLine() throws Exception
     {
         // given
         String inputString = "\nCREATE (n:Person) RETURN n;\n";
@@ -545,7 +535,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testSignalHandleOutsideExecution() throws Exception
+    void testSignalHandleOutsideExecution() throws Exception
     {
         // given
         InputStream inputStream = new ByteArrayInputStream( "".getBytes() );
@@ -566,7 +556,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testSignalHandleDuringExecution() throws Exception
+    void testSignalHandleDuringExecution() throws Exception
     {
         // given
         BoltStateHandler boltStateHandler = mock( BoltStateHandler.class );
@@ -621,7 +611,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testSwitchToUnavailableDatabase1() throws Exception
+    void testSwitchToUnavailableDatabase1() throws Exception
     {
         // given
         String input = ":use foo;\n";
@@ -640,7 +630,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testSwitchToUnavailableDatabase2() throws Exception
+    void testSwitchToUnavailableDatabase2() throws Exception
     {
         // given
         String input = ":use foo;\n";
@@ -658,7 +648,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testSwitchToUnavailableDatabase3() throws Exception
+    void testSwitchToUnavailableDatabase3() throws Exception
     {
         // given
         String input = ":use foo;\n";
@@ -676,7 +666,7 @@ public class InteractiveShellRunnerTest
     }
 
     @Test
-    public void testSwitchToNonExistingDatabase() throws Exception
+    void testSwitchToNonExistingDatabase() throws Exception
     {
         // given
         String input = ":use foo;\n";
@@ -695,7 +685,7 @@ public class InteractiveShellRunnerTest
 
     private static class FakeInterruptableShell extends CypherShell
     {
-        private AtomicReference<Thread> executionThread = new AtomicReference<>();
+        private final AtomicReference<Thread> executionThread = new AtomicReference<>();
 
         FakeInterruptableShell( @Nonnull Logger logger,
                                 @Nonnull BoltStateHandler boltStateHandler )
