@@ -316,6 +316,25 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
                             .build()
   }
 
+  test("should prefer type scan to relationship index scan from existence constraint with same cardinality, when filtered") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .enablePlanningRelationshipIndexes()
+      .enableRelationshipByTypeLookup()
+      .build()
+
+    val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN r")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("r")
+                            .relationshipTypeScan("(a)-[r:REL]->(b)")
+                            .build()
+  }
+
   test("should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used") {
 
     val planner = plannerBuilder()
@@ -331,6 +350,26 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
                             .produceResults("p")
                             .projection("n.prop AS p")
                             .nodeIndexOperator("n:Label(prop)")
+                            .build()
+  }
+
+  test("should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .enablePlanningRelationshipIndexes()
+      .enableRelationshipByTypeLookup()
+      .build()
+
+    val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN r.prop AS p")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("p")
+                            .projection("r.prop AS p")
+                            .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)")
                             .build()
   }
 
@@ -353,6 +392,27 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
                             .build()
   }
 
+  test("should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used, when filtered") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .enablePlanningRelationshipIndexes()
+      .enableRelationshipByTypeLookup()
+      .build()
+
+    val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.x = 1 RETURN r.prop AS p")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("p")
+                            .projection("r.prop AS p")
+                            .filter("r.x = 1")
+                            .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)")
+                            .build()
+  }
+
   test("should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality") {
 
     val planner = plannerBuilder()
@@ -369,6 +429,27 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
                             .produceResults("c")
                             .aggregation(Seq(), Seq("count(n.counted) AS c"))
                             .nodeIndexOperator("n:Label(counted)")
+                            .build()
+  }
+
+  test("should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .enablePlanningRelationshipIndexes()
+      .enableRelationshipByTypeLookup()
+      .build()
+
+    val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) RETURN count(r.counted) AS c")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("c")
+                            .aggregation(Seq(), Seq("count(r.counted) AS c"))
+                            .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)")
                             .build()
   }
 
@@ -392,6 +473,28 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
                             .build()
   }
 
+  test("should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality, when filtered") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .enablePlanningRelationshipIndexes()
+      .enableRelationshipByTypeLookup()
+      .build()
+
+    val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.x = 1 RETURN count(r.counted) AS c")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("c")
+                            .aggregation(Seq(), Seq("count(r.counted) AS c"))
+                            .filter("r.x = 1")
+                            .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)")
+                            .build()
+  }
+
   test("should prefer node index scan for aggregated property, even if other property is referenced") {
 
     val planner = plannerBuilder()
@@ -409,6 +512,28 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
                             .aggregation(Seq(), Seq("count(n.counted) AS c"))
                             .filter("not n.prop = 1", "n.x = 1")
                             .nodeIndexOperator("n:Label(counted)")
+                            .build()
+  }
+
+  test("should prefer relationship index scan for aggregated property, even if other property is referenced") {
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]-()", 10)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
+      .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
+      .addRelationshipExistenceConstraint("REL", "prop")
+      .enablePlanningRelationshipIndexes()
+      .enableRelationshipByTypeLookup()
+      .build()
+
+    val plan = planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop <> 1 AND r.x = 1 RETURN count(r.counted) AS c")
+
+    plan shouldEqual planner.planBuilder()
+                            .produceResults("c")
+                            .aggregation(Seq(), Seq("count(r.counted) AS c"))
+                            .filter("not r.prop = 1", "r.x = 1")
+                            .relationshipIndexOperator("(a)-[r:REL(counted)]->(b)")
                             .build()
   }
 
