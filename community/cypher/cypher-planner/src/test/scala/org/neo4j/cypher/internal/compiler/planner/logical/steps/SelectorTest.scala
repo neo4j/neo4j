@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -125,7 +126,8 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
                                inputOrdering: Ordering[X],
                                context: LogicalPlanningContext,
                                resolved: => String,
-                               resolvedPerPlan: LogicalPlan => String): Unit = {
+                               resolvedPerPlan: LogicalPlan => String,
+                               heuristic: SelectorHeuristic): Unit = {
           val plans = input.map(projector).toSet
           plans should equal(Set(
             expectedPlan,

@@ -44,7 +44,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
           }
         }
 
-        context.costComparisonListener.report(projector, input, inputOrdering, context, resolved, resolvedPerPlan)
+        context.costComparisonListener.report(projector, input, inputOrdering, context, resolved, resolvedPerPlan, heuristic)
 
         if (input.isEmpty) None else Some(input.min(inputOrdering))
       }

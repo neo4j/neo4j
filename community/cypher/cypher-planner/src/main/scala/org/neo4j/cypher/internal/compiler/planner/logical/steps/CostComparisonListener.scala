@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.util.Cardinality
@@ -37,7 +38,8 @@ trait CostComparisonListener {
                 inputOrdering: Ordering[X],
                 context: LogicalPlanningContext,
                 resolved: => String,
-                resolvedPerPlan: LogicalPlan => String = _ => ""
+                resolvedPerPlan: LogicalPlan => String = _ => "",
+                heuristic: SelectorHeuristic,
                ): Unit
 }
 
@@ -47,7 +49,8 @@ object devNullListener extends CostComparisonListener {
                          inputOrdering: Ordering[X],
                          context: LogicalPlanningContext,
                          resolved: => String,
-                         resolvedPerPlan: LogicalPlan => String = _ => ""
+                         resolvedPerPlan: LogicalPlan => String = _ => "",
+                         heuristic: SelectorHeuristic,
                         ): Unit = {}
 }
 
@@ -73,7 +76,8 @@ object SystemOutCostLogger extends CostComparisonListener {
                 inputOrdering: Ordering[X],
                 context: LogicalPlanningContext,
                 resolved: => String,
-                resolvedPerPlan: LogicalPlan => String = _ => ""
+                resolvedPerPlan: LogicalPlan => String = _ => "",
+                heuristic: SelectorHeuristic,
                ): Unit = {
     // Key is a tuple of (root plan ID, plan ID)
     val planCost: mutable.Map[(Id, Id), Cost] = mutable.Map.empty
@@ -117,11 +121,13 @@ object SystemOutCostLogger extends CostComparisonListener {
         val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
         val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
         val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString(plan), planPrefixDot = planPrefixDotString(plan))
-        val hints = s"(hints: ${context.planningAttributes.solveds.get(plan.id).numHints})"
+        val hints = context.planningAttributes.solveds.get(plan.id).numHints
+        val heuristicValue = heuristic.tieBreaker(plan)
+        val extra = s"(hints: $hints, heuristic: $heuristicValue)"
 
         println(indent(1, header))
         println(indent(2, planWithCosts))
-        println(indent(2, hints))
+        println(indent(2, extra))
         println()
       }
     }
