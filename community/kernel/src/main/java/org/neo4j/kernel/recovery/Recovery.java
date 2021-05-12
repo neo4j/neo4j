@@ -410,7 +410,7 @@ public final class Recovery
             StoreId txStoreId = logFiles.getTailInformation().lastStoreId;
             if ( !StoreId.UNKNOWN.equals( txStoreId ) )
             {
-                if ( !storeId.equalsIgnoringUpdate( txStoreId ) )
+                if ( !storeId.equalsIgnoringVersion( txStoreId ) )
                 {
                     throw new RuntimeException( "Mismatching store id. Store StoreId: " + storeId +
                             ". Transaction log StoreId: " + txStoreId );

@@ -105,7 +105,7 @@ public final class StoreId
                upgradeTxId == storeId.upgradeTxId;
     }
 
-    public boolean equalsIgnoringUpdate( Object o )
+    public boolean equalsIgnoringVersion( Object o )
     {
         if ( this == o )
         {
@@ -119,7 +119,7 @@ public final class StoreId
         return creationTime == storeId.creationTime && randomId == storeId.randomId;
     }
 
-    public boolean equalsIgnoringUpgrade( Object o )
+    public boolean equalsIgnoringLocalUpgradeMetadata( Object o )
     {
         if ( this == o )
         {
@@ -137,7 +137,7 @@ public final class StoreId
 
     public boolean compatibleIncludingMinorUpgrade( StorageEngineFactory storageEngineFactory, StoreId otherStoreId )
     {
-        if ( !equalsIgnoringUpdate( otherStoreId ) )
+        if ( !equalsIgnoringVersion( otherStoreId ) )
         {
             return false; //Different store, not compatible
         }

@@ -143,7 +143,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
         }
         LogHeader logHeader = logFile.extractHeader( logVersion );
         StoreId headerStoreId = logHeader.getStoreId();
-        return StoreId.UNKNOWN.equals( headerStoreId ) || headerStoreId.equalsIgnoringUpdate( checkpointInfo.storeId() );
+        return StoreId.UNKNOWN.equals( headerStoreId ) || headerStoreId.equalsIgnoringVersion( checkpointInfo.storeId() );
     }
 
     private StartCommitEntries getFirstTransactionIdAfterCheckpoint( LogFile logFile, LogPosition logPosition ) throws IOException
