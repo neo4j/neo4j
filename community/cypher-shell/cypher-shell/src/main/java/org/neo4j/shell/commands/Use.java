@@ -28,6 +28,7 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 
 import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
+import static org.neo4j.shell.commands.CommandHelper.stripEnclosingBackTicks;
 
 /**
  * This command starts a transaction.
@@ -85,6 +86,6 @@ public class Use implements Command
     {
         String[] args = simpleArgParse( argString, 0, 1, COMMAND_NAME, getUsage() );
         String databaseName = args.length == 0 ? DatabaseManager.ABSENT_DB_NAME : args[0];
-        databaseManager.setActiveDatabase( databaseName );
+        databaseManager.setActiveDatabase( stripEnclosingBackTicks( databaseName ) );
     }
 }

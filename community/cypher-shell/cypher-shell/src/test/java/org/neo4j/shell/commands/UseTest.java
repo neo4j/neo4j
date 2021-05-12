@@ -79,4 +79,18 @@ public class UseTest
         String usage = cmd.getUsage();
         assertEquals( usage, "database" );
     }
+
+    @Test
+    public void setActiveDatabaseWithBackticks() throws CommandException
+    {
+        cmd.execute( "`hello-world`" );
+        verify( mockShell ).setActiveDatabase( "hello-world" );
+    }
+
+    @Test
+    public void setActiveDatabaseWithoutBackticks() throws CommandException
+    {
+        cmd.execute( "hello-world" );
+        verify( mockShell ).setActiveDatabase( "hello-world" );
+    }
 }

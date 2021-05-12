@@ -139,4 +139,14 @@ public class CommandHelper
     {
         return commands.values().stream().distinct().collect( Collectors.toList() );
     }
+
+    public static String stripEnclosingBackTicks( String input )
+    {
+        if ( input.startsWith( "`" ) && input.endsWith( "`" ) )
+        {
+            return input.substring( 1, input.length() - 1 );
+        }
+
+        return input;
+    }
 }
