@@ -65,6 +65,10 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                    * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
                                    */
                                   aggregatingProperties: Set[(String, String)] = Set.empty,
+                                  /*
+                                   * All properties that are referenced (in the head planner query)
+                                   * Used to break potential ties between index leaf plans
+                                   */
                                   accessedProperties: Set[(String, String)] = Set.empty,
                                   idGen: IdGen,
                                   executionModel: ExecutionModel,

@@ -42,8 +42,8 @@ object SelectorHeuristic {
   val constant: SelectorHeuristic = (_: LogicalPlan) => 0
 }
 
-
 trait SelectorHeuristic {
+  /** Heuristic used to break ties between plans with the same cost */
   def tieBreaker(plan: LogicalPlan): Int
 }
 

@@ -232,6 +232,10 @@ object CardinalityCostModel {
      * see ActualCostCalculationTest
      */
 
+    /*
+     * Ties that may occur between leaf plans (e.g. label/type scans and index plans) are arbitrated by a SelectorHeuristic
+     */
+
     case _: NodeByLabelScan |
          _: NodeIndexScan
     => INDEX_SCAN_COST_PER_ROW
