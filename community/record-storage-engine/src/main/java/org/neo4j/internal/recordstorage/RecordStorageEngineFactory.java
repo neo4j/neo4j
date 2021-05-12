@@ -31,7 +31,6 @@ import java.util.UUID;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -218,15 +217,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
     {
-        try ( MetadataProvider metadataProvider = transactionMetaDataStore( fs, databaseLayout,
-                Config.defaults( GraphDatabaseSettings.read_only_database_default, true ), pageCache, PageCacheTracer.NULL ) )
-        {
-            return metadataProvider.getDatabaseIdUuid( cursorContext );
-        }
-        catch ( IOException e )
-        {
-            return Optional.empty();
-        }
+        return MetaDataStore.getDatabaseIdUuid( pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
     }
 
     @Override

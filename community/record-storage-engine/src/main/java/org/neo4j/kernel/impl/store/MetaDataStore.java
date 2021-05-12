@@ -427,6 +427,20 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         refreshFields();
     }
 
+    public static Optional<UUID> getDatabaseIdUuid( PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext )
+    {
+        try
+        {
+            long msb = getRecord( pageCache, neoStore, Position.DATABASE_ID_MOST_SIGN_BITS, databaseName, cursorContext );
+            long lsb = getRecord( pageCache, neoStore, DATABASE_ID_LEAST_SIGN_BITS, databaseName, cursorContext );
+            return instantiateDatabaseIdUuid( msb, lsb );
+        }
+        catch ( IOException e )
+        {
+            return Optional.empty();
+        }
+    }
+
     @Override
     public Optional<UUID> getDatabaseIdUuid( CursorContext cursorContext )
     {
@@ -442,19 +456,24 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     lsb = getRecordValue( cursor, DATABASE_ID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
                 }
             }
-            var uuid = new UUID( msb, lsb );
-            if ( isNotInitializedUUID( uuid ) || (msb == FIELD_NOT_PRESENT && lsb == FIELD_NOT_PRESENT) )
-            {
-                return Optional.empty();
-            }
-            else
-            {
-                return Optional.of( uuid );
-            }
+            return instantiateDatabaseIdUuid( msb, lsb );
         }
         catch ( IOException e )
         {
             return Optional.empty();
+        }
+    }
+
+    private static Optional<UUID> instantiateDatabaseIdUuid( long msb, long lsb )
+    {
+        var uuid = new UUID( msb, lsb );
+        if ( isNotInitializedUUID( uuid ) || (msb == FIELD_NOT_PRESENT && lsb == FIELD_NOT_PRESENT) )
+        {
+            return Optional.empty();
+        }
+        else
+        {
+            return Optional.of( uuid );
         }
     }
 
