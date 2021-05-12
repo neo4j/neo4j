@@ -20,33 +20,32 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LogicalProperty
-import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
-
 import scala.annotation.tailrec
 
 object PropertyAccessHelper {
 
+  case class PropertyAccess(variableName: String, propertyName: String)
+
   /*
-   * Find all properties in the head of this planner query. Used when selecting between index plans.
+   * Find all direct property accesses in the head of this planner query. Used when selecting between index plans.
    */
-  def findLocalPropertyAccesses(query: SinglePlannerQuery): Set[(String, String)] = {
-    val horizonPropertyAccesses = query.horizon.treeFold(Set[(String, String)]()) {
-      case LogicalProperty(LogicalVariable(varName), PropertyKeyName(propName)) => set =>
-        val prop: (String, String) = (varName, propName)
-        SkipChildren(set + prop)
+  def findLocalPropertyAccesses(query: SinglePlannerQuery): Set[PropertyAccess] = {
+    val horizonPropertyAccesses = query.horizon.treeFold(Set[PropertyAccess]()) {
+      case Property(Variable(varName), PropertyKeyName(propName)) => set =>
+        SkipChildren(set + PropertyAccess(varName, propName))
     }
-    val queryGraphPropertyAccesses = query.queryGraph.treeFold(Set[(String, String)]()) {
-      case LogicalProperty(LogicalVariable(varName), PropertyKeyName(propName)) => set =>
-        val prop: (String, String) = (varName, propName)
-        SkipChildren(set + prop)
+    val queryGraphPropertyAccesses = query.queryGraph.treeFold(Set[PropertyAccess]()) {
+      case Property(Variable(varName), PropertyKeyName(propName)) => set =>
+        SkipChildren(set + PropertyAccess(varName, propName))
     }
     horizonPropertyAccesses ++ queryGraphPropertyAccesses
   }
@@ -54,12 +53,12 @@ object PropertyAccessHelper {
   /*
    * Find all properties over which aggregation is performed, where we potentially could use a NodeIndexScan.
    */
-  def findAggregationPropertyAccesses(query: SinglePlannerQuery): Set[(String, String)] = {
+  def findAggregationPropertyAccesses(query: SinglePlannerQuery): Set[PropertyAccess] = {
 
     // The renamings map is used to keep track of any projections changing the name of the property,
     // as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
     @tailrec
-    def rec(currentQuery: SinglePlannerQuery, renamings: Map[String, Expression]): Set[(String, String)] = {
+    def rec(currentQuery: SinglePlannerQuery, renamings: Map[String, Expression]): Set[PropertyAccess] = {
       // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
       if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return Set.empty
 

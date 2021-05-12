@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFinder
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
@@ -90,10 +91,10 @@ object leafPlanOptions extends LeafPlanFinder {
   }
 
   private def hasAggregatingProperties(varName: String, properties: Seq[IndexedProperty], context: LogicalPlanningContext): Boolean =
-    properties.exists(prop => context.aggregatingProperties.contains((varName, prop.propertyKeyToken.name)))
+    properties.exists(prop => context.aggregatingProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name)))
 
   private def hasAccessedProperties(varName: String, properties: Seq[IndexedProperty], context: LogicalPlanningContext): Boolean =
-    properties.exists(prop => context.accessedProperties.contains((varName, prop.propertyKeyToken.name)))
+    properties.exists(prop => context.accessedProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name)))
 
 
 }

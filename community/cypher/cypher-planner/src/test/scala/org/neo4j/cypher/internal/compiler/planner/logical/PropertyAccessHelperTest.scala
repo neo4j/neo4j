@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.findAggregationPropertyAccesses
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.findLocalPropertyAccesses
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
@@ -73,7 +74,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN min(n.prop)")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
   }
 
   test("addAggregatedPropertiesToContext should be usable for different queries") {
@@ -89,48 +90,47 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) WITH n.prop AS prop RETURN min(prop)")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
   }
 
   test("should return updated context if mutating patterns after aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n:Label) WITH min(n.prop) AS min CREATE (:NewLabel) RETURN min")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
   }
 
   test("should return updated context for unwind before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("UNWIND [1,2,3] AS i MATCH (n) RETURN min(n.prop)")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
   }
 
   test("should return updated context for distinct before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) WITH DISTINCT n.prop AS prop RETURN min(prop)")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
   }
 
   test("should return updated context for LOAD CSV before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("LOAD CSV WITH HEADERS FROM '$url' AS row MATCH (n) WHERE toInteger(row.Value) > 20 RETURN count(n.prop)")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
   }
 
   test("should return updated context for procedure call before aggregation") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)")
     val result = context.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
   }
 
   test("should find no property accesses") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN n")
     val result = context
-      .withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
     assertContextNotUpdated(result)
@@ -139,52 +139,46 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
   test("should find property accesses in projection") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) RETURN n.prop, n.foo")
     val result = context
-      .withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(), Set(("n", "prop"), ("n", "foo")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("n", "foo")))
   }
 
   test("should find property accesses nested in expressions") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n)-[r]-() RETURN n.prop + 1, count(r.foo)")
     val result = context
-      .withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(), Set(("n", "prop"), ("r", "foo")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("r", "foo")))
   }
 
   test("should find property accesses in selection") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) WHERE n.prop = n.foo RETURN n")
     val result = context
-      .withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(), Set(("n", "prop"), ("n", "foo")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("n", "foo")))
   }
 
   test("should find property accesses from pattern component") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n), (m {foo: n.prop}) RETURN m.bar")
     val result = context
-      .withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(), Set(("n", "prop"), ("m", "foo"), ("m", "bar")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("m", "foo"), PropertyAccess("m", "bar")))
   }
 
   test("should find property accesses from same pattern") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n)-[r {foo: n.prop}]-() RETURN r.bar")
     val result = context
-      .withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
-    assertContextUpdated(result, Set(), Set(("n", "prop"), ("r", "foo"), ("r", "bar")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("r", "foo"), PropertyAccess("r", "bar")))
   }
 
   test("does not find property accesses from beyond horizon") {
     val plannerQuery = buildSinglePlannerQuery("MATCH (n) WITH 1 AS a, n MATCH (x) WHERE x.prop = n.prop RETURN n.prop")
     val result = context
-      .withAggregationProperties(findAggregationPropertyAccesses(plannerQuery))
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery))
 
     assertContextNotUpdated(result)
@@ -196,8 +190,8 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   private def assertContextUpdated(newContext: LogicalPlanningContext,
-                                   expectedAggregatingProperties: Set[(String, String)],
-                                   expectedAccessedProperties: Set[(String, String)] = Set()): Unit = {
+                                   expectedAggregatingProperties: Set[PropertyAccess],
+                                   expectedAccessedProperties: Set[PropertyAccess] = Set()): Unit = {
     newContext.aggregatingProperties should equal(expectedAggregatingProperties)
     newContext.accessedProperties should equal(expectedAccessedProperties)
     newContext should not equal context

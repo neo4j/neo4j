@@ -170,8 +170,8 @@ object EntityIndexLeafPlanner {
                                               explicitCompatiblePredicates: Set[IndexCompatiblePredicate]): Set[IndexCompatiblePredicate] = {
     // Can't currently handle aggregation on more than one variable
     val aggregatedPropNames: Set[String] =
-      if (context.aggregatingProperties.forall(prop => prop._1.equals(variable.name))) {
-        context.aggregatingProperties.map { prop => prop._2 }
+      if (context.aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
+        context.aggregatingProperties.map { prop => prop.propertyName }
       } else {
         Set.empty
       }

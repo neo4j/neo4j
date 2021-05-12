@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
@@ -62,14 +63,14 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   /*
                                    * A set of all properties over which aggregation is performed,
                                    * where we potentially could use an IndexScan.
-                                   * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
+                                   * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
                                    */
-                                  aggregatingProperties: Set[(String, String)] = Set.empty,
+                                  aggregatingProperties: Set[PropertyAccess] = Set.empty,
                                   /*
                                    * All properties that are referenced (in the head planner query)
                                    * Used to break potential ties between index leaf plans
                                    */
-                                  accessedProperties: Set[(String, String)] = Set.empty,
+                                  accessedProperties: Set[PropertyAccess] = Set.empty,
                                   idGen: IdGen,
                                   executionModel: ExecutionModel,
                                   debugOptions: CypherDebugOptions,
@@ -79,10 +80,10 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =
     copy(input = input.withLimitSelectivityConfig(cfg))
 
-  def withAggregationProperties(properties: Set[(String, String)]): LogicalPlanningContext =
+  def withAggregationProperties(properties: Set[PropertyAccess]): LogicalPlanningContext =
     copy(aggregatingProperties = properties)
 
-  def withAccessedProperties(properties: Set[(String, String)]): LogicalPlanningContext =
+  def withAccessedProperties(properties: Set[PropertyAccess]): LogicalPlanningContext =
     copy(accessedProperties = properties)
 
   def withUpdatedLabelInfo(plan: LogicalPlan): LogicalPlanningContext =
