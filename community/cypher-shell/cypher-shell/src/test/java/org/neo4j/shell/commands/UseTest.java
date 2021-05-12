@@ -20,25 +20,21 @@
 package org.neo4j.shell.commands;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.exception.CommandException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 public class UseTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    private DatabaseManager mockShell = mock( DatabaseManager.class );
+    private final DatabaseManager mockShell = mock( DatabaseManager.class );
     private Command cmd;
 
     @Before
@@ -56,13 +52,10 @@ public class UseTest
     }
 
     @Test
-    public void shouldFailIfMoreThanOneArg() throws CommandException
+    public void shouldFailIfMoreThanOneArg()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( containsString( "Incorrect number of arguments" ) );
-
-        cmd.execute( "db1 db2" );
-        fail( "Expected error" );
+        var expection = assertThrows( CommandException.class, () -> cmd.execute( "db1 db2" ) );
+        assertThat( expection.getMessage(), containsString( "Incorrect number of arguments" ) );
     }
 
     @Test
@@ -74,7 +67,7 @@ public class UseTest
     }
 
     @Test
-    public void printUsage() throws CommandException
+    public void printUsage()
     {
         String usage = cmd.getUsage();
         assertEquals( usage, "database" );

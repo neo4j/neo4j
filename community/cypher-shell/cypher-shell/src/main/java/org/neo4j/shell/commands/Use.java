@@ -38,8 +38,6 @@ public class Use implements Command
     private static final String COMMAND_NAME = ":use";
     @Nonnull
     private final DatabaseManager databaseManager;
-    @Nonnull
-    private String databaseName;
 
     public Use( @Nonnull final DatabaseManager databaseManager )
     {
@@ -71,7 +69,7 @@ public class Use implements Command
     @Override
     public String getHelp()
     {
-        return String.format( "Set the active database that transactions are executed on", Commit.COMMAND_NAME );
+        return "Set the active database that transactions are executed on";
     }
 
     @Nonnull
