@@ -24,14 +24,17 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
@@ -102,5 +105,22 @@ class PatternRelationshipMultiplierCalculatorTest extends CypherFunSuite with As
     val result = calculator.relationshipMultiplier(relationship, labelInfo)
 
     result should be >= Multiplier.ONE
+  }
+
+  test("relationship cardinality if no relationship exist should be equal with/without existing token") {
+    val stats: GraphStatistics = mock[GraphStatistics]
+    when(stats.nodesAllCardinality()).thenReturn(Cardinality(0))
+    when(stats.patternStepCardinality(any(), any(), any())).thenReturn(Cardinality(0))
+
+    val minimizedStats = new MinimumGraphStatistics(stats)
+    val calculator = PatternRelationshipMultiplierCalculator(minimizedStats, IndependenceCombiner)
+    val unknownTypeRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(RelTypeName("UNKNOWN")(pos)), SimplePatternLength)
+    val knownTypeRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(RelTypeName("KNOWN")(pos)), SimplePatternLength)
+
+    implicit val semanticTable: SemanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("KNOWN" -> RelTypeId(0)))
+    val unknownRelCardinality = calculator.relationshipMultiplier(unknownTypeRel, Map.empty)
+    val knownRelCardinality = calculator.relationshipMultiplier(knownTypeRel, Map.empty)
+
+    unknownRelCardinality should equal(knownRelCardinality)
   }
 }

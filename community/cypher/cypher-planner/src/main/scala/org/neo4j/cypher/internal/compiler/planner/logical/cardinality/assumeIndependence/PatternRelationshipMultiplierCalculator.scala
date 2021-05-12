@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -151,7 +152,7 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
         val cardinalityForOneLabelCombination = (lhsLabel, typ, rhsLabel) match {
           // If the rel-type or either label are unknown to the schema, we know no matches will be had
           case (SpecifiedButUnknown(), _, _) | (_, SpecifiedButUnknown(), _) | (_, _, SpecifiedButUnknown()) =>
-            Cardinality.EMPTY
+            MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY
 
           case _ if dir == SemanticDirection.OUTGOING =>
             stats.patternStepCardinality(lhsLabel.id, typ.id, rhsLabel.id)
@@ -164,7 +165,7 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
               stats.patternStepCardinality(lhsLabel.id, typ.id, rhsLabel.id),
               stats.patternStepCardinality(rhsLabel.id, typ.id, lhsLabel.id)
             )
-            // Relationship directions are exclusive, we we can simply add the Cardinalties.
+            // Relationship directions are exclusive, we we can simply add the Cardinalities.
             cardinalities.sum
         }
         // If there are multiple labels on start and/or end nodes,
@@ -181,7 +182,7 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
     // We have no information about this intersection, except that it cannot be larger than the minimum, so we take that.
     // For further considerations, see the comment at the end of this file.
     val cardinalitiesPerType = cardinalitiesPerTypeAndLabel.map(_.min)
-    // Relationship types are exclusive, we we can simply add the Cardinalties.
+    // Relationship types are exclusive, we we can simply add the Cardinalities.
     val combinedCardinality = cardinalitiesPerType.sum
 
     // To get a multiplier, we divide by the cardinality of the cross product of (lhs,rhs)
