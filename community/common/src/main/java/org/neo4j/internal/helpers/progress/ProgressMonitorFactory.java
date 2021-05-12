@@ -66,12 +66,23 @@ public abstract class ProgressMonitorFactory
     @Deprecated
     private static ProgressMonitorFactory textual( final Writer out, boolean deltaTimes )
     {
+        return textual( out, deltaTimes, Indicator.Textual.DEFAULT_DOTS_PER_LINE, Indicator.Textual.DEFAULT_NUM_LINES );
+    }
+
+    public static ProgressMonitorFactory textual( final OutputStream out, boolean deltaTimes, int dotsPerLine, int numLines )
+    {
+        return textual( new OutputStreamWriter( out, StandardCharsets.UTF_8 ), deltaTimes, dotsPerLine, numLines );
+    }
+
+    public static ProgressMonitorFactory textual( final Writer out, boolean deltaTimes, int dotsPerLine, int numLines )
+    {
         return new ProgressMonitorFactory()
         {
             @Override
             protected Indicator newIndicator( String process )
             {
-                return new Indicator.Textual( process, writer(), deltaTimes, Clocks.nanoClock(), Indicator.Textual.DEFAULT_DELTA_CHARACTER );
+                return new Indicator.Textual( process, writer(), deltaTimes, Clocks.nanoClock(), Indicator.Textual.DEFAULT_DELTA_CHARACTER,
+                        dotsPerLine, numLines );
             }
 
             private PrintWriter writer()

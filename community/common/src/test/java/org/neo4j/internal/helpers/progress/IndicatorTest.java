@@ -25,10 +25,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.helpers.progress.Indicator.Textual.DOTS_PER_LINE;
+import static org.neo4j.internal.helpers.progress.Indicator.Textual.DEFAULT_DOTS_PER_LINE;
+import static org.neo4j.internal.helpers.progress.Indicator.Textual.DEFAULT_NUM_LINES;
 
 class IndicatorTest
 {
@@ -39,23 +41,23 @@ class IndicatorTest
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintWriter out = new PrintWriter( bout );
         FakeClock clock = new FakeClock();
-        Indicator.Textual indicator = new Indicator.Textual( "Test", out, true, clock, 'D' );
+        Indicator.Textual indicator = new Indicator.Textual( "Test", out, true, clock, 'D', DEFAULT_DOTS_PER_LINE, DEFAULT_NUM_LINES );
 
         // when
         int line = 0;
         clock.forward( 1, TimeUnit.SECONDS );
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 10%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 10%
         clock.forward( 100, TimeUnit.MILLISECONDS );
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 20%
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 30%
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 40%
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 50%
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 60%
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 70%
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 80%
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 90%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 20%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 30%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 40%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 50%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 60%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 70%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 80%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 90%
         clock.forward( 3, TimeUnit.SECONDS );
-        indicator.progress( DOTS_PER_LINE * line, DOTS_PER_LINE * ++line ); // 100%
+        indicator.progress( DEFAULT_DOTS_PER_LINE * line, DEFAULT_DOTS_PER_LINE * ++line ); // 100%
 
         // then
         out.flush();
@@ -69,5 +71,27 @@ class IndicatorTest
         assertThat( output ).contains( "80% D0ms" );
         assertThat( output ).contains( "90% D0ms" );
         assertThat( output ).contains( "100% D3s" );
+    }
+
+    @Test
+    void shouldConfigureNumberOfDotsAndLines()
+    {
+        // given
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        PrintWriter out = new PrintWriter( bout );
+        int dotsPerLine = 5;
+        int lines = 4;
+        Indicator.Textual indicator = new Indicator.Textual( "Test", out, false, Clocks.nanoClock(), ' ', dotsPerLine, lines );
+
+        // when
+        indicator.progress( 0, dotsPerLine * lines );
+
+        // then
+        out.flush();
+        String output = bout.toString();
+        assertThat( output ).contains( ".....  25%" );
+        assertThat( output ).contains( ".....  50%" );
+        assertThat( output ).contains( ".....  75%" );
+        assertThat( output ).contains( "..... 100%" );
     }
 }
