@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
-import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -691,13 +690,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        NodeIndexSeek(
-          "n",
-          LabelToken("Awesome", LabelId(0)),
-          Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE), indexedProperty("foo", 1, DoNotGetValue, NODE_TYPE)),
-          CompositeQueryExpression(Seq(SingleQueryExpression(literalInt(42)), SingleQueryExpression(literalInt(21)))),
-          Set.empty,
-          IndexOrderNone),
+        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", Map("prop" -> GetValue, "foo" -> DoNotGetValue)),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -1034,16 +1027,13 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     withClue("Index scan on two properties should be planned if they are only available through constraint") {
-      plan.toString should include("UndirectedRelationshipIndexScan")
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheR[r.prop2] AS `r.prop2`")
+        .relationshipIndexOperator("(a)-[r:REL(prop1, prop2)]-(b)", getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue))
+        .build()
+      )
     }
 
-    // This is the plan that we would like to compare against (except the get-value-behaviour) but the LogicalPlanBuilder currently does not support
-    // different get-value-behaviours on one index operation.
-//    equal(planner.subPlanBuilder()
-//      .projection("r.prop2 AS `r.prop2`")
-//      .relationshipIndexOperator("(a)-[r:REL(prop1, prop2)]-(b)", getValue = GetValue)
-//      .build()
-//    )
   }
 
   // This test is temporarily disabled while the nodeIndexSeekPlanProvider filters out implicit predicates.
@@ -1062,9 +1052,12 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .plan(query)
       .stripProduceResults
 
-    // we should test for the exact plan here. But that is not possible at the moment to express using the logical plan builder
     withClue("Index scan on two properties should be planned if they are only available through constraint") {
-      plan.toString should include("NodeIndexScan")
+      plan should equal(planner.subPlanBuilder()
+        .projection("cacheN[a.prop2] AS `a.prop2`")
+        .nodeIndexOperator("a:A(prop1, prop2)", getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue))
+        .build()
+      )
     }
   }
 
@@ -1546,15 +1539,11 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .stripProduceResults
 
     withClue("Index seek on two properties should be planned if they are only available through constraint") {
-      plan.toString should include("UndirectedRelationshipIndexSeek")
+       plan shouldBe planner.subPlanBuilder()
+         .projection("cacheR[r.prop2] AS `r.prop2`")
+         .relationshipIndexOperator("(a)-[r:REL(prop1 > 123, prop2)]-(b)", getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue))
+         .build()
     }
-
-    // This is the plan that we would like to compare against (except the get-value-behaviour) but the LogicalPlanBuilder currently does not support
-    // different get-value-behaviours on one index operation.
-    // plan shouldBe planner.subPlanBuilder()
-    //   .projection("r.prop2 AS `r.prop2`")
-    //   .relationshipIndexOperator("(a)-[r:REL(prop1 > 123, prop2)]-(b)", getValue = GetValue)
-    //   .build()
   }
 
   test("should plan seek (relationship) with DoNotGetValue when composite existence constraint but the index does not provide values") {
