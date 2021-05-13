@@ -111,6 +111,15 @@ public interface StorageEngine extends Lifecycle
      */
     List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo );
 
+    /**
+     * Claims exclusive locks for some records whilst performing recovery.
+     * Note: only used when {@code unsupported.dbms.recovery.enable_parallelism=true}
+     *
+     * @param commands whose records may need locking for safe parallel recovery.
+     * @param lockService used to acquire locks on records during recovery
+     * @param lockGroup collection of acquired locks
+     * @param mode used in this case to distinguish between RECOVERY and REVERSE_RECOVERY
+     */
     void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode );
 
     /**

@@ -688,4 +688,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<Integer> counts_store_max_cached_entries =
             newBuilder( "unsupported.dbms.memory.counts_store_max_cached_entries", INT, 1_000_000 ).build();
+
+    @Internal
+    @Description( "Whether or not to use multiple threads whilst performing recovery. Provides performance improvement for some workloads." )
+    public static final Setting<Boolean> do_parallel_recovery =
+            newBuilder( "unsupported.dbms.recovery.enable_parallelism", BOOL, false ).build();
 }

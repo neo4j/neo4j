@@ -367,10 +367,12 @@ public final class Recovery
         schemaLife.add( storageEngine.schemaAndTokensLifecycle() );
         schemaLife.add( indexingService );
 
+        var doParallelRecovery = config.get( GraphDatabaseInternalSettings.do_parallel_recovery );
         TransactionLogsRecovery transactionLogsRecovery =
                 transactionLogRecovery( fs, metadataProvider, monitors.newMonitor( RecoveryMonitor.class ),
-                        monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, metadataProvider,
-                        schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, tracers.getPageCacheTracer(), memoryTracker );
+                                        monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine,
+                                        transactionStore, metadataProvider, schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog,
+                                        startupChecker, tracers.getPageCacheTracer(), memoryTracker, doParallelRecovery );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
@@ -434,10 +436,10 @@ public final class Recovery
             RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
             Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log, RecoveryStartupChecker startupChecker,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, boolean doParallelRecovery )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, transactionIdStore, logicalTransactionStore,
-                logVersionRepository, logFiles, positionMonitor, log );
+                                                                      logVersionRepository, logFiles, positionMonitor, log, doParallelRecovery );
         CorruptedLogsTruncator logsTruncator =
                 new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker );
         ProgressReporter progressReporter = new LogProgressReporter( log );

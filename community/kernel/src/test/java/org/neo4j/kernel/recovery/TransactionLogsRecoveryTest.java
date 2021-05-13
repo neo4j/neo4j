@@ -224,7 +224,7 @@ class TransactionLogsRecoveryTest
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
-                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) )
+                                                                               txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false )
             {
                 private int nr;
 
@@ -331,7 +331,7 @@ class TransactionLogsRecoveryTest
                 }
             } );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
-                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
+                                                                               txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false ),
                     logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, EMPTY_CHECKER, NULL ) );
 
             life.start();
@@ -577,7 +577,7 @@ class TransactionLogsRecoveryTest
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, transactionIdStore,
-                    txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ) ),
+                                                                               txStore, versionRepository, logFiles, NO_MONITOR, mock( Log.class ), false ),
                     logPruner, schemaLife, monitor, ProgressReporter.SILENT, false, startupChecker, NULL ) );
 
             life.start();

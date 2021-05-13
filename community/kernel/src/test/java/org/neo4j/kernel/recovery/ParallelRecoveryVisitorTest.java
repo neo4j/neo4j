@@ -70,7 +70,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
-class RecoveryVisitorTest
+class ParallelRecoveryVisitorTest
 {
     @Test
     void shouldApplyUnrelatedInParallel() throws Exception
@@ -100,7 +100,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
@@ -131,7 +131,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 99 ) ) );
@@ -176,7 +176,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
@@ -207,7 +207,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             assertThatThrownBy( () ->
             {
@@ -240,7 +240,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 );
+        ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 );
         visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
         assertThatThrownBy( visitor::close ).getCause().hasMessageContaining( failure );
     }

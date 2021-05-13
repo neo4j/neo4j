@@ -44,16 +44,18 @@ public class DefaultRecoveryService implements RecoveryService
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogVersionRepository logVersionRepository;
     private final Log log;
+    private final boolean doParallelRecovery;
 
     DefaultRecoveryService( StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, LogFiles logFiles,
-            RecoveryStartInformationProvider.Monitor monitor, Log log )
+            RecoveryStartInformationProvider.Monitor monitor, Log log, boolean doParallelRecovery )
     {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
         this.log = log;
+        this.doParallelRecovery = doParallelRecovery;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logFiles, monitor );
     }
 
@@ -66,7 +68,11 @@ public class DefaultRecoveryService implements RecoveryService
     @Override
     public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag )
     {
-        return new RecoveryVisitor( storageEngine, mode, cursorContext, tracerTag );
+        if ( doParallelRecovery )
+        {
+            return new ParallelRecoveryVisitor( storageEngine, mode, cursorContext, tracerTag );
+        }
+        return new RecoveryVisitor( storageEngine, mode, cursorContext );
     }
 
     @Override
