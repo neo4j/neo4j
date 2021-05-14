@@ -20,5 +20,6 @@
 package org.neo4j.cypher.internal
 
 case class PeriodicCommitInfo(size: Option[Long]) {
+  // We may want to align this with GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.defaultValue().toLong
   def batchRowCount: Long = size.getOrElse(/* defaultSize */ 1000L)
 }

@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring.Monitors
+import org.neo4j.storageengine.api.TransactionIdStore
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
@@ -93,6 +94,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   protected val runtimeContextManager: RuntimeContextManager[CONTEXT] = edition.newRuntimeContextManager(resolver, lifeSupport, logProvider)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
+  private lazy val txIdStore = resolver.resolveDependency(classOf[TransactionIdStore])
 
   private var _tx: InternalTransaction = _
   private var _txContext: TransactionalContext = _
@@ -121,7 +123,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def restartPeriodicCommitTx(): Unit = {
     _txContext.close()
-    _tx.commit()
+    if (_tx.isOpen) {
+      _tx.commit()
+    }
     _tx = cypherGraphDb.beginTransaction(Type.IMPLICIT, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
@@ -133,6 +137,10 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
   def startNewTx(): InternalTransaction = {
     cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
+  }
+
+  def getLastClosedTransactionId: Long = {
+    txIdStore.getLastClosedTransactionId
   }
 
   def tx: InternalTransaction = _tx
