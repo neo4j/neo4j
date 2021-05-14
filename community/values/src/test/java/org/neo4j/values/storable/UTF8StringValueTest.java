@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
@@ -277,5 +278,14 @@ class UTF8StringValueTest
 
             }
         }
+    }
+
+    @Test
+    void shouldHandleEqualsOnSubstring()
+    {
+        TextValue utf8 = utf8Value( "hello cruel world".getBytes( UTF_8 ) );
+        var substring = utf8.substring( 6, 5 );
+        assertThat( substring, equalTo( utf8Value( "cruel".getBytes( UTF_8 ) ) ) );
+        assertThat( substring, not( equalTo( utf8Value( "jazzy".getBytes( UTF_8 ) ) ) ) );
     }
 }

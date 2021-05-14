@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -65,18 +66,7 @@ public final class UTF8StringValue extends StringValue
         if ( value instanceof UTF8StringValue )
         {
             UTF8StringValue other = (UTF8StringValue) value;
-            if ( byteLength != other.byteLength )
-            {
-                return false;
-            }
-            for ( int i = offset, j = other.offset; i < byteLength; i++, j++ )
-            {
-                if ( bytes[i] != other.bytes[j] )
-                {
-                    return false;
-                }
-            }
-            return true;
+            return Arrays.equals( bytes, offset, offset + byteLength, other.bytes, other.offset, other.offset + other.byteLength );
         }
         else
         {
