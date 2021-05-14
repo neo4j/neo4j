@@ -127,7 +127,8 @@ public abstract class AbstractSecurityLog extends LifecycleAdapter
         {
             this.username = username;
             this.sourceString = connectionInfo.asConnectionDetails();
-            this.message = message;
+            // clean message of newlines
+            this.message = message.replaceAll( "\\R+", " " );
         }
 
         @Override
