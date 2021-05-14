@@ -23,7 +23,6 @@ import java.io.File
 import java.io.PrintWriter
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
@@ -31,10 +30,13 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
@@ -67,6 +69,7 @@ import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.virtual.ListValue
 import org.scalactic.Equality
 import org.scalactic.TolerantNumerics
@@ -76,6 +79,12 @@ import org.scalatest.Tag
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import java.time.LocalTime
+import java.time.OffsetTime
+import java.time.chrono.ChronoLocalDate
+import java.time.chrono.ChronoLocalDateTime
+import java.time.chrono.ChronoZonedDateTime
+import java.time.format.DateTimeFormatter
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -528,6 +537,21 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       if ( c.incrementAndGet() == failAfterRowCount ) {
         throw new RuntimeException(s"Probe failed as expected (row count=$c)")
       }
+    }
+  }
+
+  def toExpression(value: Any): Expression = {
+    def resolve(function: FunctionInvocation): Expression = {
+      if (function.needsToBeResolved) ResolvedFunctionInvocation(functionSignature)(function).coerceArguments else function
+    }
+    value match {
+      case date: ChronoLocalDate => resolve(function("date", literalString(date.format(DateTimeFormatter.ISO_LOCAL_DATE))))
+      case dateTime: ChronoLocalDateTime[_] => resolve(function("localdatetime", literalString(dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+      case time: LocalTime => resolve(function("localtime", literalString(time.format(DateTimeFormatter.ISO_LOCAL_TIME))))
+      case duration: DurationValue => resolve(function("duration", literalString(duration.prettyPrint())))
+      case offsetTime: OffsetTime => resolve(function("time", literalString(offsetTime.format(DateTimeFormatter.ISO_OFFSET_TIME))))
+      case dateTime: ChronoZonedDateTime[_] => resolve(function("datetime", literalString(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))))
+      case other => literal(other)
     }
   }
 }

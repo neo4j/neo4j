@@ -230,6 +230,21 @@ public class RandomValues
         return nextValueOfType( among( types ) );
     }
 
+    /**
+     * Returns the next size number of {@link Value}, distributed uniformly among the provided value types.
+     *
+     * @see RandomValues
+     */
+    public Value[] nextValuesOfTypes( int size, ValueType... types )
+    {
+        var values = new Value[size];
+        for ( int i = 0; i < size; i++ )
+        {
+            values[i] = nextValueOfType( among( types ) );
+        }
+        return values;
+    }
+
     public static ValueType[] including( Predicate<ValueType> include )
     {
         return Arrays.stream( ValueType.values() )

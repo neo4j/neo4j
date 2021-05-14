@@ -382,7 +382,7 @@ object IndexSeek {
         case EXISTS(propStr) =>
           createScan(Seq(prop(propStr)))
       }
-    } else if (predicates.length > 1) {
+    } else if (predicates.length > 1 && customQueryExpression.isEmpty) {
       val properties = new ArrayBuffer[IndexedProperty]()
       val valueExprs = new ArrayBuffer[QueryExpression[Expression]]()
 
@@ -392,7 +392,7 @@ object IndexSeek {
         case _ => false
       }
       val equalityAndNextPred =
-        if(equalityPred sameElements predicates) equalityPred
+        if (equalityPred sameElements predicates) equalityPred
         else equalityPred :+ predicates(equalityPred.length)
 
       val restOfPred = predicates.slice(equalityAndNextPred.length, predicates.length)
@@ -476,6 +476,8 @@ object IndexSeek {
         createScan(properties)
       else
         createSeek(properties, CompositeQueryExpression(valueExprs))
+    } else if (predicates.length > 1 && customQueryExpression.isDefined) {
+      createSeek(predicates.map(prop), customQueryExpression.get)
     } else
       throw new IllegalArgumentException(s"Cannot parse `${predicates.mkString("Array(", ", ", ")")}` as an index seek.")
   }

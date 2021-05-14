@@ -482,6 +482,16 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
+   * Creates an index and restarts the transaction. This should be called before any data creation operation.
+   */
+  def relationshipIndexWithProvider(indexProvider: String, relationshipType: String, properties: String*): Unit = {
+    val query = s"CREATE INDEX FOR ()-[r:$relationshipType]-() ON (${properties.map(p => s"r.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
+    runtimeTestSupport.tx.execute(query)
+    runtimeTestSupport.restartTx()
+    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+  }
+
+  /**
    * Creates a unique index and restarts the transaction. This should be called before any data creation operation.
    */
   def uniqueIndex(label: String, property: String): Unit = {

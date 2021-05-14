@@ -19,1276 +19,1187 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.ValueType
 
 // Supported by all runtimes
 abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
                                                                          edition: Edition[CONTEXT],
                                                                          runtime: CypherRuntime[CONTEXT],
                                                                          val sizeHint: Int
-                                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                                       )
+  extends RuntimeTestSuite[CONTEXT](edition, runtime)
+  with RandomValuesTestSupport
+{
 
-  test("should exact (single) directed relationship seek of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
+  for (indexProvider <- Seq(SchemaIndex.NATIVE30, SchemaIndex.NATIVE_BTREE10)) {
+
+    test(s"should exact (single) directed relationship seek of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+      val lookFor = randomAmong(relationships).getProperty("prop")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20)]->(y)")
-      .build()
+    test(s"should exact (single) undirected relationship seek of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+      val lookFor = randomAmong(relationships).getProperty("prop")
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)))
+        .build()
 
-    // then
-    val r = relationships(20)
-    runtimeResult should beColumns("x", "r", "y").withSingleRow(r.getStartNode, r, r.getEndNode)
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should exact (single) undirected relationship seek of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20)]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val r = relationships(20)
-    runtimeResult should beColumns("x", "r", "y").withRows(Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode)))
-  }
-
-  test("should exact (single) directed seek nodes of an index with a property with multiple matches") {
-    val numMatches = sizeHint / 5
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i < numMatches => r.setProperty("prop", "foo")
-        case (r, _) => r.setProperty("prop", "bar")
+    test(s"should exact (single) directed seek nodes of an index with a property with multiple matches (${indexProvider.providerName()})") {
+      val propertyValues = randomValues(5, randomPropertyType())
+      val relationships = given {
+        defaultIndexedCircleGraph { case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject()) }
       }
-      rels
+
+      val lookFor = propertyValues.head.asObject()
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 'foo')]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withRows(relationships.take(numMatches).map(r => Array(r.getStartNode, r, r.getEndNode)))
-  }
-
-  test("should exact (single) udirected seek nodes of an index with a property with multiple matches") {
-    val numMatches = sizeHint / 5
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i < numMatches => r.setProperty("prop", "foo")
-        case (r, _) => r.setProperty("prop", "bar")
+    test(s"should exact (single) undirected seek nodes of an index with a property with multiple matches (${indexProvider.providerName()})") {
+      val propertyValues = randomValues(5, randomPropertyType())
+      val relationships = given {
+        defaultIndexedCircleGraph { case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject()) }
       }
-      rels
+
+      val lookFor = propertyValues.head.asObject()
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 'foo')]-(y)")
-      .build()
+    test(s"exact single directed seek should handle null (${indexProvider.providerName()})") {
+      given {
+        defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(nullLiteral))
+        .build()
 
-    // then
-    runtimeResult should beColumns("x", "r", "y").withRows(relationships
-      .take(numMatches)
-      .flatMap(r =>
-        Seq(
-          Array(r.getStartNode, r, r.getEndNode),
-          Array(r.getEndNode, r, r.getStartNode))
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
+    }
+
+    test(s"exact single undirected seek should handle null (${indexProvider.providerName()})") {
+      given {
+        defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(nullLiteral))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
+    }
+
+    test(s"should exact (multiple) directed seek nodes of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+
+      val lookFor = Seq(
+        randomAmong(relationships).getProperty("prop"),
+        randomAmong(relationships).getProperty("prop")
       )
-    )
-  }
 
-  test("exact single directed seek should handle null") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop)]->(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor(0)), toExpression(lookFor(1)))))
+        )
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](lookFor.contains)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
+    }
+
+    test(s"should exact (multiple) undirected seek nodes of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+
+      val lookFor = Seq(
+        randomAmong(relationships).getProperty("prop"),
+        randomAmong(relationships).getProperty("prop")
+      )
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor(0)), toExpression(lookFor(1)))))
+        )
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](lookFor.contains)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
+    }
+
+    test(s"should handle null in exact multiple directed seek (${indexProvider.providerName()})") {
+      given {
+        defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop IN ???)]->(y)", paramExpr = Some(nullLiteral))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(nullLiteral))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
-
-  test("exact single undirected seek should handle null") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
+    test(s"should handle null in exact multiple undirected seek (${indexProvider.providerName()})") {
+      given {
+        defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop IN ???)]-(y)", paramExpr = Some(nullLiteral))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(nullLiteral))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
-
-  test("should exact (multiple) directed seek nodes of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
+    test(s"should exact (multiple, but empty) directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+      given {
+        defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", customQueryExpression = Some(ManyQueryExpression(listOf())))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 30)]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    val r1 = relationships(20)
-    val r2 = relationships(30)
-    // then
-    val expected = Seq(
-      Array(r1.getStartNode, r1, r1.getEndNode),
-      Array(r2.getStartNode, r2, r2.getEndNode)
-    )
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should exact (multiple) undirected seek nodes of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
+    test(s"should exact (multiple, but empty) undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+      given {
+        defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", i) }
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", customQueryExpression = Some(ManyQueryExpression(listOf())))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 30)]-(y)")
-      .build()
+    test(s"should exact (multiple, with null) directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      val lookFor = randomAmong(relationships).getProperty("prop")
 
-    val r1 = relationships(20)
-    val r2 = relationships(30)
-    // then
-    val expected = Seq(
-      Array(r1.getStartNode, r1, r1.getEndNode),
-      Array(r1.getEndNode, r1, r1.getStartNode),
-      Array(r2.getStartNode, r2, r2.getEndNode),
-      Array(r2.getEndNode, r2, r2.getStartNode)
-    )
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop)]->(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), nullLiteral)))
+        )
+        .build()
 
-  test("should handle null in exact multiple directed seek") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop IN ???)]->(y)", paramExpr = Some(nullLiteral))
-      .build()
+    test(s"should exact (multiple, with null) undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+      val lookFor = randomAmong(relationships).getProperty("prop")
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), nullLiteral)))
+        )
+        .build()
 
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should handle null in exact multiple undirected seek") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop IN ???)]-(y)", paramExpr = Some(nullLiteral))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
-
-  test("should exact (multiple, but empty) directed seek relationships of an index with a property") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", customQueryExpression = Some(ManyQueryExpression(listOf())))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
-
-  test("should exact (multiple, but empty) undirected seek relationships of an index with a property") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", customQueryExpression = Some(ManyQueryExpression(listOf())))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
-
-  test("should exact (multiple, with null) directed seek relationships of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR ???)]->(y)", paramExpr = Some(nullLiteral))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val rel = relationships(20)
-    runtimeResult should beColumns("x", "r", "y").withSingleRow(rel.getStartNode, rel, rel.getEndNode)
-  }
-
-  test("should exact (multiple, with null) undirected seek relationships of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR ???)]-(y)", paramExpr = Some(nullLiteral))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val rel = relationships(20)
-    runtimeResult should beColumns("x", "r", "y").withRows(Seq(Array(rel.getStartNode, rel, rel.getEndNode), Array(rel.getEndNode, rel, rel.getStartNode)))
-  }
-
-  test("should exact (multiple, but identical) directed seek relationships of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 20)]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    val relationship = relationships(20)
-    // then
-    val expected = Seq(Array(relationship.getStartNode, relationship, relationship.getEndNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should exact (multiple, but identical) undirected seek relationships of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 20)]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    val relationship = relationships(20)
-    // then
-    val expected = Seq(
-      Array(relationship.getStartNode, relationship, relationship.getEndNode),
-      Array(relationship.getEndNode, relationship, relationship.getStartNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  // RANGE queries
-  test("should directed seek relationships of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map {
-      case (r, _) => Array(r.getStartNode, r, r.getEndNode)
-    }
-
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should undirected seek relationships of an index with a property") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.flatMap {
-      case (r, _) => Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode))
-    }
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should directed seek relationships with multiple less than bounds") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i < 1 }.map {
-      case (r, _) => Array(r.getStartNode, r, r.getEndNode)
-    }
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should undirected seek relationships with multiple less than bounds") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i < 1 }.flatMap {
-      case (r, _) => Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode))
-    }
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should directed seek relationships with multiple less than bounds with different types") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
-
-  test("should undirected seek relationships with multiple less than bounds with different types") {
-    given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "r", "y").withNoRows()
-  }
-
-
-  test("should support directed seek on composite index") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => {
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
+    test(s"should support directed seek on composite index with random type (${indexProvider.providerName()})") {
+      val propertyType1 = randomPropertyType()
+      val propertyType2 = randomPropertyType()
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", randomValue(propertyType1).asObject())
+            r.setProperty("prop2", randomValue(propertyType2).asObject())
         }
-        case _ =>
       }
-      rels
+
+      val lookForRelationship = randomAmong(relationships)
+      val lookFor1 = lookForRelationship.getProperty("prop")
+      val lookFor2 = lookForRelationship.getProperty("prop2")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop, prop2)]->(y)",
+          customQueryExpression = Some(CompositeQueryExpression(Seq(
+            SingleQueryExpression(toExpression(lookFor1)),
+            SingleQueryExpression(toExpression(lookFor2))
+          )))
+        )
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect {
+        case r if r.getProperty("prop") == lookFor1 && r.getProperty("prop2") == lookFor2 => Array(r.getStartNode, r, r.getEndNode)
+      }
+      runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)")
-      .build()
+    test(s"should exact (multiple, but identical) directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+      val lookFor = randomAmong(relationships).getProperty("prop")
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop)]->(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), toExpression(lookFor))))
+        )
+        .build()
 
-    // then
-    val expected = relationships(10)
-    runtimeResult should beColumns("x", "r", "y").withSingleRow(expected.getStartNode, expected, expected.getEndNode)
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should support undirected seek on composite index") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => {
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should exact (multiple, but identical) undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedRandomCircleGraph())
+      val lookFor = randomAmong(relationships).getProperty("prop")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(
+          indexSeekString = "(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), toExpression(lookFor))))
+        )
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Any](_ == lookFor)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    // RANGE queries
+    test(s"should directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ > sizeHint / 2)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ > sizeHint / 2)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should directed seek relationships with multiple less than bounds (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ < 1)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should undirected seek relationships with multiple less than bounds (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ < 1)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should directed seek relationships with multiple less than bounds with different types (${indexProvider.providerName()})") {
+      given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
+    }
+
+    test(s"should undirected seek relationships with multiple less than bounds with different types (${indexProvider.providerName()})") {
+      given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("x", "r", "y").withNoRows()
+    }
+
+
+    test(s"should support directed seek on composite index (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
         }
-        case _ =>
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodesAndRelationship(relationships(10 / 10))
+      runtimeResult should beColumns("x", "r", "y").withSingleRow(expected:_*)
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships(10)
-    runtimeResult should beColumns("x", "r", "y").withRows(Seq(
-      Array(expected.getStartNode, expected, expected.getEndNode),
-      Array(expected.getEndNode, expected, expected.getStartNode))
-    )
-  }
-
-  test("should support directed seek on composite index (multiple results)") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 2 == 0 => {
-          r.setProperty("prop", i % 5)
-          r.setProperty("prop2", i % 3)
+    test(s"should support undirected seek on composite index (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
         }
-        case _ =>
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodesAndRelationshipUndirectional(relationships(10 / 10))
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 0, prop2 = 0)]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.collect { case (r, i) if i % 2 == 0 && i % 5 == 0 && i % 3 == 0 => r }
-      .map(r => Array(r.getStartNode, r, r.getEndNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should support undirected seek on composite index (multiple results)") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 2 == 0 => {
-          r.setProperty("prop", i % 5)
-          r.setProperty("prop2", i % 3)
+    test(s"should support directed seek on composite index (multiple results) (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 2 == 0 =>
+            r.setProperty("prop", i % 5)
+            r.setProperty("prop2", i % 3)
         }
-        case _ =>
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 0, prop2 = 0)]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .collect { case r if r.getProperty("prop") == 0 && r.getProperty("prop2") == 0 => nodesAndRelationship(r) }
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 0, prop2 = 0)]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.collect { case (r, i) if i % 2 == 0 && i % 5 == 0 && i % 3 == 0 => r }
-      .flatMap(r => Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode)))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should support directed seek on composite index (multiple values)") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => {
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
+    test(s"should support undirected seek on composite index (multiple results) (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 2 == 0 =>
+            r.setProperty("prop", (i % 5).toString)
+            r.setProperty("prop2", (i % 3).toString)
         }
-        case _ =>
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = '0', prop2 = '0')]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .filter(r => r.getProperty("prop") == "0" && r.getProperty("prop2") == "0")
+        .flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships(10)
-    runtimeResult should beColumns("x", "r", "y").withSingleRow(expected.getStartNode, expected, expected.getEndNode)
-  }
-
-  test("should support undirected seek on composite index (multiple values)") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => {
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
+    test(s"should support directed seek on composite index (multiple values) (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
         }
-        case _ =>
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships(10 / 10)
+      runtimeResult should beColumns("x", "r", "y").withSingleRow(expected.getStartNode, expected, expected.getEndNode)
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships(10)
-    runtimeResult should beColumns("x", "r", "y").withRows(Seq(
-      Array(expected.getStartNode, expected, expected.getEndNode),
-      Array(expected.getEndNode, expected, expected.getStartNode)
-    ))
-  }
-
-  test("should support directed composite index seek with equality and existence check") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 3 == 0 =>
-          r.setProperty("prop", i % 20)
-          r.setProperty("prop2", i.toString)
-        case (r, i) =>
-          r.setProperty("prop", i % 20)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.filter(n => n.hasProperty("prop2") && n.getProperty("prop").asInstanceOf[Int] == 10)
-      .map(r => Array(r.getStartNode, r, r.getEndNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should support undirected composite index seek with equality and existence check") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 3 == 0 =>
-          r.setProperty("prop", i % 20)
-          r.setProperty("prop2", i.toString)
-        case (r, i) =>
-          r.setProperty("prop", i % 20)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.filter(n => n.hasProperty("prop2") && n.getProperty("prop").asInstanceOf[Int] == 10)
-      .flatMap(r => Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode)))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should support directed composite index seek with equality and range check") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) =>
-          r.setProperty("prop", i % 20)
-          r.setProperty("prop2", i)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.filter(n => n.getProperty("prop").asInstanceOf[Int] == 10 && n.getProperty("prop2").asInstanceOf[Int] > 10)
-      .map(r => Array(r.getStartNode, r, r.getEndNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should support undirected composite index seek with equality and range check") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) =>
-          r.setProperty("prop", i % 20)
-          r.setProperty("prop2", i)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.filter(n => n.getProperty("prop").asInstanceOf[Int] == 10 && n.getProperty("prop2").asInstanceOf[Int] > 10)
-      .flatMap(r => Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode)))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should support directed seek on composite index with range check and existence check") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 3 == 0 =>
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
-        case (r, i) =>
-          r.setProperty("prop", i)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]->(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.filter(n => n.getProperty("prop").asInstanceOf[Int] > 10 && n.hasProperty("prop2"))
-      .map(r => Array(r.getStartNode, r, r.getEndNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("should support undirected seek on composite index with range check and existence check") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 3 == 0 =>
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
-        case (r, i) =>
-          r.setProperty("prop", i)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]-(y)")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.filter(n => n.getProperty("prop").asInstanceOf[Int] > 10 && n.hasProperty("prop2"))
-      .flatMap(r => Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode)))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
-  }
-
-  test("directed seek should cache properties") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "prop")
-      .projection("cacheR[r.prop] AS prop")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", GetValue)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.collect{ case (n, i) if (i % 10) == 0 && i > sizeHint / 2 => Array(n, i)}
-    runtimeResult should beColumns("r", "prop").withRows(expected)
-  }
-
-  test("undirected seek should cache properties") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "prop")
-      .projection("cacheR[r.prop] AS prop")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", GetValue)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.collect{ case (n, i) if (i % 10) == 0 && i > sizeHint / 2 => Seq.fill(2)(Array(n, i))}.flatten
-    runtimeResult should beColumns("r", "prop").withRows(expected)
-  }
-
-  test("directed composite seek should cache properties") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => {
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
+    test(s"should support undirected seek on composite index (multiple values) (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
         }
-        case _ =>
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = nodesAndRelationshipUndirectional(relationships(10 / 10))
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "prop", "prop2")
-      .projection("cacheR[r.prop] AS prop", "cacheR[r.prop2] AS prop2")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)", GetValue)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("r", "prop", "prop2").withSingleRow(relationships(10), 10, "10")
-  }
-
-  test("undirected composite seek should cache properties") {
-    val relationships = given {
-      relationshipIndex("R", "prop", "prop2")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => {
-          r.setProperty("prop", i)
-          r.setProperty("prop2", i.toString)
+    test(s"should support directed composite index seek with equality and existence check (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 3 == 0 =>
+            r.setProperty("prop", i % 20)
+            r.setProperty("prop2", i.toString)
+          case (r, i) =>
+            r.setProperty("prop", i % 20)
         }
-        case _ =>
       }
-      rels
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .filter(n => n.hasProperty("prop2") && n.getProperty("prop").asInstanceOf[Int] == 10)
+        .map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "prop", "prop2")
-      .projection("cacheR[r.prop] AS prop", "cacheR[r.prop2] AS prop2")
-      .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)", GetValue)
-      .build()
+    test(s"should support undirected composite index seek with equality and existence check (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 3 == 0 =>
+            r.setProperty("prop", i % 20)
+            r.setProperty("prop2", i.toString)
+          case (r, i) =>
+            r.setProperty("prop", i % 20)
+        }
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]-(y)")
+        .build()
 
-    // then
-    runtimeResult should beColumns("r", "prop", "prop2").withRows(Seq(Array(relationships(10), 10, "10"), Array(relationships(10), 10, "10")))
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should use existing values from arguments when available in directed seek") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
+      // then
+      val expected = relationships
+        .filter(n => n.hasProperty("prop2") && n.getProperty("prop").asInstanceOf[Int] == 10)
+        .flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should support directed composite index seek with equality and range check (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) =>
+            r.setProperty("prop", i % 20)
+            r.setProperty("prop2", i)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .filter(n => n.getProperty("prop") == 10 && n.getProperty("prop2").asInstanceOf[Int] > 10)
+        .map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should support undirected composite index seek with equality and range check (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) =>
+            r.setProperty("prop", i % 20)
+            r.setProperty("prop2", i)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .filter(n => n.getProperty("prop") == 10 && n.getProperty("prop2").asInstanceOf[Int] > 10)
+        .flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should support directed seek on composite index with range check and existence check (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 3 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
+          case (r, i) =>
+            r.setProperty("prop", i)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]->(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .filter(n => n.getProperty("prop").asInstanceOf[Int] > 10 && n.hasProperty("prop2"))
+        .map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should support undirected seek on composite index with range check and existence check (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 3 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
+          case (r, i) =>
+            r.setProperty("prop", i)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]-(y)")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .filter(n => n.getProperty("prop").asInstanceOf[Int] > 10 && n.hasProperty("prop2"))
+        .flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"directed seek should cache properties (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r", "prop")
+        .projection("cacheR[r.prop] AS prop")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", GetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect {
+        case r if r.getProperty("prop").asInstanceOf[Int] > sizeHint / 2 => Array(r, r.getProperty("prop"))
+      }
+      runtimeResult should beColumns("r", "prop").withRows(expected)
+    }
+
+    test(s"undirected seek should cache properties (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r", "prop")
+        .projection("cacheR[r.prop] AS prop")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", GetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect {
+        case r if r.getProperty("prop").asInstanceOf[Int] > sizeHint / 2 => Seq.fill(2)(Array(r, r.getProperty("prop")))}.flatten
+      runtimeResult should beColumns("r", "prop").withRows(expected)
+    }
+
+    test(s"directed composite seek should cache properties (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 =>
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r", "prop", "prop2")
+        .projection("cacheR[r.prop] AS prop", "cacheR[r.prop2] AS prop2")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)", GetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("r", "prop", "prop2").withSingleRow(relationships(10 / 10), 10, "10")
+    }
+
+    test(s"undirected composite seek should cache properties (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop", "prop2") {
+          case (r, i) if i % 10 == 0 => {
+            r.setProperty("prop", i)
+            r.setProperty("prop2", i.toString)
+          }
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r", "prop", "prop2")
+        .projection("cacheR[r.prop] AS prop", "cacheR[r.prop2] AS prop2")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)", GetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("r", "prop", "prop2").withRows(Seq(Array(relationships(10 / 10), 10, "10"), Array(relationships(10 / 10), 10, "10")))
+    }
+
+    test(s"should use existing values from arguments when available in directed seek (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
+        .input(variables = Seq("value"))
+        .build()
+
+      val input = inputValues(Array(20), Array(50))
+
+      val runtimeResult = execute(logicalQuery, runtime, input)
+
+      // then
+      val expected = Seq(relationships(20 / 10), relationships(50 / 10)).map(nodesAndRelationship)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should use existing values from arguments when available in undirected seek (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "r", "y")
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
+        .input(variables = Seq("value"))
+        .build()
+
+      val input = inputValues(Array(20), Array(50))
+
+      val runtimeResult = execute(logicalQuery, runtime, input)
+
+      // then
+      val expected = Seq(relationships(20 / 10), relationships(50 / 10)).flatMap(nodesAndRelationshipUndirectional)
+      runtimeResult should beColumns("x", "r", "y").withRows(expected)
+    }
+
+    test(s"should directed seek relationships of an index with a property in ascending order (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderAscending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ > sizeHint / 2))
+      runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should undirected seek relationships of an index with a property in ascending order (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderAscending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ > sizeHint / 2)).flatMap(r => Seq(r, r))
+      runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
+    }
+
+
+    test(s"should directed seek relationships of an index with a property in descending order (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderDescending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ > sizeHint / 2)).reverse
+      runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should undirected seek relationships of an index with a property in descending order (${indexProvider.providerName()})") {
+      val relationships = given(defaultIndexedIntCircleGraph())
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderDescending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.filter(propFilter[Int](_ > sizeHint / 2)).flatMap(r => Seq(r, r)).reverse
+      runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple directed index seek, ascending int (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", i % 10)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
+          indexOrder = IndexOrderAscending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect(collectProp[Int](Set(7, 2, 3).contains)).sorted
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple directed index seek, ascending string (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", (i % 10).toString)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
+          indexOrder = IndexOrderAscending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect(collectProp[String](Set("7", "2", "3").contains)).sorted
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple undirected index seek, ascending int (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", i % 10)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
+          indexOrder = IndexOrderAscending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect(collectProp[Int](Set(7, 2, 3).contains)).sorted.flatMap(r => Seq(r, r))
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple undirected index seek, ascending string (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", (i % 10).toString)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
+          indexOrder = IndexOrderAscending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect(collectProp[String](Set("7", "2", "3").contains)).sorted.flatMap(p => Seq(p, p))
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple directed index seek, descending int (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", i % 10)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
+          indexOrder = IndexOrderDescending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect(collectProp[Int](Set(7, 2, 3).contains)).sorted(Ordering.Int.reverse)
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple directed index seek, descending string (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", (i % 10).toString)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
+          indexOrder = IndexOrderDescending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships.collect(collectProp[String](Set("7", "2", "3").contains)).sorted(Ordering.String.reverse)
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple undirected index seek, descending int (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", i % 10)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
+          indexOrder = IndexOrderDescending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .collect(collectProp[Int](Set(7, 2, 3).contains))
+        .sorted(Ordering.Int.reverse)
+        .flatMap(r => Seq(r, r))
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"should handle order in multiple undirected index seek, descending string (${indexProvider.providerName()})") {
+      val relationships = given {
+        indexedCircleGraph("R", "prop") {
+          case (r, i) => r.setProperty("prop", (i % 10).toString)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
+          customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
+          indexOrder = IndexOrderDescending)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = relationships
+        .collect(collectProp[String](Set("7", "2", "3").contains))
+        .sorted(Ordering.String.reverse)
+        .flatMap(r => Seq(r, r))
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    def defaultIndexedRandomCircleGraph(): Seq[Relationship] = {
+      val propertyType = randomPropertyType()
+      defaultIndexedCircleGraph {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", randomValue(propertyType).asObject())
+      }
+    }
+
+    def defaultIndexedIntCircleGraph(): Seq[Relationship] = {
+      defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", i) }
+    }
+
+    def defaultIndexedCircleGraph(propFunction: PartialFunction[(Relationship, Int), Unit]): Seq[Relationship] = {
+      indexedCircleGraph("R", "prop")(propFunction)
+    }
+
+    def indexedCircleGraph(indexedRelType: String, indexedProperties: String*)(propFunction: PartialFunction[(Relationship, Int), Unit]): Seq[Relationship] = {
+      relationshipIndexWithProvider(indexProvider.providerName(), indexedRelType, indexedProperties:_*)
       val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
+      rels.zipWithIndex.collect {
+        case t@(r, _) if propFunction.isDefinedAt(t) =>
+          propFunction.apply(t)
+          r
       }
-      rels
     }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
-      .input(variables = Seq("value"))
-      .build()
-
-    val input = inputValues(Array(20), Array(50))
-
-    val runtimeResult = execute(logicalQuery, runtime, input)
-
-    // then
-    val expected = Seq(relationships(20), relationships(50)).map(r => Array(r.getStartNode, r, r.getEndNode))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
-  test("should use existing values from arguments when available in undirected seek") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "r", "y")
-      .apply()
-      .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
-      .input(variables = Seq("value"))
-      .build()
-
-    val input = inputValues(Array(20), Array(50))
-
-    val runtimeResult = execute(logicalQuery, runtime, input)
-
-    // then
-    val expected = Seq(relationships(20), relationships(50)).flatMap(r => Seq(Array(r.getStartNode, r, r.getEndNode), Array(r.getEndNode, r, r.getStartNode)))
-    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  private def propFilter[T](predicate: T => Boolean): Relationship => Boolean = {
+    r => predicate.apply(r.getProperty("prop").asInstanceOf[T])
   }
 
-  test("should directed seek relationships of an index with a property in ascending order") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderAscending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1)
-    runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
+  private def collectProp[T](predicate: T => Boolean): PartialFunction[Relationship, T] = {
+    case r if predicate(r.getProperty("prop").asInstanceOf[T]) => r.getProperty("prop").asInstanceOf[T]
   }
 
-  test("should undirected seek relationships of an index with a property in ascending order") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
+  private def nodesAndRelationship(relationship: Relationship): Array[_] = Array(relationship.getStartNode, relationship, relationship.getEndNode)
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderAscending)
-      .build()
+  private def nodesAndRelationshipUndirectional(relationship: Relationship): Seq[Array[_]] = Seq(
+    Array(relationship.getStartNode, relationship, relationship.getEndNode),
+    Array(relationship.getEndNode, relationship, relationship.getStartNode)
+  )
+}
 
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.flatMap(t => Seq.fill(2)(t._1))
-    runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
+abstract class ParallelRelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RelationshipIndexSeekTestBase[CONTEXT](edition, runtime, sizeHint) {
+  private val supportedPropertyTypes: Array[ValueType] = {
+    stringValueTypes ++ numericValueTypes :+ ValueType.BOOLEAN
   }
 
-
-  test("should directed seek relationships of an index with a property in descending order") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderDescending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1).reverse
-    runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
-  }
-
-  test("should undirected seek relationships of an index with a property in descending order") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-        case _ =>
-      }
-      rels
-    }
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r")
-      .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderDescending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = relationships.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.flatMap(t => Seq.fill(2)(t._1)).reverse
-    runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
-  }
-
-  test("should handle order in multiple directed index seek, ascending") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) => r.setProperty("prop", i % 10)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("prop")
-      .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-        indexOrder = IndexOrderAscending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val keys = Set(7, 2, 3)
-    val expected = relationships.collect {
-      case r if keys(r.getProperty("prop").asInstanceOf[Int]) => r.getProperty("prop").asInstanceOf[Int]
-    }.sorted
-    runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
-  }
-
-  test("should handle order in multiple undirected in˚dex seek, ascending") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) => r.setProperty("prop", i % 10)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("prop")
-      .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-        indexOrder = IndexOrderAscending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val keys = Set(7, 2, 3)
-    val expected = relationships.collect {
-      case r if keys(r.getProperty("prop").asInstanceOf[Int]) => r.getProperty("prop").asInstanceOf[Int]
-    }.sorted.flatMap(r => Seq(r, r))
-    runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
-  }
-
-  test("should handle order in multiple directed index seek, descending") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) => r.setProperty("prop", i % 10)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("prop")
-      .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-        indexOrder = IndexOrderDescending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val keys = Set(7, 2, 3)
-    val expected = relationships.collect {
-      case r if keys(r.getProperty("prop").asInstanceOf[Int]) => r.getProperty("prop").asInstanceOf[Int]
-    }.sorted(Ordering.Int.reverse)
-    runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
-  }
-
-  test("should handle order in multiple undirected index seek, descending") {
-    val relationships = given {
-      relationshipIndex("R", "prop")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) => r.setProperty("prop", i % 10)
-      }
-      rels
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("prop")
-      .projection("r.prop AS prop")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
-        customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-        indexOrder = IndexOrderDescending)
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val keys = Set(7, 2, 3)
-    val expected = relationships.collect {
-      case r if keys(r.getProperty("prop").asInstanceOf[Int]) => r.getProperty("prop").asInstanceOf[Int]
-    }.sorted(Ordering.Int.reverse).flatMap(r => Seq(r, r))
-    runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
-  }
+  // Parallel does not support functions at the moment so we can only use properties that have literals
+  override def propertyValueTypes: Array[ValueType] = supportedPropertyTypes
 }
