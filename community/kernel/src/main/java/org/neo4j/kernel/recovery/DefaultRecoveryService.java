@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -66,13 +67,13 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
-    public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag )
+    public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
     {
         if ( doParallelRecovery )
         {
-            return new ParallelRecoveryVisitor( storageEngine, mode, cursorContext, tracerTag );
+            return new ParallelRecoveryVisitor( storageEngine, mode, cacheTracer, tracerTag );
         }
-        return new RecoveryVisitor( storageEngine, mode, cursorContext );
+        return new RecoveryVisitor( storageEngine, mode, cacheTracer, tracerTag );
     }
 
     @Override

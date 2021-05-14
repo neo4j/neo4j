@@ -43,7 +43,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -229,9 +229,9 @@ class TransactionLogsRecoveryTest
                 private int nr;
 
                 @Override
-                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag )
+                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
                 {
-                    RecoveryApplier actual = super.getRecoveryApplier( mode, cursorContext, tracerTag );
+                    RecoveryApplier actual = super.getRecoveryApplier( mode, cacheTracer, tracerTag );
                     if ( mode == TransactionApplicationMode.REVERSE_RECOVERY )
                     {
                         return actual;

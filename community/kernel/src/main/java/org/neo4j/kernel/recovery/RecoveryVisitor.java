@@ -20,6 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -33,11 +34,11 @@ final class RecoveryVisitor implements RecoveryApplier
     private final TransactionApplicationMode mode;
     private final CursorContext cursorContext;
 
-    RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContext cursorContext )
+    RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
     {
         this.storageEngine = storageEngine;
         this.mode = mode;
-        this.cursorContext = cursorContext;
+        this.cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( tracerTag ) );
     }
 
     @Override
@@ -54,6 +55,7 @@ final class RecoveryVisitor implements RecoveryApplier
 
     @Override
     public void close()
-    {   // nothing to close
+    {
+        cursorContext.close();
     }
 }

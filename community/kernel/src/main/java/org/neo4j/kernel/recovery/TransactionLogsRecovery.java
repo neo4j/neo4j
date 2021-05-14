@@ -99,8 +99,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             {
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
                 try ( var transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryStartPosition );
-                      var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( REVERSE_RECOVERY_TAG ) );
-                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, cursorContext, REVERSE_RECOVERY_TAG ) )
+                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, pageCacheTracer, REVERSE_RECOVERY_TAG ) )
                 {
                     while ( transactionsToRecover.next() )
                     {
@@ -125,8 +124,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 schemaLife.init();
 
                 try ( var transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
-                        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RECOVERY_TAG ) );
-                        var recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, cursorContext, RECOVERY_TAG ) )
+                        var recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, pageCacheTracer, RECOVERY_TAG ) )
                 {
                     while ( transactionsToRecover.next() )
                     {
