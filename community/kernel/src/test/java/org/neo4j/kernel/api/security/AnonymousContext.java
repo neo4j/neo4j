@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.security;
 
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -68,7 +69,7 @@ public class AnonymousContext extends LoginContext
     }
 
     @Override
-    public SecurityContext authorize( IdLookup idLookup, String dbName )
+    public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
     {
         return new SecurityContext( subject(), accessMode, connectionInfo() );
     }

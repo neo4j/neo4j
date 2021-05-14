@@ -25,7 +25,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
- * By calling {@link #authorize(IdLookup, String)} the user is also authorized, and a full SecurityContext is returned,
+ * By calling {@link #authorize(IdLookup, String, AbstractSecurityLog)} the user is also authorized, and a full SecurityContext is returned,
  * which can be used to assert user permissions during query execution.
  */
 public abstract class LoginContext
@@ -57,9 +57,10 @@ public abstract class LoginContext
      *
      * @param idLookup token lookup, used to compile fine grained security verification
      * @param dbName the name of the database the user should be authorized against
+     * @param securityLog where to log security related messages
      * @return the security context
      */
-    public abstract SecurityContext authorize( IdLookup idLookup, String dbName );
+    public abstract SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog );
 
     /**
      * Get a login context with full privileges.
@@ -71,7 +72,7 @@ public abstract class LoginContext
         return new LoginContext( AuthSubject.AUTH_DISABLED, connectionInfo )
         {
             @Override
-            public SecurityContext authorize( IdLookup idLookup, String dbName )
+            public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog log )
             {
                 return SecurityContext.authDisabled( AccessMode.Static.FULL, connectionInfo() );
             }

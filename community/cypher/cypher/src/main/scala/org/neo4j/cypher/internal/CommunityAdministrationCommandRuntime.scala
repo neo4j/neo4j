@@ -75,6 +75,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.PrivilegeAction
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.Status
@@ -99,6 +100,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
                                                  extraLogicalToExecutable: PartialFunction[LogicalPlan, AdministrationCommandRuntimeContext => ExecutionPlan] = CommunityAdministrationCommandRuntime.emptyLogicalToExecutable
                                                 ) extends AdministrationCommandRuntime {
   override def name: String = "community administration-commands"
+
+  private lazy val securityAuthorizationHandler = new SecurityAuthorizationHandler(resolver.resolveDependency(classOf[AbstractSecurityLog]))
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
     throw new CantCompileQueryException(
@@ -127,11 +130,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   def logicalToExecutable: PartialFunction[LogicalPlan, AdministrationCommandRuntimeContext => ExecutionPlan] = {
     // Check Admin Rights for DBMS commands
     case AssertAllowedDbmsActions(maybeSource, actions) => context =>
-      AuthorizationPredicateExecutionPlan((_, securityContext) => actions.forall { action =>
+      AuthorizationPredicateExecutionPlan(
+        securityAuthorizationHandler,
+        (_, securityContext) => actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationAction = (securityContext:SecurityContext, message:String) =>  {
-        val securityLog:AbstractSecurityLog = resolver.resolveDependency(classOf[AbstractSecurityLog])
-        securityLog.error(securityContext, message)
       },
         violationMessage = "Permission denied for " + prettifyActionName(actions: _*) + ". " + checkShowUserPrivilegesText, //sorting is important to keep error messages stable
         source = maybeSource match {
@@ -142,11 +144,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Check Admin Rights for DBMS commands or self
     case AssertAllowedDbmsActionsOrSelf(user, actions) => _ =>
-      AuthorizationPredicateExecutionPlan((params, securityContext) => securityContext.subject().hasUsername(runtimeStringValue(user, params)) || actions.forall { action =>
+      AuthorizationPredicateExecutionPlan(securityAuthorizationHandler,
+        (params, securityContext) => securityContext.subject().hasUsername(runtimeStringValue(user, params)) || actions.forall { action =>
         securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL))
-      }, violationAction = (securityContext:SecurityContext, message:String) =>  {
-        val securityLog:AbstractSecurityLog = resolver.resolveDependency(classOf[AbstractSecurityLog])
-        securityLog.error(securityContext, message)
       }, violationMessage = "Permission denied for " + prettifyActionName(actions:_*) + ". " + checkShowUserPrivilegesText)  //sorting is important to keep error messages stable
 
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
@@ -158,13 +158,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Check Admin Rights for some Database commands
     case AssertAllowedDatabaseAction(action, database, maybeSource) => context =>
-      AuthorizationPredicateExecutionPlan((params, securityContext) =>
-        securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action),
+      AuthorizationPredicateExecutionPlan(securityAuthorizationHandler,
+        (params, securityContext) => securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action),
           new DatabaseScope(runtimeStringValue(database, params)), Segment.ALL)),
-        violationAction = (securityContext:SecurityContext, message:String) =>  {
-          val securityLog:AbstractSecurityLog = resolver.resolveDependency(classOf[AbstractSecurityLog])
-          securityLog.error(securityContext, message)
-        }, violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText,
+        violationMessage = "Permission denied for " + prettifyActionName(action) + ". " + checkShowUserPrivilegesText,
         source = maybeSource match {
           case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
           case _            => None
@@ -173,7 +170,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // SHOW USERS
     case ShowUsers(source, symbols, yields, returns) => context =>
-      SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
+      SystemCommandExecutionPlan("ShowUsers",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
         s"""MATCH (u:User)
            |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
            |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
@@ -185,7 +184,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // SHOW CURRENT USER
     case ShowCurrentUser(symbols, yields, returns) => _ =>
       val currentUserKey = internalKey("currentUser")
-      SystemCommandExecutionPlan("ShowCurrentUser", normalExecutionEngine,
+      SystemCommandExecutionPlan("ShowCurrentUser",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
         s"""MATCH (u:User)
            |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
            |WHERE user = $$`$currentUserKey`
@@ -203,7 +204,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
 
       def failWithError(command: String) : PredicateExecutionPlan = {
-        new PredicateExecutionPlan((_, _) => false, sourcePlan, None, (params, _) => {
+        new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
           val user = runtimeStringValue(userName, params)
           throw new CantCompileQueryException(s"Failed to create the specified user '$user': '$command' is not available in community edition.")
         })
@@ -215,7 +216,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         failWithError("HOME DATABASE")
       }
       else {
-        makeCreateUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = false, defaultDatabase = None)(sourcePlan, normalExecutionEngine)
+        makeCreateUserExecutionPlan(
+          userName, isEncryptedPassword, password, requirePasswordChange, suspended = false, defaultDatabase = None
+        )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
       }
 
     // RENAME USER
@@ -226,14 +229,14 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           val toName = runtimeStringValue(toUserName, params)
           NameValidator.assertValidUsername(toName)
         }
-      )(sourcePlan, normalExecutionEngine)
+      )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
 
     // ALTER USER foo [SET [PLAINTEXT | ENCRYPTED] PASSWORD pw] [CHANGE [NOT] REQUIRED]
     case AlterUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspended, defaultDatabase) => context =>
       val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
 
       def failWithError(command: String) : PredicateExecutionPlan = {
-        new PredicateExecutionPlan((_, _) => false, sourcePlan, None, (params, _) => {
+        new PredicateExecutionPlan((_, _) => false, sourcePlan, (params, _) => {
           val user = runtimeStringValue(userName, params)
           throw new CantCompileQueryException(s"Failed to alter the specified user '$user': '$command' is not available in community edition.")
         })
@@ -244,13 +247,17 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       } else if (defaultDatabase.isDefined ) {
         failWithError("HOME DATABASE")
       } else {
-        makeAlterUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = None, defaultDatabase = None)(sourcePlan, normalExecutionEngine)
+        makeAlterUserExecutionPlan(
+          userName, isEncryptedPassword, password, requirePasswordChange, suspended = None, defaultDatabase = None
+        )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
       }
 
     // DROP USER foo [IF EXISTS]
     case DropUser(source, userName) => context =>
       val userNameFields = getNameFields("username", userName)
-      UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
+      UpdatingSystemCommandExecutionPlan("DropUser",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
         s"""MATCH (user:User {name: $$`${userNameFields.nameKey}`}) DETACH DELETE user
           |RETURN 1 AS ignore""".stripMargin,
         VirtualValues.map(Array(userNameFields.nameKey), Array(userNameFields.nameValue)),
@@ -280,7 +287,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           |SET user.passwordChangeRequired = false
           |RETURN oldCredentials""".stripMargin
 
-      UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine, query,
+      UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine,
+        securityAuthorizationHandler,
+        query,
         VirtualValues.map(Array(newPw.key, newPw.bytesKey, currentKeyBytes), Array(newPw.value, newPw.bytesValue, currentValueBytes)),
         QueryHandler
           .handleError {
@@ -338,7 +347,12 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           |CALL dbms.database.state(d.name) yield status, error, address, role
           |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error
           |$returnClause""".stripMargin
-      SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = paramGenerator)
+      SystemCommandExecutionPlan(scope.showCommandName,
+        normalExecutionEngine,
+        securityAuthorizationHandler,
+        query,
+        VirtualValues.EMPTY_MAP,
+        parameterGenerator = paramGenerator)
 
     // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
     case ShowDatabase(scope, symbols, yields, returns) => _ =>
@@ -373,11 +387,19 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
                      |d.default as default, coalesce(d.name = homeDbName, false) as home
                      |$extraFilter
                      |$returnClause""".stripMargin
-      SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
+      SystemCommandExecutionPlan(scope.showCommandName,
+        normalExecutionEngine,
+        securityAuthorizationHandler,
+        query,
+        params,
+        parameterGenerator = paramGenerator,
+        parameterConverter = paramConverter)
 
     case DoNothingIfNotExists(source, label, name, operation, valueMapper) => context =>
       val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-      UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
+      UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
         s"""
            |MATCH (node:$label {name: $$`${nameFields.nameKey}`})
            |RETURN node.name AS name
@@ -395,7 +417,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     case DoNothingIfExists(source, label, name, valueMapper) => context =>
       val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-      UpdatingSystemCommandExecutionPlan("DoNothingIfExists", normalExecutionEngine,
+      UpdatingSystemCommandExecutionPlan("DoNothingIfExists",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
         s"""
            |MATCH (node:$label {name: $$`${nameFields.nameKey}`})
            |RETURN node.name AS name
@@ -414,7 +438,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Ensure that the role or user exists before being dropped
     case EnsureNodeExists(source, label, name, valueMapper) => context =>
       val nameFields = getNameFields("name", name, valueMapper = valueMapper)
-      UpdatingSystemCommandExecutionPlan("EnsureNodeExists", normalExecutionEngine,
+      UpdatingSystemCommandExecutionPlan("EnsureNodeExists",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
         s"""MATCH (node:$label {name: $$`${nameFields.nameKey}`})
            |RETURN node""".stripMargin,
         VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
@@ -446,16 +472,24 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         defaults.updatedWith(params)
       }
 
-      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, MapValue.EMPTY,
+      SystemCommandExecutionPlan("SystemProcedure",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
+        queryString,
+        MapValue.EMPTY,
         checkCredentialsExpired = checkCredentialsExpired,
         parameterConverter = (_, params) => addParameterDefaults(params),
-        modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ))
+        modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ)),
       )
 
     // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES
     case AllowedNonAdministrationCommands(statement) => _ =>
       val queryString = QueryRenderer.render(statement)
-      SystemCommandExecutionPlan("AllowedNonAdministrationCommand", normalExecutionEngine, queryString, MapValue.EMPTY,
+      SystemCommandExecutionPlan("AllowedNonAdministrationCommand",
+        normalExecutionEngine,
+        securityAuthorizationHandler,
+        queryString,
+        MapValue.EMPTY,
         modeConverter = s => s // Keep the users permissions
       )
 

@@ -45,6 +45,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -214,7 +215,7 @@ class TransactionEventsIT
         LoginContext loginContext = new LoginContext( subject, EMBEDDED_CONNECTION )
         {
             @Override
-            public SecurityContext authorize( IdLookup idLookup, String dbName )
+            public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
             {
                 return new SecurityContext( subject, AccessMode.Static.WRITE, EMBEDDED_CONNECTION );
             }

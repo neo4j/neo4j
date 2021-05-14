@@ -37,6 +37,7 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Transaction
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
@@ -204,7 +205,8 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             suspended: Boolean,
                                             defaultDatabase: Option[HomeDatabaseAction] = None)
                                            (sourcePlan: Option[ExecutionPlan],
-                                            normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
+                                            normalExecutionEngine: ExecutionEngine,
+                                            securityAuthorizationHandler: SecurityAuthorizationHandler): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
     val uuidKey = internalKey("uuid")
@@ -219,7 +221,9 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       val newParams = credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
       homeDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
     }
-    UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
+    UpdatingSystemCommandExecutionPlan("CreateUser",
+      normalExecutionEngine,
+      securityAuthorizationHandler,
       // NOTE: If username already exists we will violate a constraint
       s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, id: $$`$uuidKey`, credentials: $$`${credentials.key}`,
          |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`
@@ -259,7 +263,8 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                            suspended: Option[Boolean],
                                            defaultDatabase: Option[HomeDatabaseAction] = None)
                                           (sourcePlan: Option[ExecutionPlan],
-                                           normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
+                                           normalExecutionEngine: ExecutionEngine,
+                                           securityAuthorizationHandler: SecurityAuthorizationHandler): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
     val homeDatabaseFields = defaultDatabase.map {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
@@ -293,7 +298,9 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       val newParams = maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameFields.nameConverter(tx, p))
       homeDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
     }
-    UpdatingSystemCommandExecutionPlan("AlterUser", normalExecutionEngine,
+    UpdatingSystemCommandExecutionPlan("AlterUser",
+      normalExecutionEngine,
+      securityAuthorizationHandler,
       s"$query RETURN oldCredentials",
       VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
       QueryHandler
@@ -321,12 +328,16 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                         fromName: Either[String, Parameter],
                                         toName: Either[String, Parameter],
                                         initFunction: MapValue => Boolean)
-                                       (sourcePlan: Option[ExecutionPlan], normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
+                                       (sourcePlan: Option[ExecutionPlan],
+                                        normalExecutionEngine: ExecutionEngine,
+                                        securityAuthorizationHandler: SecurityAuthorizationHandler): ExecutionPlan = {
     val fromNameFields = getNameFields("fromName", fromName)
     val toNameFields = getNameFields("toName", toName)
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => toNameFields.nameConverter(tx, fromNameFields.nameConverter(tx, p))
 
-    UpdatingSystemCommandExecutionPlan(s"Create$entity", normalExecutionEngine,
+    UpdatingSystemCommandExecutionPlan(s"Create$entity",
+      normalExecutionEngine,
+      securityAuthorizationHandler,
       s"""MATCH (old:$entity {name: $$`${fromNameFields.nameKey}`})
          |SET old.name = $$`${toNameFields.nameKey}`
          |RETURN old.name

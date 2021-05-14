@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -50,7 +51,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         return new LoginContext( AuthSubject.ANONYMOUS, connectionInfo )
         {
             @Override
-            public SecurityContext authorize( IdLookup idLookup, String dbName )
+            public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
             {
                 return new SecurityContext( subject(), AccessMode.Static.ACCESS, connectionInfo() );
             }

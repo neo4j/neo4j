@@ -28,6 +28,6 @@ public class CommunitySecurityLog extends AbstractSecurityLog
 
     public CommunitySecurityLog( LogExtended log )
     {
-        setLog(log);
+        setLog( log );
     }
 }

@@ -39,6 +39,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
@@ -137,6 +138,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
     private final TokenHoldersIdLookup tokenHoldersIdLookup;
     private final ScopedMemoryPool transactionMemoryPool;
+    private final AbstractSecurityLog securityLog;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -189,6 +191,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
         this.transactionMemoryPool = transactionsMemoryPool.newDatabasePool( namedDatabaseId.name(),
                 config.get( memory_transaction_database_max_size ), memory_transaction_database_max_size.name() );
+        this.securityLog = databaseDependendies.resolveDependency( AbstractSecurityLog.class );
         config.addListener( memory_transaction_database_max_size, ( before, after ) -> transactionMemoryPool.setSize( after ) );
         doBlockNewTransactions();
     }
@@ -196,7 +199,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( tokenHoldersIdLookup, namedDatabaseId.name() );
+        SecurityContext securityContext = loginContext.authorize( tokenHoldersIdLookup, namedDatabaseId.name(), securityLog );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
@@ -406,7 +409,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                            kernelVersionRepository );
+                            kernelVersionRepository, securityLog );
             this.transactions.add( tx );
             return tx;
         }

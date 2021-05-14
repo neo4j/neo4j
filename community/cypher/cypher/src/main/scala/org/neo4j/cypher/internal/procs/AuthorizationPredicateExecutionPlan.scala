@@ -20,15 +20,16 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ExecutionPlan
-import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.values.virtual.MapValue
 
-case class AuthorizationPredicateExecutionPlan(predicate: (MapValue, SecurityContext) => Boolean, source: Option[ExecutionPlan] = None,
-                                               violationAction: (SecurityContext, String) => Unit,
+case class AuthorizationPredicateExecutionPlan(securityAuthorizationHandler: SecurityAuthorizationHandler,
+                                               predicate: (MapValue, SecurityContext) => Boolean,
+                                               source: Option[ExecutionPlan] = None,
                                                violationMessage: String = PERMISSION_DENIED)
   extends PredicateExecutionPlan(predicate,
     source,
-    Some(violationAction(_, violationMessage)),
-    (_, _) => new AuthorizationViolationException(violationMessage))
+    (_, securityContext) => securityAuthorizationHandler.logAndGetAuthorizationException(securityContext, violationMessage)
+  )

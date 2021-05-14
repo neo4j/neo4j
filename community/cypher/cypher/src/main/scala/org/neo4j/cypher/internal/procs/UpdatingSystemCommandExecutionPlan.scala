@@ -33,6 +33,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransientFailureException
 import org.neo4j.internal.kernel.api.security.AccessMode
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -44,6 +45,7 @@ import org.neo4j.values.virtual.MapValue
  */
 case class UpdatingSystemCommandExecutionPlan(name: String,
                                               normalExecutionEngine: ExecutionEngine,
+                                              securityAuthorizationHandler: SecurityAuthorizationHandler,
                                               query: String,
                                               systemParams: MapValue,
                                               queryHandler: QueryHandler,
@@ -69,7 +71,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
       val securityContext = tc.securityContext()
-      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired()
+      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
       val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
       val tx = tc.transaction()

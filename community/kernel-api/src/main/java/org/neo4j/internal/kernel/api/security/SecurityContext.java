@@ -65,7 +65,6 @@ public class SecurityContext extends LoginContext
      */
     public boolean allowsAdminAction( AdminActionOnResource action )
     {
-        assertCredentialsNotExpired();
         return true;
     }
 
@@ -75,7 +74,7 @@ public class SecurityContext extends LoginContext
     }
 
     @Override
-    public SecurityContext authorize( IdLookup idLookup, String dbName )
+    public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog log )
     {
         return this;
     }
@@ -96,12 +95,13 @@ public class SecurityContext extends LoginContext
         return new SecurityContext( subject, mode, connectionInfo() );
     }
 
-    public void assertCredentialsNotExpired()
+    public void assertCredentialsNotExpired( SecurityAuthorizationHandler handler )
     {
         if ( AuthenticationResult.PASSWORD_CHANGE_REQUIRED.equals( subject().getAuthenticationResult() ) )
         {
-            throw new AuthorizationViolationException( SecurityAuthorizationHandler.generateCredentialsExpiredMessage( PERMISSION_DENIED ),
-                                                       Status.Security.CredentialsExpired );
+            throw handler.logAndGetAuthorizationException(this,
+                                                          SecurityAuthorizationHandler.generateCredentialsExpiredMessage( PERMISSION_DENIED ),
+                                                          Status.Security.CredentialsExpired );
         }
     }
 

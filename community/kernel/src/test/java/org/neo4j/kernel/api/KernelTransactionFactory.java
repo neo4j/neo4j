@@ -90,7 +90,6 @@ public final class KernelTransactionFactory
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
-        dependencies.satisfyDependency( CommunitySecurityLog.NULL_LOG );
         KernelTransactionImplementation transaction =
                 new KernelTransactionImplementation( Config.defaults(), mock( DatabaseTransactionEventListeners.class ),
                                                      mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
@@ -102,10 +101,10 @@ public final class KernelTransactionFactory
                                                      mock( IndexingService.class ), mock( LabelScanStore.class ),
                                                      mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
                                                      LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                                                     TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST );
+                                                     TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST, CommunitySecurityLog.NULL_LOG );
 
         transaction.initialize( 0, 0, new NoOpClient(), KernelTransaction.Type.IMPLICIT,
-                loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
+                loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ), 0L, 1L, EMBEDDED_CONNECTION );
 
         return new Instances( transaction );
     }

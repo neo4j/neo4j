@@ -33,6 +33,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -43,7 +44,11 @@ import org.neo4j.values.virtual.MapValue
 /**
  * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
  */
-case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
+case class SystemCommandExecutionPlan(name: String,
+                                      normalExecutionEngine: ExecutionEngine,
+                                      securityAuthorizationHandler: SecurityAuthorizationHandler,
+                                      query: String,
+                                      systemParams: MapValue,
                                       queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
                                       source: Option[ExecutionPlan] = None,
                                       checkCredentialsExpired: Boolean = true,
@@ -64,7 +69,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
       val securityContext = tc.securityContext()
-      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired()
+      if (checkCredentialsExpired) securityContext.assertCredentialsNotExpired(securityAuthorizationHandler)
       val fullReadAccess = modeConverter(securityContext)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
       val tx = tc.transaction()

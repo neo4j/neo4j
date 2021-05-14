@@ -191,7 +191,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "tx.setMetaData", mode = DBMS )
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
-        securityContext.assertCredentialsNotExpired();
         int totalCharSize = data.entrySet()
                                 .stream()
                                 .mapToInt( e -> e.getKey().length() + ((e.getValue() != null) ? e.getValue().toString().length() : 0) )
@@ -219,7 +218,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "tx.getMetaData", mode = DBMS )
     public Stream<MetadataResult> getTXMetaData()
     {
-        securityContext.assertCredentialsNotExpired();
         return Stream.of( ((InternalTransaction) transaction).kernelTransaction().getMetaData() ).map( MetadataResult::new );
     }
 
@@ -229,7 +227,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.procedures", mode = DBMS, deprecatedBy = "SHOW PROCEDURES command" )
     public Stream<ProcedureResult> listProcedures()
     {
-        securityContext.assertCredentialsNotExpired();
         return graph.getDependencyResolver().resolveDependency( GlobalProcedures.class ).getAllProcedures().stream()
                     .filter( proc -> !proc.internal() )
                     .sorted( Comparator.comparing( a -> a.name().toString() ) )
@@ -242,8 +239,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.functions", mode = DBMS, deprecatedBy = "SHOW FUNCTIONS command" )
     public Stream<FunctionResult> listFunctions()
     {
-        securityContext.assertCredentialsNotExpired();
-
         DependencyResolver resolver = graph.getDependencyResolver();
         QueryExecutionEngine queryExecutionEngine = resolver.resolveDependency( QueryExecutionEngine.class );
         List<FunctionInformation> providedLanguageFunctions = queryExecutionEngine.getProvidedLanguageFunctions();
@@ -345,8 +340,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.listTransactions", mode = DBMS )
     public Stream<TransactionStatusResult> listTransactions() throws InvalidArgumentsException
     {
-        securityContext.assertCredentialsNotExpired();
-
         ZoneId zoneId = getConfiguredTimeZone();
         List<TransactionStatusResult> result = new ArrayList<>();
         for ( DatabaseContext databaseContext : getDatabaseManager().registeredDatabases().values() )
@@ -392,7 +385,6 @@ public class BuiltInDbmsProcedures
     public Stream<TransactionMarkForTerminationResult> killTransactions( @Name( "ids" ) List<String> transactionIds ) throws InvalidArgumentsException
     {
         requireNonNull( transactionIds );
-        securityContext.assertCredentialsNotExpired();
         log.warn( "User %s trying to kill transactions: %s.", securityContext.subject().username(), transactionIds.toString() );
 
         DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();
@@ -441,8 +433,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.listQueries", mode = DBMS )
     public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
     {
-        securityContext.assertCredentialsNotExpired();
-
         ZoneId zoneId = getConfiguredTimeZone();
         List<QueryStatusResult> result = new ArrayList<>();
 
@@ -504,8 +494,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.killQueries", mode = DBMS )
     public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException
     {
-        securityContext.assertCredentialsNotExpired();
-
         DatabaseManager<DatabaseContext> databaseManager = getDatabaseManager();
         DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
 
@@ -564,8 +552,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.listConnections", mode = DBMS )
     public Stream<ListConnectionResult> listConnections()
     {
-        securityContext.assertCredentialsNotExpired();
-
         NetworkConnectionTracker connectionTracker = getConnectionTracker();
         ZoneId timeZone = getConfiguredTimeZone();
 
@@ -588,8 +574,6 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.killConnections", mode = DBMS )
     public Stream<ConnectionTerminationResult> killConnections( @Name( "ids" ) List<String> ids )
     {
-        securityContext.assertCredentialsNotExpired();
-
         NetworkConnectionTracker connectionTracker = getConnectionTracker();
 
         return ids.stream().map( id -> killConnection( id, connectionTracker ) );

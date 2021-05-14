@@ -39,6 +39,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -482,7 +483,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         // WHEN
         transaction.close();
         transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, new NoOpClient(), KernelTransaction.Type.IMPLICIT,
-            loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
+                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ),
+                0L, 1L, EMBEDDED_CONNECTION );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -655,7 +657,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         Locks.Client locksClient = mock( Locks.Client.class );
         tx.initialize( 42, 42, locksClient, KernelTransaction.Type.IMPLICIT,
-            loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
+                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ),
+                0L, 0L, EMBEDDED_CONNECTION );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -676,7 +679,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         Locks.Client locksClient = mock( Locks.Client.class );
         tx.initialize( 42, 42, locksClient, KernelTransaction.Type.IMPLICIT,
-            loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
+                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ),
+                0L, 0L, EMBEDDED_CONNECTION );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
@@ -829,7 +833,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         for ( int i = 0; i < times; i++ )
         {
             tx.initialize( i + 10, i + 10, new NoOpClient(), KernelTransaction.Type.IMPLICIT,
-                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
+                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ),
+                0L, 0L, EMBEDDED_CONNECTION );
             tx.close();
         }
     }

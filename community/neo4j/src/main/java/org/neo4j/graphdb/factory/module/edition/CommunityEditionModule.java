@@ -48,6 +48,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.Kernel;
@@ -257,14 +258,14 @@ public class CommunityEditionModule extends StandaloneEditionModule
         };
     }
 
-    private static void setupSecurityGraphInitializer( GlobalModule globalModule )
+    private void setupSecurityGraphInitializer( GlobalModule globalModule )
     {
         Config config = globalModule.getGlobalConfig();
         FileSystemAbstraction fileSystem = globalModule.getFileSystem();
         LogProvider logProvider = globalModule.getLogService().getUserLogProvider();
-        LogExtended securityLog = (LogExtended) logProvider.getLog( UserSecurityGraphComponent.class );
+        AbstractSecurityLog securityLog = new CommunitySecurityLog( (LogExtended) logProvider.getLog( UserSecurityGraphComponent.class ) );
 
-        var communityComponent = CommunitySecurityModule.createSecurityComponent( new CommunitySecurityLog( securityLog ), config, fileSystem, logProvider );
+        var communityComponent = CommunitySecurityModule.createSecurityComponent( securityLog, config, fileSystem, logProvider );
 
         Dependencies dependencies = globalModule.getGlobalDependencies();
         SystemGraphComponents systemGraphComponents = dependencies.resolveDependency( SystemGraphComponents.class );
@@ -277,7 +278,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         setSecurityProvider( makeSecurityModule( globalModule ) );
     }
 
-    private static SecurityProvider makeSecurityModule( GlobalModule globalModule )
+    private SecurityProvider makeSecurityModule( GlobalModule globalModule )
     {
         globalModule.getGlobalDependencies().satisfyDependency( CommunitySecurityLog.NULL_LOG );
         setupSecurityGraphInitializer( globalModule );

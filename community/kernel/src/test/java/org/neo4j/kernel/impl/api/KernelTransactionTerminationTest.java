@@ -307,7 +307,7 @@ class KernelTransactionTerminationTest
                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ),
                    mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
                    LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                   TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST );
+                   TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST, CommunitySecurityLog.NULL_LOG );
 
             this.monitor = monitor;
         }
@@ -316,7 +316,6 @@ class KernelTransactionTerminationTest
         {
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
-            dependencies.satisfyDependency( CommunitySecurityLog.NULL_LOG );
             return new TestKernelTransaction( new CommitTrackingMonitor(), dependencies );
         }
 

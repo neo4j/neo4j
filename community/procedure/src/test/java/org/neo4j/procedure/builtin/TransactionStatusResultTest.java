@@ -275,7 +275,6 @@ class TransactionStatusResultTest
         {
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
-            dependencies.satisfyDependency( CommunitySecurityLog.NULL_LOG );
             KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                     Config.defaults(),
                     mock( DatabaseTransactionEventListeners.class ),
@@ -289,7 +288,7 @@ class TransactionStatusResultTest
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ),
                     mock( IndexStatisticsStore.class ), dependencies,
                     new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                    TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST )
+                    TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST, CommunitySecurityLog.NULL_LOG )
             {
                 @Override
                 public Statistics getStatistics()

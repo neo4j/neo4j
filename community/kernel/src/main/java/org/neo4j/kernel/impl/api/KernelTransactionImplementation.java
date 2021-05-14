@@ -233,7 +233,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor,
-            KernelVersionRepository kernelVersionRepository )
+            KernelVersionRepository kernelVersionRepository, AbstractSecurityLog securityLog )
     {
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
@@ -260,7 +260,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, config );
-        this.securityAuthorizationHandler = new SecurityAuthorizationHandler( dependencies.resolveDependency( AbstractSecurityLog.class ) );
+        this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
         this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
                         dependencies, config, memoryTracker );

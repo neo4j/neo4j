@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
 
@@ -198,6 +199,12 @@ public class SecurityAuthorizationHandler
     {
         securityLog.error( securityContext, message );
         return new AuthorizationViolationException( message );
+    }
+
+    public AuthorizationViolationException logAndGetAuthorizationException( SecurityContext securityContext, String message, Status status )
+    {
+        securityLog.error( securityContext, message );
+        return new AuthorizationViolationException( message, status );
     }
 
     public static String generateCredentialsExpiredMessage( String message )

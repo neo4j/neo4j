@@ -56,6 +56,8 @@ import org.neo4j.fabric.planning.FabricPlanner;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.FabricTransactionMonitor;
 import org.neo4j.fabric.transaction.TransactionManager;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
@@ -78,13 +80,15 @@ public abstract class FabricServicesBootstrap
     private final FabricConfig fabricConfig;
     private final Dependencies dependencies;
     private final LogService logService;
+    private final AbstractSecurityLog securityLog;
     private final ServiceBootstrapper serviceBootstrapper;
     private final Config config;
 
-    public FabricServicesBootstrap( LifeSupport lifeSupport, Dependencies dependencies, LogService logService )
+    public FabricServicesBootstrap( LifeSupport lifeSupport, Dependencies dependencies, LogService logService, AbstractSecurityLog securityLog )
     {
         this.dependencies = dependencies;
         this.logService = logService;
+        this.securityLog = securityLog;
 
         serviceBootstrapper = new ServiceBootstrapper( lifeSupport, dependencies );
 
@@ -125,7 +129,8 @@ public abstract class FabricServicesBootstrap
         register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval, null ), TransactionMonitorScheduler.class );
 
         var errorReporter = new ErrorReporter( logService );
-        register( new TransactionManager( remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor ), TransactionManager.class );
+        register( new TransactionManager(
+                remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, securityLog ), TransactionManager.class );
 
         var cypherConfig = CypherConfiguration.fromConfig( config );
 
@@ -213,7 +218,7 @@ public abstract class FabricServicesBootstrap
     {
         public Community( LifeSupport lifeSupport, Dependencies dependencies, LogService logService )
         {
-            super( lifeSupport, dependencies, logService );
+            super( lifeSupport, dependencies, logService, CommunitySecurityLog.NULL_LOG );
         }
 
         @Override

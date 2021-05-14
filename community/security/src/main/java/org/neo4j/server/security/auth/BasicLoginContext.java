@@ -21,12 +21,13 @@ package org.neo4j.server.security.auth;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.security.User;
 
@@ -87,17 +88,18 @@ public class BasicLoginContext extends LoginContext
     }
 
     @Override
-    public SecurityContext authorize( IdLookup idLookup, String dbName )
+    public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
     {
         if ( subject().getAuthenticationResult().equals( FAILURE ) || subject().getAuthenticationResult().equals( TOO_MANY_ATTEMPTS ) )
         {
+            securityLog.error( connectionInfo(), String.format( "Authentication failed for database %s.", dbName ) );
             throw new AuthorizationViolationException( AuthorizationViolationException.PERMISSION_DENIED, Status.Security.Unauthorized );
         }
         else if ( !dbName.equals( SYSTEM_DATABASE_NAME ) && subject().getAuthenticationResult().equals( PASSWORD_CHANGE_REQUIRED ) )
         {
-            throw new AuthorizationViolationException(
-                    SecurityAuthorizationHandler.generateCredentialsExpiredMessage( String.format( "ACCESS on database %s is not allowed." , dbName ) ),
-                    Status.Security.CredentialsExpired );
+            String message = SecurityAuthorizationHandler.generateCredentialsExpiredMessage( String.format( "ACCESS on database %s is not allowed.", dbName ) );
+            securityLog.error( this, message );
+            throw new AuthorizationViolationException( message, Status.Security.CredentialsExpired );
         }
         return new SecurityContext( subject(), accessMode, connectionInfo() );
     }

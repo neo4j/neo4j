@@ -95,7 +95,6 @@ public class AuthProcedures
     @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserResult> showCurrentUser()
     {
-        securityContext.assertCredentialsNotExpired();
         String username = securityContext.subject().username();
         return Stream.of( new UserResult( username, false ) );
     }

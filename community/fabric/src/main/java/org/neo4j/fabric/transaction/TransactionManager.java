@@ -28,6 +28,7 @@ import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -41,6 +42,7 @@ public class TransactionManager extends LifecycleAdapter
     private final ErrorReporter errorReporter;
     private final FabricConfig fabricConfig;
     private final FabricTransactionMonitor transactionMonitor;
+    private final AbstractSecurityLog securityLog;
 
     private final Set<FabricTransactionImpl> openTransactions = ConcurrentHashMap.newKeySet();
 
@@ -48,18 +50,20 @@ public class TransactionManager extends LifecycleAdapter
             FabricLocalExecutor localExecutor,
             ErrorReporter errorReporter,
             FabricConfig fabricConfig,
-            FabricTransactionMonitor transactionMonitor )
+            FabricTransactionMonitor transactionMonitor,
+            AbstractSecurityLog securityLog )
     {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
         this.errorReporter = errorReporter;
         this.fabricConfig = fabricConfig;
         this.transactionMonitor = transactionMonitor;
+        this.securityLog = securityLog;
     }
 
     public FabricTransaction begin( FabricTransactionInfo transactionInfo, TransactionBookmarkManager transactionBookmarkManager )
     {
-        transactionInfo.getLoginContext().authorize( LoginContext.IdLookup.EMPTY, transactionInfo.getDatabaseName() );
+        transactionInfo.getLoginContext().authorize( LoginContext.IdLookup.EMPTY, transactionInfo.getDatabaseName(), securityLog );
 
         FabricTransactionImpl fabricTransaction = new FabricTransactionImpl( transactionInfo,
                 transactionBookmarkManager,
