@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -77,8 +76,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexProxy;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -102,7 +99,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -208,7 +204,7 @@ public class DetectRandomSabotageIT
     void shouldDetectRandomSabotage() throws Exception
     {
         // given
-        SabotageType type = random.among( getValidSabotageTypes() );
+        SabotageType type = random.among( SabotageType.values() );
 
         // when
         Sabotage sabotage = type.run( random, neoStores, resolver, db );
@@ -218,15 +214,6 @@ public class DetectRandomSabotageIT
         boolean hasSomeErrorOrWarning = result.summary().getTotalInconsistencyCount() > 0 || result.summary().getTotalWarningCount() > 0;
         assertTrue( hasSomeErrorOrWarning );
         // TODO also assert there being a report about the sabotaged area
-    }
-
-    SabotageType[] getValidSabotageTypes()
-    {
-        List<SabotageType> sabotageTypes = new ArrayList<>( Arrays.asList( SabotageType.values() ) );
-        // Those two are only used when RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes is true
-        sabotageTypes.remove( SabotageType.NODE_LABEL_INDEX_ENTRY );
-        sabotageTypes.remove( SabotageType.RELATIONSHIP_TYPE_INDEX_ENTRY );
-        return sabotageTypes.toArray(SabotageType[]::new);
     }
 
     /* Failures/bugs found by the random sabotage are fixed and tested below, if they don't fit into any other FullCheck IT*/
@@ -801,59 +788,6 @@ public class DetectRandomSabotageIT
                         return new Sabotage( String.format( "%s entityId:%d values:%s index:%s", add ? "Add" : "Remove", selectedEntityId,
                                 Arrays.toString( selectedValues ), userDescription ),
                                 userDescription ); // TODO more specific
-                    }
-                },
-        LABEL_SCAN_STORE_ENTRY
-                {
-                    @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
-                    {
-                        LabelScanStore labelIndex = otherDependencies.resolveDependency( LabelScanStore.class );
-                        boolean add = random.nextBoolean();
-                        NodeStore store = stores.getNodeStore();
-                        NodeRecord nodeRecord = randomRecord( random, store, r -> add || (r.inUse() && r.getLabelField() != NO_LABELS_FIELD.longValue()) );
-                        TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
-                        Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
-                        int labelId;
-                        try ( TokenScanWriter writer = labelIndex.newWriter( NULL ) )
-                        {
-                            if ( nodeRecord.inUse() )
-                            {
-                                // Our node is in use, make sure it's a label it doesn't already have
-                                NodeLabels labelsField = NodeLabelsField.parseLabelsField( nodeRecord );
-                                long[] labelsBefore = labelsField.get( store, NULL );
-                                for ( long labelIdBefore : labelsBefore )
-                                {
-                                    labelNames.remove( tokenHolders.labelTokens().getTokenById( (int) labelIdBefore ).name() );
-                                }
-                                if ( add )
-                                {
-                                    // Add a label to an existing node (in the label index only)
-                                    labelId = labelNames.isEmpty()
-                                                  ? 9999
-                                                  : tokenHolders.labelTokens().getIdByName( random.among( new ArrayList<>( labelNames ) ) );
-                                    long[] labelsAfter = Arrays.copyOf( labelsBefore, labelsBefore.length + 1 );
-                                    labelsAfter[labelsBefore.length] = labelId;
-                                    Arrays.sort( labelsAfter );
-                                    writer.write( EntityTokenUpdate.tokenChanges( nodeRecord.getId(), labelsBefore, labelsAfter ) );
-                                }
-                                else
-                                {
-                                    // Remove a label from an existing node (in the label index only)
-                                    MutableLongList labels = LongLists.mutable.of( Arrays.copyOf( labelsBefore, labelsBefore.length ) );
-                                    labelId = (int) labels.removeAtIndex( random.nextInt( labels.size() ) );
-                                    long[] labelsAfter = labels.toSortedArray(); // With one of the labels removed
-                                    writer.write( EntityTokenUpdate.tokenChanges( nodeRecord.getId(), labelsBefore, labelsAfter ) );
-                                }
-                            }
-                            else // Getting here means the we're adding something (see above when selecting the node)
-                            {
-                                // Add a label to a non-existent node (in the label index only)
-                                labelId = tokenHolders.labelTokens().getIdByName( random.among( TOKEN_NAMES ) );
-                                writer.write( EntityTokenUpdate.tokenChanges( nodeRecord.getId(), EMPTY_LONG_ARRAY, new long[]{labelId} ) );
-                            }
-                        }
-                        return new Sabotage( String.format( "%s labelId:%d node:%s", add ? "Add" : "Remove", labelId, nodeRecord ), nodeRecord.toString() );
                     }
                 },
         NODE_LABEL_INDEX_ENTRY
