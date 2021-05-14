@@ -270,4 +270,13 @@ class UTF8StringValueTest
             }
         }
     }
+
+    @Test
+    void shouldHandleEqualsOnSubstring()
+    {
+        TextValue utf8 = utf8Value( "hello cruel world".getBytes( UTF_8 ) );
+        var substring = utf8.substring( 6, 5 );
+        assertThat( substring ).isEqualTo( utf8Value( "cruel".getBytes( UTF_8 ) ) );
+        assertThat( substring ).isNotEqualTo( utf8Value( "jazzy".getBytes( UTF_8 ) ) );
+    }
 }
