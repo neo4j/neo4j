@@ -38,8 +38,12 @@ import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 /**
  * The base of building Bolt protocols.
@@ -55,6 +59,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     private final BoltStateMachineFactory stateMachineFactory;
     private final BoltConnectionFactory connectionFactory;
     private final BookmarksParser bookmarksParser;
+    private final MapValue connectionHints;
 
     public AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
                                  BoltStateMachineFactory stateMachineFactory, Config config, LogService logging, TransportThrottleGroup throttleGroup,
@@ -75,6 +80,16 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         this.connectionFactory = connectionFactory;
         this.bookmarksParser = bookmarksParser;
         this.memoryTracker = memoryTracker;
+
+        var hintBuilder = new MapValueBuilder( 1 );
+        if ( config.get( BoltConnectorInternalSettings.connection_keep_alive_type ) == BoltConnectorInternalSettings.KeepAliveRequestType.ALL )
+        {
+            var keepAliveInterval = config.get( BoltConnectorInternalSettings.connection_keep_alive );
+            var keepAliveProbes = config.get( BoltConnectorInternalSettings.connection_keep_alive_probes );
+
+            hintBuilder.add( "connection.recv_timeout_seconds", Values.longValue( keepAliveInterval.toSeconds() * keepAliveProbes ) );
+        }
+        this.connectionHints = hintBuilder.build();
     }
 
     /**
@@ -83,7 +98,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     @Override
     public void install()
     {
-        BoltStateMachine stateMachine = stateMachineFactory.newStateMachine( version(), channel, memoryTracker );
+        BoltStateMachine stateMachine = stateMachineFactory.newStateMachine( version(), channel, connectionHints, memoryTracker );
         var neo4jPack = createPack( memoryTracker );
         var messageWriter = createMessageWriter( neo4jPack, logging, memoryTracker );
 

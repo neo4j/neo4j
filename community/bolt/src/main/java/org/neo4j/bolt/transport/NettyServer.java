@@ -42,6 +42,7 @@ import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.function.ThrowingAction.executeAll;
@@ -218,7 +220,7 @@ public class NettyServer extends LifecycleAdapter
                 .group( eventLoopGroup )
                 .channel( configurationProvider.getChannelClass( protocolInitializer.address() ) )
                 .option( ChannelOption.SO_REUSEADDR, TRUE )
-                .childOption( ChannelOption.SO_KEEPALIVE, TRUE )
+                .childOption( ChannelOption.SO_KEEPALIVE, config.get( BoltConnectorInternalSettings.tcp_keep_alive ) ? TRUE : FALSE )
                 .childHandler( protocolInitializer.channelInitializer() );
     }
 

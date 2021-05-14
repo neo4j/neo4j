@@ -29,6 +29,7 @@ import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.bolt.v41.messaging.request.HelloMessage;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v3.messaging.BoltAuthenticationHelper.processAuthentication;
 import static org.neo4j.util.Preconditions.checkState;
@@ -46,7 +47,13 @@ public class ConnectedState implements BoltStateMachineState
 
     private static final String CONNECTION_ID_KEY = "connection_id";
 
+    private final MapValue hints;
     private BoltStateMachineState readyState;
+
+    public ConnectedState( MapValue hints )
+    {
+        this.hints = hints;
+    }
 
     @Override
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
@@ -63,6 +70,7 @@ public class ConnectedState implements BoltStateMachineState
             {
                 context.resolveDefaultDatabase();
                 context.connectionState().onMetadata( CONNECTION_ID_KEY, Values.utf8Value( context.connectionId() ) );
+                context.connectionState().onMetadata( "hints", hints );
                 return readyState;
             }
             else

@@ -71,7 +71,7 @@ public class BoltKeepAliveSchedulingIT
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, false );
             settings.put( BoltConnectorInternalSettings.connection_keep_alive, Duration.ofMillis( 20 ) );
-            settings.put( BoltConnectorInternalSettings.connection_keep_alive_scheduling_interval, Duration.ofMillis( 10 ) );
+            settings.put( BoltConnectorInternalSettings.connection_keep_alive_streaming_scheduling_interval, Duration.ofMillis( 10 ) );
         };
     }
 

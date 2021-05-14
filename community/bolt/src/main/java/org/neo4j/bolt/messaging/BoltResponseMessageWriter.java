@@ -36,6 +36,10 @@ public interface BoltResponseMessageWriter extends BoltRecordConsumer, Closeable
     {
     }
 
+    default void flushBufferOrSendKeepAlive() throws IOException
+    {
+    }
+
     default void initKeepAliveTimer()
     {
     }

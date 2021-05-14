@@ -83,13 +83,7 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
             {
                 if ( timer.isTimedOut() )
                 {
-                    if ( inRecord )
-                    {
-                        shouldFlushAfterRecord = true;
-                        return;
-                    }
-                    writeNoop();
-                    flush();
+                    flushBufferOrSendKeepAlive();
                 }
             }
         }
@@ -146,6 +140,27 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
         {
             flush();
         }
+    }
+
+    @Override
+    public void flushBufferOrSendKeepAlive() throws IOException
+    {
+        synchronized ( this )
+        {
+            this.doFlushBufferOrSendKeepAlive();
+        }
+    }
+
+    private void doFlushBufferOrSendKeepAlive() throws IOException
+    {
+        if ( inRecord )
+        {
+            shouldFlushAfterRecord = true;
+            return;
+        }
+
+        writeNoop();
+        flush();
     }
 
     private void writeNoop() throws IOException

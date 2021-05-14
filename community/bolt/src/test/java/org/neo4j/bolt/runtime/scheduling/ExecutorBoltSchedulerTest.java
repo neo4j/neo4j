@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.testing.Jobs;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.KeepAliveRequestType;
 import org.neo4j.function.Predicates;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -72,7 +73,7 @@ class ExecutorBoltSchedulerTest
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
             new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10,
-                    Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(), Duration.ZERO, Duration.ZERO );
+                                       Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(), Duration.ZERO, KeepAliveRequestType.OFF, Duration.ZERO );
 
     @BeforeEach
     void setup()
@@ -104,7 +105,8 @@ class ExecutorBoltSchedulerTest
         ).when( connection ).keepAlive();
 
         var boltScheduler = new ExecutorBoltScheduler( CONNECTOR_KEY, executorFactory, jobScheduler, logService, 0, 10,
-                Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(), Duration.ZERO, Duration.ofMillis( 10 ) );
+                                                       Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool(), Duration.ZERO,
+                                                       KeepAliveRequestType.STREAMING, Duration.ofMillis( 10 ) );
         boltScheduler.init();
         boltScheduler.created( connection );
 
@@ -155,7 +157,7 @@ class ExecutorBoltSchedulerTest
         when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
-                        ForkJoinPool.commonPool(), Duration.ZERO, Duration.ZERO );
+                                           ForkJoinPool.commonPool(), Duration.ZERO, KeepAliveRequestType.OFF, Duration.ZERO );
 
         scheduler.init();
 
@@ -171,7 +173,7 @@ class ExecutorBoltSchedulerTest
         when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( cachedThreadPool );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
-                        ForkJoinPool.commonPool(), Duration.ZERO, Duration.ZERO );
+                                           ForkJoinPool.commonPool(), Duration.ZERO, KeepAliveRequestType.OFF, Duration.ZERO );
 
         scheduler.init();
         scheduler.shutdown();

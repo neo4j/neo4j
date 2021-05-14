@@ -34,26 +34,27 @@ import org.neo4j.bolt.v3.runtime.TransactionStreamingState;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.virtual.MapValue;
 
 public class BoltStateMachineV3 extends AbstractBoltStateMachine
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineV3.class );
 
     public BoltStateMachineV3( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
-                               MemoryTracker memoryTracker )
+                               MapValue connectionHints, MemoryTracker memoryTracker )
     {
-        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker );
     }
 
     @Override
-    protected States buildStates( MemoryTracker memoryTracker )
+    protected States buildStates( MapValue connectionHints, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap(
                 ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE + StreamingState.SHALLOW_SIZE
                 + TransactionReadyState.SHALLOW_SIZE + TransactionStreamingState.SHALLOW_SIZE
                 + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
 
-        ConnectedState connected = new ConnectedState();
+        ConnectedState connected = new ConnectedState( connectionHints );
         ReadyState ready = new ReadyState();
         StreamingState streaming = new StreamingState();
         TransactionReadyState txReady = new TransactionReadyState();

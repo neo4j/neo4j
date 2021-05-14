@@ -29,8 +29,10 @@ import org.neo4j.bolt.runtime.scheduling.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.scheduling.BoltScheduler;
 import org.neo4j.bolt.runtime.scheduling.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.transport.pipeline.KeepAliveHandler;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
 
@@ -66,8 +68,16 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         BoltConnectionReadLimiter readLimiter = createReadLimiter( config, logService );
         BoltConnectionQueueMonitor connectionQueueMonitor = new BoltConnectionQueueMonitorAggregate( scheduler, readLimiter );
 
-        BoltConnection connection = new DefaultBoltConnection( channel, messageWriter, stateMachine, logService, scheduler,
-                connectionQueueMonitor, DEFAULT_MAX_BATCH_SIZE, metricsMonitor, clock );
+        var keepAliveHandler = createKeepAliveHandler( config, messageWriter );
+        if ( keepAliveHandler != null )
+        {
+            channel.rawChannel().pipeline()
+                   .addLast( keepAliveHandler );
+        }
+
+        BoltConnection connection = new DefaultBoltConnection(
+                channel, messageWriter, stateMachine, logService, scheduler, connectionQueueMonitor, DEFAULT_MAX_BATCH_SIZE, keepAliveHandler, metricsMonitor,
+                clock );
         connection.start();
 
         return connection;
@@ -78,5 +88,17 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         int lowWatermark = config.get( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_low_water_mark );
         int highWatermark = config.get( GraphDatabaseInternalSettings.bolt_inbound_message_throttle_high_water_mark );
         return new BoltConnectionReadLimiter( logService, lowWatermark, highWatermark );
+    }
+
+    private static KeepAliveHandler createKeepAliveHandler( Config config, BoltResponseMessageWriter messageWriter )
+    {
+        var mechanism = config.get( BoltConnectorInternalSettings.connection_keep_alive_type );
+        if ( mechanism != BoltConnectorInternalSettings.KeepAliveRequestType.ALL )
+        {
+            return null;
+        }
+
+        var interval = config.get( BoltConnectorInternalSettings.connection_keep_alive ).toMillis();
+        return new KeepAliveHandler( interval, messageWriter );
     }
 }

@@ -431,7 +431,7 @@ public class TransportTestUtil
     public <T extends TransportConnection> ResponseMessage receiveOneResponseMessage( T conn ) throws IOException,
             InterruptedException
     {
-        return receiveOneResponseMessage( false, () -> {}, conn );
+        return receiveOneResponseMessage( true, () -> {}, conn );
     }
 
     public <T extends TransportConnection> ResponseMessage receiveOneResponseMessage( boolean allowNoOp,

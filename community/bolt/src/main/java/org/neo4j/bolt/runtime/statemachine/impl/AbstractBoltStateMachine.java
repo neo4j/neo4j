@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * This state machine oversees the exchange of messages for the Bolt protocol.
@@ -71,7 +72,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     private final BoltStateMachineState failedState;
 
     public AbstractBoltStateMachine( BoltStateMachineSPI spi, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
-                                     MemoryTracker memoryTracker )
+                                     MapValue connectionHints, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( BoltStateMachineContextImpl.SHALLOW_SIZE );
 
@@ -82,7 +83,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         this.connectionState = new MutableConnectionState();
         this.context = new BoltStateMachineContextImpl( this, boltChannel, spi, connectionState, clock, defaultDatabaseResolver, memoryTracker );
 
-        States states = buildStates( memoryTracker );
+        States states = buildStates( connectionHints, memoryTracker );
         this.state = states.initial;
         this.failedState = states.failed;
     }
@@ -353,7 +354,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         }
     }
 
-    protected abstract States buildStates( MemoryTracker memoryTracker );
+    protected abstract States buildStates( MapValue connectionHints, MemoryTracker memoryTracker );
 
     public static class States
     {

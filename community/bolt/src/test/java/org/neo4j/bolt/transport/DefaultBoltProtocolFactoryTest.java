@@ -35,15 +35,12 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
-import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
-import org.neo4j.bolt.transport.pipeline.HouseKeeper;
-import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
-import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Clocks;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -87,7 +84,7 @@ class DefaultBoltProtocolFactoryTest
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        when( stateMachineFactory.newStateMachine( boltProtocolVersion, boltChannel, memoryTracker ) ).thenReturn( stateMachine );
+        when( stateMachineFactory.newStateMachine( boltProtocolVersion, boltChannel, MapValue.EMPTY, memoryTracker ) ).thenReturn( stateMachine );
 
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
         BoltConnection connection = mock( BoltConnection.class );

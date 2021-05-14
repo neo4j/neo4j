@@ -33,26 +33,27 @@ import org.neo4j.bolt.v41.runtime.ConnectedState;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.virtual.MapValue;
 
 public class BoltStateMachineV41 extends AbstractBoltStateMachine
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineV41.class );
 
     public BoltStateMachineV41( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
-                                MemoryTracker memoryTracker )
+                                MapValue connectionHints, MemoryTracker memoryTracker )
     {
-        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, connectionHints, memoryTracker );
     }
 
     @Override
-    protected States buildStates( MemoryTracker memoryTracker )
+    protected States buildStates( MapValue connectionHints, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap(
                 ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
                 + AutoCommitState.SHALLOW_SIZE + InTransactionState.SHALLOW_SIZE
                 + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
 
-        ConnectedState connected = new ConnectedState(); //v4.1
+        ConnectedState connected = new ConnectedState( connectionHints ); //v4.1
         ReadyState ready = new ReadyState(); // v4
         AutoCommitState autoCommitState = new AutoCommitState(); // v4
         InTransactionState inTransaction = new InTransactionState(); // v4

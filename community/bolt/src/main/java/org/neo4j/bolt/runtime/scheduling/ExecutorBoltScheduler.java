@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Job;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -59,12 +60,14 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
 
     private ExecutorService threadPool;
 
+    private final BoltConnectorInternalSettings.KeepAliveRequestType keepAliveRequestType;
     private final Duration keepAliveSchedulingInterval;
     private ScheduledExecutorService keepAliveService;
 
     public ExecutorBoltScheduler( String connector, ExecutorFactory executorFactory, JobScheduler scheduler,
-            LogService logService, int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize,
-            ExecutorService forkJoinPool, Duration shutdownWaitTime, Duration keepAliveSchedulingInterval )
+                                  LogService logService, int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize,
+                                  ExecutorService forkJoinPool, Duration shutdownWaitTime,
+                                  BoltConnectorInternalSettings.KeepAliveRequestType keepAliveRequestType, Duration keepAliveSchedulingInterval )
     {
         this.connector = connector;
         this.executorFactory = executorFactory;
@@ -76,6 +79,7 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
         this.queueSize = queueSize;
         this.forkJoinPool = forkJoinPool;
         this.shutdownWaitTime = shutdownWaitTime;
+        this.keepAliveRequestType = keepAliveRequestType;
         this.keepAliveSchedulingInterval = keepAliveSchedulingInterval;
     }
 
@@ -106,20 +110,27 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
     @Override
     public void start()
     {
-        if ( keepAliveSchedulingInterval.isNegative() || keepAliveSchedulingInterval.isZero() )
+        if ( keepAliveRequestType != BoltConnectorInternalSettings.KeepAliveRequestType.STREAMING || keepAliveSchedulingInterval.isNegative() ||
+             keepAliveSchedulingInterval.isZero() )
         {
             log.debug( "Bolt keep-alive service is disabled." );
         }
         else
         {
             keepAliveService = Executors.newSingleThreadScheduledExecutor();
-            keepAliveService.scheduleAtFixedRate( () -> {
-                for ( var id : activeWorkItems.keySet() )
-                {
-                    var connection = activeConnections.get( id );
-                    connection.keepAlive();
-                }
-            }, keepAliveSchedulingInterval.toMillis(), keepAliveSchedulingInterval.toMillis(), MILLISECONDS );
+            keepAliveService.scheduleAtFixedRate(
+                    () ->
+                    {
+                        for ( var id : activeWorkItems.keySet() )
+                        {
+                            var connection = activeConnections.get( id );
+                            connection.keepAlive();
+                        }
+                    },
+                    keepAliveSchedulingInterval.toMillis(),
+                    keepAliveSchedulingInterval.toMillis(),
+                    MILLISECONDS
+            );
             log.debug( "Initialized bolt keep-alive service." );
         }
     }

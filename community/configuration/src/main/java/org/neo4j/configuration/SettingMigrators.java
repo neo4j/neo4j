@@ -59,6 +59,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_bl
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.SettingValueParsers.LIST_SEPARATOR;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
+import static org.neo4j.configuration.connectors.BoltConnectorInternalSettings.connection_keep_alive_streaming_scheduling_interval;
 
 public final class SettingMigrators
 {
@@ -502,6 +503,17 @@ public final class SettingMigrators
             migrateSettingRemoval( values, log, "unsupported.consistency_checker.experimental",
                     "There is no longer multiple different consistency checkers to choose from" );
             migrateSettingNameChange( values, log, "unsupported.consistency_checker.experimental.fail_fast", consistency_checker_fail_fast_threshold );
+        }
+    }
+
+    @ServiceProvider
+    public static class ConnectorKeepAliveSettingsMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            migrateSettingNameChange( values, log, "dbms.connector.bolt.connection_keep_alive_scheduling_interval",
+                                      connection_keep_alive_streaming_scheduling_interval );
         }
     }
 

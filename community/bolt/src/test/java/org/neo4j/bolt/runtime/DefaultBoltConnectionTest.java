@@ -425,7 +425,7 @@ class DefaultBoltConnectionTest
 
     private DefaultBoltConnection newConnection( int maxBatchSize )
     {
-        return new DefaultBoltConnection( boltChannel, writer, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize,
-                mock( BoltConnectionMetricsMonitor.class ), Clock.systemUTC() );
+        return new DefaultBoltConnection( boltChannel, writer, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize, null,
+                                          mock( BoltConnectionMetricsMonitor.class ), Clock.systemUTC() );
     }
 }

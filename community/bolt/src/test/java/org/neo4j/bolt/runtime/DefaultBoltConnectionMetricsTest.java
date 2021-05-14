@@ -169,8 +169,9 @@ class DefaultBoltConnectionMetricsTest
     private static BoltConnection newConnection( BoltConnectionMetricsMonitor metricsMonitor )
     {
         BoltChannel channel = BoltTestUtil.newTestBoltChannel();
-        return new DefaultBoltConnection( channel, mock( BoltResponseMessageWriter.class ), mock( BoltStateMachine.class ), NullLogService.getInstance(),
-                mock( BoltConnectionLifetimeListener.class ), mock( BoltConnectionQueueMonitor.class ), DEFAULT_MAX_BATCH_SIZE, metricsMonitor,
-                Clocks.systemClock() );
+        return new DefaultBoltConnection(
+                channel, mock( BoltResponseMessageWriter.class ), mock( BoltStateMachine.class ), NullLogService.getInstance(),
+                mock( BoltConnectionLifetimeListener.class ), mock( BoltConnectionQueueMonitor.class ), DEFAULT_MAX_BATCH_SIZE, null,
+                metricsMonitor, Clocks.systemClock() );
     }
 }

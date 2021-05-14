@@ -48,6 +48,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -72,7 +73,7 @@ class BoltStateMachineFactoryImplTest
         BoltStateMachineFactoryImpl factory = newBoltFactory();
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 3, 0 ), CHANNEL, memoryTracker );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 3, 0 ), CHANNEL, MapValue.EMPTY, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV3.class );
@@ -88,7 +89,7 @@ class BoltStateMachineFactoryImplTest
         BoltStateMachineFactoryImpl factory = newBoltFactory();
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 0 ), CHANNEL, memoryTracker );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 0 ), CHANNEL, MapValue.EMPTY, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV4.class );
@@ -104,7 +105,7 @@ class BoltStateMachineFactoryImplTest
         BoltStateMachineFactoryImpl factory = newBoltFactory();
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 1 ), CHANNEL, memoryTracker );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 1 ), CHANNEL, MapValue.EMPTY, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV41.class );
@@ -120,7 +121,7 @@ class BoltStateMachineFactoryImplTest
         BoltStateMachineFactoryImpl factory = newBoltFactory();
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 2 ), CHANNEL, memoryTracker );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 2 ), CHANNEL, MapValue.EMPTY, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV42.class );
@@ -136,7 +137,7 @@ class BoltStateMachineFactoryImplTest
         BoltStateMachineFactoryImpl factory = newBoltFactory();
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 3 ), CHANNEL, memoryTracker );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 3 ), CHANNEL, MapValue.EMPTY, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV43.class );
@@ -155,7 +156,7 @@ class BoltStateMachineFactoryImplTest
         var memoryTracker = mock( MemoryTracker.class );
 
         IllegalArgumentException error =
-                assertThrows( IllegalArgumentException.class, () -> factory.newStateMachine( boltProtocolVersion, CHANNEL, memoryTracker ) );
+                assertThrows( IllegalArgumentException.class, () -> factory.newStateMachine( boltProtocolVersion, CHANNEL, MapValue.EMPTY, memoryTracker ) );
         assertThat( error.getMessage() ).startsWith( "Failed to create a state machine for protocol version" );
 
         verifyNoMoreInteractions( memoryTracker );

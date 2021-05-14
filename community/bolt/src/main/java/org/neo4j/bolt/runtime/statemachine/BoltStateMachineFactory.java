@@ -22,6 +22,7 @@ package org.neo4j.bolt.runtime.statemachine;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Factory class for Bolt runtime environments.
@@ -32,9 +33,9 @@ public interface BoltStateMachineFactory
      * Generate a new state machine.
      *
      * @param protocolVersion used to select state machine version
-     * @param boltChannel channel over which Bolt massages can be exchanged
-     * @param memoryTracker memory tracker to allocate state machine heap from.
+     * @param boltChannel     channel over which Bolt massages can be exchanged
+     * @param memoryTracker   memory tracker to allocate state machine heap from.
      * @return new {@link BoltStateMachine} instance
      */
-    BoltStateMachine newStateMachine( BoltProtocolVersion protocolVersion, BoltChannel boltChannel, MemoryTracker memoryTracker );
+    BoltStateMachine newStateMachine( BoltProtocolVersion protocolVersion, BoltChannel boltChannel, MapValue connectionHints, MemoryTracker memoryTracker );
 }

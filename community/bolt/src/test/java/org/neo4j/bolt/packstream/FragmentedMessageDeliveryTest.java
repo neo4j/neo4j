@@ -129,7 +129,7 @@ public class FragmentedMessageDeliveryTest
 
         BoltProtocol boltProtocol = new BoltProtocolV4(
                 boltChannel, ( ch, s, messageWriter ) -> boltConnection,
-                ( v, ch, mem ) -> machine, Config.defaults(), bookmarksParser, logging, mock( TransportThrottleGroup.class ), memoryTracker );
+                ( v, ch, hints, mem ) -> machine, Config.defaults(), bookmarksParser, logging, mock( TransportThrottleGroup.class ), memoryTracker );
         boltProtocol.install();
 
         // When data arrives split up according to the current permutation

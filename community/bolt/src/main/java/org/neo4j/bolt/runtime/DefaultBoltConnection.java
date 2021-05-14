@@ -35,6 +35,7 @@ import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionLifetimeListener;
 import org.neo4j.bolt.runtime.scheduling.BoltConnectionQueueMonitor;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.transport.pipeline.KeepAliveHandler;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -68,11 +69,13 @@ public class DefaultBoltConnection implements BoltConnection
     private final BoltConnectionMetricsMonitor metricsMonitor;
     private final Clock clock;
     private final BoltResponseMessageWriter messageWriter;
+    private final KeepAliveHandler keepAliveHandler;
 
     DefaultBoltConnection( BoltChannel channel, BoltResponseMessageWriter messageWriter, BoltStateMachine machine,
-            LogService logService, BoltConnectionLifetimeListener listener,
-            BoltConnectionQueueMonitor queueMonitor, int maxBatchSize, BoltConnectionMetricsMonitor metricsMonitor,
-            Clock clock )
+                           LogService logService, BoltConnectionLifetimeListener listener,
+                           BoltConnectionQueueMonitor queueMonitor, int maxBatchSize, KeepAliveHandler keepAliveHandler,
+                           BoltConnectionMetricsMonitor metricsMonitor,
+                           Clock clock )
     {
         this.id = channel.id();
         this.channel = channel;
@@ -86,6 +89,7 @@ public class DefaultBoltConnection implements BoltConnection
         this.metricsMonitor = metricsMonitor;
         this.clock = clock;
         this.messageWriter = messageWriter;
+        this.keepAliveHandler = keepAliveHandler;
     }
 
     @Override
@@ -139,20 +143,32 @@ public class DefaultBoltConnection implements BoltConnection
         metricsMonitor.messageReceived();
         long queuedAt = clock.millis();
         enqueueInternal( machine ->
-        {
-            long queueTime = clock.millis() - queuedAt;
-            metricsMonitor.messageProcessingStarted( queueTime );
-            try
-            {
-                job.perform( machine );
-                metricsMonitor.messageProcessingCompleted( clock.millis() - queuedAt - queueTime );
-            }
-            catch ( Throwable t )
-            {
-                metricsMonitor.messageProcessingFailed();
-                throw t;
-            }
-        } );
+                         {
+                             if ( keepAliveHandler != null )
+                             {
+                                 keepAliveHandler.setActive( true );
+                             }
+
+                             long queueTime = clock.millis() - queuedAt;
+                             metricsMonitor.messageProcessingStarted( queueTime );
+                             try
+                             {
+                                 job.perform( machine );
+                                 metricsMonitor.messageProcessingCompleted( clock.millis() - queuedAt - queueTime );
+                             }
+                             catch ( Throwable t )
+                             {
+                                 metricsMonitor.messageProcessingFailed();
+                                 throw t;
+                             }
+                             finally
+                             {
+                                 if ( keepAliveHandler != null && !machine.hasOpenStatement() )
+                                 {
+                                     keepAliveHandler.setActive( false );
+                                 }
+                             }
+                         } );
     }
 
     @Override

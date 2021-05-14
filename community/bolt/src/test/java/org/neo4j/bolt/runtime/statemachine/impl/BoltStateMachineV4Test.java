@@ -53,6 +53,7 @@ import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -465,7 +466,8 @@ class BoltStateMachineV4Test
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
         var memoryTracker = mock( MemoryTracker.class );
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class), memoryTracker );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class), MapValue.EMPTY,
+                                                           memoryTracker );
 
         machine.close();
 
@@ -479,7 +481,9 @@ class BoltStateMachineV4Test
         BoltChannel boltChannel = mock( BoltChannel.class );
         var memoryTracker = mock( MemoryTracker.class );
 
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class), memoryTracker );
+        BoltStateMachine machine =
+                new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(),
+                                        mock( DefaultDatabaseResolver.class ), MapValue.EMPTY, memoryTracker );
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
 
         machine.markFailed( error );
@@ -704,7 +708,7 @@ class BoltStateMachineV4Test
         var memoryTracker = mock( MemoryTracker.class );
 
         // state allocation is a side effect of construction
-        new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), memoryTracker );
+        new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), MapValue.EMPTY, memoryTracker );
 
         verify( memoryTracker ).allocateHeap(
                 ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE

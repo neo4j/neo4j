@@ -59,6 +59,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.time.Duration.ofSeconds;
 
@@ -84,7 +85,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     public BoltStateMachine newMachine( BoltProtocolVersion version, BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
         assertTestStarted();
-        BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel, memoryTracker );
+        BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel, MapValue.EMPTY, memoryTracker );
         runningMachines.add( machine );
         return machine;
     }
