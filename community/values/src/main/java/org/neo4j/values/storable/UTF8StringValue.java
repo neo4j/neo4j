@@ -69,7 +69,8 @@ public final class UTF8StringValue extends StringValue
             {
                 return false;
             }
-            for ( int i = offset, j = other.offset; i < byteLength; i++, j++ )
+            final int max = offset + byteLength;
+            for ( int i = offset, j = other.offset; i < max; i++, j++ )
             {
                 if ( bytes[i] != other.bytes[j] )
                 {
