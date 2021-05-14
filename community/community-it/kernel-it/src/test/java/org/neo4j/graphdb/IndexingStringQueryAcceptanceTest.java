@@ -32,35 +32,17 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 public class IndexingStringQueryAcceptanceTest
 {
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-    }
-
-    /**
-     * Temporary solution to skip relationship token index tests here.
-     * Will be removed when token indexes are enabled by default.
-     */
-    public void skipRelTokenIndexIfNotSupported( IndexingMode mode, EntityControl entityControl )
-    {
-        assumeFalse( mode == IndexingMode.TOKEN && entityControl.equals( EntityTypes.RELATIONSHIP ) );
-    }
 
     private static final String KEY = "name";
     private String tokenName;
@@ -78,8 +60,6 @@ public class IndexingStringQueryAcceptanceTest
     @MethodSource( "data" )
     void shouldSupportIndexSeek( DataSet dataSet, IndexingMode withIndex, EntityControl entityControl )
     {
-        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
-
         // GIVEN
         createIndex( entityControl, withIndex );
         createEntities( entityControl, db, tokenName, dataSet.nonMatching );
@@ -100,8 +80,6 @@ public class IndexingStringQueryAcceptanceTest
     @MethodSource( "data" )
     void shouldIncludeEntitiesCreatedInSameTxInIndexSeek( DataSet dataSet, IndexingMode withIndex, EntityControl entityControl )
     {
-        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
-
         // GIVEN
         createIndex( entityControl, withIndex );
         createEntities( entityControl, db, tokenName, dataSet.nonMatching[0], dataSet.nonMatching[1] );
@@ -123,8 +101,6 @@ public class IndexingStringQueryAcceptanceTest
     @MethodSource( "data" )
     void shouldNotIncludeEntitiesDeletedInSameTxInIndexSeek( DataSet dataSet, IndexingMode withIndex, EntityControl entityControl )
     {
-        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
-
         // GIVEN
         createIndex( entityControl, withIndex );
         createEntities( entityControl, db, tokenName, dataSet.nonMatching[0] );
@@ -135,13 +111,7 @@ public class IndexingStringQueryAcceptanceTest
         LongSet found;
         try ( Transaction tx = db.beginTx() )
         {
-            toDelete.each(
-                    id ->
-                    {
-                        entityControl.deleteEntity( tx, id );
-                    }
-            );
-
+            toDelete.each( id -> entityControl.deleteEntity( tx, id ) );
             found = entityControl.findEntities( tx, tokenName, KEY, dataSet.template, dataSet.searchMode );
         }
         // THEN
@@ -152,8 +122,6 @@ public class IndexingStringQueryAcceptanceTest
     @MethodSource( "data" )
     void shouldConsiderEntitiesChangedInSameTxInIndexSeek( DataSet dataSet, IndexingMode withIndex, EntityControl entityControl )
     {
-        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
-
         // GIVEN
         createIndex( entityControl, withIndex );
         createEntities( entityControl, db, tokenName, dataSet.nonMatching[0] );
@@ -368,6 +336,6 @@ public class IndexingStringQueryAcceptanceTest
                           .forEach( found::add );
                         return found;
                     }
-                };
+                }
     }
 }
