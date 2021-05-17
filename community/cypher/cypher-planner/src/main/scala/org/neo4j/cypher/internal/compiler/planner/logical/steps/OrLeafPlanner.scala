@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.DisjunctionForOneVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.InlinedRelationshipTypePredicateKind
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicateKind
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.bestPlansByHeuristic
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions.leafPlanHeuristic
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.Ors
@@ -38,23 +39,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.logical
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.util.InputPosition
 
 object OrLeafPlanner {
@@ -96,7 +81,9 @@ object OrLeafPlanner {
    * @param variableName the name of the variable
    * @param predicates   the predicates.
    */
-  case class DisjunctionForOneVariable(variableName: String, predicates: Seq[DistributablePredicate])
+  case class DisjunctionForOneVariable(variableName: String, predicates: Seq[DistributablePredicate]) {
+    override def toString: String = predicates.mkString(" OR ")
+  }
 
   /**
    * A predicate that can be distributed by the OrLeafPlanner
@@ -167,6 +154,8 @@ object OrLeafPlanner {
     }
 
     override def queryGraphContains(qg: QueryGraph): Boolean = qg.selections.flatPredicates.contains(e)
+
+    override def toString: String = ExpressionStringifier(e => e.asCanonicalStringVal)(e)
   }
 
   /**
@@ -238,6 +227,10 @@ object OrLeafPlanner {
       case PatternRelationship(`variableName`, _, _, Seq(`typ`), _) => true
       case _ => false
     }
+
+    override def toString: String = ExpressionStringifier(e => e.asCanonicalStringVal)(
+      HasTypes(Variable(variableName)(InputPosition.NONE), Seq(typ))(InputPosition.NONE)
+    )
   }
 
   /**
@@ -247,35 +240,6 @@ object OrLeafPlanner {
     val nonArgVars = e.findByAllClass[Variable].filterNot(v => argumentIds.contains(v.name))
     if (nonArgVars.distinct.size == 1) nonArgVars.headOption else None
   }
-
-  private def bestPlansByHeuristic(plans: Seq[LogicalPlan]): Seq[LogicalPlan] = {
-    if (plans.isEmpty) plans else plans.groupBy(planOrderingHeuristic).minBy(_._1)._2
-  }
-
-  private def planOrderingHeuristic(logicalPlan: LogicalPlan): Int = logicalPlan match {
-    case _: NodeIndexSeek |
-         _: NodeUniqueIndexSeek |
-         _: NodeIndexEndsWithScan |
-         _: NodeIndexContainsScan |
-         _: DirectedRelationshipIndexEndsWithScan |
-         _: UndirectedRelationshipIndexEndsWithScan |
-         _: DirectedRelationshipIndexContainsScan |
-         _: UndirectedRelationshipIndexContainsScan |
-         _: DirectedRelationshipIndexSeek |
-         _: UndirectedRelationshipIndexSeek |
-         _: DirectedRelationshipIndexEndsWithScan |
-         _: UndirectedRelationshipIndexEndsWithScan |
-         _: DirectedRelationshipIndexContainsScan |
-         _: UndirectedRelationshipIndexContainsScan => 0
-    case _: NodeIndexScan |
-         _: UndirectedRelationshipIndexScan |
-         _: DirectedRelationshipIndexScan => 1
-    case _: NodeByLabelScan |
-         _: DirectedRelationshipTypeScan |
-         _: UndirectedRelationshipTypeScan => 2
-    case _ => 3
-  }
-
 }
 
 case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
@@ -283,6 +247,9 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
   private val predicateKinds = Seq(WhereClausePredicateKind, InlinedRelationshipTypePredicateKind)
 
   override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+    val pickBest = context.config.pickBestCandidate(context)
+    val select = context.config.applySelections
+
     // The queryGraph without any predicates
     val bareQg = predicateKinds.foldLeft(qg)((accQg, dp) => dp.stripAllFromQueryGraph(accQg))
 
@@ -301,13 +268,12 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
 
         // Obtain plans for each for the query graph with this expression added
         val innerLeafPlans = inner.flatMap(_ (qgForExpression, interestingOrderConfig, context)).distinct
+        // Apply selections on top of the leaf plans.
+        val innerPlansWithSelections = innerLeafPlans.map(select(_, qgForExpression, interestingOrderConfig, context))
 
         // This is a Seq of possible solutions per expression
-        // We really only want the best option IndexSeek > IndexScan > LabelScan as combine() explodes to p^n
-        // (number of plans ^ number of predicates) so we really want p to be 1
-        bestPlansByHeuristic(innerLeafPlans)
-          // Apply selections on top of the best leaf plans.
-          .map(p => context.config.applySelections(p, qgForExpression, interestingOrderConfig, context))
+        // We really only want the best option
+        pickBest(innerPlansWithSelections, leafPlanHeuristic(context), s"best plan for $predicate from disjunction $disjunction")
           // Only keep a plan if it actually solves the predicate from the disjunction
           .filter(plan => predicate.queryGraphContains(solvedQueryGraph(plan)))
           .toArray

@@ -316,7 +316,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
                             .build()
   }
 
-  test("should prefer type scan to relationship index scan from existence constraint with same cardinality, when filtered") {
+  test("should prefer type scan to relationship index scan from existence constraint with same cardinality") {
 
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)

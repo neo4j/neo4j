@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
@@ -884,7 +885,7 @@ class OrLeafPlanningIntegrationTest
         |RETURN r""".stripMargin
     )
 
-    // Possible improvement: This could be planned with a relationshipTypeScan and a nodeIndexSeek
+    // Possible improvement: This could be planned with a relationshipTypeScan and a relationshipIndexSeek
     plan should (equal(
       cfg.planBuilder()
         .produceResults("r")
@@ -902,6 +903,266 @@ class OrLeafPlanningIntegrationTest
         .orderedUnion(Seq(Ascending("r")))
         .|.relationshipTypeScan("(a)-[r:REL1]-(b)", indexOrder = IndexOrderAscending)
         .relationshipTypeScan("(a)-[r:REL2]-(b)", indexOrder = IndexOrderAscending)
+        .build()
+    ))
+  }
+
+  test("should prefer label scan to node index scan from existence constraint with same cardinality") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 0.1)
+      .addNodeExistenceConstraint("L", "p1")
+      .addNodeIndex("P", Seq("p1"), 1.0, 0.1)
+      .addNodeExistenceConstraint("P", "p1")
+      .build()
+
+    val plan = cfg.plan(s"MATCH (n) WHERE n:L or n:P RETURN n")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .orderedDistinct(Seq("n"), "n AS n")
+        .orderedUnion(Seq(Ascending("n")))
+        .|.nodeByLabelScan("n", "P", IndexOrderAscending)
+        .nodeByLabelScan("n", "L", IndexOrderAscending)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .orderedDistinct(Seq("n"), "n AS n")
+        .orderedUnion(Seq(Ascending("n")))
+        .|.nodeByLabelScan("n", "L", IndexOrderAscending)
+        .nodeByLabelScan("n", "P", IndexOrderAscending)
+        .build()
+    ))
+  }
+
+  test("should prefer type scan to relationship index scan from existence constraint with same cardinality") {
+    val cfg = plannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1)
+      .addRelationshipExistenceConstraint("REL1", "p1")
+      .addRelationshipIndex("REL2", Seq("p2"), 1.0, 0.1)
+      .addRelationshipExistenceConstraint("REL2", "p1")
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:REL1|REL2]->(b) RETURN r")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
+        .orderedUnion(Seq(Ascending("r")))
+        .|.relationshipTypeScan("(a)-[r:REL2]->(b)", indexOrder = IndexOrderAscending)
+        .relationshipTypeScan("(a)-[r:REL1]->(b)", indexOrder = IndexOrderAscending)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("r")
+        .orderedDistinct(Seq("r"), "r AS r", "a AS a", "b AS b")
+        .orderedUnion(Seq(Ascending("r")))
+        .|.relationshipTypeScan("(a)-[r:REL1]->(b)", indexOrder = IndexOrderAscending)
+        .relationshipTypeScan("(a)-[r:REL2]->(b)", indexOrder = IndexOrderAscending)
+        .build()
+    ))
+  }
+
+  test("should prefer node index scan from existence constraint to label scan with same cardinality, if indexed property is used") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeExistenceConstraint("L", "p1")
+      .addNodeIndex("P", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeExistenceConstraint("P", "p1")
+      .build()
+
+    val plan = cfg.plan(s"MATCH (n) WHERE n:L or n:P RETURN n.p1 AS p")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("p")
+        .projection("cacheN[n.p1] AS p")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:L(p1)", getValue = GetValue)
+        .nodeIndexOperator("n:P(p1)", getValue = GetValue)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("p")
+        .projection("cacheN[n.p1] AS p")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:P(p1)", getValue = GetValue)
+        .nodeIndexOperator("n:L(p1)", getValue = GetValue)
+        .build()
+    ))
+  }
+
+  test("should prefer relationship index scan from existence constraint to type scan with same cardinality, if indexed property is used") {
+    val cfg = plannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipExistenceConstraint("REL1", "p1")
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipExistenceConstraint("REL2", "p1")
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:REL1|REL2]->(b) RETURN r.p1 AS p")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("p")
+        .projection("cacheR[r.p1] AS p")
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL1(p1)]->(b)", getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL2(p1)]->(b)", getValue = GetValue)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("p")
+        .projection("cacheR[r.p1] AS p")
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL2(p1)]->(b)", getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL1(p1)]->(b)", getValue = GetValue)
+        .build()
+    ))
+  }
+
+  test("should prefer node index scan from aggregation to node index scan from existence constraint with same cardinality") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeExistenceConstraint("L", "p1")
+      .addNodeIndex("L", Seq("p2"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("P", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeExistenceConstraint("P", "p1")
+      .addNodeIndex("P", Seq("p2"), 1.0, 0.1, withValues = true)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (n) WHERE n:L or n:P RETURN count(n.p2) AS c")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:L(p2)", getValue = GetValue)
+        .nodeIndexOperator("n:P(p2)", getValue = GetValue)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:P(p2)", getValue = GetValue)
+        .nodeIndexOperator("n:L(p2)", getValue = GetValue)
+        .build()
+    ))
+  }
+
+  test("should prefer relationship index scan from aggregation to relationship index scan from existence constraint with same cardinality") {
+    val cfg = plannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipExistenceConstraint("REL1", "p1")
+      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 0.1, withValues = true)
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addRelationshipExistenceConstraint("REL2", "p1")
+      .addRelationshipIndex("REL2", Seq("p2"), 1.0, 0.1, withValues = true)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:REL1|REL2]->(b) RETURN count(r.p2) AS c")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = GetValue)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = GetValue)
+        .relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = GetValue)
+        .build()
+    ))
+  }
+
+  test("should prefer node index scan for aggregated property, even if other property is referenced") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeExistenceConstraint("L", "p1")
+      .addNodeIndex("L", Seq("p2"), 1.0, 0.1, withValues = true)
+      .addNodeIndex("P", Seq("p1"), 1.0, 0.1, withValues = true)
+      .addNodeExistenceConstraint("P", "p1")
+      .addNodeIndex("P", Seq("p2"), 1.0, 0.1, withValues = true)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (n) WHERE (n:L or n:P) AND n.p1 <> 1 RETURN count(n.p2) AS c")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
+        .distinct("n AS n")
+        .union()
+        .|.filter("not n.p1 = 1")
+        .|.nodeIndexOperator("n:L(p2)", getValue = GetValue)
+        .filter("not n.p1 = 1")
+        .nodeIndexOperator("n:P(p2)", getValue = GetValue)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheN[n.p2]) AS c"))
+        .distinct("n AS n")
+        .union()
+        .|.filter("not n.p1 = 1")
+        .|.nodeIndexOperator("n:P(p2)", getValue = GetValue)
+        .filter("not n.p1 = 1")
+        .nodeIndexOperator("n:L(p2)", getValue = GetValue)
+        .build()
+    ))
+  }
+
+  test("should prefer relationship index scan for aggregated property, even if other property is referenced") {
+    val cfg = plannerConfig()
+      .addRelationshipIndex("REL1", Seq("p1"), 1.0, 0.01, withValues = true)
+      .addRelationshipExistenceConstraint("REL1", "p1")
+      .addRelationshipIndex("REL1", Seq("p2"), 1.0, 0.01, withValues = true)
+      .addRelationshipIndex("REL2", Seq("p1"), 1.0, 0.01, withValues = true)
+      .addRelationshipExistenceConstraint("REL2", "p1")
+      .addRelationshipIndex("REL2", Seq("p2"), 1.0, 0.01, withValues = true)
+      .build()
+
+    val plan = cfg.plan(s"MATCH (a)-[r:REL1|REL2]->(b) WHERE r.p1 <> 1 RETURN count(r.p2) AS c")
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.filter("not r.p1 = 1")
+        .|.relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = GetValue)
+        .filter("not r.p1 = 1")
+        .relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = GetValue)
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("c")
+        .aggregation(Seq(), Seq("count(cacheR[r.p2]) AS c"))
+        .distinct("r AS r", "a AS a", "b AS b")
+        .union()
+        .|.filter("not r.p1 = 1")
+        .|.relationshipIndexOperator("(a)-[r:REL2(p2)]->(b)", getValue = GetValue)
+        .filter("not r.p1 = 1")
+        .relationshipIndexOperator("(a)-[r:REL1(p2)]->(b)", getValue = GetValue)
         .build()
     ))
   }
@@ -1024,7 +1285,6 @@ class OrLeafPlanningIntegrationTest
   }
 
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Await.result(scala.concurrent.Future(f), Duration.apply(timeout, "s"))
+    Await.result(scala.concurrent.Future(f)(scala.concurrent.ExecutionContext.global), Duration.apply(timeout, "s"))
   }
 }
