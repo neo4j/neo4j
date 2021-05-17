@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -83,8 +84,6 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -103,6 +102,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -144,7 +144,6 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -324,15 +323,78 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    void writeToNodeLabelStructure( GraphStoreFixture fixture, Iterable<EntityTokenUpdate> entityTokenUpdates )
-            throws IOException, IndexEntryConflictException
+    @Test
+    void shouldReportRelationshipTypeIndexInconsistencies1() throws Exception
     {
-        LabelScanStore tokenScanStore = fixture.directStoreAccess().labelScanStore();
-        try ( TokenScanWriter writer = tokenScanStore.newWriter( NULL ) )
+        // given
+        // relationship present in type index but not in store
+        GraphStoreFixture.IdGenerator idGenerator = fixture.idGenerator();
+        long relationshipId = idGenerator.relationship();
+        long relationshipTypeId = idGenerator.relationshipType() - 1;
+
+        IndexDescriptor rtiDescriptor = findTokenIndex( fixture, EntityType.RELATIONSHIP );
+        IndexAccessor accessor = fixture.indexAccessorLookup().apply( rtiDescriptor );
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
-            for ( EntityTokenUpdate update : entityTokenUpdates )
+            indexUpdater.process( IndexEntryUpdate.change( relationshipId, rtiDescriptor, new long[]{}, new long[]{relationshipTypeId} ) );
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, 1 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportRelationshipTypeIndexInconsistencies2() throws Exception
+    {
+        // given
+        // type index and store has different type for same relationship
+        RecordStore<RelationshipRecord> relationshipStore = fixture.directStoreAccess().nativeStores().getRelationshipStore();
+        GraphStoreFixture.IdGenerator idGenerator = fixture.idGenerator();
+        RelationshipRecord relationshipRecord = new RelationshipRecord( 0 );
+
+        long relationshipId = idGenerator.relationship() - 1;
+        relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.NORMAL, NULL );
+        relationshipRecord.setType( relationshipRecord.getType() + 1 );
+        relationshipStore.updateRecord( relationshipRecord, NULL );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, 2 )
+                   .verify( RecordType.COUNTS, 2 )
+                   .andThatsAllFolks();
+    }
+
+    private IndexDescriptor findTokenIndex( GraphStoreFixture fixture, EntityType entityType )
+    {
+        Iterator<IndexDescriptor> indexDescriptors = fixture.getIndexDescriptors();
+        while ( indexDescriptors.hasNext() )
+        {
+            IndexDescriptor next = indexDescriptors.next();
+            if ( next.isTokenIndex() && next.schema().entityType() == entityType )
             {
-                writer.write( update );
+                return next;
+            }
+        }
+        throw new RuntimeException( entityType + " index missing" );
+    }
+
+
+    void writeToNodeLabelStructure( GraphStoreFixture fixture, Iterable<EntityTokenUpdate> entityTokenUpdates ) throws IOException, IndexEntryConflictException
+    {
+        IndexDescriptor tokenIndex = findTokenIndex( fixture, EntityType.NODE );
+        IndexAccessor accessor = fixture.indexAccessorLookup().apply( tokenIndex );
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        {
+            for ( EntityTokenUpdate entityTokenUpdate : entityTokenUpdates )
+            {
+                indexUpdater.process( IndexEntryUpdate
+                                              .change( entityTokenUpdate.getEntityId(), tokenIndex, entityTokenUpdate.getTokensBefore(), entityTokenUpdate.getTokensAfter() ) );
             }
         }
     }
@@ -2344,7 +2406,6 @@ public class FullCheckIntegrationTest
 
     protected Map<Setting<?>,Object> getSettings()
     {
-        settings.put( enable_scan_stores_as_token_indexes, false );
         return settings;
     }
 
