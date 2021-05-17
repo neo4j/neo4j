@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.util.Bits;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,8 +32,8 @@ import static org.mockito.Mockito.mock;
 
 public class HasLabelSubscriberTest
 {
+    private static final int THE_NODE = 13;
 
-    public static final int THE_NODE = 13;
     private final DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
 
     @Test
@@ -103,10 +104,12 @@ public class HasLabelSubscriberTest
 
         //then
         record.setData( record1 );
+        record.setNextBlock( 789 );
         subscriber.onRecord( record );
         assertFalse( subscriber.hasLabel() );
 
         record.setData( record2 );
+        record.setNextBlock( Record.NO_NEXT_BLOCK.longValue() );
         subscriber.onRecord( record );
         assertTrue( subscriber.hasLabel() );
     }

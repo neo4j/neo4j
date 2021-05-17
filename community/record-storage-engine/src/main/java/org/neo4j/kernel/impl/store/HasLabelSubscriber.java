@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.util.Bits;
 
 /**
@@ -36,6 +37,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
     private final int label;
     private final DynamicArrayStore labelStore;
     private final CursorContext cursorContext;
+    private int bitsUsedInLastByte;
 
     HasLabelSubscriber( int label, DynamicArrayStore labelStore, CursorContext cursorContext )
     {
@@ -58,34 +60,43 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
         }
         labelStore.ensureHeavy( record, cursorContext );
 
+        boolean lastRecord = Record.NO_NEXT_BLOCK.is( record.getNextBlock() );
         if ( firstRecord )
         {
             firstRecord = false;
-            return processFirstRecord( record.getData() );
+            return processFirstRecord( record.getData(), lastRecord );
         }
         else
         {
-            return processRecord( record.getData() );
+            return processRecord( record.getData(), lastRecord );
         }
     }
 
-    private boolean processFirstRecord( byte[] data )
+    private boolean processFirstRecord( byte[] data, boolean lastRecord )
     {
         assert ShortArray.typeOf( data[0] ) == ShortArray.LONG;
+        bitsUsedInLastByte = data[1];
         requiredBits = data[2];
         bits = Bits.bitsFromBytes( data, 3 );
-        int totalNumberOfBits = (data.length - 3) * 8;
-        int numberOfCompleteLabels = totalNumberOfBits / requiredBits;
-        remainingBits = totalNumberOfBits - numberOfCompleteLabels * requiredBits;
-        return findLabel( (data.length - 3) * 8 / requiredBits, true );
+        int numberOfUsedBitsInRecord = numberOfUsedBitsInRecord( (data.length - 3) * Byte.SIZE, lastRecord );
+        int numberOfCompleteLabels = numberOfUsedBitsInRecord / requiredBits;
+        remainingBits = numberOfUsedBitsInRecord - numberOfCompleteLabels * requiredBits;
+        return findLabel( numberOfCompleteLabels, true );
     }
 
-    private boolean processRecord( byte[] data )
+    private boolean processRecord( byte[] data, boolean lastRecord )
     {
-        int totalNumberOfBits = remainingBits + (data.length) * 8;
-        int numberOfCompleteLabels = totalNumberOfBits / requiredBits;
-        computeBits( data, totalNumberOfBits, numberOfCompleteLabels );
+        int numberOfBitsInRecord = remainingBits + (data.length) * Byte.SIZE;
+        int numberOfUsedBitsInRecord = numberOfUsedBitsInRecord( numberOfBitsInRecord, lastRecord );
+        int numberOfCompleteLabels = numberOfUsedBitsInRecord / requiredBits;
+        computeBits( data, numberOfBitsInRecord, numberOfCompleteLabels );
         return findLabel( numberOfCompleteLabels, false );
+    }
+
+    private int numberOfUsedBitsInRecord( int numberOfBitsInRecord, boolean lastRecord )
+    {
+        int bitsUsedInLastByteInThisRecord = lastRecord ? bitsUsedInLastByte : Byte.SIZE;
+        return numberOfBitsInRecord - (Byte.SIZE - bitsUsedInLastByteInThisRecord);
     }
 
     private void computeBits( byte[] data, int totalNumberOfBits, int numberOfCompleteLabels )
