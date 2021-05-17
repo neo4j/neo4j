@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
@@ -49,6 +50,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaStorage;
@@ -61,8 +63,12 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
@@ -83,6 +89,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -91,6 +99,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -178,7 +187,52 @@ class CheckerTestBase
 
     TokenScanWriter labelIndexWriter()
     {
-        return labelIndex.newWriter( CursorContext.NULL );
+        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
+        final IndexDescriptor[] indexDescriptors =
+                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), CursorContext.NULL );
+        // The Node Label Index should exist and be unique.
+        assertThat( indexDescriptors.length ).isEqualTo( 1 );
+        IndexDescriptor nli = indexDescriptors[0];
+        IndexProxy indexProxy;
+        try
+        {
+            indexProxy = indexingService.getIndexProxy( nli );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new RuntimeException( e );
+        }
+        IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
+        return new TokenScanWriter()
+        {
+            @Override
+            public void write( EntityTokenUpdate update )
+            {
+                try
+                {
+                    indexUpdater.process( IndexEntryUpdate.change( update.getEntityId(), nli, update.getTokensBefore(), update.getTokensAfter() ) );
+                }
+                catch ( IndexEntryConflictException e )
+                {
+                    //The TokenIndexUpdater should never throw IndexEntryConflictException.
+                    throw new RuntimeException( e );
+                }
+            }
+
+            @Override
+            public void close()
+            {
+                try
+                {
+                    indexUpdater.close();
+                }
+                catch ( IndexEntryConflictException e )
+                {
+                    //The TokenIndexUpdater should never throw IndexEntryConflictException.
+                    throw new RuntimeException( e );
+                }
+            }
+        };
     }
 
     void configure( TestDatabaseManagementServiceBuilder builder )
