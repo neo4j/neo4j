@@ -78,14 +78,14 @@ trait ExecutableQuery extends CacheabilityInfo {
   val compilerInfo: CompilerInfo // val to force eager calculation
 
   /**
-    * Label ids of the indexes used by this executable query. Precomputed to reduce execution latency
-    * for very fast queries.
-    */
+   * Returns label ids of the indexes used by this executable query, excluding lookup indexes.
+   * Precomputed to reduce execution latency for very fast queries.
+   */
   val labelIdsOfUsedIndexes: Array[Long] = compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }.toArray
 
   /**
-   * Returns the relationship type id paired with the property keys of the indexes used by this executable query. Precomputed to reduce execution latency
-   * for very fast queries.
+   * Returns the relationship type id paired with the property keys of the indexes used by this executable query, excluding lookup indexes.
+   * Precomputed to reduce execution latency for very fast queries.
    */
   val relationshipsOfUsedIndexes: Map[Long, Array[Int]] = compilerInfo.relationshipTypeIndexes().asScala
     .collect { case item: RelationshipTypeIndexUsage => (item.getRelationshipTypeId.toLong -> item.getPropertyKeyIds )}

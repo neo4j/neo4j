@@ -632,7 +632,7 @@ class QueryExecutionLocksIT
         public void acquireSharedRelationshipTypeLock( long... ids )
         {
             record( false, true, ResourceTypes.RELATIONSHIP_TYPE, ids );
-            delegate.acquireSharedLabelLock( ids );
+            delegate.acquireSharedRelationshipTypeLock( ids );
         }
 
             @Override
@@ -660,7 +660,7 @@ class QueryExecutionLocksIT
         public void releaseSharedRelationshipTypeLock( long... ids )
         {
             record( false, false, ResourceTypes.RELATIONSHIP_TYPE, ids );
-            delegate.releaseSharedRelationshipLock( ids );
+            delegate.releaseSharedRelationshipTypeLock( ids );
         }
 
         @Override
