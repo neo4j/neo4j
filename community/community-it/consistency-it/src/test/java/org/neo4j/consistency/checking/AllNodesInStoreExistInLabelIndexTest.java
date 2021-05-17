@@ -36,6 +36,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -227,6 +229,32 @@ class AllNodesInStoreExistInLabelIndexTest
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
+    }
+
+    @Test
+    void checkShouldBeSuccessfulIfNoNodeLabelIndexExist() throws ConsistencyCheckIncompleteException
+    {
+        // Remove the Node Label Index
+        try ( Transaction tx = db.beginTx() )
+        {
+            final Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+            for ( IndexDefinition index : indexes )
+            {
+                if ( index.getIndexType() == IndexType.LOOKUP && index.isNodeIndex() )
+                {
+                    index.drop();
+                }
+            }
+            tx.commit();
+        }
+
+        // Add some data to the node store
+        someData();
+        managementService.shutdown();
+
+        // Then consistency check should still be successful without NLI
+        ConsistencyCheckService.Result result = fullConsistencyCheck();
+        assertTrue( result.isSuccessful(), "Expected consistency check to succeed" );
     }
 
     private String readReport( ConsistencyCheckService.Result result ) throws IOException
