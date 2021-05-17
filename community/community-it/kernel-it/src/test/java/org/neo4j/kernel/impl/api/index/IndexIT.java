@@ -56,10 +56,8 @@ import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,14 +89,6 @@ class IndexIT extends KernelIntegrationTest
     private LabelSchemaDescriptor schema;
     private LabelSchemaDescriptor schema2;
     private ExecutorService executorService;
-
-    @Override
-    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder )
-    {
-        final TestDatabaseManagementServiceBuilder builder = super.configure( databaseManagementServiceBuilder );
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-        return builder;
-    }
 
     @BeforeEach
     void createLabelAndProperty() throws Exception

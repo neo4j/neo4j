@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-
 public class ParallelNodeLabelScanTest extends ParallelNodeLabelScanTestBase<ReadTestSupport>
 {
     @Override
     public ReadTestSupport newTestSupport()
     {
-        var testSupport = new ReadTestSupport();
-        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
-        return testSupport;
+        return new ReadTestSupport();
     }
 }
