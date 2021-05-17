@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -44,8 +46,13 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
@@ -228,7 +235,8 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         {
             // when
             cursor.setTracer( tracer );
-            read.nodeLabelScan( barId, cursor, IndexOrder.NONE );
+            read.nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
+                                IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ) );
             while ( cursor.next() )
             {
                 expectedEvents.add( OnNode( cursor.nodeReference() ) );
@@ -411,7 +419,6 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         }
     }
 
-    @Disabled( "disabled until we have token indexes on by default" )
     @Test
     void shouldTraceRelationshipTypeScan() throws KernelException
     {
@@ -426,8 +433,8 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         {
             // when
             cursor.setTracer( tracer );
-            // Change to token variant when enabling test
-            // read.relationshipTypeScan( hasId, cursor, IndexOrder.NONE );
+            read.relationshipTypeScan( getTokenReadSession( tx, EntityType.RELATIONSHIP ), cursor,
+                                       IndexQueryConstraints.unconstrained(), new TokenPredicate( hasId ) );
             while ( cursor.next() )
             {
                 expectedEvents.add( OnRelationship( cursor.relationshipReference() ) );
@@ -452,6 +459,14 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
             assertRelationshipIndexSeekTracing( tracer, cursor, session, IndexOrder.NONE, p1 );
             assertRelationshipIndexSeekTracing( tracer, cursor, session, IndexOrder.ASCENDING, p1 );
         }
+    }
+
+    private static TokenReadSession getTokenReadSession( KernelTransaction tx, EntityType entityType ) throws IndexNotFoundKernelException
+    {
+        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        IndexDescriptor index = indexes.next();
+        assertFalse( indexes.hasNext() );
+        return tx.dataRead().tokenReadSession( index );
     }
 
     private void assertRelationshipIndexSeekTracing( TestKernelReadTracer tracer,

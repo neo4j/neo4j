@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Label;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -38,6 +39,9 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -108,7 +112,8 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
 
             // when
             cursor.setTracer( tracer );
-            tx.dataRead().nodeLabelScan( barId, cursor, IndexOrder.NONE );
+            tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( barId ) );
             tracer.assertEvents( OnLabelScan( barId ) );
 
             assertTrue( cursor.next() );
@@ -304,7 +309,6 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         }
     }
 
-    @Disabled( "disabled until token indexes are on by default" )
     @Test
     void shouldTraceRelationshipTypeScan() throws KernelException
     {
@@ -322,8 +326,8 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
 
             // when
             cursor.setTracer( tracer );
-            // Change to token variant when enabling test
-            // tx.dataRead().relationshipTypeScan( rType, cursor, IndexOrder.NONE );
+            tx.dataRead().relationshipTypeScan( getTokenReadSession( tx, EntityType.RELATIONSHIP ), cursor,
+                                                IndexQueryConstraints.unconstrained(), new TokenPredicate( rType ) );
             tracer.assertEvents( OnRelationshipTypeScan( rType ) );
 
             assertTrue( cursor.next() );
@@ -333,6 +337,15 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
             tracer.assertEvents();
         }
     }
+
+    private static TokenReadSession getTokenReadSession( KernelTransaction tx, EntityType entityType ) throws IndexNotFoundKernelException
+    {
+        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        IndexDescriptor index = indexes.next();
+        assertFalse( indexes.hasNext() );
+        return tx.dataRead().tokenReadSession( index );
+    }
+
     private int[] array( int... elements )
     {
         return elements;
