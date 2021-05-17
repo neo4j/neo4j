@@ -131,13 +131,15 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param pageCacheTracer global page cache tracer
      * @param createIfNotExists should create file if it does not exists
      * @param truncateExisting should truncate file if it exists
+     * @param useDirectIo use direct io for page file operations
+     * @param preallocateStoreFiles try to preallocate store files when they grow on supported platforms
      * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
      * This information is currently used only for monitoring purposes.
      * @param ioController io controller to report page file io operations
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
-            boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, String databaseName,
+            boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, boolean preallocateStoreFiles, String databaseName,
             int faultLockStriping, IOController ioController ) throws IOException
     {
         super( pageCache.pages );
@@ -167,7 +169,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         // filled with UNMAPPED_TTE values, and then finally assigns the new outer array to the translationTable field
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
-        swapper = swapperFactory.createPageSwapper( path, filePageSize, onEviction, createIfNotExists, useDirectIo, ioController, getSwappers() );
+        swapper = swapperFactory.createPageSwapper( path, filePageSize, onEviction, createIfNotExists, useDirectIo, preallocateStoreFiles, ioController,
+                getSwappers() );
         if ( truncateExisting )
         {
             swapper.truncate();

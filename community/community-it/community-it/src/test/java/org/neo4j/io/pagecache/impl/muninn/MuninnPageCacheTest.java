@@ -1665,9 +1665,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
         @Override
         public PageSwapper createPageSwapper( Path file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
-                IOController ioController, SwapperSet swappers ) throws IOException
+                boolean preallocateStoreFiles, IOController ioController, SwapperSet swappers ) throws IOException
         {
-            return new DelegatingPageSwapper( super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers ) )
+            return new DelegatingPageSwapper(
+                    super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, useDirectIO, preallocateStoreFiles, ioController, swappers ) )
             {
                 @Override
                 public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages ) throws IOException

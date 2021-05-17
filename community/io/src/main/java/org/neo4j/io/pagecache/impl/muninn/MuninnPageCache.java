@@ -166,6 +166,7 @@ public class MuninnPageCache implements PageCache
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
     private final int faultLockStriping;
+    private final boolean preallocateStoreFiles;
     private final boolean enableEvictionThread;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
@@ -239,10 +240,11 @@ public class MuninnPageCache implements PageCache
         private final IOBufferFactory bufferFactory;
         private final int faultLockStriping;
         private final boolean enableEvictionThread;
+        private final boolean preallocateStoreFiles;
 
         private Configuration( MemoryAllocator memoryAllocator, SystemNanoClock clock, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
                 int pageSize, IOBufferFactory bufferFactory, int faultLockStriping,
-                boolean enableEvictionThread )
+                boolean enableEvictionThread, boolean preallocateStoreFiles )
         {
             this.memoryAllocator = memoryAllocator;
             this.clock = clock;
@@ -252,6 +254,7 @@ public class MuninnPageCache implements PageCache
             this.bufferFactory = bufferFactory;
             this.faultLockStriping = faultLockStriping;
             this.enableEvictionThread = enableEvictionThread;
+            this.preallocateStoreFiles = preallocateStoreFiles;
         }
 
         /**
@@ -260,7 +263,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryAllocator( MemoryAllocator memoryAllocator )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
 
         /**
@@ -269,7 +272,7 @@ public class MuninnPageCache implements PageCache
         public Configuration clock( SystemNanoClock clock )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
 
         /**
@@ -278,7 +281,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryTracker( MemoryTracker memoryTracker )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
 
         /**
@@ -287,7 +290,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageCacheTracer( PageCacheTracer pageCacheTracer )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
 
         /**
@@ -296,7 +299,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageSize( int pageSize )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
 
         /**
@@ -305,7 +308,7 @@ public class MuninnPageCache implements PageCache
         public Configuration bufferFactory( IOBufferFactory bufferFactory )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
 
         /**
@@ -314,7 +317,7 @@ public class MuninnPageCache implements PageCache
         public Configuration faultLockStriping( int faultLockStriping )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread );
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
 
         /**
@@ -323,7 +326,16 @@ public class MuninnPageCache implements PageCache
         public Configuration disableEvictionThread()
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
-                    faultLockStriping, false );
+                    faultLockStriping, false, preallocateStoreFiles );
+        }
+
+        /**
+         * Configure store files preallocation.
+         */
+        public Configuration preallocateStoreFiles( boolean preallocateStoreFiles )
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, pageSize, bufferFactory,
+                    faultLockStriping, enableEvictionThread, preallocateStoreFiles );
         }
     }
 
@@ -343,7 +355,7 @@ public class MuninnPageCache implements PageCache
     public static Configuration config( MemoryAllocator memoryAllocator )
     {
         return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL,
-                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true );
+                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true, true );
     }
 
     /**
@@ -372,6 +384,7 @@ public class MuninnPageCache implements PageCache
         this.clock = configuration.clock;
         this.faultLockStriping = configuration.faultLockStriping;
         this.enableEvictionThread = configuration.enableEvictionThread;
+        this.preallocateStoreFiles = configuration.preallocateStoreFiles;
         setFreelistHead( new AtomicInteger() );
 
         // Expose the total number of pages
@@ -497,7 +510,9 @@ public class MuninnPageCache implements PageCache
                 swapperFactory,
                 pageCacheTracer,
                 createIfNotExists,
-                truncateExisting, useDirectIO,
+                truncateExisting,
+                useDirectIO,
+                preallocateStoreFiles,
                 databaseName,
                 faultLockStriping,
                 ioController );

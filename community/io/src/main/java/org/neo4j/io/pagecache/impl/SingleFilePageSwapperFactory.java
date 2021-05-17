@@ -46,12 +46,12 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
 
     @Override
     public PageSwapper createPageSwapper( Path file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
-            IOController ioController, SwapperSet swappers ) throws IOException
+            boolean preallocateStoreFiles, IOController ioController, SwapperSet swappers ) throws IOException
     {
         if ( !createIfNotExist && !fs.fileExists( file ) )
         {
             throw new NoSuchFileException( file.toString(), null, "Cannot map non-existing file" );
         }
-        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, ioController, swappers );
+        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, preallocateStoreFiles, ioController, swappers );
     }
 }

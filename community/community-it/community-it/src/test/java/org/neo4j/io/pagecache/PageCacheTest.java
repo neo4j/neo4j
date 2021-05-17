@@ -4645,9 +4645,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             @Override
             public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
-                    IOController ioController, SwapperSet swappers ) throws IOException
+                    boolean preallocateStoreFiles, IOController ioController, SwapperSet swappers ) throws IOException
             {
-                PageSwapper swapper = super.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers );
+                PageSwapper swapper =
+                        super.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO, preallocateStoreFiles, ioController, swappers );
                 return new DelegatingPageSwapper( swapper )
                 {
                     @Override

@@ -61,7 +61,6 @@ import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
  */
 public class SingleFilePageSwapper implements PageSwapper
 {
-    private static final boolean PREALLOCATE_MAPPED_FILES = FeatureToggles.flag( SingleFilePageSwapper.class, "PREALLOCATE_MAPPED_FILES", true );
     private static final ThreadLocal<ByteBuffer> PROXY_CACHE = new ThreadLocal<>();
 
     private static ByteBuffer proxy( long buffer, int bufferLength ) throws IOException
@@ -93,6 +92,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private final FileSystemAbstraction fs;
     private final Path path;
     private final IOController ioController;
+    private final boolean preallocateStoreFiles;
     private final int filePageSize;
     private final Set<OpenOption> openOptions;
     private volatile PageEvictionCallback onEviction;
@@ -122,11 +122,12 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO,
-            IOController ioController, SwapperSet swapperSet ) throws IOException
+            boolean preallocateStoreFiles, IOController ioController, SwapperSet swapperSet ) throws IOException
     {
         this.fs = fs;
         this.path = path;
         this.ioController = ioController;
+        this.preallocateStoreFiles = preallocateStoreFiles;
 
         var options = new ArrayList<>( WRITE_OPTIONS );
         if ( useDirectIO )
@@ -743,7 +744,7 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public boolean canAllocate()
     {
-        return PREALLOCATE_MAPPED_FILES
+        return preallocateStoreFiles
                 && NativeAccessProvider.getNativeAccess().isAvailable()
                 // this type of operation requires the underlying channel to provide a file descriptor
                 && channel.getFileDescriptor() != INVALID_FILE_DESCRIPTOR;

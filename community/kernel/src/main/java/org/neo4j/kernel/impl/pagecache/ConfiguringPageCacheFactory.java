@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.pagecache;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,6 +39,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_store_files;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.memory.MemoryGroup.PAGE_CACHE;
@@ -96,6 +98,7 @@ public class ConfiguringPageCacheFactory
         MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
                 .memoryTracker( memoryTracker )
                 .bufferFactory( bufferFactory )
+                .preallocateStoreFiles( config.get( preallocate_store_files ) )
                 .clock( clock )
                 .pageCacheTracer( pageCacheTracer );
         return new MuninnPageCache( swapperFactory, scheduler, configuration );
