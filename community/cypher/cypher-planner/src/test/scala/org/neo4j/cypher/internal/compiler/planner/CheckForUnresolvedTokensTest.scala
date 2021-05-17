@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
@@ -28,6 +30,12 @@ import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.InputPosition
@@ -36,6 +44,10 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.symbols.CTDate
+import org.neo4j.cypher.internal.util.symbols.CTDuration
+import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.DurationFields
 import org.neo4j.values.storable.PointFields
@@ -105,7 +117,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("warn when missing node property key name") {
     //given
-    val semanticTable = new SemanticTable
+    val semanticTable = new SemanticTable().addNode(Variable("a")(InputPosition(16, 1, 17)))
 
     //when
     val ast = parse("MATCH (a) WHERE a.prop = 42 RETURN a")
@@ -117,8 +129,8 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("don't warn when node property key name is there") {
     //given
-    val semanticTable = new SemanticTable
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+    val semanticTable = new SemanticTable().addNode(Variable("a")(InputPosition(7, 1, 8)))
+    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
 
     //when
     val ast = parse("MATCH (a {prop: 42}) RETURN a")
@@ -129,7 +141,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("warn when missing relationship property key name") {
     //given
-    val semanticTable = new SemanticTable
+    val semanticTable = new SemanticTable().addRelationship(Variable("r")(InputPosition(23, 1, 24)))
 
     //when
     val ast = parse("MATCH ()-[r]->() WHERE r.prop = 42 RETURN r")
@@ -141,11 +153,25 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("don't warn when relationship property key name is there") {
     //given
-    val semanticTable = new SemanticTable
+    val semanticTable = new SemanticTable().addRelationship(Variable("r")(InputPosition(10, 1, 11)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
 
     //when
     val ast = parse("MATCH ()-[r {prop: 42}]->() RETURN r")
+
+    //then
+    checkForTokens(ast, semanticTable) shouldBe empty
+  }
+
+  test("don't warn for map keys") {
+    //given
+    val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
+    val semanticTypes = emptyTypeMap.updated(Variable("map")(InputPosition(32, 1, 33)), ExpressionTypeInfo(CTMap))
+    val semanticTable = new SemanticTable(types = semanticTypes)
+    semanticTable.resolvedPropertyKeyNames.put("key", PropertyKeyId(0))
+
+    //when
+    val ast = parse("WITH {key: 'val'} as map RETURN map.key")
 
     //then
     checkForTokens(ast, semanticTable) shouldBe empty
@@ -164,7 +190,9 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("don't warn when using point properties") {
     //given
-    val semanticTable = new SemanticTable
+    val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
+    val semanticTypes = emptyTypeMap.updated(functionAt("point", 16), ExpressionTypeInfo(CTPoint))
+    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(22, 1, 23)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     PointFields.values().foreach { property =>
@@ -178,7 +206,9 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("don't warn when using temporal properties") {
     //given
-    val semanticTable = new SemanticTable
+    val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
+    val semanticTypes = emptyTypeMap.updated(functionAt("date", 16), ExpressionTypeInfo(CTDate))
+    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(21, 1, 22)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     TemporalFields.allFields().asScala.foreach { property =>
@@ -192,7 +222,9 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("don't warn when using duration properties") {
     //given
-    val semanticTable = new SemanticTable
+    val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
+    val semanticTypes = emptyTypeMap.updated(functionAt("duration", 16), ExpressionTypeInfo(CTDuration))
+    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(25, 1, 26)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     DurationFields.values().foreach { property =>
@@ -206,7 +238,9 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   test("don't warn when using special property keys, independent of case") {
     //given
-    val semanticTable = new SemanticTable
+    val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
+    val semanticTypes = emptyTypeMap.updated(propertyAt(16), ExpressionTypeInfo(CTDuration))
+    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(16, 1, 17)))
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     Seq("X", "yEaRs", "DAY", "epochMillis").foreach { property =>
@@ -236,6 +270,17 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
   private def parse(query: String): Query = parser.parse(query, Neo4jCypherExceptionFactory(query, None)) match {
     case q: Query => q
     case _ => fail("Must be a Query")
+  }
+
+  private def functionAt(name: String, offset: Int): FunctionInvocation = {
+     val functionPos = InputPosition(offset, 1, offset + 1)
+     FunctionInvocation(FunctionName(name)(functionPos), propertyAt(offset))(functionPos)
+  }
+
+  private def propertyAt(offset: Int): Property = {
+    val variablePos = InputPosition(offset, 1, offset + 1)
+    val propertyPos = InputPosition(offset + 2, 1, offset + 3)
+    Property(Variable("a")(variablePos), PropertyKeyName("prop")(propertyPos))(propertyPos)
   }
 
 }

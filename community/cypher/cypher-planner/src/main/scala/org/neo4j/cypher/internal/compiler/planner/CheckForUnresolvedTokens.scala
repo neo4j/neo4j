@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
 import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -38,11 +39,6 @@ import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.values.storable.DurationFields
-import org.neo4j.values.storable.PointFields
-import org.neo4j.values.storable.TemporalValue.TemporalFields
-
-import scala.collection.JavaConverters.asScalaSetConverter
 
 case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Condition
 
@@ -51,17 +47,13 @@ case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Cond
  */
 case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  private val specialPropertyKey: Set[String] =
-    (TemporalFields.allFields().asScala ++
-      DurationFields.values().map(_.propertyKey) ++
-      PointFields.values().map(_.propertyKey)).map(_.toLowerCase).toSet
-
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
     if(value.query.readOnly) {
       val table = value.semanticTable()
       def isEmptyLabel(label: String) = !table.resolvedLabelNames.contains(label)
       def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
       def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
+      def isNodeOrRelationship(variable: Expression) = table.isNode(variable) || table.isRelationship(variable)
 
       val notifications = value.statement().treeFold(Seq.empty[InternalNotification]) {
         case label@LabelName(name) if isEmptyLabel(name) => acc =>
@@ -70,7 +62,8 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
         case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
           TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
 
-        case Property(_, prop@PropertyKeyName(name)) if !specialPropertyKey(name.toLowerCase) && isEmptyPropertyName(name) => acc =>
+        case Property(variable, prop@PropertyKeyName(name))
+          if isNodeOrRelationship(variable) && isEmptyPropertyName(name) => acc =>
           TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
       }
 
