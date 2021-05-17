@@ -24,21 +24,18 @@ import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /**
  * Normalize the AST into a form easier for the planner to work with.
  */
-case class AstRewriting(innerVariableNamer: InnerVariableNamer,
-                        parameterTypeMapping : Map[String, CypherType] = Map.empty
+case class AstRewriting(parameterTypeMapping : Map[String, CypherType] = Map.empty
 ) extends Phase[BaseContext, BaseState, BaseState] {
 
-  private val astRewriter = new ASTRewriter(innerVariableNamer)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    val rewrittenStatement = astRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory, context.allNameGenerators)
+    val rewrittenStatement = ASTRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory, context.allNameGenerators)
     in.withStatement(rewrittenStatement)
   }
 

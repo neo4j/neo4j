@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
@@ -66,9 +65,8 @@ object ExpressionConverters {
    */
   def asQueryGraph(exp: PatternExpression,
                    availableSymbols: Set[String],
-                   innerVariableNamer: InnerVariableNamer,
                    allNameGenerators: AllNameGenerators): QueryGraph = {
-    val addUniquenessPredicates = AddUniquenessPredicates(innerVariableNamer)
+    val addUniquenessPredicates = AddUniquenessPredicates(allNameGenerators)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
@@ -119,9 +117,8 @@ object ExpressionConverters {
    */
   def asQueryGraph(exp: PatternComprehension,
                    availableSymbols: Set[String],
-                   innerVariableNamer: InnerVariableNamer,
                    allNameGenerators: AllNameGenerators): QueryGraph = {
-    val addUniquenessPredicates = AddUniquenessPredicates(innerVariableNamer)
+    val addUniquenessPredicates = AddUniquenessPredicates(allNameGenerators)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element

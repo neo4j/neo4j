@@ -51,8 +51,7 @@ case object replaceLiteralDynamicPropertyLookups extends Rewriter with Step with
 
   override def apply(v: AnyRef): AnyRef = instance(v)
 
-  override def getRewriter(innerVariableNamer: InnerVariableNamer,
-                           semanticState: SemanticState,
+  override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
                            allNameGenerators: AllNameGenerators): Rewriter = instance

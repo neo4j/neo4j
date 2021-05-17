@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.exceptions.InternalException
 
@@ -57,8 +57,8 @@ trait QueryHorizon {
      */
   protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
-    val patternComprehensions = filtered.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
-    val patternExpressions = filtered.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
+    val patternComprehensions = filtered.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
+    val patternExpressions = filtered.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
     val qgs = patternComprehensions ++ patternExpressions :+ getQueryGraphFromDependingExpressions
     qgs.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
   }

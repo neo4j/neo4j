@@ -85,8 +85,6 @@ import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Cardinality
@@ -112,7 +110,6 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val pushdownPropertyReads: Boolean = true
   val deduplicateNames: Boolean = true
-  val innerVariableNamer: InnerVariableNamer = new GeneratingNamer
 
   val configurationThatForcesCompacting: CypherPlannerConfiguration = {
     val builder = Config.newBuilder()
@@ -164,12 +161,11 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   }
 
   def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
-               innerVariableNamer: InnerVariableNamer = innerVariableNamer,
                deduplicateNames: Boolean = deduplicateNames,
                cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults(),
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
-    val p1 = parsing(ParsingConfig(innerVariableNamer, literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
+    val p1 = parsing(ParsingConfig(literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
       planPipeLine(pushdownPropertyReads = pushdownPropertyReads)
     if (deduplicateNames) {
@@ -186,7 +182,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val parser = new CypherParser
   val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
   val deduplicateNames: Boolean = LogicalPlanningTestSupport2.deduplicateNames
-  val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
   var queryGraphSolver: QueryGraphSolver = QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
   val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
 
@@ -196,7 +191,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def pipeLine(deduplicateNames: Boolean = deduplicateNames
               ): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
-    pushdownPropertyReads, innerVariableNamer, deduplicateNames, cypherCompilerConfig
+    pushdownPropertyReads, deduplicateNames, cypherCompilerConfig
   )
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
@@ -368,7 +363,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         notificationLogger = devNullLogger,
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
-        innerVariableNamer = innerVariableNamer,
         idGen = idGen,
         executionModel = ExecutionModel.default,
         debugOptions = CypherDebugOptions.default,
@@ -393,7 +387,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         notificationLogger = devNullLogger,
         costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
-        innerVariableNamer = innerVariableNamer,
         idGen = idGen,
         executionModel = ExecutionModel.default,
         debugOptions = CypherDebugOptions.default,

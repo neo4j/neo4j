@@ -122,8 +122,7 @@ object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewr
     ProjectionClausesHaveSemanticInfo // It can invalidate this condition by rewriting things inside WITH/RETURN.
   )
 
-  override def getRewriter(innerVariableNamer: InnerVariableNamer,
-                           semanticState: SemanticState,
+  override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
                            allNameGenerators: AllNameGenerators): Rewriter = normalizeExistsPatternExpressions(semanticState)

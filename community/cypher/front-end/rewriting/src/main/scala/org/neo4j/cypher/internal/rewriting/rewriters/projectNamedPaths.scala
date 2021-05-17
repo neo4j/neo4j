@@ -234,8 +234,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 
-  override def getRewriter(innerVariableNamer: InnerVariableNamer,
-                           semanticState: SemanticState,
+  override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
                            allNameGenerators: AllNameGenerators): Rewriter = instance

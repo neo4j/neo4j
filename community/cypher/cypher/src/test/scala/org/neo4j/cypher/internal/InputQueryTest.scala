@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InputQueryTest extends CypherFunSuite {
@@ -39,7 +38,7 @@ class InputQueryTest extends CypherFunSuite {
       TestExecutorCaffeineCacheFactory)
 
   private def parser =
-    CompilationPhases.parsing(ParsingConfig(new GeneratingNamer))
+    CompilationPhases.parsing(ParsingConfig())
 
   private def toPreParsedQuery(queryString: String) =
     preParser.preParseQuery(queryString)

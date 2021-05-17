@@ -51,8 +51,7 @@ case class nameAllPatternElements(allNameGenerators: AllNameGenerators) extends 
 }
 
 object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFactory {
-  override def getRewriter(innerVariableNamer: InnerVariableNamer,
-                           semanticState: SemanticState,
+  override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
                            allNameGenerators: AllNameGenerators): Rewriter = nameAllPatternElements(allNameGenerators)

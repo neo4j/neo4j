@@ -94,7 +94,6 @@ case object QueryPlanner
       csvBufferSize = context.config.csvBufferSize,
       costComparisonListener = costComparisonListener,
       planningAttributes = planningAttributes,
-      innerVariableNamer = context.innerVariableNamer,
       idGen = context.logicalPlanIdGen,
       executionModel = context.executionModel,
       debugOptions = context.debugOptions,

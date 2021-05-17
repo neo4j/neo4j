@@ -47,8 +47,7 @@ case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
  */
 case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
-  override def getRewriter(innerVariableNamer: InnerVariableNamer,
-                           semanticState: SemanticState,
+  override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
                            allNameGenerators: AllNameGenerators): Rewriter = instance

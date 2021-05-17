@@ -162,7 +162,6 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       notificationLogger = devNullLogger,
       costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
-      innerVariableNamer = innerVariableNamer,
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,

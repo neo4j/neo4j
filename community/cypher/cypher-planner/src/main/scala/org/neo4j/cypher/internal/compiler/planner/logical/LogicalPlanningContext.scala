@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -61,7 +60,6 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
                                   costComparisonListener: CostComparisonListener,
                                   planningAttributes: PlanningAttributes,
-                                  innerVariableNamer: InnerVariableNamer,
                                   /*
                                    * A set of all properties over which aggregation is performed,
                                    * where we potentially could use an IndexScan.

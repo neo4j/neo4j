@@ -47,7 +47,6 @@ import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
-import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.AllNameGenerators
@@ -132,7 +131,6 @@ case class FabricFrontEnd(
       )
 
     private val parsingConfig = CompilationPhases.ParsingConfig(
-      innerVariableNamer = new GeneratingNamer,
       compatibilityMode = compatibilityMode,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       semanticFeatures = semanticFeatures,

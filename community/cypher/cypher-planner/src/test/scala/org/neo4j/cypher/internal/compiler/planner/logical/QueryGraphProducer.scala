@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
@@ -87,7 +88,7 @@ trait QueryGraphProducer extends MockitoSugar {
 
     val allNameGenerators = new AllNameGenerators()
     // if you ever want to have parameters in here, fix the map
-    val firstRewriteStep = astRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory, allNameGenerators)
+    val firstRewriteStep = ASTRewriter.rewrite(cleanedStatement, semanticState, Map.empty, exceptionFactory, allNameGenerators)
     val state = LogicalPlanState(query, None, IDPPlannerName, newStubbedPlanningAttributes, Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create(logicalPlanIdGen = idGen, planContext = new TestSignatureResolvingPlanContext(procLookup, fcnLookup))
     val output = (RewriteProcedureCalls andThen SemanticAnalysis(warn = false) andThen Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen collapseMultipleInPredicates).transform(state, context)
