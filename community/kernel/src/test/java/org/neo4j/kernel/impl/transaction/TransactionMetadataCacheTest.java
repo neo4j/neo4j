@@ -50,15 +50,13 @@ class TransactionMetadataCacheTest
         final TransactionMetadataCache cache = new TransactionMetadataCache();
         final LogPosition position = new LogPosition( 3, 4 );
         final int txId = 42;
-        final int checksum = 2;
-        final long timestamp = System.currentTimeMillis();
 
         // when
-        cache.cacheTransactionMetadata( txId, position, checksum, timestamp );
+        cache.cacheTransactionMetadata( txId, position );
         final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( txId );
 
         // then
-        assertEquals( new TransactionMetadataCache.TransactionMetadata( position, checksum, timestamp ), metadata );
+        assertEquals( new TransactionMetadataCache.TransactionMetadata( position ), metadata );
     }
 
     @Test
@@ -68,10 +66,8 @@ class TransactionMetadataCacheTest
         final TransactionMetadataCache cache = new TransactionMetadataCache();
         final LogPosition position = new LogPosition( 3, -1 );
         final int txId = 42;
-        final int checksum = 2;
-        final long timestamp = System.currentTimeMillis();
 
-        var e = assertThrows( RuntimeException.class, () -> cache.cacheTransactionMetadata( txId, position, checksum, timestamp ) );
+        var e = assertThrows( RuntimeException.class, () -> cache.cacheTransactionMetadata( txId, position ) );
         assertEquals( "StartEntry.position is " + position, e.getMessage() );
     }
 
@@ -82,11 +78,9 @@ class TransactionMetadataCacheTest
         final TransactionMetadataCache cache = new TransactionMetadataCache();
         final LogPosition position = new LogPosition( 3, 4 );
         final int txId = 42;
-        final int checksum = 2;
-        final long timestamp = System.currentTimeMillis();
 
         // when
-        cache.cacheTransactionMetadata( txId, position, checksum, timestamp );
+        cache.cacheTransactionMetadata( txId, position );
         cache.clear();
         final TransactionMetadataCache.TransactionMetadata metadata = cache.getTransactionMetadata( txId );
 

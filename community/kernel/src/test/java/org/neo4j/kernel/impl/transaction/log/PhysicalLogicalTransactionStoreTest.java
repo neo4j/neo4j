@@ -260,7 +260,7 @@ class PhysicalLogicalTransactionStoreTest
         when( logFile.getReader( any( LogPosition.class) ) ).thenThrow( new NoSuchFileException( "mock" ) );
         // Which is nevertheless in the metadata cache
         TransactionMetadataCache cache = new TransactionMetadataCache();
-        cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ), 100, System.currentTimeMillis() );
+        cache.cacheTransactionMetadata( 10, new LogPosition( 2, 130 ) );
 
         LifeSupport life = new LifeSupport();
 

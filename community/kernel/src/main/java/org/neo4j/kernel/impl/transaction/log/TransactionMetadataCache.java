@@ -25,51 +25,42 @@ import org.neo4j.internal.helpers.collection.LruCache;
 
 public class TransactionMetadataCache
 {
-    private static final int DEFAULT_TRANSACTION_CACHE_SIZE = 100_000;
-    private final LruCache<Long /*tx id*/,TransactionMetadata> txStartPositionCache;
+    private static final int DEFAULT_TRANSACTION_CACHE_SIZE = 10_000;
+    private final LruCache<Long,TransactionMetadata> txIdMetadataCache;
 
     public TransactionMetadataCache()
     {
-        this( DEFAULT_TRANSACTION_CACHE_SIZE );
-    }
-
-    public TransactionMetadataCache( int transactionCacheSize )
-    {
-        this.txStartPositionCache = new LruCache<>( "Tx start position cache", transactionCacheSize );
+        this.txIdMetadataCache = new LruCache<>( "Tx start position cache", DEFAULT_TRANSACTION_CACHE_SIZE );
     }
 
     public void clear()
     {
-        txStartPositionCache.clear();
+        txIdMetadataCache.clear();
     }
 
     public TransactionMetadata getTransactionMetadata( long txId )
     {
-        return txStartPositionCache.get( txId );
+        return txIdMetadataCache.get( txId );
     }
 
-    public void cacheTransactionMetadata( long txId, LogPosition position, int checksum, long timeWritten )
+    public void cacheTransactionMetadata( long txId, LogPosition position )
     {
         if ( position.getByteOffset() == -1 )
         {
             throw new RuntimeException( "StartEntry.position is " + position );
         }
 
-        TransactionMetadata result = new TransactionMetadata( position, checksum, timeWritten );
-        txStartPositionCache.put( txId, result );
+        TransactionMetadata result = new TransactionMetadata( position );
+        txIdMetadataCache.put( txId, result );
     }
 
     public static class TransactionMetadata
     {
         private final LogPosition startPosition;
-        private final int checksum;
-        private final long timeWritten;
 
-        public TransactionMetadata( LogPosition startPosition, int checksum, long timeWritten )
+        public TransactionMetadata( LogPosition startPosition )
         {
             this.startPosition = startPosition;
-            this.checksum = checksum;
-            this.timeWritten = timeWritten;
         }
 
         public LogPosition getStartPosition()
@@ -77,23 +68,11 @@ public class TransactionMetadataCache
             return startPosition;
         }
 
-        public int getChecksum()
-        {
-            return checksum;
-        }
-
-        public long getTimeWritten()
-        {
-            return timeWritten;
-        }
-
         @Override
         public String toString()
         {
             return "TransactionMetadata{" +
                    ", startPosition=" + startPosition +
-                   ", checksum=" + checksum +
-                   ", timeWritten=" + timeWritten +
                    '}';
         }
 
@@ -109,18 +88,13 @@ public class TransactionMetadataCache
                 return false;
             }
             TransactionMetadata that = (TransactionMetadata) o;
-            return checksum == that.checksum &&
-                   timeWritten == that.timeWritten &&
-                   Objects.equals( startPosition, that.startPosition );
+            return Objects.equals( startPosition, that.startPosition );
         }
 
         @Override
         public int hashCode()
         {
-            int result = startPosition.hashCode();
-            result = 31 * result + checksum;
-            result = 31 * result + (int) (timeWritten ^ (timeWritten >>> 32));
-            return result;
+            return startPosition.hashCode();
         }
     }
 }

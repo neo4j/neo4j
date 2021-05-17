@@ -92,7 +92,8 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             // ask LogFile
             TransactionPositionLocator transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
             logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
-            LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
+            LogPosition position = transactionPositionLocator.getLogPosition();
+            transactionMetadataCache.cacheTransactionMetadata( transactionIdToStartFrom, position );
             return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
         }
         catch ( NoSuchFileException e )
@@ -109,9 +110,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     {
         private final long startTransactionId;
         private final LogEntryReader logEntryReader;
-        private LogEntryStart startEntryForFoundTransaction;
-        private long commitTimestamp;
-        private int commitChecksum;
+        private LogEntryStart transactionStartEntry;
 
         TransactionPositionLocator( long startTransactionId, LogEntryReader logEntryReader )
         {
@@ -135,9 +134,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                     LogEntryCommit commit = (LogEntryCommit) logEntry;
                     if ( commit.getTxId() == startTransactionId )
                     {
-                        startEntryForFoundTransaction = startEntry;
-                        commitTimestamp = commit.getTimeWritten();
-                        commitChecksum = commit.getChecksum();
+                        transactionStartEntry = startEntry;
                         return false;
                     }
                     break;
@@ -148,19 +145,13 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             return true;
         }
 
-        LogPosition getAndCacheFoundLogPosition( TransactionMetadataCache transactionMetadataCache ) throws NoSuchTransactionException
+        LogPosition getLogPosition() throws NoSuchTransactionException
         {
-            if ( startEntryForFoundTransaction == null )
+            if ( transactionStartEntry == null )
             {
                 throw new NoSuchTransactionException( startTransactionId );
             }
-            transactionMetadataCache.cacheTransactionMetadata(
-                    startTransactionId,
-                    startEntryForFoundTransaction.getStartPosition(),
-                    commitChecksum,
-                    commitTimestamp
-            );
-            return startEntryForFoundTransaction.getStartPosition();
+            return transactionStartEntry.getStartPosition();
         }
     }
 

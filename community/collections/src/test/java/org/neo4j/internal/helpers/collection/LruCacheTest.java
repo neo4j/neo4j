@@ -112,69 +112,6 @@ class LruCacheTest
     }
 
     @Test
-    void shouldResizeTheCache()
-    {
-        final Set<String> cleaned = new HashSet<>();
-        LruCache<Integer, String> cache = new LruCache<>( "TestCache", 3 )
-        {
-            @Override
-            public void elementCleaned( String element )
-            {
-                cleaned.add( element );
-            }
-        };
-
-        String s1 = "1";
-        Integer key1 = 1;
-        String s2 = "2";
-        Integer key2 = 2;
-        String s3 = "3";
-        Integer key3 = 3;
-        String s4 = "4";
-        Integer key4 = 4;
-        String s5 = "5";
-        Integer key5 = 5;
-
-        cache.put( key1, s1 );
-        cache.put( key2, s2 );
-        cache.put( key3, s3 );
-        cache.get( key2 );
-
-        assertEquals( Set.of( new Integer[]{key1, key2, key3} ), cache.keySet() );
-        assertEquals( cache.maxSize(), cache.size() );
-
-        cache.resize( 5 );
-
-        assertEquals( 5, cache.maxSize() );
-        assertEquals( 3, cache.size() );
-        assertTrue( cleaned.isEmpty() );
-
-        cache.put( key4, s4 );
-
-        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4} ), cache.keySet() );
-
-        cache.put( key5, s5 );
-
-        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4, key5} ), cache.keySet() );
-        assertEquals( cache.maxSize(), cache.size() );
-
-        cache.resize( 4 );
-
-        assertEquals( Set.of( new Integer[]{key2, key3, key4, key5} ), cache.keySet() );
-        assertEquals( cache.maxSize(), cache.size() );
-        assertEquals( Set.of( new String[]{s1} ), cleaned );
-
-        cleaned.clear();
-
-        cache.resize( 3 );
-
-        assertEquals( Set.of( new Integer[]{key2, key4, key5} ), cache.keySet() );
-        assertEquals( 3, cache.maxSize() );
-        assertEquals( 3, cache.size() );
-        assertEquals( Set.of( new String[]{s3} ), cleaned );
-    }
-
-    @Test
     void shouldClear()
     {
         final Set<String> cleaned = new HashSet<>();
@@ -206,18 +143,13 @@ class LruCacheTest
         assertEquals( Set.of( new Integer[]{key1, key2, key3} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
 
-        cache.resize( 5 );
-
-        assertEquals( 5, cache.maxSize() );
-        assertEquals( 3, cache.size() );
-
         cache.put( key4, s4 );
 
-        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4} ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key2, key3, key4} ), cache.keySet() );
 
         cache.put( key5, s5 );
 
-        assertEquals( Set.of( new Integer[]{key1, key2, key3, key4, key5} ), cache.keySet() );
+        assertEquals( Set.of( new Integer[]{key2, key4, key5} ), cache.keySet() );
         assertEquals( cache.maxSize(), cache.size() );
 
         cache.clear( );

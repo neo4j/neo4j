@@ -23,6 +23,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.util.VisibleForTesting;
+
 /**
  * Simple implementation of Least-recently-used cache.
  * <p>
@@ -32,7 +34,7 @@ import java.util.Set;
 public class LruCache<K, E>
 {
     private final String name;
-    private int maxSize;
+    private final int maxSize;
 
     private final Map<K, E> cache = new LinkedHashMap<>( 500, 0.75f, true )
     {
@@ -127,47 +129,8 @@ public class LruCache<K, E>
         return cache.keySet();
     }
 
-    /**
-     * Changes the max size of the cache. If <CODE>newMaxSize</CODE> is
-     * greater then <CODE>maxSize()</CODE> next invoke to <CODE>maxSize()</CODE>
-     * will return <CODE>newMaxSize</CODE> and the entries in cache will not
-     * be modified.
-     * <p>
-     * If <CODE>newMaxSize</CODE> is less then <CODE>size()</CODE>
-     * the cache will shrink itself removing least recently used element until
-     * <CODE>size()</CODE> equals <CODE>newMaxSize</CODE>. For each element
-     * removed the {@link #elementCleaned} method is invoked.
-     * <p>
-     * If <CODE>newMaxSize</CODE> is less then <CODE>1</CODE> an
-     * {@link IllegalArgumentException} is thrown.
-     *
-     * @param newMaxSize the new maximum size of the cache
-     */
-    public synchronized void resize( int newMaxSize )
-    {
-        if ( newMaxSize < 1 )
-        {
-            throw new IllegalArgumentException( "newMaxSize=" + newMaxSize );
-        }
-
-        if ( newMaxSize >= size() )
-        {
-            maxSize = newMaxSize;
-        }
-        else
-        {
-            maxSize = newMaxSize;
-            java.util.Iterator<Map.Entry<K, E>> itr = cache.entrySet().iterator();
-            while ( itr.hasNext() && cache.size() > maxSize )
-            {
-                E element = itr.next().getValue();
-                itr.remove();
-                elementCleaned( element );
-            }
-        }
-    }
-
-    public void elementCleaned( E element )
+    @VisibleForTesting
+    protected void elementCleaned( E element )
     {
     }
 }

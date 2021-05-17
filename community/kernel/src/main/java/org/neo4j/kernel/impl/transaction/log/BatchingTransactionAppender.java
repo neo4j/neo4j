@@ -177,7 +177,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             var logPositionAfterCommit = transactionLogWriter.getCurrentPosition();
             logAppendEvent.appendToLogFile( logPositionBeforeCommit, logPositionAfterCommit );
 
-            transactionMetadataCache.cacheTransactionMetadata( transactionId, logPositionBeforeCommit, checksum, transaction.getTimeCommitted() );
+            transactionMetadataCache.cacheTransactionMetadata( transactionId, logPositionBeforeCommit );
 
             return new TransactionCommitment( transactionId, checksum, transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
         }

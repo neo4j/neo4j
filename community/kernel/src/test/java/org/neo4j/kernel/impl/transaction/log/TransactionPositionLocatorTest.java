@@ -42,7 +42,6 @@ class TransactionPositionLocatorTest
 {
     private final LogEntryReader logEntryReader = mock( LogEntryReader.class );
     private final ReadableClosablePositionAwareChecksumChannel channel = mock( ReadableClosablePositionAwareChecksumChannel.class );
-    private final TransactionMetadataCache metadataCache = mock( TransactionMetadataCache.class );
 
     private final long txId = 42;
     private final LogPosition startPosition = new LogPosition( 1, 128 );
@@ -62,17 +61,11 @@ class TransactionPositionLocatorTest
 
         // when
         final boolean result = locator.visit( channel );
-        final LogPosition position = locator.getAndCacheFoundLogPosition( metadataCache );
+        final LogPosition position = locator.getLogPosition();
 
         // then
         assertFalse( result );
         assertEquals( startPosition, position );
-        verify( metadataCache ).cacheTransactionMetadata(
-                txId,
-                startPosition,
-                commit.getChecksum(),
-                commit.getTimeWritten()
-        );
     }
 
     @Test
@@ -90,7 +83,7 @@ class TransactionPositionLocatorTest
         // then
         assertTrue( result );
         NoSuchTransactionException exception =
-                assertThrows( NoSuchTransactionException.class, () -> locator.getAndCacheFoundLogPosition( metadataCache ) );
+                assertThrows( NoSuchTransactionException.class, locator::getLogPosition );
         assertEquals( "Unable to find transaction " + txId + " in any of my logical logs", exception.getMessage() );
     }
 }
