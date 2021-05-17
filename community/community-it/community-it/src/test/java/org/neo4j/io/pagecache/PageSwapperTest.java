@@ -467,6 +467,17 @@ public abstract class PageSwapperTest
     }
 
     @Test
+    void swapperCantPreallocateWhenConfigured() throws IOException
+    {
+        Path file = file( "notPreallocatedFile" );
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        try ( PageSwapper swapper = createSwapper( factory, file, cachePageSize(), NO_CALLBACK, true, false, false ) )
+        {
+            assertFalse( swapper.canAllocate() );
+        }
+    }
+
+    @Test
     void mustRunEvictionCallbackOnEviction() throws Exception
     {
         final AtomicLong callbackFilePageId = new AtomicLong();
@@ -1112,8 +1123,7 @@ public abstract class PageSwapperTest
             int filePageSize,
             PageEvictionCallback callback,
             boolean createIfNotExist,
-            boolean preallocateStoreFiles,
-            boolean useDirectIO ) throws IOException
+            boolean useDirectIO, boolean preallocateStoreFiles ) throws IOException
     {
         return createSwapper( factory, path, filePageSize, callback, createIfNotExist, useDirectIO, preallocateStoreFiles, DISABLED );
     }

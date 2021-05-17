@@ -330,7 +330,7 @@ public class MuninnPageCache implements PageCache
         }
 
         /**
-         * Configure store files preallocation.
+         * Configure store files pre-allocation.
          */
         public Configuration preallocateStoreFiles( boolean preallocateStoreFiles )
         {
