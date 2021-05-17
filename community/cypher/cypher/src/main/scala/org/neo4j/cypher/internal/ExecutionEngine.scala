@@ -282,12 +282,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           inputQuery.options.queryOptions.replan,
           inputQuery.description)
 
-        val lockedLabels = schemaHelper.lockEntities(schemaToken, executableQuery, tc)
+        val lockedEntities = schemaHelper.lockEntities(schemaToken, executableQuery, tc)
 
-        if (lockedLabels.successful) {
+        if (lockedEntities.successful) {
           return executableQuery
         }
-        forceReplan = lockedLabels.needsReplan
+        forceReplan = lockedEntities.needsReplan
 
         // if the schema has changed while taking all locks we need to try again.
         n += 1

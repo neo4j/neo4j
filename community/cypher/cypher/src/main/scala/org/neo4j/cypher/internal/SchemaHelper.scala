@@ -46,7 +46,7 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
 
   def lockEntities(schemaTokenBefore: SchemaToken,
                    executionPlan: ExecutableQuery,
-                   tc: TransactionalContext): LockedLabels = {
+                   tc: TransactionalContext): LockedEntities = {
     // Lock all used indexes
     val labelIds: Array[Long] = executionPlan.labelIdsOfUsedIndexes
     val relationshipIds = executionPlan.relationshipsOfUsedIndexes
@@ -62,10 +62,10 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
       // if the schema has changed while taking all locks OR if the lookup index has been dropped we release locks and return false
       if (schemaTokenBefore != schemaTokenAfter || indexDropped) {
         releaseLocks(tc, labelIds, relationshipIds.keys.toArray, lookupTypes)
-        return LockedLabels(successful = false, needsReplan = indexDropped)
+        return LockedEntities(successful = false, needsReplan = indexDropped)
       }
     }
-    LockedLabels(successful = true, needsReplan = false)
+    LockedEntities(successful = true, needsReplan = false)
   }
 
   private def acquireLocks(tc: TransactionalContext, labelIds: Array[Long], relationshipIds: Array[Long], lookupTypes: Seq[EntityType]): Unit = {
@@ -112,5 +112,5 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
       .schemaRead()
       .indexForSchemaNonTransactional(SchemaDescriptor.forLabel(label.toInt, properties: _*)).hasNext
 
-  case class LockedLabels(successful: Boolean, needsReplan: Boolean)
+  case class LockedEntities(successful: Boolean, needsReplan: Boolean)
 }
