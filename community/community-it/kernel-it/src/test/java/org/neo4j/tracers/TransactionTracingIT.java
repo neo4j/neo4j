@@ -19,8 +19,11 @@
  */
 package org.neo4j.tracers;
 
-import org.junit.jupiter.api.Disabled;
+import org.assertj.core.api.SoftAssertions;
+import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
+import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -33,21 +36,14 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
-import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-@DbmsExtension( configurationCallback = "configure" )
+@ExtendWith( SoftAssertionsExtension.class )
+@DbmsExtension
 class TransactionTracingIT
 {
     private static final int ENTITY_COUNT = 1_000;
@@ -57,11 +53,8 @@ class TransactionTracingIT
     @Inject
     private DatabaseManagementService managementService;
 
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
+    @InjectSoftAssertions
+    private SoftAssertions softly;
 
     @Test
     void tracePageCacheAccessOnAllNodesAccess()
@@ -80,11 +73,11 @@ class TransactionTracingIT
             var cursorContext = transaction.kernelTransaction().cursorContext();
             assertZeroCursor( cursorContext );
 
-            assertEquals( ENTITY_COUNT, Iterables.count( transaction.getAllNodes() ) );
+            softly.assertThat( Iterables.count( transaction.getAllNodes() ) ).as( "Number of expected nodes" ).isEqualTo( ENTITY_COUNT );
 
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
-            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
+            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 2 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 2 );
         }
     }
 
@@ -105,7 +98,7 @@ class TransactionTracingIT
             assertZeroCursor( cursorContext );
 
             transaction.commit();
-            assertTrue( commitCursorChecker.isInvoked() );
+            softly.assertThat( commitCursorChecker.isInvoked() ).as( "Transaction committed" ).isTrue();
         }
     }
 
@@ -127,11 +120,11 @@ class TransactionTracingIT
             var cursorContext = transaction.kernelTransaction().cursorContext();
             assertZeroCursor( cursorContext );
 
-            assertEquals( ENTITY_COUNT, Iterables.count( transaction.getAllRelationships() ) );
+            softly.assertThat( Iterables.count( transaction.getAllRelationships() ) ).as( "Number of expected relationships" ).isEqualTo( ENTITY_COUNT );
 
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 5 );
-            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 5 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 5 );
+            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 5 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 5 );
+            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 5 );
         }
     }
 
@@ -155,16 +148,15 @@ class TransactionTracingIT
             var cursorContext = transaction.kernelTransaction().cursorContext();
             assertZeroCursor( cursorContext );
 
-            assertEquals( ENTITY_COUNT, Iterators.count( transaction.findNodes( marker ) ) );
+            softly.assertThat( Iterators.count( transaction.findNodes( marker ) ) ).as( "Number of expected nodes" ).isEqualTo( ENTITY_COUNT );
 
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
-            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 1 );
         }
     }
 
     @Test
-    @Disabled( "Disable until token index feature is enabled" )
     void tracePageCacheAccessOnFindRelationships()
     {
         var marker = Label.label( "marker" );
@@ -184,12 +176,11 @@ class TransactionTracingIT
             var cursorContext = transaction.kernelTransaction().cursorContext();
             assertZeroCursor( cursorContext );
 
-            assertEquals( ENTITY_COUNT, Iterators.count( transaction.findRelationships( type ) ) );
+            softly.assertThat( Iterators.count( transaction.findRelationships( type ) ) ).as( "Number of expected relationships" ).isEqualTo( ENTITY_COUNT );
 
-            // 1 while setting up TokenScan, and 1 for scanning the index
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 2 );
-            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 2 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 2 );
+            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1 );
+            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 1 );
         }
     }
 
@@ -216,21 +207,21 @@ class TransactionTracingIT
 
             transaction.kernelTransaction().dataWrite().nodeDetachDelete( sourceId );
 
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 14 );
-            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 11 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 14 );
+            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 14 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 11 );
+            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 14 );
         }
     }
 
     private void assertZeroCursor( CursorContext cursorContext )
     {
-        assertThat( cursorContext.getCursorTracer().pins() ).isZero();
-        assertThat( cursorContext.getCursorTracer().unpins() ).isZero();
-        assertThat( cursorContext.getCursorTracer().hits() ).isZero();
-        assertThat( cursorContext.getCursorTracer().faults() ).isZero();
+        softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isZero();
+        softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isZero();
+        softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isZero();
+        softly.assertThat( cursorContext.getCursorTracer().faults() ).as( "Number of cursor faults" ).isZero();
     }
 
-    private static class CommitCursorChecker extends TransactionEventListenerAdapter<Object>
+    private class CommitCursorChecker extends TransactionEventListenerAdapter<Object>
     {
         private final CursorContext cursorContext;
         private volatile boolean invoked;
@@ -248,10 +239,10 @@ class TransactionTracingIT
         @Override
         public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1003 );
-            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1003 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1001 );
-            assertThat( cursorContext.getCursorTracer().faults() ).isEqualTo( 2 );
+            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1003 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1003 );
+            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 1001 );
+            softly.assertThat( cursorContext.getCursorTracer().faults() ).as( "Number of cursor faults" ).isEqualTo( 2 );
             invoked = true;
         }
     }
