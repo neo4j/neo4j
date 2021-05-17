@@ -103,7 +103,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     checkForTokens(ast, semanticTable) shouldBe empty
   }
 
-  test("warn when missing property key name") {
+  test("warn when missing node property key name") {
     //given
     val semanticTable = new SemanticTable
 
@@ -115,13 +115,37 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
       MissingPropertyNameNotification(InputPosition(18, 1, 19), "prop")))
   }
 
-  test("don't warn when property key name is there") {
+  test("don't warn when node property key name is there") {
     //given
     val semanticTable = new SemanticTable
     semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
 
     //when
     val ast = parse("MATCH (a {prop: 42}) RETURN a")
+
+    //then
+    checkForTokens(ast, semanticTable) shouldBe empty
+  }
+
+  test("warn when missing relationship property key name") {
+    //given
+    val semanticTable = new SemanticTable
+
+    //when
+    val ast = parse("MATCH ()-[r]->() WHERE r.prop = 42 RETURN r")
+
+    //then
+    checkForTokens(ast, semanticTable) should equal(Set(
+      MissingPropertyNameNotification(InputPosition(25, 1, 26), "prop")))
+  }
+
+  test("don't warn when relationship property key name is there") {
+    //given
+    val semanticTable = new SemanticTable
+    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
+
+    //when
+    val ast = parse("MATCH ()-[r {prop: 42}]->() RETURN r")
 
     //then
     checkForTokens(ast, semanticTable) shouldBe empty
