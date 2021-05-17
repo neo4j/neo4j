@@ -95,8 +95,10 @@ public class DiagnosticsReportCommand extends AbstractCommand
     @Override
     public void execute()
     {
-        jmxDumper = new JMXDumper( ctx.homeDir(), ctx.fs(), ctx.out(), ctx.err(), verbose );
-        DiagnosticsReporter reporter = createAndRegisterSources();
+        Config config = getConfig( configFile() );
+
+        jmxDumper = new JMXDumper( config, ctx.fs(), ctx.out(), ctx.err(), verbose );
+        DiagnosticsReporter reporter = createAndRegisterSources( config );
 
         if ( list )
         {
@@ -180,11 +182,9 @@ public class DiagnosticsReportCommand extends AbstractCommand
         }
     }
 
-    private DiagnosticsReporter createAndRegisterSources()
+    private DiagnosticsReporter createAndRegisterSources( Config config )
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter();
-        Path configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
-        Config config = getConfig( configFile );
 
         Path storeDirectory = config.get( databases_root_path );
 
@@ -192,13 +192,18 @@ public class DiagnosticsReportCommand extends AbstractCommand
 
         // Register sources provided by this tool
         reporter.registerSource( "config",
-                DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", ctx.fs(), configFile ) );
+                DiagnosticsReportSources.newDiagnosticsFile( "neo4j.conf", ctx.fs(), configFile() ) );
 
         reporter.registerSource( "ps", runningProcesses() );
 
         // Online connection
         registerJMXSources( reporter );
         return reporter;
+    }
+
+    private Path configFile()
+    {
+        return ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
     }
 
     private void registerJMXSources( DiagnosticsReporter reporter )

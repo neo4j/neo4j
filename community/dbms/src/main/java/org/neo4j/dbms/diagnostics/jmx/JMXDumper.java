@@ -29,6 +29,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
+import org.neo4j.configuration.BootloaderSettings;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
@@ -36,15 +38,15 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  */
 public class JMXDumper
 {
-    private final Path homeDir;
+    private final Config config;
     private final FileSystemAbstraction fs;
     private final PrintStream err;
     private final boolean verbose;
     private PrintStream out;
 
-    public JMXDumper( Path homeDir, FileSystemAbstraction fs, PrintStream out, PrintStream err, boolean verbose )
+    public JMXDumper( Config config, FileSystemAbstraction fs, PrintStream out, PrintStream err, boolean verbose )
     {
-        this.homeDir = homeDir;
+        this.config = config;
         this.fs = fs;
         this.err = err;
         this.verbose = verbose;
@@ -115,7 +117,7 @@ public class JMXDumper
 
     private Optional<Long> getPid()
     {
-        Path pidFile = this.homeDir.resolve( "run/neo4j.pid" );
+        Path pidFile = config.get( BootloaderSettings.pid_file );
         if ( this.fs.fileExists( pidFile ) )
         {
             // The file cannot be opened with write permissions on Windows

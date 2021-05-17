@@ -74,6 +74,11 @@ public class BootloaderSettings implements SettingsDeclaration
     public static final Setting<Path> run_directory =
             newBuilder( "dbms.directories.run", PATH, Path.of( "run" ) ).setDependency( neo4j_home ).immutable().build();
 
+    @Internal
+    @Description( "Path of the pid file." )
+    public static final Setting<Path> pid_file =
+            newBuilder( "unsupported.dbms.directories.pid_file", PATH, Path.of( "neo4j.pid" ) ).setDependency( run_directory ).immutable().build();
+
     @Description( "Path of the lib directory" )
     public static final Setting<Path> lib_directory =
             newBuilder( "dbms.directories.lib", PATH, Path.of( "lib" ) ).setDependency( neo4j_home ).immutable().build();

@@ -45,7 +45,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.util.Preconditions;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
-import static org.neo4j.server.startup.Bootloader.DEFAULT_PID_LOCATION;
 
 abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase
 {
@@ -56,7 +55,7 @@ abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase
     void setUp() throws Exception
     {
         super.setUp();
-        pidFile = config.get( BootloaderSettings.run_directory ).resolve( DEFAULT_PID_LOCATION );
+        pidFile = config.get( BootloaderSettings.pid_file );
         if ( IS_OS_WINDOWS )
         {
             URL resource = getClass().getClassLoader().getResource( WindowsBootloaderOs.PRUNSRV_AMD_64_EXE );

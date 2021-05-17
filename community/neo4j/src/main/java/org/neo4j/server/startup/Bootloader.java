@@ -58,7 +58,6 @@ class Bootloader
     static final String ARG_EXPAND_COMMANDS = "--expand-commands";
 
     static final Path DEFAULT_CONFIG_LOCATION = Path.of( Config.DEFAULT_CONFIG_DIR_NAME );
-    static final Path DEFAULT_PID_LOCATION = Path.of( "neo4j.pid" );
     static final int DEFAULT_NEO4J_SHUTDOWN_TIMEOUT = 120;
 
     private final BootloaderContext ctx;

@@ -38,7 +38,6 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.configuration.SettingValueParsers.INT;
-import static org.neo4j.server.startup.Bootloader.DEFAULT_PID_LOCATION;
 import static org.neo4j.server.startup.Bootloader.ENV_NEO4J_START_WAIT;
 
 class ProcessManager
@@ -285,6 +284,6 @@ class ProcessManager
 
     private Path pidFile()
     {
-        return ctx.config().get( BootloaderSettings.run_directory ).resolve( DEFAULT_PID_LOCATION );
+        return ctx.config().get( BootloaderSettings.pid_file );
     }
 }
