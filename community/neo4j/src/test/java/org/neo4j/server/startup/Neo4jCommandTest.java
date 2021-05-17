@@ -41,12 +41,14 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -56,6 +58,8 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.server.NeoBootstrapper;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.time.Stopwatch;
 
@@ -563,6 +567,69 @@ class Neo4jCommandTest
             assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( out.toString() ).contains( "Starting Neo4j." );
             assertThat( pidFile ).exists();
+            assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( pidFile ).doesNotExist();
+        }
+
+        @DisabledOnOs( OS.WINDOWS )
+        @Test
+        void shouldWritePidFileOnConsole() throws Exception
+        {
+            if ( fork.run( () ->
+            {
+                try ( OtherThreadExecutor executor = new OtherThreadExecutor( "TestExecutor" ) )
+                {
+                    Future<Integer> console = executor.executeDontWait( () -> execute( "console" ) );
+                    assertEventually( () -> Files.exists( pidFile ), Conditions.TRUE, 2, MINUTES );
+                    Optional<ProcessHandle> process = getProcess();
+                    assertThat( process ).isPresent();
+
+                    process.get().destroy();
+                    console.get();
+                }
+            }, Map.of( TestEntryPoint.ENV_TIMEOUT, "1000" ) ) )
+            {
+                assertThat( pidFile ).doesNotExist();
+            }
+        }
+
+        @DisabledOnOs( OS.WINDOWS )
+        @Test
+        void shouldDetectRunningNeo4jOnConsole() throws Exception
+        {
+            if ( !fork.run( () ->
+            {
+                assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+                assertThat( execute( "console" ) ).isEqualTo( ExitCode.SOFTWARE );
+            } ) )
+            {
+                assertThat( out.toString() ).contains( "Neo4j is already running" );
+            }
+        }
+
+        @DisabledOnOs( OS.WINDOWS )
+        @DisabledForRoot
+        @Test
+        void shouldPrintErrorOnFailedPidWriteOnConsole() throws Exception
+        {
+            if ( !fork.run( () ->
+            {
+                Path runDir = pidFile.getParent();
+                Files.createDirectories( runDir );
+                Set<PosixFilePermission> origPermissions = Files.getPosixFilePermissions( runDir );
+                try
+                {
+                    Files.setPosixFilePermissions( runDir, Set.of() );
+                    assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
+                }
+                finally
+                {
+                    Files.setPosixFilePermissions( runDir, origPermissions );
+                }
+            }, Map.of( TestEntryPoint.ENV_TIMEOUT, "0" ) ) )
+            {
+                assertThat( err.toString() ).contains( "Failed to write PID file: Access denied" );
+            }
         }
 
         @DisabledOnOs( OS.WINDOWS )

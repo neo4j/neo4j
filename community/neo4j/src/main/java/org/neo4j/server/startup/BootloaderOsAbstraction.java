@@ -68,7 +68,12 @@ abstract class BootloaderOsAbstraction
 
     long console() throws BootFailureException
     {
-        return ctx.processManager().run( buildStandardStartArguments(), behaviour().blocking().inheritIO().withShutdownHook() );
+        return ctx.processManager().run( buildStandardStartArguments(), consoleBehaviour() );
+    }
+
+    protected ProcessManager.Behaviour consoleBehaviour()
+    {
+        return behaviour().blocking().inheritIO().withShutdownHook();
     }
 
     long admin() throws BootFailureException

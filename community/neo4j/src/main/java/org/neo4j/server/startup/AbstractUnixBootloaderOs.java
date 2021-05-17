@@ -45,6 +45,12 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction
     }
 
     @Override
+    protected ProcessManager.Behaviour consoleBehaviour()
+    {
+        return super.consoleBehaviour().tryStorePid();
+    }
+
+    @Override
     void installService() throws BootFailureException
     {
         throw new UnsupportedOperationException( "Not supported on this OS" );

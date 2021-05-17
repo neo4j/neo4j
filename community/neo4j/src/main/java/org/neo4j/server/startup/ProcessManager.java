@@ -54,6 +54,7 @@ class ProcessManager
         protected boolean blocking;
         protected boolean redirectToUserLog;
         protected boolean storePid;
+        protected boolean throwOnStorePidFailure;
         protected boolean homeAndConfAsEnv;
         protected boolean shutdownHook;
         protected PrintStream outputConsumer;
@@ -86,6 +87,14 @@ class ProcessManager
         Behaviour storePid()
         {
             this.storePid = true;
+            this.throwOnStorePidFailure = true;
+            return this;
+        }
+
+        Behaviour tryStorePid()
+        {
+            this.storePid = true;
+            throwOnStorePidFailure = false;
             return this;
         }
 
@@ -164,7 +173,7 @@ class ProcessManager
             }
             if ( behaviour.storePid )
             {
-                storePid( process.pid() );
+                storePid( process.pid(), behaviour.throwOnStorePidFailure );
             }
             if ( behaviour.blocking )
             {
@@ -205,7 +214,7 @@ class ProcessManager
         }
     }
 
-    private static void installShutdownHook( Process finalProcess )
+    private void installShutdownHook( Process finalProcess )
     {
         Runtime.getRuntime().addShutdownHook( new Thread( () -> killProcess( finalProcess ) ) );
         Runnable onSignal = () -> System.exit( killProcess( finalProcess ) );
@@ -224,7 +233,7 @@ class ProcessManager
         }
     }
 
-    private static synchronized int killProcess( Process finalProcess )
+    private synchronized int killProcess( Process finalProcess )
     {
         if ( finalProcess.isAlive() )
         {
@@ -242,6 +251,7 @@ class ProcessManager
                 }
             }
         }
+        deletePid();
         return finalProcess.exitValue();
     }
 
@@ -291,17 +301,27 @@ class ProcessManager
         {
             Files.deleteIfExists( pidFile() );
         }
-        catch ( IOException e )
-        {
-            throw new BootFailureException( "Unable to delete pid file, " + e.getMessage(), 0 );
+        catch ( IOException ignored )
+        { //We can ignore this safely, as it will either be cleaned up later or fail at a later stage
         }
     }
 
-    private void storePid( long pid ) throws IOException
+    private void storePid( long pid, boolean throwOnFailure ) throws IOException
     {
         Path pidFilePath = pidFile();
-        Files.createDirectories( pidFilePath.getParent() );
-        Files.write( pidFilePath, Long.toString( pid ).getBytes(), CREATE, WRITE, TRUNCATE_EXISTING );
+        try
+        {
+            Files.createDirectories( pidFilePath.getParent() );
+            Files.write( pidFilePath, Long.toString( pid ).getBytes(), CREATE, WRITE, TRUNCATE_EXISTING );
+        }
+        catch ( AccessDeniedException exception )
+        {
+            if ( throwOnFailure )
+            {
+                throw exception;
+            }
+            ctx.err.printf( "Failed to write PID file: Access denied at %s%n", pidFilePath.toAbsolutePath() );
+        }
     }
 
     private Path pidFile()
