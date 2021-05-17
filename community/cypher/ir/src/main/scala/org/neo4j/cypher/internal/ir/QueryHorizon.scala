@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.exceptions.InternalException
 
@@ -44,9 +44,14 @@ trait QueryHorizon {
 
   def readOnly = true
 
+  /**
+   * @return all recursively included query graphs.
+   *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
+   *         is not safe to use for planning pattern expressions and pattern comprehensions.
+   */
   def allQueryGraphs: Seq[QueryGraph] = {
-    val patternComprehensions = dependingExpressions.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
-    val patternExpressions = dependingExpressions.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
+    val patternComprehensions = dependingExpressions.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
+    val patternExpressions = dependingExpressions.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
     patternComprehensions ++ patternExpressions
   }
 }

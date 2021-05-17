@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
@@ -49,7 +48,7 @@ import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
+object ASTRewriter {
 
   private val AccumulatedSteps(orderedSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with ASTRewriterFactory]()).orderSteps(Set(
     expandStar,
@@ -79,7 +78,7 @@ class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
               allNameGenerators: AllNameGenerators
              ): Statement = {
     val rewriters = orderedSteps.map { step =>
-      val rewriter = step.getRewriter(innerVariableNamer, semanticState, parameterTypeMapping, cypherExceptionFactory, allNameGenerators)
+      val rewriter = step.getRewriter(semanticState, parameterTypeMapping, cypherExceptionFactory, allNameGenerators)
       RewriterStep.validatingRewriter(rewriter, step)
     }
 

@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.graphdb.config.Setting
@@ -75,7 +74,6 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  debugOptions: CypherDebugOptions,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer,
-                 innerVariableNamer: InnerVariableNamer,
                  params: MapValue,
                  compatibilityMode: CypherCompatibilityVersion): BaseState = {
 
@@ -97,10 +95,8 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          clock,
                                          logicalPlanIdGen = null,
                                          evaluator = null,
-                                         innerVariableNamer = innerVariableNamer,
                                          params )
     CompilationPhases.parsing(ParsingConfig(
-      context.innerVariableNamer,
       compatibilityMode,
       parameterTypeMapping = context.getParameterValueTypeMapping,
       useJavaCCParser = config.useJavaCCParser,

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.collection.GenSet
@@ -101,9 +101,14 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     )
   }
 
+  /**
+   * @return all recursively included query graphs.
+   *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
+   *         is not safe to use for planning pattern expressions and pattern comprehensions.
+   */
   def allQueryGraphs: Seq[QueryGraph] = {
-    val patternComprehensions = this.findByAllClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
-    val patternExpressions = this.findByAllClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
+    val patternComprehensions = this.findByAllClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
+    val patternExpressions = this.findByAllClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
     Seq(this) ++
       optionalMatches.flatMap(_.allQueryGraphs) ++
       patternComprehensions ++

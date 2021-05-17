@@ -93,7 +93,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
           val variableToCollectName = context.allNameGenerators.freshIdNameGenerator.nextName
           val collectionName = context.allNameGenerators.rollupCollectionNameGenerator.nextName
           val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(e.outerScope, variableToCollectName, collectionName)
-          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.innerVariableNamer, context.allNameGenerators)
+          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.allNameGenerators)
           acc ++ qg
 
         case elem: NodePattern =>

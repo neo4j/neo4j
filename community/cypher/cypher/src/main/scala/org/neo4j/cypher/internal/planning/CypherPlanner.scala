@@ -83,8 +83,6 @@ import org.neo4j.cypher.internal.planner.spi.DPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planning.CypherPlanner.createQueryGraphSolver
-import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.ExceptionTranslatingPlanContext
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
@@ -217,7 +215,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                          notificationLogger: InternalNotificationLogger,
                          offset: InputPosition,
                          tracer: CompilationPhaseTracer,
-                         innerVariableNamer: InnerVariableNamer,
                         ): BaseState = {
     parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
       val parsedQuery = planner.parseQuery(preParsedQuery.statement,
@@ -227,7 +224,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         preParsedQuery.options.queryOptions.debugOptions,
         Some(offset),
         tracer,
-        innerVariableNamer,
         params,
         compatibilityMode)
       if (!config.planSystemCommands) parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
@@ -251,15 +247,14 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                    runtime: CypherRuntime[_]
                   ): LogicalPlanResult = {
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.options.offset))
-    val innerVariableNamer = new GeneratingNamer
 
-    val syntacticQuery = getOrParse(preParsedQuery, params, notificationLogger, preParsedQuery.options.offset, tracer, innerVariableNamer)
+    val syntacticQuery = getOrParse(preParsedQuery, params, notificationLogger, preParsedQuery.options.offset, tracer)
 
     // The parser populates the notificationLogger as a side-effect of its work, therefore
     // in the case of a cached query the notificationLogger will not be properly filled
     syntacticQuery.maybeSemantics.map(_.notifications).getOrElse(Set.empty).foreach(notificationLogger.log)
 
-    doPlan(syntacticQuery, preParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, innerVariableNamer,
+    doPlan(syntacticQuery, preParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger,
       preParsedQuery.rawStatement)
   }
 
@@ -280,7 +275,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
            runtime: CypherRuntime[_]
           ): LogicalPlanResult = {
     val notificationLogger = new RecordingNotificationLogger(Some(fullyParsedQuery.options.offset))
-    doPlan(fullyParsedQuery.state, fullyParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, new GeneratingNamer,
+    doPlan(fullyParsedQuery.state, fullyParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger,
       fullyParsedQuery.state.queryText)
   }
 
@@ -291,7 +286,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                      params: MapValue,
                      runtime: CypherRuntime[_],
                      notificationLogger: InternalNotificationLogger,
-                     innerVariableNamer: InnerVariableNamer,
                      rawQueryText: String
                     ): LogicalPlanResult = {
     val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
@@ -326,7 +320,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       clock,
       new SequentialIdGen(),
       simpleExpressionEvaluator,
-      innerVariableNamer,
       params)
 
     // Prepare query for caching

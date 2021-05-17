@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -33,15 +33,15 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
   test("uniqueness check is done between relationships of simple and variable pattern lengths") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE NONE(r2 IN r2 WHERE r1 = r2) RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE NONE(`  REL0` IN r2 WHERE r1 = `  REL0`) RETURN *")
 
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) RETURN *",
-      "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NONE(r1 IN r1 WHERE r1 = r2) RETURN *")
+      "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NONE(`  REL0` IN r1 WHERE `  REL0` = r2) RETURN *")
 
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE NONE(r1 IN r1 WHERE ANY(r2 IN r2 WHERE r1 = r2)) RETURN *")
+      "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE NONE(`  REL0` IN r1 WHERE ANY(`  REL1` IN r2 WHERE `  REL0` = `  REL1`)) RETURN *")
   }
 
   test("uniqueness check is done between relationships") {
@@ -96,5 +96,5 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
       "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
   }
 
-  val rewriterUnderTest: Rewriter = AddUniquenessPredicates(SameNameNamer)
+  def rewriterUnderTest: Rewriter = AddUniquenessPredicates(new AllNameGenerators)
 }

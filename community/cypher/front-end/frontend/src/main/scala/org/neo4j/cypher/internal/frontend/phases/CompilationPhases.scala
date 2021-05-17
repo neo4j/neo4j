@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityTo
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
-import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 
 object CompilationPhases {
 
@@ -32,7 +31,7 @@ object CompilationPhases {
       SyntaxDeprecationWarningsAndReplacements(deprecations) andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
-      AstRewriting(innerVariableNamer = SameNameNamer) andThen
+      AstRewriting() andThen
       LiteralExtraction(literalExtractionStrategy)
 
   def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =

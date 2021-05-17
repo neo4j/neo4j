@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -60,7 +59,6 @@ trait RewritePhaseTest {
     override def version: String = "fake"
   }
 
-  private val astRewriter = new ASTRewriter(innerVariableNamer = SameNameNamer)
 
   def assertNotRewritten(from: String): Unit = assertRewritten(from, from)
 
@@ -72,8 +70,10 @@ trait RewritePhaseTest {
     val toOutState = prepareFrom(to, rewriterPhaseForExpected, features: _*)
 
     fromOutState.statement() should equal(toOutState.statement())
-    semanticTableExpressions.foreach { e =>
-      fromOutState.semanticTable().types.keys should contain(e)
+    if (astRewriteAndAnalyze) {
+      semanticTableExpressions.foreach { e =>
+        fromOutState.semanticTable().types.keys should contain(e)
+      }
     }
   }
 
@@ -93,7 +93,7 @@ trait RewritePhaseTest {
     val parsedAst = parser.parse(queryText, exceptionFactory)
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
     if (astRewriteAndAnalyze) {
-      astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory, new AllNameGenerators())
+      ASTRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory, new AllNameGenerators())
     } else {
       cleanedAst
     }

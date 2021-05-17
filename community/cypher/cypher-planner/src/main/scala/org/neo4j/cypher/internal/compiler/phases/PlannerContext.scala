@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
@@ -59,7 +58,6 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val debugOptions: CypherDebugOptions,
                      val clock: Clock,
                      val logicalPlanIdGen: IdGen,
-                     val innerVariableNamer: InnerVariableNamer,
                      val params: MapValue,
                      val executionModel: ExecutionModel) extends BaseContext {
 
@@ -89,7 +87,6 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       clock: Clock,
                       logicalPlanIdGen: IdGen,
                       evaluator: ExpressionEvaluator,
-                      innerVariableNamer: InnerVariableNamer,
                       params: MapValue
                      ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
@@ -100,6 +97,6 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
       metricsFactory.newMetrics(planContext.statistics, evaluator, config, executionModel)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params, executionModel)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel)
   }
 }

@@ -62,7 +62,6 @@ import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
-import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
@@ -97,14 +96,12 @@ object CompilationPhases {
       initialConditions = Set(StatementCondition(containsNoReturnAll), StatementCondition(containsNamedPathOnlyForShortestPath))
     )
 
-  case class ParsingConfig(
-                            innerVariableNamer: InnerVariableNamer,
-                            compatibilityMode: CypherCompatibilityVersion = Compatibility4_3,
-                            literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
-                            parameterTypeMapping: Map[String, CypherType] = Map.empty,
-                            semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-                            useJavaCCParser: Boolean = false,
-                            obfuscateLiterals: Boolean = false
+  case class ParsingConfig(compatibilityMode: CypherCompatibilityVersion = Compatibility4_3,
+                           literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
+                           parameterTypeMapping: Map[String, CypherType] = Map.empty,
+                           semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+                           useJavaCCParser: Boolean = false,
+                           obfuscateLiterals: Boolean = false
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
@@ -135,7 +132,7 @@ object CompilationPhases {
   // Phase 1
   def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
-      AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
+      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_XAfterRewrite) andThen
       LiteralExtraction(config.literalExtractionStrategy)
   }
@@ -152,7 +149,7 @@ object CompilationPhases {
   // Phase 1.1 (Fabric)
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
-      AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
+      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }

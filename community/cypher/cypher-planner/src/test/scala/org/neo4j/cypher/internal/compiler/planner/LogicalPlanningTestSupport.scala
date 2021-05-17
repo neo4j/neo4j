@@ -56,7 +56,6 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
@@ -88,7 +87,6 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -108,8 +106,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val monitors = mock[Monitors]
   val parser = new CypherParser
-  val innerVariableNamer = new GeneratingNamer
-  val astRewriter = new ASTRewriter(innerVariableNamer = innerVariableNamer)
   val mockRel = newPatternRelationship("a", "b", "r")
 
   def newPatternRelationship(start: String, end: String, rel: String, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
@@ -211,7 +207,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       config = QueryPlannerConfiguration.default,
       costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
-      innerVariableNamer = innerVariableNamer,
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
@@ -238,7 +233,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       config = QueryPlannerConfiguration.default,
       costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
-      innerVariableNamer = innerVariableNamer,
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
@@ -317,7 +311,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Parsing andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries) andThen
-      AstRewriting(innerVariableNamer = new GeneratingNamer) andThen
+      AstRewriting() andThen
       RewriteProcedureCalls andThen
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
