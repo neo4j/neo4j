@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
@@ -211,13 +211,13 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     selections.allPropertyPredicatesInvolving.getOrElse(idName, Set.empty).map(_.propertyKey)
 
   private def possibleLabelsOnNode(node: String): Set[LabelName] = {
-    val lbl = selections
+    val label = selections
       .allHasLabelsInvolving.getOrElse(node, Set.empty)
       .flatMap(_.labels)
-    val lblOrT = selections
+    val labelOrType = selections
       .allHasLabelsOrTypesInvolving.getOrElse(node, Set.empty)
       .flatMap(_.labelsOrTypes).map(lblOrType => LabelName(lblOrType.name)(lblOrType.position))
-    lbl ++ lblOrT
+    label ++ labelOrType
   }
 
   private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {

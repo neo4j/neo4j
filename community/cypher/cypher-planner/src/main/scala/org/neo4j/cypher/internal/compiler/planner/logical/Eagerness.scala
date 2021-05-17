@@ -106,7 +106,7 @@ object Eagerness {
   @tailrec
   private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithLeafInfo: QgWithLeafInfo): Boolean = {
     val allHeadQgs = Set(headQgWithLeafInfo) ++ (headQgWithLeafInfo.queryGraph.allQueryGraphs.toSet - headQgWithLeafInfo.queryGraph).map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsHead(writeQg: QueryGraph): Boolean = allHeadQgs.exists(readQg => writeQg overlaps readQg)
+    def overlapsHead(writeQg: QueryGraph): Boolean = allHeadQgs.exists(readQg => writeQg.overlaps(readQg))
 
     val conflictWithQqInHorizon = tail.horizon.allQueryGraphs.exists(qg => overlapsHead(qg))
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
@@ -220,7 +220,7 @@ object Eagerness {
 
   def readWriteConflict(readQuery: SinglePlannerQuery, writeQuery: SinglePlannerQuery): Boolean = {
     val readQGs = readQuery.queryGraph.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsWithReadQg(writeQg: QueryGraph): Boolean = readQGs.exists(readQg => writeQg overlaps readQg)
+    def overlapsWithReadQg(writeQg: QueryGraph): Boolean = readQGs.exists(readQg => writeQg.overlaps(readQg))
 
     val conflictWithQgInHorizon = writeQuery.horizon.allQueryGraphs.exists(overlapsWithReadQg)
     val mergeReadWrite = readQuery == writeQuery && readQuery.queryGraph.containsMergeRecursive
@@ -236,7 +236,7 @@ object Eagerness {
   @tailrec
   def writeReadConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
     val readQGs = tail.queryGraph.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsWithReadQg(writeQg: QueryGraph): Boolean = readQGs.exists(readQg => writeQg overlaps readQg)
+    def overlapsWithReadQg(writeQg: QueryGraph): Boolean = readQGs.exists(readQg => writeQg.overlaps(readQg))
 
     val conflict =
       if (tail.queryGraph.writeOnly) false
