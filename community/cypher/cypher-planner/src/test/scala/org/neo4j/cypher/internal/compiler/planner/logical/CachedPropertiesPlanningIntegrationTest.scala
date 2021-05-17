@@ -19,135 +19,117 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.EmptyResult
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with LogicalPlanningTestSupport2 {
+class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
   test("should cache node property on multiple usages") {
-    val plan = planFor("MATCH (n) WHERE n.prop1 > 42 RETURN n.prop1")
-
-    plan._2 should equal(
-      Projection(
-        Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
-          AllNodesScan("n", Set.empty)),
-        Map("n.prop1" -> cachedNodeProp("n", "prop1"))
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) WHERE n.prop1 > 42 RETURN n.prop1").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[n.prop1] AS `n.prop1`")
+      .filter("cacheNFromStore[n.prop1] > 42")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should cache node property on multiple usages without return") {
-    val plan = planFor("MATCH (n) WHERE n.prop1 > 42 SET n.prop2 = n.prop1")
-
-    plan._2 should equal(
-      EmptyResult(
-        SetNodeProperty(
-          Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
-            AllNodesScan("n", Set.empty)),
-          "n", PropertyKeyName("prop2")(pos), cachedNodeProp("n", "prop1")
-        )
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) WHERE n.prop1 > 42 SET n.prop2 = n.prop1").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .setNodeProperty("n", "prop2", "cacheN[n.prop1]")
+      .filter("cacheNFromStore[n.prop1] > 42")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should not rewrite node property if there is only one usage") {
-    val plan = planFor("MATCH (n) RETURN n.prop1")
-
-    plan._2 should equal(
-      Projection(
-        AllNodesScan("n", Set.empty),
-        Map("n.prop1" -> prop("n", "prop1"))
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) RETURN n.prop1").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("n.prop1 AS `n.prop1`")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should not rewrite node property if there is only one usage in selection") {
-    val plan = planFor("MATCH (n) WHERE n.prop1 > 42 RETURN n")
-
-    plan._2 should equal(
-      Selection(Seq(greaterThan(prop("n", "prop1"), literalInt(42))),
-        AllNodesScan("n", Set.empty))    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) WHERE n.prop1 > 42 RETURN n").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("n.prop1 > 42")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should cache relationship property on multiple usages") {
-    val plan = planFor("MATCH (a)-[r]-(b) WHERE r.prop1 > 42 RETURN r.prop1")
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 50)
+      .build()
 
-    plan._2 should equal(
-      Projection(
-        Selection(Seq(greaterThan(cachedRelPropFromStore("r", "prop1"), literalInt(42))),
-          Expand(
-            AllNodesScan("a", Set.empty),
-            "a", BOTH, Seq.empty, "b", "r")),
-        Map("r.prop1" -> cachedRelProp("r", "prop1"))
-      )
-    )
+    val plan = cfg.plan("MATCH (a)-[r]-(b) WHERE r.prop1 > 42 RETURN r.prop1").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheR[r.prop1] AS `r.prop1`")
+      .filter("cacheRFromStore[r.prop1] > 42")
+      .expandAll("(a)-[r]-(b)")
+      .allNodeScan("a")
+      .build()
   }
 
   test("should not rewrite relationship property if there is only one usage") {
-    val plan = planFor("MATCH (a)-[r]-(b) RETURN r.prop1")
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 50)
+      .build()
 
-    plan._2 should equal(
-      Projection(
-        Expand(
-          AllNodesScan("a", Set.empty),
-          "a", BOTH, Seq.empty, "b", "r"),
-        Map("r.prop1" -> prop("r", "prop1"))
-      )
-    )
+    val plan = cfg.plan("MATCH (a)-[r]-(b) RETURN r.prop1").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("r.prop1 AS `r.prop1`")
+      .expandAll("(a)-[r]-(b)")
+      .allNodeScan("a")
+      .build()
   }
 
   test("should cache renamed variable: n AS x") {
-    val plan = planFor("MATCH (n) WHERE n.prop1 > 42 WITH n AS x RETURN x.prop1")
-
-    plan._2 should equal(
-      Projection(
-        Projection(
-          Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
-            AllNodesScan("n", Set.empty)),
-          Map("x" -> varFor("n"))),
-        Map("x.prop1" -> cachedNodeProp("n", "prop1", "x"))
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) WHERE n.prop1 > 42 WITH n AS x RETURN x.prop1").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection(Map("x.prop1" -> cachedNodeProp("n", "prop1", "x")))
+      .projection("n AS x")
+      .filter("cacheNFromStore[n.prop1] > 42")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should cache renamed variable: n AS x with predicate in between") {
-    val plan = planFor("MATCH (n) WHERE n.prop1 > 42 WITH n AS x WHERE x.prop1 > 42 RETURN x")
-
-    plan._2 should equal(
-      Selection(Seq(greaterThan(cachedNodeProp("n", "prop1", "x"), literalInt(42))),
-        Projection(
-          Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
-            AllNodesScan("n", Set.empty)),
-          Map("x" -> varFor("n"))))
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) WHERE n.prop1 > 42 WITH n AS x WHERE x.prop1 > 42 RETURN x").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filterExpression(greaterThan(cachedNodeProp("n", "prop1", "x"), literalInt(42)))
+      .projection("n AS x")
+      .filter("cacheNFromStore[n.prop1] > 42")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should cache with byzantine renaming: n AS m, m AS x") {
-    val plan = planFor("MATCH (n), (m) WHERE n.prop1 > 42 AND m.prop1 > 42 WITH n AS m, m AS x RETURN m.prop1, x.prop1")
-
-    plan._2 should equal(
-      Projection(
-        Projection(
-          CartesianProduct(
-            Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
-              AllNodesScan("n", Set.empty)),
-            Selection(Seq(greaterThan(cachedNodePropFromStore("m", "prop1"), literalInt(42))),
-              AllNodesScan("m", Set.empty))),
-          Map("m" -> varFor("n"), "x" -> varFor("m"))),
-        Map("m.prop1" -> cachedNodeProp("n", "prop1", "m"), "x.prop1" -> cachedNodeProp("m", "prop1", "x"))
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n), (m) WHERE n.prop1 > 42 AND m.prop1 > 42 WITH n AS m, m AS x RETURN m.prop1, x.prop1").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection(Map(
+        "m.prop1" -> cachedNodeProp("n", "prop1", "m"),
+        "x.prop1" -> cachedNodeProp("m", "prop1", "x")))
+      .projection("n AS m", "m AS x")
+      .cartesianProduct()
+      .|.filter("cacheNFromStore[m.prop1] > 42")
+      .|.allNodeScan("m")
+      .filter("cacheNFromStore[n.prop1] > 42")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should not push down property reads into RHS of apply unnecessarily") {

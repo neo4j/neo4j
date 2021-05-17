@@ -19,152 +19,142 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.EmptyResult
-import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
   test("should plan single create") {
-    planFor("CREATE (a)-[r:R]->(b)")._2 should equal(
-      EmptyResult(
-        Create(
-          Argument(),
-          List(
-            CreateNode("a", Seq.empty, None),
-            CreateNode("b", Seq.empty, None)
-          ),
-          List(
-            CreateRelationship("r", "a", relType("R"), "b", SemanticDirection.OUTGOING, None)
-          )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a)-[r:R]->(b)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        Seq(
+          CreateNode("a", Seq.empty, None),
+          CreateNode("b", Seq.empty, None)
+        ),
+        Seq(
+          CreateRelationship("r", "a", relTypeName("R"), "b", SemanticDirection.OUTGOING, None)
         )
       )
-    )
+      .argument()
+      .build()
   }
 
   test("should plan complicated create") {
-    planFor("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)")._2 should equal(
-      EmptyResult(
-        Create(
-          Argument(),
-          List(
-            CreateNode("a", Seq.empty, None),
-            CreateNode("b", Seq.empty, None),
-            CreateNode("c", Seq.empty, None),
-            CreateNode("d", Seq.empty, None)
-          ),
-          List(
-            CreateRelationship("r1", "a", relType("R1"), "b", SemanticDirection.OUTGOING, None),
-            CreateRelationship("r2", "b", relType("R2"), "c", SemanticDirection.INCOMING, None),
-            CreateRelationship("r3", "c", relType("R3"), "d", SemanticDirection.OUTGOING, None)
-          )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a)-[r1:R1]->(b)<-[r2:R2]-(c)-[r3:R3]->(d)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        Seq(
+          CreateNode("a", Seq.empty, None),
+          CreateNode("b", Seq.empty, None),
+          CreateNode("c", Seq.empty, None),
+          CreateNode("d", Seq.empty, None)
+        ),
+        Seq(
+          CreateRelationship("r1", "a", relTypeName("R1"), "b", SemanticDirection.OUTGOING, None),
+          CreateRelationship("r2", "b", relTypeName("R2"), "c", SemanticDirection.INCOMING, None),
+          CreateRelationship("r3", "c", relTypeName("R3"), "d", SemanticDirection.OUTGOING, None)
         )
       )
-    )
+      .argument()
+      .build()
   }
 
   test("should plan reversed create pattern") {
-    planFor("CREATE (a)<-[r1:R1]-(b)<-[r2:R2]-(c)")._2 should equal(
-      EmptyResult(
-        Create(
-          Argument(),
-          List(
-            CreateNode("a", Seq.empty, None),
-            CreateNode("b", Seq.empty, None),
-            CreateNode("c", Seq.empty, None)
-          ),
-          List(
-            CreateRelationship("r1", "a", relType("R1"), "b", SemanticDirection.INCOMING, None),
-            CreateRelationship("r2", "b", relType("R2"), "c", SemanticDirection.INCOMING, None)
-          )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a)<-[r1:R1]-(b)<-[r2:R2]-(c)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        Seq(
+          CreateNode("a", Seq.empty, None),
+          CreateNode("b", Seq.empty, None),
+          CreateNode("c", Seq.empty, None)
+        ),
+        Seq(
+          CreateRelationship("r1", "a", relTypeName("R1"), "b", SemanticDirection.INCOMING, None),
+          CreateRelationship("r2", "b", relTypeName("R2"), "c", SemanticDirection.INCOMING, None)
         )
       )
-    )
+      .argument()
+      .build()
   }
 
   test("should plan only one create node when the other node is already in scope when creating a relationship") {
-    planFor("MATCH (n) CREATE (n)-[r:T]->(b)")._2 should equal(
-      EmptyResult(
-        Create(
-          AllNodesScan("n", Set()),
-          List(
-            CreateNode("b", Seq.empty, None)
-          ),
-          List(
-            CreateRelationship("r", "n", relType("T"), "b", SemanticDirection.OUTGOING, None)
-          )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("MATCH (n) CREATE (n)-[r:T]->(b)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        Seq(
+          CreateNode("b", Seq.empty, None)
+        ),
+        Seq(
+          CreateRelationship("r", "n", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
         )
       )
-    )
+      .allNodeScan("n")
+      .build()
   }
 
   test("should not plan two create nodes when they are already in scope when creating a relationship") {
-    planFor("MATCH (n) MATCH (m) CREATE (n)-[r:T]->(m)")._2 should equal(
-      EmptyResult(
-        Create(
-          CartesianProduct(
-            AllNodesScan("n", Set()),
-            AllNodesScan("m", Set())
-          ),
-          Nil,
-          List(
-            CreateRelationship("r", "n", relType("T"), "m", SemanticDirection.OUTGOING, None)
-          )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("MATCH (n) MATCH (m) CREATE (n)-[r:T]->(m)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        Seq.empty,
+        Seq(
+          CreateRelationship("r", "n", relTypeName("T"), "m", SemanticDirection.OUTGOING, None)
         )
       )
-    )
+      .cartesianProduct()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should not plan two create nodes when they are already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b)")._2 should equal(
-      EmptyResult(
-        Create(
-          Projection(
-            CartesianProduct(
-              AllNodesScan("n", Set()),
-              AllNodesScan("m", Set())
-            ),
-            Map(
-              "a" -> varFor("n"),
-              "b" -> varFor("m")
-            )
-          ),
-          Nil,
-          List(
-            CreateRelationship("r", "a", relType("T"), "b", SemanticDirection.OUTGOING, None)
-          )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        Seq.empty,
+        Seq(
+          CreateRelationship("r", "a", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
         )
       )
-    )
+      .projection("n AS a", "m AS b")
+      .cartesianProduct()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)")._2 should equal(
-      EmptyResult(
-        Create(
-          Projection(
-            AllNodesScan("n", Set()),
-            Map("a" -> varFor("n"))
-          ),
-          List(
-            CreateNode("b", Seq.empty, None)
-          ),
-          List(
-            CreateRelationship("r", "a", relType("T"), "b", SemanticDirection.OUTGOING, None)
-          )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        Seq(
+          CreateNode("b", Seq.empty, None)
+        ),
+        Seq(
+          CreateRelationship("r", "a", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
         )
       )
-    )
+      .projection("n AS a")
+      .allNodeScan("n")
+      .build()
   }
-
-  private def relType(name: String): RelTypeName = RelTypeName(name)(pos)
 }

@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ArgumentPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class ArgumentPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
   test("should build plans containing single row") {
-    planFor("RETURN 42")._2 should equal(
-      Projection(
-        Argument(), projectExpressions = Map("42" -> literalInt(42))
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("RETURN 42").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("42 AS 42")
+      .argument()
+      .build()
   }
 }

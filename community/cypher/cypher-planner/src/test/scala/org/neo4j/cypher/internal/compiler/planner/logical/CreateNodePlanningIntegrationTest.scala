@@ -19,117 +19,100 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
   test("should plan single create") {
-    planFor("CREATE (a)")._2 should equal(
-      EmptyResult(
-        Create(Argument(), List(CreateNode("a", Seq.empty, None)), Nil)
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(CreateNode("a", Seq.empty, None))
+      .argument()
+      .build()
   }
 
   test("should plan for multiple creates") {
-    planFor("CREATE (a), (b), (c)")._2 should equal(
-      EmptyResult(
-        Create(
-          Argument(),
-          List(
-            CreateNode("a", Seq.empty, None),
-            CreateNode("b", Seq.empty, None),
-            CreateNode("c", Seq.empty, None)
-          ),
-          Nil
-        )
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a), (b), (c)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        CreateNode("a", Seq.empty, None),
+        CreateNode("b", Seq.empty, None),
+        CreateNode("c", Seq.empty, None))
+      .argument()
+      .build()
   }
 
   test("should plan for multiple creates via multiple statements") {
-    planFor("CREATE (a) CREATE (b) CREATE (c)")._2 should equal(
-      EmptyResult(
-        Create(
-          Argument(),
-          List(
-            CreateNode("a",Seq.empty,None),
-            CreateNode("b",Seq.empty,None),
-            CreateNode("c",Seq.empty,None)
-          ),
-          Nil
-        )
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a) CREATE (b) CREATE (c)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(
+        CreateNode("a", Seq.empty, None),
+        CreateNode("b", Seq.empty, None),
+        CreateNode("c", Seq.empty, None))
+      .argument()
+      .build()
   }
 
   test("should plan single create with return") {
-    planFor("CREATE (a) return a")._2 should equal(
-      Create(Argument(), List(CreateNode("a", Seq.empty, None)), Nil)
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a) return a").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .create(CreateNode("a", Seq.empty, None))
+      .argument()
+      .build()
   }
 
   test("should plan create with labels") {
-    planFor("CREATE (a:A:B)")._2 should equal(
-      EmptyResult(
-        Create(Argument(), List(CreateNode("a", Seq(labelName("A"), labelName("B")), None)), Nil)
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a:A:B)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(CreateNode("a", Seq(labelName("A"), labelName("B")), None))
+      .argument()
+      .build()
   }
 
   test("should plan create with properties") {
-
-    planFor("CREATE (a {prop: 42})")._2 should equal(
-      EmptyResult(
-        Create(
-          Argument(),
-          List(
-            CreateNode("a", Seq.empty,
-              Some(
-                mapOfInt(("prop", 42))
-              )
-            )
-          ),
-          Nil
-        )
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("CREATE (a {prop: 42})").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(CreateNode("a", Seq.empty, Some(mapOfInt(("prop", 42)))))
+      .argument()
+      .build()
   }
 
   test("should plan match and create") {
-    planFor("MATCH (a) CREATE (b)")._2 should equal(
-      EmptyResult(
-        Create(AllNodesScan("a", Set.empty), List(CreateNode("b", Seq.empty, None)), Nil)
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("MATCH (a) CREATE (b)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(CreateNode("b", Seq.empty, None))
+      .allNodeScan("a")
+      .build()
   }
 
   test("should plan create in tail") {
-    planFor("MATCH (a) CREATE (b) WITH * MATCH(c) CREATE (d)")._2 should equal(
-      EmptyResult(
-        Create(
-          Eager(
-            Apply(
-              Eager(
-                Create(
-                  AllNodesScan("a", Set.empty),
-                  List(CreateNode("b", Seq.empty, None)), Nil
-                )
-              ),
-              AllNodesScan("c", Set("a", "b"))
-            )
-          ),
-          List(CreateNode("d", Seq.empty, None)), Nil
-        )
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("MATCH (a) CREATE (b) WITH * MATCH (c) CREATE (d)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .create(CreateNode("d", Seq.empty, None))
+      .eager()
+      .apply()
+      .|.allNodeScan("c", "a", "b")
+      .eager()
+      .create(CreateNode("b", Seq.empty, None))
+      .allNodeScan("a")
+      .build()
   }
 }
