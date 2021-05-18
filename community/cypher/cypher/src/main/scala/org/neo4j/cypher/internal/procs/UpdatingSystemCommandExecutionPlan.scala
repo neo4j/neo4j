@@ -110,7 +110,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
         finallyFunction(updatedParams)
       }
     } finally {
-      if (revertAccessModeChange != null) revertAccessModeChange
+      if (revertAccessModeChange != null) revertAccessModeChange.close()
     }
   }
 
