@@ -101,20 +101,20 @@ class RelationshipChecker implements Checker
     public void check( LongRange nodeIdRange, boolean firstRange, boolean lastRange ) throws Exception
     {
         execution.run( getClass().getSimpleName() + "-relationships", execution.partition( neoStores.getRelationshipStore(),
-                ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to, lastRange && last ) ) );
+                ( from, to, last ) -> () -> check( nodeIdRange, firstRange, from, to, firstRange && last ) ) );
         // Let's not report progress for this since it's so much faster than store checks, it's just scanning the cache
         execution.run( getClass().getSimpleName() + "-unusedRelationships", execution.partition( nodeIdRange,
                 ( from, to, last ) -> () -> checkNodesReferencingUnusedRelationships( from, to, context.pageCacheTracer ) ) );
     }
 
-    private void check( LongRange nodeIdRange, boolean firstRound, long fromRelationshipId, long toRelationshipId, boolean last ) throws Exception
+    private void check( LongRange nodeIdRange, boolean firstRound, long fromRelationshipId, long toRelationshipId, boolean checkToEndOfIndex ) throws Exception
     {
         RelationshipCounter counter = observedCounts.instantiateRelationshipCounter();
         long[] typeHolder = new long[1];
         try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG ) );
               RecordReader<RelationshipRecord> relationshipReader = new RecordReader<>( context.neoStores.getRelationshipStore(), true, cursorContext );
-              BoundedIterable<EntityTokenRange> relationshipTypeReader = getRelationshipTypeIndexReader( fromRelationshipId, toRelationshipId, last,
-                      cursorContext );
+              BoundedIterable<EntityTokenRange> relationshipTypeReader = getRelationshipTypeIndexReader( fromRelationshipId, toRelationshipId,
+                      checkToEndOfIndex, cursorContext );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorContext );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorContext,
                       context.memoryTracker ) )
@@ -203,10 +203,10 @@ class RelationshipChecker implements Checker
                 }
                 observedCounts.incrementRelationshipNodeCounts( counter, relationshipRecord, startNodeIsWithinRange, endNodeIsWithinRange );
             }
-            if ( !context.isCancelled() && relationshipTypeReader.maxCount() != 0 )
+            if ( firstRound && !context.isCancelled() && relationshipTypeReader.maxCount() != 0 )
             {
-                reportRemainingRelationshipTypeIndexEntries( relationshipTypeRangeIterator, typeIndexState, last ? Long.MAX_VALUE : toRelationshipId,
-                        cursorContext );
+                reportRemainingRelationshipTypeIndexEntries( relationshipTypeRangeIterator, typeIndexState,
+                        checkToEndOfIndex ? Long.MAX_VALUE : toRelationshipId, cursorContext );
             }
             localProgress.done();
         }
