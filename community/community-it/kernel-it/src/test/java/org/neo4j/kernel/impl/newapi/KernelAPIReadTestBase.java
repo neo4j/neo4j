@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -67,23 +68,6 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     @Inject
     private TestDirectory testDirectory;
 
-    @AfterEach
-    public void closeTransaction() throws Exception
-    {
-        tx.commit();
-        cursors.assertAllClosedAndReset();
-    }
-
-    @AfterAll
-    public static void tearDown()
-    {
-        if ( testSupport != null )
-        {
-            testSupport.tearDown();
-            testSupport = null;
-        }
-    }
-
     /**
      * Creates a new instance of KernelAPIReadTestSupport, which will be used to execute the concrete test
      */
@@ -107,15 +91,30 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     {
     }
 
-    @BeforeEach
-    public void setupGraph() throws KernelException
+    @BeforeAll
+    public void setupGraph()
     {
-        if ( testSupport == null )
-        {
-            testSupport = newTestSupport();
-            testSupport.setup( testDirectory.homePath(), this::createTestGraph, this::createSystemGraph );
-        }
+        testSupport = newTestSupport();
+        testSupport.setup( testDirectory.homePath(), this::createTestGraph, this::createSystemGraph );
+    }
+
+    @BeforeEach
+    public void disableAuth() throws KernelException
+    {
         changeUser( LoginContext.AUTH_DISABLED );
+    }
+
+    @AfterEach
+    public void closeTransaction() throws Exception
+    {
+        tx.commit();
+        cursors.assertAllClosedAndReset();
+    }
+
+    @AfterAll
+    public static void tearDown()
+    {
+        testSupport.tearDown();
     }
 
     protected void changeUser( LoginContext loginContext ) throws KernelException
