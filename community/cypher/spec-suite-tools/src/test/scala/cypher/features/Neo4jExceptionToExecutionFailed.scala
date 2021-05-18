@@ -69,7 +69,7 @@ object Phase {
   val compile = "compile time"
 }
 
-case class Neo4jExecutionFailed(errorType: String, phase: String, detail: String, cause: Throwable) extends Exception
+case class Neo4jExecutionFailed(errorType: String, phase: String, detail: String, cause: Throwable) extends Exception(cause)
 
 object Neo4jExceptionToExecutionFailed {
 
@@ -137,7 +137,9 @@ object Neo4jExceptionToExecutionFailed {
   }
 
   private def compileTimeDetail(msg: String): String = {
-    if (msg.matches("Invalid input. '-.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
+    if (msg == null)
+      ""
+    else if (msg.matches("Invalid input. '-.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
       NEGATIVE_INTEGER_ARGUMENT
     else if (msg.matches("Invalid input. '.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
       INVALID_ARGUMENT_TYPE
