@@ -73,8 +73,14 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
     semanticTable = semanticTable.addTypeInfoCTAny(variable)
   }
 
-  override protected def newAlias(variable: Variable, expression: Expression): Unit =
-    semanticTable = semanticTable.addTypeInfo(variable, semanticTable.types.get(expression).map(_.actual).getOrElse(CTAny.invariant))
+  override protected def newAlias(variable: Variable, expression: Expression): Unit = {
+    val typeInfo = semanticTable.types.get(expression).orElse(findTypeIgnoringPosition(expression))
+    val spec = typeInfo.map(_.actual).getOrElse(CTAny.invariant)
+    semanticTable = semanticTable.addTypeInfo(variable, spec)
+  }
+
+  private def findTypeIgnoringPosition(expr: Expression) =
+    semanticTable.types.iterator.collectFirst { case (`expr`, t) => t }
 
   private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {
     override def isNode(expr: Expression): Boolean = semanticTable.isNodeNoFail(expr)

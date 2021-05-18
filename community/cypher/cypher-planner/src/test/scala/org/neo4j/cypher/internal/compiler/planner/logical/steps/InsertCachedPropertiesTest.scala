@@ -757,7 +757,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan = new LogicalPlanBuilder()
       .produceResults("`n3.prop`").withEffectiveCardinality(200)
       .projection("n3.prop as `n3.prop`").withEffectiveCardinality(200)
-      .projection("n2 AS n3").withEffectiveCardinality(200).newVar("n3", CTNode)
+      .projection("n2 AS n3").withEffectiveCardinality(200)
       .apply().withEffectiveCardinality(200)
       .|.nodeByLabelScan("m", "B").withEffectiveCardinality(200)
       // Note, push down properties don't keep track of input position in all cases and can produce output like the following

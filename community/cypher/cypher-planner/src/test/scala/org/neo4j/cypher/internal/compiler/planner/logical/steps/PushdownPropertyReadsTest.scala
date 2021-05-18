@@ -671,7 +671,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
       .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
-      .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .projection("n AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .allNodeScan("n").withEffectiveCardinality(90)
 
@@ -691,8 +691,8 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
       .filter("unknownNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
-      .projection("mysteryNode AS unknownNode").withEffectiveCardinality(235).newVar("unknownNode", CTNode)
-      .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .projection("mysteryNode AS unknownNode").withEffectiveCardinality(235)
+      .projection("n AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .allNodeScan("n").withEffectiveCardinality(90)
 
@@ -701,8 +701,8 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       new LogicalPlanBuilder()
         .produceResults("n", "m")
         .filter("unknownNode.prop == 'NOT-IMPORTANT'")
-        .projection("mysteryNode AS unknownNode").newVar("unknownNode", CTNode)
-        .projection("n AS mysteryNode").newVar("mysteryNode", CTNode)
+        .projection("mysteryNode AS unknownNode")
+        .projection("n AS mysteryNode")
         .expand("(n)-->(m)")
         .cacheProperties("n.prop")
         .allNodeScan("n")
@@ -713,7 +713,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
       .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
-      .projection("m AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .projection("m AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .allNodeScan("n").withEffectiveCardinality(90)
 
@@ -733,7 +733,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
       .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
-      .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .projection("n AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
@@ -746,7 +746,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
       .filter("mysteryRel.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
-      .projection("r AS mysteryRel").withEffectiveCardinality(235).newVar("mysteryRel", CTRelationship)
+      .projection("r AS mysteryRel").withEffectiveCardinality(235)
       .expand("(n)-->(0)").withEffectiveCardinality(235)
       .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
@@ -758,7 +758,7 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should ignore unrelated renaming") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .projection("x AS mysteryVariable").withEffectiveCardinality(5).newVar("mysteryVariable", CTInteger)
+      .projection("x AS mysteryVariable").withEffectiveCardinality(5)
       .projection("1 AS x").withEffectiveCardinality(5).newVar("x", CTInteger)
       .allNodeScan("n").withEffectiveCardinality(5)
 
