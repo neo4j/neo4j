@@ -175,6 +175,10 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
     assertSameAST(testName)
   }
 
+  test("MATCH ()-[:Person*1..2]-(f) RETURN f") {
+    assertSameAST(testName)
+  }
+
   // extra spaces tests
 
   private def assertSameASTWithExtraSpaces(query: String) = {
