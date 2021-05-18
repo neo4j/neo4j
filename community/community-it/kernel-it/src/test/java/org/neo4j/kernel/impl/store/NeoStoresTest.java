@@ -834,21 +834,28 @@ public class NeoStoresTest
 
     private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void nodeLoadProperties( long nodeId, RECEIVER receiver )
     {
-        NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
+        NodeRecord nodeRecord = nodeStore.newRecord();
+        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, NULL ) )
+        {
+            nodeStore.getRecordByCursor( nodeId, nodeRecord, NORMAL, cursor );
+        }
         loadProperties( nodeRecord.getNextProp(), receiver );
     }
 
     private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void loadProperties( long nextProp, RECEIVER receiver )
     {
         PropertyRecord record = pStore.newRecord();
-        while ( !Record.NULL_REFERENCE.is( nextProp ) )
+        try ( var propertyCursor = pStore.openPageCursorForReading( nextProp, NULL ) )
         {
-            pStore.getRecord( nextProp, record, NORMAL, NULL );
-            for ( PropertyBlock propBlock : record )
+            while ( !Record.NULL_REFERENCE.is( nextProp ) )
             {
-                receiver.receive( propBlock.newPropertyKeyValue( pStore, NULL ), record.getId() );
+                pStore.getRecordByCursor( nextProp, record, NORMAL, propertyCursor );
+                for ( PropertyBlock propBlock : record )
+                {
+                    receiver.receive( propBlock.newPropertyKeyValue( pStore, NULL ), record.getId() );
+                }
+                nextProp = record.getNextProp();
             }
-            nextProp = record.getNextProp();
         }
     }
 

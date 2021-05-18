@@ -347,8 +347,11 @@ public class ConsistencyCheckServiceIntegrationTest
         NeoStores neoStores = fixture.neoStores();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
-        RelationshipRecord record = relationshipStore.getRecord( 4, relationshipRecord, RecordLoad.FORCE, NULL );
-        record.setInUse( false );
+        try ( var cursor = relationshipStore.openPageCursorForReading( 4, NULL ) )
+        {
+            relationshipStore.getRecordByCursor( 4, relationshipRecord, RecordLoad.FORCE, cursor );
+        }
+        relationshipRecord.setInUse( false );
         relationshipStore.updateRecord( relationshipRecord, NULL );
     }
 

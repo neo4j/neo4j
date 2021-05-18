@@ -190,9 +190,11 @@ class RelationshipChainCheckerTest extends CheckerTestBase
         }
 
         RelationshipStore relationshipStore = context( numberOfThreads() ).neoStores.getRelationshipStore();
-        RelationshipRecord arbitraryRelationship =
-                relationshipStore.getRecord( relationshipIds[relationshipIds.length / 2], relationshipStore.newRecord(), NORMAL,
-                        CursorContext.NULL );
+        RelationshipRecord arbitraryRelationship = relationshipStore.newRecord();
+        try ( var cursor = relationshipStore.openPageCursorForReading( 0, CursorContext.NULL ) )
+        {
+            relationshipStore.getRecordByCursor( relationshipIds[relationshipIds.length / 2], relationshipStore.newRecord(), NORMAL, cursor );
+        }
         vandal.accept( arbitraryRelationship );
         relationshipStore.updateRecord( arbitraryRelationship, CursorContext.NULL );
 
@@ -227,8 +229,13 @@ class RelationshipChainCheckerTest extends CheckerTestBase
 
         try ( var tx = tx() )
         {
-            RelationshipRecord first = relationshipStore.getRecord( firstRelationshipId, relationshipStore.newRecord(), NORMAL, CursorContext.NULL );
-            RelationshipRecord second = relationshipStore.getRecord( secondRelationshipId, relationshipStore.newRecord(), NORMAL, CursorContext.NULL );
+            RelationshipRecord first = relationshipStore.newRecord();
+            RelationshipRecord second = relationshipStore.newRecord();
+            try ( var cursor = relationshipStore.openPageCursorForReading( 0, CursorContext.NULL ) )
+            {
+                relationshipStore.getRecordByCursor( firstRelationshipId, first, NORMAL, cursor );
+                relationshipStore.getRecordByCursor( secondRelationshipId, second, NORMAL, cursor );
+            }
             vandal.accept( first, second );
             relationshipStore.updateRecord( first, CursorContext.NULL );
             relationshipStore.updateRecord( second, CursorContext.NULL );

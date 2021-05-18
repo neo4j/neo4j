@@ -87,8 +87,10 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
+import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -180,7 +182,7 @@ public class FullCheckIntegrationTest
     private final Log4jLogProvider logProvider = new Log4jLogProvider( logStream );
 
     @RegisterExtension
-    ExtendFailureMessageWatcher watcher = new ExtendFailureMessageWatcher( () -> String.format( "%n%s%n", logStream.toString() ) );
+    ExtendFailureMessageWatcher watcher = new ExtendFailureMessageWatcher( () -> String.format( "%n%s%n", logStream ) );
 
     protected int label1;
     protected int label2;
@@ -357,7 +359,10 @@ public class FullCheckIntegrationTest
         RelationshipRecord relationshipRecord = new RelationshipRecord( 0 );
 
         long relationshipId = idGenerator.relationship() - 1;
-        relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.NORMAL, NULL );
+        try ( var cursor = relationshipStore.openPageCursorForReading( relationshipId, NULL ) )
+        {
+            relationshipStore.getRecordByCursor( relationshipId, relationshipRecord, RecordLoad.NORMAL, cursor );
+        }
         relationshipRecord.setType( relationshipRecord.getType() + 1 );
         relationshipStore.updateRecord( relationshipRecord, NULL );
 
@@ -816,10 +821,14 @@ public class FullCheckIntegrationTest
 
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         NodeRecord nodeRecord = new NodeRecord( nodeId );
-        neoStores.getNodeStore().getRecord( nodeId, nodeRecord, FORCE, NULL );
+        NodeStore nodeStore = neoStores.getNodeStore();
+        try ( var cursor = nodeStore.openPageCursorForReading( 0, CursorContext.NULL ) )
+        {
+            nodeStore.getRecordByCursor( nodeId, nodeRecord, FORCE, cursor );
+        }
         nodeRecord.setLabelField( dynamicPointer( duplicatedLabel ), duplicatedLabel );
         nodeRecord.setInUse( true );
-        neoStores.getNodeStore().updateRecord( nodeRecord, NULL );
+        nodeStore.updateRecord( nodeRecord, NULL );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1176,7 +1185,11 @@ public class FullCheckIntegrationTest
         } );
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         DynamicStringStore nameStore = neoStores.getRelationshipTypeTokenStore().getNameStore();
-        DynamicRecord record = nameStore.getRecord( inconsistentName.get(), nameStore.newRecord(), FORCE, NULL );
+        DynamicRecord record = nameStore.newRecord();
+        try ( var cursor = nameStore.openPageCursorForReading( inconsistentName.get(), NULL ) )
+        {
+            nameStore.getRecordByCursor( inconsistentName.get(), record, FORCE, cursor );
+        }
         record.setNextBlock( record.getId() );
         nameStore.updateRecord( record, NULL );
 
@@ -1205,7 +1218,11 @@ public class FullCheckIntegrationTest
         } );
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         DynamicStringStore nameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
-        DynamicRecord record = nameStore.getRecord( propertyKeyNameIds.get()[0], nameStore.newRecord(), FORCE, NULL );
+        DynamicRecord record = nameStore.newRecord();
+        try ( var cursor = nameStore.openPageCursorForReading( 0, NULL ) )
+        {
+            nameStore.getRecordByCursor( propertyKeyNameIds.get()[0], record, FORCE, cursor );
+        }
         record.setNextBlock( record.getId() );
         nameStore.updateRecord( record, NULL );
 
@@ -1223,8 +1240,11 @@ public class FullCheckIntegrationTest
         // given
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         RecordStore<RelationshipTypeTokenRecord> relTypeStore = neoStores.getRelationshipTypeTokenStore();
-        RelationshipTypeTokenRecord record = relTypeStore.getRecord( (int) relTypeStore.nextId( NULL ),
-                relTypeStore.newRecord(), FORCE, NULL );
+        RelationshipTypeTokenRecord record = relTypeStore.newRecord();
+        try ( var cursor = relTypeStore.openPageCursorForReading( 0, NULL ) )
+        {
+            relTypeStore.getRecordByCursor( (int) relTypeStore.nextId( NULL ), record, FORCE, cursor );
+        }
         record.setNameId( 20 );
         record.setInUse( true );
         relTypeStore.updateRecord( record, NULL );
@@ -1243,11 +1263,15 @@ public class FullCheckIntegrationTest
     {
         // given
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
-        LabelTokenRecord record = neoStores.getLabelTokenStore().getRecord( 1,
-                neoStores.getLabelTokenStore().newRecord(), FORCE, NULL );
+        LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
+        LabelTokenRecord record = labelTokenStore.newRecord();
+        try ( var cursor = labelTokenStore.openPageCursorForReading( 1, NULL ) )
+        {
+            labelTokenStore.getRecordByCursor( 1, labelTokenStore.newRecord(), FORCE, cursor );
+        }
         record.setNameId( 20 );
         record.setInUse( true );
-        neoStores.getLabelTokenStore().updateRecord( record, NULL );
+        labelTokenStore.updateRecord( record, NULL );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1274,7 +1298,11 @@ public class FullCheckIntegrationTest
         } );
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         DynamicStringStore nameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
-        DynamicRecord record = nameStore.getRecord( propertyKeyNameIds.get()[0], nameStore.newRecord(), FORCE, NULL );
+        DynamicRecord record = nameStore.newRecord();
+        try ( var cursor = nameStore.openPageCursorForReading( 0, NULL ) )
+        {
+            nameStore.getRecordByCursor( propertyKeyNameIds.get()[0], record, FORCE, cursor );
+        }
         record.setInUse( false );
         nameStore.updateRecord( record, NULL );
 

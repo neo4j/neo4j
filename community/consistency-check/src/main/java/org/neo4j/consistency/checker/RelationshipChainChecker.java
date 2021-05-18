@@ -153,7 +153,9 @@ class RelationshipChainChecker implements Checker
     private void detectSingleRelationshipChainInconsistencies( LongRange nodeIdRange )
     {
         CacheAccess.Client client = cacheAccess.client();
-        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( SINGLE_RELATIONSHIP_CONSISTENCY_CHECKER_TAG ) ) )
+        RelationshipStore relationshipStore = context.neoStores.getRelationshipStore();
+        try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( SINGLE_RELATIONSHIP_CONSISTENCY_CHECKER_TAG ) );
+              var relationshipCursor = relationshipStore.openPageCursorForReading( 0, cursorContext ) )
         {
             for ( long nodeId = nodeIdRange.from(); nodeId < nodeIdRange.to(); nodeId++ )
             {
@@ -180,10 +182,10 @@ class RelationshipChainChecker implements Checker
 
                     if ( !consistent )
                     {
-                        RelationshipStore relationshipStore = context.neoStores.getRelationshipStore();
-                        RelationshipRecord relationship = relationshipStore.getRecord( relationshipId, relationshipStore.newRecord(), FORCE, cursorContext );
+                        RelationshipRecord relationship =
+                                relationshipStore.getRecordByCursor( relationshipId, relationshipStore.newRecord(), FORCE, relationshipCursor );
                         RelationshipRecord referenceRelationship =
-                                relationshipStore.getRecord( reference, relationshipStore.newRecord(), FORCE, cursorContext );
+                                relationshipStore.getRecordByCursor( reference, relationshipStore.newRecord(), FORCE, relationshipCursor );
                         linkOf( sourceOrTarget == SOURCE, prevOrNext == PREV ).reportDoesNotReferenceBack( reporter, relationship, referenceRelationship );
                     }
                 }

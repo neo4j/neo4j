@@ -179,7 +179,10 @@ public class NeoStores implements AutoCloseable
         {
             // We're going to open this store anyway so might as well do it here, like we open the others
             MetaDataStore metaDataStore = (MetaDataStore) getOrOpenStore( StoreType.META_DATA, cursorContext );
-            existingFormat = metaDataStore.getRecord( STORE_VERSION.id(), metaDataStore.newRecord(), RecordLoad.CHECK, cursorContext ).getValue();
+            try ( var cursor = metaDataStore.openPageCursorForReading( STORE_VERSION.id(), cursorContext ) )
+            {
+                existingFormat = metaDataStore.getRecordByCursor( STORE_VERSION.id(), metaDataStore.newRecord(), RecordLoad.CHECK, cursor ).getValue();
+            }
         }
         else
         {

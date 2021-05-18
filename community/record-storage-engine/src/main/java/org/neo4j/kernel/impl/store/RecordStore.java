@@ -33,10 +33,10 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 /**
  * A store for {@link #updateRecord(AbstractBaseRecord, CursorContext) updating} and
- * {@link #getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)}  getting} records.
+ * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}  getting} records.
  *
  * There are two ways of getting records, either one-by-one using
- * {@link #getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)}, passing in record retrieved from {@link #newRecord()}.
+ * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}, passing in record retrieved from {@link #newRecord()}.
  * This to make a conscious decision about who will create the record instance and in that process figure out
  * ways to reduce number of record instances created.
  * <p>
@@ -75,35 +75,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     void setHighestPossibleIdInUse( long highestIdInUse );
 
     /**
-     * @return a new record instance for receiving data by {@link #getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)}.
+     * @return a new record instance for receiving data by {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
      */
     RECORD newRecord();
-
-    /**
-     * Reads a record from the store into {@code target}. Depending on {@link RecordLoad} given there will
-     * be different behavior, although the {@code target} record will be marked with the specified
-     * {@code id} after participating in this method call.
-     * <ul>
-     * <li>{@link RecordLoad#CHECK}: As little data as possible is read to determine whether the record
-     *     is in use or not. If not in use then no more data will be loaded into the target record and
-     *     the data of the record will be {@link AbstractBaseRecord#clear() cleared}.</li>
-     * <li>{@link RecordLoad#NORMAL}: Just like {@link RecordLoad#CHECK}, but with the difference that
-     *     an {@link InvalidRecordException} will be thrown if the record isn't in use.</li>
-     * <li>{@link RecordLoad#FORCE}: The entire contents of the record will be loaded into the target record
-     *     regardless if the record is in use or not. This leaves no guarantees about the data in the record
-     *     after this method call, except that the id will be the specified {@code id}.
-     * <li>{@link RecordLoad#ALWAYS}: Similar to {@link RecordLoad#FORCE}, except the sanity checks on
-     *     the record data is always enabled.</li>
-     *
-     * @param id the id of the record to load.
-     * @param target record where data will be loaded into. This record will have its id set to the specified
-     * {@code id} as part of this method call.
-     * @param mode loading behaviour, read more in method description.
-     * @param cursorContext underlying page cursor context.
-     * @return the record that was passed in, for convenience.
-     * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
-     */
-    RECORD getRecord( long id, RECORD target, RecordLoad mode, CursorContext cursorContext ) throws InvalidRecordException;
 
     /**
      * Opens a {@link PageCursor} on this store, capable of reading records using
@@ -140,30 +114,43 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     PageCursor openPageCursorForWriting( long id, CursorContext cursorContext );
 
     /**
-     * Reads a record from the store into {@code target}, see
-     * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)}.
-     * <p>
+     * Reads a record from the store into {@code target}. Depending on {@link RecordLoad} given there will
+     * be different behavior, although the {@code target} record will be marked with the specified
+     * {@code id} after participating in this method call.
+     * <ul>
+     * <li>{@link RecordLoad#CHECK}: As little data as possible is read to determine whether the record
+     *     is in use or not. If not in use then no more data will be loaded into the target record and
+     *     the data of the record will be {@link AbstractBaseRecord#clear() cleared}.</li>
+     * <li>{@link RecordLoad#NORMAL}: Just like {@link RecordLoad#CHECK}, but with the difference that
+     *     an {@link InvalidRecordException} will be thrown if the record isn't in use.</li>
+     * <li>{@link RecordLoad#FORCE}: The entire contents of the record will be loaded into the target record
+     *     regardless if the record is in use or not. This leaves no guarantees about the data in the record
+     *     after this method call, except that the id will be the specified {@code id}.
+     * <li>{@link RecordLoad#ALWAYS}: Similar to {@link RecordLoad#FORCE}, except the sanity checks on
+     *     the record data is always enabled.</li>
+     *
      * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
      * correct page if needed.
      *
-     * @param id the record id, understood to be the absolute reference to the store.
-     * @param target the record to fill.
-     * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)}.
+     * @param id the id of the record to load.
+     * @param target record where data will be loaded into. This record will have its id set to the specified
+     * {@code id} as part of this method call.
+     * @param mode loading behaviour, read more in method description.
      * @param cursor the PageCursor to use for record loading.
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
-    void getRecordByCursor( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
+    RECORD getRecordByCursor( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
 
     /**
      * Reads a record from the store into {@code target}, see
-     * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)}.
+     * {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
      * <p>
      * This method requires that the cursor page and offset point to the first byte of the record in target on calling.
      * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
      * next page if the input record was the last on it's page.
      *
      * @param target the record to fill.
-     * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad, CursorContext)}.
+     * @param mode loading behaviour, read more in {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
      * @param cursor the PageCursor to use for record loading.
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */

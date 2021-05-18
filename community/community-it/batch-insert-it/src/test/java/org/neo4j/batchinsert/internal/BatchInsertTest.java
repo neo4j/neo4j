@@ -771,12 +771,15 @@ class BatchInsertTest
             SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders, () -> KernelVersion.LATEST );
             List<Long> inUse = new ArrayList<>();
             SchemaRecord record = store.newRecord();
-            for ( long i = 1, high = store.getHighestPossibleIdInUse( NULL ); i <= high; i++ )
+            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
             {
-                store.getRecord( i, record, RecordLoad.FORCE, NULL );
-                if ( record.inUse() )
+                for ( long i = 1, high = store.getHighestPossibleIdInUse( NULL ); i <= high; i++ )
                 {
-                    inUse.add( i );
+                    store.getRecordByCursor( i, record, RecordLoad.FORCE, cursor );
+                    if ( record.inUse() )
+                    {
+                        inUse.add( i );
+                    }
                 }
             }
             assertEquals( 2, inUse.size(), "records in use" );
@@ -1118,7 +1121,11 @@ class BatchInsertTest
 
         NeoStores neoStores = getFlushedNeoStores( inserter );
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord record = nodeStore.getRecord( node1, nodeStore.newRecord(), NORMAL, NULL );
+        NodeRecord record = nodeStore.newRecord();
+        try ( var cursor = nodeStore.openPageCursorForReading( 0, NULL ) )
+        {
+            nodeStore.getRecordByCursor( node1, record, NORMAL, cursor );
+        }
         assertTrue( record.isDense(), "Node " + record + " should have been dense" );
         inserter.shutdown();
     }
@@ -1153,7 +1160,11 @@ class BatchInsertTest
 
         // THEN
         NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
+        NodeRecord node = nodeStore.newRecord();
+        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, NULL ) )
+        {
+            nodeStore.getRecordByCursor( nodeId, node, NORMAL, cursor );
+        }
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
         long[] labelIds = labels.get( nodeStore, NULL );
         assertEquals( 1, labelIds.length );
@@ -1175,7 +1186,11 @@ class BatchInsertTest
 
         // THEN
         NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
+        NodeRecord node = nodeStore.newRecord();
+        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, NULL ) )
+        {
+            nodeStore.getRecordByCursor( nodeId, node, NORMAL, cursor );
+        }
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
         long[] labelIds = labels.get( nodeStore, NULL );

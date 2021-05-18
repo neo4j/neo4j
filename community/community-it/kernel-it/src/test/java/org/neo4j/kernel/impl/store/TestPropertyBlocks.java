@@ -177,11 +177,16 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
     private List<Pair<String, Object>> getPropertiesFromRecord( long recordId )
     {
         final List<Pair<String, Object>> props = new ArrayList<>();
-        final PropertyRecord record = propertyStore().getRecord( recordId, propertyStore().newRecord(), RecordLoad.FORCE, NULL );
+        PropertyStore propertyStore = propertyStore();
+        final PropertyRecord record = propertyStore.newRecord();
+        try ( var cursor = propertyStore.openPageCursorForReading( 0, NULL ) )
+        {
+            propertyStore.getRecordByCursor( recordId, record, RecordLoad.FORCE, cursor );
+        }
         record.forEach( block ->
         {
-            final Object value = propertyStore().getValue( block, NULL ).asObject();
-            final String name = propertyStore().getPropertyKeyTokenStore().getToken( block.getKeyIndexId(), NULL ).name();
+            final Object value = propertyStore.getValue( block, NULL ).asObject();
+            final String name = propertyStore.getPropertyKeyTokenStore().getToken( block.getKeyIndexId(), NULL ).name();
             props.add( pair( name, value ) );
         } );
         return props;

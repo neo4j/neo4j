@@ -153,7 +153,11 @@ class NeoStoresIT
         }
 
         var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRecord" ) );
-        nodeStore.getRecord( nodeId, new NodeRecord( nodeId ), RecordLoad.NORMAL, cursorContext );
+        NodeRecord nodeRecord = new NodeRecord( nodeId );
+        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, cursorContext ) )
+        {
+            nodeStore.getRecordByCursor( nodeId, nodeRecord, RecordLoad.NORMAL, cursor );
+        }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 1, cursorTracer.hits() );

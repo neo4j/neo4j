@@ -57,7 +57,10 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
     @Override
     protected RelationshipRecord getLight( long id, RelationshipStore store )
     {
-        return store.getRecord( id, store.newRecord(), NORMAL, NULL );
+        try ( var cursor = store.openPageCursorForReading( id, NULL ) )
+        {
+            return store.getRecordByCursor( id, store.newRecord(), NORMAL, cursor );
+        }
     }
 
     @Override

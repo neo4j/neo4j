@@ -46,6 +46,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.lock.ResourceTypes.NODE;
@@ -323,7 +324,7 @@ public class LockVerificationMonitor implements LoadMonitor
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
             PropertyRecord record = readRecord( id, propertyStore );
-            propertyStore.ensureHeavy( record, CursorContext.NULL );
+            propertyStore.ensureHeavy( record, NULL );
             return record;
         }
 
@@ -332,7 +333,7 @@ public class LockVerificationMonitor implements LoadMonitor
         {
             try
             {
-                return schemaRuleAccess.loadSingleSchemaRule( id, CursorContext.NULL );
+                return schemaRuleAccess.loadSingleSchemaRule( id, NULL );
             }
             catch ( MalformedSchemaRuleException e )
             {
@@ -348,7 +349,10 @@ public class LockVerificationMonitor implements LoadMonitor
 
         private static <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )
         {
-            return store.getRecord( id, store.newRecord(), RecordLoad.ALWAYS, CursorContext.NULL );
+            try ( var cursor = store.openPageCursorForReading( id, NULL ) )
+            {
+                return store.getRecordByCursor( id, store.newRecord(), RecordLoad.ALWAYS, cursor );
+            }
         }
     }
 }

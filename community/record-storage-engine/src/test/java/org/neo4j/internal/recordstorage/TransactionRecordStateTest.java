@@ -1592,20 +1592,24 @@ class TransactionRecordStateTest
     private static void assertRelationshipGroupsInOrder( NeoStores neoStores, long nodeId, int... types )
     {
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
-        assertTrue( node.isDense(), "Node should be dense, is " + node );
-        long groupId = node.getNextRel();
-        int cursor = 0;
-        List<RelationshipGroupRecord> seen = new ArrayList<>();
-        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        try ( var nodeCursor = nodeStore.openPageCursorForReading( nodeId, NULL );
+              var relGroupCursor = relationshipGroupStore.openPageCursorForReading( 0, NULL ) )
         {
-            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-            RelationshipGroupRecord group = relationshipGroupStore.getRecord( groupId, relationshipGroupStore.newRecord(), NORMAL, NULL );
-            seen.add( group );
-            assertEquals( types[cursor++], group.getType(), "Invalid type, seen groups so far " + seen );
-            groupId = group.getNext();
+            NodeRecord node = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, nodeCursor );
+            assertTrue( node.isDense(), "Node should be dense, is " + node );
+            long groupId = node.getNextRel();
+            int cursor = 0;
+            List<RelationshipGroupRecord> seen = new ArrayList<>();
+            while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                RelationshipGroupRecord group = relationshipGroupStore.getRecordByCursor( groupId, relationshipGroupStore.newRecord(), NORMAL, relGroupCursor );
+                seen.add( group );
+                assertEquals( types[cursor++], group.getType(), "Invalid type, seen groups so far " + seen );
+                groupId = group.getNext();
+            }
+            assertEquals( types.length, cursor, "Not enough relationship group records found in chain for " + node );
         }
-        assertEquals( types.length, cursor, "Not enough relationship group records found in chain for " + node );
     }
 
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
@@ -1752,8 +1756,11 @@ class TransactionRecordStateTest
     private static void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse )
     {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
-        DynamicRecord record = dynamicLabelStore.getRecord( id, dynamicLabelStore.nextRecord( NULL ), FORCE, NULL );
-        assertEquals( inUse, record.inUse() );
+        try ( var cursor = dynamicLabelStore.openPageCursorForReading( id, NULL ) )
+        {
+            DynamicRecord record = dynamicLabelStore.getRecordByCursor( id, dynamicLabelStore.nextRecord( NULL ), FORCE, cursor );
+            assertEquals( inUse, record.inUse() );
+        }
     }
 
     private static Value string( int length )

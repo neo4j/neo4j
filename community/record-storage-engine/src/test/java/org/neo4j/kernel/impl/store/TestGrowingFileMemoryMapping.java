@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -83,14 +84,16 @@ class TestGrowingFileMemoryMapping
 
         // then
         NodeRecord record = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
-        for ( int i = 0; i < iterations; i++ )
+        try ( var pageCursor = nodeStore.openPageCursorForReading( 0, CursorContext.NULL ) )
         {
-            record.setId( startingId + i );
-            nodeStore.getRecord( i, record, NORMAL, CursorContext.NULL );
-            assertTrue( record.inUse(), "record[" + i + "] should be in use" );
-            assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( i );
+            for ( int i = 0; i < iterations; i++ )
+            {
+                record.setId( startingId + i );
+                nodeStore.getRecordByCursor( i, record, NORMAL, pageCursor );
+                assertTrue( record.inUse(), "record[" + i + "] should be in use" );
+                assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( i );
+            }
         }
-
         neoStores.close();
     }
 }

@@ -223,11 +223,19 @@ public class DetectRandomSabotageIT
     {
         //Given
         SchemaStore schemaStore = neoStores.getSchemaStore();
-        long indexId = resolver.resolveDependency( IndexingService.class ).getIndexIds().longIterator().next();
-        SchemaRecord schemaRecord = schemaStore.getRecord( indexId, schemaStore.newRecord(), RecordLoad.FORCE, NULL );
-
         PropertyStore propertyStore = schemaStore.propertyStore();
-        PropertyRecord indexConfigPropertyRecord = propertyStore.getRecord( schemaRecord.getNextProp(), propertyStore.newRecord(), RecordLoad.FORCE, NULL );
+        long indexId = resolver.resolveDependency( IndexingService.class ).getIndexIds().longIterator().next();
+        SchemaRecord schemaRecord = schemaStore.newRecord();
+        try ( var cursor = schemaStore.openPageCursorForReading( indexId, NULL ) )
+        {
+            schemaStore.getRecordByCursor( indexId, schemaRecord, RecordLoad.FORCE, cursor );
+        }
+
+        PropertyRecord indexConfigPropertyRecord = propertyStore.newRecord();
+        try ( var propertyCursor = propertyStore.openPageCursorForReading( 0, NULL ) )
+        {
+            propertyStore.getRecordByCursor( schemaRecord.getNextProp(), indexConfigPropertyRecord, RecordLoad.FORCE, propertyCursor );
+        }
         propertyStore.ensureHeavy( indexConfigPropertyRecord, NULL );
 
         //When
@@ -466,7 +474,11 @@ public class DetectRandomSabotageIT
                     {
                         NodeStore store = stores.getNodeStore();
                         NodeRecord node = randomRecord( random, store, usedRecord() );
-                        NodeRecord before = store.getRecord( node.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
+                        NodeRecord before = store.newRecord();
+                        try ( var cursor = store.openPageCursorForReading( node.getId(), NULL ) )
+                        {
+                            store.getRecordByCursor( node.getId(), before, RecordLoad.NORMAL, cursor );
+                        }
                         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
                         long[] existing = nodeLabels.get( store, NULL );
                         if ( random.nextBoolean() )
@@ -511,7 +523,11 @@ public class DetectRandomSabotageIT
                     {
                         RelationshipStore store = stores.getRelationshipStore();
                         RelationshipRecord relationship = randomRecord( random, store, usedRecord() );
-                        RelationshipRecord before = store.getRecord( relationship.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
+                        RelationshipRecord before = store.newRecord();
+                        try ( var cursor = store.openPageCursorForReading( relationship.getId(), NULL ) )
+                        {
+                            store.getRecordByCursor( relationship.getId(), before, RecordLoad.NORMAL, cursor );
+                        }
                         LongSupplier rng = () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true );
                         switch ( random.nextInt( 4 ) )
                         {
@@ -567,7 +583,11 @@ public class DetectRandomSabotageIT
                                     }
 
                                     PropertyStore propertyStore = stores.getPropertyStore();
-                                    PropertyRecord record = propertyStore.getRecord( propertyId, propertyStore.newRecord(), RecordLoad.CHECK, NULL );
+                                    PropertyRecord record = propertyStore.newRecord();
+                                    try ( var cursor = propertyStore.openPageCursorForReading( propertyId, NULL ) )
+                                    {
+                                        propertyStore.getRecordByCursor( propertyId, record, RecordLoad.CHECK, cursor );
+                                    }
                                     return !record.inUse() || !NULL_REFERENCE.is( record.getPrevProp() );
                                 } ) );
                     }
@@ -980,7 +1000,11 @@ public class DetectRandomSabotageIT
         protected <T extends AbstractBaseRecord> Sabotage setRandomRecordNotInUse( RandomRule random, RecordStore<T> store )
         {
             T before = randomRecord( random, store, usedRecord() );
-            T record = store.getRecord( before.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
+            T record = store.newRecord();
+            try ( var cursor = store.openPageCursorForReading( before.getId(), NULL ) )
+            {
+                store.getRecordByCursor( before.getId(), record, RecordLoad.NORMAL, cursor );
+            }
             record.setInUse( false );
             store.updateRecord( record, NULL );
             return recordSabotage( before, record );
@@ -1002,7 +1026,11 @@ public class DetectRandomSabotageIT
                 ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, LongSupplier rng )
         {
             T before = randomRecord( random, store, filter );
-            T record = store.getRecord( before.getId(), store.newRecord(), RecordLoad.NORMAL, NULL );
+            T record = store.newRecord();
+            try ( var cursor = store.openPageCursorForReading( before.getId(), NULL ) )
+            {
+                store.getRecordByCursor( before.getId(), record, RecordLoad.NORMAL, cursor );
+            }
             guaranteedChangedId( () -> idGetter.applyAsLong( record ), changedId -> idSetter.accept( record, changedId ), rng );
             store.updateRecord( record, NULL );
             return recordSabotage( before, record );
@@ -1026,23 +1054,30 @@ public class DetectRandomSabotageIT
                 PropertyType valueType, Consumer<DynamicRecord> vandal, Predicate<Value> checkability )
         {
             PropertyRecord propertyRecord = propertyStore.newRecord();
-            while ( true )
+            try ( var propertyCursor = propertyStore.openPageCursorForReading( 0, NULL ) )
             {
-                propertyStore.getRecord( random.nextLong( propertyStore.getHighId() ), propertyRecord, RecordLoad.CHECK, NULL );
-                if ( propertyRecord.inUse() )
+                while ( true )
                 {
-                    for ( PropertyBlock block : propertyRecord )
+                    propertyStore.getRecordByCursor( random.nextLong( propertyStore.getHighId() ), propertyRecord, RecordLoad.CHECK, propertyCursor );
+                    if ( propertyRecord.inUse() )
                     {
-                        if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore, NULL ) ) )
+                        for ( PropertyBlock block : propertyRecord )
                         {
-                            propertyStore.ensureHeavy( block, NULL );
-                            if ( block.getValueRecords().size() > 1 )
+                            if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore, NULL ) ) )
                             {
-                                DynamicRecord dynamicRecord = block.getValueRecords().get( random.nextInt( block.getValueRecords().size() - 1 ) );
-                                DynamicRecord before = dynamicStore.getRecord( dynamicRecord.getId(), dynamicStore.newRecord(), RecordLoad.NORMAL, NULL );
-                                vandal.accept( dynamicRecord );
-                                dynamicStore.updateRecord( dynamicRecord, NULL );
-                                return recordSabotage( before, dynamicRecord );
+                                propertyStore.ensureHeavy( block, NULL );
+                                if ( block.getValueRecords().size() > 1 )
+                                {
+                                    DynamicRecord dynamicRecord = block.getValueRecords().get( random.nextInt( block.getValueRecords().size() - 1 ) );
+                                    DynamicRecord before = dynamicStore.newRecord();
+                                    try ( var dynamicCursor = dynamicStore.openPageCursorForReading( dynamicRecord.getId(), NULL ) )
+                                    {
+                                        dynamicStore.getRecordByCursor( dynamicRecord.getId(), before, RecordLoad.NORMAL, dynamicCursor );
+                                    }
+                                    vandal.accept( dynamicRecord );
+                                    dynamicStore.updateRecord( dynamicRecord, NULL );
+                                    return recordSabotage( before, dynamicRecord );
+                                }
                             }
                         }
                     }
@@ -1076,12 +1111,15 @@ public class DetectRandomSabotageIT
         {
             long highId = store.getHighId();
             T record = store.newRecord();
-            do
+            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
             {
-                // Load with FORCE to ignore not-in-use and decoding errors at this stage.
-                store.getRecord( random.nextLong( highId ), record, RecordLoad.FORCE, NULL );
+                do
+                {
+                    // Load with FORCE to ignore not-in-use and decoding errors at this stage.
+                    store.getRecordByCursor( random.nextLong( highId ), record, RecordLoad.FORCE, cursor );
+                }
+                while ( !filter.test( record ) );
             }
-            while ( !filter.test( record ) );
             return record;
         }
 

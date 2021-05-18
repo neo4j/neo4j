@@ -43,6 +43,7 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -101,14 +102,20 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
 
     protected R getHeavy( S store, long id )
     {
-        R record = store.getRecord( id, store.newRecord(), NORMAL, CursorContext.NULL );
-        store.ensureHeavy( record, CursorContext.NULL );
-        return record;
+        try ( var cursor = store.openPageCursorForReading( id, NULL ) )
+        {
+            R record = store.getRecordByCursor( id, store.newRecord(), NORMAL, cursor );
+            store.ensureHeavy( record, CursorContext.NULL );
+            return record;
+        }
     }
 
     R getForce( S store, int id )
     {
-        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE, CursorContext.NULL );
+        try ( var cursor = store.openPageCursorForReading( id, NULL ) )
+        {
+            return store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, cursor );
+        }
     }
 
     @Test

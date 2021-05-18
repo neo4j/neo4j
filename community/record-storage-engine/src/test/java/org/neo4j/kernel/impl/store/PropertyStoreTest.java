@@ -101,9 +101,12 @@ class PropertyStoreTest
 
                 doAnswer( invocation ->
                 {
-                    PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE, NULL );
-                    assertFalse( recordBeforeWrite.inUse() );
-                    return null;
+                    try ( var cursor = store.openPageCursorForReading( propertyRecordId, NULL ) )
+                    {
+                        PropertyRecord recordBeforeWrite = store.getRecordByCursor( propertyRecordId, store.newRecord(), FORCE, cursor );
+                        assertFalse( recordBeforeWrite.inUse() );
+                        return null;
+                    }
                 } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any() );
 
                 // when

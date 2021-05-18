@@ -279,7 +279,11 @@ class SchemaCheckerTest extends CheckerTestBase
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );
             schemaStorage.writeSchemaRule( index, cursorContext, INSTANCE );
-            SchemaRecord schemaRecord = schemaStore.getRecord( index.getId(), schemaStore.newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
+            SchemaRecord schemaRecord = schemaStore.newRecord();
+            try ( var cursor = schemaStore.openPageCursorForReading( index.getId(), CursorContext.NULL ) )
+            {
+                schemaStore.getRecordByCursor( index.getId(), schemaRecord, RecordLoad.NORMAL, cursor );
+            }
             propertyStore.updateRecord( new PropertyRecord( schemaRecord.getNextProp() ), CursorContext.NULL );
         }
 
@@ -607,7 +611,11 @@ class SchemaCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // (T)--->(D)---> (vandalized dynamic value chain)
-            TOKEN record = store.getRecord( tokenId, store.newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
+            TOKEN record = store.newRecord();
+            try ( var cursor = store.openPageCursorForReading( tokenId, CursorContext.NULL ) )
+            {
+                store.getRecordByCursor( tokenId, record, RecordLoad.NORMAL, cursor );
+            }
             store.ensureHeavy( record, CursorContext.NULL );
             vandal.accept( record );
             DynamicStringStore nameStore = store.getNameStore();

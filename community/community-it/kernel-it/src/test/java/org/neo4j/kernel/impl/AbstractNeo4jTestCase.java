@@ -110,12 +110,15 @@ public abstract class AbstractNeo4jTestCase
     private static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse( RecordStore<RECORD> store )
     {
         int inUse = 0;
-        for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
         {
-            RECORD record = store.getRecord( id, store.newRecord(), RecordLoad.FORCE, NULL );
-            if ( record.inUse() )
+            for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )
             {
-                inUse++;
+                RECORD record = store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, cursor );
+                if ( record.inUse() )
+                {
+                    inUse++;
+                }
             }
         }
         return inUse;
@@ -123,12 +126,15 @@ public abstract class AbstractNeo4jTestCase
 
     protected static <RECORD extends AbstractBaseRecord> long lastUsedRecordId( RecordStore<RECORD> store )
     {
-        for ( long id = store.getHighId(); id > store.getNumberOfReservedLowIds(); id-- )
+        try ( var cursor = store.openPageCursorForReading( store.getHighId(), NULL ) )
         {
-            RECORD record = store.getRecord( id, store.newRecord(), RecordLoad.FORCE, NULL );
-            if ( record.inUse() )
+            for ( long id = store.getHighId(); id > store.getNumberOfReservedLowIds(); id-- )
             {
-                return id;
+                RECORD record = store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, cursor );
+                if ( record.inUse() )
+                {
+                    return id;
+                }
             }
         }
         return 0;

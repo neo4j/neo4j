@@ -427,23 +427,26 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         Map<String,Value> props = new HashMap<>();
         PropertyRecord propRecord = propertyStore.newRecord();
         long nextProp = record.getNextProp();
-        while ( nextProp != NO_NEXT_PROPERTY.longValue() )
+        try ( var propertyCursor = propertyStore.openPageCursorForWriting( nextProp, cursorContext ) )
         {
-            try
+            while ( nextProp != NO_NEXT_PROPERTY.longValue() )
             {
-                propertyStore.getRecord( nextProp, propRecord, RecordLoad.NORMAL, cursorContext );
+                try
+                {
+                    propertyStore.getRecordByCursor( nextProp, propRecord, RecordLoad.NORMAL, propertyCursor );
+                }
+                catch ( InvalidRecordException e )
+                {
+                    throw new MalformedSchemaRuleException(
+                            "Cannot read schema rule because it is referencing a property record (id " + nextProp + ") that is invalid: " + propRecord, e );
+                }
+                for ( PropertyBlock propertyBlock : propRecord )
+                {
+                    PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore, cursorContext );
+                    insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
+                }
+                nextProp = propRecord.getNextProp();
             }
-            catch ( InvalidRecordException e )
-            {
-                throw new MalformedSchemaRuleException(
-                        "Cannot read schema rule because it is referencing a property record (id " + nextProp + ") that is invalid: " + propRecord, e );
-            }
-            for ( PropertyBlock propertyBlock : propRecord )
-            {
-                PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore, cursorContext );
-                insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
-            }
-            nextProp = propRecord.getNextProp();
         }
         if ( props.isEmpty() )
         {

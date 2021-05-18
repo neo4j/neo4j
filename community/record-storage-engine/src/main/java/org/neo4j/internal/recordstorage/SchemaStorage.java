@@ -88,8 +88,7 @@ public class SchemaStorage implements SchemaRuleAccess
     @Override
     public SchemaRule loadSingleSchemaRule( long ruleId, CursorContext cursorContext ) throws MalformedSchemaRuleException
     {
-        SchemaRecord record = schemaStore.newRecord();
-        schemaStore.getRecord( ruleId, record, RecordLoad.NORMAL, cursorContext );
+        SchemaRecord record = loadSchemaRecord( ruleId, cursorContext );
         return readSchemaRule( record, cursorContext );
     }
 
@@ -235,8 +234,7 @@ public class SchemaStorage implements SchemaRuleAccess
     @Override
     public void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext )
     {
-        SchemaRecord record = schemaStore.newRecord();
-        schemaStore.getRecord( rule.getId(), record, RecordLoad.CHECK, cursorContext );
+        var record = loadSchemaRecord( rule.getId(), cursorContext );
         if ( record.inUse() )
         {
             long nextProp = record.getNextProp();
@@ -244,12 +242,24 @@ public class SchemaStorage implements SchemaRuleAccess
             schemaStore.updateRecord( record, cursorContext );
             PropertyStore propertyStore = schemaStore.propertyStore();
             PropertyRecord props = propertyStore.newRecord();
-            while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() && propertyStore.getRecord( nextProp, props, RecordLoad.NORMAL, cursorContext ).inUse() )
+            try ( var propertyCursor = propertyStore.openPageCursorForReading( nextProp, cursorContext ) )
             {
-                nextProp = props.getNextProp();
-                props.setInUse( false );
-                propertyStore.updateRecord( props, cursorContext );
+                while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() &&
+                        propertyStore.getRecordByCursor( nextProp, props, RecordLoad.NORMAL, propertyCursor ).inUse() )
+                {
+                    nextProp = props.getNextProp();
+                    props.setInUse( false );
+                    propertyStore.updateRecord( props, cursorContext );
+                }
             }
+        }
+    }
+
+    private SchemaRecord loadSchemaRecord( long ruleId, CursorContext cursorContext )
+    {
+        try ( var cursor = schemaStore.openPageCursorForReading( ruleId, cursorContext ) )
+        {
+            return schemaStore.getRecordByCursor( ruleId, schemaStore.newRecord(), RecordLoad.NORMAL, cursor );
         }
     }
 
@@ -276,7 +286,12 @@ public class SchemaStorage implements SchemaRuleAccess
         }
 
         return Stream.concat( LongStream.range( startId, endId )
-                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, cursorContext ) )
+                .mapToObj( id -> {
+                    try ( var cursor = schemaStore.openPageCursorForReading( id, cursorContext ) )
+                    {
+                        return schemaStore.getRecordByCursor( id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, cursor );
+                    }
+                } )
                 .filter( AbstractBaseRecord::inUse )
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, cursorContext ) ), nli );
     }

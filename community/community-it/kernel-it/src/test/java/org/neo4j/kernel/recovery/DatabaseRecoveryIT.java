@@ -502,17 +502,21 @@ class DatabaseRecoveryIT
         long maxHighId = max( highId1, highId2 );
         RECORD record1 = store1.newRecord();
         RECORD record2 = store2.newRecord();
-        for ( long id = store1.getNumberOfReservedLowIds(); id < maxHighId; id++ )
+        try ( var cursor1 = store1.openPageCursorForReading( 0, CursorContext.NULL );
+             var cursor2 = store2.openPageCursorForReading( 0, CursorContext.NULL ) )
         {
-            store1.getRecord( id, record1, RecordLoad.CHECK, CursorContext.NULL );
-            store2.getRecord( id, record2, RecordLoad.CHECK, CursorContext.NULL );
-            boolean deletedAndDynamicPropertyRecord = !record1.inUse() && store1 instanceof AbstractDynamicStore;
-            if ( !deletedAndDynamicPropertyRecord )
+            for ( long id = store1.getNumberOfReservedLowIds(); id < maxHighId; id++ )
             {
-                assertEquals( record1, record2 );
+                store1.getRecordByCursor( id, record1, RecordLoad.CHECK, cursor1 );
+                store2.getRecordByCursor( id, record2, RecordLoad.CHECK, cursor2 );
+                boolean deletedAndDynamicPropertyRecord = !record1.inUse() && store1 instanceof AbstractDynamicStore;
+                if ( !deletedAndDynamicPropertyRecord )
+                {
+                    assertEquals( record1, record2 );
+                }
+                // else this record is a dynamic record which came from a property record update, a dynamic record which will not be set back
+                // to unused during reverse recovery and therefore cannot be checked with equality between the two versions of that record.
             }
-            // else this record is a dynamic record which came from a property record update, a dynamic record which will not be set back
-            // to unused during reverse recovery and therefore cannot be checked with equality between the two versions of that record.
         }
     }
 

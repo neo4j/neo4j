@@ -177,20 +177,33 @@ class CommonAbstractStoreBehaviourTest
     @Test
     void getRecordMustThrowOnPageOverflow()
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL, NULL ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> {
+            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            {
+                store.getRecordByCursor( 5, new IntRecord( 5 ), NORMAL, cursor );
+            }
+        } );
     }
 
     @Test
     void getRecordMustThrowOnPageOverflowWithCheckLoadMode()
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> {
+            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            {
+                store.getRecordByCursor( 5, new IntRecord( 5 ), CHECK, cursor );
+            }
+        } );
     }
 
     @Test
     void getRecordMustNotThrowOnPageOverflowWithForceLoadMode()
     {
         prepareStoreForOutOfBoundsAccess();
-        store.getRecord( 5, new IntRecord( 5 ), FORCE, NULL );
+        try ( var cursor = store.openPageCursorForReading( 5, NULL ) )
+        {
+            store.getRecordByCursor( 5, new IntRecord( 5 ), FORCE, cursor );
+        }
     }
 
     @Test
@@ -202,20 +215,33 @@ class CommonAbstractStoreBehaviourTest
     @Test
     void getRecordMustThrowOnCursorError()
     {
-        verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL, NULL ) );
+        verifyExceptionOnCursorError( () -> {
+            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            {
+                store.getRecordByCursor( 5, new IntRecord( 5 ), NORMAL, cursor );
+            }
+        } );
     }
 
     @Test
     void getRecordMustThrowOnCursorErrorWithCheckLoadMode()
     {
-        verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), CHECK, NULL ) );
+        verifyExceptionOnCursorError( () -> {
+            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            {
+                store.getRecordByCursor( 5, new IntRecord( 5 ), CHECK, cursor );
+            }
+        } );
     }
 
     @Test
     void getRecordMustNotThrowOnCursorErrorWithForceLoadMode()
     {
         prepareStoreForCursorError();
-        store.getRecord( 5, new IntRecord( 5 ), FORCE, NULL );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            store.getRecordByCursor( 5, new IntRecord( 5 ), FORCE, cursor );
+        }
     }
 
     @Test

@@ -260,7 +260,11 @@ class SchemaStore35Test
     public List<DynamicRecord> allocateFrom( SchemaRule rule, CursorContext cursorContext )
     {
         List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = store.getRecord( rule.getId(), store.newRecord(), CHECK, cursorContext );
+        DynamicRecord record = store.newRecord();
+        try ( var cursor = store.openPageCursorForReading( rule.getId(), cursorContext ) )
+        {
+            store.getRecordByCursor( rule.getId(), record, CHECK, cursor );
+        }
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), store );
         allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorContext, INSTANCE );
         return records;

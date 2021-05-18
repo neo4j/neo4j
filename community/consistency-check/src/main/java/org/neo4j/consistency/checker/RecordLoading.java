@@ -197,7 +197,10 @@ class RecordLoading
 
     <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, RECORD record, long id, CursorContext cursorContext )
     {
-        return store.getRecord( id, record, RecordLoad.FORCE, cursorContext );
+        try ( var cursor = store.openPageCursorForReading( id, cursorContext ) )
+        {
+            return store.getRecordByCursor( id, record, RecordLoad.FORCE, cursor );
+        }
     }
 
     static <RECORD extends TokenRecord> List<NamedToken> safeLoadTokens( TokenStore<RECORD> tokenStore, CursorContext cursorContext )
@@ -326,8 +329,11 @@ class RecordLoading
             }
             catch ( TokenNotFoundException tnfe )
             {
-                TOKEN tokenRecord = tokenStore.getRecord( token, tokenStore.newRecord(), RecordLoad.FORCE, cursorContext );
-                unusedReporter.accept( entity, tokenRecord );
+                try ( var cursor = tokenStore.openPageCursorForReading( token, cursorContext ) )
+                {
+                    TOKEN tokenRecord = tokenStore.getRecordByCursor( token, tokenStore.newRecord(), RecordLoad.FORCE, cursor );
+                    unusedReporter.accept( entity, tokenRecord );
+                }
                 return false;
             }
             // Regardless of whether or not it's in use apparently we're expected to count it

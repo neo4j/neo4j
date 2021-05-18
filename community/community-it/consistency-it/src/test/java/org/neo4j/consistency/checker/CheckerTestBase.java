@@ -103,6 +103,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.consistency.checker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intArray;
@@ -366,7 +367,11 @@ class CheckerTestBase
 
     NodeRecord loadNode( long id )
     {
-        return neoStores.getNodeStore().getRecord( id, neoStores.getNodeStore().newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
+        NodeStore nodeStore = neoStores.getNodeStore();
+        try ( var cursor = nodeStore.openPageCursorForReading( id, CursorContext.NULL ) )
+        {
+            return nodeStore.getRecordByCursor( id, nodeStore.newRecord(), RecordLoad.NORMAL, cursor );
+        }
     }
 
     long node( long id, long nextProp, long nextRel, int... labels )

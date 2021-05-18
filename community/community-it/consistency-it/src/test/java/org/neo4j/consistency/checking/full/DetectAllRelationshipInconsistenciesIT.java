@@ -201,7 +201,11 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId )
     {
-        RelationshipRecord before = store.getRecord( id, store.newRecord(), RecordLoad.NORMAL, NULL );
+        RelationshipRecord before = store.newRecord();
+        try ( var cursor = store.openPageCursorForReading( id, NULL ) )
+        {
+            store.getRecordByCursor( id, before, RecordLoad.NORMAL, cursor );
+        }
         RelationshipRecord after = before.copy();
 
         boolean sabotageSourceChain = random.nextBoolean(); // otherwise target chain
@@ -248,7 +252,15 @@ public class DetectAllRelationshipInconsistenciesIT
         store.prepareForCommit( after, NULL );
         store.updateRecord( after, NULL );
 
-        RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : store.getRecord( otherReference, store.newRecord(), RecordLoad.FORCE, NULL );
+        RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : loadRecord( store, otherReference );
         return new Sabotage( before, after, other );
+    }
+
+    private RelationshipRecord loadRecord( RelationshipStore store, long otherReference )
+    {
+        try ( var cursor = store.openPageCursorForReading( otherReference, NULL ) )
+        {
+            return store.getRecordByCursor( otherReference, store.newRecord(), RecordLoad.FORCE, cursor );
+        }
     }
 }

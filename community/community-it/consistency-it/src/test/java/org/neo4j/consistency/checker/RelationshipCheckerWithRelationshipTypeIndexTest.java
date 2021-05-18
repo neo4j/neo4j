@@ -381,7 +381,10 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     private void notInUse( long relationshipId )
     {
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.NORMAL, CursorContext.NULL );
+        try ( var cursor = relationshipStore.openPageCursorForReading( relationshipId, CursorContext.NULL ) )
+        {
+            relationshipStore.getRecordByCursor( relationshipId, relationshipRecord, RecordLoad.NORMAL, cursor );
+        }
         relationshipRecord.setInUse( false );
         relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
     }

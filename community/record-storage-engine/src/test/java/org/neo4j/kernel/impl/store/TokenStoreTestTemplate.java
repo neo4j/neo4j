@@ -55,6 +55,7 @@ import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
@@ -112,8 +113,11 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     void forceGetRecordSkipInUseCheck() throws IOException
     {
         createEmptyPageZero();
-        R record = store.getRecord( 7, store.newRecord(), FORCE, NULL );
-        assertFalse( record.inUse(), "Record should not be in use" );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            R record = store.getRecordByCursor( 7, store.newRecord(), FORCE, cursor );
+            assertFalse( record.inUse(), "Record should not be in use" );
+        }
     }
 
     @Test
@@ -121,7 +125,13 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     {
         createEmptyPageZero();
 
-        Assertions.assertThrows( InvalidRecordException.class, () -> store.getRecord( 7, store.newRecord(), NORMAL, NULL ) );
+        assertThrows( InvalidRecordException.class, () ->
+        {
+            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            {
+                store.getRecordByCursor( 7, store.newRecord(), NORMAL, cursor );
+            }
+        } );
     }
 
     @Test
@@ -130,11 +140,14 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         R tokenRecord = createInUseRecord( allocateNameRecords( "MyToken" ) );
         storeToken( tokenRecord );
 
-        R readBack = store.getRecord( tokenRecord.getId(), store.newRecord(), NORMAL, NULL );
-        store.ensureHeavy( readBack, NULL );
-        assertThat( readBack ).isEqualTo( tokenRecord );
-        assertThat( tokenRecord.isInternal() ).isEqualTo( false );
-        assertThat( readBack.isInternal() ).isEqualTo( false );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            R readBack = store.getRecordByCursor( tokenRecord.getId(), store.newRecord(), NORMAL, cursor );
+            store.ensureHeavy( readBack, NULL );
+            assertThat( readBack ).isEqualTo( tokenRecord );
+            assertThat( tokenRecord.isInternal() ).isEqualTo( false );
+            assertThat( readBack.isInternal() ).isEqualTo( false );
+        }
     }
 
     @Test
@@ -144,11 +157,14 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         tokenRecord.setInternal( true );
         storeToken( tokenRecord );
 
-        R readBack = store.getRecord( tokenRecord.getId(), store.newRecord(), NORMAL, NULL );
-        store.ensureHeavy( readBack, NULL );
-        assertThat( readBack ).isEqualTo( tokenRecord );
-        assertThat( tokenRecord.isInternal() ).isEqualTo( true );
-        assertThat( readBack.isInternal() ).isEqualTo( true );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            R readBack = store.getRecordByCursor( tokenRecord.getId(), store.newRecord(), NORMAL, cursor );
+            store.ensureHeavy( readBack, NULL );
+            assertThat( readBack ).isEqualTo( tokenRecord );
+            assertThat( tokenRecord.isInternal() ).isEqualTo( true );
+            assertThat( readBack.isInternal() ).isEqualTo( true );
+        }
 
         NamedToken token = store.getToken( toIntExact( tokenRecord.getId() ), NULL );
         assertThat( token.name() ).isEqualTo( "MyInternalToken" );
@@ -170,23 +186,26 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         storeToken( tokenC );
         storeToken( tokenD );
 
-        R readA = store.getRecord( tokenA.getId(), store.newRecord(), NORMAL, NULL );
-        R readB = store.getRecord( tokenB.getId(), store.newRecord(), NORMAL, NULL );
-        R readC = store.getRecord( tokenC.getId(), store.newRecord(), NORMAL, NULL );
-        R readD = store.getRecord( tokenD.getId(), store.newRecord(), NORMAL, NULL );
-        store.ensureHeavy( readA, NULL );
-        store.ensureHeavy( readB, NULL );
-        store.ensureHeavy( readC, NULL );
-        store.ensureHeavy( readD, NULL );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            R readA = store.getRecordByCursor( tokenA.getId(), store.newRecord(), NORMAL, cursor );
+            R readB = store.getRecordByCursor( tokenB.getId(), store.newRecord(), NORMAL, cursor );
+            R readC = store.getRecordByCursor( tokenC.getId(), store.newRecord(), NORMAL, cursor );
+            R readD = store.getRecordByCursor( tokenD.getId(), store.newRecord(), NORMAL, cursor );
+            store.ensureHeavy( readA, NULL );
+            store.ensureHeavy( readB, NULL );
+            store.ensureHeavy( readC, NULL );
+            store.ensureHeavy( readD, NULL );
 
-        assertThat( readA ).isEqualTo( tokenA );
-        assertThat( readA.isInternal() ).isEqualTo( tokenA.isInternal() );
-        assertThat( readB ).isEqualTo( tokenB );
-        assertThat( readB.isInternal() ).isEqualTo( tokenB.isInternal() );
-        assertThat( readC ).isEqualTo( tokenC );
-        assertThat( readC.isInternal() ).isEqualTo( tokenC.isInternal() );
-        assertThat( readD ).isEqualTo( tokenD );
-        assertThat( readD.isInternal() ).isEqualTo( tokenD.isInternal() );
+            assertThat( readA ).isEqualTo( tokenA );
+            assertThat( readA.isInternal() ).isEqualTo( tokenA.isInternal() );
+            assertThat( readB ).isEqualTo( tokenB );
+            assertThat( readB.isInternal() ).isEqualTo( tokenB.isInternal() );
+            assertThat( readC ).isEqualTo( tokenC );
+            assertThat( readC.isInternal() ).isEqualTo( tokenC.isInternal() );
+            assertThat( readD ).isEqualTo( tokenD );
+            assertThat( readD.isInternal() ).isEqualTo( tokenD.isInternal() );
+        }
 
         Iterator<NamedToken> itr = store.getAllReadableTokens( NULL ).iterator();
         assertTrue( itr.hasNext() );

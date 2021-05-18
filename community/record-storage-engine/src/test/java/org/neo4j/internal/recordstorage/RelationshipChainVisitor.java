@@ -74,7 +74,13 @@ public class RelationshipChainVisitor
 
     private static <R extends AbstractBaseRecord> LongFunction<R> recordLoader( RecordStore<R> store )
     {
-        return id -> store.getRecord( id, store.newRecord(), RecordLoad.NORMAL, CursorContext.NULL );
+        return id ->
+        {
+            try ( var cursor = store.openPageCursorForReading( id, CursorContext.NULL ) )
+            {
+                return store.getRecordByCursor( id, store.newRecord(), RecordLoad.NORMAL, cursor );
+            }
+        };
     }
 
     public void visit( long nodeId, Visitor visitor )

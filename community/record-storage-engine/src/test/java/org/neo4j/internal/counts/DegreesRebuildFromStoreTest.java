@@ -95,7 +95,11 @@ class DegreesRebuildFromStoreTest
             assertThat( highId ).isGreaterThan( 1 );
             for ( int i = 10; i < highId; i++ )
             {
-                RelationshipGroupRecord record = groupStore.getRecord( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, NULL );
+                RelationshipGroupRecord record;
+                try ( var readCursor = groupStore.openPageCursorForReading( i, NULL ) )
+                {
+                    record = groupStore.getRecordByCursor( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, readCursor );
+                }
                 record.setInUse( false );
                 groupStore.updateRecord( record, NULL );
             }

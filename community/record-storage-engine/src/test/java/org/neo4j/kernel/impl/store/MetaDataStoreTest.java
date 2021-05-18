@@ -274,8 +274,12 @@ class MetaDataStoreTest
 
             assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
             assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
-            MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
-            assertThat( record.getValue() ).isGreaterThan( 0L );
+            try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL ) )
+            {
+                MetaDataRecord record =
+                        metaDataStore.getRecordByCursor( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, cursor );
+                assertThat( record.getValue() ).isGreaterThan( 0L );
+            }
         }
     }
 
@@ -288,8 +292,12 @@ class MetaDataStoreTest
 
             assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
             assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
-            MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
-            assertEquals( -1, record.getValue() );
+            try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL ) )
+            {
+                MetaDataRecord record =
+                        metaDataStore.getRecordByCursor( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, cursor );
+                assertEquals( -1, record.getValue() );
+            }
         }
     }
 

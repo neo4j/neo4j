@@ -48,7 +48,10 @@ class NodeInputIdPropertyLookup implements PropertyValueLookup
     @Override
     public Object lookupProperty( long nodeId, CursorContext cursorContext )
     {
-        propertyStore.getRecord( nodeId, propertyRecord, CHECK, cursorContext );
+        try ( var cursor = propertyStore.openPageCursorForReading( nodeId, cursorContext ) )
+        {
+            propertyStore.getRecordByCursor( nodeId, propertyRecord, CHECK, cursor );
+        }
         if ( !propertyRecord.inUse() )
         {
             return null;

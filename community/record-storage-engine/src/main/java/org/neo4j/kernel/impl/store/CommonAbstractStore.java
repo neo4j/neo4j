@@ -818,36 +818,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return recordFormat.newRecord();
     }
 
-    /**
-     * Acquires a {@link PageCursor} from the {@link PagedFile store file} and reads the requested record
-     * in the correct page and offset.
-     *
-     * @param id the record id.
-     * @param record the record instance to load the data into.
-     * @param mode how strict to be when loading, f.ex {@link RecordLoad#FORCE} will always read what's there
-     * and load into the record, whereas {@link RecordLoad#NORMAL} will throw {@link InvalidRecordException}
-     * if not in use.
-     */
     @Override
-    public RECORD getRecord( long id, RECORD record, RecordLoad mode, CursorContext cursorContext )
-    {
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
-        {
-            readIntoRecord( id, record, mode, cursor );
-            return record;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    @Override
-    public void getRecordByCursor( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws UnderlyingStorageException
+    public RECORD getRecordByCursor( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws UnderlyingStorageException
     {
         try
         {
             readIntoRecord( id, record, mode, cursor );
+            return record;
         }
         catch ( IOException e )
         {

@@ -305,8 +305,11 @@ public class RecordRelationshipTraversalCursorTest
     protected void unUseRecord( long recordId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RelationshipRecord relationshipRecord = relationshipStore.getRecord( recordId, new RelationshipRecord( -1 ),
-                RecordLoad.FORCE, CursorContext.NULL );
+        RelationshipRecord relationshipRecord;
+        try ( var cursor = relationshipStore.openPageCursorForReading( recordId, CursorContext.NULL ) )
+        {
+            relationshipRecord = relationshipStore.getRecordByCursor( recordId, new RelationshipRecord( -1 ), RecordLoad.FORCE, cursor );
+        }
         relationshipRecord.setInUse( false );
         relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
     }

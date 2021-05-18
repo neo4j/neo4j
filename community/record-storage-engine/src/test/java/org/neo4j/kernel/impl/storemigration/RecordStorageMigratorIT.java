@@ -703,7 +703,11 @@ class RecordStorageMigratorIT
     public static List<DynamicRecord> allocateFrom( SchemaStore35 schemaStore35, SchemaRule rule, CursorContext cursorContext )
     {
         List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = schemaStore35.getRecord( rule.getId(), schemaStore35.newRecord(), CHECK, cursorContext );
+        DynamicRecord record = schemaStore35.newRecord();
+        try ( var cursor = schemaStore35.openPageCursorForReading( rule.getId(), cursorContext ) )
+        {
+            schemaStore35.getRecordByCursor( rule.getId(), record, CHECK, cursor );
+        }
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), schemaStore35 );
         allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorContext, INSTANCE );
         return records;

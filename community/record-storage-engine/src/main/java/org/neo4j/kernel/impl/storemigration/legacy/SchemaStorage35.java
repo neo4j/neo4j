@@ -97,49 +97,52 @@ public class SchemaStorage35 implements SchemaStorage
             @Override
             protected ReturnType fetchNextOrNull()
             {
-                while ( currentId <= highestId )
+                try ( var cursor = schemaStore.openPageCursorForReading( 0, cursorContext ) )
                 {
-                    long id = currentId++;
-                    schemaStore.getRecord( id, record, RecordLoad.LENIENT_CHECK, cursorContext );
-                    if ( !record.inUse() )
+                    while ( currentId <= highestId )
                     {
-                        continue;
-                    }
-                    schemaStore.getRecord( id, record, RecordLoad.NORMAL, cursorContext );
-                    if ( record.isStartRecord() )
-                    {
-                        // It may be that concurrently to our reading there's a transaction dropping the schema rule
-                        // that we're reading and that rule may have spanned multiple dynamic records.
-                        try
+                        long id = currentId++;
+                        schemaStore.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, cursor );
+                        if ( !record.inUse() )
                         {
-                            Collection<DynamicRecord> records;
+                            continue;
+                        }
+                        schemaStore.getRecordByCursor( id, record, RecordLoad.NORMAL, cursor );
+                        if ( record.isStartRecord() )
+                        {
+                            // It may be that concurrently to our reading there's a transaction dropping the schema rule
+                            // that we're reading and that rule may have spanned multiple dynamic records.
                             try
                             {
-                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, cursorContext );
-                            }
-                            catch ( InvalidRecordException e )
-                            {
-                                // This may have been due to a concurrent drop of this rule.
-                                continue;
-                            }
-
-                            SchemaRule schemaRule = SchemaStore35.readSchemaRule( id, records, scratchData );
-                            if ( returnType.isInstance( schemaRule ) )
-                            {
-                                ReturnType returnRule = returnType.cast( schemaRule );
-                                if ( predicate.test( returnRule ) )
+                                Collection<DynamicRecord> records;
+                                try
                                 {
-                                    return returnRule;
+                                    records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, cursorContext );
+                                }
+                                catch ( InvalidRecordException e )
+                                {
+                                    // This may have been due to a concurrent drop of this rule.
+                                    continue;
+                                }
+
+                                SchemaRule schemaRule = SchemaStore35.readSchemaRule( id, records, scratchData );
+                                if ( returnType.isInstance( schemaRule ) )
+                                {
+                                    ReturnType returnRule = returnType.cast( schemaRule );
+                                    if ( predicate.test( returnRule ) )
+                                    {
+                                        return returnRule;
+                                    }
                                 }
                             }
-                        }
-                        catch ( MalformedSchemaRuleException e )
-                        {
-                            throw new RuntimeException( e );
+                            catch ( MalformedSchemaRuleException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
                         }
                     }
+                    return null;
                 }
-                return null;
             }
         };
     }

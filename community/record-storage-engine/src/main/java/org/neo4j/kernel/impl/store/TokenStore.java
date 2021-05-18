@@ -100,28 +100,30 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     private List<NamedToken> readAllTokens( boolean ignoreInconsistentTokens, CursorContext cursorContext )
     {
         long highId = getHighId();
-        ArrayList<NamedToken> records = new ArrayList<>();
-        records.ensureCapacity( Math.toIntExact( highId ) );
+        ArrayList<NamedToken> records = new ArrayList<>( Math.toIntExact( highId ) );
         RECORD record = newRecord();
-        for ( int i = 0; i < highId; i++ )
+        try ( var cursor = openPageCursorForReading( 0, cursorContext ) )
         {
-            if ( !getRecord( i, record, RecordLoad.LENIENT_CHECK, cursorContext ).inUse() )
+            for ( int i = 0; i < highId; i++ )
             {
-                continue;
-            }
-
-            if ( record.getNameId() != Record.RESERVED.intValue() )
-            {
-                try
+                if ( !getRecordByCursor( i,record, RecordLoad.LENIENT_CHECK, cursor ).inUse() )
                 {
-                    String name = getStringFor( record, cursorContext );
-                    records.add( new NamedToken( name, i, record.isInternal() ) );
+                    continue;
                 }
-                catch ( Exception e )
+
+                if ( record.getNameId() != Record.RESERVED.intValue() )
                 {
-                    if ( !ignoreInconsistentTokens )
+                    try
                     {
-                        throw e;
+                        String name = getStringFor( record, cursorContext );
+                        records.add( new NamedToken( name, i, record.isInternal() ) );
+                    }
+                    catch ( Exception e )
+                    {
+                        if ( !ignoreInconsistentTokens )
+                        {
+                            throw e;
+                        }
                     }
                 }
             }
@@ -131,8 +133,11 @@ public abstract class TokenStore<RECORD extends TokenRecord>
 
     public NamedToken getToken( int id, CursorContext cursorContext )
     {
-        RECORD record = getRecord( id, newRecord(), NORMAL, cursorContext );
-        return new NamedToken( getStringFor( record, cursorContext ), record.getIntId(), record.isInternal() );
+        try ( PageCursor pageCursor = openPageCursorForReading( id, cursorContext ) )
+        {
+            RECORD record = getRecordByCursor( id, newRecord(), NORMAL, pageCursor );
+            return new NamedToken( getStringFor( record, cursorContext ), record.getIntId(), record.isInternal() );
+        }
     }
 
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars, CursorContext cursorContext, MemoryTracker memoryTracker )

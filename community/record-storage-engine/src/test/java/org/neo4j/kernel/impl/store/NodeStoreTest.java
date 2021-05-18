@@ -179,11 +179,13 @@ class NodeStoreTest
 
         // WHEN
         // -- reading that record back
-        NodeRecord readRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL, NULL );
-
-        // THEN
-        // -- the label field must be the same
-        assertEquals( labels, readRecord.getLabelField() );
+        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, NULL ) )
+        {
+            NodeRecord readRecord = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, cursor );
+            // THEN
+            // -- the label field must be the same
+            assertEquals( labels, readRecord.getLabelField() );
+        }
     }
 
     @Test
@@ -382,7 +384,10 @@ class NodeStoreTest
         nodeStore.updateRecord( record, NULL );
 
         // when
-        nodeStore.getRecord( primaryUnitId, record, NORMAL, NULL );
+        try ( var cursor = nodeStore.openPageCursorForReading( primaryUnitId, NULL ) )
+        {
+            nodeStore.getRecordByCursor( primaryUnitId, record, NORMAL, cursor );
+        }
         record.setSecondaryUnitIdOnCreate( secondaryUnitId );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
         nodeStore.updateRecord( record, idUpdateListener, NULL );
@@ -410,7 +415,11 @@ class NodeStoreTest
         }
 
         // when loading that node and making it heavy
-        NodeRecord loadedRecord = nodeStore.getRecord( record.getId(), nodeStore.newRecord(), NORMAL, NULL );
+        NodeRecord loadedRecord = nodeStore.newRecord();
+        try ( var cursor = nodeStore.openPageCursorForReading( record.getId(), NULL ) )
+        {
+            nodeStore.getRecordByCursor( record.getId(), loadedRecord, NORMAL, cursor );
+        }
         InvalidRecordException e = assertThrows( InvalidRecordException.class, () -> nodeStore.ensureHeavy( loadedRecord, NULL ) );
 
         // then
