@@ -83,7 +83,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
         UpdatingSystemCommandRuntimeResult(ctx)
       }
     } finally {
-      if (revertAccessModeChange != null) revertAccessModeChange
+      if (revertAccessModeChange != null) revertAccessModeChange.close()
     }
   }
 

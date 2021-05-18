@@ -63,7 +63,7 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
       // This code path is only designed for read only queries
       ctx.getOptStatistics.filter(_.containsSystemUpdates).foreach(_ => throw new IllegalStateException("Read only administration command contained updates."))
     } finally {
-      if (revertSecurityContextChange != null) revertSecurityContextChange
+      if (revertSecurityContextChange != null) revertSecurityContextChange.close()
     }
   }
 
