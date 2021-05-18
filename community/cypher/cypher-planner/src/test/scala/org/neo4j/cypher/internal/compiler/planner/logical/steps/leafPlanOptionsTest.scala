@@ -34,12 +34,14 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -205,6 +207,73 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
       options.shouldEqual(List(
         BestResults(plan, None)
+      ))
+    }
+  }
+
+  test("should group plans with same available symbols not considering generated variables that are not part of the queryGraph") {
+    val allNameGenerators = new AllNameGenerators
+    val plans = Seq(
+     Argument(Set("a", allNameGenerators.freshIdNameGenerator.nextName)),
+     Argument(Set("a", allNameGenerators.freshIdNameGenerator.nextName))
+    )
+    val customLeafPlanner: LeafPlanner = (_, _, _) => plans
+    val queryPlanConfig = QueryPlannerConfiguration(
+      pickBestCandidate = _ =>
+        new CandidateSelector {
+          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = input.headOption
+        },
+      applySelections = (plan, _, _, _) => plan,
+      optionalSolvers = Seq.empty,
+      leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner)),
+      updateStrategy = defaultUpdateStrategy
+    )
+
+    new given().withLogicalPlanningContext { (_, ctx) =>
+      val options = leafPlanOptions(
+        queryPlanConfig,
+        QueryGraph(patternNodes = Set("a")),
+        InterestingOrderConfig.empty,
+        ctx
+      )
+
+      options.shouldEqual(List(
+        BestResults(plans.head, None)
+      ))
+    }
+  }
+
+  test("should group plans with same available symbols considering generated variables that are part of the queryGraph") {
+    val allNameGenerators = new AllNameGenerators
+    val fresh1 = allNameGenerators.freshIdNameGenerator.nextName
+    val fresh2 = allNameGenerators.freshIdNameGenerator.nextName
+    val plans = Seq(
+     Argument(Set("a", fresh1)),
+     Argument(Set("a", fresh2))
+    )
+    val customLeafPlanner: LeafPlanner = (_, _, _) => plans
+    val queryPlanConfig = QueryPlannerConfiguration(
+      pickBestCandidate = _ =>
+        new CandidateSelector {
+          override def applyWithResolvedPerPlan[X](projector: X => LogicalPlan, input: Iterable[X], resolved: => String, resolvedPerPlan: LogicalPlan => String, heuristic: SelectorHeuristic): Option[X] = input.headOption
+        },
+      applySelections = (plan, _, _, _) => plan,
+      optionalSolvers = Seq.empty,
+      leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner)),
+      updateStrategy = defaultUpdateStrategy
+    )
+
+    new given().withLogicalPlanningContext { (_, ctx) =>
+      val options = leafPlanOptions(
+        queryPlanConfig,
+        QueryGraph(patternNodes = Set("a", fresh1, fresh2)),
+        InterestingOrderConfig.empty,
+        ctx
+      )
+
+      options.shouldEqual(List(
+        BestResults(plans(0), None),
+        BestResults(plans(1), None)
       ))
     }
   }

@@ -56,7 +56,8 @@ object leafPlanOptions extends LeafPlanFinder {
     val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
 
     val bestPlansPerAvailableSymbols = leafPlanCandidateListsWithSelections
-      .groupBy(_.availableSymbols)
+      // Group by available symbols which are part of the query graph.
+      .groupBy(_.availableSymbols.filter(queryGraph.idsWithoutOptionalMatchesOrUpdates))
       .values
       .map { bucket =>
         val bestPlan = pickBest(bucket, leafPlanHeuristic(context), s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
