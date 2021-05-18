@@ -73,13 +73,9 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
       val execution = normalExecutionEngine.executeSubQuery(query, updatedParams, tc, isOutermostQuery = false, executionMode == ProfileMode, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
       systemSubscriber.assertNotFailed()
 
-      if (systemSubscriber.shouldIgnoreResult()) {
-        IgnoredRuntimeResult
-      } else {
-        SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
-      }
+      SystemCommandRuntimeResult(ctx, new SystemCommandExecutionResult(execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
     } finally {
-      if (revertAccessModeChange != null) revertAccessModeChange
+      if (revertAccessModeChange != null) revertAccessModeChange.close()
     }
   }
 

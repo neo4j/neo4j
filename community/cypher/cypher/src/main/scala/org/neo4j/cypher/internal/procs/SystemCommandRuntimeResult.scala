@@ -65,7 +65,7 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
       // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
       subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
     } finally {
-      if (revertSecurityContextChange != null) revertSecurityContextChange
+      if (revertSecurityContextChange != null) revertSecurityContextChange.close()
     }
   }
 
