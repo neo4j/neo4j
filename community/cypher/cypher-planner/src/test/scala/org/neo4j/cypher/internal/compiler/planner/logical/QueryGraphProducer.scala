@@ -45,8 +45,9 @@ trait QueryGraphProducer extends MockitoSugar {
   self: LogicalPlanningTestSupport =>
 
 
-  def producePlannerQueryForPattern(query: String): (SinglePlannerQuery, SemanticTable) = {
-    val q = query + " RETURN 1 AS Result"
+  def producePlannerQueryForPattern(query: String, appendReturn: Boolean = true): (SinglePlannerQuery, SemanticTable) = {
+    val appendix = if (appendReturn) " RETURN 1 AS Result" else ""
+    val q = query + appendix
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
     val ast = parser.parse(q, exceptionFactory)
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
@@ -60,6 +61,8 @@ trait QueryGraphProducer extends MockitoSugar {
     val context = ContextHelper.create(logicalPlanIdGen = idGen)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
 
-    (toPlannerQuery(output.statement().asInstanceOf[Query], output.semanticTable()).query.asInstanceOf[SinglePlannerQuery], output.semanticTable())
+    val semanticTable = output.semanticTable()
+    val plannerQuery = toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable)
+    (plannerQuery.query.asInstanceOf[SinglePlannerQuery], semanticTable)
   }
 }
