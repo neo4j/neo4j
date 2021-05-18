@@ -59,7 +59,6 @@ import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -67,7 +66,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Null
-import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -90,7 +88,6 @@ import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
@@ -119,7 +116,6 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
@@ -298,45 +294,6 @@ object ClauseConverters {
     RequiredOrderCandidate(columns)
   }
 
-  /**
-   * Selections can induce an interesting order if there are label/relType disjunctions.
-   */
-  private def interestingOrderCandidatesForSelections(selections: Selections): Seq[InterestingOrderCandidate] = {
-    def variableIfAllEqualHasLabelsOrRelTypes(expressions: Seq[Expression]): Option[Expression] = {
-      expressions.headOption
-        .collect {
-          case HasLabels(variable, _) => variable
-          case HasTypes(variable, _) => variable
-        }
-        .filter(variable => expressions.tail.forall {
-          case HasLabels(`variable`, _) => true
-          case HasTypes(`variable`, _) => true
-          case _ => false
-        })
-    }
-
-    selections.predicates.toSeq.collect {
-      case Predicate(_, Ors(expressions)) =>
-        for {
-          v <- variableIfAllEqualHasLabelsOrRelTypes(expressions).toSeq
-          // ASC before DESC because it is slightly cheaper
-          indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
-        } yield InterestingOrderCandidate(Seq(indexOrder(v)))
-    }.flatten
-  }
-
-  /**
-   * Inlined relationship type predicates can induce an interesting order if there are relType disjunctions.
-   */
-  private def interestingOrderCandidatesForPatternRelationships(relationships: Seq[PatternRelationship]): Seq[InterestingOrderCandidate] = {
-    for {
-      rel <- relationships
-      if rel.types.length > 1
-      // ASC before DESC because it is slightly cheaper
-      indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
-    } yield InterestingOrderCandidate(Seq(indexOrder(Variable(rel.name)(InputPosition.NONE))))
-  }
-
   private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder =
     clause.items.foldLeft(acc) {
 
@@ -457,10 +414,7 @@ object ClauseConverters {
 
     val selections = asSelections(clause.where)
 
-    val interestingOrderCandidates = interestingOrderCandidatesForSelections(selections) ++
-      interestingOrderCandidatesForPatternRelationships(patternContent.rels)
-
-    val withMatch = if (clause.optional) {
+    if (clause.optional) {
       acc.amendQueryGraph { qg => qg.withAddedOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
@@ -482,7 +436,6 @@ object ClauseConverters {
           .addShortestPaths(patternContent.shortestPaths: _*)
       }
     }
-    withMatch.withInterestingOrderCandidates(interestingOrderCandidates)
   }
 
   private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubQuery): PlannerQueryBuilder = {
@@ -696,11 +649,8 @@ object ClauseConverters {
           && noShortestPaths =>
         val selections = asSelections(where)
 
-        val interestingOrderCandidates = interestingOrderCandidatesForSelections(selections)
-
         builder
           .amendQueryGraph(_.addSelections(selections))
-          .withInterestingOrderCandidates(interestingOrderCandidates)
 
       /*
       When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.

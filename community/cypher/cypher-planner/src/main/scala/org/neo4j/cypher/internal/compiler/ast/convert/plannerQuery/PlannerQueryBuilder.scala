@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 
 case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
   extends ListSupport {
@@ -57,12 +56,6 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
 
   def withQueryInput(inputVariables : Seq[String]): PlannerQueryBuilder = {
     copy(q = q.withInput(inputVariables))
-  }
-
-  def withInterestingOrderCandidates(candidates: Seq[InterestingOrderCandidate]): PlannerQueryBuilder = {
-    val existingIO = q.last.interestingOrder
-    val newIO = InterestingOrder(existingIO.requiredOrderCandidate, existingIO.interestingOrderCandidates ++ candidates)
-    copy(q = q.updateTailOrSelf(_.withInterestingOrder(newIO)))
   }
 
   def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQueryBuilder = {

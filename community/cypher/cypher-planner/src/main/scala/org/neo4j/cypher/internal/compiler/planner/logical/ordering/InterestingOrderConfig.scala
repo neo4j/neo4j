@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
-import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-
-import scala.annotation.tailrec
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 
 /**
  * When there is an ORDER BY later in the query, it can make sense to solve it earlier.
@@ -34,7 +32,13 @@ import scala.annotation.tailrec
 final case class InterestingOrderConfig(
   orderToReport: InterestingOrder,
   orderToSolve: InterestingOrder,
-)
+) {
+  /**
+   * Add an interesting order candidate to the order to solve. Leave order to report untouched.
+   */
+  def addInterestingOrderCandidate(candidate: InterestingOrderCandidate): InterestingOrderConfig =
+    InterestingOrderConfig(orderToReport, orderToSolve.interesting(candidate))
+}
 
 object InterestingOrderConfig {
   /**

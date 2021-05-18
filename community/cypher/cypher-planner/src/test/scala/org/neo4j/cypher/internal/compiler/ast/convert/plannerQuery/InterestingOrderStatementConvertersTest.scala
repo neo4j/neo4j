@@ -577,50 +577,6 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     )
   }
 
-  test("should find interesting order for label disjunction") {
-    val result = buildSinglePlannerQuery {
-      """MATCH (n)
-        |WHERE n:Foo OR n:Bar
-        |RETURN n""".stripMargin
-    }
-    result.interestingOrder shouldBe InterestingOrder(
-      RequiredOrderCandidate(Seq.empty),
-      Seq(
-        InterestingOrderCandidate.asc(varFor("n")),
-        InterestingOrderCandidate.desc(varFor("n")),
-      )
-    )
-  }
-
-  test("should find interesting order for relationship type disjunction") {
-    val result = buildSinglePlannerQuery {
-      """MATCH ()-[r]-()
-        |WHERE r:Foo OR r:Bar
-        |RETURN r""".stripMargin
-    }
-    result.interestingOrder shouldBe InterestingOrder(
-      RequiredOrderCandidate(Seq.empty),
-      Seq(
-        InterestingOrderCandidate.asc(varFor("r")),
-        InterestingOrderCandidate.desc(varFor("r")),
-      )
-    )
-  }
-
-  test("should find interesting order for inlined relationship type disjunction") {
-    val result = buildSinglePlannerQuery {
-      """MATCH ()-[r:Foo|Bar]-()
-        |RETURN r""".stripMargin
-    }
-    result.interestingOrder shouldBe InterestingOrder(
-      RequiredOrderCandidate(Seq.empty),
-      Seq(
-        InterestingOrderCandidate.asc(varFor("r")),
-        InterestingOrderCandidate.desc(varFor("r")),
-      )
-    )
-  }
-
   private def interestingOrders(plannerQuery: SinglePlannerQuery): List[InterestingOrder] =
     plannerQuery.tail match {
       case None => List(plannerQuery.interestingOrder)

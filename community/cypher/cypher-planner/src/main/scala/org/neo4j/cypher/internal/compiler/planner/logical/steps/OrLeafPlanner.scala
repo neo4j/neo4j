@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.In
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicateKind
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions.leafPlanHeuristic
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -38,6 +39,9 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.ordering
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.logical
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InputPosition
@@ -78,10 +82,13 @@ object OrLeafPlanner {
   /**
    * A disjunction of predicates that all use only one variable
    *
-   * @param variableName the name of the variable
-   * @param predicates   the predicates.
+   * @param variableName               the name of the variable
+   * @param predicates                 the predicates.
+   * @param interestingOrderCandidates if these candidates lead to different leaf plans, we can plan OrderedUnion instead of Union
    */
-  case class DisjunctionForOneVariable(variableName: String, predicates: Seq[DistributablePredicate]) {
+  case class DisjunctionForOneVariable(variableName: String,
+                                       predicates: Seq[DistributablePredicate],
+                                       interestingOrderCandidates: Seq[InterestingOrderCandidate]) {
     override def toString: String = predicates.mkString(" OR ")
   }
 
@@ -105,12 +112,31 @@ object OrLeafPlanner {
    */
   final case object WhereClausePredicateKind extends PredicateKind {
 
+    private def variableIfAllEqualHasLabelsOrRelTypes(expressions: Seq[Expression]): Option[Expression] = {
+      expressions.headOption
+        .collect {
+          case HasLabels(variable, _) => variable
+          case HasTypes(variable, _) => variable
+        }
+        .filter(variable => expressions.tail.forall {
+          case HasLabels(`variable`, _) => true
+          case HasTypes(`variable`, _) => true
+          case _ => false
+        })
+    }
+
     override def findDisjunctions(qg: QueryGraph): Seq[DisjunctionForOneVariable] = qg.selections.flatPredicates.collect {
       case Ors(exprs) =>
         // All expressions in the OR must be for the same variable, otherwise we cannot solve it with Union of LeafPlans.
         variableUsedInExpression(exprs.head, qg.argumentIds) match {
           case Some(singleUsedVar) if exprs.tail.map(variableUsedInExpression(_, qg.argumentIds)).forall(_.contains(singleUsedVar)) =>
-            Some(DisjunctionForOneVariable(singleUsedVar.name, exprs.map(WhereClausePredicate)))
+            val interestingOrderCandidates = for {
+              v <- variableIfAllEqualHasLabelsOrRelTypes(exprs).toSeq
+              // ASC before DESC because it is slightly cheaper
+              indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
+            } yield InterestingOrderCandidate(Seq(indexOrder(v)))
+
+            Some(DisjunctionForOneVariable(singleUsedVar.name, exprs.map(WhereClausePredicate), interestingOrderCandidates))
           case _ => None
         }
     }.flatten
@@ -164,7 +190,13 @@ object OrLeafPlanner {
   final case object InlinedRelationshipTypePredicateKind extends PredicateKind {
 
     override def findDisjunctions(qg: QueryGraph): Seq[DisjunctionForOneVariable] = qg.patternRelationships.collect {
-      case PatternRelationship(name, _, _, types, SimplePatternLength) if types.length > 1 => DisjunctionForOneVariable(name, types.map(InlinedRelationshipTypePredicate(name, _)))
+      case PatternRelationship(name, _, _, types, SimplePatternLength) if types.length > 1 =>
+        val interestingOrderCandidates = for {
+          // ASC before DESC because it is slightly cheaper
+          indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
+        } yield InterestingOrderCandidate(Seq(indexOrder(Variable(name)(InputPosition.NONE))))
+
+        DisjunctionForOneVariable(name, types.map(InlinedRelationshipTypePredicate(name, _)), interestingOrderCandidates)
     }.toSeq
 
     override def stripAllFromQueryGraph(qg: QueryGraph): QueryGraph = qg.withPatternRelationships(qg.patternRelationships.map(_.copy(types = Seq())))
@@ -261,14 +293,17 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       // Add all related predicates to the bare queryGraph
       val qgWithRelatedPredicates = relatedPredicates.foldLeft(bareQg)((accQg, dp) => dp.addToQueryGraph(accQg))
 
+      // Add interesting order candidates to allow planning OrderedUnion
+      val innerInterestingOrderConfig = disjunction.interestingOrderCandidates.foldLeft(interestingOrderConfig)(_.addInterestingOrderCandidate(_))
+
       // Add each expression in the OR separately
       disjunction.predicates.map { predicate =>
         val qgForExpression = predicate.addToQueryGraph(qgWithRelatedPredicates)
 
         // Obtain plans for each for the query graph with this expression added
-        val innerLeafPlans = inner.flatMap(_ (qgForExpression, interestingOrderConfig, context)).distinct
+        val innerLeafPlans = inner.flatMap(_ (qgForExpression, innerInterestingOrderConfig, context)).distinct
         // Apply selections on top of the leaf plans.
-        val innerPlansWithSelections = innerLeafPlans.map(select(_, qgForExpression, interestingOrderConfig, context))
+        val innerPlansWithSelections = innerLeafPlans.map(select(_, qgForExpression, innerInterestingOrderConfig, context))
 
         // This is a Seq of possible solutions per expression
         // We really only want the best option
