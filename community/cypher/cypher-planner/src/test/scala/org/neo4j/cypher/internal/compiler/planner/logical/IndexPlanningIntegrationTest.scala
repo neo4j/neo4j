@@ -153,7 +153,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       } getLogicalPlanFor
         s"""WITH {maxDistance: 10} AS x
            |MATCH (p:Place)
-           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) < x.maxDistance
+           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
            |RETURN p.location as point
         """.stripMargin
 

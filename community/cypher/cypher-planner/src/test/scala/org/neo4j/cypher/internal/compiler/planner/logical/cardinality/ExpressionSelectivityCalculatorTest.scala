@@ -537,6 +537,20 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       +- 0.00000001)
   }
 
+  test("distance in AndedPropertyInequalities") {
+    val inequality = lessThan(function(Distance.name, nProp, fakePoint), rProp)
+    val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val distanceResult = calculator(predicate)
+
+    distanceResult.factor should equal(
+      0.2 // exists n.prop
+        * DEFAULT_RANGE_SEEK_FACTOR // point distance
+    )
+  }
+
   // STARTS WITH
 
   test("starts with length 0, no label") {

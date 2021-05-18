@@ -111,13 +111,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case EndsWith(Property(Variable(name), propertyKey), expr) =>
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, None)
 
-    // WHERE x.prop <, <=, >=, > that could benefit from an index
-    case AsValueRangeSeekable(seekable) =>
-      calculateSelectivityForValueRangeSeekable(seekable, labelInfo, relTypeInfo)
-
     // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
     case AsDistanceSeekable(seekable) =>
       calculateSelectivityForPointDistanceSeekable(seekable, labelInfo, relTypeInfo)
+
+    // WHERE x.prop <, <=, >=, > that could benefit from an index
+    case AsValueRangeSeekable(seekable) =>
+      calculateSelectivityForValueRangeSeekable(seekable, labelInfo, relTypeInfo)
 
     // WHERE has(x.prop)
     case AsPropertyScannable(scannable) =>
