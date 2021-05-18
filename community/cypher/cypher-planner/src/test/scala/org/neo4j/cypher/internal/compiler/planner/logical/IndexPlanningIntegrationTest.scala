@@ -171,9 +171,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   test("should allow one join and one index hint on the same variable") {
     val (_, plan, _, _) =
       new given {
-        indexOn("S", "p")
         indexOn("T", "p") // This index is enforced by hint
         indexOn("T", "foo") // This index would normally be preferred
+        indexOn("S", "p")
       } getLogicalPlanFor(
         s"""MATCH (s:S {p: 10})<-[r]-(t:T {foo: 2})
            |USING JOIN ON t
