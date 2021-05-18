@@ -19,104 +19,62 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
-import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
   test("finds shortest paths") {
-    planFor("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b")._2 should equal(
-      FindShortestPaths(
-        CartesianProduct(
-          AllNodesScan("a", Set.empty),
-          AllNodesScan("b", Set.empty)
-        ),
-        ShortestPathPattern(
-          Some("anon_16"),
-          PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          single = true
-        )(null)
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_16"))
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
   }
 
   test("find shortest path with length predicate and WITH should not plan fallback") {
-    planFor("MATCH (a), (b), p = shortestPath((a)-[r]->(b)) WITH p WHERE length(p) > 1 RETURN p")._2 should equal(
-      Selection(ands(greaterThan(function("length", varFor("p")), literalInt(1))),
-        FindShortestPaths(
-          CartesianProduct(
-            AllNodesScan("a", Set.empty),
-            AllNodesScan("b", Set.empty)
-          ),
-          ShortestPathPattern(
-            Some("p"),
-            PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-            single = true
-          )(null)
-        )
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (a), (b), p = shortestPath((a)-[r]->(b)) WITH p WHERE length(p) > 1 RETURN p").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("length(p) > 1")
+      .shortestPath("(a)-[r]->(b)", pathName = Some("p"))
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
   }
 
   test("finds all shortest paths") {
-    planFor("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b")._2 should equal(
-      FindShortestPaths(
-        CartesianProduct(
-          AllNodesScan("a", Set.empty),
-          AllNodesScan("b", Set.empty)
-        ),
-        ShortestPathPattern(
-          Some("anon_16"),
-          PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          single = false
-        )(null)
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_16"), all = true)
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
   }
 
   test("find shortest paths on top of hash joins") {
-    val result = (new given {
-      cardinality = mapCardinality {
-        // node label scan
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
-        // all node scan
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
-        // expand
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
-        case _                             => Double.MaxValue
-      }
-    } getLogicalPlanFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p")._2
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("X", 100)
+      .setRelationshipCardinality("()-[]->()", 99999)
+      .setRelationshipCardinality("()-[]->(:X)", 100)
+      .build()
 
-    val expected =
-      FindShortestPaths(
-        Selection(
-          ands(not(equals(varFor("r1"), varFor("r2")))),
-          NodeHashJoin(
-            Set("b"),
-            Expand(
-              NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
-              "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1", ExpandAll),
-            Expand(
-              NodeByLabelScan("c", labelName("X"), Set.empty, IndexOrderNone),
-              "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll)
-          )
-        ),
-        ShortestPathPattern(Some("p"), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))
-
-    result should equal(expected)
+    val plan = cfg.plan("MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .shortestPath("(a)-[r]->(c)", pathName = Some("p"))
+      .filter("not r1 = r2")
+      .nodeHashJoin("b")
+      .|.expandAll("(c)<-[r2]-(b)")
+      .|.nodeByLabelScan("c", "X")
+      .expandAll("(a)<-[r1]-(b)")
+      .nodeByLabelScan("a", "X")
+      .build()
   }
 }

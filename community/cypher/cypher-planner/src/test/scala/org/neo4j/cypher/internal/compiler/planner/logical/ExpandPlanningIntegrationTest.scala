@@ -19,120 +19,112 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
-import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.ExpandInto
-import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
+class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
-    planFor("MATCH (a)-[r]->(b) RETURN r")._2 should equal(
-        Expand(
-          AllNodesScan("a", Set.empty),
-          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"
-        )
-    )
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 50)
+      .build()
+
+    val plan = cfg.plan("MATCH (a)-[r]->(b) RETURN r").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .expandAll("(a)-[r]->(b)")
+      .allNodeScan("a")
+      .build()
   }
 
   test("Should build plans containing expand for two unrelated relationship patterns") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("A", 1000)
+      .setLabelCardinality("B", 2000)
+      .setLabelCardinality("C", 3000)
+      .setLabelCardinality("D", 4000)
+      .setRelationshipCardinality("(:A)-[]-(:B)", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .setRelationshipCardinality("()-[]->(:B)", 100)
+      .setRelationshipCardinality("(:C)-[]->(:D)", 100)
+      .setRelationshipCardinality("(:C)-[]->()", 100)
+      .setRelationshipCardinality("()-[]->(:D)", 100)
+      .build()
 
-    (new given {
-      cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("d") => 4000.0
-        case _ => 100.0
-      }
-    } getLogicalPlanFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2")._2 should beLike {
-      case
-        Selection(_,
-          CartesianProduct(
-            Expand(
-              AllNodesScan("a", _), _, _, _, _, _, _),
-            Expand(
-              AllNodesScan("c", _), _, _, _, _, _, _), _
-          )
-        ) => ()
-    }
+    val plan = cfg.plan("MATCH (a:A)-[r1]->(b:B), (c:C)-[r2]->(d:D) RETURN r1, r2").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("not r1 = r2")
+      .cartesianProduct()
+      .|.filter("d:D")
+      .|.expandAll("(c)-[r2]->(d)")
+      .|.nodeByLabelScan("c", "C")
+      .filter("b:B")
+      .expandAll("(a)-[r1]->(b)")
+      .nodeByLabelScan("a", "A")
+      .build()
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
-    val result = planFor("MATCH (a)-[r]->(a) RETURN r")._2
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 50)
+      .build()
 
-    result should equal(
-      Expand(
-        AllNodesScan("a", Set.empty),
-        "a", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandInto)
-    )
+    val plan = cfg.plan("MATCH (a)-[r]->(a) RETURN r").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .expandInto("(a)-[r]->(a)")
+      .allNodeScan("a")
+      .build()
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    (new given {
-      cardinality = mapCardinality {
-        // all node scans
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 => 1000.0
-        case _                                                                   => 1.0
-      }
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 20)
+      .build()
 
-    } getLogicalPlanFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2")._2 should equal(
-      Selection(ands(not(equals(varFor("r1"), varFor("r2")))),
-        Expand(
-          Expand(
-            AllNodesScan("a",Set.empty),
-           "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r2",ExpandAll),
-          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandInto)
-        )
-    )
+    val plan = cfg.plan("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("not r1 = r2")
+      .expandInto("(a)-[r1]->(b)")
+      .expandAll("(a)-[r2]->(b)")
+      .allNodeScan("a")
+      .build()
   }
 
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:X]-()", 500)
+      .build()
 
-    def myCardinality(plan: PlannerQueryPart): Cardinality = Cardinality(plan match {
-      case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if !queryGraph.selections.isEmpty  => 10
-      case _ => 1000
-    })
-
-    (new given {
-      cardinality = PartialFunction(myCardinality)
-    } getLogicalPlanFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a")._2 should equal(
-        Expand(
-          Selection(
-            ands(equals(prop("a", "name"), literalString("Andres"))),
-            AllNodesScan("a", Set.empty)
-          ),
-          "a", SemanticDirection.BOTH, Seq(RelTypeName("x")_), "start", "rel"
-      )
-    )
+    val plan = cfg.plan("MATCH (start)-[rel:X]-(a) WHERE a.name = 'Andres' RETURN a").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .expandAll("(a)-[rel:X]-(start)")
+      .filter("a.name = 'Andres'")
+      .allNodeScan("a")
+      .build()
   }
 
   test("Should build plans expanding from the more expensive side if that is requested by using a hint") {
-    (new given {
-      cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.selections.predicates.size == 2 => 1000.0
-        case _                => 10.0
-      }
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .setLabelCardinality("A", 10)
+      .setLabelCardinality("Person", 1000)
+      .setRelationshipCardinality("(:A)-[]->(:Person)", 10)
+      .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("()-[]->(:Person)", 500)
+      .addNodeIndex("Person", Seq("name"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
+      .build()
 
-      indexOn("Person", "name")
-    } getLogicalPlanFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r")._2 should equal(
-        Expand(
-          nodeIndexSeek("b:Person(name = 'Andres')"),
-          "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
-        )
-    )
+    val plan = cfg.plan("MATCH (a:A)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("a:A")
+      .expandAll("(b)<-[r]-(a)")
+      .nodeIndexOperator("b:Person(name = 'Andres')")
+      .build()
   }
 
   test("should plan typed expand with not-inlined type predicate") {

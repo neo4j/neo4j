@@ -23,47 +23,34 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
-import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
-import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 /**
  * This class tests only greedy - the idp counterpart is tested in [[ConnectComponentsPlanningIntegrationTest]]
  */
-class CartesianProductGreedyPlanningIntegrationTest extends CartesianProductPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
-
-abstract class CartesianProductPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
-  extends CypherFunSuite
-  with LogicalPlanningTestSupport2
-  with LogicalPlanningIntegrationTestSupport {
-
-  locally {
-    queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
-  }
+class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
-    super.plannerBuilder().enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
-
+    super.plannerBuilder().enableConnectComponentsPlanner(false)
 
   test("should build cartesian product with sorted plan left for many disconnected components") {
     val nodes = (0 until COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT).map(i => s"(n$i:Few)").mkString(",")
-    val orderedNode = s"n${COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT}"
+    val orderedNode = s"n$COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT"
 
-    val plan = new given {
-      labelCardinality = Map("Few" -> 1.0, "Many" -> 1000.0)
-      indexOn("Many", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(s"MATCH $nodes, ($orderedNode:Many) WHERE $orderedNode.prop IS NOT NULL RETURN * ORDER BY $orderedNode.prop")._2
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1500)
+      .setLabelCardinality("Few", 2)
+      .setLabelCardinality("Many", 1000)
+      .addNodeIndex("Many", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, providesOrder = IndexOrderCapability.BOTH)
+      .build()
+
+    val plan = cfg.plan(s"MATCH $nodes, ($orderedNode:Many) WHERE $orderedNode.prop IS NOT NULL RETURN * ORDER BY $orderedNode.prop").stripProduceResults
 
     // We do not want a Sort
     plan shouldBe a[CartesianProduct]
@@ -74,26 +61,28 @@ abstract class CartesianProductPlanningIntegrationTest(queryGraphSolverSetup: Qu
   }
 
   test("should build plans for simple cartesian product") {
-    planFor("MATCH (n), (m) RETURN n, m")._2 should equal(
-      CartesianProduct(
-        AllNodesScan("n", Set.empty),
-        AllNodesScan("m", Set.empty)
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n), (m) RETURN n, m").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .cartesianProduct()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+      .build()
   }
 
-  test("should build plans so the cheaper plan is on the left") {
-    (new given {
-      cost = {
-        case (_: Selection, _, _, _) => 1000.0
-        case (_: NodeByLabelScan, _, _, _) => 20.0
-      }
-      cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.selections.predicates.size == 1 => 10
-      }
-    } getLogicalPlanFor  "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m")._2 should beLike {
-      case CartesianProduct(_: Selection, _: NodeByLabelScan, _) => ()
-    }
+  test("should build plans so the overall cost is minimized (lhsCost + lhsCardinality * rhsCost)") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Label", 1000 * PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY.factor) // to get the same cardinality on both sides of cartesian
+      .build()
+
+    val plan = cfg.plan("MATCH (n), (m) WHERE n.prop is not null AND m:Label RETURN n, m").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .cartesianProduct()
+      .|.nodeByLabelScan("m", "Label")
+      .filter("n.prop IS NOT NULL")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should plan cartesian product of three plans so the cost is minimized") {
