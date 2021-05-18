@@ -53,7 +53,7 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
       def isEmptyLabel(label: String) = !table.resolvedLabelNames.contains(label)
       def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
       def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
-      def isNodeOrRelationship(variable: Expression) = table.isNode(variable) || table.isRelationship(variable)
+      def isNodeOrRelationship(variable: Expression) = table.isNodeNoFail(variable) || table.isRelationshipNoFail(variable)
 
       val notifications = value.statement().treeFold(Seq.empty[InternalNotification]) {
         case label@LabelName(name) if isEmptyLabel(name) => acc =>
@@ -62,8 +62,7 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
         case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
           TraverseChildren(acc :+ MissingRelTypeNotification(rel.position, name))
 
-        case Property(variable, prop@PropertyKeyName(name))
-          if isNodeOrRelationship(variable) && isEmptyPropertyName(name) => acc =>
+        case Property(variable, prop@PropertyKeyName(name)) if isNodeOrRelationship(variable) && isEmptyPropertyName(name) => acc =>
           TraverseChildren(acc :+ MissingPropertyNameNotification(prop.position, name))
       }
 
