@@ -95,9 +95,9 @@ object OrLeafPlanner {
     def addToQueryGraph(qg: QueryGraph): QueryGraph
 
     /**
-     * Test whether a query graph contains this predicate.
+     * Test whether this predicate is contained in a query graph.
      */
-    def queryGraphContains(qg: QueryGraph): Boolean
+    def containedIn(qg: QueryGraph): Boolean
   }
 
   /**
@@ -153,7 +153,7 @@ object OrLeafPlanner {
       case _ => qg.addPredicates(e)
     }
 
-    override def queryGraphContains(qg: QueryGraph): Boolean = qg.selections.flatPredicates.contains(e)
+    override def containedIn(qg: QueryGraph): Boolean = qg.selections.flatPredicates.contains(e)
 
     override def toString: String = ExpressionStringifier(e => e.asCanonicalStringVal)(e)
   }
@@ -172,7 +172,7 @@ object OrLeafPlanner {
     override def collectRelatedPredicates(qg: QueryGraph, disjunction: DisjunctionForOneVariable): Seq[DistributablePredicate] = {
       def includesHasTypes(disjunction: DisjunctionForOneVariable) =
         disjunction.predicates.exists {
-          case WhereClausePredicate(e) => e.isInstanceOf[HasTypes]
+          case WhereClausePredicate(_: HasTypes) => true
           case _ => false
         }
 
@@ -190,9 +190,8 @@ object OrLeafPlanner {
 
     def addTypesToRelationship(qg: QueryGraph, variableName: String, types: Seq[RelTypeName]): QueryGraph = {
       // Replace the rel without a predicate with a rel with a predicate
-      val relWithoutInlinedTypePredicate = qg.patternRelationships.find {
-        case PatternRelationship(`variableName`, _, _, _, _) => true
-        case _ => false
+      val relWithoutInlinedTypePredicate = qg.patternRelationships.collectFirst {
+        case pr@PatternRelationship(`variableName`, _, _, _, _) => pr
       }.head
       val relWithInlinedTypePredicate = relWithoutInlinedTypePredicate.copy(types = types)
       qg
@@ -223,7 +222,7 @@ object OrLeafPlanner {
   final case class InlinedRelationshipTypePredicate(variableName: String, typ: RelTypeName) extends DistributablePredicate {
     override def addToQueryGraph(qg: QueryGraph): QueryGraph = InlinedRelationshipTypePredicateKind.addTypesToRelationship(qg, variableName, Seq(typ))
 
-    override def queryGraphContains(qg: QueryGraph): Boolean = qg.patternRelationships.exists {
+    override def containedIn(qg: QueryGraph): Boolean = qg.patternRelationships.exists {
       case PatternRelationship(`variableName`, _, _, Seq(`typ`), _) => true
       case _ => false
     }
@@ -275,7 +274,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
         // We really only want the best option
         pickBest(innerPlansWithSelections, leafPlanHeuristic(context), s"best plan for $predicate from disjunction $disjunction")
           // Only keep a plan if it actually solves the predicate from the disjunction
-          .filter(plan => predicate.queryGraphContains(solvedQueryGraph(plan)))
+          .filter(plan => predicate.containedIn(solvedQueryGraph(plan)))
           .toArray
       }.toArray
     }
