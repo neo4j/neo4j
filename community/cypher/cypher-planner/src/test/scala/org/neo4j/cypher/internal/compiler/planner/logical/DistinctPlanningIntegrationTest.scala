@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.UsingMatcher.using
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class DistinctPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class DistinctPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
   test("should not use eager plans for distinct") {
-    no(planFor("MATCH (n) RETURN DISTINCT n.name")._2.flatten) should matchPattern {
-      case _: Eager =>
-    }
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) RETURN DISTINCT n.name")
+    plan should not be using[Eager]
   }
 }

@@ -89,8 +89,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.Cardinality
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attribute
@@ -100,12 +98,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.internal.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
-import org.scalatest.matchers.BeMatcher
-import org.scalatest.matchers.MatchResult
 import org.scalatest.mockito.MockitoSugar
 
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 
 object LogicalPlanningTestSupport2 extends MockitoSugar {
 
@@ -179,7 +174,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   }
 }
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport with UsingMatcher {
   self: CypherFunSuite =>
 
   val parser = new CypherParser
@@ -439,17 +434,5 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   implicit def propertyKeyId(label: String)(implicit semanticTable: SemanticTable): PropertyKeyId =
     semanticTable.resolvedPropertyKeyNames(label)
-
-  def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
-    override def apply(actual: LogicalPlan): MatchResult = {
-      val matches = actual.treeFold(false) {
-        case lp if tag.runtimeClass.isInstance(lp) => acc => SkipChildren(true)
-      }
-      MatchResult(
-        matches = matches,
-        rawFailureMessage = s"Plan should use ${tag.runtimeClass.getSimpleName}",
-        rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}")
-    }
-  }
 
 }
