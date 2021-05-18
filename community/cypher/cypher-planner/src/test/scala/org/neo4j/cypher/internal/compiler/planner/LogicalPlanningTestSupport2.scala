@@ -215,6 +215,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         }.iterator
       }
 
+      override def hasPropertyExistenceConstraint(labelName: String,
+                                                  propertyKey: String): Boolean = {
+        getPropertiesWithExistenceConstraint(labelName).contains(propertyKey)
+      }
+
       override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
         config.constraints.filter(p => p._1 == labelName).flatMap(p => p._2)
       }
