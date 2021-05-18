@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -43,11 +45,43 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
   }
 
+  test("should plan a count for node count with * and no labels") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (n) RETURN count(*)"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("*")
+  }
+
+  test ("should not plan a count if no match provided") {
+    val query = "RETURN count(*)"
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test ("should plan a count for simple cases even if nodes are unnamed") {
+    val query = "MATCH () RETURN count(*)"
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("*")
+  }
+
   test("should plan a count for cartesian node count no labels") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH (n), (m)", "n")
 
     countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
+  }
+
+  test("should plan a count for cartesian node count with * and no labels") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (n), (m) RETURN count(*)"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("*")
   }
 
   test("should not plan a count for node count when there is a predicate on the node") {
@@ -56,6 +90,14 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plannerQuery = producePlannerQuery("MATCH (n) WHERE n.prop", "n")
 
     // Then
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a count for node count with * and when there is a predicate on the node") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (n) WHERE n.prop RETURN count(*)"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
