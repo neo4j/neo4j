@@ -91,6 +91,6 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
     @Override
     protected PageCursor getCursor( StoreCursors storeCursors )
     {
-        return storeCursors.pageCursor( RELATIONSHIP_CURSOR );
+        return storeCursors.readCursor( RELATIONSHIP_CURSOR );
     }
 }

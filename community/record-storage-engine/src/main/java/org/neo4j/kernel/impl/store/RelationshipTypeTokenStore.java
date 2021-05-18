@@ -29,11 +29,9 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
@@ -61,18 +59,6 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     {
         super( path, idFile, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, recordFormats.relationshipTypeToken(),
-                recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
-    }
-
-    @Override
-    public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
-    {
-        return storeCursors.pageCursor( REL_TYPE_TOKEN_CURSOR );
-    }
-
-    @Override
-    PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
-    {
-        return storeCursors.pageCursor( DYNAMIC_REL_TYPE_TOKEN_CURSOR );
+                recordFormats.storeVersion(), readOnlyChecker, databaseName, REL_TYPE_TOKEN_CURSOR, DYNAMIC_REL_TYPE_TOKEN_CURSOR, openOptions );
     }
 }

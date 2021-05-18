@@ -36,17 +36,19 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 public class GroupOfCommands implements CommandsToApply
 {
     private final long transactionId;
+    private final StoreCursors storeCursors;
     private final StorageCommand[] commands;
     GroupOfCommands next;
 
-    public GroupOfCommands( StorageCommand... commands )
+    public GroupOfCommands( StoreCursors storeCursors, StorageCommand... commands )
     {
-        this( TransactionIdStore.BASE_TX_ID, commands );
+        this( TransactionIdStore.BASE_TX_ID, storeCursors, commands );
     }
 
-    public GroupOfCommands( long transactionId, StorageCommand... commands )
+    public GroupOfCommands( long transactionId, StoreCursors storeCursors, StorageCommand... commands )
     {
         this.transactionId = transactionId;
+        this.storeCursors = storeCursors;
         this.commands = commands;
     }
 
@@ -71,7 +73,7 @@ public class GroupOfCommands implements CommandsToApply
     @Override
     public StoreCursors storeCursors()
     {
-        return StoreCursors.NULL;
+        return storeCursors;
     }
 
     @Override

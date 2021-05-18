@@ -50,7 +50,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     @Override
     protected PageCursor getCursor( StoreCursors storeCursors )
     {
-        return storeCursors.pageCursor( PROPERTY_CURSOR );
+        return storeCursors.readCursor( PROPERTY_CURSOR );
     }
 
     @Override

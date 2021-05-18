@@ -279,7 +279,7 @@ public abstract class RecordStorageReaderTestBase
         long txId = nextTxId.incrementAndGet();
         storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, LockTracer.NONE, txId, state -> state, NULL,
                 storageCursors, INSTANCE );
-        storageEngine.apply( new GroupOfCommands( txId, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
+        storageEngine.apply( new GroupOfCommands( txId, storageCursors, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
     }
 
     protected int labelId( Label label )

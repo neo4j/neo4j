@@ -177,7 +177,7 @@ public class RelationshipImporter extends EntityImporter
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
 
             relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ), cursorContext );
-            relationshipStore.updateRecord( relationshipRecord, IGNORE, relationshipUpdateCursor, cursorContext );
+            relationshipStore.updateRecord( relationshipRecord, IGNORE, relationshipUpdateCursor, cursorContext, storeCursors );
             relationshipCount++;
             typeCounts.increment( relationshipRecord.getType() );
         }

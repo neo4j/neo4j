@@ -27,12 +27,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever transaction is committed.
@@ -44,15 +45,18 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     private final Loader<RECORD, ADDITIONAL> loader;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
+    private final short cursorType;
     private final Map<Long,DirectRecordProxy> batch = new HashMap<>();
 
     private final MutableInt changeCounter = new MutableInt();
 
-    public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD, ADDITIONAL> loader, CursorContext cursorContext, StoreCursors storeCursors )
+    public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD,ADDITIONAL> loader, CursorContext cursorContext,
+            short cursorType, StoreCursors storeCursors )
     {
         this.store = store;
         this.loader = loader;
         this.cursorContext = cursorContext;
+        this.cursorType = cursorType;
         this.storeCursors = storeCursors;
     }
 
@@ -193,11 +197,11 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
             return record.toString();
         }
 
-        public void store()
+        public void store( PageCursor pageCursor )
         {
             if ( changed )
             {
-                store.updateRecord( record, IdUpdateListener.IGNORE, cursorContext );
+                store.updateRecord( record, IdUpdateListener.IGNORE, pageCursor, cursorContext, storeCursors );
             }
         }
 
@@ -223,9 +227,12 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
 
         List<DirectRecordProxy> directRecordProxies = new ArrayList<>( batch.values() );
         directRecordProxies.sort( ( o1, o2 ) -> Long.compare( -o1.getKey(), o2.getKey() ) );
-        for ( DirectRecordProxy proxy : directRecordProxies )
+        try ( var cursor = storeCursors.writeCursor( cursorType ) )
         {
-            proxy.store();
+            for ( DirectRecordProxy proxy : directRecordProxies )
+            {
+                proxy.store( cursor );
+            }
         }
         changeCounter.setValue( 0 );
         batch.clear();

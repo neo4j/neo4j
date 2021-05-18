@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -43,6 +44,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -55,6 +57,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -71,6 +74,7 @@ class ApplyRecoveredTransactionsTest
 
     private NeoStores neoStores;
     private DefaultIdGeneratorFactory idGeneratorFactory;
+    private CachedStoreCursors storeCursors;
 
     @BeforeEach
     void before()
@@ -80,12 +84,13 @@ class ApplyRecoveredTransactionsTest
                 new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL,
                         writable() );
         neoStores = storeFactory.openAllNeoStores( true );
+        storeCursors = new CachedStoreCursors( neoStores, NULL );
     }
 
     @AfterEach
     void after()
     {
-        neoStores.close();
+        closeAllUnchecked( storeCursors, neoStores );
     }
 
     @Test
@@ -128,12 +133,12 @@ class ApplyRecoveredTransactionsTest
 
         NeoStoreTransactionApplierFactory applier = new NeoStoreTransactionApplierFactory( INTERNAL, neoStores, mock( CacheAccessBackDoor.class ),
                 lockService );
-        CommandsToApply tx = new GroupOfCommands( transactionId, commands );
+        CommandsToApply tx = new GroupOfCommands( transactionId, storeCursors, commands );
         CommandHandlerContract.apply( applier, txApplier ->
         {
             tx.accept( txApplier );
             return false;
-        }, new GroupOfCommands( transactionId, commands ) );
+        }, new GroupOfCommands( transactionId, storeCursors, commands ) );
     }
 
     private static <RECORD extends AbstractBaseRecord> RECORD inUse( RECORD record )

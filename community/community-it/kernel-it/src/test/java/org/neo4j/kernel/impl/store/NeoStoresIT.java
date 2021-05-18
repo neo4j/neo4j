@@ -49,6 +49,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 @DbmsExtension( configurationCallback = "configure" )
@@ -109,7 +111,7 @@ class NeoStoresIT
         var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRawRecordData" ) );
         try ( var storeCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
-            propertyStore.getRawRecordData( 1L, storeCursors.pageCursor( PROPERTY_CURSOR ) );
+            propertyStore.getRawRecordData( 1L, storeCursors.readCursor( PROPERTY_CURSOR ) );
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -178,6 +180,7 @@ class NeoStoresIT
     {
         var storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         var neoStores = storageEngine.testAccessNeoStores();
+        var storeCursors = storageEngine.createStorageCursors( NULL );
         var nodeStore = neoStores.getNodeStore();
 
         long nodeId;
@@ -190,12 +193,15 @@ class NeoStoresIT
         }
 
         var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnUpdateRecord" ) );
-        nodeStore.updateRecord( new NodeRecord( nodeId ), cursorContext );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( new NodeRecord( nodeId ), storeCursor, cursorContext, storeCursors );
+        }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 5, cursorTracer.hits() );
-        assertEquals( 6, cursorTracer.pins() );
-        assertEquals( 6, cursorTracer.unpins() );
+        assertEquals( 4, cursorTracer.hits() );
+        assertEquals( 5, cursorTracer.pins() );
+        assertEquals( 5, cursorTracer.unpins() );
     }
 
     @Test

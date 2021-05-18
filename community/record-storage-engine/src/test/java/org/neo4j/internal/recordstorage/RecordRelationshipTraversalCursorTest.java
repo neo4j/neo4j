@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -74,6 +73,8 @@ import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -310,10 +311,13 @@ public class RecordRelationshipTraversalCursorTest
     protected void unUseRecord( long recordId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        var cursor = storeCursors.pageCursor( CursorTypes.RELATIONSHIP_CURSOR );
-        RelationshipRecord relationshipRecord = relationshipStore.getRecordByCursor( recordId, new RelationshipRecord( -1 ), RecordLoad.FORCE, cursor );
+        var readCursor = storeCursors.readCursor( RELATIONSHIP_CURSOR );
+        RelationshipRecord relationshipRecord = relationshipStore.getRecordByCursor( recordId, new RelationshipRecord( -1 ), RecordLoad.FORCE, readCursor );
         relationshipRecord.setInUse( false );
-        relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
+        try ( var writeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            relationshipStore.updateRecord( relationshipRecord, writeCursor, CursorContext.NULL, storeCursors );
+        }
     }
 
     protected static RelationshipGroupRecord createRelationshipGroup( long id, int type, long[] firstIds, long next )
@@ -327,10 +331,14 @@ public class RecordRelationshipTraversalCursorTest
         if ( !dense )
         {
             // a single chain
-            for ( int i = 0; i < relationshipSpecs.length; i++ )
+            try ( var cursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
             {
-                long nextRelationshipId = i == relationshipSpecs.length - 1 ? NULL : i + 1;
-                relationshipStore.updateRecord( createRelationship( i, nextRelationshipId, relationshipSpecs[i] ), CursorContext.NULL );
+                for ( int i = 0; i < relationshipSpecs.length; i++ )
+                {
+                    long nextRelationshipId = i == relationshipSpecs.length - 1 ? NULL : i + 1;
+                    relationshipStore.updateRecord( createRelationship( i, nextRelationshipId, relationshipSpecs[i] ), cursor, CursorContext.NULL,
+                            storeCursors );
+                }
             }
             return 0;
         }
@@ -342,30 +350,36 @@ public class RecordRelationshipTraversalCursorTest
             int currentType = -1;
             long[] currentGroup = null;
             long nextGroupId = relationshipGroupStore.getNumberOfReservedLowIds();
-            for ( int i = 0; i < relationshipSpecs.length; i++ )
+            try ( var groupCursor = storeCursors.writeCursor( GROUP_CURSOR );
+                  var relCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
             {
-                RelationshipSpec spec = relationshipSpecs[i];
-                if ( spec.type != currentType || currentGroup == null )
+                for ( int i = 0; i < relationshipSpecs.length; i++ )
                 {
-                    if ( currentGroup != null )
+                    RelationshipSpec spec = relationshipSpecs[i];
+                    if ( spec.type != currentType || currentGroup == null )
                     {
-                        relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId++, currentType, currentGroup, nextGroupId ),
-                                CursorContext.NULL );
+                        if ( currentGroup != null )
+                        {
+                            relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId++, currentType, currentGroup, nextGroupId ), groupCursor,
+                                    CursorContext.NULL, storeCursors );
+                        }
+                        currentType = spec.type;
+                        currentGroup = new long[]{NULL, NULL, NULL};
                     }
-                    currentType = spec.type;
-                    currentGroup = new long[]{NULL, NULL, NULL};
-                }
 
-                int relationshipOrdinal = relationshipSpecs[i].direction.ordinal();
-                long relationshipId = i;
-                long nextRelationshipId = i < relationshipSpecs.length - 1 && relationshipSpecs[i + 1].equals( spec ) ? i + 1 : NULL;
-                relationshipStore.updateRecord( createRelationship( relationshipId, nextRelationshipId, relationshipSpecs[i] ), CursorContext.NULL );
-                if ( currentGroup[relationshipOrdinal] == NULL )
-                {
-                    currentGroup[relationshipOrdinal] = relationshipId;
+                    int relationshipOrdinal = relationshipSpecs[i].direction.ordinal();
+                    long relationshipId = i;
+                    long nextRelationshipId = i < relationshipSpecs.length - 1 && relationshipSpecs[i + 1].equals( spec ) ? i + 1 : NULL;
+                    relationshipStore.updateRecord( createRelationship( relationshipId, nextRelationshipId, relationshipSpecs[i] ), relCursor,
+                            CursorContext.NULL, storeCursors );
+                    if ( currentGroup[relationshipOrdinal] == NULL )
+                    {
+                        currentGroup[relationshipOrdinal] = relationshipId;
+                    }
                 }
+                relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId, currentType, currentGroup, NULL ), groupCursor, CursorContext.NULL,
+                        storeCursors );
             }
-            relationshipGroupStore.updateRecord( createRelationshipGroup( nextGroupId, currentType, currentGroup, NULL ), CursorContext.NULL );
             return relationshipsReferenceWithDenseMarker( relationshipGroupStore.getNumberOfReservedLowIds(), true );
         }
     }

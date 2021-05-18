@@ -38,7 +38,7 @@ class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<Schema
     @Override
     protected PageCursor getCursor( StoreCursors storeCursors )
     {
-        return storeCursors.pageCursor( SCHEMA_CURSOR );
+        return storeCursors.readCursor( SCHEMA_CURSOR );
     }
 
     @Override

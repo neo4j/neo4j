@@ -162,7 +162,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         {
             try
             {
-                propertyStore.getRecordByCursor( nextProp, propRecord, RecordLoad.NORMAL, storeCursors.pageCursor( PROPERTY_CURSOR ) );
+                propertyStore.getRecordByCursor( nextProp, propRecord, RecordLoad.NORMAL, storeCursors.readCursor( PROPERTY_CURSOR ) );
             }
             catch ( InvalidRecordException e )
             {

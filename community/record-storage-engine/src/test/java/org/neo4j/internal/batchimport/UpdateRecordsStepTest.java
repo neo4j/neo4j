@@ -20,8 +20,11 @@
 package org.neo4j.internal.batchimport;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
+import org.mockito.MockSettings;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
@@ -31,11 +34,16 @@ import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -44,6 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 class UpdateRecordsStepTest
 {
@@ -56,7 +65,8 @@ class UpdateRecordsStepTest
 
         Configuration configuration = mock( Configuration.class );
         StageControl stageControl = mock( StageControl.class );
-        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence(), PageCacheTracer.NULL );
+        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, configuration, store, new StorePrepareIdSequence(), PageCacheTracer.NULL,
+                getCursorsCreator(), NODE_CURSOR );
 
         NodeRecord record = new NodeRecord( 1 );
         record.setInUse( true );
@@ -76,7 +86,7 @@ class UpdateRecordsStepTest
         RecordStore<NodeRecord> store = mock( NodeStore.class );
         StageControl stageControl = mock( StageControl.class );
         UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, Configuration.DEFAULT, store,
-                new StorePrepareIdSequence(), PageCacheTracer.NULL );
+                new StorePrepareIdSequence(), PageCacheTracer.NULL, getCursorsCreator(), NODE_CURSOR );
 
         NodeRecord node1 = new NodeRecord( 1 );
         node1.setInUse( true );
@@ -88,10 +98,15 @@ class UpdateRecordsStepTest
         step.process( batch, mock( BatchSender.class ), NULL );
 
         verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ), any( CursorContext.class ) );
-        verify( store ).updateRecord( eq( node1 ), any(), any(), any() );
+        verify( store ).updateRecord( eq( node1 ), any(), any(), any(), any() );
         verify( store ).prepareForCommit( eq( node2 ), any( IdSequence.class ), any( CursorContext.class ) );
-        verify( store ).updateRecord( eq( node2 ), any(), any(), any() );
+        verify( store ).updateRecord( eq( node2 ), any(), any(), any(), any() );
         verify( store, never() ).prepareForCommit( eq( nodeWithReservedId ), any( IdSequence.class ), any( CursorContext.class ) );
-        verify( store, never() ).updateRecord( eq( nodeWithReservedId ), any() );
+        verify( store, never() ).updateRecord( eq( nodeWithReservedId ), any(), any(), any() );
+    }
+
+    private static Function<CursorContext,StoreCursors> getCursorsCreator()
+    {
+        return any -> new CachedStoreCursors( mock( NeoStores.class, RETURNS_MOCKS ), any );
     }
 }

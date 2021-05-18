@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -136,14 +137,17 @@ class IdGeneratorMigratorTest
         R record = store.newRecord();
         record.setInUse( true );
         long id = store.getNumberOfReservedLowIds();
-        for ( int i = 0; i < rounds; i++ )
+        try ( var cursor = store.openPageCursorForWriting( 0, CursorContext.NULL ) )
         {
-            id += numDeleted;
-            for ( int c = 0; c < numCreated; c++ )
+            for ( int i = 0; i < rounds; i++ )
             {
-                record.setId( id++ );
-                // we don't look at these id generators anyway during migration
-                store.updateRecord( record, IdUpdateListener.IGNORE, CursorContext.NULL );
+                id += numDeleted;
+                for ( int c = 0; c < numCreated; c++ )
+                {
+                    record.setId( id++ );
+                    // we don't look at these id generators anyway during migration
+                    store.updateRecord( record, IdUpdateListener.IGNORE, cursor, CursorContext.NULL, StoreCursors.NULL );
+                }
             }
         }
     }

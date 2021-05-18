@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +51,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 class NodeCheckerTest extends CheckerTestBase
 {
@@ -229,9 +231,15 @@ class NodeCheckerTest extends CheckerTestBase
             new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), CursorContext.NULL, StoreCursors.NULL,
                     INSTANCE );
             assertThat( node.getDynamicLabelRecords().size() ).isGreaterThanOrEqualTo( 2 );
-            nodeStore.updateRecord( node, CursorContext.NULL );
+            try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+            {
+                nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+            }
             vandal.accept( node );
-            nodeStore.updateRecord( node, CursorContext.NULL );
+            try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+            {
+                nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+            }
         }
 
         // when
@@ -313,7 +321,10 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             NodeRecord node = new NodeRecord( nodeStore.nextId( CursorContext.NULL ) ).initialize( true, NULL, false, NULL, 0x171f5bd081L );
-            nodeStore.updateRecord( node, CursorContext.NULL );
+            try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+            {
+                nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+            }
         }
 
         // when

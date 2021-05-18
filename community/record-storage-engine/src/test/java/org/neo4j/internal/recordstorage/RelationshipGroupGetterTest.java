@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -59,6 +60,8 @@ import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.Relations
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -76,6 +79,7 @@ class RelationshipGroupGetterTest
     private RecordAccess<RelationshipGroupRecord,Integer> groupRecords;
     private RecordAccess<NodeRecord,Void> nodeRecords;
     private RelationshipGroupGetter groupGetter;
+    private StoreCursors storeCursors;
 
     @BeforeEach
     void openStore()
@@ -87,9 +91,9 @@ class RelationshipGroupGetterTest
         stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL );
         groupStore = spy( stores.getRelationshipGroupStore() );
         NodeStore nodeStore = stores.getNodeStore();
-        StoreCursors storeCursors = new CachedStoreCursors( stores, NULL );
-        groupRecords = new DirectRecordAccess<>( groupStore, Loaders.relationshipGroupLoader( groupStore, storeCursors ), NULL, storeCursors );
-        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore, storeCursors ), NULL, storeCursors );
+        storeCursors = new CachedStoreCursors( stores, NULL );
+        groupRecords = new DirectRecordAccess<>( groupStore, Loaders.relationshipGroupLoader( groupStore, storeCursors ), NULL, GROUP_CURSOR, storeCursors );
+        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore, storeCursors ), NULL, NODE_CURSOR, storeCursors );
         groupGetter = new RelationshipGroupGetter( groupStore, NULL );
     }
 
@@ -225,9 +229,12 @@ class RelationshipGroupGetterTest
                 groups[i].setNext( groups[i + 1].getId() );
             }
         }
-        for ( RelationshipGroupRecord group : groups )
+        try ( var cursor = storeCursors.writeCursor( GROUP_CURSOR ) )
         {
-            groupStore.updateRecord( group, NULL );
+            for ( RelationshipGroupRecord group : groups )
+            {
+                groupStore.updateRecord( group, cursor, NULL, storeCursors );
+            }
         }
     }
 

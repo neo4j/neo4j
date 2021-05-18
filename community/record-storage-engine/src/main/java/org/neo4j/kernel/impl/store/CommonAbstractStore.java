@@ -894,7 +894,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors )
     {
         long id = record.getId();
         IdValidator.assertValidId( getIdType(), id, recordFormat.getMaxId() );

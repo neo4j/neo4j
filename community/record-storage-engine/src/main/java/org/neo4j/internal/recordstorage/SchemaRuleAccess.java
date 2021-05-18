@@ -93,5 +93,5 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.
      * This is a non-transactional operation that is used during schema store migration.
      */
-    void writeSchemaRule( SchemaRule rule, CursorContext cursorContext, MemoryTracker memoryTracker ) throws KernelException;
+    void writeSchemaRule( SchemaRule rule, CursorContext cursorContext, MemoryTracker memoryTracker, StoreCursors storeCursors ) throws KernelException;
 }

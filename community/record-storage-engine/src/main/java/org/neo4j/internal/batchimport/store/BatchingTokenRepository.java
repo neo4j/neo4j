@@ -30,7 +30,9 @@ import java.util.function.ToIntFunction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -38,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
@@ -45,7 +48,7 @@ import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
 /**
  * Batching version of a {@link TokenStore} where tokens can be created and retrieved, but only persisted
- * to storage as part of {@link #flush(CursorContext) flush}. Instances of this class are thread safe
+ * to storage as part of {@link #flush(CursorContext, PageCursor, StoreCursors)}  flush}. Instances of this class are thread safe
  * to call {@link #getOrCreateId(String)} methods on.
  */
 public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implements ToIntFunction<Object>
@@ -185,14 +188,14 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         return highId;
     }
 
-    public void flush( CursorContext cursorContext )
+    public void flush( CursorContext cursorContext, PageCursor pageCursor, StoreCursors storeCursors )
     {
         int highest = highestCreatedId;
         for ( Map.Entry<TokenId,String> tokenToCreate : sortCreatedTokensById( tokens ) )
         {
             if ( tokenToCreate.getKey().value > highestCreatedId )
             {
-                createToken( tokenToCreate.getValue(), tokenToCreate.getKey().value, tokenToCreate.getKey().internal, cursorContext );
+                createToken( tokenToCreate.getValue(), tokenToCreate.getKey().value, tokenToCreate.getKey().internal, cursorContext, pageCursor, storeCursors );
                 highest = Math.max( highest, tokenToCreate.getKey().value );
             }
         }
@@ -203,7 +206,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         highestCreatedId = highestId;
     }
 
-    private void createToken( String name, int tokenId, boolean internal, CursorContext cursorContext )
+    private void createToken( String name, int tokenId, boolean internal, CursorContext cursorContext, PageCursor pageCursor, StoreCursors storeCursors )
     {
         RECORD record = recordInstantiator.apply( tokenId );
         record.setInUse( true );
@@ -212,8 +215,12 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ), cursorContext, EmptyMemoryTracker.INSTANCE );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
-        store.updateRecord( record, cursorContext );
-        nameRecords.forEach( nameRecord -> store.getNameStore().updateRecord( nameRecord, cursorContext ) );
+        store.updateRecord( record, pageCursor, cursorContext, storeCursors );
+        try ( var namedCursor = store.getWriteDynamicTokenCursor( storeCursors ) )
+        {
+            DynamicStringStore tokenNameStore = store.getNameStore();
+            nameRecords.forEach( nameRecord -> tokenNameStore.updateRecord( nameRecord, namedCursor, cursorContext, storeCursors ) );
+        }
     }
 
     private static Iterable<Map.Entry<TokenId,String>> sortCreatedTokensById( Map<String,TokenId> tokens )

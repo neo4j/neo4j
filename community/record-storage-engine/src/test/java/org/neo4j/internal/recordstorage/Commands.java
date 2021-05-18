@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -175,6 +176,6 @@ public class Commands
 
     public static CommandsToApply transaction( Command... commands )
     {
-        return new GroupOfCommands( commands );
+        return new GroupOfCommands( StoreCursors.NULL, commands );
     }
 }

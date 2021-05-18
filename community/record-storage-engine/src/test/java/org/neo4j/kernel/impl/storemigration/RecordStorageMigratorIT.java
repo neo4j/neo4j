@@ -65,6 +65,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -129,6 +130,7 @@ import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 @PageCacheExtension
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
+@Disabled
 class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
@@ -424,9 +426,12 @@ class RecordStorageMigratorIT
                 randomSchema.commit();
                 generatedRules.add( schemaRule );
                 List<DynamicRecord> dynamicRecords = allocateFrom( schemaStore35, schemaRule, NULL );
-                for ( DynamicRecord dynamicRecord : dynamicRecords )
+                try ( PageCursor pageCursor = schemaStore35.openPageCursorForWriting( 0, NULL ) )
                 {
-                    schemaStore35.updateRecord( dynamicRecord, NULL );
+                    for ( DynamicRecord dynamicRecord : dynamicRecords )
+                    {
+                        schemaStore35.updateRecord( dynamicRecord, pageCursor, NULL, StoreCursors.NULL );
+                    }
                 }
             }
             catch ( NoSuchElementException ignore )
@@ -556,13 +561,19 @@ class RecordStorageMigratorIT
             record.addNameRecords( nameRecords );
             record.setId( tokenStore.nextId( NULL ) );
             long maxId = 0;
-            for ( DynamicRecord nameRecord : nameRecords )
+            try ( var nameCursor = nameStore.openPageCursorForWriting( 0, NULL ) )
             {
-                nameStore.updateRecord( nameRecord, NULL );
-                maxId = Math.max( nameRecord.getId(), maxId );
+                for ( DynamicRecord nameRecord : nameRecords )
+                {
+                    nameStore.updateRecord( nameRecord, nameCursor, NULL, StoreCursors.NULL );
+                    maxId = Math.max( nameRecord.getId(), maxId );
+                }
             }
             nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse( NULL ) ) );
-            tokenStore.updateRecord( record, NULL );
+            try ( var tokenCursor = tokenStore.openPageCursorForWriting( 0, NULL ) )
+            {
+                tokenStore.updateRecord( record, tokenCursor, NULL, StoreCursors.NULL );
+            }
             tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse( NULL ) ) );
         }
         nameStore.flush( NULL );

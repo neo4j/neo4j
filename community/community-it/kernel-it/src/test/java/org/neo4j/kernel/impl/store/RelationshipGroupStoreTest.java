@@ -43,12 +43,14 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -63,6 +65,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
 @Neo4jLayoutExtension
@@ -335,19 +338,21 @@ class RelationshipGroupStoreTest
         {
             StoreFactory factory = factory( null, pageCache );
 
-            try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
+            try ( NeoStores neoStores = factory.openAllNeoStores( true );
+                  var storeCursors = new CachedStoreCursors( neoStores, NULL ) )
             {
                 RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
                 RelationshipGroupRecord record = new RelationshipGroupRecord( 1 ).initialize( true, 2, 3, 4, 5, 6,
                         Record.NO_NEXT_RELATIONSHIP.intValue() );
-                relationshipGroupStore.updateRecord( record, CursorContext.NULL );
+                try ( var storeCursor = storeCursors.writeCursor( GROUP_CURSOR ) )
+                {
+                    relationshipGroupStore.updateRecord( record, storeCursor, CursorContext.NULL, StoreCursors.NULL );
+                }
                 nextReadIsInconsistent.set( true );
                 // Now the following should not throw any RecordNotInUse exceptions
-                try ( var relCursor = relationshipGroupStore.openPageCursorForReading( 0, NULL ) )
-                {
-                    RelationshipGroupRecord readBack = relationshipGroupStore.getRecordByCursor( 1, relationshipGroupStore.newRecord(), NORMAL, relCursor );
-                    assertThat( readBack.toString() ).isEqualTo( record.toString() );
-                }
+                RelationshipGroupRecord readBack =
+                        relationshipGroupStore.getRecordByCursor( 1, relationshipGroupStore.newRecord(), NORMAL, storeCursors.readCursor( GROUP_CURSOR ) );
+                assertThat( readBack.toString() ).isEqualTo( record.toString() );
             }
         }
     }

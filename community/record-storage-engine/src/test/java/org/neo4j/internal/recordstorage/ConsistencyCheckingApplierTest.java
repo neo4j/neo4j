@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.ConsistencyCheckingApplierFactory.ConsistencyCheckingApplier;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -33,17 +34,20 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.stream;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,6 +55,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 @PageCacheExtension
 class ConsistencyCheckingApplierTest
@@ -71,6 +76,7 @@ class ConsistencyCheckingApplierTest
     private ConsistencyCheckingApplier checker;
     private NeoStoreTransactionApplier applier;
     private TransactionApplier[] appliers;
+    private CachedStoreCursors storeCursors;
 
     @BeforeEach
     void setUp()
@@ -80,18 +86,19 @@ class ConsistencyCheckingApplierTest
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME ), pageCache,
                 directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
         checker = new ConsistencyCheckingApplier( relationshipStore, CursorContext.NULL );
         BatchContext batchContext = mock( BatchContext.class );
         when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
         applier = new NeoStoreTransactionApplier( CommandVersion.AFTER, neoStores, mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, 0,
-                batchContext, CursorContext.NULL );
+                batchContext, CursorContext.NULL, storeCursors );
         appliers = new TransactionApplier[]{checker, applier};
     }
 
     @AfterEach
     void tearDown()
     {
-        neoStores.close();
+        closeAllUnchecked( storeCursors, neoStores );
     }
 
     @Test

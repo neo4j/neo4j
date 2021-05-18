@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.function.Function;
+
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
@@ -26,11 +28,14 @@ import org.neo4j.internal.batchimport.staging.ExecutionSupervisors;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Defragments {@link RelationshipGroupRecord} so that they end up sequential per node in the group store.
@@ -90,6 +95,7 @@ public class RelationshipGroupDefragmenter
             RecordStore<RelationshipGroupRecord> fromStore = neoStore.getTemporaryRelationshipGroupStore();
             // and write into the main relationship group store
             RecordStore<RelationshipGroupRecord> toStore = neoStore.getRelationshipGroupStore();
+            Function<CursorContext,StoreCursors> storeCursorCreator = cursorContext -> new CachedStoreCursors( neoStore.getNeoStores(), cursorContext );
 
             // Count all nodes, how many groups each node has each
             Configuration groupConfig =
@@ -106,7 +112,7 @@ public class RelationshipGroupDefragmenter
                 // Cache those groups
                 executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache, pageCacheTracer, memoryUsage ) );
                 // And write them in sequential order in the store
-                executeStage( new WriteGroupsStage( groupConfig, groupCache, toStore, pageCacheTracer ) );
+                executeStage( new WriteGroupsStage( groupConfig, groupCache, toStore, pageCacheTracer, storeCursorCreator ) );
 
                 // Make adjustments for the next iteration
                 fromNodeId = toNodeId;
@@ -116,7 +122,7 @@ public class RelationshipGroupDefragmenter
             ByteArray groupCountCache = groupCache.getGroupCountCache();
             groupCountCache.clear();
             Configuration nodeConfig = Configuration.withBatchSize( config, neoStore.getNodeStore().getRecordsPerPage() );
-            executeStage( new NodeFirstGroupStage( nodeConfig, toStore, neoStore.getNodeStore(), groupCountCache, pageCacheTracer ) );
+            executeStage( new NodeFirstGroupStage( nodeConfig, toStore, neoStore.getNodeStore(), groupCountCache, pageCacheTracer, storeCursorCreator ) );
         }
     }
 

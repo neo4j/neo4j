@@ -51,6 +51,7 @@ import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.HighestTransactionId;
 import org.neo4j.util.Bits;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -68,6 +69,13 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_MOS
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.KERNEL_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CONSTRAINT_TRANSACTION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LOG_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
@@ -230,7 +238,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         assertNotClosed();
         byte version = kernelVersion.version();
-        setRecord( KERNEL_VERSION, version, cursorContext );
+        try ( var cursor = openPageCursorForWriting( KERNEL_VERSION.id, cursorContext ) )
+        {
+            setRecord( KERNEL_VERSION, version, cursor, cursorContext );
+        }
         this.kernelVersion = version;
     }
 
@@ -260,7 +271,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         synchronized ( checkpointLogVersionLock )
         {
-            setRecord( CHECKPOINT_LOG_VERSION, version, cursorContext );
+            try ( var cursor = openPageCursorForWriting( CHECKPOINT_LOG_VERSION.id, cursorContext ) )
+            {
+                setRecord( CHECKPOINT_LOG_VERSION, version, cursor, cursorContext );
+            }
             checkpointLogVersionField = version;
         }
     }
@@ -276,8 +290,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private void setExternalStoreUUID( UUID uuid, CursorContext cursorContext )
     {
         assertNotClosed();
-        setRecord( EXTERNAL_STORE_UUID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursorContext );
-        setRecord( EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursorContext );
+        try ( var cursor = openPageCursorForWriting( EXTERNAL_STORE_UUID_MOST_SIGN_BITS.id, cursorContext ) )
+        {
+            setRecord( EXTERNAL_STORE_UUID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursor, cursorContext );
+            setRecord( EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursor, cursorContext );
+        }
     }
 
     // Only for initialization and recovery, so we don't need to lock the records
@@ -287,11 +304,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             CursorContext cursorContext )
     {
         assertNotClosed();
-        setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursorContext );
-        setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum, cursorContext );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursorContext );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursorContext );
-        setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp, cursorContext );
+        try ( var cursor = openPageCursorForWriting( LAST_TRANSACTION_ID.id, cursorContext ) )
+        {
+            setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursor, cursorContext );
+            setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum, cursor, cursorContext );
+            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursor, cursorContext );
+            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursor, cursorContext );
+            setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp, cursor, cursorContext );
+        }
         checkInitialized( lastCommittingTxField.get() );
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
@@ -422,8 +442,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public void setDatabaseIdUuid( UUID uuid, CursorContext cursorContext )
     {
         assertNotClosed();
-        setRecord( DATABASE_ID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursorContext );
-        setRecord( DATABASE_ID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursorContext );
+        try ( var cursor = openPageCursorForWriting( DATABASE_ID_MOST_SIGN_BITS.id, cursorContext ) )
+        {
+            setRecord( DATABASE_ID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursor, cursorContext );
+            setRecord( DATABASE_ID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursor, cursorContext );
+        }
         refreshFields();
     }
 
@@ -513,7 +536,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         synchronized ( upgradeTimeLock )
         {
-            setRecord( Position.UPGRADE_TIME, time, cursorContext );
+            try ( var cursor = openPageCursorForWriting( UPGRADE_TIME.id, cursorContext ) )
+            {
+                setRecord( Position.UPGRADE_TIME, time, cursor, cursorContext );
+            }
             upgradeTimeField = time;
         }
     }
@@ -571,7 +597,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         synchronized ( creationTimeLock )
         {
-            setRecord( Position.TIME, time, cursorContext );
+            try ( var cursor = openPageCursorForWriting( TIME.id, cursorContext ) )
+            {
+                setRecord( Position.TIME, time, cursor, cursorContext );
+            }
             creationTimeField = time;
         }
     }
@@ -587,7 +616,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         synchronized ( randomNumberLock )
         {
-            setRecord( Position.RANDOM_NUMBER, random, cursorContext );
+            try ( var cursor = openPageCursorForWriting( RANDOM_NUMBER.id, cursorContext ) )
+            {
+                setRecord( Position.RANDOM_NUMBER, random, cursor, cursorContext );
+            }
             randomNumberField = random;
         }
     }
@@ -605,7 +637,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         synchronized ( logVersionLock )
         {
-            setRecord( Position.LOG_VERSION, version, cursorContext );
+            try ( var cursor = openPageCursorForWriting( LOG_VERSION.id, cursorContext ) )
+            {
+                setRecord( Position.LOG_VERSION, version, cursor, cursorContext );
+            }
             versionField = version;
         }
     }
@@ -671,7 +706,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         synchronized ( storeVersionLock )
         {
-            setRecord( Position.STORE_VERSION, version, cursorContext );
+            try ( var cursor = openPageCursorForWriting( STORE_VERSION.id, cursorContext ) )
+            {
+                setRecord( Position.STORE_VERSION, version, cursor, cursorContext );
+            }
             storeVersionField = version;
         }
     }
@@ -687,7 +725,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         synchronized ( lastConstraintIntroducingTxLock )
         {
-            setRecord( Position.LAST_CONSTRAINT_TRANSACTION, latestConstraintIntroducingTx, cursorContext );
+            try ( var cursor = openPageCursorForWriting( LAST_CONSTRAINT_TRANSACTION.id, cursorContext ) )
+            {
+                setRecord( Position.LAST_CONSTRAINT_TRANSACTION, latestConstraintIntroducingTx, cursor, cursorContext );
+            }
             latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
         }
     }
@@ -790,12 +831,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    private void setRecord( Position position, long value, CursorContext cursorContext )
+    private void setRecord( Position position, long value, PageCursor pageCursor, CursorContext cursorContext )
     {
         MetaDataRecord record = new MetaDataRecord();
         record.initialize( true, value );
         record.setId( position.id );
-        updateRecord( record, cursorContext );
+        updateRecord( record, pageCursor, cursorContext, StoreCursors.NULL );
     }
 
     private void setRecord( PageCursor cursor, Position position, long value )
@@ -1003,12 +1044,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, CursorContext cursorContext )
     {
         assertNotClosed();
-        setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursorContext );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursorContext );
-        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursorContext );
-        if ( missingLogs )
+        try ( var cursor = openPageCursorForWriting( LAST_TRANSACTION_ID.id, cursorContext ) )
         {
-            setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis(), cursorContext );
+            setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursor, cursorContext );
+            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursor, cursorContext );
+            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursor, cursorContext );
+            if ( missingLogs )
+            {
+                setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis(), cursor, cursorContext );
+            }
         }
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
     }

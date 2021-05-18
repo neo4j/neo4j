@@ -60,18 +60,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
-                recordFormats.propertyKeyToken(), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
-    }
-
-    @Override
-    public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
-    {
-        return storeCursors.pageCursor( PROPERTY_KEY_TOKEN_CURSOR );
-    }
-
-    @Override
-    PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
-    {
-        return storeCursors.pageCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR );
+                recordFormats.propertyKeyToken(), recordFormats.storeVersion(), readOnlyChecker, databaseName, PROPERTY_KEY_TOKEN_CURSOR,
+                DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR, openOptions );
     }
 }

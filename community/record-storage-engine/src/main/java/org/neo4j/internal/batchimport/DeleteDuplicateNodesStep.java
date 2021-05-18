@@ -75,7 +75,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
             while ( nodeIds.hasNext() )
             {
                 long duplicateNodeId = nodeIds.next();
-                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
+                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, storeCursors.readCursor( NODE_CURSOR ) );
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
                 nodeStore.ensureHeavy( nodeRecord, storeCursors );
@@ -84,13 +84,16 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 long nextProp = nodeRecord.getNextProp();
                 while ( !Record.NULL_REFERENCE.is( nextProp ) )
                 {
-                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, storeCursors.pageCursor( PROPERTY_CURSOR ) );
+                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, storeCursors.readCursor( PROPERTY_CURSOR ) );
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
                     propertyStore.ensureHeavy( propertyRecord, storeCursors );
                     propertiesRemoved += propertyRecord.numberOfProperties();
                     nextProp = propertyRecord.getNextProp();
                     deletePropertyRecordIncludingValueRecords( propertyRecord );
-                    propertyStore.updateRecord( propertyRecord, cursorContext );
+                    try ( var propertyWriteCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+                    {
+                        propertyStore.updateRecord( propertyRecord, propertyWriteCursor, cursorContext, storeCursors );
+                    }
                 }
 
                 // Delete node (and dynamic label records, if any)
@@ -99,7 +102,10 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 {
                     labelRecord.setInUse( false );
                 }
-                nodeStore.updateRecord( nodeRecord, cursorContext );
+                try ( var nodeWriteCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+                {
+                    nodeStore.updateRecord( nodeRecord, nodeWriteCursor, cursorContext, storeCursors );
+                }
                 nodesRemoved++;
             }
         }

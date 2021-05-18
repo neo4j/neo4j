@@ -34,7 +34,17 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
+
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
@@ -54,9 +64,10 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     private final LockService lockService;
     private final IdUpdateListener idUpdateListener;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
 
     public NeoStoreTransactionApplier( CommandVersion version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
-            long transactionId, BatchContext batchContext, CursorContext cursorContext )
+            long transactionId, BatchContext batchContext, CursorContext cursorContext, StoreCursors storeCursors )
     {
         this.version = version;
         this.lockGroup = batchContext.getLockGroup();
@@ -66,6 +77,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         this.cacheAccess = cacheAccess;
         this.idUpdateListener = batchContext.getIdUpdateListener();
         this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     @Override
@@ -75,7 +87,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockType.EXCLUSIVE ) );
 
         // update store
-        updateStore( neoStores.getNodeStore(), command );
+        updateStore( neoStores.getNodeStore(), command, NODE_CURSOR );
         return false;
     }
 
@@ -84,7 +96,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     {
         lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), LockType.EXCLUSIVE ) );
 
-        updateStore( neoStores.getRelationshipStore(), command );
+        updateStore( neoStores.getRelationshipStore(), command, RELATIONSHIP_CURSOR );
         return false;
     }
 
@@ -101,35 +113,35 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
             lockGroup.add( lockService.acquireRelationshipLock( command.getRelId(), LockType.EXCLUSIVE ) );
         }
 
-        updateStore( neoStores.getPropertyStore(), command );
+        updateStore( neoStores.getPropertyStore(), command, PROPERTY_CURSOR );
         return false;
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command )
     {
-        updateStore( neoStores.getRelationshipGroupStore(), command );
+        updateStore( neoStores.getRelationshipGroupStore(), command, GROUP_CURSOR );
         return false;
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command )
     {
-        updateStore( neoStores.getRelationshipTypeTokenStore(), command );
+        updateStore( neoStores.getRelationshipTypeTokenStore(), command, REL_TYPE_TOKEN_CURSOR );
         return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command )
     {
-        updateStore( neoStores.getLabelTokenStore(), command );
+        updateStore( neoStores.getLabelTokenStore(), command, LABEL_TOKEN_CURSOR );
         return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command )
     {
-        updateStore( neoStores.getPropertyKeyTokenStore(), command );
+        updateStore( neoStores.getPropertyKeyTokenStore(), command, PROPERTY_KEY_TOKEN_CURSOR );
         return false;
     }
 
@@ -145,7 +157,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         //    job might get those as updates
         // 4) the population job will apply those updates as added properties, and might end up with duplicate
         //    entries for the same property
-        updateStore( neoStores.getSchemaStore(), command );
+        updateStore( neoStores.getSchemaStore(), command, SCHEMA_CURSOR );
         SchemaRule schemaRule = command.getSchemaRule();
         boolean isConstraint = command.getAfter().isConstraint();
         onSchemaRuleChange( command.getMode(), command.getKey(), schemaRule, isConstraint );
@@ -194,9 +206,12 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         }
     }
 
-    private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command )
+    private <RECORD extends AbstractBaseRecord> void updateStore( CommonAbstractStore<RECORD,?> store, BaseCommand<RECORD> command, short cursorType )
     {
-        store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener, cursorContext );
+        try ( var cursor = storeCursors.writeCursor( cursorType ) )
+        {
+            store.updateRecord( selectRecordByCommandVersion( command ), idUpdateListener, cursor, cursorContext, storeCursors );
+        }
     }
 
     private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion( BaseCommand<RECORD> command )

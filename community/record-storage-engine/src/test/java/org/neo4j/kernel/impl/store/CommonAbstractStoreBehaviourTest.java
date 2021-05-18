@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
@@ -218,7 +219,13 @@ class CommonAbstractStoreBehaviourTest
     @Test
     void updateRecordMustThrowOnPageOverflow()
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> store.updateRecord( new IntRecord( 5 ), NULL ) );
+        verifyExceptionOnOutOfBoundsAccess( () ->
+        {
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            {
+                store.updateRecord( new IntRecord( 5 ), storeCursor, NULL, StoreCursors.NULL );
+            }
+        } );
     }
 
     @Test
@@ -260,7 +267,10 @@ class CommonAbstractStoreBehaviourTest
         store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );
         record.value = 0xCAFEBABE;
-        store.updateRecord( record, NULL );
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        {
+            store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+        }
         intsPerRecord = 8192;
         assertThrowsUnderlyingStorageException( () -> store.start( NULL ) );
     }
@@ -294,9 +304,12 @@ class CommonAbstractStoreBehaviourTest
         MutableLongSet holes = LongSets.mutable.empty();
         holes.add( store.nextId( NULL ) );
         holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
-        holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        {
+            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
+            holes.add( store.nextId( NULL ) );
+            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
+        }
 
         // when
         store.close();
@@ -320,12 +333,15 @@ class CommonAbstractStoreBehaviourTest
         createStore();
         store.start( NULL );
         MutableLongSet holes = LongSets.mutable.empty();
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
-        holes.add( store.nextId( NULL ) );
-        holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
-        holes.add( store.nextId( NULL ) );
-        store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), NULL );
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        {
+            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
+            holes.add( store.nextId( NULL ) );
+            holes.add( store.nextId( NULL ) );
+            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
+            holes.add( store.nextId( NULL ) );
+            store.updateRecord( new IntRecord( store.nextId( NULL ), 1 ), storeCursor, NULL, StoreCursors.NULL );
+        }
 
         // when
         store.close();

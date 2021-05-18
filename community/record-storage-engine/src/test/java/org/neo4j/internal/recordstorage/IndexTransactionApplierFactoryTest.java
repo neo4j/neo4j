@@ -70,7 +70,7 @@ class IndexTransactionApplierFactoryTest
                 mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock, NULL, INSTANCE,
                 mock( IdUpdateListener.class ), StoreCursors.NULL ) )
         {
-            try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), batchContext ) )
+            try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( StoreCursors.NULL ), batchContext ) )
             {
                 // WHEN
                 txApplier.visitNodeCommand( node( 15 ) );
@@ -104,7 +104,7 @@ class IndexTransactionApplierFactoryTest
         when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
         when( batchContext.indexUpdates() ).thenReturn( mock( IndexUpdates.class ) );
         when( batchContext.getIndexActivator() ).thenReturn( indexActivator );
-        try ( var txApplier = applier.startTx( new GroupOfCommands(), batchContext ) )
+        try ( var txApplier = applier.startTx( new GroupOfCommands( StoreCursors.NULL ), batchContext ) )
         {
             // activate index 1
             txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule1.getId() ), asSchemaRecord( rule1, true ), rule1 ) );

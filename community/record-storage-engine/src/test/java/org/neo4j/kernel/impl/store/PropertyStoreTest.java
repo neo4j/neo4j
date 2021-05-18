@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -107,13 +108,16 @@ class PropertyStoreTest
                         assertFalse( recordBeforeWrite.inUse() );
                         return null;
                     }
-                } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any() );
+                } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any(), any() );
 
                 // when
-                store.updateRecord( record, NULL );
+                try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+                {
+                    store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+                }
 
                 // then verify that our mocked method above, with the assert, was actually called
-                verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any() );
+                verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any(), any(), any() );
             }
         }
     }

@@ -39,6 +39,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.internal.recordstorage.RecordPropertyCursor;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -64,6 +65,7 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
 import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
@@ -208,13 +210,14 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     @Override
-    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext )
+    public void updateRecord( PropertyRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext,
+            StoreCursors storeCursors )
     {
-        updatePropertyBlocks( record, idUpdateListener, cursorContext );
-        super.updateRecord( record, idUpdateListener, cursor, cursorContext );
+        updatePropertyBlocks( record, idUpdateListener, cursorContext, storeCursors );
+        super.updateRecord( record, idUpdateListener, cursor, cursorContext, storeCursors );
     }
 
-    private void updatePropertyBlocks( PropertyRecord record, IdUpdateListener idUpdateListener, CursorContext cursorContext )
+    private void updatePropertyBlocks( PropertyRecord record, IdUpdateListener idUpdateListener, CursorContext cursorContext, StoreCursors storeCursors )
     {
         if ( record.inUse() )
         {
@@ -230,30 +233,47 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 if ( !block.isLight()
                         && block.getValueRecords().get( 0 ).isCreated() )
                 {
-                    updateDynamicRecords( block.getValueRecords(), idUpdateListener, cursorContext );
+                    updateDynamicRecords( block.getValueRecords(), idUpdateListener, cursorContext, storeCursors );
                 }
             }
         }
-        updateDynamicRecords( record.getDeletedRecords(), idUpdateListener, cursorContext );
+        updateDynamicRecords( record.getDeletedRecords(), idUpdateListener, cursorContext, storeCursors );
     }
 
-    private void updateDynamicRecords( List<DynamicRecord> records, IdUpdateListener idUpdateListener, CursorContext cursorContext )
+    private void updateDynamicRecords( List<DynamicRecord> records, IdUpdateListener idUpdateListener, CursorContext cursorContext, StoreCursors storeCursors )
     {
-        for ( DynamicRecord valueRecord : records )
+        PageCursor stringCursor = null;
+        PageCursor arrayCursor = null;
+        try
         {
-            PropertyType recordType = valueRecord.getType();
-            if ( recordType == PropertyType.STRING )
+            for ( DynamicRecord valueRecord : records )
             {
-                stringStore.updateRecord( valueRecord, idUpdateListener, cursorContext );
+                PropertyType recordType = valueRecord.getType();
+                if ( recordType == PropertyType.STRING )
+                {
+                    if ( stringCursor == null )
+                    {
+                        stringCursor = storeCursors.writeCursor( DYNAMIC_STRING_STORE_CURSOR );
+                    }
+                    stringStore.updateRecord( valueRecord, idUpdateListener, stringCursor, cursorContext, storeCursors );
+                }
+                else if ( recordType == PropertyType.ARRAY )
+                {
+                    if ( arrayCursor == null )
+                    {
+                        arrayCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR );
+                    }
+                    arrayStore.updateRecord( valueRecord, idUpdateListener, arrayCursor, cursorContext, storeCursors );
+                }
+                else
+                {
+                    throw new InvalidRecordException( "Unknown dynamic record" + valueRecord );
+                }
             }
-            else if ( recordType == PropertyType.ARRAY )
-            {
-                arrayStore.updateRecord( valueRecord, idUpdateListener, cursorContext );
-            }
-            else
-            {
-                throw new InvalidRecordException( "Unknown dynamic record" + valueRecord );
-            }
+        }
+        finally
+        {
+            closeAllUnchecked( stringCursor, arrayCursor );
         }
     }
 
@@ -292,9 +312,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         switch ( type )
         {
         case ARRAY:
-            return storeCursors.pageCursor( DYNAMIC_ARRAY_STORE_CURSOR );
+            return storeCursors.readCursor( DYNAMIC_ARRAY_STORE_CURSOR );
         case STRING:
-            return storeCursors.pageCursor( DYNAMIC_STRING_STORE_CURSOR );
+            return storeCursors.readCursor( DYNAMIC_STRING_STORE_CURSOR );
         default:
             throw new IllegalArgumentException( "Unsupported type of dynamic property " + type );
         }

@@ -57,6 +57,8 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
     private final DynamicStringStore nameStore;
+    private final short cursorType;
+    private final short dynamicCursorType;
 
     public TokenStore(
             Path path,
@@ -72,11 +74,15 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
+            short cursorType,
+            short dynamicCursorType,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, readOnlyChecker, databaseName, openOptions );
         this.nameStore = nameStore;
+        this.cursorType = cursorType;
+        this.dynamicCursorType = dynamicCursorType;
     }
 
     public DynamicStringStore getNameStore()
@@ -145,14 +151,17 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     }
 
     @Override
-    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext )
+    public void updateRecord( RECORD record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors )
     {
-        super.updateRecord( record, idUpdateListener, cursor, cursorContext );
+        super.updateRecord( record, idUpdateListener, cursor, cursorContext, storeCursors );
         if ( !record.isLight() )
         {
-            for ( DynamicRecord keyRecord : record.getNameRecords() )
+            try ( var nameCursor = getWriteDynamicTokenCursor( storeCursors ) )
             {
-                nameStore.updateRecord( keyRecord, idUpdateListener, cursorContext );
+                for ( DynamicRecord keyRecord : record.getNameRecords() )
+                {
+                    nameStore.updateRecord( keyRecord, idUpdateListener, nameCursor, cursorContext, storeCursors );
+                }
             }
         }
     }
@@ -170,9 +179,20 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true, getDynamicTokenCursor( storeCursors ) ) );
     }
 
-    public abstract PageCursor getTokenStoreCursor( StoreCursors storeCursors );
+    public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.readCursor( cursorType );
+    }
 
-    abstract PageCursor getDynamicTokenCursor( StoreCursors storeCursors );
+    public PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.readCursor( dynamicCursorType );
+    }
+
+    public PageCursor getWriteDynamicTokenCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.writeCursor( dynamicCursorType );
+    }
 
     public String getStringFor( RECORD nameRecord, StoreCursors storeCursors )
     {

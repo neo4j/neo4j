@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import org.neo4j.internal.batchimport.staging.BatchSender;
@@ -38,6 +39,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
@@ -50,16 +52,20 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
 {
     protected final RecordStore<RECORD> store;
     private final int recordSize;
+    private final Function<CursorContext,StoreCursors> storeCursorsCreator;
+    private final short cursorType;
     private final PrepareIdSequence prepareIdSequence;
     private final LongAdder recordsUpdated = new LongAdder();
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
-            PrepareIdSequence prepareIdSequence, PageCacheTracer pageCacheTracer )
+            PrepareIdSequence prepareIdSequence, PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator, short cursorType )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, pageCacheTracer );
         this.store = store;
         this.prepareIdSequence = prepareIdSequence;
         this.recordSize = store.getRecordSize();
+        this.storeCursorsCreator = storeCursorsCreator;
+        this.cursorType = cursorType;
     }
 
     @Override
@@ -67,7 +73,8 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     {
         LongFunction<IdSequence> idSequence = prepareIdSequence.apply( store );
         int recordsUpdatedInThisBatch = 0;
-        try ( PageCursor cursor = store.openPageCursorForWriting( 0, cursorContext ) )
+        try ( var storeCursors = storeCursorsCreator.apply( cursorContext );
+              var cursor = storeCursors.writeCursor( cursorType ) )
         {
             for ( RECORD record : batch )
             {
@@ -76,7 +83,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
                     store.prepareForCommit( record, idSequence.apply( record.getId() ), cursorContext );
                     // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
                     // instead just note the highId. It will be mostly correct in the end.
-                    store.updateRecord( record, IGNORE, cursor, cursorContext );
+                    store.updateRecord( record, IGNORE, cursor, cursorContext, storeCursors );
                     recordsUpdatedInThisBatch++;
                 }
             }

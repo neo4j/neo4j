@@ -268,19 +268,25 @@ class SchemaStore35Test
     private void storeBrokenRule( SchemaRule rule )
     {
         Collection<DynamicRecord> records = allocateFrom( rule, NULL );
-        for ( DynamicRecord record : records )
+        try ( var cursor = storeCursors.writeCursor( CursorTypes.SCHEMA_CURSOR ) )
         {
-            record.setData( new byte[]{1,3,4} );
-            store.updateRecord( record, NULL );
+            for ( DynamicRecord record : records )
+            {
+                record.setData( new byte[]{1, 3, 4} );
+                store.updateRecord( record, cursor, NULL, storeCursors );
+            }
         }
     }
 
     private void storeRule( SchemaRule rule )
     {
         Collection<DynamicRecord> records = allocateFrom( rule, NULL );
-        for ( DynamicRecord record : records )
+        try ( var cursor = storeCursors.writeCursor( CursorTypes.SCHEMA_CURSOR ) )
         {
-            store.updateRecord( record, NULL );
+            for ( DynamicRecord record : records )
+            {
+                store.updateRecord( record, cursor, NULL, storeCursors );
+            }
         }
     }
 
@@ -310,7 +316,7 @@ class SchemaStore35Test
     {
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = store.newRecord();
-        var cursor = storeCursors.pageCursor( CursorTypes.SCHEMA_CURSOR );
+        var cursor = storeCursors.readCursor( CursorTypes.SCHEMA_CURSOR );
         store.getRecordByCursor( rule.getId(), record, CHECK, cursor );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), store );
         allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorContext, INSTANCE );

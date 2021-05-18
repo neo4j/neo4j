@@ -60,18 +60,6 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     {
         super( path, idFile, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, TYPE_DESCRIPTOR, recordFormats.labelToken(),
-                recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
-    }
-
-    @Override
-    public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
-    {
-        return storeCursors.pageCursor( LABEL_TOKEN_CURSOR );
-    }
-
-    @Override
-    PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
-    {
-        return storeCursors.pageCursor( DYNAMIC_LABEL_TOKEN_CURSOR );
+                recordFormats.storeVersion(), readOnlyChecker, databaseName, LABEL_TOKEN_CURSOR, DYNAMIC_LABEL_TOKEN_CURSOR, openOptions );
     }
 }

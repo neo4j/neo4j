@@ -37,9 +37,11 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
@@ -81,29 +83,32 @@ class DirectRecordStoreMigrator
                         new DefaultIdGeneratorFactory( fs, immediate(), toDirectoryStructure.getDatabaseName() ), pageCache, fs, toFormat,
                         NullLogProvider.getInstance(), cacheTracer, writable(), immutable.empty() )
                         .openNeoStores( true, storesToOpen );
-                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( DIRECT_STORE_MIGRATOR_TAG ) ) )
+                var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( DIRECT_STORE_MIGRATOR_TAG ) );
+                var toStoreCursors = new CachedStoreCursors( toStores, cursorContext ) )
         {
             toStores.start( cursorContext );
             for ( StoreType type : types )
             {
                 // This condition will exclude counts store first and foremost.
-                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), cursorContext );
+                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ), cursorContext, toStoreCursors );
                 progressReporter.progress( 1 );
             }
         }
     }
 
-    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, CursorContext cursorContext )
+    private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, CursorContext cursorContext,
+            StoreCursors toStoreCursors )
     {
         to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse( cursorContext ) );
-        try ( var pageCursor = from.openPageCursorForReading( 0, cursorContext ) )
+        try ( var toCursor = to.openPageCursorForWriting( 0, cursorContext );
+              var fromCursor = from.openPageCursorForReading( 0, cursorContext ) )
         {
             from.scanAllRecords( record ->
             {
                 to.prepareForCommit( record, cursorContext );
-                to.updateRecord( record, cursorContext );
+                to.updateRecord( record, toCursor, cursorContext, toStoreCursors );
                 return false;
-            }, pageCursor );
+            }, fromCursor );
         }
     }
 

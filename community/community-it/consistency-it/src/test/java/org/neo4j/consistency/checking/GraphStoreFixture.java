@@ -52,7 +52,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -121,6 +120,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private RecordStorageEngine storageEngine;
     private CountsAccessor countsStore;
     private RelationshipGroupDegreesStore groupDegreesStore;
+    private StoreCursors storeCursors;
 
     protected GraphStoreFixture( String formatName, TestDirectory testDirectory )
     {
@@ -160,6 +160,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                 dependencyResolver.resolveDependency( IndexStatisticsStore.class ),
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ) );
         countsStore = storageEngine.countsAccessor();
+        storeCursors = storageEngine.createStorageCursors( NULL );
         groupDegreesStore = storageEngine.relationshipGroupDegreesStore();
         pageCache = dependencyResolver.resolveDependency( PageCache.class );
 
@@ -237,6 +238,11 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public IndexingService indexingService()
     {
         return indexingService;
+    }
+
+    public StoreCursors getStoreCursors()
+    {
+        return storeCursors;
     }
 
     public EntityUpdates nodeAsUpdates( long nodeId )

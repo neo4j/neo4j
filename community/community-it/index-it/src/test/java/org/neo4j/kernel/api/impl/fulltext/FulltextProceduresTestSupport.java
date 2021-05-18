@@ -260,11 +260,6 @@ class FulltextProceduresTestSupport
         return values;
     }
 
-    static String quoteValueForQuery( Value value )
-    {
-        return QueryParserUtil.escape( value.prettyPrint() ).replace( "\\", "\\\\" ).replace( "\"", "\\\"" );
-    }
-
     void createIndexAndWait( EntityUtil entityUtil )
     {
         try ( Transaction tx = db.beginTx() )

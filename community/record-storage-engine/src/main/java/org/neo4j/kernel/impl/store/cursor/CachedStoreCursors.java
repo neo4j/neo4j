@@ -73,18 +73,56 @@ public class CachedStoreCursors implements StoreCursors
     }
 
     @Override
-    public PageCursor pageCursor( short type )
+    public PageCursor readCursor( short type )
     {
         var cursor = cursorsByType[type];
         if ( cursor == null )
         {
-            cursor = readCursor( type );
+            cursor = createReadCursor( type );
             cursorsByType[type] = cursor;
         }
         return cursor;
     }
 
-    private PageCursor readCursor( short type )
+    @Override
+    public PageCursor writeCursor( short type )
+    {
+        switch ( type )
+        {
+        case NODE_CURSOR:
+            return neoStores.getNodeStore().openPageCursorForWriting( 0, cursorContext );
+        case GROUP_CURSOR:
+            return neoStores.getRelationshipGroupStore().openPageCursorForWriting( 0, cursorContext );
+        case SCHEMA_CURSOR:
+            return neoStores.getSchemaStore().openPageCursorForWriting( 0, cursorContext );
+        case RELATIONSHIP_CURSOR:
+            return neoStores.getRelationshipStore().openPageCursorForWriting( 0, cursorContext );
+        case PROPERTY_CURSOR:
+            return neoStores.getPropertyStore().openPageCursorForWriting( 0, cursorContext );
+        case DYNAMIC_ARRAY_STORE_CURSOR:
+            return neoStores.getPropertyStore().getArrayStore().openPageCursorForWriting( 0, cursorContext );
+        case DYNAMIC_STRING_STORE_CURSOR:
+            return neoStores.getPropertyStore().getStringStore().openPageCursorForWriting( 0, cursorContext );
+        case DYNAMIC_LABEL_STORE_CURSOR:
+            return neoStores.getNodeStore().getDynamicLabelStore().openPageCursorForWriting( 0, cursorContext );
+        case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
+            return neoStores.getRelationshipTypeTokenStore().getNameStore().openPageCursorForWriting( 0, cursorContext );
+        case REL_TYPE_TOKEN_CURSOR:
+            return neoStores.getRelationshipTypeTokenStore().openPageCursorForWriting( 0, cursorContext );
+        case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
+            return neoStores.getPropertyKeyTokenStore().getNameStore().openPageCursorForWriting( 0, cursorContext );
+        case PROPERTY_KEY_TOKEN_CURSOR:
+            return neoStores.getPropertyKeyTokenStore().openPageCursorForWriting( 0, cursorContext );
+        case DYNAMIC_LABEL_TOKEN_CURSOR:
+            return neoStores.getLabelTokenStore().getNameStore().openPageCursorForWriting( 0, cursorContext );
+        case LABEL_TOKEN_CURSOR:
+            return neoStores.getLabelTokenStore().openPageCursorForWriting( 0, cursorContext );
+        default:
+            throw new UnsupportedOperationException( "Unsupported type " + type + " of cursor was requested." );
+        }
+    }
+
+    private PageCursor createReadCursor( short type )
     {
         switch ( type )
         {
@@ -103,7 +141,7 @@ public class CachedStoreCursors implements StoreCursors
         case DYNAMIC_STRING_STORE_CURSOR:
             return neoStores.getPropertyStore().getStringStore().openPageCursorForReading( 0, cursorContext );
         case DYNAMIC_LABEL_STORE_CURSOR:
-            return neoStores.getNodeStore().getDynamicLabelStore().openPageCursorForWriting( 0, cursorContext );
+            return neoStores.getNodeStore().getDynamicLabelStore().openPageCursorForReading( 0, cursorContext );
         case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
             return neoStores.getRelationshipTypeTokenStore().getNameStore().openPageCursorForReading( 0, cursorContext );
         case REL_TYPE_TOKEN_CURSOR:

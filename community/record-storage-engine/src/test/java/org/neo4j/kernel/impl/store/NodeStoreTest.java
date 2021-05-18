@@ -87,6 +87,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @EphemeralNeo4jLayoutExtension
@@ -183,11 +184,14 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( nodeId ).initialize( false, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
         record.setInUse( true );
         record.setLabelField( labels, Collections.emptyList() );
-        nodeStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
 
         // WHEN
         // -- reading that record back
-        NodeRecord readRecord = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
+        NodeRecord readRecord = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.readCursor( NODE_CURSOR ) );
         // THEN
         // -- the label field must be the same
         assertEquals( labels, readRecord.getLabelField() );
@@ -227,16 +231,18 @@ class NodeStoreTest
         NodeStore store = newNodeStore( fs );
 
         long exists = store.nextId( NULL );
-        store.updateRecord( new NodeRecord( exists ).initialize( true, 20, false, 10, 0 ), NULL );
-
         long deleted = store.nextId( NULL );
-        store.updateRecord( new NodeRecord( deleted ).initialize( true, 20, false, 10, 0 ), NULL );
-        store.updateRecord( new NodeRecord( deleted ).initialize( false, 20, false, 10, 0 ), NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            store.updateRecord( new NodeRecord( exists ).initialize( true, 20, false, 10, 0 ), storeCursor, NULL, storeCursors );
 
+            store.updateRecord( new NodeRecord( deleted ).initialize( true, 20, false, 10, 0 ), storeCursor, NULL, storeCursors );
+            store.updateRecord( new NodeRecord( deleted ).initialize( false, 20, false, 10, 0 ), storeCursor, NULL, storeCursors );
+        }
         // When & then
-        assertTrue( store.isInUse( exists, storeCursors.pageCursor( NODE_CURSOR ) ) );
-        assertFalse( store.isInUse( deleted, storeCursors.pageCursor( NODE_CURSOR ) ) );
-        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), storeCursors.pageCursor( NODE_CURSOR ) ) );
+        assertTrue( store.isInUse( exists, storeCursors.readCursor( NODE_CURSOR ) ) );
+        assertFalse( store.isInUse( deleted, storeCursors.readCursor( NODE_CURSOR ) ) );
+        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), storeCursors.readCursor( NODE_CURSOR ) ) );
     }
 
     @Test
@@ -255,12 +261,18 @@ class NodeStoreTest
             {
                 long nodeId = nodeStore.nextId( NULL );
                 NodeRecord record = new NodeRecord( nodeId ).initialize( true, 20, false, nextRelCandidate, 0 );
-                nodeStore.updateRecord( record, NULL );
+                try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+                {
+                    nodeStore.updateRecord( record, storeCursor, NULL, storeCursors );
+                }
                 if ( rng.nextInt( 0, 10 ) < 3 )
                 {
                     nextRelSet.remove( nextRelCandidate );
                     record.setInUse( false );
-                    nodeStore.updateRecord( record, NULL );
+                    try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+                    {
+                        nodeStore.updateRecord( record, storeCursor, NULL, storeCursors );
+                    }
                 }
             }
         }
@@ -274,7 +286,7 @@ class NodeStoreTest
             assertTrue( nextRelSet.remove( record.getNextRel() ) );
             return false;
         };
-        nodeStore.scanAllRecords( scanner, storeCursors.pageCursor( NODE_CURSOR ) );
+        nodeStore.scanAllRecords( scanner, storeCursors.readCursor( NODE_CURSOR ) );
 
         // ...NOR do we have anything left in the set afterwards.
         assertTrue( nextRelSet.isEmpty() );
@@ -321,13 +333,19 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( 5L );
         record.setSecondaryUnitIdOnLoad( 10L );
         record.setInUse( true );
-        nodeStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
         nodeStore.setHighestPossibleIdInUse( 10L );
 
         // WHEN
         record.setInUse( false );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, idUpdateListener, storeCursor, NULL, storeCursors );
+        }
 
         // THEN
         verify( idUpdateListener ).markIdAsUnused( any(), eq( 5L ), any( CursorContext.class ) );
@@ -342,13 +360,19 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( 5L );
         record.setSecondaryUnitIdOnLoad( 10L );
         record.setInUse( true );
-        nodeStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
         nodeStore.setHighestPossibleIdInUse( 10L );
 
         // WHEN
         record.setRequiresSecondaryUnit( false );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, idUpdateListener, storeCursor, NULL, storeCursors );
+        }
 
         // THEN
         verify( idUpdateListener, never() ).markIdAsUnused( any(), eq( 5L ), any( CursorContext.class ) );
@@ -369,7 +393,10 @@ class NodeStoreTest
 
         // when
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, idUpdateListener, storeCursor, NULL, storeCursors );
+        }
 
         // then
         verify( idUpdateListener ).markIdAsUsed( any(), eq( primaryUnitId ), any( CursorContext.class ) );
@@ -386,13 +413,19 @@ class NodeStoreTest
         NodeRecord record = new NodeRecord( primaryUnitId );
         record.setInUse( true );
         record.setCreated();
-        nodeStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
 
         // when
-        nodeStore.getRecordByCursor( primaryUnitId, record, NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
+        nodeStore.getRecordByCursor( primaryUnitId, record, NORMAL, storeCursors.readCursor( NODE_CURSOR ) );
         record.setSecondaryUnitIdOnCreate( secondaryUnitId );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
-        nodeStore.updateRecord( record, idUpdateListener, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, idUpdateListener, storeCursor, NULL, storeCursors );
+        }
 
         // then
         verify( idUpdateListener, never() ).markIdAsUsed( any(), eq( primaryUnitId ), any( CursorContext.class ) );
@@ -406,19 +439,26 @@ class NodeStoreTest
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L ).initialize( true, NULL_REFERENCE.longValue(), false, 1234, NO_LABELS_FIELD.longValue() );
         NodeLabels labels = NodeLabelsField.parseLabelsField( record );
-        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, nodeStore.getDynamicLabelStore(), NULL, storeCursors, INSTANCE );
-        nodeStore.updateRecord( record, NULL );
+        DynamicArrayStore dynamicLabelStore = nodeStore.getDynamicLabelStore();
+        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, dynamicLabelStore, NULL, storeCursors, INSTANCE );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
 
         // ... and where e.g. the dynamic label record is unused
-        for ( DynamicRecord dynamicLabelRecord : record.getDynamicLabelRecords() )
+        try ( var dynamicCursor = storeCursors.writeCursor( DYNAMIC_LABEL_STORE_CURSOR ) )
         {
-            dynamicLabelRecord.setInUse( false );
-            nodeStore.getDynamicLabelStore().updateRecord( dynamicLabelRecord, NULL );
+            for ( DynamicRecord dynamicLabelRecord : record.getDynamicLabelRecords() )
+            {
+                dynamicLabelRecord.setInUse( false );
+                dynamicLabelStore.updateRecord( dynamicLabelRecord, dynamicCursor, NULL, storeCursors );
+            }
         }
 
         // when loading that node and making it heavy
         NodeRecord loadedRecord = nodeStore.newRecord();
-        nodeStore.getRecordByCursor( record.getId(), loadedRecord, NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
+        nodeStore.getRecordByCursor( record.getId(), loadedRecord, NORMAL, storeCursors.readCursor( NODE_CURSOR ) );
         InvalidRecordException e = assertThrows( InvalidRecordException.class, () -> nodeStore.ensureHeavy( loadedRecord, storeCursors ) );
 
         // then

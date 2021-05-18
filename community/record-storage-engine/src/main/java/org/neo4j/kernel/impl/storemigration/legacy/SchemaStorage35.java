@@ -121,12 +121,12 @@ public class SchemaStorage35 implements SchemaStorage
                     try
                     {
                         long id = currentId++;
-                        schemaStore.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, storeCursors.pageCursor( SCHEMA_CURSOR ) );
+                        schemaStore.getRecordByCursor( id, record, RecordLoad.LENIENT_CHECK, storeCursors.readCursor( SCHEMA_CURSOR ) );
                         if ( !record.inUse() )
                         {
                             continue;
                         }
-                        schemaStore.getRecordByCursor( id, record, RecordLoad.NORMAL, storeCursors.pageCursor( SCHEMA_CURSOR ) );
+                        schemaStore.getRecordByCursor( id, record, RecordLoad.NORMAL, storeCursors.readCursor( SCHEMA_CURSOR ) );
                         if ( record.isStartRecord() )
                         {
                             // It may be that concurrently to our reading there's a transaction dropping the schema rule
@@ -136,7 +136,7 @@ public class SchemaStorage35 implements SchemaStorage
                                 Collection<DynamicRecord> records;
                                 try
                                 {
-                                    records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, storeCursors.pageCursor( SCHEMA_CURSOR ) );
+                                    records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, storeCursors.readCursor( SCHEMA_CURSOR ) );
                                 }
                                 catch ( InvalidRecordException e )
                                 {

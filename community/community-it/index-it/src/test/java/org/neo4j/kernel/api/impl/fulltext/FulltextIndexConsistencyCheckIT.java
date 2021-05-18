@@ -96,6 +96,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asS
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
 @Neo4jLayoutExtension
@@ -615,7 +616,7 @@ class FulltextIndexConsistencyCheckIT
         NodeRecord record = nodeStore.newRecord();
         try ( var cursors = new CachedStoreCursors( stores, NULL ) )
         {
-            nodeStore.getRecordByCursor( nodeId, record, RecordLoad.NORMAL, cursors.pageCursor( NODE_CURSOR ) );
+            nodeStore.getRecordByCursor( nodeId, record, RecordLoad.NORMAL, cursors.readCursor( NODE_CURSOR ) );
         }
         long propId = record.getNextProp();
 
@@ -625,12 +626,16 @@ class FulltextIndexConsistencyCheckIT
         List<NamedToken> propertyKeyTokens;
         try ( var cursors = new CachedStoreCursors( stores, NULL ) )
         {
-            propertyStore.getRecordByCursor( propId, propRecord, RecordLoad.NORMAL, cursors.pageCursor( PROPERTY_CURSOR ) );
+            propertyStore.getRecordByCursor( propId, propRecord, RecordLoad.NORMAL, cursors.readCursor( PROPERTY_CURSOR ) );
             propertyKeyTokens = stores.getPropertyKeyTokenStore().getAllReadableTokens( cursors );
+
+            NamedToken propertyKeyToken = propertyKeyTokens.stream().filter( token -> "p2".equals( token.name() ) ).findFirst().orElseThrow();
+            propRecord.removePropertyBlock( propertyKeyToken.id() );
+            try ( var storeCursor = cursors.writeCursor( PROPERTY_CURSOR ) )
+            {
+                propertyStore.updateRecord( propRecord, storeCursor, NULL, cursors );
+            }
         }
-        NamedToken propertyKeyToken = propertyKeyTokens.stream().filter( token -> "p2".equals( token.name() ) ).findFirst().orElseThrow();
-        propRecord.removePropertyBlock( propertyKeyToken.id() );
-        propertyStore.updateRecord( propRecord, NULL );
 
         managementService.shutdown();
 
@@ -745,23 +750,26 @@ class FulltextIndexConsistencyCheckIT
             tx.commit();
         }
         NeoStores stores = getNeoStores( db );
-        RelationshipStore relationshipStore = stores.getRelationshipStore();
-        RelationshipRecord record = relationshipStore.newRecord();
-        PropertyStore propertyStore = stores.getPropertyStore();
-        try ( var relCursor = relationshipStore.openPageCursorForReading( relId, NULL ) )
+        try ( CachedStoreCursors storeCursors = new CachedStoreCursors( stores, NULL ) )
         {
-            relationshipStore.getRecordByCursor( relId, record, RecordLoad.NORMAL, relCursor );
+            RelationshipStore relationshipStore = stores.getRelationshipStore();
+            RelationshipRecord record = relationshipStore.newRecord();
+            PropertyStore propertyStore = stores.getPropertyStore();
+            relationshipStore.getRecordByCursor( relId, record, RecordLoad.NORMAL, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
+            long propId = record.getNextProp();
+            record.setNextProp( AbstractBaseRecord.NO_ID );
+            try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+            {
+                relationshipStore.updateRecord( record, storeCursor, NULL, storeCursors );
+            }
+            PropertyRecord propRecord = propertyStore.newRecord();
+            propertyStore.getRecordByCursor( propId, propertyStore.newRecord(), RecordLoad.NORMAL, storeCursors.readCursor( PROPERTY_CURSOR ) );
+            propRecord.setInUse( false );
+            try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+            {
+                propertyStore.updateRecord( propRecord, cursor, NULL, storeCursors );
+            }
         }
-        long propId = record.getNextProp();
-        record.setNextProp( AbstractBaseRecord.NO_ID );
-        relationshipStore.updateRecord( record, NULL );
-        PropertyRecord propRecord = propertyStore.newRecord();
-        try ( var cursor = propertyStore.openPageCursorForReading( propId, NULL ) )
-        {
-            propertyStore.getRecordByCursor( propId, propertyStore.newRecord(), RecordLoad.NORMAL, cursor );
-        }
-        propRecord.setInUse( false );
-        propertyStore.updateRecord( propRecord, NULL );
         managementService.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();

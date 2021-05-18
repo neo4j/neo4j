@@ -133,7 +133,9 @@ import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTE
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -182,14 +184,7 @@ class TransactionRecordStateTest
     @AfterEach
     void after()
     {
-        if ( storeCursors != null )
-        {
-            storeCursors.close();
-        }
-        if ( neoStores != null )
-        {
-            neoStores.close();
-        }
+        closeAllUnchecked( storeCursors, neoStores );
     }
 
     private void createStores()
@@ -333,7 +328,7 @@ class TransactionRecordStateTest
         recordState.relAddProperty( relId, propertyKeyId, Values.of( "Oen" ) );
 
         // WHEN
-        CommandsToApply transaction = transaction( recordState );
+        CommandsToApply transaction = transaction( storeCursors, recordState );
         IndexUpdatesExtractor extractor = new IndexUpdatesExtractor();
         transaction.accept( extractor );
 
@@ -384,7 +379,7 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
 
         // THEN
-        CommandsToApply representation = transaction( recordState );
+        CommandsToApply representation = transaction( storeCursors, recordState );
         representation.accept( command -> ((Command) command).handle( new CommandVisitor.Adapter()
         {
             @Override
@@ -552,7 +547,7 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
-        apply( transaction( recordState ) );
+        apply( transaction( storeCursors, recordState ) );
         IndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
         IndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
         IndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
@@ -584,7 +579,7 @@ class TransactionRecordStateTest
         addLabelsToNode( recordState, nodeId, oneLabelId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
-        apply( transaction( recordState ) );
+        apply( transaction( storeCursors, recordState ) );
         IndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
         IndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
         IndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
@@ -611,11 +606,11 @@ class TransactionRecordStateTest
         TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
-        apply( applier, transaction( nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
+        apply( applier, transaction( storeCursors, nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
         assertDynamicLabelRecordInUse( neoStores, dynamicLabelRecordId.get(), true, storeCursors );
 
         // WHEN applying a transaction where the node is deleted
-        apply( applier, transaction( deleteNode( nodeId.get() ) ) );
+        apply( applier, transaction( storeCursors, deleteNode( nodeId.get() ) ) );
 
         // THEN the dynamic label record should also be deleted
         assertDynamicLabelRecordInUse( neoStores, dynamicLabelRecordId.get(), false, storeCursors );
@@ -629,14 +624,14 @@ class TransactionRecordStateTest
         TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
-        apply( applier, transaction( nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
+        apply( applier, transaction( storeCursors, nodeWithDynamicLabelRecord( neoStores, nodeId, dynamicLabelRecordId ) ) );
         assertDynamicLabelRecordInUse( neoStores, dynamicLabelRecordId.get(), true, storeCursors );
 
         // WHEN applying a transaction, which has first round-tripped through a log (written then read)
-        CommandsToApply transaction = transaction( deleteNode( nodeId.get() ) );
+        CommandsToApply transaction = transaction( storeCursors, deleteNode( nodeId.get() ) );
         InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
         writeToChannel( transaction, channel );
-        CommandsToApply recoveredTransaction = readFromChannel( channel );
+        CommandsToApply recoveredTransaction = readFromChannel( storeCursors, channel );
         // and applying that recovered transaction
         apply( applier, recoveredTransaction );
 
@@ -717,7 +712,7 @@ class TransactionRecordStateTest
         recordState.relModify( singleCreate( relId1, 0, nodeId, nodeId ) );
         recordState.relModify( singleCreate( relId2, 0, nodeId, nodeId ) );
         recordState.nodeAddProperty( nodeId, 0, Values.of( 101 ) );
-        apply( transaction( recordState ) );
+        apply( transaction( storeCursors, recordState ) );
 
         recordState = newTransactionRecordState();
         recordState.nodeChangeProperty( nodeId, 0, Values.of( 102 ) );
@@ -801,7 +796,7 @@ class TransactionRecordStateTest
         recordState.relModify( singleCreate( relId2, 0, nodeId1, nodeId1 ) );
         recordState.relModify( singleCreate( relId4, 1, nodeId1, nodeId1 ) );
         recordState.nodeAddProperty( nodeId1, 0, value1 );
-        apply( transaction( recordState ) );
+        apply( transaction( storeCursors, recordState ) );
 
         recordState = newTransactionRecordState();
         recordState.relModify( singleDelete( relId4, 1, nodeId1, nodeId1 ) );
@@ -919,7 +914,7 @@ class TransactionRecordStateTest
             tx.nodeAddProperty( nodes[3], 0, Values.of( "old" ) );
             tx.nodeAddProperty( nodes[4], 0, Values.of( "old" ) );
             TransactionApplierFactory applier = buildApplier( locks );
-            apply( applier, transaction( tx ) );
+            apply( applier, transaction( storeCursors, tx ) );
         }
         reset( locks );
 
@@ -938,7 +933,7 @@ class TransactionRecordStateTest
 
         //commit( tx );
         TransactionApplierFactory applier = buildApplier( locks );
-        apply( applier, transaction( tx ) );
+        apply( applier, transaction( storeCursors, tx ) );
 
         // then
         // create node, NodeCommand == 1 update
@@ -971,7 +966,7 @@ class TransactionRecordStateTest
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 20 );
 
         TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
-        apply( applier, transaction( tx ) );
+        apply( applier, transaction( storeCursors, tx ) );
 
         tx = newTransactionRecordState();
 
@@ -984,7 +979,7 @@ class TransactionRecordStateTest
 
         tx.relModify( new FlatRelationshipModifications( relationships(), relationshipsOfTypeB ) );
 
-        CommandsToApply ptx = transaction( tx );
+        CommandsToApply ptx = transaction( storeCursors, tx );
         apply( applier, ptx );
 
         // THEN
@@ -1200,7 +1195,7 @@ class TransactionRecordStateTest
             recordState.createRelationshipTypeToken( "5", type5, false );
             recordState.createRelationshipTypeToken( "10", type10, false );
             recordState.createRelationshipTypeToken( "15", type15, false );
-            apply( transaction( recordState ) );
+            apply( transaction( storeCursors, recordState ) );
         }
 
         long nodeId = neoStores.getNodeStore().nextId( NULL );
@@ -1215,7 +1210,7 @@ class TransactionRecordStateTest
             // This relationship will cause the switch to dense
             recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type10, nodeId, otherNode2Id ) );
 
-            apply( transaction( recordState ) );
+            apply( transaction( storeCursors, recordState ) );
 
             // Just a little validation of assumptions
             assertRelationshipGroupsInOrder( neoStores, storeCursors, nodeId, type10 );
@@ -1227,7 +1222,7 @@ class TransactionRecordStateTest
             long otherNodeId = neoStores.getNodeStore().nextId( NULL );
             recordState.nodeCreate( otherNodeId );
             recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type5, nodeId, otherNodeId ) );
-            apply( transaction( recordState ) );
+            apply( transaction( storeCursors, recordState ) );
 
             // THEN that group should end up first in the chain
             assertRelationshipGroupsInOrder( neoStores, storeCursors, nodeId, type5, type10 );
@@ -1239,7 +1234,7 @@ class TransactionRecordStateTest
             long otherNodeId = neoStores.getNodeStore().nextId( NULL );
             recordState.nodeCreate( otherNodeId );
             recordState.relModify( singleCreate( neoStores.getRelationshipStore().nextId( NULL ), type15, nodeId, otherNodeId ) );
-            apply( transaction( recordState ) );
+            apply( transaction( storeCursors, recordState ) );
 
             // THEN that group should end up last in the chain
             assertRelationshipGroupsInOrder( neoStores, storeCursors, nodeId, type5, type10, type15 );
@@ -1368,7 +1363,7 @@ class TransactionRecordStateTest
         assertThat( schemaCmd.getAfter().isCreated() ).isEqualTo( false );
         assertThat( schemaCmd.getAfter().getNextProp() ).isEqualTo( propCmd.getKey() );
 
-        apply( transaction( commands ) );
+        apply( transaction( storeCursors, commands ) );
 
         state = newTransactionRecordState();
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( false ), rule );
@@ -1505,20 +1500,25 @@ class TransactionRecordStateTest
         long groupA = groupStore.nextId( NULL );
         long groupB = groupStore.nextId( NULL );
         long groupC = groupStore.nextId( NULL );
-        groupStore.updateRecord(
-                new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                        nodeId, groupB ), NULL );
-        groupStore.updateRecord(
-                new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), relationshipId,
-                        nodeId, groupC ), NULL );
-        groupStore.updateRecord(
-                new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                        nodeId, NULL_REFERENCE.longValue() ), NULL );
-        relationshipStore.updateRecord(
-                new RelationshipRecord( relationshipId ).initialize( true, NO_NEXT_PROPERTY.longValue(), nodeId, nodeId, 1, 1, NULL_REFERENCE.longValue(), 1,
-                        NULL_REFERENCE.longValue(), true, true ), NULL );
-        nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, Record.NO_LABELS_FIELD.longValue() ),
-                NULL );
+        try ( var groupCursor = storeCursors.writeCursor( GROUP_CURSOR );
+              var relCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR );
+              var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            groupStore.updateRecord( new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                    NULL_REFERENCE.longValue(), nodeId, groupB ), groupCursor, NULL, storeCursors );
+            groupStore.updateRecord(
+                    new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), relationshipId, nodeId,
+                            groupC ), groupCursor, NULL, storeCursors );
+            groupStore.updateRecord( new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                    NULL_REFERENCE.longValue(), nodeId, NULL_REFERENCE.longValue() ), groupCursor, NULL, storeCursors );
+
+            relationshipStore.updateRecord(
+                    new RelationshipRecord( relationshipId ).initialize( true, NO_NEXT_PROPERTY.longValue(), nodeId, nodeId, 1, 1, NULL_REFERENCE.longValue(),
+                            1, NULL_REFERENCE.longValue(), true, true ), relCursor, NULL, storeCursors );
+
+            nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, NO_LABELS_FIELD.longValue() ),
+                    nodeCursor, NULL, storeCursors );
+        }
 
         // when
         TransactionRecordState state = newTransactionRecordState();
@@ -1527,11 +1527,11 @@ class TransactionRecordStateTest
         apply( state );
 
         // then
-        assertThat( nodeStore.isInUse( nodeId, storeCursors.pageCursor( NODE_CURSOR ) ) ).isFalse();
-        assertThat( groupStore.isInUse( groupA, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
-        assertThat( groupStore.isInUse( groupB, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
-        assertThat( groupStore.isInUse( groupC, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
-        assertThat( relationshipStore.isInUse( relationshipId, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) ) ).isFalse();
+        assertThat( nodeStore.isInUse( nodeId, storeCursors.readCursor( NODE_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupA, storeCursors.readCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupB, storeCursors.readCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupC, storeCursors.readCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( relationshipStore.isInUse( relationshipId, storeCursors.readCursor( RELATIONSHIP_CURSOR ) ) ).isFalse();
     }
 
     @Test
@@ -1546,17 +1546,18 @@ class TransactionRecordStateTest
         long groupA = groupStore.nextId( NULL );
         long groupB = groupStore.nextId( NULL );
         long groupC = groupStore.nextId( NULL );
-        groupStore.updateRecord(
-                new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                        nodeId, groupB ), NULL );
-        groupStore.updateRecord(
-                new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                        nodeId, groupC ), NULL );
-        groupStore.updateRecord(
-                new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
-                        nodeId, NULL_REFERENCE.longValue() ), NULL );
-        nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, Record.NO_LABELS_FIELD.longValue() ),
-                NULL );
+        try ( var groupCursor = storeCursors.writeCursor( GROUP_CURSOR );
+              var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            groupStore.updateRecord( new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                    NULL_REFERENCE.longValue(), nodeId, groupB ), groupCursor, NULL, storeCursors );
+            groupStore.updateRecord( new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                    NULL_REFERENCE.longValue(), nodeId, groupC ), groupCursor, NULL, storeCursors );
+            groupStore.updateRecord( new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                    NULL_REFERENCE.longValue(), nodeId, NULL_REFERENCE.longValue() ), groupCursor, NULL, storeCursors );
+            nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, NO_LABELS_FIELD.longValue() ),
+                    nodeCursor, NULL, storeCursors );
+        }
 
         // when
         TransactionRecordState state = newTransactionRecordState();
@@ -1564,10 +1565,10 @@ class TransactionRecordStateTest
         apply( state );
 
         // then
-        assertThat( nodeStore.isInUse( nodeId, storeCursors.pageCursor( NODE_CURSOR ) ) ).isFalse();
-        assertThat( groupStore.isInUse( groupA, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
-        assertThat( groupStore.isInUse( groupB, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
-        assertThat( groupStore.isInUse( groupC, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( nodeStore.isInUse( nodeId, storeCursors.readCursor( NODE_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupA, storeCursors.readCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupB, storeCursors.readCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupC, storeCursors.readCursor( GROUP_CURSOR ) ) ).isFalse();
     }
 
     private static void addLabelsToNode( TransactionRecordState recordState, long nodeId, long[] labelIds )
@@ -1607,7 +1608,7 @@ class TransactionRecordStateTest
     {
         NodeStore nodeStore = neoStores.getNodeStore();
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        NodeRecord node = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
+        NodeRecord node = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.readCursor( NODE_CURSOR ) );
         assertTrue( node.isDense(), "Node should be dense, is " + node );
         long groupId = node.getNextRel();
         int cursor = 0;
@@ -1615,7 +1616,7 @@ class TransactionRecordStateTest
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             RelationshipGroupRecord group = relationshipGroupStore.getRecordByCursor( groupId, relationshipGroupStore.newRecord(), NORMAL,
-                    storeCursors.pageCursor( GROUP_CURSOR ) );
+                    storeCursors.readCursor( GROUP_CURSOR ) );
             seen.add( group );
             assertEquals( types[cursor++], group.getType(), "Invalid type, seen groups so far " + seen );
             groupId = group.getNext();
@@ -1626,7 +1627,7 @@ class TransactionRecordStateTest
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
             throws IOException, TransactionFailureException
     {
-        return indexUpdatesOf( neoStores, transaction( state ) );
+        return indexUpdatesOf( neoStores, transaction( storeCursors, state ) );
     }
 
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf( NeoStores neoStores, CommandsToApply transaction )
@@ -1646,9 +1647,9 @@ class TransactionRecordStateTest
         return updates;
     }
 
-    private static CommandsToApply transaction( List<StorageCommand> commands )
+    private static CommandsToApply transaction( StoreCursors storeCursors, List<StorageCommand> commands )
     {
-        return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
+        return new GroupOfCommands( storeCursors, commands.toArray( new StorageCommand[0] ) );
     }
 
     private static void assertCommand( StorageCommand next, Class<?> klass )
@@ -1657,7 +1658,7 @@ class TransactionRecordStateTest
     }
 
     @SuppressWarnings( "InfiniteLoopStatement" )
-    private static CommandsToApply readFromChannel( ReadableLogChannel channel ) throws IOException
+    private static CommandsToApply readFromChannel( StoreCursors storeCursors, ReadableLogChannel channel ) throws IOException
     {
         CommandReader reader = LogCommandSerializationV4_0.INSTANCE;
         List<StorageCommand> commands = new ArrayList<>();
@@ -1672,7 +1673,7 @@ class TransactionRecordStateTest
         {
             // reached the end
         }
-        return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
+        return new GroupOfCommands( storeCursors, commands.toArray( new StorageCommand[0] ) );
     }
 
     private static void writeToChannel( CommandsToApply transaction, FlushableChannel channel ) throws IOException
@@ -1730,7 +1731,7 @@ class TransactionRecordStateTest
     private void apply( TransactionRecordState state ) throws Exception
     {
         TransactionApplierFactory applier = buildApplier( LockService.NO_LOCK_SERVICE );
-        apply( applier, transaction( state ) );
+        apply( applier, transaction( storeCursors, state ) );
     }
 
     private TransactionApplierFactory buildApplier( LockService noLockService )
@@ -1755,18 +1756,18 @@ class TransactionRecordStateTest
                 propertyDeleter, NULL, storeCursors, INSTANCE, RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION );
     }
 
-    private static CommandsToApply transaction( TransactionRecordState recordState ) throws TransactionFailureException
+    private static CommandsToApply transaction( StoreCursors storeCursors, TransactionRecordState recordState ) throws TransactionFailureException
     {
         List<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands, INSTANCE );
-        return transaction( commands );
+        return transaction( storeCursors, commands );
     }
 
     private static void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse, StoreCursors storeCursors )
     {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
         DynamicRecord record = dynamicLabelStore.getRecordByCursor( id, dynamicLabelStore.nextRecord( NULL ), FORCE,
-                storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ) );
+                storeCursors.readCursor( DYNAMIC_LABEL_STORE_CURSOR ) );
         assertEquals( inUse, record.inUse() );
     }
 

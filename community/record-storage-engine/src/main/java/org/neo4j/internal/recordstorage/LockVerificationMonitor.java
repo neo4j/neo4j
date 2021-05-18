@@ -312,26 +312,26 @@ public class LockVerificationMonitor implements LoadMonitor
         @Override
         public NodeRecord loadNode( long id )
         {
-            return readRecord( id, neoStores.getNodeStore(), storeCursors.pageCursor( NODE_CURSOR ) );
+            return readRecord( id, neoStores.getNodeStore(), storeCursors.readCursor( NODE_CURSOR ) );
         }
 
         @Override
         public RelationshipRecord loadRelationship( long id )
         {
-            return readRecord( id, neoStores.getRelationshipStore(), storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
+            return readRecord( id, neoStores.getRelationshipStore(), storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
         }
 
         @Override
         public RelationshipGroupRecord loadRelationshipGroup( long id )
         {
-            return readRecord( id, neoStores.getRelationshipGroupStore(), storeCursors.pageCursor( GROUP_CURSOR ) );
+            return readRecord( id, neoStores.getRelationshipGroupStore(), storeCursors.readCursor( GROUP_CURSOR ) );
         }
 
         @Override
         public PropertyRecord loadProperty( long id )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
-            PropertyRecord record = readRecord( id, propertyStore, storeCursors.pageCursor( PROPERTY_CURSOR ) );
+            PropertyRecord record = readRecord( id, propertyStore, storeCursors.readCursor( PROPERTY_CURSOR ) );
             propertyStore.ensureHeavy( record, storeCursors );
             return record;
         }
@@ -352,7 +352,7 @@ public class LockVerificationMonitor implements LoadMonitor
         @Override
         public SchemaRecord loadSchemaRecord( long id )
         {
-            return readRecord( id, neoStores.getSchemaStore(), storeCursors.pageCursor( SCHEMA_CURSOR ) );
+            return readRecord( id, neoStores.getSchemaStore(), storeCursors.readCursor( SCHEMA_CURSOR ) );
         }
 
         private static <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store, PageCursor pageCursor )

@@ -34,9 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -49,7 +47,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -73,6 +70,7 @@ import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -165,30 +163,35 @@ class RelationshipGroupDefragmenterTest
         NodeRecord nodeRecord = nodeStore.newRecord();
         long cursor = 0;
         BitSet initializedNodes = new BitSet();
-        for ( int typeId = relationshipTypeCount - 1; typeId >= 0; typeId-- )
+        // note that group store is separate and not covered by store cursors here
+        try ( var groupCursor = groupStore.openPageCursorForWriting( 0, NULL );
+              var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            for ( int nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
+            for ( int typeId = relationshipTypeCount - 1; typeId >= 0; typeId-- )
             {
-                // Reasoning behind this thing is that we want to have roughly 10% of the nodes dense
-                // right from the beginning and then some stray dense nodes coming into this in the
-                // middle of the type range somewhere
-                double comparison = typeId == 0 || initializedNodes.get( nodeId ) ? 0.1 : 0.001;
-
-                if ( random.nextDouble() < comparison )
+                for ( int nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
                 {
-                    // next doesn't matter at all, as we're rewriting it anyway
-                    // firstOut/In/Loop we could use in verification phase later
-                    groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
-                    groupRecord.setId( groupStore.nextId( NULL ) );
-                    groupStore.updateRecord( groupRecord, NULL );
+                    // Reasoning behind this thing is that we want to have roughly 10% of the nodes dense
+                    // right from the beginning and then some stray dense nodes coming into this in the
+                    // middle of the type range somewhere
+                    double comparison = typeId == 0 || initializedNodes.get( nodeId ) ? 0.1 : 0.001;
 
-                    if ( !initializedNodes.get( nodeId ) )
+                    if ( random.nextDouble() < comparison )
                     {
-                        nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
-                        nodeRecord.setId( nodeId );
-                        nodeStore.updateRecord( nodeRecord, NULL );
-                        nodeStore.setHighestPossibleIdInUse( nodeId );
-                        initializedNodes.set( nodeId );
+                        // next doesn't matter at all, as we're rewriting it anyway
+                        // firstOut/In/Loop we could use in verification phase later
+                        groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
+                        groupRecord.setId( groupStore.nextId( NULL ) );
+                        groupStore.updateRecord( groupRecord, groupCursor, NULL, storeCursors );
+
+                        if ( !initializedNodes.get( nodeId ) )
+                        {
+                            nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
+                            nodeRecord.setId( nodeId );
+                            nodeStore.updateRecord( nodeRecord, nodeCursor, NULL, storeCursors );
+                            nodeStore.setHighestPossibleIdInUse( nodeId );
+                            initializedNodes.set( nodeId );
+                        }
                     }
                 }
             }
@@ -207,23 +210,28 @@ class RelationshipGroupDefragmenterTest
         RecordStore<NodeRecord> nodeStore = stores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
         long cursor = 0;
-        for ( int typeId = relationshipTypeCount - 1; typeId >= 0; typeId-- )
+        // note that group store is separate and not covered by store cursors here
+        try ( var groupCursor = groupStore.openPageCursorForWriting( 0, NULL );
+              var nodeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            for ( long nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
+            for ( int typeId = relationshipTypeCount - 1; typeId >= 0; typeId-- )
             {
-                // next doesn't matter at all, as we're rewriting it anyway
-                // firstOut/In/Loop we could use in verification phase later
-                groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
-                groupRecord.setId( groupStore.nextId( NULL ) );
-                groupStore.updateRecord( groupRecord, NULL );
-
-                if ( typeId == 0 )
+                for ( long nodeId = 0; nodeId < nodeCount; nodeId++, cursor++ )
                 {
-                    // first round also create the nodes
-                    nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
-                    nodeRecord.setId( nodeId );
-                    nodeStore.updateRecord( nodeRecord, NULL );
-                    nodeStore.setHighestPossibleIdInUse( nodeId );
+                    // next doesn't matter at all, as we're rewriting it anyway
+                    // firstOut/In/Loop we could use in verification phase later
+                    groupRecord.initialize( true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4 );
+                    groupRecord.setId( groupStore.nextId( NULL ) );
+                    groupStore.updateRecord( groupRecord, groupCursor, NULL, storeCursors );
+
+                    if ( typeId == 0 )
+                    {
+                        // first round also create the nodes
+                        nodeRecord.initialize( true, -1, true, groupRecord.getId(), 0 );
+                        nodeRecord.setId( nodeId );
+                        nodeStore.updateRecord( nodeRecord, nodeCursor, NULL, storeCursors );
+                        nodeStore.setHighestPossibleIdInUse( nodeId );
+                    }
                 }
             }
         }
@@ -264,7 +272,7 @@ class RelationshipGroupDefragmenterTest
         int currentGroupLength = 0;
         for ( long id = firstId; id < highGroupId; id++, newGroupCount++ )
         {
-            store.getRecordByCursor( id, groupRecord, CHECK, storeCursors.pageCursor( GROUP_CURSOR ) );
+            store.getRecordByCursor( id, groupRecord, CHECK, storeCursors.readCursor( GROUP_CURSOR ) );
             if ( !groupRecord.inUse() )
             {
                 // This will be the case if we have double record units, just assert that fact

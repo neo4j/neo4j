@@ -49,6 +49,7 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -90,6 +91,9 @@ import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -421,9 +425,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             stopFlushingPageCache();
         }
 
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BATCHING_STORE_SHUTDOWN_TAG ) ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BATCHING_STORE_SHUTDOWN_TAG ) );
+              var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
-            flushAndForce( cursorContext );
+            flushAndForce( cursorContext, storeCursors );
         }
 
         // Close the neo store
@@ -515,19 +520,28 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return pageCache;
     }
 
-    public void flushAndForce( CursorContext cursorContext ) throws IOException
+    public void flushAndForce( CursorContext cursorContext, StoreCursors storeCursors ) throws IOException
     {
         if ( propertyKeyRepository != null )
         {
-            propertyKeyRepository.flush( cursorContext );
+            try ( PageCursor pageCursor = storeCursors.writeCursor( PROPERTY_KEY_TOKEN_CURSOR ) )
+            {
+                propertyKeyRepository.flush( cursorContext, pageCursor, storeCursors );
+            }
         }
         if ( labelRepository != null )
         {
-            labelRepository.flush( cursorContext );
+            try ( PageCursor pageCursor = storeCursors.writeCursor( LABEL_TOKEN_CURSOR ) )
+            {
+                labelRepository.flush( cursorContext, pageCursor, storeCursors );
+            }
         }
         if ( relationshipTypeRepository != null )
         {
-            relationshipTypeRepository.flush( cursorContext );
+            try ( PageCursor pageCursor = storeCursors.writeCursor( REL_TYPE_TOKEN_CURSOR ) )
+            {
+                relationshipTypeRepository.flush( cursorContext, pageCursor, storeCursors );
+            }
         }
         if ( neoStores != null )
         {

@@ -59,12 +59,13 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     @Override
     public void writeSchemaRule( SchemaRule rule ) throws KernelException
     {
-        schemaStorage.writeSchemaRule( rule, cursorContext, memoryTracker );
+        schemaStorage.writeSchemaRule( rule, cursorContext, memoryTracker, storeCursors );
     }
 
     @Override
     public void close() throws IOException
     {
+        storeCursors.close();
         neoStores.flush( cursorContext );
         closeAllUnchecked( storeCursors, neoStores );
     }

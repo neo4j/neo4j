@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
@@ -30,9 +31,14 @@ import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 public class RelationshipLinkforwardStage extends Stage
 {
@@ -40,6 +46,7 @@ public class RelationshipLinkforwardStage extends Stage
 
     public RelationshipLinkforwardStage( String topic, Configuration config, BatchingNeoStores stores,
             NodeRelationshipCache cache, Predicate<RelationshipRecord> readFilter,
+            Function<CursorContext,StoreCursors> storeCursorsCreator,
             Predicate<RelationshipRecord> denseChangeFilter, int nodeTypes, PageCacheTracer pageCacheTracer, StatsProvider... additionalStatsProvider )
     {
         super( NAME, topic, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
@@ -47,6 +54,7 @@ public class RelationshipLinkforwardStage extends Stage
         add( new BatchFeedStep( control(), config, RecordIdIterator.forwards( 0, store.getHighId(), config ), store.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, true, store, new RecordDataAssembler<>( store::newRecord, readFilter, true ), pageCacheTracer ) );
         add( new RelationshipLinkforwardStep( control(), config, cache, denseChangeFilter, nodeTypes, additionalStatsProvider ) );
-        add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ), pageCacheTracer ) );
+        add( new UpdateRecordsStep<>( control(), config, store, PrepareIdSequence.of( stores.usesDoubleRelationshipRecordUnits() ), pageCacheTracer,
+                storeCursorsCreator, RELATIONSHIP_CURSOR ) );
     }
 }

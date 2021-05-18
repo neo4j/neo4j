@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -78,17 +78,20 @@ class TestGrowingFileMemoryMapping
             int iterations = 2 * NUMBER_OF_RECORDS;
             long startingId = nodeStore.nextId( CursorContext.NULL );
             long nodeId = startingId;
-            for ( int i = 0; i < iterations; i++ )
+            try ( PageCursor pageCursor = storeCursors.writeCursor( NODE_CURSOR ) )
             {
-                NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
-                record.setInUse( true );
-                nodeStore.updateRecord( record, CursorContext.NULL );
-                nodeId = nodeStore.nextId( CursorContext.NULL );
+                for ( int i = 0; i < iterations; i++ )
+                {
+                    NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
+                    record.setInUse( true );
+                    nodeStore.updateRecord( record, pageCursor, CursorContext.NULL, StoreCursors.NULL );
+                    nodeId = nodeStore.nextId( CursorContext.NULL );
+                }
             }
 
             // then
             NodeRecord record = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
-            var pageCursor = storeCursors.pageCursor( NODE_CURSOR );
+            var pageCursor = storeCursors.readCursor( NODE_CURSOR );
             for ( int i = 0; i < iterations; i++ )
             {
                 record.setId( startingId + i );

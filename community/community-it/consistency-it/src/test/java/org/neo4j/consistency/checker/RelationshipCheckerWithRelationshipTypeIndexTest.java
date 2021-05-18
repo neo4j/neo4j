@@ -57,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @ExtendWith( RandomExtension.class )
 class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
@@ -71,7 +72,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     private RandomRule random;
 
     @BeforeEach
-    private void extractRelationshipTypeIndexProxy()
+    void extractRelationshipTypeIndexProxy()
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
@@ -381,12 +382,12 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     private void notInUse( long relationshipId )
     {
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        try ( var cursor = relationshipStore.openPageCursorForReading( relationshipId, CursorContext.NULL ) )
-        {
-            relationshipStore.getRecordByCursor( relationshipId, relationshipRecord, RecordLoad.NORMAL, cursor );
-        }
+        relationshipStore.getRecordByCursor( relationshipId, relationshipRecord, RecordLoad.NORMAL, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
         relationshipRecord.setInUse( false );
-        relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
+        try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            relationshipStore.updateRecord( relationshipRecord, storeCursor, CursorContext.NULL, storeCursors );
+        }
     }
 
     private void check() throws Exception
@@ -408,6 +409,6 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     {
         DENSE,
         SPARSE,
-        RANDOM;
+        RANDOM
     }
 }

@@ -33,14 +33,12 @@ import org.neo4j.internal.recordstorage.FlatRelationshipModifications.Relationsh
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -102,9 +100,12 @@ class DegreesRebuildFromStoreTest
                 for ( int i = 10; i < highId; i++ )
                 {
                     RelationshipGroupRecord record =
-                            groupStore.getRecordByCursor( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, storageCursors.pageCursor( GROUP_CURSOR ) );
+                            groupStore.getRecordByCursor( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, storageCursors.readCursor( GROUP_CURSOR ) );
                     record.setInUse( false );
-                    groupStore.updateRecord( record, NULL );
+                    try ( var groupStoreCursor = storageCursors.writeCursor( GROUP_CURSOR ) )
+                    {
+                        groupStore.updateRecord( record, groupStoreCursor, NULL, storageCursors );
+                    }
                 }
             }
             storageEngine.flushAndForce( NULL );

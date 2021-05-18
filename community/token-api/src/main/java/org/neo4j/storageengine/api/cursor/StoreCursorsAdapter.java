@@ -31,7 +31,13 @@ public class StoreCursorsAdapter implements StoreCursors
     }
 
     @Override
-    public PageCursor pageCursor( short type )
+    public PageCursor readCursor( short type )
+    {
+        return null;
+    }
+
+    @Override
+    public PageCursor writeCursor( short type )
     {
         return null;
     }

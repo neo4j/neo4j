@@ -142,7 +142,7 @@ public class AllStoreHolder extends Read
         }
 
         AccessMode mode = ktx.securityContext().mode();
-        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.storeCursors().pageCursor( NODE_CURSOR ) );
+        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.storeCursors().readCursor( NODE_CURSOR ) );
 
         if ( mode.allowsTraverseAllLabels() )
         {
@@ -405,7 +405,7 @@ public class AllStoreHolder extends Read
         }
         AccessMode mode = ktx.securityContext().mode();
         CursorContext cursorContext = ktx.cursorContext();
-        boolean existsInRelStore = storageReader.relationshipExists( reference, ktx.storeCursors().pageCursor( RELATIONSHIP_CURSOR ) );
+        boolean existsInRelStore = storageReader.relationshipExists( reference, ktx.storeCursors().readCursor( RELATIONSHIP_CURSOR ) );
 
         if ( mode.allowsTraverseAllRelTypes() )
         {

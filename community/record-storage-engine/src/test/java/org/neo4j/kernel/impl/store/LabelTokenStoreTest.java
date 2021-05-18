@@ -43,7 +43,7 @@ class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
     @Override
     protected PageCursor storeCursor()
     {
-        return storeCursors.pageCursor( LABEL_TOKEN_CURSOR );
+        return storeCursors.readCursor( LABEL_TOKEN_CURSOR );
     }
 
     @Override
@@ -74,7 +74,7 @@ class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
         }
 
         @Override
-        public PageCursor pageCursor( short type )
+        public PageCursor readCursor( short type )
         {
             switch ( type )
             {
@@ -91,7 +91,21 @@ class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
                 }
                 return dynamicCursor;
             default:
-                return super.pageCursor( type );
+                return super.readCursor( type );
+            }
+        }
+
+        @Override
+        public PageCursor writeCursor( short type )
+        {
+            switch ( type )
+            {
+            case LABEL_TOKEN_CURSOR:
+                return store.openPageCursorForWriting( 0, CursorContext.NULL );
+            case DYNAMIC_LABEL_TOKEN_CURSOR:
+                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL );
+            default:
+                return super.readCursor( type );
             }
         }
 

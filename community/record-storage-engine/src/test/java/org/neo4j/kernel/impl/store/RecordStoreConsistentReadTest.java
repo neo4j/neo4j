@@ -66,7 +66,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
 
     private NeoStores neoStores;
     private PageCache pageCache;
-    private CachedStoreCursors storeCursors;
+    protected CachedStoreCursors storeCursors;
 
     @BeforeEach
     void setUp()
@@ -92,7 +92,10 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     protected S initialiseStore( NeoStores neoStores )
     {
         S store = getStore( neoStores );
-        store.updateRecord( createExistingRecord( false ), CursorContext.NULL );
+        try ( var cursor = store.openPageCursorForWriting( 0, CursorContext.NULL ) )
+        {
+            store.updateRecord( createExistingRecord( false ), cursor, CursorContext.NULL, storeCursors );
+        }
         return store;
     }
 

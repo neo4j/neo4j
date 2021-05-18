@@ -117,7 +117,10 @@ class IndexWorkSyncTransactionApplicationStressIT
                 .getWith( fileSystem, pageCache, DatabaseLayout.ofFlat( directory.directory( DEFAULT_DATABASE_NAME ) ) )
                 .indexUpdateListener( index )
                 .build();
-        storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), EXTERNAL );
+        try ( var storageCursors = storageEngine.createStorageCursors( NULL ) )
+        {
+            storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR, 1, descriptor ) ), storageCursors ), EXTERNAL );
+        }
 
         // WHEN
         Workers<Worker> workers = new Workers<>( getClass().getSimpleName() );
@@ -140,10 +143,10 @@ class IndexWorkSyncTransactionApplicationStressIT
         return Values.of( id + "_" + progress );
     }
 
-    private static TransactionToApply tx( List<StorageCommand> commands )
+    private static TransactionToApply tx( List<StorageCommand> commands, StoreCursors storeCursors )
     {
         PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1, ANONYMOUS );
-        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL, StoreCursors.NULL );
+        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL, storeCursors );
         tx.commitment( NO_COMMITMENT, 0 );
         return tx;
     }
@@ -174,9 +177,10 @@ class IndexWorkSyncTransactionApplicationStressIT
         public void run()
         {
             try ( StorageReader reader = storageEngine.newReader();
-                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
+                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext( INSTANCE );
+                  var storeCursors = storageEngine.createStorageCursors( NULL ) )
             {
-                creationContext.initialize( NULL, StoreCursors.NULL );
+                creationContext.initialize( NULL, storeCursors );
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {
                     // Apply
@@ -188,7 +192,7 @@ class IndexWorkSyncTransactionApplicationStressIT
                 } );
                 for ( ; !end.get(); i++ )
                 {
-                    queue.queue( createNodeAndProperty( i, reader, creationContext ) );
+                    queue.queue( createNodeAndProperty( i, reader, creationContext, storeCursors ) );
                 }
                 queue.empty();
             }
@@ -198,7 +202,8 @@ class IndexWorkSyncTransactionApplicationStressIT
             }
         }
 
-        private TransactionToApply createNodeAndProperty( int progress, StorageReader reader, CommandCreationContext creationContext ) throws Exception
+        private TransactionToApply createNodeAndProperty( int progress, StorageReader reader, CommandCreationContext creationContext,
+                StoreCursors storeCursors ) throws Exception
         {
             TransactionState txState = new TxState();
             long nodeId = nodeIds.nextId( NULL );
@@ -206,9 +211,9 @@ class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             List<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands( commands, txState, reader, creationContext, null, LockTracer.NONE, 0, NO_DECORATION, NULL, StoreCursors.NULL,
+            storageEngine.createCommands( commands, txState, reader, creationContext, null, LockTracer.NONE, 0, NO_DECORATION, NULL, storeCursors,
                     INSTANCE );
-            return tx( commands );
+            return tx( commands, storeCursors );
         }
 
         private void verifyIndex( TransactionToApply tx ) throws Exception

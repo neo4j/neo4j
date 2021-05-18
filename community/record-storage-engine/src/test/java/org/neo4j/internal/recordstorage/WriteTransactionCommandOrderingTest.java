@@ -97,7 +97,7 @@ class WriteTransactionCommandOrderingTest
     {
         List<StorageCommand> commands = new ArrayList<>();
         tx.extractCommands( commands, INSTANCE );
-        return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
+        return new GroupOfCommands( StoreCursors.NULL, commands.toArray( new StorageCommand[0] ) );
     }
 
     private static TransactionRecordState injectAllPossibleCommands()

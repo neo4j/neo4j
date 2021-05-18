@@ -551,7 +551,7 @@ class FulltextIndexProviderTest
                         }
                     }
                     index = index.withIndexConfig( IndexConfig.with( indexConfigMap ) );
-                    storage.writeSchemaRule( index, cursorContext, INSTANCE );
+                    storage.writeSchemaRule( index, cursorContext, INSTANCE, storeCursors );
                     schemaStore.flush( cursorContext );
                 }
             }

@@ -31,12 +31,12 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsExtension;
@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
@@ -201,20 +202,27 @@ class DropBrokenUniquenessConstraintIT
 
     private void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext, StoreCursors storeCursors )
     {
-        var record = schemaStore.getRecordByCursor( rule.getId(), schemaStore.newRecord(), NORMAL, storeCursors.pageCursor( SCHEMA_CURSOR ) );
+        var record = schemaStore.getRecordByCursor( rule.getId(), schemaStore.newRecord(), NORMAL, storeCursors.readCursor( SCHEMA_CURSOR ) );
         if ( record.inUse() )
         {
             long nextProp = record.getNextProp();
             record.setInUse( false );
-            schemaStore.updateRecord( record, cursorContext );
+            try ( PageCursor writeCursor = storeCursors.writeCursor( SCHEMA_CURSOR ) )
+            {
+                schemaStore.updateRecord( record, writeCursor, cursorContext, storeCursors );
+            }
             PropertyStore propertyStore = schemaStore.propertyStore();
             PropertyRecord props = propertyStore.newRecord();
-            while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() &&
-                    propertyStore.getRecordByCursor( nextProp, props, NORMAL, storeCursors.pageCursor( PROPERTY_CURSOR ) ).inUse() )
+            var propertyReadCursor = storeCursors.readCursor( PROPERTY_CURSOR );
+            while ( nextProp != NO_NEXT_PROPERTY.longValue() &&
+                    propertyStore.getRecordByCursor( nextProp, props, NORMAL, propertyReadCursor ).inUse() )
             {
                 nextProp = props.getNextProp();
                 props.setInUse( false );
-                propertyStore.updateRecord( props, cursorContext );
+                try ( PageCursor writeCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+                {
+                    propertyStore.updateRecord( props, writeCursor, cursorContext, storeCursors );
+                }
             }
         }
     }
@@ -223,7 +231,7 @@ class DropBrokenUniquenessConstraintIT
     {
         for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( storeCursors ) ) )
         {
-            schemaRules.writeSchemaRule( rule, NULL, INSTANCE );
+            schemaRules.writeSchemaRule( rule, NULL, INSTANCE, storeCursors );
         }
     }
 }

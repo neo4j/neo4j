@@ -61,6 +61,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -650,7 +651,10 @@ class MetaDataStoreTest
             {
                 record.initialize( true, position.ordinal() + 1 );
             }
-            store.updateRecord( record, NULL );
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            {
+                store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            }
         }
     }
 
@@ -792,9 +796,9 @@ class MetaDataStoreTest
         try ( MetaDataStore ignored = newMetaDataStore( pageCacheTracer ) )
         {
             assertThat( pageCacheTracer.faults() ).isOne();
-            assertThat( pageCacheTracer.pins() ).isEqualTo( 20 );
-            assertThat( pageCacheTracer.unpins() ).isEqualTo( 20 );
-            assertThat( pageCacheTracer.hits() ).isEqualTo( 19 );
+            assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
+            assertThat( pageCacheTracer.unpins() ).isEqualTo( 14 );
+            assertThat( pageCacheTracer.hits() ).isEqualTo( 13 );
         }
     }
 

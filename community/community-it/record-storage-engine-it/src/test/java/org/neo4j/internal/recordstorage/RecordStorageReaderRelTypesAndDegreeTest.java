@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -39,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.storageengine.util.SingleDegree;
 import org.neo4j.test.extension.Inject;
@@ -618,27 +619,35 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     protected NodeRecord getNodeRecord( long id )
     {
-        return getRecord( resolveNeoStores().getNodeStore(), id, storageCursors.pageCursor( NODE_CURSOR ) );
+        return getRecord( resolveNeoStores().getNodeStore(), id, storageCursors.readCursor( NODE_CURSOR ) );
     }
 
     protected RelationshipRecord getRelRecord( long id )
     {
-        return getRecord( resolveNeoStores().getRelationshipStore(), id, storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
+        return getRecord( resolveNeoStores().getRelationshipStore(), id, storageCursors.readCursor( RELATIONSHIP_CURSOR ) );
     }
 
     protected RelationshipGroupRecord getRelGroupRecord( long id )
     {
-        return getRecord( resolveNeoStores().getRelationshipGroupStore(), id, storageCursors.pageCursor( GROUP_CURSOR ) );
+        return getRecord( resolveNeoStores().getRelationshipGroupStore(), id, storageCursors.readCursor( GROUP_CURSOR ) );
     }
 
     protected void update( RelationshipGroupRecord record )
     {
-        resolveNeoStores().getRelationshipGroupStore().updateRecord( record, NULL );
+        RelationshipGroupStore store = resolveNeoStores().getRelationshipGroupStore();
+        try ( var storeCursor = storageCursors.writeCursor( GROUP_CURSOR ) )
+        {
+            store.updateRecord( record, storeCursor, NULL, storageCursors );
+        }
     }
 
     protected void update( RelationshipRecord record )
     {
-        resolveNeoStores().getRelationshipStore().updateRecord( record, NULL );
+        RelationshipStore relationshipStore = resolveNeoStores().getRelationshipStore();
+        try ( var storeCursor = storageCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            relationshipStore.updateRecord( record, storeCursor, NULL, storageCursors );
+        }
     }
 
     protected NeoStores resolveNeoStores()

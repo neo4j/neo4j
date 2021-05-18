@@ -31,7 +31,10 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 /**
  * Updates sparse {@link NodeRecord node records} with relationship heads after relationship linking. Steps:
@@ -56,6 +59,6 @@ public class SparseNodeFirstRelationshipStage extends Stage
         add( new ReadRecordsStep<>( control(), config, true, nodeStore, pageCacheTracer ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 () -> new SparseNodeFirstRelationshipProcessor( cache ), false, 1, pageCacheTracer, storeCursorsCreator ) );
-        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), pageCacheTracer ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), pageCacheTracer, storeCursorsCreator, NODE_CURSOR ) );
     }
 }

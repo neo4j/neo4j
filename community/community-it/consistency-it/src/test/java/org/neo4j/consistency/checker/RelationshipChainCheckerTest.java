@@ -42,6 +42,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 class RelationshipChainCheckerTest extends CheckerTestBase
 {
@@ -196,7 +198,10 @@ class RelationshipChainCheckerTest extends CheckerTestBase
             relationshipStore.getRecordByCursor( relationshipIds[relationshipIds.length / 2], arbitraryRelationship, NORMAL, cursor );
         }
         vandal.accept( arbitraryRelationship );
-        relationshipStore.updateRecord( arbitraryRelationship, CursorContext.NULL );
+        try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            relationshipStore.updateRecord( arbitraryRelationship, storeCursor, CursorContext.NULL, storeCursors );
+        }
 
         // when
         check();
@@ -237,8 +242,11 @@ class RelationshipChainCheckerTest extends CheckerTestBase
                 relationshipStore.getRecordByCursor( secondRelationshipId, second, NORMAL, cursor );
             }
             vandal.accept( first, second );
-            relationshipStore.updateRecord( first, CursorContext.NULL );
-            relationshipStore.updateRecord( second, CursorContext.NULL );
+            try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+            {
+                relationshipStore.updateRecord( first, storeCursor, CursorContext.NULL, storeCursors );
+                relationshipStore.updateRecord( second, storeCursor, CursorContext.NULL, storeCursors );
+            }
         }
 
         // when

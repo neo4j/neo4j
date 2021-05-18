@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_MOCKS;
@@ -43,7 +44,7 @@ class NeoTransactionIndexApplierTest
 {
     private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final CommandsToApply transactionToApply = new GroupOfCommands( 1L );
+    private final CommandsToApply transactionToApply = new GroupOfCommands( 1L, StoreCursors.NULL );
     private final BatchContext batchContext = mock( BatchContext.class, RETURNS_MOCKS );
 
     @Test

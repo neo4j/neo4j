@@ -43,7 +43,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
     @Override
     protected PageCursor storeCursor()
     {
-        return storeCursors.pageCursor( REL_TYPE_TOKEN_CURSOR );
+        return storeCursors.readCursor( REL_TYPE_TOKEN_CURSOR );
     }
 
     @Override
@@ -74,7 +74,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
         }
 
         @Override
-        public PageCursor pageCursor( short type )
+        public PageCursor readCursor( short type )
         {
             switch ( type )
             {
@@ -91,7 +91,21 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
                 }
                 return dynamicCursor;
             default:
-                return super.pageCursor( type );
+                return super.readCursor( type );
+            }
+        }
+
+        @Override
+        public PageCursor writeCursor( short type )
+        {
+            switch ( type )
+            {
+            case REL_TYPE_TOKEN_CURSOR:
+                return store.openPageCursorForWriting( 0, CursorContext.NULL );
+            case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
+                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL );
+            default:
+                return super.writeCursor( type );
             }
         }
 

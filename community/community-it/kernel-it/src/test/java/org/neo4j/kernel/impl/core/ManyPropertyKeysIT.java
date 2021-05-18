@@ -45,10 +45,13 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -61,6 +64,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -138,15 +142,20 @@ class ManyPropertyKeysIT
                 NullLogProvider.getInstance(), cacheTracer, writable() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
-        for ( int i = 0; i < propertyKeyCount; i++ )
+        try ( var storeCursors = new CachedStoreCursors( neoStores, NULL );
+              var cursor = storeCursors.writeCursor( PROPERTY_KEY_TOKEN_CURSOR ) )
         {
-            PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( (int) store.nextId( cursorContext ) );
-            record.setInUse( true );
-            Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ), cursorContext, INSTANCE );
-            record.addNameRecords( nameRecords );
-            record.setNameId( (int) Iterables.first( nameRecords ).getId() );
-            store.updateRecord( record, NULL );
+            for ( int i = 0; i < propertyKeyCount; i++ )
+            {
+                PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( (int) store.nextId( cursorContext ) );
+                record.setInUse( true );
+                Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ), cursorContext, INSTANCE );
+                record.addNameRecords( nameRecords );
+                record.setNameId( (int) Iterables.first( nameRecords ).getId() );
+                store.updateRecord( record, cursor, NULL, storeCursors );
+            }
         }
+
         neoStores.flush( cursorContext );
         neoStores.close();
 

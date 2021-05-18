@@ -172,27 +172,27 @@ class RecordLoading
 
     NodeRecord node( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getNodeStore(), id, storeCursors.pageCursor( NODE_CURSOR ) );
+        return loadRecord( neoStores.getNodeStore(), id, storeCursors.readCursor( NODE_CURSOR ) );
     }
 
     PropertyRecord property( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getPropertyStore(), id, storeCursors.pageCursor( PROPERTY_CURSOR ) );
+        return loadRecord( neoStores.getPropertyStore(), id, storeCursors.readCursor( PROPERTY_CURSOR ) );
     }
 
     RelationshipRecord relationship( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getRelationshipStore(), id, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
+        return loadRecord( neoStores.getRelationshipStore(), id, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
     }
 
     RelationshipRecord relationship( RelationshipRecord into, long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getRelationshipStore(), into, id, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
+        return loadRecord( neoStores.getRelationshipStore(), into, id, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
     }
 
     RelationshipGroupRecord relationshipGroup( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getRelationshipGroupStore(), id, storeCursors.pageCursor( GROUP_CURSOR ) );
+        return loadRecord( neoStores.getRelationshipGroupStore(), id, storeCursors.readCursor( GROUP_CURSOR ) );
     }
 
     static <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, long id, PageCursor pageCursor )

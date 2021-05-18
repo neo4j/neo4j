@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiFunction;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -40,16 +39,13 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -251,10 +247,14 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
 
     private void storeToken( R tokenRecord )
     {
-        for ( DynamicRecord nameRecord : tokenRecord.getNameRecords() )
+        try ( var pageCursor = nameStore.openPageCursorForWriting( 0, NULL );
+              var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
         {
-            nameStore.updateRecord( nameRecord, NULL );
+            for ( DynamicRecord nameRecord : tokenRecord.getNameRecords() )
+            {
+                nameStore.updateRecord( nameRecord, pageCursor, NULL, storeCursors );
+            }
+            store.updateRecord( tokenRecord, storeCursor, NULL, storeCursors );
         }
-        store.updateRecord( tokenRecord, NULL );
     }
 }

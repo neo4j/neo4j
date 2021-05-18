@@ -99,7 +99,7 @@ class NodeImporterTest
 
                 // then
                 NodeStore nodeStore = stores.getNodeStore();
-                PageCursor nodeCursor = storeCursors.pageCursor( NODE_CURSOR );
+                PageCursor nodeCursor = storeCursors.readCursor( NODE_CURSOR );
                 NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
                 long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
                 assertEquals( numberOfLabels, labels.length );
@@ -140,15 +140,15 @@ class NodeImporterTest
 
                 NodeStore nodeStore = stores.getNodeStore();
 
-                PageCursor nodeCursor = storeCursors.pageCursor( NODE_CURSOR );
+                PageCursor nodeCursor = storeCursors.readCursor( NODE_CURSOR );
                 NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
                 long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
                 assertEquals( numberOfLabels, labels.length );
 
                 assertThat( cacheTracer.faults() ).isEqualTo( 2 );
-                assertThat( cacheTracer.pins() ).isEqualTo( 13 );
-                assertThat( cacheTracer.unpins() ).isEqualTo( 13 );
-                assertThat( cacheTracer.hits() ).isEqualTo( 11 );
+                assertThat( cacheTracer.pins() ).isEqualTo( 5 );
+                assertThat( cacheTracer.unpins() ).isEqualTo( 5 );
+                assertThat( cacheTracer.hits() ).isEqualTo( 3 );
             }
         }
     }

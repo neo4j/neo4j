@@ -46,6 +46,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -86,6 +87,7 @@ import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -102,8 +104,11 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_KEY_TOKEN;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory
@@ -300,25 +305,34 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         SchemaStore dstSchema = stores.getSchemaStore();
         TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
         {
-            PropertyKeyTokenStore keyTokenStore = stores.getPropertyKeyTokenStore();
-            DynamicStringStore nameStore = keyTokenStore.getNameStore();
-            byte[] bytes = PropertyStore.encodeString( name );
-            List<DynamicRecord> nameRecords = new ArrayList<>();
-            AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorContext, memoryTracker );
-            nameRecords.forEach( record -> nameStore.prepareForCommit( record, cursorContext ) );
-            nameRecords.forEach( record -> nameStore.updateRecord( record, cursorContext ) );
-            nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
-            int nameId = Iterables.first( nameRecords ).getIntId();
-            PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
-            long tokenId = keyTokenStore.nextId( cursorContext );
-            keyTokenRecord.setId( tokenId );
-            keyTokenRecord.initialize( true, nameId );
-            keyTokenRecord.setInternal( internal );
-            keyTokenRecord.setCreated();
-            keyTokenStore.prepareForCommit( keyTokenRecord, cursorContext );
-            keyTokenStore.updateRecord( keyTokenRecord, cursorContext );
-            keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
-            return Math.toIntExact( tokenId );
+            try ( var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
+            {
+                PropertyKeyTokenStore keyTokenStore = stores.getPropertyKeyTokenStore();
+                DynamicStringStore nameStore = keyTokenStore.getNameStore();
+                byte[] bytes = PropertyStore.encodeString( name );
+                List<DynamicRecord> nameRecords = new ArrayList<>();
+                AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore, cursorContext, memoryTracker );
+                nameRecords.forEach( record -> nameStore.prepareForCommit( record, cursorContext ) );
+                try ( PageCursor cursor = storeCursors.writeCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR ) )
+                {
+                    nameRecords.forEach( record -> nameStore.updateRecord( record, cursor, cursorContext, storeCursors ) );
+                }
+                nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
+                int nameId = Iterables.first( nameRecords ).getIntId();
+                PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
+                long tokenId = keyTokenStore.nextId( cursorContext );
+                keyTokenRecord.setId( tokenId );
+                keyTokenRecord.initialize( true, nameId );
+                keyTokenRecord.setInternal( internal );
+                keyTokenRecord.setCreated();
+                keyTokenStore.prepareForCommit( keyTokenRecord, cursorContext );
+                try ( PageCursor pageCursor = storeCursors.writeCursor( PROPERTY_KEY_TOKEN_CURSOR ) )
+                {
+                    keyTokenStore.updateRecord( keyTokenRecord, pageCursor, cursorContext, storeCursors );
+                }
+                keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
+                return Math.toIntExact( tokenId );
+            }
         };
         var storeCursors = new CachedStoreCursors( stores, cursorContext );
         TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, storeCursors );

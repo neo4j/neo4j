@@ -107,7 +107,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         try
         {
             node.setLabelField( node.getLabelField(),
-                    dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ) ) );
+                    dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, storeCursors.readCursor( DYNAMIC_LABEL_STORE_CURSOR ) ) );
         }
         catch ( InvalidRecordException e )
         {
@@ -116,10 +116,10 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     @Override
-    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext )
+    public void updateRecord( NodeRecord record, IdUpdateListener idUpdateListener, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors )
     {
-        super.updateRecord( record, idUpdateListener, cursor, cursorContext );
-        updateDynamicLabelRecords( record.getDynamicLabelRecords(), idUpdateListener, cursorContext );
+        super.updateRecord( record, idUpdateListener, cursor, cursorContext, storeCursors );
+        updateDynamicLabelRecords( record.getDynamicLabelRecords(), idUpdateListener, cursorContext, storeCursors );
     }
 
     public DynamicArrayStore getDynamicLabelStore()
@@ -127,11 +127,15 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         return dynamicLabelStore;
     }
 
-    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords, IdUpdateListener idUpdateListener, CursorContext cursorContext )
+    public void updateDynamicLabelRecords( Iterable<DynamicRecord> dynamicLabelRecords, IdUpdateListener idUpdateListener, CursorContext cursorContext,
+            StoreCursors storeCursors )
     {
-        for ( DynamicRecord record : dynamicLabelRecords )
+        try ( var cursor = storeCursors.writeCursor( DYNAMIC_LABEL_STORE_CURSOR ) )
         {
-            dynamicLabelStore.updateRecord( record, idUpdateListener, cursorContext );
+            for ( DynamicRecord record : dynamicLabelRecords )
+            {
+                dynamicLabelStore.updateRecord( record, idUpdateListener, cursor, cursorContext, storeCursors );
+            }
         }
     }
 }

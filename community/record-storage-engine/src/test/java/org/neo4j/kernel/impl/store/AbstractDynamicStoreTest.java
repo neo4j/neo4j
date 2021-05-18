@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
@@ -160,9 +161,12 @@ class AbstractDynamicStoreTest
             store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
-            store.updateRecord( first, NULL );
-            second.setNextBlock( third.getId() );
-            store.updateRecord( second, NULL );
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            {
+                store.updateRecord( first, storeCursor, NULL, StoreCursors.NULL );
+                second.setNextBlock( third.getId() );
+                store.updateRecord( second, storeCursor, NULL, StoreCursors.NULL );
+            }
 
             try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
             {
@@ -188,12 +192,15 @@ class AbstractDynamicStoreTest
             DynamicRecord third = createDynamicRecord( 3, store, 10 );
             store.setHighId( 3 );
 
-            first.setNextBlock( second.getId() );
-            store.updateRecord( first, NULL );
-            second.setNextBlock( third.getId() );
-            store.updateRecord( second, NULL );
-            second.setInUse( false );
-            store.updateRecord( second, NULL );
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            {
+                first.setNextBlock( second.getId() );
+                store.updateRecord( first, storeCursor, NULL, StoreCursors.NULL );
+                second.setNextBlock( third.getId() );
+                store.updateRecord( second, storeCursor, NULL, StoreCursors.NULL );
+                second.setInUse( false );
+                store.updateRecord( second, storeCursor, NULL, StoreCursors.NULL );
+            }
 
             try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
             {
@@ -239,7 +246,10 @@ class AbstractDynamicStoreTest
         DynamicRecord first = new DynamicRecord( id );
         first.setInUse( true );
         first.setData( RandomUtils.nextBytes( dataSize == 0 ? BLOCK_SIZE - formats.dynamic().getRecordHeaderSize() : 10 ) );
-        store.updateRecord( first, NULL );
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        {
+            store.updateRecord( first, storeCursor, NULL, StoreCursors.NULL );
+        }
         return first;
     }
 

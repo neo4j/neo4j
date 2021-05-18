@@ -301,7 +301,7 @@ class RelationshipChainChecker implements Checker
                 else if ( !NULL_REFERENCE.is( fromCache ) )
                 {
                     // Load it from store
-                    store.getRecordByCursor( linkId, otherRelationship, FORCE, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
+                    store.getRecordByCursor( linkId, otherRelationship, FORCE, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
                 }
                 else
                 {

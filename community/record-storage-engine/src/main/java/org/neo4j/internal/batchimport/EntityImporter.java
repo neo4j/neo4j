@@ -170,7 +170,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
                 long nextPropertyId = propertyIds.nextId( cursorContext );
                 long prevId = currentRecord.getId();
                 currentRecord.setNextProp( nextPropertyId );
-                propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext );
+                propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext, storeCursors );
                 currentRecord = propertyRecord( nextPropertyId );
                 currentRecord.setPrevProp( prevId );
             }
@@ -181,7 +181,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
         if ( currentRecord.size() > 0 )
         {
-            propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext );
+            propertyStore.updateRecord( currentRecord, IGNORE, propertyUpdateCursor, cursorContext, storeCursors );
         }
 
         return firstRecordId;

@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -52,6 +52,7 @@ import org.neo4j.token.api.TokenHolder;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -107,15 +108,14 @@ class SchemaStorageReadAndWriteTest
     @AfterAll
     void after()
     {
-        storeCursors.close();
-        neoStores.close();
+        closeAllUnchecked( storeCursors, neoStores );
     }
 
     @RepeatedTest( 2000 )
     void shouldPerfectlyPreserveSchemaRules() throws Exception
     {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
-        storage.writeSchemaRule( schemaRule, NULL, INSTANCE );
+        storage.writeSchemaRule( schemaRule, NULL, INSTANCE, storeCursors );
         SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId(), storeCursors );
         assertTrue( RandomSchema.schemaDeepEquals( returnedRule, schemaRule ),
                 () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule );

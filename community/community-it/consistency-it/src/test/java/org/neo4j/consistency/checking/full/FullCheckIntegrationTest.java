@@ -75,6 +75,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -165,6 +166,12 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 import static org.neo4j.util.Bits.bits;
@@ -370,7 +377,11 @@ public class FullCheckIntegrationTest
             relationshipStore.getRecordByCursor( relationshipId, relationshipRecord, RecordLoad.NORMAL, cursor );
         }
         relationshipRecord.setType( relationshipRecord.getType() + 1 );
-        relationshipStore.updateRecord( relationshipRecord, NULL );
+        StoreCursors storeCursors = fixture.getStoreCursors();
+        try ( PageCursor pageCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            relationshipStore.updateRecord( relationshipRecord, pageCursor, NULL, storeCursors );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -416,10 +427,14 @@ public class FullCheckIntegrationTest
         indexSize.createAdditionalData( fixture );
 
         // given
-        for ( Long indexedNodeId : indexedNodes )
+        NodeStore nodeStore = fixture.directStoreAccess().nativeStores().getNodeStore();
+        StoreCursors storeCursors = fixture.getStoreCursors();
+        try ( var cursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            fixture.directStoreAccess().nativeStores().getNodeStore().updateRecord(
-                    notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), NULL );
+            for ( Long indexedNodeId : indexedNodes )
+            {
+                nodeStore.updateRecord( notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), cursor, NULL, storeCursors );
+            }
         }
 
         // when
@@ -453,10 +468,14 @@ public class FullCheckIntegrationTest
             populator.close( false, NULL );
         }
 
-        for ( Long indexedNodeId : indexedNodes )
+        NodeStore nodeStore = storeAccess.nativeStores().getNodeStore();
+        StoreCursors storeCursors = fixture.getStoreCursors();
+        try ( var cursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
-            storeAccess.nativeStores().getNodeStore().updateRecord(
-                    notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), NULL );
+            for ( Long indexedNodeId : indexedNodes )
+            {
+                nodeStore.updateRecord( notInUse( new NodeRecord( indexedNodeId ).initialize( false, -1, false, -1, 0 ) ), cursor, NULL, storeCursors );
+            }
         }
 
         // when
@@ -877,7 +896,11 @@ public class FullCheckIntegrationTest
         }
         nodeRecord.setLabelField( dynamicPointer( duplicatedLabel ), duplicatedLabel );
         nodeRecord.setInUse( true );
-        nodeStore.updateRecord( nodeRecord, NULL );
+        StoreCursors storeCursors = fixture.getStoreCursors();
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( nodeRecord, storeCursor, NULL, storeCursors );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1236,14 +1259,15 @@ public class FullCheckIntegrationTest
             }
         } );
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        StoreCursors storeCursors = fixture.getStoreCursors();
         DynamicStringStore nameStore = neoStores.getRelationshipTypeTokenStore().getNameStore();
         DynamicRecord record = nameStore.newRecord();
-        try ( var cursor = nameStore.openPageCursorForReading( inconsistentName.get(), NULL ) )
-        {
-            nameStore.getRecordByCursor( inconsistentName.get(), record, FORCE, cursor );
-        }
+        nameStore.getRecordByCursor( inconsistentName.get(), record, FORCE, storeCursors.readCursor( DYNAMIC_REL_TYPE_TOKEN_CURSOR ) );
         record.setNextBlock( record.getId() );
-        nameStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_REL_TYPE_TOKEN_CURSOR ) )
+        {
+            nameStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1269,14 +1293,15 @@ public class FullCheckIntegrationTest
             }
         } );
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        StoreCursors storeCursors = fixture.getStoreCursors();
         DynamicStringStore nameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
         DynamicRecord record = nameStore.newRecord();
-        try ( var cursor = nameStore.openPageCursorForReading( 0, NULL ) )
-        {
-            nameStore.getRecordByCursor( propertyKeyNameIds.get()[0], record, FORCE, cursor );
-        }
+        nameStore.getRecordByCursor( propertyKeyNameIds.get()[0], record, FORCE, storeCursors.readCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR ) );
         record.setNextBlock( record.getId() );
-        nameStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR ) )
+        {
+            nameStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1291,15 +1316,16 @@ public class FullCheckIntegrationTest
     {
         // given
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        StoreCursors storeCursors = fixture.getStoreCursors();
         RecordStore<RelationshipTypeTokenRecord> relTypeStore = neoStores.getRelationshipTypeTokenStore();
         RelationshipTypeTokenRecord record = relTypeStore.newRecord();
-        try ( var cursor = relTypeStore.openPageCursorForReading( 0, NULL ) )
-        {
-            relTypeStore.getRecordByCursor( (int) relTypeStore.nextId( NULL ), record, FORCE, cursor );
-        }
+        relTypeStore.getRecordByCursor( (int) relTypeStore.nextId( NULL ), record, FORCE, storeCursors.readCursor( REL_TYPE_TOKEN_CURSOR ) );
         record.setNameId( 20 );
         record.setInUse( true );
-        relTypeStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( REL_TYPE_TOKEN_CURSOR ) )
+        {
+            relTypeStore.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1315,15 +1341,16 @@ public class FullCheckIntegrationTest
     {
         // given
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        StoreCursors storeCursors = fixture.getStoreCursors();
         LabelTokenStore labelTokenStore = neoStores.getLabelTokenStore();
         LabelTokenRecord record = labelTokenStore.newRecord();
-        try ( var cursor = labelTokenStore.openPageCursorForReading( 1, NULL ) )
-        {
-            labelTokenStore.getRecordByCursor( 1, record, FORCE, cursor );
-        }
+        labelTokenStore.getRecordByCursor( 1, record, FORCE, storeCursors.readCursor( LABEL_TOKEN_CURSOR ) );
         record.setNameId( 20 );
         record.setInUse( true );
-        labelTokenStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( LABEL_TOKEN_CURSOR ) )
+        {
+            labelTokenStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -1349,14 +1376,15 @@ public class FullCheckIntegrationTest
             }
         } );
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
+        StoreCursors storeCursors = fixture.getStoreCursors();
         DynamicStringStore nameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
         DynamicRecord record = nameStore.newRecord();
-        try ( var cursor = nameStore.openPageCursorForReading( 0, NULL ) )
-        {
-            nameStore.getRecordByCursor( propertyKeyNameIds.get()[0], record, FORCE, cursor );
-        }
+        nameStore.getRecordByCursor( propertyKeyNameIds.get()[0], record, FORCE, storeCursors.readCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR ) );
         record.setInUse( false );
-        nameStore.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR ) )
+        {
+            nameStore.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -2892,7 +2920,7 @@ public class FullCheckIntegrationTest
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders(),
                 () -> KernelVersion.LATEST );
-        schemaRuleAccess.writeSchemaRule( rule, NULL, INSTANCE );
+        schemaRuleAccess.writeSchemaRule( rule, NULL, INSTANCE, fixture.getStoreCursors() );
     }
 
     private Iterator<IndexDescriptor> getValueIndexDescriptors()

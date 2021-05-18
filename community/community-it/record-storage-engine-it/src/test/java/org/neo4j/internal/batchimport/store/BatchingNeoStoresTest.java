@@ -347,7 +347,10 @@ class BatchingNeoStoresTest
             ((PropertyStore)store).encodeValue( block, 0, Values.of( 10 ), NULL, INSTANCE );
             ((PropertyRecord) record).addPropertyBlock( block );
         }
-        store.updateRecord( record, NULL );
+        try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+        {
+            store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+        }
     }
 
     private void someDataInTheDatabase( Config config ) throws Exception
@@ -400,35 +403,39 @@ class BatchingNeoStoresTest
             // Create the relationship type token
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
-            CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
-            commandCreationContext.initialize( NULL, StoreCursors.NULL );
-            propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
-            labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
-            relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
-            int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
-            apply( txState, commandCreationContext, storageEngine );
+            try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
+                  var storeCursors = storageEngine.createStorageCursors( NULL ) )
+            {
+                commandCreationContext.initialize( NULL, storeCursors );
+                propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
+                labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
+                relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
+                int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
+                apply( txState, commandCreationContext, storageEngine, storeCursors );
 
-            // Finally, we're initialized and ready to create two nodes and a relationship
-            txState = new TxState();
-            long node1 = commandCreationContext.reserveNode();
-            long node2 = commandCreationContext.reserveNode();
-            txState.nodeDoCreate( node1 );
-            txState.nodeDoCreate( node2 );
-            txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
-            apply( txState, commandCreationContext, storageEngine );
-            neoStores.flush( NULL );
+                // Finally, we're initialized and ready to create two nodes and a relationship
+                txState = new TxState();
+                long node1 = commandCreationContext.reserveNode();
+                long node2 = commandCreationContext.reserveNode();
+                txState.nodeDoCreate( node1 );
+                txState.nodeDoCreate( node2 );
+                txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
+                apply( txState, commandCreationContext, storageEngine, storeCursors );
+                neoStores.flush( NULL );
+            }
         }
     }
 
-    private static void apply( TxState txState, CommandCreationContext commandCreationContext, RecordStorageEngine storageEngine ) throws Exception
+    private static void apply( TxState txState, CommandCreationContext commandCreationContext, RecordStorageEngine storageEngine,
+            StoreCursors storeCursors ) throws Exception
     {
         List<StorageCommand> commands = new ArrayList<>();
         try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
             storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, LockTracer.NONE,
-                    BASE_TX_ID, v -> v, NULL, StoreCursors.NULL, INSTANCE );
+                    BASE_TX_ID, v -> v, NULL, storeCursors, INSTANCE );
             CommandsToApply apply =
-                    new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL, StoreCursors.NULL );
+                    new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL, storeCursors );
             storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }
     }

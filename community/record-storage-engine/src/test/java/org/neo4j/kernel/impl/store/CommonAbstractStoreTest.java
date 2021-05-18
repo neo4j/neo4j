@@ -53,6 +53,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -165,7 +166,13 @@ class CommonAbstractStoreTest
         TheStore store = newStore();
         TheRecord record = newRecord( -1 );
 
-        assertThrows( NegativeIdException.class, () -> store.updateRecord( record, NULL ) );
+        assertThrows( NegativeIdException.class, () ->
+        {
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            {
+                store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            }
+        } );
     }
 
     @Test
@@ -177,7 +184,13 @@ class CommonAbstractStoreTest
         TheStore store = newStore();
         TheRecord record = newRecord( maxFormatId + 1 );
 
-        assertThrows( IdCapacityExceededException.class, () -> store.updateRecord( record, NULL ) );
+        assertThrows( IdCapacityExceededException.class, () ->
+        {
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            {
+                store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            }
+        } );
     }
 
     @Test
@@ -186,7 +199,13 @@ class CommonAbstractStoreTest
         TheStore store = newStore();
         TheRecord record = newRecord( INTEGER_MINUS_ONE );
 
-        assertThrows( ReservedIdException.class, () -> store.updateRecord( record, NULL ) );
+        assertThrows( ReservedIdException.class, () ->
+        {
+            try ( var storeCursor = store.openPageCursorForWriting( 0, NULL ) )
+            {
+                store.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            }
+        } );
     }
 
     @Test

@@ -278,9 +278,12 @@ class TestArrayStore
     {
         Collection<DynamicRecord> records = new ArrayList<>();
         arrayStore.allocateRecords( records, array, CursorContext.NULL, INSTANCE );
-        for ( DynamicRecord record : records )
+        try ( var storeCursor = arrayStore.openPageCursorForWriting( 0, NULL ) )
         {
-            arrayStore.updateRecord( record, NULL );
+            for ( DynamicRecord record : records )
+            {
+                arrayStore.updateRecord( record, storeCursor, NULL, StoreCursors.NULL );
+            }
         }
         return records;
     }

@@ -39,7 +39,7 @@ public class SchemaStore35StoreCursors extends StoreCursorsAdapter
     }
 
     @Override
-    public PageCursor pageCursor( short type )
+    public PageCursor readCursor( short type )
     {
         if ( SCHEMA_CURSOR == type )
         {
@@ -51,7 +51,20 @@ public class SchemaStore35StoreCursors extends StoreCursorsAdapter
         }
         else
         {
-            return super.pageCursor( type );
+            return super.readCursor( type );
+        }
+    }
+
+    @Override
+    public PageCursor writeCursor( short type )
+    {
+        if ( SCHEMA_CURSOR == type )
+        {
+            return schemaStore35.openPageCursorForWriting( 0, cursorContext );
+        }
+        else
+        {
+            return super.writeCursor( type );
         }
     }
 

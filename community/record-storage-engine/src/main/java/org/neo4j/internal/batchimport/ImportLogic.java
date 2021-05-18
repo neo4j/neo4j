@@ -418,14 +418,15 @@ public class ImportLogic implements Closeable
                 : record -> typesToLinkThisRound.contains( record.getType() );
 
         // LINK Forward
+        Function<CursorContext,StoreCursors> neoStoreCursorCreator = cursorContext -> new CachedStoreCursors( neoStore.getNeoStores(), cursorContext );
         RelationshipLinkforwardStage linkForwardStage = new RelationshipLinkforwardStage( topic, relationshipConfig,
-                neoStore, nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes, pageCacheTracer,
+                neoStore, nodeRelationshipCache, readFilter, neoStoreCursorCreator, denseChangeFilter, nodeTypes, pageCacheTracer,
                 new RelationshipLinkingProgress(), memoryUsageStats );
         executeStage( linkForwardStage );
 
         // Write relationship groups cached from the relationship import above
-        executeStage( new RelationshipGroupStage( topic, groupConfig,
-                neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, pageCacheTracer ) );
+        executeStage( new RelationshipGroupStage( topic, groupConfig, neoStore.getTemporaryRelationshipGroupStore(), nodeRelationshipCache, pageCacheTracer,
+                cursorContext -> new CachedStoreCursors( neoStore.getTemporaryNeoStores(), cursorContext ) ) );
         if ( thisIsTheFirstRound )
         {
             // Set node nextRel fields for sparse nodes
@@ -437,7 +438,7 @@ public class ImportLogic implements Closeable
         // LINK backward
         nodeRelationshipCache.setForwardScan( false, true/*dense*/ );
         executeStage( new RelationshipLinkbackStage( topic, relationshipConfig, neoStore,
-                nodeRelationshipCache, readFilter, denseChangeFilter, nodeTypes, pageCacheTracer,
+                nodeRelationshipCache, readFilter, neoStoreCursorCreator, denseChangeFilter, nodeTypes, pageCacheTracer,
                 new RelationshipLinkingProgress(), memoryUsageStats ) );
 
         updatePeakMemoryUsage();

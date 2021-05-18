@@ -69,6 +69,9 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 @ExtendWith( RandomExtension.class )
 @EphemeralPageCacheExtension
@@ -156,7 +159,10 @@ class PropertyDeleterTest
         PropertyRecord secondPropRecord = getRecord( propertyStore, secondPropId, NORMAL );
         readValuesFromPropertyRecord( secondPropRecord, valuesInTheFirstTwoRecords );
         secondPropRecord.setNextProp( firstPropId );
-        propertyStore.updateRecord( secondPropRecord, NULL );
+        try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+        {
+            propertyStore.updateRecord( secondPropRecord, cursor, NULL, storeCursors );
+        }
 
         // when
         DirectRecordAccessSet changes = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
@@ -207,7 +213,10 @@ class PropertyDeleterTest
         long thirdPropId = secondPropRecord.getNextProp();
         PropertyRecord thirdPropRecord = getRecord( propertyStore, thirdPropId, NORMAL );
         thirdPropRecord.setInUse( false );
-        propertyStore.updateRecord( thirdPropRecord, NULL );
+        try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+        {
+            propertyStore.updateRecord( thirdPropRecord, cursor, NULL, storeCursors );
+        }
 
         // when
         DirectRecordAccessSet changes = new DirectRecordAccessSet( neoStores, idGeneratorFactory, NULL );
@@ -365,8 +374,22 @@ class PropertyDeleterTest
         DynamicRecord valueRecord = dynamicBlock.getValueRecords().get( random.nextInt( dynamicBlock.getValueRecords().size() ) );
         PropertyType type = valueRecord.getType();
         valueRecord.setInUse( false );
-        AbstractDynamicStore dynamicStore = type == PropertyType.STRING ? propertyStore.getStringStore() : propertyStore.getArrayStore();
-        dynamicStore.updateRecord( valueRecord, NULL );
+        AbstractDynamicStore dynamicStore;
+        PageCursor pageCursor;
+        if ( type == PropertyType.STRING )
+        {
+            dynamicStore = propertyStore.getStringStore();
+            pageCursor = storeCursors.writeCursor( DYNAMIC_STRING_STORE_CURSOR );
+        }
+        else
+        {
+            dynamicStore = propertyStore.getArrayStore();
+            pageCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR );
+        }
+        try ( pageCursor )
+        {
+            dynamicStore.updateRecord( valueRecord, pageCursor, NULL, storeCursors );
+        }
     }
 
     private void createCycleIn( PropertyBlock dynamicBlock )
@@ -377,8 +400,22 @@ class PropertyDeleterTest
         DynamicRecord cycleEndRecord = dynamicBlock.getValueRecords().get( cycleEndIndex );
         PropertyType type = cycleEndRecord.getType();
         cycleEndRecord.setNextBlock( dynamicBlock.getValueRecords().get( cycleStartIndex ).getId() );
-        AbstractDynamicStore dynamicStore = type == PropertyType.STRING ? propertyStore.getStringStore() : propertyStore.getArrayStore();
-        dynamicStore.updateRecord( cycleEndRecord, NULL );
+        AbstractDynamicStore dynamicStore;
+        PageCursor pageCursor;
+        if ( type == PropertyType.STRING )
+        {
+            dynamicStore = propertyStore.getStringStore();
+            pageCursor = storeCursors.writeCursor( DYNAMIC_STRING_STORE_CURSOR );
+        }
+        else
+        {
+            dynamicStore = propertyStore.getArrayStore();
+            pageCursor = storeCursors.writeCursor( DYNAMIC_ARRAY_STORE_CURSOR );
+        }
+        try ( pageCursor )
+        {
+            dynamicStore.updateRecord( cycleEndRecord, pageCursor, NULL, storeCursors );
+        }
     }
 
     private Value randomLargeLongArray()

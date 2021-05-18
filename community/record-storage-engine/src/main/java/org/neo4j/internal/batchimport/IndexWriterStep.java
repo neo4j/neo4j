@@ -64,14 +64,14 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
         try ( var storeCursors = storeCursorsFactory.apply( cursorContext ) )
         {
             var index = findIndex( entityType, schemaRuleAccess, storeCursors ).orElseGet(
-                    () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext ) );
+                    () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext, storeCursors ) );
             return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
         }
     }
 
     private static IndexDescriptor createIndex(
             EntityType entityType, IndexConfig config, SchemaRuleAccess schemaRule, SchemaStore schemaStore,
-            MemoryTracker memoryTracker, CursorContext cursorContext )
+            MemoryTracker memoryTracker, CursorContext cursorContext, StoreCursors storeCursors )
     {
         try
         {
@@ -79,7 +79,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
             IndexPrototype prototype = forSchema( forAnyEntityTokens( entityType ) ).withIndexType( LOOKUP ).withIndexProvider( providerDescriptor );
             String name = defaultIfEmpty( config.indexName( entityType ), generateName( prototype, new String[]{}, new String[]{} ) );
             IndexDescriptor descriptor = prototype.withName( name ).materialise( schemaStore.nextId( cursorContext ) );
-            schemaRule.writeSchemaRule( descriptor, cursorContext, memoryTracker );
+            schemaRule.writeSchemaRule( descriptor, cursorContext, memoryTracker, storeCursors );
             return descriptor;
         }
         catch ( KernelException e )

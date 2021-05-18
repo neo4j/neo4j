@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -71,6 +72,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -112,10 +114,14 @@ public class DetectAllRelationshipInconsistenciesIT
 
             // WHEN sabotaging a random relationship
             DependencyResolver resolver = db.getDependencyResolver();
-            NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+            RecordStorageEngine recordStorageEngine = resolver.resolveDependency( RecordStorageEngine.class );
+            NeoStores neoStores = recordStorageEngine.testAccessNeoStores();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             Relationship sabotagedRelationships = random.among( relationships );
-            sabotage = sabotage( relationshipStore, sabotagedRelationships.getId(), additionalNodeId );
+            try ( var storeCursors = recordStorageEngine.createStorageCursors( NULL ) )
+            {
+                sabotage = sabotage( relationshipStore, sabotagedRelationships.getId(), additionalNodeId, storeCursors );
+            }
         }
         finally
         {
@@ -200,7 +206,7 @@ public class DetectAllRelationshipInconsistenciesIT
         }
     }
 
-    private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId )
+    private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId, StoreCursors storeCursors )
     {
         RelationshipRecord before = store.newRecord();
         try ( var cursor = store.openPageCursorForReading( id, NULL ) )
@@ -251,7 +257,10 @@ public class DetectAllRelationshipInconsistenciesIT
         }
 
         store.prepareForCommit( after, NULL );
-        store.updateRecord( after, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            store.updateRecord( after, storeCursor, NULL, storeCursors );
+        }
 
         RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : loadRecord( store, otherReference );
         return new Sabotage( before, after, other );

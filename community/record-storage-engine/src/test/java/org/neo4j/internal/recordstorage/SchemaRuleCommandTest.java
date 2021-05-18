@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,7 +96,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any(), any() );
+        verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
     }
 
     @Test
@@ -133,7 +134,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, schemaRule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any(), any() );
+        verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( txId, NULL );
     }
 
@@ -151,7 +152,7 @@ class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( eq( after ), any(), any() );
+        verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
     }
 
     @Test
@@ -268,6 +269,6 @@ class SchemaRuleCommandTest
 
     private void visitSchemaRuleCommand( TransactionApplierFactory applier, SchemaRuleCommand command ) throws Exception
     {
-        CommandHandlerContract.apply( applier, new GroupOfCommands( txId, command ) );
+        CommandHandlerContract.apply( applier, new GroupOfCommands( txId, StoreCursors.NULL, command ) );
     }
 }

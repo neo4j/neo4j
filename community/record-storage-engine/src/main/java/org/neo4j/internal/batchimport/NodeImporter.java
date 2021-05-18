@@ -103,7 +103,7 @@ public class NodeImporter extends EntityImporter
             idPropertyRecord.addPropertyBlock( idPropertyBlock );
             idPropertyRecord.setId( nodeId ); // yes nodeId
             idPropertyRecord.setInUse( true );
-            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorContext );
+            idPropertyStore.updateRecord( idPropertyRecord, IGNORE, idPropertyUpdateCursor, cursorContext, storeCursors );
             idPropertyRecord.clear();
         }
         return true;
@@ -151,7 +151,7 @@ public class NodeImporter extends EntityImporter
         // Write data to stores
         nodeRecord.setNextProp( createAndWritePropertyChain( cursorContext ) );
         nodeRecord.setInUse( true );
-        nodeStore.updateRecord( nodeRecord, IGNORE, nodeUpdateCursor, cursorContext );
+        nodeStore.updateRecord( nodeRecord, IGNORE, nodeUpdateCursor, cursorContext, storeCursors );
         nodeCount++;
         nodeRecord.clear();
         nodeRecord.setId( NULL_REFERENCE.longValue() );

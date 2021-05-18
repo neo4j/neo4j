@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -68,6 +69,8 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -164,7 +167,10 @@ public class RecordPropertyCursorTest
         long secondProp = firstRecord.getNextProp();
         PropertyRecord secondRecord = getRecord( store, secondProp, NORMAL );
         secondRecord.setNextProp( firstProp );
-        store.updateRecord( secondRecord, NULL );
+        try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+        {
+            store.updateRecord( secondRecord, cursor, NULL, storeCursors );
+        }
         owner.setId( 99 );
 
         // when
@@ -199,7 +205,10 @@ public class RecordPropertyCursorTest
         DynamicRecord cycle = block.getValueRecords().get( cycleEndRecordIndex );
         int cycleStartIndex = random.nextInt( cycleEndRecordIndex );
         cycle.setNextBlock( block.getValueRecords().get( cycleStartIndex ).getId() );
-        store.getStringStore().updateRecord( cycle, NULL );
+        try ( var cursor = storeCursors.writeCursor( DYNAMIC_STRING_STORE_CURSOR ) )
+        {
+            store.getStringStore().updateRecord( cycle, cursor, NULL, storeCursors );
+        }
         owner.setId( 99 );
 
         // when

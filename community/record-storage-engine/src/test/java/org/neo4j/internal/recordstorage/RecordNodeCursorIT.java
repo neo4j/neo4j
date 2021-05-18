@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -51,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @ExtendWith( RandomExtension.class )
 @EphemeralPageCacheExtension
@@ -116,7 +117,10 @@ class RecordNodeCursorIT
         nodeRecord.initialize( true, Record.NO_NEXT_PROPERTY.longValue(), false, Record.NO_NEXT_RELATIONSHIP.longValue(), Record.NO_LABELS_FIELD.longValue() );
         nodeRecord.setCreated();
         NodeLabelsField.parseLabelsField( nodeRecord ).put( labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL, storeCursors, INSTANCE );
-        nodeStore.updateRecord( nodeRecord, NULL );
+        try ( var writeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( nodeRecord, writeCursor, NULL, storeCursors );
+        }
         return nodeRecord.getId();
     }
 

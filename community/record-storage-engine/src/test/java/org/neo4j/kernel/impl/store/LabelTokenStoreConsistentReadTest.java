@@ -37,7 +37,6 @@ import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
 
 class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<LabelTokenRecord, LabelTokenStore>
 {
-
     private static final int NAME_RECORD_ID = 2;
     private static final byte[] NAME_RECORD_DATA = UTF8.encode( "TheLabel" );
 
@@ -50,7 +49,7 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
     @Override
     protected PageCursor getCursor( StoreCursors storeCursors )
     {
-        return storeCursors.pageCursor( LABEL_TOKEN_CURSOR );
+        return storeCursors.readCursor( LABEL_TOKEN_CURSOR );
     }
 
     @Override
@@ -63,7 +62,10 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
         nameRecord.setData( NAME_RECORD_DATA );
         nameRecord.setInUse( true );
         record.addNameRecord( nameRecord );
-        store.updateRecord( record, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( LABEL_TOKEN_CURSOR ) )
+        {
+            store.updateRecord( record, storeCursor, NULL, storeCursors );
+        }
         return store;
     }
 

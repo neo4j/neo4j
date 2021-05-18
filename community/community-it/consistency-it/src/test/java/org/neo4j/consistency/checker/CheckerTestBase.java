@@ -87,7 +87,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
-import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -109,6 +108,10 @@ import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -374,7 +377,7 @@ class CheckerTestBase
     NodeRecord loadNode( long id )
     {
         NodeStore nodeStore = neoStores.getNodeStore();
-        var cursor = storeCursors.pageCursor( CursorTypes.NODE_CURSOR );
+        var cursor = storeCursors.readCursor( NODE_CURSOR );
         return nodeStore.getRecordByCursor( id, nodeStore.newRecord(), RecordLoad.NORMAL, cursor );
     }
 
@@ -384,7 +387,10 @@ class CheckerTestBase
         long[] labelIds = toLongs( labels );
         InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, CursorContext.NULL, storeCursors,
                 INSTANCE );
-        nodeStore.updateRecord( node, CursorContext.NULL );
+        try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( node, storeCursor, CursorContext.NULL, storeCursors );
+        }
         return id;
     }
 
@@ -399,14 +405,20 @@ class CheckerTestBase
     {
         RelationshipRecord relationship = new RelationshipRecord( id ).initialize( true, nextProp, startNode, endNode, type, startPrev, startNext,
                 endPrev, endNext, firstInStart, firstInEnd );
-        relationshipStore.updateRecord( relationship, CursorContext.NULL );
+        try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            relationshipStore.updateRecord( relationship, storeCursor, CursorContext.NULL, storeCursors );
+        }
         return id;
     }
 
     long relationshipGroup( long id, long next, long owningNode, int type, long firstOut, long firstIn, long firstLoop )
     {
         RelationshipGroupRecord group = new RelationshipGroupRecord( id ).initialize( true, type, firstOut, firstIn, firstLoop, owningNode, next );
-        relationshipGroupStore.updateRecord( group, CursorContext.NULL );
+        try ( var storeCursor = storeCursors.writeCursor( GROUP_CURSOR ) )
+        {
+            relationshipGroupStore.updateRecord( group, storeCursor, CursorContext.NULL, storeCursors );
+        }
         return id;
     }
 
@@ -436,6 +448,9 @@ class CheckerTestBase
         {
             prop.addPropertyBlock( property );
         }
-        propertyStore.updateRecord( prop, CursorContext.NULL );
+        try ( var storeCursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+        {
+            propertyStore.updateRecord( prop, storeCursor, CursorContext.NULL, storeCursors );
+        }
     }
 }

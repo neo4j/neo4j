@@ -25,6 +25,7 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -47,7 +48,7 @@ class CountsStoreTransactionApplierTest
         final CountsStoreTransactionApplierFactory applier = new CountsStoreTransactionApplierFactory( counts, groupDegreesStore );
 
         // WHEN
-        try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ), mock( BatchContext.class ) ) )
+        try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L, StoreCursors.NULL ), mock( BatchContext.class ) ) )
         {
             txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ANY_LABEL, 1 ) );
         }

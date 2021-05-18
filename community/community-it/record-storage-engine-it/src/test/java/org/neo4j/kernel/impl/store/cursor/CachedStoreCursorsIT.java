@@ -21,17 +21,11 @@ package org.neo4j.kernel.impl.store.cursor;
 
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.cursor.CursorTypes;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -55,14 +49,14 @@ class CachedStoreCursorsIT
             Object[] cursors = new Object[CursorTypes.MAX_TYPE + 1];
             for ( short i = 0; i <= CursorTypes.MAX_TYPE; i++ )
             {
-                cursors[i] = storageCursors.pageCursor( i );
+                cursors[i] = storageCursors.readCursor( i );
             }
 
             for ( int i = 0; i < 10; i++ )
             {
                 for ( short j = 0; j <= CursorTypes.MAX_TYPE; j++ )
                 {
-                    assertEquals( cursors[j], storageCursors.pageCursor( j ) );
+                    assertEquals( cursors[j], storageCursors.readCursor( j ) );
                 }
             }
         }

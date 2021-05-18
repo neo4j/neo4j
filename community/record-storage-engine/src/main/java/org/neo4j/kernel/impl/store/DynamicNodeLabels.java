@@ -77,7 +77,7 @@ public class DynamicNodeLabels implements NodeLabels
         {
             //dynamic records not there, stream the result from the dynamic label store
             dynamicLabelStore.streamRecords( firstDynamicLabelRecordId( node.getLabelField() ), RecordLoad.NORMAL, false,
-                    storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ), subscriber );
+                    storeCursors.readCursor( DYNAMIC_LABEL_STORE_CURSOR ), subscriber );
         }
         else
         {

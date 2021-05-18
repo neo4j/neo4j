@@ -136,7 +136,7 @@ class DeleteDuplicateNodesStepTest
         // then
         int expectedNodes = 0;
         int expectedProperties = 0;
-        var nodeCursor = storeCursors.pageCursor( NODE_CURSOR );
+        var nodeCursor = storeCursors.readCursor( NODE_CURSOR );
         for ( Ids entity : ids )
         {
             boolean expectedToBeInUse = !ArrayUtils.contains( duplicateNodeIds, entity.node.getId() );
@@ -150,13 +150,13 @@ class DeleteDuplicateNodesStepTest
             for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
             {
                 assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(),
-                        storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ) ) );
+                        storeCursors.readCursor( DYNAMIC_LABEL_STORE_CURSOR ) ) );
             }
 
             // Verify property records
             for ( PropertyRecord propertyRecord : entity.properties )
             {
-                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), storeCursors.pageCursor( PROPERTY_CURSOR ) ) );
+                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), storeCursors.readCursor( PROPERTY_CURSOR ) ) );
                 for ( PropertyBlock property : propertyRecord )
                 {
                     // Verify property dynamic value records
@@ -168,11 +168,11 @@ class DeleteDuplicateNodesStepTest
                         {
                         case STRING:
                             valueStore = neoStores.getPropertyStore().getStringStore();
-                            valueCursor = storeCursors.pageCursor( DYNAMIC_STRING_STORE_CURSOR );
+                            valueCursor = storeCursors.readCursor( DYNAMIC_STRING_STORE_CURSOR );
                             break;
                         case ARRAY:
                             valueStore = neoStores.getPropertyStore().getArrayStore();
-                            valueCursor = storeCursors.pageCursor( DYNAMIC_ARRAY_STORE_CURSOR );
+                            valueCursor = storeCursors.readCursor( DYNAMIC_ARRAY_STORE_CURSOR );
                             break;
                         default: throw new IllegalArgumentException( propertyRecord + " " + property );
                         }
@@ -261,7 +261,10 @@ class DeleteDuplicateNodesStepTest
         {
             nodeRecord.setNextProp( propertyRecords[0].getId() );
         }
-        nodeStore.updateRecord( nodeRecord, NULL );
+        try ( var cursor = storeCursors.writeCursor( NODE_CURSOR ) )
+        {
+            nodeStore.updateRecord( nodeRecord, cursor, NULL, storeCursors );
+        }
         monitor.nodesImported( 1 );
         monitor.propertiesImported( propertyCount );
         return new Ids( nodeRecord, propertyRecords );
@@ -295,7 +298,10 @@ class DeleteDuplicateNodesStepTest
             current.addPropertyBlock( block );
             space -= block.getValueBlocks().length;
         }
-        records.forEach( record -> propertyStore.updateRecord( record, NULL ) );
+        try ( var cursor = storeCursors.writeCursor( PROPERTY_CURSOR ) )
+        {
+            records.forEach( record -> propertyStore.updateRecord( record, cursor, NULL, storeCursors ) );
+        }
         return records.toArray( new PropertyRecord[0] );
     }
 

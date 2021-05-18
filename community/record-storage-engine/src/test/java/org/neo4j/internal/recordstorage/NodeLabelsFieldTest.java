@@ -41,11 +41,13 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -72,6 +74,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -93,6 +96,7 @@ class NodeLabelsFieldTest
 
     private NeoStores neoStores;
     private NodeStore nodeStore;
+    private CachedStoreCursors storeCursors;
 
     @BeforeEach
     void startUp()
@@ -103,12 +107,13 @@ class NodeLabelsFieldTest
                 pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
+        storeCursors = new CachedStoreCursors( neoStores, NULL );
     }
 
     @AfterEach
     void cleanUp()
     {
-        neoStores.close();
+        closeAllUnchecked( storeCursors, neoStores );
     }
 
     @Test
@@ -238,7 +243,7 @@ class NodeLabelsFieldTest
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 56 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, oneByteLongs( 56 ) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -257,7 +262,7 @@ class NodeLabelsFieldTest
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
         Long nodeId = 24L;
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs(56) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, storeCursors, oneByteLongs(56) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
 
         // WHEN
@@ -273,7 +278,7 @@ class NodeLabelsFieldTest
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 57 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, oneByteLongs( 57 ) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -294,7 +299,7 @@ class NodeLabelsFieldTest
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
         Long nodeId = 42L;
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs( 57 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, storeCursors, oneByteLongs( 57 ) );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
         List<DynamicRecord> changedDynamicRecords = addAll( new ArrayList<>(),
@@ -312,7 +317,7 @@ class NodeLabelsFieldTest
     void oneDynamicRecordShouldShrinkIntoInlinedWhenRemoving()
     {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, oneByteLongs( 5 ) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -329,7 +334,7 @@ class NodeLabelsFieldTest
     void shouldReadIdOfDynamicRecordFromDynamicLabelsField()
     {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, oneByteLongs( 5 ) );
         DynamicRecord dynamicRecord = node.getDynamicLabelRecords().iterator().next();
 
         // WHEN
@@ -393,7 +398,7 @@ class NodeLabelsFieldTest
     {
         // GIVEN
         long[] labels = oneByteLongs( 20 );
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, labels );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, labels );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
         // WHEN
@@ -425,7 +430,7 @@ class NodeLabelsFieldTest
     {
         // GIVEN
         long[] labels = oneByteLongs( 20 );
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, labels );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, labels );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
         assertThrows( IllegalStateException.class, () -> nodeLabels.remove( 123456, nodeStore, NULL, StoreCursors.NULL, INSTANCE ) );
@@ -435,7 +440,7 @@ class NodeLabelsFieldTest
     void shouldReallocateSomeOfPreviousDynamicRecords()
     {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, oneByteLongs( 5 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, oneByteLongs( 5 ) );
         Set<DynamicRecord> initialRecords = Iterables.asUniqueSet( node.getDynamicLabelRecords() );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -452,7 +457,7 @@ class NodeLabelsFieldTest
     void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome()
     {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, fourByteLongs( 100 ) );
+        NodeRecord node = nodeRecordWithDynamicLabels( nodeStore, storeCursors, fourByteLongs( 100 ) );
         Set<DynamicRecord> initialRecords = Iterables.asSet( cloned( node.getDynamicLabelRecords(), DynamicRecord.class ) );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -541,23 +546,23 @@ class NodeLabelsFieldTest
         return node;
     }
 
-    private static NodeRecord nodeRecordWithDynamicLabels( NodeStore nodeStore, long... labels )
+    private static NodeRecord nodeRecordWithDynamicLabels( NodeStore nodeStore, StoreCursors storeCursors, long... labels )
     {
-        return nodeRecordWithDynamicLabels( 0, nodeStore, labels );
+        return nodeRecordWithDynamicLabels( 0, nodeStore, storeCursors, labels );
     }
 
-    private static NodeRecord nodeRecordWithDynamicLabels( long nodeId, NodeStore nodeStore, long... labels )
+    private static NodeRecord nodeRecordWithDynamicLabels( long nodeId, NodeStore nodeStore, StoreCursors storeCursors, long... labels )
     {
         NodeRecord node = new NodeRecord( nodeId ).initialize( false, 0, false, 0, 0 );
-        Collection<DynamicRecord> initialRecords = allocateAndApply( nodeStore, node.getId(), labels );
+        Collection<DynamicRecord> initialRecords = allocateAndApply( nodeStore, storeCursors, node.getId(), labels );
         node.setLabelField( dynamicLabelsLongRepresentation( initialRecords ), initialRecords );
         return node;
     }
 
-    private static Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, long nodeId, long[] longs )
+    private static Collection<DynamicRecord> allocateAndApply( NodeStore nodeStore, StoreCursors storeCursors, long nodeId, long[] longs )
     {
         Collection<DynamicRecord> records = allocateRecordsForDynamicLabels( nodeId, longs, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
-        nodeStore.updateDynamicLabelRecords( records, IdUpdateListener.DIRECT, NULL );
+        nodeStore.updateDynamicLabelRecords( records, IdUpdateListener.DIRECT, NULL, storeCursors );
         return records;
     }
 

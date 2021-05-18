@@ -52,6 +52,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -188,27 +189,30 @@ class RecordStorageEngineTest
                 .lockService( lockService )
                 .transactionApplierTransformer( applier::wrapAroundActualApplier )
                 .build();
-        CommandsToApply commandsToApply = mock( CommandsToApply.class );
-        when( commandsToApply.cursorContext() ).thenReturn( NULL );
-        when( commandsToApply.accept( any() ) ).thenAnswer( invocationOnMock ->
+        try ( StoreCursors storageCursors = engine.createStorageCursors( NULL ) )
         {
-            // Visit one node command
-            Visitor<StorageCommand,IOException> visitor = invocationOnMock.getArgument( 0 );
-            NodeRecord after = new NodeRecord( nodeId );
-            after.setInUse( true );
-            visitor.visit( new Command.NodeCommand( new NodeRecord( nodeId ), after ) );
-            return null;
-        } );
+            CommandsToApply commandsToApply = mock( CommandsToApply.class );
+            when( commandsToApply.cursorContext() ).thenReturn( NULL );
+            when( commandsToApply.storeCursors() ).thenReturn( storageCursors );
+            when( commandsToApply.accept( any() ) ).thenAnswer( invocationOnMock ->
+            {
+                // Visit one node command
+                Visitor<StorageCommand,IOException> visitor = invocationOnMock.getArgument( 0 );
+                NodeRecord after = new NodeRecord( nodeId );
+                after.setInUse( true );
+                visitor.visit( new Command.NodeCommand( new NodeRecord( nodeId ), after ) );
+                return null;
+            } );
+            // when
+            engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL );
 
-        // when
-        engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL );
-
-        // then
-        InOrder inOrder = inOrder( lockService, applierCloseCall, nodeLock );
-        inOrder.verify( lockService ).acquireNodeLock( nodeId, EXCLUSIVE );
-        inOrder.verify( applierCloseCall ).accept( true );
-        inOrder.verify( nodeLock ).release();
-        inOrder.verifyNoMoreInteractions();
+            // then
+            InOrder inOrder = inOrder( lockService, applierCloseCall, nodeLock );
+            inOrder.verify( lockService ).acquireNodeLock( nodeId, EXCLUSIVE );
+            inOrder.verify( applierCloseCall ).accept( true );
+            inOrder.verify( nodeLock ).release();
+            inOrder.verifyNoMoreInteractions();
+        }
     }
 
     private RecordStorageEngine buildRecordStorageEngine()

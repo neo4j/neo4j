@@ -796,8 +796,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 srcTokenHolders.setInitialTokens( allTokens( srcStore ), srcCursors );
                 SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
 
-                try ( var dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext, memoryTracker);
-                     var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
+                try ( SchemaRuleMigrationAccess dstAccess =
+                        RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext, memoryTracker );
+                        var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
                 {
                     migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, schemaCursors );
                 }

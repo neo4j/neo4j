@@ -84,6 +84,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_B
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 
@@ -347,12 +348,16 @@ public class ConsistencyCheckServiceIntegrationTest
         NeoStores neoStores = fixture.neoStores();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
-        try ( var cursor = relationshipStore.openPageCursorForReading( 4, NULL ) )
+        var storeCursors = fixture.getStoreCursors();
+        try ( var cursor = storeCursors.readCursor( RELATIONSHIP_CURSOR ) )
         {
             relationshipStore.getRecordByCursor( 4, relationshipRecord, RecordLoad.FORCE, cursor );
         }
         relationshipRecord.setInUse( false );
-        relationshipStore.updateRecord( relationshipRecord, NULL );
+        try ( var storeCursor = storeCursors.writeCursor( RELATIONSHIP_CURSOR ) )
+        {
+            relationshipStore.updateRecord( relationshipRecord, storeCursor, NULL, storeCursors );
+        }
     }
 
     private void nonRecoveredDatabase() throws IOException

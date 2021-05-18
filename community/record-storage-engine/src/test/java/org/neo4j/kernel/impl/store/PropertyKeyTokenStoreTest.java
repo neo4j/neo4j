@@ -43,7 +43,7 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
     @Override
     protected PageCursor storeCursor()
     {
-        return storeCursors.pageCursor( PROPERTY_KEY_TOKEN_CURSOR );
+        return storeCursors.readCursor( PROPERTY_KEY_TOKEN_CURSOR );
     }
 
     @Override
@@ -74,7 +74,7 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
         }
 
         @Override
-        public PageCursor pageCursor( short type )
+        public PageCursor readCursor( short type )
         {
             switch ( type )
             {
@@ -91,7 +91,21 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
                 }
                 return dynamicCursor;
             default:
-                return super.pageCursor( type );
+                return super.readCursor( type );
+            }
+        }
+
+        @Override
+        public PageCursor writeCursor( short type )
+        {
+            switch ( type )
+            {
+            case PROPERTY_KEY_TOKEN_CURSOR:
+                return store.openPageCursorForWriting( 0, CursorContext.NULL );
+            case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
+                return nameStore.openPageCursorForWriting( 0, CursorContext.NULL );
+            default:
+                return super.writeCursor( type );
             }
         }
 

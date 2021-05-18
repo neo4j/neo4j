@@ -77,6 +77,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -174,6 +175,9 @@ import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -669,7 +673,7 @@ public class BatchInserterImpl implements BatchInserter
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
         IdValidator.assertValidId( IdType.NODE, id, maxNodeId );
-        var nodeCursor = storeCursors.pageCursor( CursorTypes.NODE_CURSOR );
+        var nodeCursor = storeCursors.readCursor( CursorTypes.NODE_CURSOR );
         if ( nodeStore.isInUse( id, nodeCursor ) )
         {
             throw new IllegalArgumentException( "id=" + id + " already in use" );
@@ -769,7 +773,7 @@ public class BatchInserterImpl implements BatchInserter
     public boolean nodeExists( long nodeId )
     {
         flushStrategy.forceFlush();
-        return nodeStore.isInUse( nodeId, storeCursors.pageCursor( CursorTypes.NODE_CURSOR ) );
+        return nodeStore.isInUse( nodeId, storeCursors.readCursor( CursorTypes.NODE_CURSOR ) );
     }
 
     @Override
@@ -903,20 +907,29 @@ public class BatchInserterImpl implements BatchInserter
 
     private int createNewPropertyKeyId( String stringKey, boolean internal )
     {
-        return createNewToken( propertyKeyTokenStore, stringKey, internal );
+        try ( var keyTokenCursor = storeCursors.writeCursor( PROPERTY_KEY_TOKEN_CURSOR ) )
+        {
+            return createNewToken( propertyKeyTokenStore, stringKey, internal, keyTokenCursor, storeCursors );
+        }
     }
 
     private int createNewLabelId( String stringKey, boolean internal )
     {
-        return createNewToken( labelTokenStore, stringKey, internal );
+        try ( var labelTokenCursor = storeCursors.writeCursor( LABEL_TOKEN_CURSOR ) )
+        {
+            return createNewToken( labelTokenStore, stringKey, internal, labelTokenCursor, storeCursors );
+        }
     }
 
     private int createNewRelationshipType( String name, boolean internal )
     {
-        return createNewToken( relationshipTypeTokenStore, name, internal );
+        try ( var relTypeToken = storeCursors.writeCursor( REL_TYPE_TOKEN_CURSOR ) )
+        {
+            return createNewToken( relationshipTypeTokenStore, name, internal, relTypeToken, storeCursors );
+        }
     }
 
-    private <R extends TokenRecord> int createNewToken( TokenStore<R> store, String name, boolean internal )
+    private <R extends TokenRecord> int createNewToken( TokenStore<R> store, String name, boolean internal, PageCursor writeCursor, StoreCursors storeCursors )
     {
         int keyId = (int) store.nextId( cursorContext );
         R record = store.newRecord();
@@ -927,7 +940,7 @@ public class BatchInserterImpl implements BatchInserter
         Collection<DynamicRecord> keyRecords = store.allocateNameRecords( encodeString( name ), cursorContext, memoryTracker );
         record.setNameId( (int) Iterables.first( keyRecords ).getId() );
         record.addNameRecords( keyRecords );
-        store.updateRecord( record, cursorContext );
+        store.updateRecord( record, writeCursor, cursorContext, storeCursors );
         return keyId;
     }
 

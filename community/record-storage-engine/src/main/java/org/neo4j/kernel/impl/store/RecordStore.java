@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
- * A store for {@link #updateRecord(AbstractBaseRecord, CursorContext) updating} and
+ * A store for {@link #updateRecord(AbstractBaseRecord, PageCursor, CursorContext, StoreCursors) updating} and
  * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}  getting} records.
  *
  * There are two ways of getting records, either one-by-one using
@@ -206,19 +206,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * specified by the record.
      * @param cursorContext underlying page cursor context.
      */
-    default void updateRecord( RECORD record, IdUpdateListener idUpdates, CursorContext cursorContext )
-    {
-        try ( PageCursor cursor = openPageCursorForWriting( 0, cursorContext ) )
-        {
-            updateRecord( record, idUpdates, cursor, cursorContext );
-        }
-    }
+    void updateRecord( RECORD record, IdUpdateListener idUpdates, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors );
 
-    void updateRecord( RECORD record, IdUpdateListener idUpdates, PageCursor cursor, CursorContext cursorContext );
-
-    default void updateRecord( RECORD record , CursorContext cursorContext )
+    default void updateRecord( RECORD record, PageCursor cursor, CursorContext cursorContext, StoreCursors storeCursors )
     {
-        updateRecord( record, IdUpdateListener.DIRECT, cursorContext );
+        updateRecord( record, IdUpdateListener.DIRECT, cursor, cursorContext, storeCursors );
     }
 
     /**
@@ -248,7 +240,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     void close();
 
     /**
-     * Flushes all pending {@link #updateRecord(AbstractBaseRecord, CursorContext) updates} to underlying storage.
+     * Flushes all pending {@link #updateRecord(AbstractBaseRecord, PageCursor, CursorContext, StoreCursors) updates} to underlying storage.
      * This call is blocking and will ensure all updates since last call to this method are durable
      * once the call returns.
      */
