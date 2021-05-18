@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.UnsignedIntegerLiteral
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -167,7 +168,7 @@ trait Literals extends Parser
         ".." ~
         optional(WS ~ UnsignedIntegerLiteral)
       ) ~~>> (expressions.Range(_, _))
-    | UnsignedIntegerLiteral ~~>> (l => expressions.Range(Some(l), Some(l)))
+    | UnsignedIntegerLiteral ~~>> ((l: UnsignedIntegerLiteral) => expressions.Range(Some(l), Some(l)))
   )
 
   def NodeLabels: Rule1[Seq[expressions.LabelName]] = rule("node labels") {

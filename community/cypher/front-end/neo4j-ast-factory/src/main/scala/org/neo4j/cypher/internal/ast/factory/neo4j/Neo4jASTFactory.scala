@@ -519,12 +519,12 @@ class Neo4jASTFactory(query: String)
       legacyTypeSeparator)(p)
   }
 
-  override def pathLength(p: InputPosition, minLength: String, maxLength: String): Option[Range] = {
+  override def pathLength(p: InputPosition, pMin: InputPosition, pMax: InputPosition, minLength: String, maxLength: String): Option[Range] = {
     if (minLength == null && maxLength == null) {
       None
     } else {
-      val min = if (minLength == "") None else Some(UnsignedDecimalIntegerLiteral(minLength)(p))
-      val max = if (maxLength == "") None else Some(UnsignedDecimalIntegerLiteral(maxLength)(p))
+      val min = if (minLength == "") None else Some(UnsignedDecimalIntegerLiteral(minLength)(pMin))
+      val max = if (maxLength == "") None else Some(UnsignedDecimalIntegerLiteral(maxLength)(pMax))
       Some(Range(min, max)(p))
     }
   }

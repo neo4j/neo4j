@@ -290,7 +290,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL pathLength( NULL p, String minLength, String maxLength )
+    public NULL pathLength( NULL p, NULL pMin, NULL mMax, String minLength, String maxLength )
     {
         throw new UnsupportedOperationException( "pathLength is not a literal" );
     }

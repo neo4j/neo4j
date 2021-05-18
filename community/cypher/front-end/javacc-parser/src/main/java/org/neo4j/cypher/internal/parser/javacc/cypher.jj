@@ -1902,7 +1902,7 @@ PATH_LENGTH PathLength() :
 {
     t=<TIMES> ( p=PathLengthLiteral( t ) )?
     {
-        return p == null ? astFactory.pathLength( pos( t ), null, null ) : p;
+        return p == null ? astFactory.pathLength( pos( t ), null, null, null, null ) : p;
     }
 }
 
@@ -1914,12 +1914,12 @@ PATH_LENGTH PathLengthLiteral( Token t ) :
 {
     LOOKAHEAD( 2 ) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? <DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
         {
-            return astFactory.pathLength( pos( t ), v1 == null ? "" : v1.image, v2 == null ? "" : v2.image );
+            return astFactory.pathLength( pos( t ), v1 == null ? null : pos ( v1 ), v2 == null ? null : pos ( v2 ),  v1 == null ? "" : v1.image, v2 == null ? "" : v2.image );
         }
     | v1=<UNSIGNED_DECIMAL_INTEGER>
         {
             String v = v1 == null ? "" : v1.image;
-            return astFactory.pathLength( pos( t ), v, v);
+            return astFactory.pathLength( pos( t ), v1 == null ? null : pos ( v1 ), v1 == null ? null : pos ( v1 ), v, v);
         }
 }
 
