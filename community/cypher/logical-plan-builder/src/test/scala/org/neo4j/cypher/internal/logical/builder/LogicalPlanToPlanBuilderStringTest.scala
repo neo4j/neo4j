@@ -1168,7 +1168,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
    * This is done via reflection.
    */
   test("all the tests exist") {
-    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExistsExpressionProjection", "nestedPlanCollectExpressionProjection")
+    val methodsWeCantTest = Set("filterExpression", "appendAtCurrentIndent", "nestedPlanExistsExpressionProjection", "nestedPlanCollectExpressionProjection", "pointDistanceNodeIndexSeekExpr")
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>
         val modifiers = m.getModifiers

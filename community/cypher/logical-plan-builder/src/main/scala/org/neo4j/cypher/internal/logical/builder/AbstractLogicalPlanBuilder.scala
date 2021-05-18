@@ -806,6 +806,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                  indexOrder: IndexOrder = IndexOrderNone,
                                  inclusive: Boolean = false,
                                  argumentIds: Set[String] = Set.empty): IMPL = {
+    pointDistanceNodeIndexSeekExpr(node, labelName, property, point, literalFloat(distance), getValue, indexOrder, inclusive, argumentIds)
+  }
+
+  def pointDistanceNodeIndexSeekExpr(node: String,
+                                     labelName: String,
+                                     property: String,
+                                     point: String,
+                                     distanceExpr: Expression,
+                                     getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                     indexOrder: IndexOrder = IndexOrderNone,
+                                     inclusive: Boolean = false,
+                                     argumentIds: Set[String] = Set.empty): IMPL = {
     val label = resolver.getLabelId(labelName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -815,7 +827,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       val indexedProperty = IndexedProperty(propToken, getValue, NODE_TYPE)
       val e =
         RangeQueryExpression(PointDistanceSeekRangeWrapper(
-          PointDistanceRange(function("point", Parser.parseExpression(point)), literalFloat(distance), inclusive))(NONE))
+          PointDistanceRange(function("point", Parser.parseExpression(point)), distanceExpr, inclusive))(NONE))
       val plan = NodeIndexSeek(node,
                                labelToken,
                                Seq(indexedProperty),

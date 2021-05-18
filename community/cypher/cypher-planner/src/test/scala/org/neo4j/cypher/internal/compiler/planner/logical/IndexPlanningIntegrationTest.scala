@@ -19,214 +19,220 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
+class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
-  override val pushdownPropertyReads: Boolean = false
+  private def plannerConfigForIndexOnLabelPropTests(): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 100)
+      .setRelationshipCardinality("()-[]->(:Label)", 50)
+      .setRelationshipCardinality("(:Label)-[]->()", 50)
+      .setRelationshipCardinality("()-[]->()", 50)
+      .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
+      .build()
 
   test("should not plan index usage if predicate depends on variable from same QueryGraph") {
+    val cfg = plannerConfigForIndexOnLabelPropTests()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
-      val plan =
-        new given {
-          indexOn("Label", "prop")
-        } getLogicalPlanFor s"MATCH (a)-->(b:Label) WHERE b.prop $op a.prop RETURN a"
+      val plan = cfg.plan(s"MATCH (a)-[r]->(b:Label) WHERE b.prop $op a.prop RETURN a").stripProduceResults
 
-      plan._2 should beLike {
-        case Selection(_,
-              Expand(
-                _:NodeIndexScan | _:NodeByLabelScan,
-                _, _, _, _, _, _
-              )
-             ) => ()
-      }
+      val planWithLabelScan = cfg.subPlanBuilder()
+        .filter(s"b.prop $op a.prop")
+        .expandAll("(b)<-[r]-(a)")
+        .nodeByLabelScan("b", "Label")
+        .build()
+
+      val planWithIndexScan = cfg.subPlanBuilder()
+        .filter(s"b.prop $op a.prop")
+        .expandAll("(b)<-[r]-(a)")
+        .nodeIndexOperator("b:Label(prop)")
+        .build()
+
+      plan should (be(planWithIndexScan) or be(planWithLabelScan))
     }
   }
 
   test("should plan index usage if predicate depends on simple variable from horizon") {
+    val cfg = plannerConfigForIndexOnLabelPropTests()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
-      val plan =
-        new given {
-          indexOn("Label", "prop")
-        } getLogicalPlanFor s"WITH 'foo' AS foo MATCH (a)-->(b:Label) WHERE b.prop $op foo RETURN a"
-
-      plan._2 should beLike {
-        case Expand(
-              Apply(
-                Projection(_: Argument, _),
-                _:NodeIndexSeek | _:NodeIndexContainsScan | _:NodeIndexEndsWithScan, _
-              ), _, _, _, _, _, _) => ()
-      }
+      val plan = cfg.plan(s"WITH 'foo' AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo RETURN a").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .expandAll("(b)<-[r]-(a)")
+        .apply()
+        .|.nodeIndexOperator(s"b:Label(prop $op ???)", paramExpr = Some(varFor("foo")), argumentIds = Set("foo"))
+        .projection("'foo' AS foo")
+        .argument()
+        .build()
     }
   }
 
   test("should plan index usage if predicate depends on property of variable from horizon") {
+    val cfg = plannerConfigForIndexOnLabelPropTests()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
-      val plan =
-        new given {
-          indexOn("Label", "prop")
-        } getLogicalPlanFor s"WITH {prop: 'foo'} AS foo MATCH (a)-->(b:Label) WHERE b.prop $op foo.prop RETURN a"
-
-      plan._2 should beLike {
-        case Expand(
-              Apply(
-                Projection(_: Argument, _),
-                _:NodeIndexSeek | _:NodeIndexContainsScan | _:NodeIndexEndsWithScan, _
-              ), _, _, _, _, _, _) => ()
-      }
+      val plan = cfg.plan(s"WITH {prop: 'foo'} AS foo MATCH (a)-[r]->(b:Label) WHERE b.prop $op foo.prop RETURN a").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .expandAll("(b)<-[r]-(a)")
+        .apply()
+        .|.nodeIndexOperator(s"b:Label(prop $op ???)", paramExpr = Some(prop("foo", "prop")) , argumentIds = Set("foo"))
+        .projection("{prop: 'foo'} AS foo")
+        .argument()
+        .build()
     }
   }
 
-  test("should not plan index usage if distance predicate depends on variable from same QueryGraph") {
+  private def plannerConfigForDistancePredicateTests(): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Place", 50)
+      .setLabelCardinality("Preference", 50)
+      .addNodeIndex("Place", Seq("location"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
+      .setRelationshipCardinality("(:Place)-[]->()", 20)
+      .setRelationshipCardinality("(:Place)-[]->(:Preference)", 20)
+      .setRelationshipCardinality("()-[]->(:Preference)", 20)
+      .build()
 
-    val plan =
-      new given {
-        indexOn("Place", "location")
-      } getLogicalPlanFor
-        s"""MATCH (p:Place)-->(x:Preference)
-           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
-           |RETURN p.location as point
+  test("should not plan index usage if distance predicate depends on variable from same QueryGraph") {
+    val query =
+      """MATCH (p:Place)-[r]->(x:Preference)
+        |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
+        |RETURN p.location as point
         """.stripMargin
 
-    plan._2 should beLike {
-      case Projection(
-            Selection(_,
-              Expand(
-                _:NodeByLabelScan, _, _, _, _, _, _
-              )
-            ), _) => ()
-    }
+    val cfg = plannerConfigForDistancePredicateTests()
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[p.location] AS point")
+      .filter("x.maxDistance >= distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))", "x:Preference")
+      .expandAll("(p)-[r]->(x)")
+      .nodeByLabelScan("p", "Place")
+      .build()
   }
 
   test("should plan index usage if distance predicate depends on variable from the horizon") {
-
-    val plan =
-      new given {
-        indexOn("Place", "location")
-      } getLogicalPlanFor
-        s"""WITH 10 AS maxDistance
-           |MATCH (p:Place)
-           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance
-           |RETURN p.location as point
+    val query =
+      """WITH 10 AS maxDistance
+        |MATCH (p:Place)
+        |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance
+        |RETURN p.location as point
         """.stripMargin
 
-    plan._2 should beLike {
-      case Projection(
-            Selection(_,
-              Apply(
-                Projection(_: Argument, _),
-                _:NodeIndexSeek, _
-              )
-            ), _) => ()
-    }
+    val cfg = plannerConfigForDistancePredicateTests()
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[p.location] AS point")
+      .filter("distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'})) <= maxDistance")
+      .apply()
+      .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = varFor("maxDistance"), argumentIds = Set("maxDistance"), inclusive = true)
+      .projection("10 AS maxDistance")
+      .argument()
+      .build()
   }
 
   test("should plan index usage if distance predicate depends on property read of variable from the horizon") {
-
-    val plan =
-      new given {
-        indexOn("Place", "location")
-      } getLogicalPlanFor
-        s"""WITH {maxDistance: 10} AS x
-           |MATCH (p:Place)
-           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
-           |RETURN p.location as point
+    val query =
+      """WITH {maxDistance: 10} AS x
+        |MATCH (p:Place)
+        |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
+        |RETURN p.location as point
         """.stripMargin
 
-    plan._2 should beLike {
-      case Projection(
-            Selection(_,
-              Apply(
-                Projection(_: Argument, _),
-                _:NodeIndexSeek, _
-              )
-            ), _) => ()
-    }
+    val cfg = plannerConfigForDistancePredicateTests()
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[p.location] AS point")
+      .filter("x.maxDistance >= distance(cacheNFromStore[p.location], point({x: 0, y: 0, crs: 'cartesian'}))")
+      .apply()
+      .|.pointDistanceNodeIndexSeekExpr("p", "Place", "location", "{x: 0, y: 0, crs: 'cartesian'}", distanceExpr = prop("x", "maxDistance"), argumentIds = Set("x"), inclusive = true)
+      .projection("{maxDistance: 10} AS x")
+      .argument()
+      .build()
   }
 
-  test("should allow one join and one index hint on the same variable") {
-    val (_, plan, _, _) =
-      new given {
-        indexOn("T", "p") // This index is enforced by hint
-        indexOn("T", "foo") // This index would normally be preferred
-        indexOn("S", "p")
-      } getLogicalPlanFor(
-        s"""MATCH (s:S {p: 10})<-[r]-(t:T {foo: 2})
-           |USING JOIN ON t
-           |USING INDEX t:T(p)
-           |WHERE 0 <= t.p <= 10
-           |RETURN s, r, t
-        """.stripMargin, stripProduceResults = false)
+  private def plannerConfigForUsingHintTests(): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("S", 500)
+      .setLabelCardinality("T", 500)
+      .setRelationshipCardinality("()-[]->(:S)", 1000)
+      .setRelationshipCardinality("(:T)-[]->(:S)", 1000)
+      .setRelationshipCardinality("(:T)-[]->()", 1000)
+      .addNodeIndex("S", Seq("p"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
+      .addNodeIndex("T", Seq("p"), existsSelectivity = 1.0, uniqueSelectivity = 0.1) // This index is enforced by hint
+      .addNodeIndex("T", Seq("foo"), existsSelectivity = 1.0, uniqueSelectivity = 0.1) // This index would normally be preferred
+      .build()
 
-    plan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("s", "r", "t")
-        .nodeHashJoin("t")
-        .|.expandAll("(s)<-[r]-(t)")
-        .|.nodeIndexOperator("s:S(p = 10)")
-        .filter("t.foo = 2")
-        .nodeIndexOperator("t:T(0 <= p <= 10)")
-        .build()
-    )
+  test("should allow one join and one index hint on the same variable") {
+    val query =
+      """MATCH (s:S {p: 10})<-[r]-(t:T {foo: 2})
+        |USING JOIN ON t
+        |USING INDEX t:T(p)
+        |WHERE 0 <= t.p <= 10
+        |RETURN s, r, t
+        """.stripMargin
+
+    val cfg = plannerConfigForUsingHintTests()
+    val plan = cfg.plan(query)
+
+    // t:T(p) is enforced by hint
+    // t:T(foo) would normally be preferred
+    plan shouldEqual cfg.planBuilder()
+      .produceResults("s", "r", "t")
+      .nodeHashJoin("t")
+      .|.expandAll("(s)<-[r]-(t)")
+      .|.nodeIndexOperator("s:S(p = 10)")
+      .filter("t.foo = 2")
+      .nodeIndexOperator("t:T(0 <= p <= 10)")
+      .build()
   }
 
   test("should allow one join and one scan hint on the same variable") {
-    val (_, plan, _, _) =
-      new given {
-        indexOn("S", "p")
-        indexOn("T", "p")
-        indexOn("T", "foo") // This index would normally be preferred
-      } getLogicalPlanFor(
-        s"""MATCH (s:S {p: 10})<-[r]-(t:T {foo: 2})
-           |USING JOIN ON t
-           |USING SCAN t:T
-           |RETURN s, r, t
-        """.stripMargin, stripProduceResults = false)
+    val query =
+      """MATCH (s:S {p: 10})<-[r]-(t:T {foo: 2})
+        |USING JOIN ON t
+        |USING SCAN t:T
+        |RETURN s, r, t
+        """.stripMargin
 
-    plan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("s", "r", "t")
-        .nodeHashJoin("t")
-        .|.expandAll("(s)<-[r]-(t)")
-        .|.nodeIndexOperator("s:S(p = 10)")
-        .filter("t.foo = 2")
-        .nodeByLabelScan("t", "T")
-        .build()
-    )
+    val cfg = plannerConfigForUsingHintTests()
+    val plan = cfg.plan(query)
+
+    // t:T(foo) would normally be preferred
+    plan shouldEqual cfg.planBuilder()
+      .produceResults("s", "r", "t")
+      .nodeHashJoin("t")
+      .|.expandAll("(s)<-[r]-(t)")
+      .|.nodeIndexOperator("s:S(p = 10)")
+      .filter("t.foo = 2")
+      .nodeByLabelScan("t", "T")
+      .build()
   }
 
   test("should or-leaf-plan in reasonable time") {
     import scala.concurrent.ExecutionContext.Implicits.global
 
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Coleslaw", 100)
+      .addNodeIndex("Coleslaw", Seq("name"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, isUnique = true)
+      .build()
+
     val futurePlan =
       Future(
-        new given {
-          uniqueIndexOn("Coleslaw", "name")
-        } getLogicalPlanFor
+        cfg.plan {
           """
             |MATCH (n:Coleslaw) USING INDEX n:Coleslaw(name)
             |WHERE (n.age < 10 AND ( n.name IN $p0 OR
@@ -256,29 +262,33 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
             |        n.name IN $p24 OR
             |        n.name IN $p25) AND n.legal)
             |RETURN n.name as name
-        """.stripMargin)(global)
+        """.stripMargin
+        })
 
     Await.result(futurePlan, 1.minutes)
   }
 
   test("should not plan index scan if predicate variable is an argument") {
-    val plan =
-      new given {
-        indexOn("Label", "prop")
-      } getLogicalPlanFor
-        """
-           |MATCH (a: Label {prop: $param})
-           |MATCH (b)
-           |WHERE (a:Label {prop: $param})-[]-(b)
-           |RETURN a
-           |""".stripMargin
+    val query =
+      """
+        |MATCH (a: Label {prop: $param})
+        |MATCH (b)
+        |WHERE (a:Label {prop: $param})-[]-(b)
+        |RETURN a
+        |""".stripMargin
 
-    plan._2 should beLike {
-      case SemiApply(
-             CartesianProduct(_: NodeIndexSeek, _: AllNodesScan, _),
-             Expand(
-               Selection(_, _: Argument), _, _, _, _, _, _)) => ()
-    }
+    val cfg = plannerConfigForIndexOnLabelPropTests()
+    val plan = cfg.plan(query).stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .semiApply()
+      .|.expandInto("(a)-[anon_73]-(b)")
+      .|.filter("cacheN[a.prop] = $param", "a:Label")
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .nodeIndexOperator("a:Label(prop = ???)", paramExpr = Some(parameter("param", CTAny)), getValue = _ => GetValue)
+      .build()
   }
 
   test("should prefer label scan to node index scan from existence constraint with same cardinality") {
