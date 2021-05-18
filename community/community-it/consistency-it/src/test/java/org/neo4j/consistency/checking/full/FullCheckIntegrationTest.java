@@ -384,7 +384,6 @@ public class FullCheckIntegrationTest
         throw new RuntimeException( entityType + " index missing" );
     }
 
-
     void writeToNodeLabelStructure( GraphStoreFixture fixture, Iterable<EntityTokenUpdate> entityTokenUpdates ) throws IOException, IndexEntryConflictException
     {
         IndexDescriptor tokenIndex = findTokenIndex( fixture, EntityType.NODE );
@@ -393,8 +392,8 @@ public class FullCheckIntegrationTest
         {
             for ( EntityTokenUpdate entityTokenUpdate : entityTokenUpdates )
             {
-                indexUpdater.process( IndexEntryUpdate
-                                              .change( entityTokenUpdate.getEntityId(), tokenIndex, entityTokenUpdate.getTokensBefore(), entityTokenUpdate.getTokensAfter() ) );
+                indexUpdater.process( IndexEntryUpdate.change( entityTokenUpdate.getEntityId(), tokenIndex,
+                                                               entityTokenUpdate.getTokensBefore(), entityTokenUpdate.getTokensAfter() ) );
             }
         }
     }
