@@ -34,9 +34,9 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.ProcedureName
-import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -64,8 +64,9 @@ trait QueryGraphProducer extends MockitoSugar {
    *
    * my.proc.foo(a: INT): (x: INT, y: NODE)
    */
-  def producePlannerQueryForPattern(query: String): (SinglePlannerQuery, SemanticTable) = {
-    val q = query + " RETURN 1 AS Result"
+  def producePlannerQueryForPattern(query: String, appendReturn: Boolean = true): (SinglePlannerQuery, SemanticTable) = {
+    val appendix = if (appendReturn) " RETURN 1 AS Result" else ""
+    val q = query + appendix
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
     val ast = parser.parse(q, exceptionFactory)
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
@@ -90,6 +91,8 @@ trait QueryGraphProducer extends MockitoSugar {
     val context = ContextHelper.create(logicalPlanIdGen = idGen, planContext = new TestSignatureResolvingPlanContext(procLookup, fcnLookup))
     val output = (RewriteProcedureCalls andThen SemanticAnalysis(warn = false) andThen Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen collapseMultipleInPredicates).transform(state, context)
 
-    (toPlannerQuery(output.statement().asInstanceOf[Query], output.semanticTable()).query.asInstanceOf[SinglePlannerQuery], output.semanticTable())
+    val semanticTable = output.semanticTable()
+    val plannerQuery = toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable)
+    (plannerQuery.query.asInstanceOf[SinglePlannerQuery], semanticTable)
   }
 }
