@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SyntaxDeprecationWarningsTest extends CypherFunSuite {
+class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
 
   test("should warn about deprecation octal syntax") {
     check(deprecatedFeaturesIn4_X, "RETURN 01277") should equal(Set(
@@ -39,7 +39,7 @@ class SyntaxDeprecationWarningsTest extends CypherFunSuite {
 
   private def check(deprecations: Deprecations, query: String): Set[InternalNotification] = {
     val logger = new RecordingNotificationLogger()
-    SyntaxDeprecationWarnings(deprecations).transform(TestState(Some(parse(query))), TestContext(logger))
+    SyntaxDeprecationWarningsAndReplacements(deprecations).transform(TestState(Some(parse(query))), TestContext(logger))
     logger.notifications
   }
 

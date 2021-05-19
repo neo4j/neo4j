@@ -39,6 +39,8 @@ trait RewritePhaseTest {
 
   def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState]
 
+  def astRewriteAndAnalyze: Boolean = true
+
   def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] =
     new Transformer[BaseContext, BaseState, BaseState] {
       override def transform(from: BaseState,
@@ -57,7 +59,7 @@ trait RewritePhaseTest {
     override def version: String = "fake"
   }
 
-  val astRewriter = new ASTRewriter(innerVariableNamer = SameNameNamer)
+  private val astRewriter = new ASTRewriter(innerVariableNamer = SameNameNamer)
 
   def assertNotRewritten(from: String): Unit = assertRewritten(from, from)
 
@@ -78,8 +80,10 @@ trait RewritePhaseTest {
     val fromOutState: BaseState = prepareFrom(from, rewriterPhaseUnderTest, features: _*)
 
     fromOutState.statement() should equal(to)
-    semanticTableExpressions.foreach { e =>
-      fromOutState.semanticTable().types.keys should contain(e)
+    if (astRewriteAndAnalyze) {
+      semanticTableExpressions.foreach { e =>
+        fromOutState.semanticTable().types.keys should contain(e)
+      }
     }
   }
 
@@ -87,13 +91,22 @@ trait RewritePhaseTest {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val parsedAst = parser.parse(queryText, exceptionFactory)
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
-    astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory)
+    if (astRewriteAndAnalyze) {
+      astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory)
+    } else {
+      cleanedAst
+    }
   }
 
  def prepareFrom(from: String, transformer: Transformer[BaseContext, BaseState, BaseState], features: SemanticFeature*): BaseState = {
     val fromAst = parseAndRewrite(from, features: _*)
-    val fromInState = SemanticAnalysis(warn = false, features: _*).process(InitialState(from, None, plannerName, maybeStatement = Some(fromAst)), TestContext())
-    val fromOutState = transformer.transform(fromInState, ContextHelper.create())
-    fromOutState
+   val initialState = InitialState(from, None, plannerName, maybeStatement = Some(fromAst))
+   val context = ContextHelper.create()
+   val fromInState = if (astRewriteAndAnalyze) {
+     SemanticAnalysis(warn = false, features: _*).process(initialState, TestContext())
+   } else {
+     initialState
+   }
+   transformer.transform(fromInState, context)
   }
 }
