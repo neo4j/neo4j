@@ -319,6 +319,26 @@ class Neo4jCommandTest
             assertThat( out.toString() ).containsSubsequence( "java", "-cp", TestEntryPoint.class.getName(), "--home-dir", "--config-dir" );
         }
 
+        @Test
+        void shouldQuoteArgsCorrectlyOnDryRun()
+        {
+            addConf( BootloaderSettings.additional_jvm, "-Dfoo=/path/with spaces/" );
+            addConf( BootloaderSettings.additional_jvm, "'-Dbar=/path/with spaces/and single qoutes'" );
+            addConf( BootloaderSettings.additional_jvm, "\"-Dbaz=/path/with spaces/and double qoutes\"" );
+            addConf( BootloaderSettings.additional_jvm, "-Dqux=/path/with spaces/and unmatched \" qoute" );
+            addConf( BootloaderSettings.additional_jvm, "-Dcorge=/path/with/no/spaces" );
+            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( out.toString() ).contains(
+                    "\"-Dfoo=/path/with spaces/\"",
+                    "\"-Dbar=/path/with spaces/and single qoutes\"",
+                    "\"-Dbaz=/path/with spaces/and double qoutes\"",
+                    "'-Dqux=/path/with spaces/and unmatched \" qoute'",
+                    "-Dcorge=/path/with/no/spaces"
+            );
+
+            assertThat( out.toString() ).doesNotContain( "\"-Dcorge=/path/with/no/spaces\"" );
+        }
+
         @Nested
         @EnabledOnOs( OS.WINDOWS )
         class OnWindows

@@ -19,7 +19,11 @@
  */
 package org.neo4j.server.startup;
 
+import org.apache.commons.exec.util.StringUtils;
+
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
@@ -125,7 +129,9 @@ class Bootloader
         BootloaderOsAbstraction os = ctx.os();
         if ( dryRun )
         {
-            ctx.out.println( String.join( " ", os.buildStandardStartArguments() ) );
+            List<String> args = os.buildStandardStartArguments();
+            String cmd = args.stream().map( StringUtils::quoteArgument ).collect( Collectors.joining( " " ) );
+            ctx.out.println( cmd );
             return EXIT_CODE_OK;
         }
 
