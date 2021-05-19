@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 
 class LoadCsvIteratorWithPeriodicCommitTest extends CypherFunSuite {
 
@@ -95,16 +97,17 @@ class LoadCsvIteratorWithPeriodicCommitTest extends CypherFunSuite {
   }
 
   private def getIterator(inner: Iterator[Array[String]])(onNext: => Unit) = {
+    val valueInner = inner.map(_.map(Values.stringValue(_).asInstanceOf[Value]))
     new LoadCsvIteratorWithPeriodicCommit(new LoadCsvIterator{
       var lastProcessed: Long = 0L
       var readAll: Boolean = false
 
       override protected[this] def closeMore(): Unit = ()
 
-      override def innerHasNext: Boolean = inner.hasNext
+      override def innerHasNext: Boolean = valueInner.hasNext
 
-      override def next(): Array[String] = {
-        val next = inner.next()
+      override def next(): Array[Value] = {
+        val next = valueInner.next()
         lastProcessed += 1
         readAll = !hasNext
         next

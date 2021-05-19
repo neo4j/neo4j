@@ -61,8 +61,7 @@ object NullPipeDecorator extends PipeDecorator {
   override def afterCreateResults(planId: Id, state: QueryState): Unit = {}
 }
 
-class LinenumberPipeDecorator() extends PipeDecorator {
-  private var inner: PipeDecorator = NullPipeDecorator
+class LinenumberPipeDecorator(private var inner: PipeDecorator = NullPipeDecorator) extends PipeDecorator {
 
   def setInnerDecorator(newDecorator: PipeDecorator): Unit = inner = newDecorator
 

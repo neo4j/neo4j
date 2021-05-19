@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
   private val DEFAULT_BUFFER_SIZE = 4 * 1024 * 1024
@@ -128,16 +130,17 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
   }
 
   private def getIterator(inner: Iterator[Array[String]]): LoadCsvIterator = {
+    val valueInner = inner.map(_.map(Values.stringValue(_).asInstanceOf[Value]))
     new LoadCsvIterator{
       var lastProcessed: Long = 0L
       var readAll: Boolean = false
 
       override protected[this] def closeMore(): Unit = ()
 
-      override def innerHasNext: Boolean = inner.hasNext
+      override def innerHasNext: Boolean = valueInner.hasNext
 
-      override def next(): Array[String] = {
-        val next = inner.next()
+      override def next(): Array[Value] = {
+        val next = valueInner.next()
         lastProcessed += 1
         readAll = !hasNext
         next

@@ -55,7 +55,5 @@ trait WritableRow extends CachedPropertiesRow {
 
   // Linenumber and filename specifics
   //===================================
-
-  def setLinenumber(file: String, line: Long, last: Boolean = false): Unit
   def setLinenumber(line: Option[ResourceLinenumber]): Unit
 }

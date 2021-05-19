@@ -44,6 +44,8 @@ import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.LoadExternalResourceException
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
@@ -84,7 +86,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     val reader: CharReadable = getReader(url)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping, bufferSize), false)
-    val extractor = new Extractors(delimiter).string()
+    val extractor = new Extractors(delimiter).textValue()
     val intDelimiter = delimiter.toInt
     val mark = new Mark
 
@@ -97,13 +99,13 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
       override protected[this] def closeMore(): Unit = resource.close()
 
-      private def readNextRow: Array[String] = {
-        val buffer = new ArrayBuffer[String]
+      private def readNextRow: Array[Value] = {
+        val buffer = new ArrayBuffer[Value]
 
         try {
           while (seeker.seek(mark, intDelimiter)) {
             val success = seeker.tryExtract(mark, extractor)
-            buffer += (if (success) extractor.value() else null)
+            buffer += (if (success) extractor.value() else Values.NO_VALUE)
             if (mark.isEndOfLine) return if (buffer.isEmpty) null else buffer.toArray
           }
         } catch {
@@ -118,11 +120,11 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
         }
       }
 
-      var nextRow: Array[String] = readNextRow
+      var nextRow: Array[Value] = readNextRow
 
       override def innerHasNext: Boolean = nextRow != null
 
-      override def next(): Array[String] = {
+      override def next(): Array[Value] = {
         if (!hasNext) Iterator.empty.next()
         val row = nextRow
         nextRow = readNextRow

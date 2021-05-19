@@ -107,6 +107,12 @@ public abstract class MapValue extends VirtualValue
             this.wrappedHeapSize = sizeOfHashMap( map ) + payloadSize;
         }
 
+        MapWrappingMapValue( Map<String,AnyValue> map, long mapSize, long payloadSize )
+        {
+            this.map = map;
+            this.wrappedHeapSize = mapSize + payloadSize;
+        }
+
         @Override
         public Iterable<String> keySet()
         {

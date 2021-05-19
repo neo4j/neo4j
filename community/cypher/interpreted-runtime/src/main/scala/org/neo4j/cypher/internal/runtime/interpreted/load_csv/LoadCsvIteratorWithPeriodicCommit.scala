@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
+import org.neo4j.values.storable.Value
 
 class LoadCsvIteratorWithPeriodicCommit(loadCsvIterator: LoadCsvIterator)(onNext: => Unit) extends LoadCsvIterator {
 
@@ -29,7 +30,7 @@ class LoadCsvIteratorWithPeriodicCommit(loadCsvIterator: LoadCsvIterator)(onNext
 
   def readAll: Boolean = loadCsvIterator.readAll
 
-  def next(): Array[String] = {
+  def next(): Array[Value] = {
     val row = loadCsvIterator.next()
     onNext
     row

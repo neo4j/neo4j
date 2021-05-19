@@ -112,6 +112,11 @@ public final class VirtualValues
         return new MapValue.MapWrappingMapValue( map, payloadSize );
     }
 
+    public static MapValue fromMap( Map<String,AnyValue> map, long mapSize, long payloadSize )
+    {
+        return new MapValue.MapWrappingMapValue( map, mapSize, payloadSize );
+    }
+
     public static ErrorValue error( Exception e )
     {
         return new ErrorValue( e );

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.values.storable.Value
 
 trait ExternalCSVResource {
   def getCsvIterator(url: URL,
@@ -36,7 +37,7 @@ object ExternalCSVResource {
                                     _: Int, _: Boolean) => LoadCsvIterator.empty
 }
 
-trait LoadCsvIterator extends ClosingIterator[Array[String]] {
+trait LoadCsvIterator extends ClosingIterator[Array[Value]] {
   def lastProcessed: Long
   def readAll: Boolean
 }

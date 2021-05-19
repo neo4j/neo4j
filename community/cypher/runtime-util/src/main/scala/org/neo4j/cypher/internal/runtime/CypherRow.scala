@@ -22,16 +22,21 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.Measurable
 import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValueWriter
+import org.neo4j.values.Equality
+import org.neo4j.values.ValueMapper
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.mutable
+import scala.runtime.ScalaRunTime
 
 object CypherRow {
   def empty: CypherRow = apply()
@@ -45,7 +50,19 @@ object CypherRow {
   def apply(m: mutable.Map[String, AnyValue] = MutableMaps.empty): MapCypherRow = new MapCypherRow(m, null)
 }
 
-case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)
+case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false) extends AnyValue {
+  override protected def equalTo(other: Any): Boolean = this == other
+  override protected def computeHash(): Int = ScalaRunTime._hashCode(ResourceLinenumber.this)
+  override def writeTo[E <: Exception](writer: AnyValueWriter[E]): Unit = throw new UnsupportedOperationException()
+  override def ternaryEquals(other: AnyValue): Equality = throw new UnsupportedOperationException()
+  override def map[T](mapper: ValueMapper[T]): T = throw new UnsupportedOperationException()
+  override def getTypeName: String = "ResourceLinenumber"
+  override def estimatedHeapUsage(): Long = ResourceLinenumber.SHALLOW_SIZE // NOTE: The filename string is expected to be repeated so we do not count it here
+}
+
+object ResourceLinenumber {
+  final val SHALLOW_SIZE: Long = HeapEstimator.shallowSizeOfInstance(classOf[ResourceLinenumber])
+}
 
 trait CypherRow extends ReadWriteRow with Measurable {
 
@@ -63,21 +80,6 @@ trait CypherRow extends ReadWriteRow with Measurable {
 
 
   def isNull(key: String): Boolean
-
-  private var linenumber: Option[ResourceLinenumber] = None
-
-  override def setLinenumber(file: String, line: Long, last: Boolean = false): Unit = {
-    // sets the linenumber for the first time, overwrite since it would mean we have a LoadCsv in a LoadCsv
-    linenumber = Some(ResourceLinenumber(file, line, last))
-  }
-
-  override def setLinenumber(line: Option[ResourceLinenumber]): Unit = linenumber match {
-    // used to copy the linenumber when copying the ExecutionContext, don't want to overwrite it
-    case None => linenumber = line
-    case _ =>
-  }
-
-  override def getLinenumber: Option[ResourceLinenumber] = linenumber
 }
 
 object MapCypherRow {
@@ -88,6 +90,16 @@ object MapCypherRow {
 
 class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty.RuntimeKey, Value] = null)
   extends CypherRow {
+
+  private var linenumber: Option[ResourceLinenumber] = None
+
+  def setLinenumber(line: Option[ResourceLinenumber]): Unit = linenumber match {
+    // used to copy the linenumber when copying the ExecutionContext, don't want to overwrite it
+    case None => linenumber = line
+    case _ =>
+  }
+
+  override def getLinenumber: Option[ResourceLinenumber] = linenumber
 
   override def copyAllFrom(input: ReadableRow): Unit = fail()
 

@@ -37,6 +37,7 @@ import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Character.isWhitespace;
@@ -110,6 +111,7 @@ public class Extractors
     private final LocalTimeExtractor localTime;
     private final LocalDateTimeExtractor localDateTime;
     private final DurationExtractor duration;
+    private final TextValueExtractor textValue;
 
     public Extractors( char arrayDelimiter )
     {
@@ -172,6 +174,7 @@ public class Extractors
             add( localTime = new LocalTimeExtractor() );
             add( localDateTime = new LocalDateTimeExtractor() );
             add( duration = new DurationExtractor() );
+            add( textValue = new TextValueExtractor( emptyStringsAsNull ) );
         }
         catch ( IllegalAccessException e )
         {
@@ -312,6 +315,11 @@ public class Extractors
     public DurationExtractor duration()
     {
         return duration;
+    }
+
+    public TextValueExtractor textValue()
+    {
+        return textValue;
     }
 
     private abstract static class AbstractExtractor<T> implements Extractor<T>
@@ -1200,6 +1208,46 @@ public class Extractors
         }
 
         public static final String NAME = "Duration";
+    }
+
+    public static class TextValueExtractor extends AbstractSingleValueExtractor<Value>
+    {
+        private Value value;
+        private final boolean emptyStringsAsNull;
+
+        TextValueExtractor( boolean emptyStringsAsNull )
+        {
+            super( NAME );
+            this.emptyStringsAsNull = emptyStringsAsNull;
+        }
+
+        @Override
+        protected boolean nullValue( int length, boolean hadQuotes )
+        {
+            return length == 0 && (!hadQuotes || emptyStringsAsNull);
+        }
+
+        @Override
+        protected void clear()
+        {
+            value = Values.NO_VALUE;
+        }
+
+        @Override
+        protected boolean extract0( char[] data, int offset, int length, CSVHeaderInformation optionalData )
+        {
+            // TODO: If the file format is known to be UTF8 we could create a UTF8-value directly
+            value = Values.utf8Value( new String( data, offset, length ) );
+            return true;
+        }
+
+        @Override
+        public Value value()
+        {
+            return value;
+        }
+
+        public static final String NAME = "TextValue";
     }
 
     private static final Supplier<ZoneId> inUTC = () -> UTC;

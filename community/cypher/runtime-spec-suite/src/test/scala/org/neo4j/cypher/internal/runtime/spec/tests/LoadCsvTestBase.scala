@@ -286,6 +286,84 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
       testRange.map { i => Map("p1" -> s"${testValueOffset + i}", "p2" -> s"${testValueOffset*2 + i}", "p3" -> s"${testValueOffset*3 + i}") }
   }
 
+  test("should load csv file with linenumber") {
+    // given
+    val url = singleColumnCsvFile()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projection("line[0] as x", "linenumber() as y")
+      .loadCSV(url, variableName = "line", NoHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 1) }.toArray
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should load csv file with headers and linenumber") {
+    // given
+    val url = singleColumnCsvFile(withHeaders = true)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projection("line.a as x", "linenumber() as y")
+      .loadCSV(url, variableName = "line", HasHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 2) }.toArray
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should load csv file with linenumber and file") {
+    // given
+    val url = singleColumnCsvFile()
+    val filename = url.replace("file:", "").replace("\"", "")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .projection("line[0] as x", "linenumber() as y", "file() as z")
+      .loadCSV(url, variableName = "line", NoHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 1, filename) }.toArray
+    runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
+
+  test("should load csv file with headers and linenumber and file") {
+    // given
+    val url = singleColumnCsvFile(withHeaders = true)
+    val filename = url.replace("file:", "").replace("\"", "")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .projection("line.a as x", "linenumber() as y", "file() as z")
+      .loadCSV(url, variableName = "line", HasHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 2, filename) }.toArray
+    runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
+
   test("should load csv create node with properties with periodic commit") {
     // given an empty data base
     val url = multipleColumnCsvFile(withHeaders = true)

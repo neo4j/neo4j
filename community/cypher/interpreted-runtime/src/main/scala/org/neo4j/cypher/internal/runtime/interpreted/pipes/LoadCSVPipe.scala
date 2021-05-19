@@ -28,15 +28,18 @@ import org.neo4j.cypher.internal.runtime.ArrayBackedMap
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.LoadExternalResourceException
+import org.neo4j.memory.HeapEstimator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
+
+import scala.collection.JavaConverters._
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,
@@ -46,7 +49,24 @@ case class LoadCSVPipe(source: Pipe,
                        legacyCsvQuoteEscaping: Boolean,
                        bufferSize: Int)
                       (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+  extends AbstractLoadCSVPipe(source, format, urlExpression, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) {
+
+  override final def writeRow(filename: String, linenumber: Long, last: Boolean, argumentRow: CypherRow, value: AnyValue): CypherRow = {
+    val newRow = rowFactory.copyWith(argumentRow, variable, value)
+    newRow.setLinenumber(Some(ResourceLinenumber(filename, linenumber, last)))
+    newRow
+  }
+}
+
+abstract class AbstractLoadCSVPipe(source: Pipe,
+                                   format: CSVFormat,
+                                   urlExpression: Expression,
+                                   fieldTerminator: Option[String],
+                                   legacyCsvQuoteEscaping: Boolean,
+                                   bufferSize: Int
+                                  ) extends PipeWithSource(source) {
+
+  protected def writeRow(filename: String, linenumber: Long, last: Boolean, argumentRow: CypherRow, value: AnyValue): CypherRow
 
   protected def getImportURL(urlString: String, context: QueryContext): URL = {
     val url: URL = try {
@@ -64,53 +84,52 @@ case class LoadCSVPipe(source: Pipe,
     }
   }
 
-  private def copyWithLinenumber(filename: String, linenumber: Long, last: Boolean, row: CypherRow, key: String, value: AnyValue): CypherRow = {
-    val newCtx = rowFactory.copyWith(row, key, value)
-    newCtx.setLinenumber(filename, linenumber, last)
-    newCtx
-  }
-
   //Uses an ArrayBackedMap to store header-to-values mapping
-  private class IteratorWithHeaders(headers: Seq[Value], context: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
-    private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a eq Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
-    private var nextContext: CypherRow = _
+  private class IteratorWithHeaders(headers: Seq[Value], argumentRow: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
+    private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a eq Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap,
+                                                                   nullValue = Values.NO_VALUE)
+    private val internalMapSize = ArrayBackedMap.SHALLOW_SIZE + HeapEstimator.shallowSizeOfObjectArray(headers.size)
+    private var newRow: CypherRow = _
     private var needsUpdate = true
 
     override protected[this] def closeMore(): Unit = inner.close()
 
     override def innerHasNext: Boolean = {
       if (needsUpdate) {
-        nextContext = computeNextRow()
+        newRow = computeNextRow()
         needsUpdate = false
       }
-      nextContext != null
+      newRow != null
     }
 
     override def next(): CypherRow = {
       if (!hasNext) Iterator.empty.next()
       needsUpdate = true
-      nextContext
+      newRow
     }
 
     private def computeNextRow() = {
       if (inner.hasNext) {
-        val row = inner.next().map(s => Values.ut8fOrNoValue(s))
+        val row = inner.next()
         internalMap.putValues(row.asInstanceOf[Array[AnyValue]])
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
-
-
-        val builder = new MapValueBuilder
-        for ((key, maybeNull) <- internalMap) {
-          val value = if (maybeNull == null) Values.NO_VALUE else maybeNull
-          builder.add(key, value)
+        val internalMapCopy = internalMap.copy.asJava
+        // NOTE: The header key values will be the same for every row, so we do not include it in the memory tracking payload size
+        //       since it will result in overestimation of heap usage
+        var payloadSize = 0L
+        var i = 0
+        while (i < row.length) {
+          payloadSize += row(i).estimatedHeapUsage()
+          i += 1
         }
-        copyWithLinenumber(filename, inner.lastProcessed, inner.readAll, context, variable, builder.build())
+        val mapValue = VirtualValues.fromMap(internalMapCopy, internalMapSize, payloadSize)
+        writeRow(filename, inner.lastProcessed, inner.readAll, argumentRow, mapValue)
       } else null
     }
   }
 
-  private class IteratorWithoutHeaders(context: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
+  private class IteratorWithoutHeaders(argumentRow: CypherRow, filename: String, inner: LoadCsvIterator) extends ClosingIterator[CypherRow] {
 
     override protected[this] def closeMore(): Unit = inner.close()
 
@@ -118,8 +137,8 @@ case class LoadCSVPipe(source: Pipe,
 
     override def next(): CypherRow = {
       // Make sure to pull on inner.next before calling inner.lastProcessed to get the right line number
-      val value = VirtualValues.list(inner.next().map(s => Values.ut8fOrNoValue(s)): _*)
-      copyWithLinenumber(filename, inner.lastProcessed, inner.readAll, context, variable, value)
+      val value = VirtualValues.list(inner.next().asInstanceOf[Array[AnyValue]]: _*)
+      writeRow(filename, inner.lastProcessed, inner.readAll, argumentRow, value)
     }
   }
 
@@ -130,17 +149,17 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
-    input.flatMap(context => {
-      val urlString: TextValue = urlExpression(context, state).asInstanceOf[TextValue]
+    input.flatMap(row => {
+      val urlString: TextValue = urlExpression(row, state).asInstanceOf[TextValue]
       val url = getImportURL(urlString.stringValue(), state.query)
 
       format match {
         case HasHeaders =>
           val iterator = getLoadCSVIterator(state, url, useHeaders = true)
-          val headers = if (iterator.nonEmpty) iterator.next().map(s => Values.ut8fOrNoValue(s)).toIndexedSeq else IndexedSeq.empty // First row is headers
-          new IteratorWithHeaders(headers, context, url.getFile, iterator)
+          val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
+          new IteratorWithHeaders(headers, row, url.getFile, iterator)
         case NoHeaders =>
-          new IteratorWithoutHeaders(context, url.getFile, getLoadCSVIterator(state, url, useHeaders = false))
+          new IteratorWithoutHeaders(row, url.getFile, getLoadCSVIterator(state, url, useHeaders = false))
       }
     })
   }

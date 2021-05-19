@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class ArrayBackedMapTest extends CypherFunSuite {
 
   test("updating and getting") {
-    val map = ArrayBackedMap.apply[String, String]("name", "id")
+    val map = ArrayBackedMap.apply[String, String]("name", "id")()
     map.putValues(Array("neo", "123"))
 
     map.get("name") should equal(Some("neo"))
@@ -33,7 +33,7 @@ class ArrayBackedMapTest extends CypherFunSuite {
   }
 
   test("+ operator with existing key") {
-    val map = ArrayBackedMap.apply[String, String]("name", "id")
+    val map = ArrayBackedMap.apply[String, String]("name", "id")()
     map.putValues(Array("neo", "123"))
     val updatedMap = map + ("name" -> "oen")
 
@@ -44,7 +44,7 @@ class ArrayBackedMapTest extends CypherFunSuite {
   }
 
   test("+ operator with non-existing key") {
-    val map = ArrayBackedMap.apply[String, String]("name", "id")
+    val map = ArrayBackedMap.apply[String, String]("name", "id")()
     map.putValues(Array("neo", "123"))
     val updatedMap = map + ("age" -> "35")
 
@@ -58,7 +58,7 @@ class ArrayBackedMapTest extends CypherFunSuite {
   }
 
   test("- operator on existing key") {
-    val map = ArrayBackedMap.apply[String, String]("name", "id")
+    val map = ArrayBackedMap.apply[String, String]("name", "id")()
     map.putValues(Array("neo", "123"))
     val updatedMap = map - "name"
 
@@ -69,13 +69,13 @@ class ArrayBackedMapTest extends CypherFunSuite {
   }
 
   test("iterating over map") {
-    val map = ArrayBackedMap.apply[String, String]("name", "id")
+    val map = ArrayBackedMap.apply[String, String]("name", "id")()
     map.putValues(Array("neo", "123"))
     map.iterator.toSet should equal(Set(("name", "neo"), ("id", "123")))
   }
 
   test("support one null key") {
-    val map = ArrayBackedMap.apply[String, String]("name", null)
+    val map = ArrayBackedMap.apply[String, String]("name", null)()
     map.putValues(Array("neo", "123"))
 
     map.get("name") should equal(Some("neo"))
@@ -83,7 +83,7 @@ class ArrayBackedMapTest extends CypherFunSuite {
   }
 
   test("support for null values") {
-    val map = ArrayBackedMap.apply[String, String]("a", "b", "c")
+    val map = ArrayBackedMap.apply[String, String]("a", "b", "c")()
     map.putValues(Array(null, "123", null))
 
     map.get("a") should equal(Some(null))
@@ -91,8 +91,26 @@ class ArrayBackedMapTest extends CypherFunSuite {
     map.get("c") should equal(Some(null))
   }
 
+  test("support for missing values as null") {
+    val map = ArrayBackedMap.apply[String, String]("a", "b", "c")()
+    map.putValues(Array("123"))
+
+    map.get("a") should equal(Some("123"))
+    map.get("b") should equal(Some(null))
+    map.get("c") should equal(Some(null))
+  }
+
+  test("support for missing values as null with given nullValue") {
+    val map = ArrayBackedMap.apply[String, String]("a", "b", "c")(nullValue = "<null>")
+    map.putValues(Array("123"))
+
+    map.get("a") should equal(Some("123"))
+    map.get("b") should equal(Some("<null>"))
+    map.get("c") should equal(Some("<null>"))
+  }
+
   test("support one null key mapped to null value") {
-    val map = ArrayBackedMap.apply[String, String]("name", null)
+    val map = ArrayBackedMap.apply[String, String]("name", null)()
     map.putValues(Array("neo", null))
 
     map.get("name") should equal(Some("neo"))
@@ -100,7 +118,7 @@ class ArrayBackedMapTest extends CypherFunSuite {
   }
 
   test("having multiple nulls means that the last null is mapped") {
-    val map = ArrayBackedMap.apply[String, String](null, null, null)
+    val map = ArrayBackedMap.apply[String, String](null, null, null)()
     map.putValues(Array("v1", "v2", "v3"))
 
     map.get(null) should equal(Some("v3"))
