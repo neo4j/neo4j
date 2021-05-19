@@ -117,7 +117,7 @@ public class SchemaStorage35 implements SchemaStorage
                                 Collection<DynamicRecord> records;
                                 try
                                 {
-                                    records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, cursorContext );
+                                    records = schemaStore.getRecords( id, RecordLoad.NORMAL, false, cursor );
                                 }
                                 catch ( InvalidRecordException e )
                                 {

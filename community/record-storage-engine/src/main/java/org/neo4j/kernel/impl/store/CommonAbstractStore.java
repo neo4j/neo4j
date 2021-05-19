@@ -972,15 +972,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, CursorContext cursorContext )
+    public List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor )
     {
         ArrayList<RECORD> list = new ArrayList<>();
-        streamRecords( firstId, mode, guardForCycles, cursorContext, list::add );
+        streamRecords( firstId, mode, guardForCycles, pageCursor, list::add );
         return list;
     }
 
     @Override
-    public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, CursorContext cursorContext, RecordSubscriber<RECORD> subscriber )
+    public void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursor cursor, RecordSubscriber<RECORD> subscriber )
     {
         if ( Record.NULL_REFERENCE.is( firstId ) )
         {
@@ -989,26 +989,23 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
 
         long id = firstId;
-        try ( PageCursor cursor = openPageCursorForReading( firstId, cursorContext ) )
+        RECORD record;
+        do
         {
-            RECORD record;
-            do
+            record = newRecord();
+            if ( cycleGuard.test( id ) )
             {
-                record = newRecord();
-                if ( cycleGuard.test( id ) )
-                {
-                    throw newCycleDetectedException( firstId, id, record );
-                }
-                getRecordByCursor( id, record, mode, cursor );
-                // Even unused records gets added and returned
-                if ( !subscriber.onRecord( record ) )
-                {
-                    return;
-                }
-                id = recordFormat.getNextRecordReference( record );
+                throw newCycleDetectedException( firstId, id, record );
             }
-            while ( !Record.NULL_REFERENCE.is( id ) );
+            getRecordByCursor( id, record, mode, cursor );
+            // Even unused records gets added and returned
+            if ( !subscriber.onRecord( record ) )
+            {
+                return;
+            }
+            id = recordFormat.getNextRecordReference( record );
         }
+        while ( !Record.NULL_REFERENCE.is( id ) );
     }
 
     private static LongPredicate createRecordCycleGuard()

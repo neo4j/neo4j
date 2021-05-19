@@ -170,7 +170,10 @@ public abstract class TokenStore<RECORD extends TokenRecord>
 
         // Guard for cycles in the name chain, since this might be called by the consistency checker on an inconsistent store.
         // This will throw an exception if there's a cycle, and we'll just ignore those tokens at this point.
-        record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true, cursorContext ) );
+        try ( var cursor = nameStore.openPageCursorForReading( 0, cursorContext ) )
+        {
+            record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true, cursor ) );
+        }
     }
 
     public String getStringFor( RECORD nameRecord, CursorContext cursorContext )

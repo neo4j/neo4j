@@ -106,8 +106,11 @@ class TestDynamicStore
         neoStores.close();
         neoStores = null;
 
-        assertThrows( RuntimeException.class, () -> store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL ) );
-        assertThrows( RuntimeException.class, () -> store.getRecords( 0, NORMAL, false, NULL ) );
+        try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            assertThrows( RuntimeException.class, () -> store.getArrayFor( store.getRecords( blockId, NORMAL, false, storeCursor ), NULL ) );
+            assertThrows( RuntimeException.class, () -> store.getRecords( 0, NORMAL, false, storeCursor ) );
+        }
     }
 
     @Test
@@ -144,10 +147,14 @@ class TestDynamicStore
             if ( rIndex < deleteIndex && currentCount > 0 )
             {
                 long blockId = idsTaken.remove( random.nextInt( currentCount ) );
-                store.getRecords( blockId, NORMAL, false, NULL );
-                byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL );
-                validateData( bytes, byteData.remove( blockId ) );
-                Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false, NULL );
+                Collection<DynamicRecord> records;
+                try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+                {
+                    store.getRecords( blockId, NORMAL, false, cursor );
+                    byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, cursor ), NULL );
+                    validateData( bytes, byteData.remove( blockId ) );
+                    records = store.getRecords( blockId, NORMAL, false, cursor );
+                }
                 for ( DynamicRecord record : records )
                 {
                     record.setInUse( false );
@@ -217,11 +224,18 @@ class TestDynamicStore
         DynamicArrayStore store = createDynamicArrayStore();
         byte[] emptyToWrite = createBytes( 0 );
         long blockId = create( store, emptyToWrite );
-        store.getRecords( blockId, NORMAL, false, NULL );
-        byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL );
-        assertEquals( 0, bytes.length );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            store.getRecords( blockId, NORMAL, false, cursor );
+            byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, cursor ), NULL );
+            assertEquals( 0, bytes.length );
+        }
 
-        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false, NULL );
+        Collection<DynamicRecord> records;
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            records = store.getRecords( blockId, NORMAL, false, cursor );
+        }
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );
@@ -234,11 +248,18 @@ class TestDynamicStore
     {
         DynamicArrayStore store = createDynamicArrayStore();
         long blockId = create( store, new String[0] );
-        store.getRecords( blockId, NORMAL, false, NULL );
-        String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, NULL ), NULL );
-        assertEquals( 0, readBack.length );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            store.getRecords( blockId, NORMAL, false, cursor );
+            String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false, cursor ), NULL );
+            assertEquals( 0, readBack.length );
+        }
 
-        Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false, NULL );
+        Collection<DynamicRecord> records;
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            records = store.getRecords( blockId, NORMAL, false, cursor );
+        }
         for ( DynamicRecord record : records )
         {
             record.setInUse( false );
@@ -259,9 +280,12 @@ class TestDynamicStore
         secondLastRecord.setNextBlock( secondLastId );
         records.forEach( record -> store.updateRecord( record, NULL ) );
 
-        var e = assertThrows( RecordChainCycleDetectedException.class, () -> store.getRecords( firstId, NORMAL, true, NULL ) );
-        String message = e.getMessage();
-        assertThat( message ).contains( "" + firstId );
-        assertThat( message ).contains( "" + secondLastRecord.getId() );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            var e = assertThrows( RecordChainCycleDetectedException.class, () -> store.getRecords( firstId, NORMAL, true, cursor ) );
+            String message = e.getMessage();
+            assertThat( message ).contains( "" + firstId );
+            assertThat( message ).contains( "" + secondLastRecord.getId() );
+        }
     }
 }

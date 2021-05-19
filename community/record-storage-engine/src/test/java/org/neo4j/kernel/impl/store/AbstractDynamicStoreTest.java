@@ -162,14 +162,17 @@ class AbstractDynamicStoreTest
             second.setNextBlock( third.getId() );
             store.updateRecord( second, NULL );
 
-            Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL, false, NULL ).iterator();
-            assertTrue( records.hasNext() );
-            assertEquals( first, records.next() );
-            assertTrue( records.hasNext() );
-            assertEquals( second, records.next() );
-            assertTrue( records.hasNext() );
-            assertEquals( third, records.next() );
-            assertFalse( records.hasNext() );
+            try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
+            {
+                Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL, false, storeCursor ).iterator();
+                assertTrue( records.hasNext() );
+                assertEquals( first, records.next() );
+                assertTrue( records.hasNext() );
+                assertEquals( second, records.next() );
+                assertTrue( records.hasNext() );
+                assertEquals( third, records.next() );
+                assertFalse( records.hasNext() );
+            }
         }
     }
 
@@ -190,17 +193,20 @@ class AbstractDynamicStoreTest
             second.setInUse( false );
             store.updateRecord( second, NULL );
 
-            Iterator<DynamicRecord> records = store.getRecords( 1, FORCE, false, NULL ).iterator();
-            assertTrue( records.hasNext() );
-            assertEquals( first, records.next() );
-            assertTrue( records.hasNext() );
-            DynamicRecord secondReadRecord = records.next();
-            assertEquals( second, secondReadRecord );
-            assertFalse( secondReadRecord.inUse() );
-            // because mode == FORCE we can still move through the chain
-            assertTrue( records.hasNext() );
-            assertEquals( third, records.next() );
-            assertFalse( records.hasNext() );
+            try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
+            {
+                Iterator<DynamicRecord> records = store.getRecords( 1, FORCE, false, storeCursor ).iterator();
+                assertTrue( records.hasNext() );
+                assertEquals( first, records.next() );
+                assertTrue( records.hasNext() );
+                DynamicRecord secondReadRecord = records.next();
+                assertEquals( second, secondReadRecord );
+                assertFalse( secondReadRecord.inUse() );
+                // because mode == FORCE we can still move through the chain
+                assertTrue( records.hasNext() );
+                assertEquals( third, records.next() );
+                assertFalse( records.hasNext() );
+            }
         }
     }
 

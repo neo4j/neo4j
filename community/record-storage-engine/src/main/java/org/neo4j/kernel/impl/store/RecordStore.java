@@ -175,11 +175,11 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
      * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
      * A cycle would only occur if the store is inconsistent, though.
-     * @param cursorContext underlying page cursor context
+     * @param pageCursor page cursor to be used for record reading
      * @return {@link Collection} of records in the loaded chain.
      * @throws InvalidRecordException if some record not in use and the {@code mode} is allows for throwing.
      */
-    List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, CursorContext cursorContext ) throws InvalidRecordException;
+    List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor ) throws InvalidRecordException;
 
     /**
      * Streams records that belong together, a chain of records that as a whole forms the entirety of a data item.
@@ -190,10 +190,10 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
      * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
      * A cycle would only occur if the store is inconsistent, though.
-     * @param cursorContext underlying page cursor context
+     * @param pageCursor page cursor to be used for record reading
      * @param subscriber The subscriber of the data, will receive records until the subscriber returns <code>false</code>
      */
-    void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, CursorContext cursorContext,
+    void streamRecords( long firstId, RecordLoad mode, boolean guardForCycles, PageCursor pageCursor,
                         RecordSubscriber<RECORD> subscriber );
 
     /**

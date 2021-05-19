@@ -74,7 +74,10 @@ public class DynamicNodeLabels implements NodeLabels
         if ( node.isLight() )
         {
             //dynamic records not there, stream the result from the dynamic label store
-            dynamicLabelStore.streamRecords( firstDynamicLabelRecordId( node.getLabelField() ), RecordLoad.NORMAL, false, cursorContext, subscriber );
+            try ( var dynamicCursor = dynamicLabelStore.openPageCursorForReading( 0, cursorContext ) )
+            {
+                dynamicLabelStore.streamRecords( firstDynamicLabelRecordId( node.getLabelField() ), RecordLoad.NORMAL, false, dynamicCursor, subscriber );
+            }
         }
         else
         {
@@ -189,11 +192,6 @@ public class DynamicNodeLabels implements NodeLabels
             }
         }
         return existingRecords;
-    }
-
-    public long getFirstDynamicRecordId()
-    {
-        return firstDynamicLabelRecordId( node.getLabelField() );
     }
 
     public static long dynamicPointer( Collection<DynamicRecord> newRecords )

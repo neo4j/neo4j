@@ -101,9 +101,9 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         }
 
         // Load any dynamic labels and populate the node record
-        try
+        try ( var dynamicCursor = dynamicLabelStore.openPageCursorForReading( 0, cursorContext ) )
         {
-            node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, cursorContext ) );
+            node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, dynamicCursor ) );
         }
         catch ( InvalidRecordException e )
         {

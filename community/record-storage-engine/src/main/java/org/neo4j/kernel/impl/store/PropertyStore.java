@@ -269,12 +269,15 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType( type );
         if ( dynamicStore != null )
         {
-            List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL, false, cursorContext );
-            for ( DynamicRecord dynamicRecord : dynamicRecords )
+            try ( var dynamicCursor = dynamicStore.openPageCursorForReading( 0, cursorContext ) )
             {
-                dynamicRecord.setType( type.intValue() );
+                List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL, false, dynamicCursor );
+                for ( DynamicRecord dynamicRecord : dynamicRecords )
+                {
+                    dynamicRecord.setType( type.intValue() );
+                }
+                block.setValueRecords( dynamicRecords );
             }
-            block.setValueRecords( dynamicRecords );
         }
     }
 
