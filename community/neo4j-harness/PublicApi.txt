@@ -42,11 +42,13 @@ org.neo4j.harness.internal.InProcessNeo4j::httpURI() java.net.URI public
 org.neo4j.harness.internal.InProcessNeo4j::httpsURI() java.net.URI public
 org.neo4j.harness.internal.InProcessNeo4j::printLogs(java.io.PrintStream) void public
 org.neo4j.harness.internal.InProcessNeo4j::start() void public
-org.neo4j.harness.junit.extension.Neo4jExtension public class extends java.lang.Object implements org.junit.jupiter.api.extension.BeforeAllCallback, org.junit.jupiter.api.extension.AfterAllCallback, org.junit.jupiter.api.extension.ParameterResolver
+org.neo4j.harness.junit.extension.Neo4jExtension public class extends java.lang.Object implements org.junit.jupiter.api.extension.BeforeAllCallback, org.junit.jupiter.api.extension.AfterAllCallback, org.junit.jupiter.api.extension.BeforeEachCallback, org.junit.jupiter.api.extension.AfterEachCallback, org.junit.jupiter.api.extension.ParameterResolver
 org.neo4j.harness.junit.extension.Neo4jExtension::Neo4jExtension() void public
 org.neo4j.harness.junit.extension.Neo4jExtension::Neo4jExtension(org.neo4j.harness.Neo4jBuilder) void protected
 org.neo4j.harness.junit.extension.Neo4jExtension::afterAll(org.junit.jupiter.api.extension.ExtensionContext) void public
+org.neo4j.harness.junit.extension.Neo4jExtension::afterEach(org.junit.jupiter.api.extension.ExtensionContext) void public throws java.lang.Exception
 org.neo4j.harness.junit.extension.Neo4jExtension::beforeAll(org.junit.jupiter.api.extension.ExtensionContext) void public
+org.neo4j.harness.junit.extension.Neo4jExtension::beforeEach(org.junit.jupiter.api.extension.ExtensionContext) void public throws java.lang.Exception
 org.neo4j.harness.junit.extension.Neo4jExtension::builder() org.neo4j.harness.junit.extension.Neo4jExtensionBuilder public static
 org.neo4j.harness.junit.extension.Neo4jExtension::resolveParameter(org.junit.jupiter.api.extension.ParameterContext, org.junit.jupiter.api.extension.ExtensionContext) java.lang.Object public throws org.junit.jupiter.api.extension.ParameterResolutionException
 org.neo4j.harness.junit.extension.Neo4jExtension::supportsParameter(org.junit.jupiter.api.extension.ParameterContext, org.junit.jupiter.api.extension.ExtensionContext) boolean public throws org.junit.jupiter.api.extension.ParameterResolutionException

@@ -20,7 +20,9 @@
 package org.neo4j.harness.junit.extension;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -54,25 +56,43 @@ import org.neo4j.harness.internal.InProcessNeo4j;
  * Usage example:
  * <pre>
  *  <code>
- *    {@literal @}ExtendWith( Neo4jExtension.class )
- *     class TestExample {
- *            {@literal @}Test
- *             void testExample( Neo4j neo4j, GraphDatabaseService databaseService )
- *             {
- *                 // test code
- *             }
- *    }
+ *  {@literal @}ExtendWith( Neo4jExtension.class )
+ *       class TestExample {
+ *              {@literal @}Test
+ *               void testExample( Neo4j neo4j, GraphDatabaseService databaseService ) {
+ *                   // test code
+ *               }
+ *       }
+ *  </code>
+ * </pre>
+ * The extension follows the lifecycle of junit 5. If you define the extension with {@link ExtendWith} on the test class or {@link RegisterExtension}
+ * on a static field, the neo4j instance will start before any tests are executed, and stop after the last test finishes. If you define the
+ * extension with {@link RegisterExtension} on a non-static field, there will be a new instance per test method.
+ * <p>
+ * Example with per method instances:
+ * <pre>
+ *  <code>
+ *  {@literal @}TestInstance( TestInstance.Lifecycle.PER_METHOD ) // This is default, just there for clarity
+ *       class TestExample {
+ *             {@literal @}RegisterExtension
+ *              Neo4jExtension extension = Neo4jExtension.builder().build();
  *
+ *             {@literal @}Test
+ *              void testExample( Neo4j neo4j, GraphDatabaseService databaseService ) {
+ *                  // test code
+ *              }
+ *       }
  *  </code>
  * </pre>
  */
 @PublicApi
-public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, ParameterResolver
+public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver
 {
     private static final String NEO4J_NAMESPACE = "neo4j-extension";
     private static final Namespace NAMESPACE = Namespace.create( NEO4J_NAMESPACE );
 
-    private Neo4jBuilder builder;
+    private final Neo4jBuilder builder;
+    private boolean perMethod;
 
     public static Neo4jExtensionBuilder builder()
     {
@@ -92,22 +112,32 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Para
     @Override
     public void beforeAll( ExtensionContext context )
     {
-        Neo4j neo = builder.build();
-        DatabaseManagementService managementService = neo.databaseManagementService();
-        GraphDatabaseService service = neo.defaultDatabaseService();
-        context.getStore( NAMESPACE ).put( Neo4j.class, neo );
-        context.getStore( NAMESPACE ).put( DatabaseManagementService.class, managementService );
-        context.getStore( NAMESPACE ).put( GraphDatabaseService.class, service );
+        instantiateService( context );
     }
 
     @Override
     public void afterAll( ExtensionContext context )
     {
-        ExtensionContext.Store store = context.getStore( NAMESPACE );
-        store.remove( GraphDatabaseService.class );
-        store.remove( DatabaseManagementService.class );
-        InProcessNeo4j controls = store.remove( Neo4j.class, InProcessNeo4j.class );
-        controls.close();
+        destroyService( context );
+    }
+
+    @Override
+    public void beforeEach( ExtensionContext context ) throws Exception
+    {
+        if ( context.getStore( NAMESPACE ).get( Neo4j.class ) == null )
+        {
+            perMethod = true;
+            instantiateService( context );
+        }
+    }
+
+    @Override
+    public void afterEach( ExtensionContext extensionContext ) throws Exception
+    {
+        if ( perMethod )
+        {
+            destroyService( extensionContext );
+        }
     }
 
     @Override
@@ -122,5 +152,24 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Para
     {
         Class<?> paramType = parameterContext.getParameter().getType();
         return extensionContext.getStore( NAMESPACE ).get( paramType, paramType );
+    }
+
+    private void instantiateService( ExtensionContext context )
+    {
+        Neo4j neo = builder.build();
+        DatabaseManagementService managementService = neo.databaseManagementService();
+        GraphDatabaseService service = neo.defaultDatabaseService();
+        context.getStore( NAMESPACE ).put( Neo4j.class, neo );
+        context.getStore( NAMESPACE ).put( DatabaseManagementService.class, managementService );
+        context.getStore( NAMESPACE ).put( GraphDatabaseService.class, service );
+    }
+
+    private static void destroyService( ExtensionContext context )
+    {
+        ExtensionContext.Store store = context.getStore( NAMESPACE );
+        store.remove( GraphDatabaseService.class );
+        store.remove( DatabaseManagementService.class );
+        InProcessNeo4j controls = store.remove( Neo4j.class, InProcessNeo4j.class );
+        controls.close();
     }
 }
