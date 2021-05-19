@@ -33,12 +33,15 @@ import org.neo4j.cli.AdminTool;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_VERSION;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_VENDOR;
+import static org.neo4j.server.startup.Neo4jCommandTestBase.isCurrentlyRunningAsWindowsAdmin;
 
 /**
  * This test class just verifies that the Neo4jAdminCommand is correctly invoking AdminTool
@@ -150,6 +153,12 @@ class Neo4jAdminCommandTest
         @Test
         void shouldHandleExpandCommandsAndPassItThrough()
         {
+            if ( IS_OS_WINDOWS )
+            {
+                // This cannot run on Windows if the user is running as elevated to admin rights since this creates a scenario
+                // where it's essentially impossible to create correct ACL/owner of the config file that passes the validation in the config reading.
+                assumeThat( isCurrentlyRunningAsWindowsAdmin() ).isFalse();
+            }
             addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
             assertThat( execute( List.of( "foo", "-b", "--expand-commands" ), Map.of() ) ).isEqualTo( 0 );
             assertThat( out.toString() ).containsSubsequence( "foo", "-b", "--expand-commands" );
