@@ -82,21 +82,9 @@ object Deprecations {
     f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
 
   // Deprecated in 4.x
-  case object V1 extends Deprecations {
-    val functionRenames: Map[String, String] =
-      TreeMap(
-        // put any V1 deprecation here as
-        // "old name" -> "new name"
-      )(CaseInsensitiveOrdered)
+  case object deprecatedFeaturesIn4_X extends Deprecations {
 
     override val find: PartialFunction[Any, Deprecation] = {
-
-      // straight renames
-      case f@FunctionInvocation(_, FunctionName(name), _, _) if functionRenames.contains(name) =>
-        Deprecation(
-          () => renameFunctionTo(functionRenames(name))(f),
-          () => Some(DeprecatedFunctionNotification(f.position, name, functionRenames(name)))
-        )
 
       // old octal literal syntax
       case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(1) != 'o' =>
@@ -260,16 +248,13 @@ object Deprecations {
     }
   }
 
-  case object V2 extends Deprecations {
-    override val find: PartialFunction[Any, Deprecation] = V1.find
-  }
-
-  case object deprecatedFeaturesIn4_3AfterRewrite extends Deprecations {
+  // Deprecated in 4.x
+  case object deprecatedFeaturesIn4_XAfterRewrite extends Deprecations {
     override def find: PartialFunction[Any, Deprecation] = PartialFunction.empty
 
     override def findWithContext(statement: Statement, semanticTable: Option[SemanticTable]): Set[Deprecation] = {
       val deprecationsOfPatternExpressionsOutsideExists = statement.treeFold[Set[Deprecation]](Set.empty) {
-        case FunctionInvocation(_, FunctionName(name), _, _) if name.toLowerCase.equals("exists") =>
+        case Exists(_) =>
           // Don't look inside exists()
           deprecations => SkipChildren(deprecations)
 
@@ -300,8 +285,8 @@ object Deprecations {
     }
   }
 
-  // This is functionality that has been removed in an earlier version of 4.x but still should work (but be deprecated) when using CYPHER 3.5
-  case object removedFeaturesIn4_x extends Deprecations {
+  // This is functionality that has been removed in 4.0 but still should work (but be deprecated) when using CYPHER 3.5
+  case object removedFeaturesIn4_0 extends Deprecations {
     val removedFunctionsRenames: Map[String, String] =
       TreeMap(
         "toInt" -> "toInteger",
@@ -353,21 +338,6 @@ object Deprecations {
         Deprecation(
           () => p.copy(legacyTypeSeparator = false)(p.position),
           () => Some(DeprecatedRelTypeSeparatorNotification(p.position))
-        )
-    }
-  }
-
-  // This is functionality that has been removed in 4.3 but still should work (but be deprecated) when using CYPHER 3.5 or CYPHER 4.2
-  case object removedFeaturesIn4_3 extends Deprecations {
-    val removedFunctionsRenames: Map[String, String] =
-      TreeMap()(CaseInsensitiveOrdered)
-
-    override def find: PartialFunction[Any, Deprecation] = {
-
-      case f@FunctionInvocation(_, FunctionName(name), _, _) if removedFunctionsRenames.contains(name) =>
-        Deprecation(
-          () => renameFunctionTo(removedFunctionsRenames(name))(f),
-          () => Some(DeprecatedFunctionNotification(f.position, name, removedFunctionsRenames(name)))
         )
     }
   }

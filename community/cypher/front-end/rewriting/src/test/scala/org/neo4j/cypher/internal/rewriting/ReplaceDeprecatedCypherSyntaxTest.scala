@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceDeprecatedCypherSyntax
 import org.neo4j.cypher.internal.util.InputPosition
@@ -25,24 +24,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val rewriter = replaceDeprecatedCypherSyntax(Deprecations.V1)
-  private val deprecatedNameMap = Deprecations.V1.functionRenames
-
-  test("should rewrite deprecated names regardless of casing") {
-    for ((oldName, newName) <- deprecatedNameMap ) {
-      rewriter(function(oldName, varFor("arg"))) should equal(function(oldName, varFor("arg")).copy(functionName = FunctionName(newName)(pos))(pos))
-      rewriter(function(oldName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(oldName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-    }
-  }
-
-  test("should not touch new names of regardless of casing") {
-    for (newName <- deprecatedNameMap.values ) {
-      rewriter(function(newName, varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(newName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-      rewriter(function(newName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
-    }
-  }
+  private val rewriter = replaceDeprecatedCypherSyntax(Deprecations.deprecatedFeaturesIn4_X)
 
   test("should rewrite timestamp()") {
     val before = function("timestamp")
