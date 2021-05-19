@@ -28,12 +28,13 @@ import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BookmarksParser;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.messaging.MessageProcessingHandler;
 import org.neo4j.bolt.v3.messaging.ResultHandler;
-import org.neo4j.bolt.v3.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.GoodbyeMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoder;
+import org.neo4j.bolt.v3.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RollbackMessageDecoder;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -41,10 +42,10 @@ import org.neo4j.logging.internal.LogService;
 public class BoltRequestMessageReaderV4 extends BoltRequestMessageReader
 {
     public BoltRequestMessageReaderV4( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
-            LogService logService )
+                                       ChannelProtector channelProtector, LogService logService )
     {
         super( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
-                buildDecoders( connection, responseMessageWriter, bookmarksParser, logService ) );
+               buildDecoders( connection, responseMessageWriter, bookmarksParser, logService ), channelProtector );
     }
 
     private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,

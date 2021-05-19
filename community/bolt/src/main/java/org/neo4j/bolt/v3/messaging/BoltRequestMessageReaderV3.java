@@ -27,13 +27,14 @@ import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v3.messaging.decoder.DiscardAllMessageDecoder;
-import org.neo4j.bolt.v3.messaging.decoder.PullAllMessageDecoder;
-import org.neo4j.bolt.v3.messaging.decoder.ResetMessageDecoder;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;
+import org.neo4j.bolt.v3.messaging.decoder.DiscardAllMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.GoodbyeMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoder;
+import org.neo4j.bolt.v3.messaging.decoder.PullAllMessageDecoder;
+import org.neo4j.bolt.v3.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RollbackMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder;
 import org.neo4j.logging.Log;
@@ -41,11 +42,11 @@ import org.neo4j.logging.internal.LogService;
 
 public class BoltRequestMessageReaderV3 extends BoltRequestMessageReader
 {
-    public BoltRequestMessageReaderV3( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
-            LogService logService )
+    public BoltRequestMessageReaderV3( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, ChannelProtector channelProtector,
+                                       LogService logService )
     {
         super( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
-                buildDecoders( connection, responseMessageWriter, logService ) );
+               buildDecoders( connection, responseMessageWriter, logService ), channelProtector );
     }
 
     private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,

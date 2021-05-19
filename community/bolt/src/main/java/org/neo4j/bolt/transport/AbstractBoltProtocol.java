@@ -31,6 +31,7 @@ import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
@@ -46,20 +47,21 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     private final BoltChannel channel;
     private final LogService logging;
     private final TransportThrottleGroup throttleGroup;
+    private final ChannelProtector channelProtector;
 
     private final BoltStateMachineFactory stateMachineFactory;
     private final BoltConnectionFactory connectionFactory;
     private final BookmarksParser bookmarksParser;
 
     public AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, LogService logging, TransportThrottleGroup throttleGroup )
+            BoltStateMachineFactory stateMachineFactory, LogService logging, TransportThrottleGroup throttleGroup, ChannelProtector channelProtector )
     {
-        this( channel, connectionFactory, stateMachineFactory, BookmarksParserV3.INSTANCE, logging, throttleGroup );
+        this( channel, connectionFactory, stateMachineFactory, BookmarksParserV3.INSTANCE, logging, throttleGroup, channelProtector );
     }
 
     protected AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, BookmarksParser bookmarksParser, LogService logging,
-            TransportThrottleGroup throttleGroup )
+                                    BoltStateMachineFactory stateMachineFactory, BookmarksParser bookmarksParser, LogService logging,
+                                    TransportThrottleGroup throttleGroup, ChannelProtector channelProtector )
     {
         this.channel = channel;
         this.logging = logging;
@@ -67,6 +69,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         this.stateMachineFactory = stateMachineFactory;
         this.connectionFactory = connectionFactory;
         this.bookmarksParser = bookmarksParser;
+        this.channelProtector = channelProtector;
     }
 
     /**
@@ -80,7 +83,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         var messageWriter = createMessageWriter( neo4jPack, logging );
 
         var connection = connectionFactory.newConnection( channel, stateMachine, messageWriter );
-        var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging );
+        var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging, channelProtector );
 
         channel.installBoltProtocol(
                 new ChunkDecoder(),
@@ -97,7 +100,8 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     protected abstract Neo4jPack createPack();
 
     protected abstract BoltRequestMessageReader createMessageReader( BoltConnection connection,
-            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging );
+                                                                     BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser,
+                                                                     LogService logging, ChannelProtector channelProtector );
 
     protected abstract BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack,
             LogService logging );

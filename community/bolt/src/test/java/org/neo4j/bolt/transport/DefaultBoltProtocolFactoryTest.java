@@ -35,6 +35,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
@@ -58,10 +59,10 @@ class DefaultBoltProtocolFactoryTest
         BoltChannel channel = newTestBoltChannel();
         BoltProtocolFactory factory =
                 new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT,
-                        mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
+                                                NullLogService.getInstance(), new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT,
+                                                mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
 
-        BoltProtocol protocol = factory.create( new BoltProtocolVersion( protocolVersion, 0 ), channel );
+        BoltProtocol protocol = factory.create( new BoltProtocolVersion( protocolVersion, 0 ), channel, mock( ChannelProtector.class ) );
         // handler is not created
         assertNull( protocol );
     }
@@ -77,6 +78,9 @@ class DefaultBoltProtocolFactoryTest
         BoltStateMachineFactory stateMachineFactory = mock( BoltStateMachineFactory.class );
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         when( stateMachineFactory.newStateMachine( boltProtocolVersion, boltChannel ) ).thenReturn( stateMachine );
+        var channelProtector = mock( ChannelProtector.class );
+
+        when( stateMachineFactory.newStateMachine( boltProtocolVersion, boltChannel ) ).thenReturn( stateMachine );
 
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
         BoltConnection connection = mock( BoltConnection.class );
@@ -88,7 +92,7 @@ class DefaultBoltProtocolFactoryTest
                         new TestDatabaseIdRepository(), CustomBookmarkFormatParser.DEFAULT,
                         mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO );
 
-        BoltProtocol protocol = factory.create( boltProtocolVersion, boltChannel );
+        BoltProtocol protocol = factory.create( boltProtocolVersion, boltChannel, channelProtector );
 
         protocol.install();
 

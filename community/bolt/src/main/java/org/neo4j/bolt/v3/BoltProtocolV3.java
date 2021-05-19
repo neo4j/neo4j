@@ -31,6 +31,7 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.logging.internal.LogService;
@@ -43,9 +44,9 @@ public class BoltProtocolV3 extends AbstractBoltProtocol
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 3, 0 );
 
     public BoltProtocolV3( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, LogService logging, TransportThrottleGroup throttleGroup )
+            BoltStateMachineFactory stateMachineFactory, LogService logging, TransportThrottleGroup throttleGroup, ChannelProtector channelProtector )
     {
-        super( channel, connectionFactory, stateMachineFactory, logging, throttleGroup );
+        super( channel, connectionFactory, stateMachineFactory, logging, throttleGroup, channelProtector );
     }
 
     @Override
@@ -62,9 +63,9 @@ public class BoltProtocolV3 extends AbstractBoltProtocol
 
     @Override
     protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
-            BoltResponseMessageWriter messageWriter, BookmarksParser parser, LogService logging )
+            BoltResponseMessageWriter messageWriter, BookmarksParser parser, LogService logging, ChannelProtector channelProtector )
     {
-        return new BoltRequestMessageReaderV3( connection, messageWriter, logging );
+        return new BoltRequestMessageReaderV3( connection, messageWriter, channelProtector, logging );
     }
 
     @Override

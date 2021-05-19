@@ -22,6 +22,7 @@ package org.neo4j.bolt.transport;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
 import org.neo4j.bolt.BoltProtocolVersion;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 
 /**
  * Represents a component that instantiates Bolt protocol handlers.
@@ -39,5 +40,5 @@ public interface BoltProtocolFactory
      * @param channel the channel representing network connection from the client.
      * @return new protocol handler when given protocol version is known and valid, {@code null} otherwise.
      */
-    BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel );
+    BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel, ChannelProtector channelProtector );
 }

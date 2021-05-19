@@ -29,6 +29,7 @@ import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
@@ -68,7 +69,7 @@ class BoltProtocolV4Test
                 createProtocolV4();
 
         assertThat( protocolV4.createMessageReader( mock( BoltConnection.class ), mock( BoltResponseMessageWriter.class ),
-                bookmarksParser, NullLogService.getInstance() ) ).isInstanceOf( BoltRequestMessageReaderV4.class );
+                bookmarksParser, NullLogService.getInstance(), mock( ChannelProtector.class ) ) ).isInstanceOf( BoltRequestMessageReaderV4.class );
     }
 
     @Test
@@ -86,6 +87,6 @@ class BoltProtocolV4Test
     {
         return new BoltProtocolV4( newTestBoltChannel(), ( ch, st, messageWriter ) -> mock( BoltConnection.class ),
                 mock( BoltStateMachineFactory.class ),
-                bookmarksParser, NullLogService.getInstance(), mock( TransportThrottleGroup.class ) );
+                bookmarksParser, NullLogService.getInstance(), mock( TransportThrottleGroup.class ), mock( ChannelProtector.class ) );
     }
 }

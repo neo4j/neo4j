@@ -33,6 +33,7 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v41.messaging.BoltRequestMessageReaderV41;
 import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
 import org.neo4j.logging.internal.LogService;
@@ -49,9 +50,9 @@ public class BoltProtocolV41 extends AbstractBoltProtocol
 
     public BoltProtocolV41( BoltChannel channel, BoltConnectionFactory connectionFactory,
             BoltStateMachineFactory stateMachineFactory, BookmarksParser bookmarksParser, LogService logging,
-            TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval )
+            TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval, ChannelProtector channelProtector )
     {
-        super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging, throttleGroup );
+        super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging, throttleGroup, channelProtector );
         this.clock = clock;
         this.keepAliveInterval = keepAliveInterval;
     }
@@ -64,9 +65,9 @@ public class BoltProtocolV41 extends AbstractBoltProtocol
 
     @Override
     protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
-            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging )
+            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging, ChannelProtector channelProtector )
     {
-        return new BoltRequestMessageReaderV41( connection, messageWriter, bookmarksParser, logging );
+        return new BoltRequestMessageReaderV41( connection, messageWriter, bookmarksParser, channelProtector, logging );
     }
 
     @Override

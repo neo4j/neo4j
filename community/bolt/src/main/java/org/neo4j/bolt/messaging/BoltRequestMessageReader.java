@@ -24,10 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.PackStream;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.packstream.PackStream;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.function.Function.identity;
@@ -41,13 +42,15 @@ public abstract class BoltRequestMessageReader
     private final BoltConnection connection;
     private final BoltResponseHandler externalErrorResponseHandler;
     private final Map<Integer,RequestMessageDecoder> decoders;
+    private final ChannelProtector channelProtector;
 
     protected BoltRequestMessageReader( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler,
-            List<RequestMessageDecoder> decoders )
+                                        List<RequestMessageDecoder> decoders, ChannelProtector channelProtector )
     {
         this.connection = connection;
         this.externalErrorResponseHandler = externalErrorResponseHandler;
         this.decoders = decoders.stream().collect( toMap( RequestMessageDecoder::signature, identity() ) );
+        this.channelProtector = channelProtector;
     }
 
     public void read( Neo4jPack.Unpacker unpacker ) throws IOException
@@ -88,6 +91,7 @@ public abstract class BoltRequestMessageReader
             BoltResponseHandler responseHandler = decoder.responseHandler();
 
             connection.enqueue( stateMachine -> stateMachine.process( message, responseHandler ) );
+            channelProtector.afterRequestReceived();
         }
         catch ( PackStream.PackStreamException e )
         {

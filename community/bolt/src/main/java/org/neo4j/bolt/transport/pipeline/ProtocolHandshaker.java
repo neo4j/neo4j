@@ -45,18 +45,20 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     private final Log log;
     private final boolean encryptionRequired;
     private final boolean encrypted;
+    private final ChannelProtector channelProtector;
 
     private ByteBuf handshakeBuffer;
     private BoltProtocol protocol;
 
     public ProtocolHandshaker( BoltProtocolFactory boltProtocolFactory, BoltChannel boltChannel, LogProvider logging,
-            boolean encryptionRequired, boolean encrypted )
+            boolean encryptionRequired, boolean encrypted, ChannelProtector channelProtector )
     {
         this.boltProtocolFactory = boltProtocolFactory;
         this.boltChannel = boltChannel;
         this.log = logging.getLog( getClass() );
         this.encryptionRequired = encryptionRequired;
         this.encrypted = encrypted;
+        this.channelProtector = channelProtector;
     }
 
     @Override
@@ -179,7 +181,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
                 int newMinor = Math.max( minor - j, 0 );
                 BoltProtocolVersion suggestion = new BoltProtocolVersion( major, newMinor );
 
-                protocol = boltProtocolFactory.create( suggestion, boltChannel );
+                protocol = boltProtocolFactory.create( suggestion, boltChannel, channelProtector );
                 if ( protocol != null )
                 {
                     break;

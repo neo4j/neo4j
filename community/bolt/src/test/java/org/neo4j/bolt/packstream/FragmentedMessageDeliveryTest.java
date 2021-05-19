@@ -38,6 +38,7 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltRequestMessageWriterV4;
 import org.neo4j.bolt.v4.messaging.RunMessage;
@@ -125,7 +126,7 @@ public class FragmentedMessageDeliveryTest
         NullLogService logging = NullLogService.getInstance();
         var bookmarksParser = mock( BookmarksParser.class );
         BoltProtocol boltProtocol = new BoltProtocolV4( boltChannel, ( ch, s, messageWriter ) -> boltConnection, ( v,
-                ch ) -> machine, bookmarksParser, logging, mock( TransportThrottleGroup.class ) );
+                ch ) -> machine, bookmarksParser, logging, mock( TransportThrottleGroup.class ), mock( ChannelProtector.class ) );
         boltProtocol.install();
 
         // When data arrives split up according to the current permutation
