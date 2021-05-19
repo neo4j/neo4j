@@ -63,6 +63,7 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("-0234") shouldGive expressions.SignedOctalIntegerLiteral("-0234")(t)
 
     parsing("0x1") shouldGive expressions.SignedHexIntegerLiteral("0x1")(t)
+    parsing("0X1") shouldGive expressions.SignedHexIntegerLiteral("0X1")(t)
     parsing("0xffff") shouldGive expressions.SignedHexIntegerLiteral("0xffff")(t)
     parsing("-0x45FG") shouldGive expressions.SignedHexIntegerLiteral("-0x45FG")(t)
 

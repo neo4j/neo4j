@@ -55,7 +55,7 @@ trait Base extends Parser {
   def UnsignedOctalInteger = rule { ("0" ~ OctalString).memoMismatches }
   def OctalString = rule("'0'-'7'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
   def HexInteger = rule { (optional("-") ~ UnsignedHexInteger).memoMismatches }
-  def UnsignedHexInteger = rule { ("0x" ~ HexString).memoMismatches }
+  def UnsignedHexInteger = rule { (("0x" | "0X") ~ HexString).memoMismatches }
   def HexString = rule("'0'-'9', 'a'-'f'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
 
   def Dash = rule("'-'") {
