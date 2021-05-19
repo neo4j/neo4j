@@ -67,10 +67,7 @@ object ShowSchemaCommandHelper {
 
   def btreeConfigValueAsString(configValue: Value): String = {
     configValue match {
-      case doubleArray: DoubleArray => java.util.Arrays.toString(doubleArray.asObjectCopy);
-      case intValue: IntValue => "" + intValue.value()
-      case booleanValue: BooleanValue => "" + booleanValue.booleanValue()
-      case stringValue: StringValue => "'" + stringValue.stringValue() + "'"
+      case doubleArray: DoubleArray => java.util.Arrays.toString(doubleArray.asObjectCopy)
       case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
     }
   }
