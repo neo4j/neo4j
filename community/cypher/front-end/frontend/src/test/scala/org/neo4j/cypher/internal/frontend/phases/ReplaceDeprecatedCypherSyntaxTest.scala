@@ -51,4 +51,45 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
       "RETURN 0x9fff AS t"
     )
   }
+
+  test("should rewrite exists in where") {
+    assertRewritten(
+      "MATCH (n) WHERE exists(n.prop) RETURN n",
+      "MATCH (n) WHERE n.prop IS NOT NULL RETURN n"
+    )
+  }
+
+  test("should rewrite exists with dynamic property in where") {
+    assertRewritten(
+      "MATCH (n) WHERE exists(n['prop']) RETURN n",
+      "MATCH (n) WHERE n['prop'] IS NOT NULL RETURN n"
+    )
+  }
+
+  test("should rewrite exists in where nested") {
+    assertRewritten(
+      "MATCH (n) WHERE exists(n.prop) AND n.foo > 0 RETURN n",
+      "MATCH (n) WHERE n.prop IS NOT NULL AND n.foo > 0 RETURN n"
+    )
+    assertRewritten(
+      "MATCH (n) WHERE exists(n.prop) OR n.foo > 0 RETURN n",
+      "MATCH (n) WHERE n.prop IS NOT NULL OR n.foo > 0 RETURN n"
+    )
+    assertRewritten(
+      "MATCH (n) WHERE (exists(n.prop) OR n.foo > 0) AND n:N RETURN n",
+      "MATCH (n) WHERE (n.prop IS NOT NULL OR n.foo > 0) AND n:N RETURN n"
+    )
+  }
+
+  test("should not rewrite exists in with") {
+    assertNotRewritten(
+      "MATCH (n) WITH exists(n.prop) AS e RETURN e"
+    )
+  }
+
+  test("should not rewrite exists in where if nested more complicated") {
+    assertNotRewritten(
+      "MATCH (n) WHERE exists(n.prop) = n.prop RETURN n"
+    )
+  }
 }
