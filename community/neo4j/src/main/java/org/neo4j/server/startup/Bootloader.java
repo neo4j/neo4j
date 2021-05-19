@@ -120,9 +120,15 @@ class Bootloader
         ctx.out.println( "run:          " + config.get( BootloaderSettings.run_directory ).toAbsolutePath() );
     }
 
-    int console()
+    int console( boolean dryRun )
     {
         BootloaderOsAbstraction os = ctx.os();
+        if ( dryRun )
+        {
+            ctx.out.println( String.join( " ", os.buildStandardStartArguments() ) );
+            return EXIT_CODE_OK;
+        }
+
         Long pid = os.getPidIfRunning();
         if ( pid != null )
         {

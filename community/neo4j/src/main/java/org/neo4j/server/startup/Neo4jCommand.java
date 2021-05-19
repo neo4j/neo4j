@@ -30,6 +30,8 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
+
 @CommandLine.Command(
         name = "Neo4j",
         description = "Neo4j database server CLI.",
@@ -45,10 +47,13 @@ class Neo4jCommand extends BootloaderCommand
     @CommandLine.Command( name = "console", description = "Start server in console." )
     private static class Console extends BootCommand
     {
+        @CommandLine.Option( names = "--dry-run", hidden = true, description = "Print (only) the command line instead of executing it" )
+        boolean dryRun; //Note that this is a hidden "unsupported" argument, not intended for usage outside official neo4j tools/scripts
+
         @Override
         public Integer call()
         {
-            return getBootloader( startOptions.expandCommands ).console();
+            return getBootloader( startOptions.expandCommands ).console( dryRun );
         }
     }
 
@@ -99,7 +104,7 @@ class Neo4jCommand extends BootloaderCommand
         public Integer call()
         {
             bootloader.ctx.out.println( "neo4j " + org.neo4j.kernel.internal.Version.getNeo4jVersion() );
-            return 0;
+            return EXIT_CODE_OK;
         }
     }
 
@@ -141,7 +146,7 @@ class Neo4jCommand extends BootloaderCommand
                 .addSubcommand( new Start() )
                 .addSubcommand( new Stop() )
                 .addSubcommand( new Restart() )
-                .addSubcommand( new Status( ) );
+                .addSubcommand( new Status() );
 
         if ( SystemUtils.IS_OS_WINDOWS )
         {

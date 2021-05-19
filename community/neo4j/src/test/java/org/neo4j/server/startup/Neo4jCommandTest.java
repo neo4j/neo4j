@@ -304,6 +304,21 @@ class Neo4jCommandTest
             assertThat( out.toString() ).contains( "--home-dir", "--config-dir" );
         }
 
+        @Test
+        void shouldHideDryRunArgument()
+        {
+            assertThat( execute( List.of( "help", "console" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( out.toString() ).doesNotContain( "--dry-run" );
+        }
+
+        @Test
+        void shouldOnlyGetCommandLineFromDryRun()
+        {
+            assertThat( execute( List.of( "console", "--dry-run" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( out.toString() ).hasLineCount( 1 );
+            assertThat( out.toString() ).containsSubsequence( "java", "-cp", TestEntryPoint.class.getName(), "--home-dir", "--config-dir" );
+        }
+
         @Nested
         @EnabledOnOs( OS.WINDOWS )
         class OnWindows
