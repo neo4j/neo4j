@@ -37,6 +37,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
@@ -71,7 +72,7 @@ class AbstractBoltProtocolTest
         when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) ).thenReturn( mock( BoltConnection.class ) );
         BoltProtocol boltProtocol =
                 new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance(), mock( TransportThrottleGroup.class ) );
+                        NullLogService.getInstance(), mock( TransportThrottleGroup.class ), mock( ChannelProtector.class ) );
 
         // When
         boltProtocol.install();
@@ -90,9 +91,9 @@ class AbstractBoltProtocolTest
         private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion( 0, 0 );
 
         TestAbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-                                  LogService logging, TransportThrottleGroup throttleGroup )
+                                  LogService logging, TransportThrottleGroup throttleGroup, ChannelProtector channelProtector )
         {
-            super( channel, connectionFactory, stateMachineFactory, logging, throttleGroup );
+            super( channel, connectionFactory, stateMachineFactory, logging, throttleGroup, channelProtector );
         }
 
         @Override
@@ -103,7 +104,7 @@ class AbstractBoltProtocolTest
 
         @Override
         protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
-                BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging )
+                BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging, ChannelProtector channelProtector )
         {
             return mock( BoltRequestMessageReader.class );
         }

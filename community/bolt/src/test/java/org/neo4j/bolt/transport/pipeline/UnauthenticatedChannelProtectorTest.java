@@ -41,7 +41,6 @@ class UnauthenticatedChannelProtectorTest
 
         InOrder inOrder = inOrder( pipeline );
         protector.afterChannelCreated();
-        inOrder.verify( pipeline ).addLast( any( AuthenticationTimeoutTracker.class ) );
         inOrder.verify( pipeline ).addLast( any( AuthenticationTimeoutHandler.class ) );
     }
 
@@ -64,7 +63,6 @@ class UnauthenticatedChannelProtectorTest
 
         InOrder inOrder = inOrder( pipeline );
         protector.disable();
-        inOrder.verify( pipeline ).remove( AuthenticationTimeoutTracker.class );
         inOrder.verify( pipeline ).remove( AuthenticationTimeoutHandler.class );
         inOrder.verify( pipeline ).remove( BytesAccumulator.class );
     }

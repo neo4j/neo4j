@@ -27,6 +27,7 @@ import io.netty.handler.ssl.SslContext;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelProtector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -77,7 +78,8 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             {
                 ch.config().setAllocator( allocator );
 
-                BoltChannel boltChannel = newBoltChannel( ch );
+                var channelProtector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize );
+                BoltChannel boltChannel = newBoltChannel( ch, channelProtector );
                 connectionTracker.add( boltChannel );
                 ch.closeFuture().addListener( future -> connectionTracker.remove( boltChannel ) );
 
@@ -89,7 +91,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
 
                 TransportSelectionHandler transportSelectionHandler =
                         new TransportSelectionHandler( boltChannel, sslCtx,
-                                encryptionRequired, false, logging, boltProtocolFactory );
+                                                       encryptionRequired, false, logging, boltProtocolFactory, channelProtector );
                 ch.pipeline().addLast( transportSelectionHandler );
             }
         };
@@ -101,9 +103,8 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         return address;
     }
 
-    private BoltChannel newBoltChannel( Channel ch )
+    private BoltChannel newBoltChannel( Channel ch, ChannelProtector channelProtector )
     {
-        var protector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize );
-        return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch, protector );
+        return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch, channelProtector );
     }
 }

@@ -27,9 +27,10 @@ import java.util.List;
 import org.neo4j.bolt.packstream.Neo4jPack.Unpacker;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Collections.emptyList;
@@ -50,7 +51,8 @@ class BoltRequestMessageReaderTest
         RuntimeException error = new RuntimeException();
         when( unpacker.unpackStructHeader() ).thenThrow( error );
 
-        BoltRequestMessageReader reader = new TestBoltRequestMessageReader( connectionMock(), responseHandlerMock(), emptyList() );
+        BoltRequestMessageReader reader =
+                new TestBoltRequestMessageReader( connectionMock(), responseHandlerMock(), emptyList(), mock( ChannelProtector.class ) );
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> reader.read( unpacker ) );
         assertEquals( error, e );
@@ -67,7 +69,8 @@ class BoltRequestMessageReaderTest
         BoltConnection connection = new SynchronousBoltConnection( stateMachine );
 
         BoltResponseHandler externalErrorResponseHandler = responseHandlerMock();
-        BoltRequestMessageReader reader = new TestBoltRequestMessageReader( connection, externalErrorResponseHandler, emptyList() );
+        BoltRequestMessageReader reader =
+                new TestBoltRequestMessageReader( connection, externalErrorResponseHandler, emptyList(), mock( ChannelProtector.class ) );
 
         reader.read( unpacker );
 
@@ -81,7 +84,8 @@ class BoltRequestMessageReaderTest
         when( unpacker.unpackStructSignature() ).thenReturn( 'a' );
 
         RequestMessageDecoder decoder = new TestRequestMessageDecoder( 'b', responseHandlerMock(), mock( RequestMessage.class ) );
-        BoltRequestMessageReader reader = new TestBoltRequestMessageReader( connectionMock(), responseHandlerMock(), singletonList( decoder ) );
+        BoltRequestMessageReader reader =
+                new TestBoltRequestMessageReader( connectionMock(), responseHandlerMock(), singletonList( decoder ), mock( ChannelProtector.class ) );
 
         BoltIOException e = assertThrows( BoltIOException.class, () -> reader.read( unpacker ) );
         assertEquals( Status.Request.InvalidFormat, e.status() );
@@ -102,7 +106,8 @@ class BoltRequestMessageReaderTest
         BoltStateMachine stateMachine = mock( BoltStateMachine.class );
         BoltConnection connection = new SynchronousBoltConnection( stateMachine );
 
-        BoltRequestMessageReader reader = new TestBoltRequestMessageReader( connection, responseHandlerMock(), singletonList( decoder ) );
+        BoltRequestMessageReader reader =
+                new TestBoltRequestMessageReader( connection, responseHandlerMock(), singletonList( decoder ), mock( ChannelProtector.class ) );
 
         reader.read( unpacker );
 
@@ -121,9 +126,10 @@ class BoltRequestMessageReaderTest
 
     private static class TestBoltRequestMessageReader extends BoltRequestMessageReader
     {
-        TestBoltRequestMessageReader( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler, List<RequestMessageDecoder> decoders )
+        TestBoltRequestMessageReader( BoltConnection connection, BoltResponseHandler externalErrorResponseHandler, List<RequestMessageDecoder> decoders,
+                                      ChannelProtector channelProtector )
         {
-            super( connection, externalErrorResponseHandler, decoders );
+            super( connection, externalErrorResponseHandler, decoders, channelProtector );
         }
     }
 

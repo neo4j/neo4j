@@ -29,14 +29,12 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
 
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
-
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
@@ -48,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -89,17 +86,18 @@ class ProtocolHandshakerTest
     void shouldChooseFirstAvailableProtocol()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 0}, // third choice - no protocol
-                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 0}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 0}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -120,7 +118,8 @@ class ProtocolHandshakerTest
         int packedVersion = new BoltProtocolVersion( major, minor ).toInt();
         BoltProtocol protocol = newBoltProtocol( major, minor );
         BoltProtocolFactory handlerFactory = newProtocolFactory( major, minor, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
@@ -147,7 +146,8 @@ class ProtocolHandshakerTest
         int noVersion = 0;
         BoltProtocol protocol = newBoltProtocol( major, minor );
         BoltProtocolFactory handlerFactory = newProtocolFactory( major, minor, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
@@ -170,9 +170,10 @@ class ProtocolHandshakerTest
     void shouldHandleFragmentedMessage()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         channel.writeInbound( Unpooled.wrappedBuffer( new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0} ) );
@@ -201,18 +202,19 @@ class ProtocolHandshakerTest
     void shouldHandleHandshakeFollowedImmediatelyByMessage()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 0}, // third choice - no protocol
-                new byte[]{0, 0, 0, 0}, // fourth choice - no protocol
-                new byte[]{1, 2, 3, 4} ); // this is a message
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 0}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 0}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 0}, // fourth choice - no protocol
+                                                new byte[]{1, 2, 3, 4} ); // this is a message
         channel.writeInbound( input );
 
         // Then
@@ -236,15 +238,16 @@ class ProtocolHandshakerTest
         // Given
         BoltProtocol protocol = newBoltProtocol( maxVersionNumber, maxVersionNumber );
         BoltProtocolFactory handlerFactory = newProtocolFactory( maxVersionNumber, maxVersionNumber, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, // first choice - no protocol
-                new byte[]{0, 0, 0, 0}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 0}, // third choice - no protocol
-                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 0}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 0}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -262,17 +265,18 @@ class ProtocolHandshakerTest
     void shouldFallbackToNoProtocolIfNoMatch()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 3}, // third choice - no protocol
-                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 0}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 3}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -287,17 +291,18 @@ class ProtocolHandshakerTest
     void shouldRejectIfWrongPreamble()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0xDE, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF}, // preamble
-                new byte[]{0, 0, 0, 1}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 3}, // third choice - no protocol
-                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0xDE, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF}, // preamble
+                                                new byte[]{0, 0, 0, 1}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 3}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -310,17 +315,18 @@ class ProtocolHandshakerTest
     void shouldRejectIfInsecureWhenEncryptionRequired()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, true, false ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, true, false,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 1}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 3}, // third choice - no protocol
-                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 1}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 3}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -333,9 +339,10 @@ class ProtocolHandshakerTest
     void shouldRejectIfHttp()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true,
+                                                                               mock( ChannelProtector.class ) ) );
 
         // When
         FullHttpRequest request = new DefaultFullHttpRequest( HttpVersion.HTTP_1_1, HttpMethod.POST, "http://hello_world:10000" );
@@ -362,6 +369,6 @@ class ProtocolHandshakerTest
     private static BoltProtocolFactory newProtocolFactory( int majorVersion, int minorVersion, BoltProtocol protocol )
     {
         BoltProtocolVersion version = new BoltProtocolVersion( majorVersion, minorVersion );
-        return ( givenVersion, channel ) -> version.equals( givenVersion ) ? protocol : null;
+        return ( givenVersion, channel, channelProtector ) -> version.equals( givenVersion ) ? protocol : null;
     }
 }

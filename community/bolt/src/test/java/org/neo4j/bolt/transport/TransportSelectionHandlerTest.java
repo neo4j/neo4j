@@ -47,7 +47,7 @@ class TransportSelectionHandlerTest
         // Given
         ChannelHandlerContext context = channelHandlerContextMock();
         AssertableLogProvider logging = new AssertableLogProvider();
-        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null );
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null );
 
         // When
         Throwable cause = new Throwable( "Oh no!" );
@@ -65,7 +65,7 @@ class TransportSelectionHandlerTest
         // Given
         ChannelHandlerContext context = channelHandlerContextMock();
         AssertableLogProvider logging = new AssertableLogProvider();
-        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null );
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null );
 
         IOException connResetError = new IOException( "Connection reset by peer" );
 
@@ -86,7 +86,7 @@ class TransportSelectionHandlerTest
         ChannelHandlerContext context = channelHandlerContextMockSslAlreadyConfigured();
         AssertableLogProvider logging = new AssertableLogProvider();
         SslContext sslCtx = mock( SslContext.class );
-        TransportSelectionHandler handler = new TransportSelectionHandler( null, sslCtx, false, false, logging, null );
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, sslCtx, false, false, logging, null, null );
 
         final ByteBuf payload = Unpooled.wrappedBuffer(new byte[] { 22, 3, 1, 0, 5 }); //encrypted
 

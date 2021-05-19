@@ -27,6 +27,7 @@ import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
@@ -60,21 +61,21 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     }
 
     @Override
-    public BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel )
+    public BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel, ChannelProtector channelProtector )
     {
         if ( protocolVersion.equals( BoltProtocolV3.VERSION ) )
         {
-            return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService, throttleGroup );
+            return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService, throttleGroup, channelProtector );
         }
         else if ( protocolVersion.equals( BoltProtocolV4.VERSION ) )
         {
             return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService,
-                    throttleGroup );
+                    throttleGroup, channelProtector );
         }
         else if ( protocolVersion.equals( BoltProtocolV41.VERSION ) )
         {
             return new BoltProtocolV41( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService,
-                    throttleGroup, clock, keepAliveInterval );
+                    throttleGroup, clock, keepAliveInterval, channelProtector );
         }
         else
         {

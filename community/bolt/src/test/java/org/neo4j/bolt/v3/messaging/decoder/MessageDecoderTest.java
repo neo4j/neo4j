@@ -48,6 +48,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
@@ -259,7 +260,8 @@ public class MessageDecoderTest
         BoltConnection connection = mock( BoltConnection.class );
         BoltResponseMessageWriter responseMessageHandler = mock( BoltResponseMessageWriter.class );
 
-        BoltRequestMessageReader requestMessageReader = new BoltRequestMessageReaderV3( connection, responseMessageHandler, NullLogService.getInstance() );
+        BoltRequestMessageReader requestMessageReader =
+                new BoltRequestMessageReaderV3( connection, responseMessageHandler, mock( ChannelProtector.class ), NullLogService.getInstance() );
 
         LogService logService = mock( LogService.class );
         Log log = mock( Log.class );
@@ -342,7 +344,8 @@ public class MessageDecoderTest
 
     private MessageDecoder newDecoder( BoltConnection connection )
     {
-        BoltRequestMessageReader reader = new BoltRequestMessageReaderV3( connection, mock( BoltResponseMessageWriter.class ), NullLogService.getInstance() );
+        BoltRequestMessageReader reader = new BoltRequestMessageReaderV3( connection, mock( BoltResponseMessageWriter.class ), mock( ChannelProtector.class ),
+                                                                          NullLogService.getInstance() );
         return new MessageDecoder( packerUnderTest::newUnpacker, reader, NullLogService.getInstance() );
     }
 

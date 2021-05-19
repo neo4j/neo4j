@@ -27,7 +27,6 @@ import org.mockito.ArgumentCaptor;
 import java.time.Duration;
 
 import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutHandler;
-import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutTracker;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
@@ -82,7 +81,6 @@ class SocketTransportTest
 
         EmbeddedChannel channel = new EmbeddedChannel( socketTransport.channelInitializer() );
 
-        assertNotNull( channel.pipeline().get( AuthenticationTimeoutTracker.class ) );
         assertNotNull( channel.pipeline().get( AuthenticationTimeoutHandler.class ) );
     }
 
