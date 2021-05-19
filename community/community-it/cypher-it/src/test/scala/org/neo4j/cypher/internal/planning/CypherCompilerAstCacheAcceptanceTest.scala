@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.Clock
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneOffset
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.CacheCounts
@@ -61,6 +56,11 @@ import org.neo4j.logging.Log
 import org.neo4j.logging.LogAssertions.assertThat
 import org.neo4j.logging.NullLog
 import org.neo4j.logging.NullLogProvider
+
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
@@ -130,7 +130,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   private def runQuery(query: String,
                        params: scala.Predef.Map[String, AnyRef] = Map.empty,
-                       cypherCompiler: Compiler = compiler): Unit = {
+                       cypherCompiler: Compiler = compiler): String = {
 
     val preParser = new PreParser(
       CypherConfiguration.fromConfig(Config.defaults()),
@@ -143,7 +143,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(tx, query = query -> params)
       cypherCompiler.compile(preParsedQuery, noTracing, Set.empty, context, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
+      val id = context.executingQuery().id()
       context.close()
+      id
     }
   }
 
@@ -302,7 +304,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    runQuery(query)
+    val queryId = runQuery(query)
 
     // then
     val dogId = graph.withTx(tx => tokenReader(tx, _.nodeLabel("Dog")))
@@ -310,7 +312,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     assertThat(logProvider).forClass(getClass).forLevel(Level.DEBUG)
       .containsMessages(s"Discarded stale plan from the plan cache after 0 seconds. " +
                              s"Reason: NodesWithLabelCardinality(Some(LabelId($dogId))) changed from 10.0 to 1001.0, " +
-                             s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Metadata: $query")
+                             s"which is a divergence of 0.99000999000999 which is greater than threshold 0.5. Metadata: $queryId")
+      .doesNotContainMessage(query)
   }
 
   test("when running queries with debug options - never cache") {

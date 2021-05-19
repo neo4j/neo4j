@@ -364,7 +364,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
           transactionalContext,
           compilerWithExpressionCodeGenOption,
           options.queryOptions.replan,
-          syntacticQuery.queryText)
+          transactionalContext.executingQuery().id())
       } else if (!enoughParametersSupplied) {
         createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
       } else {

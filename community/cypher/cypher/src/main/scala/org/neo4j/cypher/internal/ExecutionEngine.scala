@@ -82,8 +82,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new ExecutionEngineQueryCacheMonitor {
-    override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], query: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
-      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds${maybeReason.fold("")(r => s". Reason: $r")}. Query: $query")
+    override def cacheDiscard(ignored: Pair[String, ParameterTypeMap], queryId: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
+      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds${maybeReason.fold("")(r => s". Reason: $r")}. Query id: $queryId")
     }
   })
 
@@ -280,7 +280,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           tc,
           compiler,
           inputQuery.options.queryOptions.replan,
-          inputQuery.description)
+          context.executingQuery().id())
 
         val lockedEntities = schemaHelper.lockEntities(schemaToken, executableQuery, tc)
 
