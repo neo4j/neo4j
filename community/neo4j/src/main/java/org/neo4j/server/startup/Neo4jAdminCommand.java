@@ -33,6 +33,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
+
 @CommandLine.Command(
         name = "Neo4j Admin",
         description = "Neo4j Admin CLI."
@@ -54,10 +56,13 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>
     @CommandLine.Parameters( hidden = true )
     private List<String> allParameters = List.of();
 
+    @CommandLine.Option( names = ARG_EXPAND_COMMANDS, hidden = true, description = "Allow command expansion in config value evaluation." )
+    boolean expandCommands;
+
     @Override
     public Integer call()
     {
-        ctx.init( false, false, allParameters.toArray( new String[0] ) );
+        ctx.init( expandCommands, false, allParameters.toArray( new String[0] ) );
         Bootloader bootloader = new Bootloader( ctx );
         return bootloader.admin();
     }

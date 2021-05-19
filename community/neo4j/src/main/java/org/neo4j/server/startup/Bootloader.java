@@ -259,14 +259,7 @@ class Bootloader
     {
         ctx.out.printf( "Selecting JVM - Version:%s, Name:%s, Vendor:%s%n",
                 ctx.getProp( PROP_JAVA_VERSION ), ctx.getProp( PROP_VM_NAME ), ctx.getProp( PROP_VM_VENDOR ) );
-        try
-        {
-            ctx.os().admin();
-            return EXIT_CODE_OK;
-        }
-        catch ( BootFailureException e )
-        {
-            return e.getExitCode();
-        }
+        ctx.os().admin();
+        return EXIT_CODE_OK;
     }
 }

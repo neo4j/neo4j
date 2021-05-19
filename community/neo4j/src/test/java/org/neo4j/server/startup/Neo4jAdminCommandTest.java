@@ -147,6 +147,22 @@ class Neo4jAdminCommandTest
                     vm.get( PROP_JAVA_VERSION ), vm.get( PROP_VM_NAME ), vm.get( PROP_VM_VENDOR ) ) );
         }
 
+        @Test
+        void shouldHandleExpandCommandsAndPassItThrough()
+        {
+            addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
+            assertThat( execute( List.of( "foo", "-b", "--expand-commands" ), Map.of() ) ).isEqualTo( 0 );
+            assertThat( out.toString() ).containsSubsequence( "foo", "-b", "--expand-commands" );
+        }
+
+        @Test
+        void shouldFailOnMissingExpandCommands()
+        {
+            addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
+            assertThat( execute( "bar" ) ).isEqualTo( 1 );
+            assertThat( err.toString() ).containsSubsequence( "Failed to read config", "is a command, but config is not explicitly told to expand it" );
+        }
+
         @Override
         protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup )
         {
