@@ -28,7 +28,7 @@ object CompilationPhases {
               deprecations: Deprecations = Deprecations.deprecatedFeaturesIn4_X
              ): Transformer[BaseContext, BaseState, BaseState] =
     Parsing andThen
-      SyntaxDeprecationWarnings(deprecations) andThen
+      SyntaxDeprecationWarningsAndReplacements(deprecations) andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
       AstRewriting() andThen

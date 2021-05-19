@@ -89,161 +89,161 @@ object Deprecations {
       // old octal literal syntax
       case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(1) != 'o' =>
         Deprecation(
-          () => p,
-          () => Some(DeprecatedOctalLiteralSyntax(p.position))
+          None,
+          Some(DeprecatedOctalLiteralSyntax(p.position))
         )
 
       // old hex literal syntax
       case p@SignedHexIntegerLiteral(stringVal) if stringVal.charAt(1) == 'X' =>
         Deprecation(
-          () => SignedHexIntegerLiteral(stringVal.toLowerCase)(p.position),
-          () => Some(DeprecatedHexLiteralSyntax(p.position))
+          Some(p -> SignedHexIntegerLiteral(stringVal.toLowerCase)(p.position)),
+          Some(DeprecatedHexLiteralSyntax(p.position))
         )
 
       // timestamp
       case f@FunctionInvocation(_, FunctionName(name), _, _) if name.equalsIgnoreCase("timestamp") =>
         Deprecation(
-          () => renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f),
-          () => None
+          Some(f -> renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f)),
+          None
         )
 
       // var-length binding
       case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
         Deprecation(
-          () => p,
-          () => Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
+          None,
+          Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
         )
 
       case i: ast.CreateIndexOldSyntax =>
         Deprecation(
-          () => i,
-          () => Some(DeprecatedCreateIndexSyntax(i.position))
+          None,
+          Some(DeprecatedCreateIndexSyntax(i.position))
         )
 
       case i: ast.DropIndex =>
         Deprecation(
-          () => i,
-          () => Some(DeprecatedDropIndexSyntax(i.position))
+          None,
+          Some(DeprecatedDropIndexSyntax(i.position))
         )
 
       case c: ast.DropNodeKeyConstraint =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDropConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedDropConstraintSyntax(c.position))
         )
 
       case c: ast.DropUniquePropertyConstraint =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDropConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedDropConstraintSyntax(c.position))
         )
 
       case c: ast.DropNodePropertyExistenceConstraint =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDropConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedDropConstraintSyntax(c.position))
         )
 
       case c: ast.DropRelationshipPropertyExistenceConstraint =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDropConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedDropConstraintSyntax(c.position))
         )
 
       case c: ast.CreateNodePropertyExistenceConstraint if c.oldSyntax =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
         )
 
       case c: ast.CreateRelationshipPropertyExistenceConstraint if c.oldSyntax =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
         )
 
       case e@Exists(Property(_, _)) =>
         Deprecation(
-          () => e,
-          () => Some(DeprecatedPropertyExistenceSyntax(e.position))
+          None,
+          Some(DeprecatedPropertyExistenceSyntax(e.position))
         )
 
       case e@Exists(ContainerIndex(_, _)) =>
         Deprecation(
-          () => e,
-          () => Some(DeprecatedPropertyExistenceSyntax(e.position))
+          None,
+          Some(DeprecatedPropertyExistenceSyntax(e.position))
         )
 
       case s: ShowIndexesClause if s.verbose || s.brief =>
         Deprecation(
-          () => s,
-          () => Some(DeprecatedShowSchemaSyntax(s.position))
+          None,
+          Some(DeprecatedShowSchemaSyntax(s.position))
         )
 
       case c@ast.GrantPrivilege(ast.DatabasePrivilege(_, List(ast.DefaultDatabaseScope())), _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDefaultDatabaseSyntax(c.position))
+          None,
+          Some(DeprecatedDefaultDatabaseSyntax(c.position))
         )
 
       case c@ast.DenyPrivilege(ast.DatabasePrivilege(_, List(ast.DefaultDatabaseScope())), _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDefaultDatabaseSyntax(c.position))
+          None,
+          Some(DeprecatedDefaultDatabaseSyntax(c.position))
         )
 
       case c@ast.RevokePrivilege(ast.DatabasePrivilege(_, List(ast.DefaultDatabaseScope())), _, _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDefaultDatabaseSyntax(c.position))
+          None,
+          Some(DeprecatedDefaultDatabaseSyntax(c.position))
         )
 
       case c@ast.GrantPrivilege(ast.GraphPrivilege(_, List(ast.DefaultGraphScope())), _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDefaultGraphSyntax(c.position))
+          None,
+          Some(DeprecatedDefaultGraphSyntax(c.position))
         )
 
       case c@ast.DenyPrivilege(ast.GraphPrivilege(_, List(ast.DefaultGraphScope())), _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDefaultGraphSyntax(c.position))
+          None,
+          Some(DeprecatedDefaultGraphSyntax(c.position))
         )
 
       case c@ast.RevokePrivilege(ast.GraphPrivilege(_, List(ast.DefaultGraphScope())), _, _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedDefaultGraphSyntax(c.position))
+          None,
+          Some(DeprecatedDefaultGraphSyntax(c.position))
         )
 
       case c@ShowConstraintsClause(_, ExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
       case c@ShowConstraintsClause(_, NodeExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
       case c@ShowConstraintsClause(_, RelExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
-          () => c,
-          () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
+          None,
+          Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
       case s: ShowConstraintsClause if s.verbose || s.brief =>
         Deprecation(
-          () => s,
-          () => Some(DeprecatedShowSchemaSyntax(s.position))
+          None,
+          Some(DeprecatedShowSchemaSyntax(s.position))
         )
 
       case c: HasCatalog =>
         Deprecation(
-          () => c.source,
-          () => Some(DeprecatedCatalogKeywordForAdminCommandSyntax(c.position))
+          Some(c -> c.source),
+          Some(DeprecatedCatalogKeywordForAdminCommandSyntax(c.position))
         )
     }
   }
@@ -260,8 +260,8 @@ object Deprecations {
 
         case p: PatternExpression =>
           val deprecation = Deprecation(
-            () => p,
-            () => Some(DeprecatedPatternExpressionOutsideExistsSyntax(p.position))
+            None,
+            Some(DeprecatedPatternExpressionOutsideExistsSyntax(p.position))
           )
           deprecations => SkipChildren(deprecations + deprecation)
       }
@@ -274,8 +274,8 @@ object Deprecations {
           statement.treeFold[Set[Deprecation]](Set.empty) {
             case e: Expression if isListCoercedToBoolean(e) =>
               val deprecation = Deprecation(
-                () => e,
-                () => Some(DeprecatedCoercionOfListToBoolean(e.position))
+                None,
+                Some(DeprecatedCoercionOfListToBoolean(e.position))
               )
               deprecations => SkipChildren(deprecations + deprecation)
           }
@@ -299,29 +299,29 @@ object Deprecations {
 
       case f@FunctionInvocation(_, FunctionName(name), _, _) if removedFunctionsRenames.contains(name) =>
         Deprecation(
-          () => renameFunctionTo(removedFunctionsRenames(name))(f),
-          () => Some(DeprecatedFunctionNotification(f.position, name, removedFunctionsRenames(name)))
+          Some(f -> renameFunctionTo(removedFunctionsRenames(name))(f)),
+          Some(DeprecatedFunctionNotification(f.position, name, removedFunctionsRenames(name)))
         )
 
       // extract => list comprehension
       case e@ExtractExpression(scope, expression) =>
         Deprecation(
-          () => ListComprehension(scope, expression)(e.position),
-          () => Some(DeprecatedFunctionNotification(e.position, "extract(...)", "[...]"))
+          Some(e -> ListComprehension(scope, expression)(e.position)),
+          Some(DeprecatedFunctionNotification(e.position, "extract(...)", "[...]"))
         )
 
       // filter => list comprehension
       case e@FilterExpression(scope, expression) =>
         Deprecation(
-          () => ListComprehension(ExtractScope(scope.variable, scope.innerPredicate, None)(scope.position), expression)(e.position),
-          () => Some(DeprecatedFunctionNotification(e.position, "filter(...)", "[...]"))
+          Some(e -> ListComprehension(ExtractScope(scope.variable, scope.innerPredicate, None)(scope.position), expression)(e.position)),
+          Some(DeprecatedFunctionNotification(e.position, "filter(...)", "[...]"))
         )
 
       // old parameter syntax
       case p@ParameterWithOldSyntax(name, parameterType) =>
         Deprecation(
-          () => Parameter(name, parameterType)(p.position),
-          () => Some(DeprecatedParameterSyntax(p.position))
+          Some(p -> Parameter(name, parameterType)(p.position)),
+          Some(DeprecatedParameterSyntax(p.position))
         )
 
       // length of a string, collection or pattern expression
@@ -329,15 +329,15 @@ object Deprecations {
         if name.toLowerCase.equals("length") && args.nonEmpty &&
           (args.head.isInstanceOf[StringLiteral] || args.head.isInstanceOf[ListLiteral] || args.head.isInstanceOf[PatternExpression]) =>
         Deprecation(
-          () => renameFunctionTo("size")(f),
-          () => Some(LengthOnNonPathNotification(f.position))
+          Some(f -> renameFunctionTo("size")(f)),
+          Some(LengthOnNonPathNotification(f.position))
         )
 
       // legacy type separator
       case p@RelationshipPattern(variable, _, length, properties, _, true) if variable.isDefined || length.isDefined || properties.isDefined =>
         Deprecation(
-          () => p.copy(legacyTypeSeparator = false)(p.position),
-          () => Some(DeprecatedRelTypeSeparatorNotification(p.position))
+          Some(p -> p.copy(legacyTypeSeparator = false)(p.position)),
+          Some(DeprecatedRelTypeSeparatorNotification(p.position))
         )
     }
   }
@@ -354,10 +354,10 @@ object Deprecations {
  * This class holds both the ability to replace a part of the AST with the preferred non-deprecated variant, and
  * the ability to generate an optional notification to the user that they are using a deprecated feature.
  *
- * @param generateReplacement  function which rewrites the matched construct
- * @param generateNotification function which generates an appropriate deprecation notification
+ * @param replacement  an optional replacement tuple with the ASTNode to be replaced and its replacement.
+ * @param notification optional appropriate deprecation notification
  */
-case class Deprecation(generateReplacement: () => ASTNode, generateNotification: () => Option[InternalNotification])
+case class Deprecation(replacement: Option[(ASTNode, ASTNode)], notification: Option[InternalNotification])
 
 trait Deprecations extends {
   def find: PartialFunction[Any, Deprecation]

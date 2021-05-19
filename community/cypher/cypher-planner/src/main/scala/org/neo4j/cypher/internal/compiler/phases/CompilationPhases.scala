@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
-import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
+import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarningsAndReplacements
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.extractSensitiveLiterals
@@ -111,7 +111,7 @@ object CompilationPhases {
         case Compatibility3_5 =>
           parse andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
-            SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
+            SyntaxDeprecationWarningsAndReplacements(Deprecations.removedFeaturesIn4_0) andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3)
         case Compatibility4_2 =>
           parse andThen
@@ -121,7 +121,7 @@ object CompilationPhases {
       }
 
     parseAndCompatibilityCheck andThen
-      SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_X) andThen
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_X) andThen
       PreparatoryRewriting andThen
       If( (_: BaseState) => config.obfuscateLiterals) (
         extractSensitiveLiterals
@@ -133,7 +133,7 @@ object CompilationPhases {
   def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_XAfterRewrite) andThen
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_XAfterRewrite) andThen
       LiteralExtraction(config.literalExtractionStrategy)
   }
 
@@ -150,7 +150,7 @@ object CompilationPhases {
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_3AfterRewrite) andThen
+      SyntaxDeprecationWarningsAndReplacements(Deprecations.deprecatedFeaturesIn4_XAfterRewrite) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
