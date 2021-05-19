@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.parser.ParserTest
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.parboiled.scala.Rule1
 
 class MultipleGraphClauseSemanticCheckingTest
@@ -113,7 +112,7 @@ class MultipleGraphClauseSemanticCheckingTest
     convert(astNode, defaultFeatures)
 
   override def convert(astNode: Statement, features: Seq[SemanticFeature]): SemanticCheckResult = {
-    val rewritten = PreparatoryRewriting(Deprecations.V1).transform(TestState(Some(astNode)), TestContext()).statement()
+    val rewritten = PreparatoryRewriting.transform(TestState(Some(astNode)), TestContext()).statement()
     val initialState =
       SemanticState.clean.withFeatures(features: _*)
     rewritten.semanticCheck(initialState)

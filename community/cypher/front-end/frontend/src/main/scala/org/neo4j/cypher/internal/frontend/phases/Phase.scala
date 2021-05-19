@@ -40,8 +40,6 @@ trait Phase[-C <: BaseContext, FROM, +TO] extends Transformer[C, FROM, TO] {
 
   def process(from: FROM, context: C): TO
 
-  def postConditions: Set[StepSequencer.Condition]
-
   def name: String = productPrefix
 }
 

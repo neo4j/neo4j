@@ -112,7 +112,6 @@ object CompilationPhases {
           parse andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
             SyntaxDeprecationWarnings(Deprecations.removedFeaturesIn4_0) andThen
-            PreparatoryRewriting(Deprecations.removedFeaturesIn4_0) andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3)
         case Compatibility4_2 =>
           parse andThen
@@ -123,7 +122,7 @@ object CompilationPhases {
 
     parseAndCompatibilityCheck andThen
       SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_X) andThen
-      PreparatoryRewriting(Deprecations.deprecatedFeaturesIn4_X) andThen
+      PreparatoryRewriting andThen
       If( (_: BaseState) => config.obfuscateLiterals) (
         extractSensitiveLiterals
       ) andThen

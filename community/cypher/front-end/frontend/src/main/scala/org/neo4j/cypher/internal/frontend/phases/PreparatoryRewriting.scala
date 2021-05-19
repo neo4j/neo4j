@@ -17,18 +17,16 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
-import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShowQuery
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
-import org.neo4j.cypher.internal.rewriting.rewriters.replaceDeprecatedCypherSyntax
+import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShowQuery
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
@@ -36,7 +34,7 @@ import org.neo4j.cypher.internal.util.inSequence
 /**
  * Rewrite the AST into a shape that semantic analysis can be performed on.
  */
-case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
+case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
 
   val AccumulatedSteps(orderedSteps, _) = new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(Set(
     normalizeWithAndReturnClauses,
@@ -44,13 +42,12 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
     expandCallWhere,
     expandShowWhere,
     rewriteShowQuery,
-    replaceDeprecatedCypherSyntax,
     mergeInPredicates), initialConditions = Set(LiteralsAreAvailable))
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
     val rewriters = orderedSteps.map { step =>
-      val rewriter = step.getRewriter(deprecations, context.cypherExceptionFactory, context.notificationLogger)
+      val rewriter = step.getRewriter(context.cypherExceptionFactory, context.notificationLogger)
       RewriterStep.validatingRewriter(rewriter, step)
     }
 

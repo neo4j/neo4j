@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
@@ -40,7 +39,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   private val pipeline =
     Parsing andThen
-      PreparatoryRewriting(Deprecations.deprecatedFeaturesIn4_X) andThen
+      PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, CorrelatedSubQueries) andThen
       SemanticAnalysis(warn = false, CorrelatedSubQueries)
 

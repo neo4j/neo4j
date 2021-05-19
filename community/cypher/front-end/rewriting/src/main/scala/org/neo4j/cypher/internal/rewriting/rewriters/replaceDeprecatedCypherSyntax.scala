@@ -17,9 +17,6 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -33,11 +30,7 @@ case class replaceDeprecatedCypherSyntax(deprecations: Deprecations) extends Rew
   val instance: Rewriter = bottomUp(Rewriter.lift(deprecations.find.andThen(d => d.generateReplacement())))
 }
 
-object replaceDeprecatedCypherSyntax extends Step with PreparatoryRewritingRewriterFactory {
-  override def getRewriter(deprecations: Deprecations, cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger): Rewriter = {
-    replaceDeprecatedCypherSyntax(deprecations)
-  }
-
+object replaceDeprecatedCypherSyntax extends Step {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(DeprecatedSyntaxReplaced)

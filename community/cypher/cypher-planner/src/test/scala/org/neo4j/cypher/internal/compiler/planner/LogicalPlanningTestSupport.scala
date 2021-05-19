@@ -87,7 +87,6 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -310,7 +309,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val pipeLine =
     Parsing andThen
-      PreparatoryRewriting(Deprecations.deprecatedFeaturesIn4_X) andThen
+      PreparatoryRewriting andThen
       SemanticAnalysis(warn = true, SemanticFeature.CorrelatedSubQueries) andThen
       AstRewriting() andThen
       RewriteProcedureCalls andThen
