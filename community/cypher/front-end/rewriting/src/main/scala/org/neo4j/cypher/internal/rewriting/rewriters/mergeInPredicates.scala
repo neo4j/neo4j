@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.ScopeExpression
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -156,7 +155,6 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
     })
   }
 
-  override def getRewriter(deprecations: Deprecations,
-                           cypherExceptionFactory: CypherExceptionFactory,
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
                            notificationLogger: InternalNotificationLogger): Rewriter = this
 }

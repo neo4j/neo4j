@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -61,7 +60,6 @@ case object expandShowWhere extends Rewriter with Step with PreparatoryRewriting
     private def whereToYield(where: Where): Yield =
       Yield(ReturnItems(includeExisting = true, Seq.empty)(where.position), None, None, None, Some(where))(where.position)
 
-  override def getRewriter(deprecations: Deprecations,
-                           cypherExceptionFactory: CypherExceptionFactory,
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
                            notificationLogger: InternalNotificationLogger): Rewriter = instance
 }

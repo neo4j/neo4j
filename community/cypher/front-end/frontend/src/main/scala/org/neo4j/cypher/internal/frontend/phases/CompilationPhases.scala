@@ -30,7 +30,7 @@ object CompilationPhases {
              ): Transformer[BaseContext, BaseState, BaseState] =
     Parsing andThen
       SyntaxDeprecationWarnings(deprecations) andThen
-      PreparatoryRewriting(deprecations) andThen
+      PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
       AstRewriting(innerVariableNamer = SameNameNamer) andThen
       LiteralExtraction(literalExtractionStrategy)

@@ -39,7 +39,7 @@ class SyntaxDeprecationWarningsTest extends CypherFunSuite {
 
   private def check(deprecations: Deprecations, query: String): Set[InternalNotification] = {
     val logger = new RecordingNotificationLogger()
-    SyntaxDeprecationWarnings(deprecations).visit(TestState(Some(parse(query))), TestContext(logger))
+    SyntaxDeprecationWarnings(deprecations).transform(TestState(Some(parse(query))), TestContext(logger))
     logger.notifications
   }
 

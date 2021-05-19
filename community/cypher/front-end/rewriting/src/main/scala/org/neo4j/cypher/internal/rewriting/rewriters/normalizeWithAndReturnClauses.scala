@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -246,7 +245,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
 }
 
 object normalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
-  override def getRewriter(deprecations: Deprecations, cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger): Rewriter = {
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger): Rewriter = {
     normalizeWithAndReturnClauses(cypherExceptionFactory, notificationLogger)
   }
 

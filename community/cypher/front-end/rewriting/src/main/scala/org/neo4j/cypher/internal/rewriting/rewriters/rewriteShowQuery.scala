@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
-import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
@@ -95,7 +94,6 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     }
   }
 
-  override def getRewriter(deprecations: Deprecations,
-                           cypherExceptionFactory: CypherExceptionFactory,
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory,
                            notificationLogger: InternalNotificationLogger): Rewriter = instance
 }
