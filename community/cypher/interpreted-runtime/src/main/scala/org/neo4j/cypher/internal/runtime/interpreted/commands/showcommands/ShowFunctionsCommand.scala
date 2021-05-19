@@ -53,11 +53,16 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
 
     val tx = state.query.transactionalContext.transaction
     val securityContext = tx.securityContext()
-    val (userRoles, alwaysExecutable) =
+    val (userRoles, allRoles, alwaysExecutable) =
       if (!isCommunity) {
-        ShowProcFuncCommandHelper.getRolesForUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW FUNCTIONS")
+        val (userRoles, alwaysExecutable) = ShowProcFuncCommandHelper.getRolesForUser(securityContext, tx.securityAuthorizationHandler(), systemGraph, executableBy, "SHOW FUNCTIONS")
+        val allRoles =
+          if (functionType != UserDefinedFunctions && (verbose || executableBy.isDefined)) getAllRoles(systemGraph) // We will need roles column for built-in functions
+          else Set.empty[String]
+
+        (userRoles, allRoles, alwaysExecutable)
       } else {
-        (Set.empty[String], true)
+        (Set.empty[String], Set.empty[String], true)
       }
     val allowShowRoles = if (!isCommunity && verbose) securityContext.allowsAdminAction(new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)) else false
 
@@ -84,7 +89,7 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
     val rows = sortedFunctions.map { func =>
       val (executeRoles, boostedExecuteRoles, allowedExecute) =
         if (!isCommunity && (verbose || executableBy.isDefined)) {
-          if (func.isBuiltIn) getRolesForBuiltIn(func.name, privileges, systemGraph, userRoles.nonEmpty)
+          if (func.isBuiltIn) (allRoles, Set.empty[String], userRoles.nonEmpty)
           else ShowProcFuncCommandHelper.roles(func.name, isAdmin = false, privileges, userRoles) // There is no admin functions (only applicable to procedures)
         } else (Set.empty[String], Set.empty[String], isCommunity)
 
@@ -140,14 +145,6 @@ case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Op
     } else {
       briefResult
     }
-  }
-
-  private def getRolesForBuiltIn(name: String,
-                                 privileges: ShowProcFuncCommandHelper.Privileges,
-                                 systemGraph: Option[GraphDatabaseService],
-                                 allowedExecute: Boolean): (Set[String], Set[String], Boolean) = {
-    val allowedBoostedRoles = privileges.grantedBoostedExecuteRoles(name) -- privileges.deniedBoostedExecuteRoles(name)
-    (getAllRoles(systemGraph), allowedBoostedRoles, allowedExecute)
   }
 
   private def getAllRoles(systemGraph: Option[GraphDatabaseService]): Set[String] = {
