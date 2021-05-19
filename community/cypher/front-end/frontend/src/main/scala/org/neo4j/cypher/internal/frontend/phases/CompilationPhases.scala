@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 object CompilationPhases {
 
   def parsing(literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
-              deprecations: Deprecations = Deprecations.V1
+              deprecations: Deprecations = Deprecations.deprecatedFeaturesIn4_X
              ): Transformer[BaseContext, BaseState, BaseState] =
     Parsing andThen
       SyntaxDeprecationWarnings(deprecations) andThen

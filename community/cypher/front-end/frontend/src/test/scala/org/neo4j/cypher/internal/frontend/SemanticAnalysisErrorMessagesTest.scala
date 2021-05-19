@@ -40,7 +40,7 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   private val pipeline =
     Parsing andThen
-      PreparatoryRewriting(Deprecations.V2) andThen
+      PreparatoryRewriting(Deprecations.deprecatedFeaturesIn4_X) andThen
       SemanticAnalysis(warn = true, CorrelatedSubQueries) andThen
       SemanticAnalysis(warn = false, CorrelatedSubQueries)
 
