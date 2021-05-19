@@ -51,15 +51,13 @@ object NameDeduplicator {
     sb.toString()
   }
 
-  private def noLineBreaks(s: String): String = s.replaceAll("[\n\r]","")
-
   /**
    * Removes planner-generated uniquely identifying elements from Strings.
    *
    * E.g. the String "  var@23(<uuid>)" becomes "var".
    */
   def removeGeneratedNamesAndParams(s: String): String = {
-    val paramNamed = UNNAMED_PARAMS_PATTERN.replaceAllIn(noLineBreaks(s), m => s"${(m group 1).toLowerCase()}_${m group 2}")
+    val paramNamed = UNNAMED_PARAMS_PATTERN.replaceAllIn(s, m => s"${(m group 1).toLowerCase()}_${m group 2}")
     val named = UNNAMED_PATTERN.replaceAllIn(paramNamed, m => s"anon_${m group 2}")
 
     deduplicateVariableNames(named)
