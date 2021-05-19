@@ -32,6 +32,7 @@ import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
 import org.neo4j.bolt.v43.messaging.BoltRequestMessageReaderV43;
@@ -85,7 +86,8 @@ class BoltProtocolV43Test
 
         assertThat( protocolV43.createMessageReader( mock( BoltConnection.class ),
                                                      mock( BoltResponseMessageWriter.class ),
-                                                     bookmarksParser, NullLogService.getInstance(),  mock( MemoryTracker.class )) )
+                                                     bookmarksParser, NullLogService.getInstance(), mock( ChannelProtector.class ),
+                                                     mock( MemoryTracker.class ) ) )
                 .isInstanceOf( BoltRequestMessageReaderV43.class );
     }
 
@@ -97,7 +99,7 @@ class BoltProtocolV43Test
 
         assertThat( protocolV43.createMessageReader( mock( BoltConnection.class ),
                                                      mock( BoltResponseMessageWriter.class ),
-                                                     bookmarksParser, NullLogService.getInstance(), memoryTracker ) )
+                                                     bookmarksParser, NullLogService.getInstance(), mock( ChannelProtector.class ), memoryTracker ) )
                 .isInstanceOf( BoltRequestMessageReaderV43.class );
 
         verify( memoryTracker ).allocateHeap( BoltRequestMessageReaderV43.SHALLOW_SIZE );
@@ -130,6 +132,7 @@ class BoltProtocolV43Test
     {
         return new BoltProtocolV43( newTestBoltChannel(), ( ch, st, mr ) -> mock( BoltConnection.class ),
                                     mock( BoltStateMachineFactory.class ), Config.defaults(), bookmarksParser, NullLogService.getInstance(),
-                                    mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO, mock( MemoryTracker.class ) );
+                                    mock( TransportThrottleGroup.class ), Clocks.fakeClock(), Duration.ZERO, mock( ChannelProtector.class ),
+                                    mock( MemoryTracker.class ) );
     }
 }

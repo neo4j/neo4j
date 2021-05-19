@@ -28,6 +28,7 @@ import java.net.SocketAddress;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.UnauthenticatedChannelProtector;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.LogProvider;
@@ -89,7 +90,8 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 memoryTracker.allocateHeap( HeapEstimator.sizeOf( ch ) );
 
                 memoryTracker.allocateHeap( UnauthenticatedChannelProtector.SHALLOW_SIZE + BoltChannel.SHALLOW_SIZE );
-                BoltChannel boltChannel = newBoltChannel( ch, memoryTracker );
+                var channelProtector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize, memoryTracker );
+                BoltChannel boltChannel = newBoltChannel( ch, channelProtector, memoryTracker );
                 connectionTracker.add( boltChannel );
                 ch.closeFuture().addListener( future -> connectionTracker.remove( boltChannel ) );
 
@@ -102,7 +104,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 memoryTracker.allocateHeap( TransportSelectionHandler.SHALLOW_SIZE );
                 TransportSelectionHandler transportSelectionHandler =
                         new TransportSelectionHandler( boltChannel, sslCtx,
-                                                       encryptionRequired, false, logging, boltProtocolFactory, memoryTracker );
+                                                       encryptionRequired, false, logging, boltProtocolFactory, channelProtector, memoryTracker );
                 ch.pipeline().addLast( transportSelectionHandler );
             }
         };
@@ -114,10 +116,9 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         return address;
     }
 
-    private BoltChannel newBoltChannel( Channel ch, MemoryTracker memoryTracker )
+    private BoltChannel newBoltChannel( Channel ch, ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
-        var protector = new UnauthenticatedChannelProtector( ch.pipeline(), channelTimeout, maxMessageSize, memoryTracker );
-        return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch, protector );
+        return new BoltChannel( connectionTracker.newConnectionId( connector ), connector, ch, channelProtector );
     }
 
 }

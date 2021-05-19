@@ -30,6 +30,7 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.configuration.Config;
@@ -44,9 +45,10 @@ public class BoltProtocolV4 extends AbstractBoltProtocol
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 0 );
 
     public BoltProtocolV4( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            Config config, BookmarksParser bookmarksParser, LogService logging, TransportThrottleGroup throttleGroup, MemoryTracker memoryTracker )
+                           Config config, BookmarksParser bookmarksParser, LogService logging, TransportThrottleGroup throttleGroup,
+                           ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
-        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup, memoryTracker );
+        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup, channelProtector, memoryTracker );
     }
 
     @Override
@@ -58,10 +60,10 @@ public class BoltProtocolV4 extends AbstractBoltProtocol
     @Override
     protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
                                                             BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging,
-                                                            MemoryTracker memoryTracker )
+                                                            ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( BoltRequestMessageReaderV4.SHALLOW_SIZE );
-        return new BoltRequestMessageReaderV4( connection, messageWriter, bookmarksParser, logging );
+        return new BoltRequestMessageReaderV4( connection, messageWriter, bookmarksParser, channelProtector, logging );
     }
 
     @Override

@@ -32,6 +32,7 @@ import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.transport.AbstractBoltProtocol;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v41.messaging.BoltRequestMessageReaderV41;
 import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
 import org.neo4j.configuration.Config;
@@ -50,19 +51,21 @@ public class BoltProtocolV42 extends AbstractBoltProtocol
 
     public BoltProtocolV42( BoltChannel channel, BoltConnectionFactory connectionFactory,
                             BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
-                            TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval, MemoryTracker memoryTracker )
+                            TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval, ChannelProtector channelProtector,
+                            MemoryTracker memoryTracker )
     {
-        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup, memoryTracker );
+        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup, channelProtector, memoryTracker );
         this.clock = clock;
         this.keepAliveInterval = keepAliveInterval;
     }
 
     @Override
     protected BoltRequestMessageReader createMessageReader( BoltConnection connection, BoltResponseMessageWriter messageWriter,
-                                                            BookmarksParser bookmarksParser, LogService logging, MemoryTracker memoryTracker )
+                                                            BookmarksParser bookmarksParser, LogService logging,
+                                                            ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( BoltRequestMessageReaderV41.SHALLOW_SIZE );
-        return new BoltRequestMessageReaderV41( connection, messageWriter, bookmarksParser, logging );
+        return new BoltRequestMessageReaderV41( connection, messageWriter, bookmarksParser, channelProtector, logging );
     }
 
     @Override

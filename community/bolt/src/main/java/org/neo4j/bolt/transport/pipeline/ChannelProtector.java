@@ -23,6 +23,7 @@ public interface ChannelProtector
 {
     void afterChannelCreated();
     void beforeBoltProtocolInstalled();
+    void afterRequestReceived();
     void disable();
 
     ChannelProtector NULL = new ChannelProtector()
@@ -35,6 +36,12 @@ public interface ChannelProtector
 
         @Override
         public void beforeBoltProtocolInstalled()
+        {
+            // do nothing
+        }
+
+        @Override
+        public void afterRequestReceived()
         {
             // do nothing
         }

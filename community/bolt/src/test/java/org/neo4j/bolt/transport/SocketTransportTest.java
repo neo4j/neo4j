@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 
 import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutHandler;
-import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutTracker;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.logging.NullLogProvider;
@@ -37,7 +36,6 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -86,7 +84,6 @@ class SocketTransportTest
 
         EmbeddedChannel channel = new EmbeddedChannel( socketTransport.channelInitializer() );
 
-        assertNotNull( channel.pipeline().get( AuthenticationTimeoutTracker.class ) );
         assertNotNull( channel.pipeline().get( AuthenticationTimeoutHandler.class ) );
     }
 

@@ -33,6 +33,7 @@ import io.netty.handler.ssl.SslHandler;
 import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.ProtocolHandshaker;
 import org.neo4j.bolt.transport.pipeline.WebSocketFrameTranslator;
 import org.neo4j.internal.helpers.Exceptions;
@@ -65,10 +66,11 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final LogProvider logging;
     private final BoltProtocolFactory boltProtocolFactory;
     private final Log log;
+    private final ChannelProtector channelProtector;
     private final MemoryTracker memoryTracker;
 
     TransportSelectionHandler( BoltChannel boltChannel, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-                               BoltProtocolFactory boltProtocolFactory, MemoryTracker memoryTracker )
+                               BoltProtocolFactory boltProtocolFactory, ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
         this.boltChannel = boltChannel;
         this.sslCtx = sslCtx;
@@ -77,6 +79,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         this.logging = logging;
         this.boltProtocolFactory = boltProtocolFactory;
         this.log = logging.getLog( TransportSelectionHandler.class );
+        this.channelProtector = channelProtector;
         this.memoryTracker = memoryTracker;
     }
 
@@ -180,7 +183,8 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
 
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
-        p.addLast( new TransportSelectionHandler( boltChannel, null, encryptionRequired, true, logging, boltProtocolFactory, memoryTracker ) );
+        p.addLast(
+                new TransportSelectionHandler( boltChannel, null, encryptionRequired, true, logging, boltProtocolFactory, channelProtector, memoryTracker ) );
         p.remove( this );
     }
 
@@ -215,6 +219,6 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
 
     private ProtocolHandshaker newHandshaker()
     {
-        return new ProtocolHandshaker( boltProtocolFactory, boltChannel, logging, encryptionRequired, isEncrypted, memoryTracker );
+        return new ProtocolHandshaker( boltProtocolFactory, boltChannel, logging, encryptionRequired, isEncrypted, channelProtector, memoryTracker );
     }
 }

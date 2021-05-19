@@ -37,6 +37,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
@@ -78,7 +79,8 @@ class AbstractBoltProtocolTest
         when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) ).thenReturn( mock( BoltConnection.class ) );
         BoltProtocol boltProtocol =
                 new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ), Config.defaults(),
-                        NullLogService.getInstance(), mock( TransportThrottleGroup.class ), memoryTracker );
+                                              NullLogService.getInstance(), mock( TransportThrottleGroup.class ),
+                                              mock( ChannelProtector.class ), memoryTracker );
 
         // When
         boltProtocol.install();
@@ -103,7 +105,8 @@ class AbstractBoltProtocolTest
                 .thenReturn( mock( BoltConnection.class ) );
 
         var boltProtocol = new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ),
-                                                         Config.defaults(), NullLogService.getInstance(), mock( TransportThrottleGroup.class ), memoryTracker );
+                                                         Config.defaults(), NullLogService.getInstance(), mock( TransportThrottleGroup.class ),
+                                                         mock( ChannelProtector.class ), memoryTracker );
 
         boltProtocol.install();
 
@@ -117,9 +120,10 @@ class AbstractBoltProtocolTest
         private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion( 0, 0 );
 
         TestAbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-                                  Config config, LogService logging, TransportThrottleGroup throttleGroup, MemoryTracker memoryTracker )
+                                  Config config, LogService logging, TransportThrottleGroup throttleGroup, ChannelProtector channelProtector,
+                                  MemoryTracker memoryTracker )
         {
-            super( channel, connectionFactory, stateMachineFactory, config, logging, throttleGroup, memoryTracker );
+            super( channel, connectionFactory, stateMachineFactory, config, logging, throttleGroup, channelProtector, memoryTracker );
         }
 
         @Override
@@ -131,6 +135,7 @@ class AbstractBoltProtocolTest
         @Override
         protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
                                                                 BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging,
+                                                                ChannelProtector channelProtector,
                                                                 MemoryTracker memoryTracker )
         {
             return mock( BoltRequestMessageReader.class );

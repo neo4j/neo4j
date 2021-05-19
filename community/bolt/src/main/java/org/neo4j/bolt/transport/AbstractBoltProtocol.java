@@ -32,6 +32,7 @@ import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.transport.pipeline.ChunkDecoder;
 import org.neo4j.bolt.transport.pipeline.HouseKeeper;
 import org.neo4j.bolt.transport.pipeline.MessageAccumulator;
@@ -54,6 +55,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     private final Config config;
     private final LogService logging;
     private final TransportThrottleGroup throttleGroup;
+    private final ChannelProtector channelProtector;
     private final MemoryTracker memoryTracker;
 
     private final BoltStateMachineFactory stateMachineFactory;
@@ -63,14 +65,14 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
 
     public AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
                                  BoltStateMachineFactory stateMachineFactory, Config config, LogService logging, TransportThrottleGroup throttleGroup,
-                                 MemoryTracker memoryTracker )
+                                 ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
-        this( channel, connectionFactory, stateMachineFactory, config, BookmarksParserV3.INSTANCE, logging, throttleGroup, memoryTracker );
+        this( channel, connectionFactory, stateMachineFactory, config, BookmarksParserV3.INSTANCE, logging, throttleGroup, channelProtector, memoryTracker );
     }
 
     protected AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
                                     BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
-                                    TransportThrottleGroup throttleGroup, MemoryTracker memoryTracker )
+                                    TransportThrottleGroup throttleGroup, ChannelProtector channelProtector, MemoryTracker memoryTracker )
     {
         this.channel = channel;
         this.config = config;
@@ -79,6 +81,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         this.stateMachineFactory = stateMachineFactory;
         this.connectionFactory = connectionFactory;
         this.bookmarksParser = bookmarksParser;
+        this.channelProtector = channelProtector;
         this.memoryTracker = memoryTracker;
 
         var hintBuilder = new MapValueBuilder( 1 );
@@ -103,7 +106,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         var messageWriter = createMessageWriter( neo4jPack, logging, memoryTracker );
 
         var connection = connectionFactory.newConnection( channel, stateMachine, messageWriter );
-        var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging, memoryTracker );
+        var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging, channelProtector, memoryTracker );
 
         memoryTracker.allocateHeap(
                 ChunkDecoder.SHALLOW_SIZE + MessageAccumulator.SHALLOW_SIZE + MessageDecoder.SHALLOW_SIZE + HouseKeeper.SHALLOW_SIZE );
@@ -132,7 +135,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
 
     protected abstract BoltRequestMessageReader createMessageReader( BoltConnection connection,
                                                                      BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser,
-                                                                     LogService logging, MemoryTracker memoryTracker );
+                                                                     LogService logging, ChannelProtector channelProtector, MemoryTracker memoryTracker );
 
     protected abstract BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack,
                                                                       LogService logging, MemoryTracker memoryTracker );

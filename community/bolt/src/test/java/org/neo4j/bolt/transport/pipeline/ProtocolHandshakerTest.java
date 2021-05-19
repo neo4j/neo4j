@@ -91,19 +91,20 @@ class ProtocolHandshakerTest
     void shouldChooseFirstAvailableProtocol()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 0}, // third choice - no protocol
-                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 0}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 0}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -126,7 +127,8 @@ class ProtocolHandshakerTest
         BoltProtocolFactory handlerFactory = newProtocolFactory( major, minor, protocol );
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
@@ -158,7 +160,8 @@ class ProtocolHandshakerTest
         var scopedTracker = mock( MemoryTracker.class );
         when( memoryTracker.getScopedMemoryTracker() ).thenReturn( scopedTracker );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
@@ -181,11 +184,12 @@ class ProtocolHandshakerTest
     void shouldHandleFragmentedMessage()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         channel.writeInbound( Unpooled.wrappedBuffer( new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0} ) );
@@ -214,20 +218,21 @@ class ProtocolHandshakerTest
     void shouldHandleHandshakeFollowedImmediatelyByMessage()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 0}, // third choice - no protocol
-                new byte[]{0, 0, 0, 0}, // fourth choice - no protocol
-                new byte[]{1, 2, 3, 4} ); // this is a message
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 0}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 1}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 0}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 0}, // fourth choice - no protocol
+                                                new byte[]{1, 2, 3, 4} ); // this is a message
         channel.writeInbound( input );
 
         // Then
@@ -253,15 +258,16 @@ class ProtocolHandshakerTest
         BoltProtocolFactory handlerFactory = newProtocolFactory( maxVersionNumber, maxVersionNumber, protocol );
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, // first choice - no protocol
-                new byte[]{0, 0, 0, 0}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 0}, // third choice - no protocol
-                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 0}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 0}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 0} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -279,19 +285,20 @@ class ProtocolHandshakerTest
     void shouldFallbackToNoProtocolIfNoMatch()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 0}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 3}, // third choice - no protocol
-                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 0}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 3}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -306,19 +313,20 @@ class ProtocolHandshakerTest
     void shouldRejectIfWrongPreamble()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0xDE, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF}, // preamble
-                new byte[]{0, 0, 0, 1}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 3}, // third choice - no protocol
-                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0xDE, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF}, // preamble
+                                                new byte[]{0, 0, 0, 1}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 3}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -331,19 +339,20 @@ class ProtocolHandshakerTest
     void shouldRejectIfInsecureWhenEncryptionRequired()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, true, false, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, true, false, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
-                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
-                new byte[]{0, 0, 0, 1}, // first choice - no protocol
-                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
-                new byte[]{0, 0, 0, 3}, // third choice - no protocol
-                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 1}, // first choice - no protocol
+                                                new byte[]{0, 0, 0, 2}, // second choice - protocol 1
+                                                new byte[]{0, 0, 0, 3}, // third choice - no protocol
+                                                new byte[]{0, 0, 0, 4} ); // fourth choice - no protocol
         channel.writeInbound( input );
 
         // Then
@@ -356,11 +365,12 @@ class ProtocolHandshakerTest
     void shouldRejectIfHttp()
     {
         // Given
-        BoltProtocol protocol = newBoltProtocol( 1, 0);
+        BoltProtocol protocol = newBoltProtocol( 1, 0 );
         BoltProtocolFactory handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         // When
         FullHttpRequest request = new DefaultFullHttpRequest( HttpVersion.HTTP_1_1, HttpMethod.POST, "http://hello_world:10000" );
@@ -378,7 +388,7 @@ class ProtocolHandshakerTest
     @Test
     void shouldAllocateUponNegotiation()
     {
-        var protocol = newBoltProtocol( 1, 0);
+        var protocol = newBoltProtocol( 1, 0 );
         var handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class );
         var versionMemoryTracker = mock( MemoryTracker.class );
@@ -386,7 +396,8 @@ class ProtocolHandshakerTest
         when( memoryTracker.getScopedMemoryTracker() )
                 .thenReturn( versionMemoryTracker );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         var payload = Unpooled.wrappedBuffer(
                 new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17},
@@ -411,11 +422,12 @@ class ProtocolHandshakerTest
     @Test
     void shouldFreeMemoryUponRemoval()
     {
-        var protocol = newBoltProtocol( 1, 0);
+        var protocol = newBoltProtocol( 1, 0 );
         var handlerFactory = newProtocolFactory( 1, 0, protocol );
         var memoryTracker = mock( MemoryTracker.class );
 
-        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, memoryTracker ) );
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true, mock( ChannelProtector.class ), memoryTracker ) );
 
         channel.pipeline()
                .removeFirst();
@@ -436,6 +448,6 @@ class ProtocolHandshakerTest
     private static BoltProtocolFactory newProtocolFactory( int majorVersion, int minorVersion, BoltProtocol protocol )
     {
         BoltProtocolVersion version = new BoltProtocolVersion( majorVersion, minorVersion );
-        return ( givenVersion, channel, memoryTracker ) -> version.equals( givenVersion ) ? protocol : null;
+        return ( givenVersion, channel, channelProtector, memoryTracker ) -> version.equals( givenVersion ) ? protocol : null;
     }
 }

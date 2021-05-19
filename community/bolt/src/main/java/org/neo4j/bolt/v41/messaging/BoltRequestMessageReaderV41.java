@@ -28,6 +28,7 @@ import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BookmarksParser;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.messaging.MessageProcessingHandler;
 import org.neo4j.bolt.v3.messaging.ResultHandler;
 import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;
@@ -48,10 +49,10 @@ public class BoltRequestMessageReaderV41 extends BoltRequestMessageReader
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltRequestMessageReaderV41.class );
 
     public BoltRequestMessageReaderV41( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
-                                        LogService logService )
+                                        ChannelProtector channelProtector, LogService logService )
     {
         super( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
-               buildDecoders( connection, responseMessageWriter, bookmarksParser, logService ) );
+               buildDecoders( connection, responseMessageWriter, bookmarksParser, logService ), channelProtector );
     }
 
     private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,

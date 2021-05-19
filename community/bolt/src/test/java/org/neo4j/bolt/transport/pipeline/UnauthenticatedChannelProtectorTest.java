@@ -39,12 +39,12 @@ class UnauthenticatedChannelProtectorTest
         var pipeline = mock( ChannelPipeline.class );
         var memoryTracker = mock( MemoryTracker.class );
 
-        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, -1, memoryTracker );
+        var protector =
+                new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, -1, memoryTracker );
 
         InOrder inOrder = inOrder( pipeline, memoryTracker );
         protector.afterChannelCreated();
-        inOrder.verify( memoryTracker ).allocateHeap( AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE );
-        inOrder.verify( pipeline ).addLast( any( AuthenticationTimeoutTracker.class ) );
+        inOrder.verify( memoryTracker ).allocateHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE );
         inOrder.verify( pipeline ).addLast( any( AuthenticationTimeoutHandler.class ) );
         inOrder.verifyNoMoreInteractions();
     }
@@ -74,11 +74,9 @@ class UnauthenticatedChannelProtectorTest
 
         InOrder inOrder = inOrder( pipeline, memoryTracker );
         protector.disable();
-        inOrder.verify( pipeline ).remove( AuthenticationTimeoutTracker.class );
         inOrder.verify( pipeline ).remove( AuthenticationTimeoutHandler.class );
         inOrder.verify( pipeline ).remove( BytesAccumulator.class );
-        inOrder.verify( memoryTracker ).releaseHeap(
-                AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE + BytesAccumulator.SHALLOW_SIZE );
+        inOrder.verify( memoryTracker ).releaseHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE + BytesAccumulator.SHALLOW_SIZE );
         inOrder.verifyNoMoreInteractions();
     }
 }

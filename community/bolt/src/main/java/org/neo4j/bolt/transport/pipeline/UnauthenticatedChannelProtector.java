@@ -38,22 +38,24 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
     private final long maxMessageSize;
     private final MemoryTracker memoryTracker;
 
+    private AuthenticationTimeoutHandler timeoutHandler;
+
     public UnauthenticatedChannelProtector( ChannelPipeline pipeline, Duration channelTimeout, long maxMessageSize, MemoryTracker memoryTracker )
     {
         this.channelTimeout = channelTimeout;
         this.pipeline = pipeline;
         this.maxMessageSize = maxMessageSize;
         this.memoryTracker = memoryTracker;
+
+        memoryTracker.allocateHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE );
+        this.timeoutHandler = new AuthenticationTimeoutHandler( channelTimeout );
     }
 
     public void afterChannelCreated()
     {
-        memoryTracker.allocateHeap( AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE );
-
         // Adds auth timeout handlers.
         // The timer is counting down after installation.
-        pipeline.addLast( new AuthenticationTimeoutTracker( channelTimeout ) );
-        pipeline.addLast( new AuthenticationTimeoutHandler( channelTimeout ) );
+        pipeline.addLast( timeoutHandler );
     }
 
     public void beforeBoltProtocolInstalled()
@@ -64,17 +66,24 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
         pipeline.addLast( new BytesAccumulator( maxMessageSize ) );
     }
 
+    @Override
+    public void afterRequestReceived()
+    {
+        if ( timeoutHandler != null )
+        {
+            timeoutHandler.setRequestReceived( true );
+        }
+    }
+
     public void disable()
     {
         // Removes auth timeout handlers.
-        pipeline.remove( AuthenticationTimeoutTracker.class );
         pipeline.remove( AuthenticationTimeoutHandler.class );
+        timeoutHandler = null;
 
         // Remove byte limits
         pipeline.remove( BytesAccumulator.class );
 
-        memoryTracker.releaseHeap(
-                AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE +
-                BytesAccumulator.SHALLOW_SIZE );
+        memoryTracker.releaseHeap( AuthenticationTimeoutHandler.SHALLOW_SIZE + BytesAccumulator.SHALLOW_SIZE );
     }
 }

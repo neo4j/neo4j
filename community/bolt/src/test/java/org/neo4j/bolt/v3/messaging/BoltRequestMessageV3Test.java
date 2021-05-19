@@ -36,6 +36,7 @@ import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackedInputArray;
 import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
+import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
@@ -162,7 +163,8 @@ class BoltRequestMessageV3Test
             return null;
         } ).when( stateMachine ).process( any(), any() );
         BoltRequestMessageReader reader = new BoltRequestMessageReaderV3( new SynchronousBoltConnection( stateMachine ),
-                mock( BoltResponseMessageWriter.class ), NullLogService.getInstance() );
+                                                                          mock( BoltResponseMessageWriter.class ), mock( ChannelProtector.class ),
+                                                                          NullLogService.getInstance() );
 
         byte[] bytes = channel.getBytes();
         String serialized = HexPrinter.hex( bytes );

@@ -20,43 +20,71 @@
 package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.logging.Log;
 import org.neo4j.memory.HeapEstimator;
 
 import static java.lang.String.format;
 
 /**
- * Close the channel directly if we failed to finish authentication within certain timeout specified by
- * {@link BoltConnectorInternalSettings#unsupported_bolt_unauth_connection_timeout}
+ * Close the channel directly if we failed to finish authentication within certain timeout specified by {@link
+ * BoltConnectorInternalSettings#unsupported_bolt_unauth_connection_timeout}
  */
-public class AuthenticationTimeoutHandler extends ChannelInboundHandlerAdapter
+public class AuthenticationTimeoutHandler extends IdleStateHandler
 {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( AuthenticationTimeoutHandler.class );
 
     private final Duration timeout;
 
+    private volatile boolean requestReceived;
+
     public AuthenticationTimeoutHandler( Duration timeout )
     {
+        super( timeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS );
         this.timeout = timeout;
     }
 
     @Override
-    public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
+    public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if ( evt instanceof IdleStateEvent )
-        {
-            ctx.close(); // We failed to finish auth within timeout.
-            throw new BoltConnectionFatality( format(
-                    "A connection '%s' is terminated because the client failed to finish authenticate within %s ms.",
-                    ctx.channel(), timeout.toMillis() ),
-                    null );
+        // Override the parent's method to ensure the count down timer is never reset.
+        ctx.fireChannelRead( msg );
+    }
 
+    @Override
+    protected void channelIdle( ChannelHandlerContext ctx, IdleStateEvent evt ) throws Exception
+    {
+        ctx.close();
+
+        if ( requestReceived )
+        {
+            throw new BoltConnectionFatality(
+                    format(
+                            "Terminated connection '%s' as the server failed to handle an authentication request within %d ms.",
+                            ctx.channel(), timeout.toMillis()
+                    ),
+                    null
+            );
         }
+
+        throw new BoltConnectionFatality(
+                format(
+                        "Terminated connection '%s' as the client failed to authenticate within %d ms.",
+                        ctx.channel(), timeout.toMillis()
+                ),
+                null
+        );
+    }
+
+    public void setRequestReceived( boolean requestReceived )
+    {
+        this.requestReceived = requestReceived;
     }
 }
