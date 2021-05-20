@@ -93,7 +93,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                 SystemGraphCredential currentCredentials = SystemGraphCredential.deserialize( user.getProperty( "credentials" ).toString(), secureHasher );
                 if ( currentCredentials.matchesPassword( UTF8.encode( INITIAL_PASSWORD ) ) )
                 {
-                    securityLog.info( "Updating initial user password from `auth.ini` file: %s", initialUser.name() );
+                    securityLog.info( String.format( "Updating initial user password from `auth.ini` file: %s", initialUser.name() ) );
                     user.setProperty( "credentials", initialUser.credentials().serialize() );
                     user.setProperty( "passwordChangeRequired", initialUser.passwordChangeRequired() );
                 }

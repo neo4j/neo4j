@@ -227,11 +227,10 @@ public class ProcedureRegistry
             proc = procedures.get( id );
             if ( proc.signature().admin() && !ctx.securityContext().allowExecuteAdminProcedure( id ) )
             {
-                ctx.dependencyResolver().resolveDependency( AbstractSecurityLog.class ).error( ctx.securityContext(),
-                                                                                               format( "Executing admin procedure '%s' is not allowed for %s.",
-                                                                                                       proc.signature().name(),
-                                                                                                       ctx.securityContext().description() ) );
-                throw new AuthorizationViolationException( format( "Executing admin procedure is not allowed for %s.", ctx.securityContext().description() ) );
+                String message = format( "Executing admin procedure '%s' is not allowed for %s.",
+                                         proc.signature().name(), ctx.securityContext().description() );
+                ctx.dependencyResolver().resolveDependency( AbstractSecurityLog.class ).error( ctx.securityContext(), message);
+                throw new AuthorizationViolationException( message );
             }
         }
         catch ( IndexOutOfBoundsException e )

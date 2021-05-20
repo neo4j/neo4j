@@ -217,7 +217,7 @@ class TransactionEventsIT
             @Override
             public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
             {
-                return new SecurityContext( subject, AccessMode.Static.WRITE, EMBEDDED_CONNECTION );
+                return new SecurityContext( subject, AccessMode.Static.WRITE, EMBEDDED_CONNECTION, dbName );
             }
         };
         Map<String,Object> metadata = genericMap( "username", "joe" );

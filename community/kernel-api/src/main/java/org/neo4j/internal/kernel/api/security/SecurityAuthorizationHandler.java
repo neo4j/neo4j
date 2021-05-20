@@ -48,8 +48,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsCreateNode( labelIds ) )
         {
             String labels = null == labelIds ? "" : Arrays.stream( labelIds ).mapToObj( resolver::apply ).collect( Collectors.joining( "," ) );
-            throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Create node with labels '%s' is not allowed for %s.", labels, securityContext.description() ) );
+            throw logAndGetAuthorizationException( securityContext, format( "Create node with labels '%s' on database '%s' is not allowed for %s.",
+                                                           labels, securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -59,8 +59,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsDeleteNode( labelSupplier ) )
         {
             String labels = Arrays.stream( labelSupplier.get().all() ).mapToObj( id -> resolver.apply( (int) id ) ).collect( Collectors.joining( "," ) );
-            throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Delete node with labels '%s' is not allowed for %s.", labels, securityContext.description() ) );
+            throw logAndGetAuthorizationException( securityContext, format( "Delete node with labels '%s' on database '%s' is not allowed for %s.",
+                                                                            labels, securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -70,8 +70,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsCreateRelationship( relType ) )
         {
             throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Create relationship with type '%s' is not allowed for %s.", resolver.apply( relType ),
-                                                           securityContext.description() ) );
+                                                   format( "Create relationship with type '%s' on database '%s' is not allowed for %s.",
+                                                           resolver.apply( relType ), securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -81,8 +81,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsDeleteRelationship( relType ) )
         {
             throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Delete relationship with type '%s' is not allowed for %s.", resolver.apply( relType ),
-                                                           securityContext.description() ) );
+                                                   format( "Delete relationship with type '%s' on database '%s' is not allowed for %s.",
+                                                           resolver.apply( relType ), securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -92,8 +92,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsSetLabel( labelId ) )
         {
             throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Set label for label '%s' is not allowed for %s.", resolver.apply( (int) labelId ),
-                                                           securityContext.description() ) );
+                                                   format( "Set label for label '%s' on database '%s' is not allowed for %s.",
+                                                           resolver.apply( (int) labelId ), securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -103,8 +103,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsRemoveLabel( labelId ) )
         {
             throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Remove label for label '%s' is not allowed for %s.", resolver.apply( (int) labelId ),
-                                                           securityContext.description() ) );
+                                                   format( "Remove label for label '%s' on database '%s' is not allowed for %s.",
+                                                           resolver.apply( (int) labelId ), securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -114,8 +114,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsSetProperty( () -> labelIds, (int) propertyKey ) )
         {
             throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Set property for property '%s' is not allowed for %s.", resolver.apply( propertyKey ),
-                                                           securityContext.description() ) );
+                                                   format( "Set property for property '%s' on database '%s' is not allowed for %s.",
+                                                           resolver.apply( propertyKey ), securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -125,8 +125,8 @@ public class SecurityAuthorizationHandler
         if ( !accessMode.allowsSetProperty( () -> (int) relType, (int) propertyKey ) )
         {
             throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Set property for property '%s' is not allowed for %s.", resolver.apply( propertyKey ),
-                                                           securityContext.description() ) );
+                                                   format( "Set property for property '%s' on database '%s' is not allowed for %s.",
+                                                           resolver.apply( propertyKey ), securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -135,7 +135,8 @@ public class SecurityAuthorizationHandler
         AccessMode accessMode = securityContext.mode();
         if ( !accessMode.allowsSchemaWrites() )
         {
-            throw logAndGetAuthorizationException( securityContext, format( "Schema operations are not allowed for %s.", securityContext.description() ) );
+            throw logAndGetAuthorizationException( securityContext, format( "Schema operations on database '%s' are not allowed for %s.",
+                                                                            securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -144,8 +145,8 @@ public class SecurityAuthorizationHandler
         AccessMode accessMode = securityContext.mode();
         if ( !accessMode.allowsSchemaWrites( action ) )
         {
-            throw logAndGetAuthorizationException( securityContext,
-                                                   format( "Schema operation '%s' is not allowed for %s.", action, securityContext.description() ) );
+            throw logAndGetAuthorizationException( securityContext, format( "Schema operation '%s' on database '%s' is not allowed for %s.",
+                                                                            action, securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -154,7 +155,8 @@ public class SecurityAuthorizationHandler
         AccessMode accessMode = securityContext.mode();
         if ( !accessMode.allowsShowIndex() )
         {
-            throw logAndGetAuthorizationException( securityContext, format( "Show indexes are not allowed for %s.", securityContext.description() ) );
+            throw logAndGetAuthorizationException( securityContext, format( "Show indexes on database '%s' is not allowed for %s.",
+                                                                            securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -163,7 +165,8 @@ public class SecurityAuthorizationHandler
         AccessMode accessMode = securityContext.mode();
         if ( !accessMode.allowsShowConstraint() )
         {
-            throw logAndGetAuthorizationException( securityContext, format( "Show constraints are not allowed for %s.", securityContext.description() ) );
+            throw logAndGetAuthorizationException( securityContext, format( "Show constraints on database '%s' is not allowed for %s.",
+                                                                            securityContext.database(), securityContext.description() ) );
         }
     }
 
@@ -176,21 +179,23 @@ public class SecurityAuthorizationHandler
             {
             case CREATE_LABEL:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "Creating new node label is not allowed for %s. See GRANT CREATE NEW NODE LABEL ON DATABASE...",
-                                                               securityContext.description() ) );
+                                                       format( "Creating new node label on database '%s' is not allowed for %s. " +
+                                                               "See GRANT CREATE NEW NODE LABEL ON DATABASE `%s`...",
+                                                               securityContext.database(), securityContext.description(), securityContext.database() ) );
             case CREATE_PROPERTYKEY:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "Creating new property name is not allowed for %s. See GRANT CREATE NEW PROPERTY NAME ON " +
-                                                               "DATABASE...",
-                                                               securityContext.description() ) );
+                                                       format( "Creating new property name on database '%s' is not allowed for %s. " +
+                                                               "See GRANT CREATE NEW PROPERTY NAME ON DATABASE `%s`...",
+                                                               securityContext.database(), securityContext.description(), securityContext.database() ) );
             case CREATE_RELTYPE:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "Creating new relationship type is not allowed for %s. See GRANT CREATE NEW RELATIONSHIP TYPE " +
-                                                               "ON DATABASE...",
-                                                               securityContext.description() ) );
+                                                       format( "Creating new relationship type on database '%s' is not allowed for %s. " +
+                                                               "See GRANT CREATE NEW RELATIONSHIP TYPE ON DATABASE `%s`...",
+                                                               securityContext.database(), securityContext.description(), securityContext.database() ) );
             default:
                 throw logAndGetAuthorizationException( securityContext,
-                                                       format( "'%s' operations are not allowed for %s.", action, securityContext.description() ) );
+                                                       format( "'%s' operations on database '%s' are not allowed for %s.",
+                                                               action, securityContext.database(), securityContext.description() ) );
             }
         }
     }

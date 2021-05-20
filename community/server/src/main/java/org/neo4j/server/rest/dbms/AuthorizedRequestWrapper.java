@@ -53,7 +53,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
             @Override
             public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
             {
-                return new SecurityContext( subject(), AccessMode.Static.ACCESS, connectionInfo() );
+                return new SecurityContext( subject(), AccessMode.Static.ACCESS, connectionInfo(), dbName );
             }
         };
     }

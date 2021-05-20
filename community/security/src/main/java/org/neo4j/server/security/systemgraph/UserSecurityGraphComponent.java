@@ -81,12 +81,12 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     public void initializeSystemGraphModel( Transaction tx ) throws Exception
     {
         KnownCommunitySecurityComponentVersion componentBeforeInit = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
-        securityLog.info( "Initializing system graph model for component '%s' with version %d and status %s",
-                          SECURITY_USER_COMPONENT, componentBeforeInit.version, componentBeforeInit.getStatus() );
+        securityLog.info( String.format( "Initializing system graph model for component '%s' with version %d and status %s",
+                          SECURITY_USER_COMPONENT, componentBeforeInit.version, componentBeforeInit.getStatus() ) );
         initializeLatestSystemGraph( tx );
         KnownCommunitySecurityComponentVersion componentAfterInit = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
-        securityLog.info( "After initialization of system graph model component '%s' have version %d and status %s",
-                          SECURITY_USER_COMPONENT, componentAfterInit.version, componentAfterInit.getStatus() );
+        securityLog.info( String.format( "After initialization of system graph model component '%s' have version %d and status %s",
+                          SECURITY_USER_COMPONENT, componentAfterInit.version, componentAfterInit.getStatus() ) );
     }
 
     @Override
@@ -98,7 +98,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     private void initializeLatestSystemGraph( Transaction tx ) throws Exception
     {
         KnownCommunitySecurityComponentVersion latest = knownUserSecurityComponentVersions.latestComponentVersion();
-        securityLog.debug( "Latest version of component '%s' is %s", SECURITY_USER_COMPONENT, latest.version );
+        securityLog.debug( String.format( "Latest version of component '%s' is %s", SECURITY_USER_COMPONENT, latest.version ) );
         latest.setupUsers( tx );
         latest.setVersionProperty( tx, latest.version );
     }
@@ -109,14 +109,14 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         try ( Transaction tx = system.beginTx() )
         {
             KnownCommunitySecurityComponentVersion component = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
-            securityLog.info( "Performing postInitialization step for component '%s' with version %d and status %s",
-                              SECURITY_USER_COMPONENT, component.version, component.getStatus() );
+            securityLog.info( String.format( "Performing postInitialization step for component '%s' with version %d and status %s",
+                              SECURITY_USER_COMPONENT, component.version, component.getStatus() ) );
 
             // Do not need to setup initial password when initialized, because that is already done by the initialization code in `setupUsers`
             if ( !wasInitialized )
             {
 
-                securityLog.info( "Updating the initial password in component '%s'", SECURITY_USER_COMPONENT );
+                securityLog.info( String.format( "Updating the initial password in component '%s'", SECURITY_USER_COMPONENT ) );
                 component.updateInitialUserPassword( tx );
                 tx.commit();
             }
@@ -129,8 +129,8 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         SystemGraphComponent.executeWithFullAccess( system, tx ->
         {
             KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
-            securityLog.debug( "Trying to upgrade component '%s' with version %d and status %s to latest version",
-                               SECURITY_USER_COMPONENT, currentVersion.version, currentVersion.getStatus() );
+            securityLog.debug( String.format( "Trying to upgrade component '%s' with version %d and status %s to latest version",
+                               SECURITY_USER_COMPONENT, currentVersion.version, currentVersion.getStatus() ) );
             if ( currentVersion.version == UNKNOWN_VERSION )
             {
                 securityLog.debug( "The current version does not have a security graph, doing a full initialization" );

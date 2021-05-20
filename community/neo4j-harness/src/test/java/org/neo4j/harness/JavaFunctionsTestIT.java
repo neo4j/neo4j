@@ -161,7 +161,7 @@ class JavaFunctionsTestIT
 
             // Then
             assertQueryGetsValue( server, "RETURN my.countNodes() AS value", 3L );
-            assertQueryGetsError( server, "RETURN my.willFail() AS value", "Create node with labels '' is not allowed" );
+            assertQueryGetsError( server, "RETURN my.willFail() AS value", "Create node with labels '' on database 'neo4j' is not allowed" );
         }
     }
 

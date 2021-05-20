@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api.security;
 import java.util.Collections;
 import java.util.Set;
 
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -37,11 +36,13 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 public class SecurityContext extends LoginContext
 {
     protected final AccessMode mode;
+    private final String database;
 
-    public SecurityContext( AuthSubject subject, AccessMode mode, ClientConnectionInfo connectionInfo )
+    public SecurityContext( AuthSubject subject, AccessMode mode, ClientConnectionInfo connectionInfo, String database )
     {
         super( subject, connectionInfo );
         this.mode = mode;
+        this.database = database;
     }
 
     /**
@@ -50,6 +51,11 @@ public class SecurityContext extends LoginContext
     public AccessMode mode()
     {
         return mode;
+    }
+
+    public String database()
+    {
+        return database;
     }
 
     /**
@@ -74,7 +80,7 @@ public class SecurityContext extends LoginContext
     }
 
     @Override
-    public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog log )
+    public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
     {
         return this;
     }
@@ -84,7 +90,7 @@ public class SecurityContext extends LoginContext
      */
     public SecurityContext withMode( AccessMode mode )
     {
-        return new SecurityContext( subject, mode, connectionInfo() );
+        return new SecurityContext( subject, mode, connectionInfo(), database() );
     }
 
     /**
@@ -92,7 +98,7 @@ public class SecurityContext extends LoginContext
      */
     public SecurityContext withMode( AdminAccessMode adminAccessMode )
     {
-        return new SecurityContext( subject, mode, connectionInfo() );
+        return new SecurityContext( subject, mode, connectionInfo(), database() );
     }
 
     public void assertCredentialsNotExpired( SecurityAuthorizationHandler handler )
@@ -116,16 +122,16 @@ public class SecurityContext extends LoginContext
     }
 
     /** Allows all operations. */
-    public static final SecurityContext AUTH_DISABLED = authDisabled( AccessMode.Static.FULL, EMBEDDED_CONNECTION );
+    public static final SecurityContext AUTH_DISABLED = authDisabled( AccessMode.Static.FULL, EMBEDDED_CONNECTION, null );
 
-    public static SecurityContext authDisabled( AccessMode mode, ClientConnectionInfo connectionInfo )
+    public static SecurityContext authDisabled( AccessMode mode, ClientConnectionInfo connectionInfo, String database )
     {
-        return new SecurityContext( AuthSubject.AUTH_DISABLED, mode, connectionInfo )
+        return new SecurityContext( AuthSubject.AUTH_DISABLED, mode, connectionInfo, database )
         {
             @Override
             public SecurityContext withMode( AccessMode mode )
             {
-                return authDisabled( mode, connectionInfo() );
+                return authDisabled( mode, connectionInfo(), database() );
             }
 
             @Override

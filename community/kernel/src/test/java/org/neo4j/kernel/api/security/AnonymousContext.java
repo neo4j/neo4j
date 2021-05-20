@@ -71,6 +71,6 @@ public class AnonymousContext extends LoginContext
     @Override
     public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
     {
-        return new SecurityContext( subject(), accessMode, connectionInfo() );
+        return new SecurityContext( subject(), accessMode, connectionInfo(), dbName );
     }
 }

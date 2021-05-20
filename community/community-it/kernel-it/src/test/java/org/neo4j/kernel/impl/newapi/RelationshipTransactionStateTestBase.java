@@ -1031,7 +1031,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ), EMBEDDED_CONNECTION );
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED,
+                                                            new TestAccessMode( true, false, true, false ),
+                                                            EMBEDDED_CONNECTION,
+                                                            null );
         try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             Write write = tx.dataWrite();
@@ -1058,7 +1061,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ), EMBEDDED_CONNECTION );
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED,
+                                                            new TestAccessMode( true, false, true, false ),
+                                                            EMBEDDED_CONNECTION,
+                                                            null );
         try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             Write write = tx.dataWrite();
@@ -1093,7 +1099,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.commit();
         }
 
-        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ), EMBEDDED_CONNECTION );
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED,
+                                                            new TestAccessMode( true, false, true, false ),
+                                                            EMBEDDED_CONNECTION,
+                                                            null );
         try ( KernelTransaction tx = beginTransaction( loginContext );
                 NodeCursor node = tx.cursors().allocateNodeCursor( NULL );
                 RelationshipTraversalCursor traversal = tx.cursors().allocateRelationshipTraversalCursor( NULL ) )

@@ -693,7 +693,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node1 = createNode( "label" );
         Node node2 = createNode();
 
-        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ), EMBEDDED_CONNECTION );
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED,
+                                                            new TestAccessMode( true, false, true, false ),
+                                                            EMBEDDED_CONNECTION,
+                                                            null );
         try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             // when
@@ -714,7 +717,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         createNode();
         createNode();
 
-        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ), EMBEDDED_CONNECTION );
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED,
+                                                            new TestAccessMode( true, false, true, false ),
+                                                            EMBEDDED_CONNECTION,
+                                                            null );
         try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             // when
@@ -735,7 +741,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node1 = createNode( "label" );
         Node node2 = createNode( "label" );
 
-        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ), EMBEDDED_CONNECTION );
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED,
+                                                            new TestAccessMode( true, false, true, false ),
+                                                            EMBEDDED_CONNECTION,
+                                                            null );
         try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             // when
@@ -756,7 +765,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node1 = createNode( "label" );
         Node node2 = createNode( "label" );
 
-        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED, new TestAccessMode( true, false, true, false ), EMBEDDED_CONNECTION );
+        SecurityContext loginContext = new SecurityContext( AuthSubject.AUTH_DISABLED,
+                                                            new TestAccessMode( true, false, true, false ),
+                                                            EMBEDDED_CONNECTION,
+                                                            null );
         try ( KernelTransaction tx = beginTransaction( loginContext ) )
         {
             // when

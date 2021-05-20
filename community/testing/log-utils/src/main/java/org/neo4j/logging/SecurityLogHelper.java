@@ -160,16 +160,20 @@ public class SecurityLogHelper
 
         private boolean equalLine( LogLineContent expected, Map<String,String> map )
         {
-            return Objects.equals( expected.expectedLevel, map.get( "level" ) ) &&
+            return Objects.equals( "security", map.get( "type" ) ) &&
+                   Objects.equals( expected.expectedLevel, map.get( "level" ) ) &&
                    Objects.equals( expected.expectedSource, map.get( "source" ) ) &&
-                   Objects.equals( expected.expectedUser == null ? "" : expected.expectedUser, map.get( "username" ) ) &&
+                   Objects.equals( expected.expectedDatabase, map.get( "database" ) ) &&
+                   Objects.equals( expected.expectedUser, map.get( "username" ) ) &&
                    Objects.equals( expected.expectedMessage, map.get( "message" ) );
         }
 
         private void assertLine( LogLineContent expected, Map<String,String> map )
         {
+            assertEquals( "security", map.get( "type" ), "'type' mismatch" );
             assertEquals( expected.expectedLevel, map.get( "level" ), "'level' mismatch" );
             assertEquals( expected.expectedSource, map.get( "source" ), "'source' mismatch" );
+            assertEquals( expected.expectedDatabase, map.get( "database" ), "'database' mismatch" );
             assertEquals( expected.expectedUser, map.get( "username" ), "'user' mismatch" );
             assertEquals( expected.expectedMessage, map.get( "message" ), "'message' mismatch" );
         }
@@ -253,6 +257,7 @@ public class SecurityLogHelper
     {
         private String expectedLevel;
         private String expectedSource;
+        private String expectedDatabase;
         private String expectedUser;
         private String expectedMessage;
 
@@ -265,6 +270,11 @@ public class SecurityLogHelper
         public LogLineContent source( String source )
         {
             this.expectedSource = source;
+            return this;
+        }
+        public LogLineContent database( String database )
+        {
+            this.expectedDatabase = database;
             return this;
         }
 
@@ -286,6 +296,7 @@ public class SecurityLogHelper
             return "LogLineContent{" +
                    "expectedLevel='" + expectedLevel + '\'' +
                    ", expectedSource='" + expectedSource + '\'' +
+                   ", expectedDatabase='" + expectedDatabase + '\'' +
                    ", expectedUser='" + expectedUser + '\'' +
                    ", expectedMessage='" + expectedMessage + '\'' +
                    '}';

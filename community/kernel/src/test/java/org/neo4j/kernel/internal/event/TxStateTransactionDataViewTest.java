@@ -314,7 +314,7 @@ class TxStateTransactionDataViewTest
         AuthSubject authSubject = mock( AuthSubject.class );
         when( authSubject.username() ).thenReturn( "Christof" );
         when( transaction.securityContext() )
-                .thenReturn( new SecurityContext( authSubject, AccessMode.Static.FULL, EMBEDDED_CONNECTION ) );
+                .thenReturn( new SecurityContext( authSubject, AccessMode.Static.FULL, EMBEDDED_CONNECTION, null ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "Christof", transactionDataSnapshot.username() );

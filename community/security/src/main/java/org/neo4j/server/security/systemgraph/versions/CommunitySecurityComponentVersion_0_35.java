@@ -89,7 +89,7 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
 
             // Log what happened to the security log
             String userString = users.values().size() == 1 ? "user" : "users";
-            securityLog.info( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString );
+            securityLog.info( String.format( "Completed migration of %s %s into system graph.", Integer.toString( users.values().size() ), userString ) );
         }
         else
         {

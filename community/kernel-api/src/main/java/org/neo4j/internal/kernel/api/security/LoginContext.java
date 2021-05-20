@@ -72,9 +72,9 @@ public abstract class LoginContext
         return new LoginContext( AuthSubject.AUTH_DISABLED, connectionInfo )
         {
             @Override
-            public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog log )
+            public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
             {
-                return SecurityContext.authDisabled( AccessMode.Static.FULL, connectionInfo() );
+                return SecurityContext.authDisabled( AccessMode.Static.FULL, connectionInfo(), dbName );
             }
         };
     }

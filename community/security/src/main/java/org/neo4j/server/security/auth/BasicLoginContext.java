@@ -77,7 +77,11 @@ public class BasicLoginContext extends LoginContext
         @Override
         public String username()
         {
-            return user.name();
+            if ( user != null )
+            {
+                return user.name();
+            }
+            return ""; // could be the case if user not exists
         }
 
         @Override
@@ -90,17 +94,18 @@ public class BasicLoginContext extends LoginContext
     @Override
     public SecurityContext authorize( IdLookup idLookup, String dbName, AbstractSecurityLog securityLog )
     {
+        SecurityContext securityContext = new SecurityContext( subject(), accessMode, connectionInfo(), dbName );
         if ( subject().getAuthenticationResult().equals( FAILURE ) || subject().getAuthenticationResult().equals( TOO_MANY_ATTEMPTS ) )
         {
-            securityLog.error( connectionInfo(), String.format( "Authentication failed for database %s.", dbName ) );
+            securityLog.error( securityContext, String.format( "Authentication failed for database %s.", dbName ) );
             throw new AuthorizationViolationException( AuthorizationViolationException.PERMISSION_DENIED, Status.Security.Unauthorized );
         }
         else if ( !dbName.equals( SYSTEM_DATABASE_NAME ) && subject().getAuthenticationResult().equals( PASSWORD_CHANGE_REQUIRED ) )
         {
             String message = SecurityAuthorizationHandler.generateCredentialsExpiredMessage( String.format( "ACCESS on database %s is not allowed.", dbName ) );
-            securityLog.error( this, message );
+            securityLog.error( securityContext, message );
             throw new AuthorizationViolationException( message, Status.Security.CredentialsExpired );
         }
-        return new SecurityContext( subject(), accessMode, connectionInfo() );
+        return securityContext;
     }
 }
