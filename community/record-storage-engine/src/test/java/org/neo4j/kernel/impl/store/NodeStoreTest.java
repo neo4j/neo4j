@@ -269,7 +269,10 @@ class NodeStoreTest
             assertTrue( nextRelSet.remove( record.getNextRel() ) );
             return false;
         };
-        nodeStore.scanAllRecords( scanner, NULL );
+        try ( var cursor = nodeStore.openPageCursorForReading( 0, NULL ) )
+        {
+            nodeStore.scanAllRecords( scanner, cursor );
+        }
 
         // ...NOR do we have anything left in the set afterwards.
         assertTrue( nextRelSet.isEmpty() );

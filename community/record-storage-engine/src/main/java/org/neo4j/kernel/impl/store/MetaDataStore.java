@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -166,7 +165,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[2] );
 
     // We use these objects and their monitors as "entity" locks on the records, because page write locks are not
-    // exclusive. Therefor, these locks are only used when *writing* records, not when reading them.
+    // exclusive. Therefore, these locks are only used when *writing* records, not when reading them.
     private final Object upgradeTimeLock = new Object();
     private final Object creationTimeLock  = new Object();
     private final Object randomNumberLock = new Object();

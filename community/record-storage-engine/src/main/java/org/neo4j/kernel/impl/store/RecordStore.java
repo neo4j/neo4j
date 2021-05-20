@@ -151,7 +151,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      *
      * @param target the record to fill.
      * @param mode loading behaviour, read more in {@link RecordStore#getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
-     * @param cursor the PageCursor to use for record loading.
+     * @param cursor pageCursor to use for record loading.
      * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
      */
     void nextRecordByCursor( RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
@@ -294,8 +294,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
      * cloned if you want to save it for later.
      * @param visitor {@link Visitor} notified about all records.
-     * @param cursorContext underlying page cursor context.
+     * @param pageCursor pageCursor to use for record reading.
      * @throws EXCEPTION on error reading from store.
      */
-    <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, CursorContext cursorContext ) throws EXCEPTION;
+    <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, PageCursor pageCursor ) throws EXCEPTION;
 }

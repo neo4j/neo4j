@@ -561,13 +561,14 @@ class MetaDataStoreTest
         }
 
         List<Long> actualValues = new ArrayList<>();
-        try ( MetaDataStore store = newMetaDataStore() )
+        try ( MetaDataStore store = newMetaDataStore();
+              var cursor = store.openPageCursorForReading( 0, NULL ) )
         {
             store.scanAllRecords( record ->
             {
                 actualValues.add( record.getValue() );
                 return false;
-            }, NULL );
+            }, cursor );
         }
 
         List<Long> expectedValues = Arrays.stream( positions ).map( p ->

@@ -954,19 +954,16 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, CursorContext cursorContext ) throws EXCEPTION
+    public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor, PageCursor pageCursor ) throws EXCEPTION
     {
-        try ( PageCursor cursor = openPageCursorForReading( 0, cursorContext ) )
+        RECORD record = newRecord();
+        long highId = getHighId();
+        for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
         {
-            RECORD record = newRecord();
-            long highId = getHighId();
-            for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
+            getRecordByCursor( id, record, LENIENT_CHECK, pageCursor );
+            if ( record.inUse() )
             {
-                getRecordByCursor( id, record, LENIENT_CHECK, cursor );
-                if ( record.inUse() )
-                {
-                    visitor.visit( record );
-                }
+                visitor.visit( record );
             }
         }
     }

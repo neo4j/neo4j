@@ -96,13 +96,15 @@ class DirectRecordStoreMigrator
     private static <RECORD extends AbstractBaseRecord> void migrate( RecordStore<RECORD> from, RecordStore<RECORD> to, CursorContext cursorContext )
     {
         to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse( cursorContext ) );
-
-        from.scanAllRecords( record ->
+        try ( var pageCursor = from.openPageCursorForReading( 0, cursorContext ) )
         {
-            to.prepareForCommit( record, cursorContext );
-            to.updateRecord( record, cursorContext );
-            return false;
-        }, cursorContext );
+            from.scanAllRecords( record ->
+            {
+                to.prepareForCommit( record, cursorContext );
+                to.updateRecord( record, cursorContext );
+                return false;
+            }, pageCursor );
+        }
     }
 
     /**
