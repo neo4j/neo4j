@@ -78,7 +78,7 @@ object TransactionBoundGraphStatistics {
           None
       }
 
-    override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
         val entitiesCount = index.entityType match {
           case IndexDescriptor.EntityType.Node(label) =>

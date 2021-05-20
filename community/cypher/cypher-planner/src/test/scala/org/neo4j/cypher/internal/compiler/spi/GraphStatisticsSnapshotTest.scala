@@ -244,7 +244,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
       Selectivity.of(idxSelectivity / _factor)
     }
 
-    def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
       Selectivity.of(idxPropertyExistsSelectivity / _factor)
 
     def factor(factor: Double): Unit = {

@@ -35,7 +35,7 @@ class TestGraphStatistics extends GraphStatistics {
     fail()
   override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
     fail()
-  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+  override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
     fail()
 
   private def fail() = throw new IllegalStateException("Should not have been called in this test.")

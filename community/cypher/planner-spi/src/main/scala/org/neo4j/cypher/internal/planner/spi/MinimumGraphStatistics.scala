@@ -51,17 +51,17 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
     atLeast(delegate.nodesWithLabelCardinality(maybeLabelId), MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY)
   }
 
-  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = index.entityType match {
+  override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = index.entityType match {
     case IndexDescriptor.EntityType.Node(label) =>
       nodesWithLabelCardinality(Some(label)) match {
         case MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
-        case _ => delegate.indexPropertyExistsSelectivity(index)
+        case _ => delegate.indexPropertyIsNotNullSelectivity(index)
       }
 
     case IndexDescriptor.EntityType.Relationship(relType) =>
       patternStepCardinality(None, Some(relType), None) match {
         case MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
-        case _ => delegate.indexPropertyExistsSelectivity(index)
+        case _ => delegate.indexPropertyIsNotNullSelectivity(index)
       }
   }
 

@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -70,7 +69,6 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   private val litApa = literalString(apa)
   private val litBepa = literalString(bepa)
 
-  private val propExists = function(Exists.name, prop(relName, prop))
   private val propIsNotNull = isNotNull(prop(relName, prop))
   private val propStartsWithEmpty = startsWith(prop(relName, prop), literalString(""))
   private val propEquals12 = equals(prop(relName, prop), lit12)
@@ -82,10 +80,10 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   private val propNotEquals12 = notEquals(prop(relName, prop), lit12)
   private val propRegexMatchJohnny = regex(prop(relName, prop), literalString("Johnny"))
 
-  private val fooExists = function(Exists.name, prop(relName, foo))
+  private val fooIsNotNull = isNotNull(prop(relName, foo))
   private val fooContainsApa = contains(prop(relName, foo), litApa)
-  private val barExists = function(Exists.name, prop(relName, bar))
-  private val bazExists = function(Exists.name, prop(relName, baz))
+  private val barIsNotNull = isNotNull(prop(relName, bar))
+  private val bazIsNotNull = isNotNull(prop(relName, baz))
   private val bazEquals12 = equals(prop(relName, baz), lit12)
 
   private def relationshipIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =
@@ -110,7 +108,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
 
   test("does not plan index scan when no index exist") {
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propExists)
+      qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = relationshipIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
@@ -122,7 +120,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
 
   test("index scan when there is an index on the property") {
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propExists)
+      qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -139,7 +137,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
 
   test("index scan when there is an index on the property for when matching on incoming relationship") {
     new given {
-      qg = queryGraph(Seq(relTypeName), INCOMING, propExists)
+      qg = queryGraph(Seq(relTypeName), INCOMING, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -156,7 +154,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
 
   test("index scan when there is an index on the property for when matching on outgoing relationship") {
     new given {
-      qg = queryGraph(Seq(relTypeName), OUTGOING, propExists)
+      qg = queryGraph(Seq(relTypeName), OUTGOING, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -173,7 +171,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
 
   test("no index scan when there is an index on the property but relationship variable is skipped") {
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propExists)
+      qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -205,49 +203,6 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     }
   }
 
-  test("index scan solves both exists and is not null") {
-    new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propExists, propIsNotNull)
-      relationshipIndexOn(relTypeName, prop)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = relationshipIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should equal(Seq(
-        new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)")
-          .build()
-      ))
-      val plan = resultPlans.head
-      solvedPredicates(plan, ctx) should equal(Set(
-        propExists,
-        propIsNotNull,
-      ))
-    }
-  }
-
-  test("index scan for equality solves exists") {
-    new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propEquals12, propExists)
-      relationshipIndexOn(relTypeName, prop)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = relationshipIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should equal(Seq(
-        new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)")
-          .build()
-      ))
-      val plan = resultPlans.head
-      solvedPredicates(plan, ctx) should equal(Set(
-        propExists,
-      ))
-    }
-  }
-
   test("index scan for equality solves is not null") {
     new given {
       qg = queryGraph(Seq(relTypeName), BOTH, propEquals12, propIsNotNull)
@@ -269,31 +224,9 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     }
   }
 
-  test("index scan for equality solves both exists and is not null") {
-    new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propEquals12, propExists, propIsNotNull)
-      relationshipIndexOn(relTypeName, prop)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = relationshipIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should equal(Seq(
-        new LogicalPlanBuilder(wholePlan = false)
-          .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop)]-($endNodeName)")
-          .build()
-      ))
-      val plan = resultPlans.head
-      solvedPredicates(plan, ctx) should equal(Set(
-        propExists,
-        propIsNotNull,
-      ))
-    }
-  }
-
   test("index scan with values when there is an index on the property") {
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propExists)
+      qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -312,7 +245,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint = UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
 
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propExists).addHints(Some(hint))
+      qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull).addHints(Some(hint))
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -333,7 +266,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint = UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
 
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propExists).addHints(Some(hint))
+      qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull).addHints(Some(hint))
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -366,7 +299,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propStartsWithEmpty),
+        PartialPredicate(propIsNotNull, propStartsWithEmpty),
       ))
     }
   }
@@ -387,7 +320,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propStartsWithEmpty),
+        PartialPredicate(propIsNotNull, propStartsWithEmpty),
       ))
     }
   }
@@ -409,7 +342,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propLessThan12),
+        PartialPredicate(propIsNotNull, propLessThan12),
       ))
     }
   }
@@ -430,7 +363,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propNotEquals12),
+        PartialPredicate(propIsNotNull, propNotEquals12),
       ))
     }
   }
@@ -451,7 +384,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propEquals12),
+        PartialPredicate(propIsNotNull, propEquals12),
       ))
     }
   }
@@ -472,14 +405,14 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propRegexMatchJohnny),
+        PartialPredicate(propIsNotNull, propRegexMatchJohnny),
       ))
     }
   }
 
   test("plans composite index scans when there is a composite index and multiple predicates") {
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, fooContainsApa, propContainsApa, barExists, bazEquals12)
+      qg = queryGraph(Seq(relTypeName), BOTH, fooContainsApa, propContainsApa, barIsNotNull, bazEquals12)
       relationshipIndexOn(relTypeName, foo, prop, bar, baz)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -493,17 +426,17 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propContainsApa),
-        PartialPredicate(fooExists, fooContainsApa),
-        barExists,
-        PartialPredicate(bazExists, bazEquals12),
+        PartialPredicate(propIsNotNull, propContainsApa),
+        PartialPredicate(fooIsNotNull, fooContainsApa),
+        barIsNotNull,
+        PartialPredicate(bazIsNotNull, bazEquals12),
       ))
     }
   }
 
   test("plans composite index scans when there is a composite index and multiple predicates on the same property") {
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, propEquals12, fooExists, barExists, bazEquals12)
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, propEquals12, fooIsNotNull, barIsNotNull, bazEquals12)
       relationshipIndexOn(relTypeName, foo, prop, bar, baz)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -517,18 +450,18 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
-        PartialPredicate(propExists, propContainsApa), // missing
-        PartialPredicate(propExists, propEquals12),
-        fooExists,
-        barExists,
-        PartialPredicate(bazExists, bazEquals12),
+        PartialPredicate(propIsNotNull, propContainsApa), // missing
+        PartialPredicate(propIsNotNull, propEquals12),
+        fooIsNotNull,
+        barIsNotNull,
+        PartialPredicate(bazIsNotNull, bazEquals12),
       ))
     }
   }
 
   test("plans no composite index scans when there is a composite index but not enough predicates") {
     new given {
-      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, fooContainsApa, barExists)
+      qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, fooContainsApa, barIsNotNull)
       relationshipIndexOn(relTypeName, foo, prop, bar, baz)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when

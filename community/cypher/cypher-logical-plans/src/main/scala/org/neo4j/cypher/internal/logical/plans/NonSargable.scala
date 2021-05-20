@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.InequalityExpression
@@ -34,7 +33,6 @@ import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions
 
 // This is when dynamic properties are used
 object AsDynamicPropertyNonSeekable {
@@ -49,10 +47,6 @@ object AsDynamicPropertyNonSeekable {
 // This is when dynamic properties are used
 object AsDynamicPropertyNonScannable {
   def unapply(v: Any) = v match {
-
-    case func@FunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
-      if  func.function == functions.Exists =>
-      Some(variable)
 
     case IsNotNull(ContainerIndex(variable: Variable, _)) =>
       Some(variable)

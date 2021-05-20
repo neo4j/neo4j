@@ -97,10 +97,6 @@ object AsPropertySeekable {
 
 object AsExplicitlyPropertyScannable {
   def unapply(v: Any): Option[ExplicitlyPropertyScannable] = v match {
-    case func@FunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: LogicalVariable, _)))
-      if func.function == functions.Exists =>
-      Some(ExplicitlyPropertyScannable(func, ident, property))
-
     case expr@IsNotNull(property@Property(ident: LogicalVariable, _)) =>
       Some(ExplicitlyPropertyScannable(expr, ident, property))
 
@@ -140,7 +136,7 @@ object AsPropertyScannable {
   private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression, solves: Boolean) = lhs match {
     case property@Property(ident: LogicalVariable, _) =>
       PartialPredicate.ifNotEqual(
-        FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
+        IsNotNull(property)(predicate.position),
         predicate
       ).map(ImplicitlyPropertyScannable(_, ident, property, solves))
 

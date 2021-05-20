@@ -37,7 +37,7 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     } withLogicalPlanningContext { (_, context) =>
       val compatiblePredicates = planner.findIndexCompatiblePredicates(Set(hasLabels("n", "A")), Set.empty, context)
       compatiblePredicates.size shouldBe 1
-      val predicate = exists(prop("n", "prop1"))
+      val predicate = isNotNull(prop("n", "prop1"))
       compatiblePredicates.foreach { compatiblePredicate =>
         compatiblePredicate.predicate should be(predicate)
       }

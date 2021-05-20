@@ -189,11 +189,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       ids match {
         case (Some(labelId: LabelId), Some(propertyKeyId)) =>
           val descriptor = IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
-          stats.indexPropertyExistsSelectivity(descriptor)
+          stats.indexPropertyIsNotNullSelectivity(descriptor)
 
         case (Some(relTypeId: RelTypeId), Some(propertyKeyId)) =>
           val descriptor = IndexDescriptor.forRelType(relTypeId, Seq(propertyKeyId))
-          stats.indexPropertyExistsSelectivity(descriptor)
+          stats.indexPropertyIsNotNullSelectivity(descriptor)
 
         case _ => Some(Selectivity.ZERO)
       }
@@ -229,7 +229,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int): Option[Selectivity] =
-    selectivityForPropertyEquality(stats.indexPropertyExistsSelectivity(descriptor), stats.uniqueValueSelectivity(descriptor), size)
+    selectivityForPropertyEquality(stats.indexPropertyIsNotNullSelectivity(descriptor), stats.uniqueValueSelectivity(descriptor), size)
 
 
   private def defaultSelectivityForPropertyEquality(size: Int): Option[Selectivity] =
@@ -272,7 +272,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
           }
 
           for {
-            propertyExistsSelectivity <- stats.indexPropertyExistsSelectivity(descriptor)
+            propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
             propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
           } yield {
             val pNeq = propEqValueSelectivity.negate

@@ -37,7 +37,7 @@ case object HardcodedGraphStatistics extends GraphStatistics {
   def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
     Some(INDEX_SELECTIVITY * Selectivity.of(index.properties.length).get)
 
-  def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+  def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
     Some(INDEX_PROPERTY_EXISTS_SELECTIVITY * Selectivity.of(index.properties.length).get)
 
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =

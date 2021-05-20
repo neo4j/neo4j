@@ -70,7 +70,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.expressions.functions.Distance
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedStartNotification
@@ -363,9 +362,6 @@ case class Match(
         case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
           acc => SkipChildren(acc :+ name)
         case In(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => SkipChildren(acc :+ name)
-        case predicate@FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
-          if id == variable && predicate.function == Exists =>
           acc => SkipChildren(acc :+ name)
         case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
           acc => SkipChildren(acc :+ name)

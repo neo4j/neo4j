@@ -43,8 +43,7 @@ import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
@@ -52,7 +51,6 @@ import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSee
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
@@ -156,12 +154,12 @@ abstract class EntityIndexLeafPlanner extends LeafPlanner {
 object EntityIndexLeafPlanner {
 
   /**
-   * Creates exists-predicates of the given variable to the given properties that are inferred from the context rather than read from the query.
+   * Creates IS NOT NULL-predicates of the given variable to the given properties that are inferred from the context rather than read from the query.
    */
-  private[index] def implicitExistsPredicates(variable: Variable,
-                                              context: LogicalPlanningContext,
-                                              constrainedPropNames: Set[String],
-                                              explicitCompatiblePredicates: Set[IndexCompatiblePredicate]): Set[IndexCompatiblePredicate] = {
+  private[index] def implicitIsNotNullPredicates(variable: Variable,
+                                                 context: LogicalPlanningContext,
+                                                 constrainedPropNames: Set[String],
+                                                 explicitCompatiblePredicates: Set[IndexCompatiblePredicate]): Set[IndexCompatiblePredicate] = {
     // Can't currently handle aggregation on more than one variable
     val aggregatedPropNames: Set[String] =
       if (context.aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
@@ -176,7 +174,7 @@ object EntityIndexLeafPlanner {
     for {
       propertyName <- propNames
       property = Property(variable, PropertyKeyName(propertyName)(variable.position))(variable.position)
-      predicate = FunctionInvocation(FunctionName(functions.Exists.name)(variable.position), property)(variable.position)
+      predicate = IsNotNull(property)(variable.position)
       // Don't add implicit predicates if we already have them explicitly
       if !explicitCompatiblePredicates.exists(_.predicate == predicate)
     } yield IndexCompatiblePredicate(
@@ -288,8 +286,8 @@ object EntityIndexLeafPlanner {
         case AsExplicitlyPropertyScannable(scannable) =>
           scannable.expr
         case expr =>
-          val exists = FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position)
-          PartialPredicate(exists, expr)
+          val isNotNull = IsNotNull(property)(predicate.position)
+          PartialPredicate(isNotNull, expr)
       }
     }
 

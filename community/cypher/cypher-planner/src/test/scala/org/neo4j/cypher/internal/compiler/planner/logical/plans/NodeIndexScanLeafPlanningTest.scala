@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -58,7 +57,6 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val litApa = literalString("Apa")
   private val litBepa = literalString("Bepa")
   private val hasLabelAwesome = super.hasLabels("n", "Awesome")
-  private val propExists = function(Exists.name, prop("n", "prop"))
   private val propIsNotNull = isNotNull(prop("n", "prop"))
   private val propStartsWithEmpty = startsWith(prop("n", "prop"), literalString(""))
   private val propLessThan12 = lessThan(prop("n", "prop"), lit12)
@@ -71,11 +69,11 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val propEndsWithBepa = endsWith(prop("n", "prop"), litBepa)
   private val propInLit12 = in(prop("n", "prop"), listOf(lit12))
 
-  private val fooExists = function(Exists.name, prop("n", "foo"))
+  private val fooIsNotNull = isNotNull(prop("n", "foo"))
   private val fooContainsApa = contains(prop("n", "foo"), litApa)
   private val fooEndsWithApa = endsWith(prop("n", "foo"), litApa)
-  private val barExists = function(Exists.name, prop("n", "bar"))
-  private val bazExists = function(Exists.name, prop("n", "baz"))
+  private val barIsNotNull = isNotNull(prop("n", "bar"))
+  private val bazIsNotNull = isNotNull(prop("n", "baz"))
   private val bazEquals12 = equals(prop("n", "baz"), lit12)
 
   private def nodeIndexScanLeafPlanner(restrictions: LeafPlanRestrictions) =
@@ -92,7 +90,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("does not plan index scan when no index exist") {
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome)
+      qg = queryGraph(propIsNotNull, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
@@ -104,7 +102,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("index scan when there is an index on the property") {
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome)
+      qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -120,7 +118,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("no index scan when there is an index on the property but node variable is skipped") {
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome)
+      qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -152,47 +150,6 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }
   }
 
-  test("index scan solves both exists and is not null") {
-    new given {
-      qg = queryGraph(propExists, propIsNotNull, hasLabelAwesome)
-
-      indexOn("Awesome", "prop")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _, _)) =>
-          solvedPredicates(plan, ctx) should equal(Set(
-            propExists,
-            propIsNotNull,
-            hasLabelAwesome,
-          ))
-      }
-    }
-  }
-
-  test("index scan for equality solves exists ") {
-    new given {
-      qg = queryGraph(propEquals12, propExists, hasLabelAwesome)
-
-      indexOn("Awesome", "prop")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _, _)) =>
-          solvedPredicates(plan, ctx) should equal(Set(
-            propExists,
-            hasLabelAwesome
-          ))
-      }
-    }
-  }
-
   test("index scan for equality solves is not null") {
     new given {
       qg = queryGraph(propEquals12, propIsNotNull, hasLabelAwesome)
@@ -213,33 +170,12 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }
   }
 
-  test("index scan for equality solves both exists and is not null") {
-    new given {
-      qg = queryGraph(propEquals12, propExists, propIsNotNull, hasLabelAwesome)
-
-      indexOn("Awesome", "prop")
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _, _)) =>
-          solvedPredicates(plan, ctx) should equal(Set(
-            propExists,
-            propIsNotNull,
-            hasLabels("n", "Awesome")
-          ))
-      }
-    }
-  }
-
   private def solvedPredicates(plan: LogicalPlan, ctx: LogicalPlanningContext) =
     ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
 
   test("index scan with values when there is an index on the property") {
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome)
+      qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -255,7 +191,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("unique index scan when there is an unique index on the property") {
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome)
+      qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -271,7 +207,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("unique index scan with values when there is an unique index on the property") {
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome)
+      qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -289,7 +225,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome).addHints(Some(hint))
+      qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -311,7 +247,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome).addHints(Some(hint))
+      qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -333,7 +269,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
 
     new given {
-      qg = queryGraph(propExists, hasLabelAwesome).addHints(Some(hint))
+      qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -365,7 +301,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propStartsWithEmpty),
+                PartialPredicate(propIsNotNull, propStartsWithEmpty),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -388,7 +324,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propStartsWithEmpty),
+                PartialPredicate(propIsNotNull, propStartsWithEmpty),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -411,7 +347,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propLessThan12),
+                PartialPredicate(propIsNotNull, propLessThan12),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -434,7 +370,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propLessThan12),
+                PartialPredicate(propIsNotNull, propLessThan12),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -456,7 +392,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propNotEquals12),
+                PartialPredicate(propIsNotNull, propNotEquals12),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -478,7 +414,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propNotEquals12),
+                PartialPredicate(propIsNotNull, propNotEquals12),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -500,7 +436,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propEquals12),
+                PartialPredicate(propIsNotNull, propEquals12),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -522,7 +458,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propEquals12),
+                PartialPredicate(propIsNotNull, propEquals12),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -544,7 +480,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propRegexMatchJohnny),
+                PartialPredicate(propIsNotNull, propRegexMatchJohnny),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -566,7 +502,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propRegexMatchJohnny),
+                PartialPredicate(propIsNotNull, propRegexMatchJohnny),
                 hasLabels("n", "Awesome")
               ))
           }
@@ -576,7 +512,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("plans composite index scans when there is a composite index and multiple predicates") {
     new given {
-      qg = queryGraph(propContainsApa, fooContainsApa, barExists, bazEquals12, hasLabelAwesome)
+      qg = queryGraph(propContainsApa, fooContainsApa, barIsNotNull, bazEquals12, hasLabelAwesome)
 
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -597,10 +533,10 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propContainsApa),
-                PartialPredicate(fooExists, fooContainsApa),
-                barExists,
-                PartialPredicate(bazExists, bazEquals12),
+                PartialPredicate(propIsNotNull, propContainsApa),
+                PartialPredicate(fooIsNotNull, fooContainsApa),
+                barIsNotNull,
+                PartialPredicate(bazIsNotNull, bazEquals12),
                 hasLabelAwesome,
               ))
           }
@@ -610,7 +546,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("plans composite index scans when there is a composite index and multiple predicates on the same property") {
     new given {
-      qg = queryGraph(propContainsApa, propLessThan12, fooExists, barExists, bazEquals12, hasLabelAwesome)
+      qg = queryGraph(propContainsApa, propLessThan12, fooIsNotNull, barIsNotNull, bazEquals12, hasLabelAwesome)
       addTypeToSemanticTable(lit12, CTInteger.invariant)
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -633,11 +569,11 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               // Two combinations of predicates lead to identical plans, that semantically solve the same thing
               scanQG.selections.predicates.map(_.expr) should equal(Set(
-                PartialPredicate(propExists, propContainsApa),
-                PartialPredicate(propExists, propLessThan12),
-                fooExists,
-                barExists,
-                PartialPredicate(bazExists, bazEquals12),
+                PartialPredicate(propIsNotNull, propContainsApa),
+                PartialPredicate(propIsNotNull, propLessThan12),
+                fooIsNotNull,
+                barIsNotNull,
+                PartialPredicate(bazIsNotNull, bazEquals12),
                 hasLabelAwesome,
               ))
           }
@@ -647,7 +583,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("plans no composite index scans when there is a composite index but not enough predicates") {
     new given {
-      qg = queryGraph(propContainsApa, fooContainsApa, barExists, hasLabelAwesome)
+      qg = queryGraph(propContainsApa, fooContainsApa, barIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1059,7 +995,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop", "foo")
       addTypeToSemanticTable(lit12, CTInteger.invariant)
 
-      qg = queryGraph(propLessThan12, fooExists, hasLabelAwesome)
+      qg = queryGraph(propLessThan12, fooIsNotNull, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = nodeScanLeafPlannerWithSeekExclusion(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)

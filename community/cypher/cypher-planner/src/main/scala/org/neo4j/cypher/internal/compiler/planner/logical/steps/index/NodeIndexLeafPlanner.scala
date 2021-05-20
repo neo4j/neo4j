@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.DynamicPropertyNotifier
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.getValueBehaviors
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.implicitExistsPredicates
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.implicitIsNotNullPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.predicatesForIndex
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.IndexMatch
 import org.neo4j.cypher.internal.expressions.Expression
@@ -85,10 +85,10 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
     predicates.flatMap {
       // n:User ... aggregation(n.prop)
       // or
-      // n:User with CREATE CONSTRAINT ON (n:User) ASSERT EXISTS (n.prop)
+      // n:User with CREATE CONSTRAINT ON (n:User) ASSERT n.prop IS NOT NULL
       case HasLabels(variable: Variable, labels) if valid(variable, Set.empty) =>
         val constrainedPropNames = context.planContext.getNodePropertiesWithExistenceConstraint(labels.head.name)
-        implicitExistsPredicates(variable, context, constrainedPropNames, explicitCompatiblePredicates)
+        implicitIsNotNullPredicates(variable, context, constrainedPropNames, explicitCompatiblePredicates)
 
       case _ =>
         Set.empty[IndexCompatiblePredicate]

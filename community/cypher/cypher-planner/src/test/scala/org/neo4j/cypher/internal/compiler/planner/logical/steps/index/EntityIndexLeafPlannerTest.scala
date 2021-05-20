@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialPredicateWrapper
 import org.neo4j.cypher.internal.expressions.Property
@@ -62,7 +61,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate("equals", equals(property, integerLiteral), isExact = true)
 
-  testFindIndexCompatiblePredicate("equals with unknown variable", equals(property, varFor("m")), solvedPredicate = Some(exists(property)))
+  testFindIndexCompatiblePredicate("equals with unknown variable", equals(property, varFor("m")), solvedPredicate = Some(isNotNull(property)))
 
   testFindIndexCompatiblePredicate("equals with known variable",
     equals(property, varFor("m")),
@@ -91,18 +90,18 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate("lessThan with other property",
     lessThan(property, property2),
-    solvedPredicate = Some(exists(property)))
+    solvedPredicate = Some(isNotNull(property)))
 
   testFindIndexCompatiblePredicate("lessThan with unknown variable",
     lessThan(property, varFor("m")),
-    solvedPredicate = Some(exists(property)))
+    solvedPredicate = Some(isNotNull(property)))
 
   testFindIndexCompatiblePredicate("lessThan with known variable",
     lessThan(property, varFor("m")),
     argumentIds = Set("m"), dependencies = Set("m"),
     propertyTypes = Map(varFor("m") -> CTInteger.invariant))
 
-  testFindIndexCompatiblePredicate("exists", exists(property))
+  testFindIndexCompatiblePredicate("isNotNull", isNotNull(property))
 
   // this should only work for NodeIndexLeafPlanner
   testFindIndexCompatiblePredicate("hasLabel in generic leaf planner", hasLabels("n", "ConstraintLabel"), expectToExist = false)
@@ -147,28 +146,28 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     }
   }
 
-  test("implicitExistsPredicates simple case") {
+  test("implicit IS NOT NULL predicates simple case") {
     new given {
       qg = queryGraph(Set.empty)
     } withLogicalPlanningContext {
       (_, ctx) =>
-        val implicitPredicates = EntityIndexLeafPlanner.implicitExistsPredicates(varFor("varName"), ctx, Set("prop1", "prop2"), Set.empty)
+        val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(varFor("varName"), ctx, Set("prop1", "prop2"), Set.empty)
         implicitPredicates.size should be(2)
         implicitPredicates.foreach(predicate =>
           predicate.predicate should matchPattern {
-            case FunctionInvocation(_, FunctionName("exists"), _, _) => ()
+            case IsNotNull(_) => ()
           }
         )
         implicitPredicates.map(_.propertyKeyName.name) should equal(Set("prop1", "prop2"))
     }
   }
 
-  test("implicitExistsPredicates empty case") {
+  test("implicit IS NOT NULL predicates empty case") {
     new given {
       qg = queryGraph(Set.empty)
     } withLogicalPlanningContext {
       (_, ctx) =>
-        val implicitPredicates = EntityIndexLeafPlanner.implicitExistsPredicates(varFor("varName"), ctx, Set.empty, Set.empty)
+        val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(varFor("varName"), ctx, Set.empty, Set.empty)
         implicitPredicates.size should be(0)
     }
   }

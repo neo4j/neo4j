@@ -80,7 +80,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val nPropEndsWithLitText = endsWith(nProp, literalString("Text"))
   private val nPropContainsLitText = contains(nProp, literalString("Text"))
   private val nFooEqualsLit42 = equals(nFoo, lit42)
-  private val nFooExists = exists(nFoo)
+  private val nFooIsNotNull = isNotNull(nFoo)
   private val nPropLessThanLit42 = AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit42)))
 
   private def hasLabel(l: String) = hasLabels("n", l)
@@ -916,11 +916,11 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }
   }
 
-  test("should not plan using implicit exists() if explicit exists() exists") {
+  test("should not plan using implicit IS NOT NULL if explicit IS NOT NULL exists") {
 
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(nPropInLit42, nFooExists, hasLabel("Awesome"))
+      qg = queryGraph(nPropInLit42, nFooIsNotNull, hasLabel("Awesome"))
 
       nodePropertyExistenceConstraintOn("Awesome", Set("prop", "foo"))
       indexOn("Awesome", "prop", "foo")
@@ -933,18 +933,18 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         case Seq(p@NodeIndexSeek(`idName`, _, _, CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())), _, _)) =>
           val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
           plannedQG.selections.flatPredicates.toSet shouldEqual Set(
-            nPropInLit42, nFooExists, hasLabel("Awesome")
+            nPropInLit42, nFooIsNotNull, hasLabel("Awesome")
           )
       }
 
-      // We should not consider solutions that use an implicit exists(n.foo), since we have one explicitly in the query
+      // We should not consider solutions that use an implicit n.foo IS NOT NULL, since we have one explicitly in the query
       // Otherwise we risk mixing up the solveds, since the plans would be exactly the same
-      val implicitExistsSolutions = ctx.planningAttributes.solveds.toSeq
+      val implicitIsNotNullSolutions = ctx.planningAttributes.solveds.toSeq
                                        .filter(_.hasValue)
                                        .map(_.value.asSinglePlannerQuery.queryGraph.selections.flatPredicates.toSet)
                                        .filter(_ == Set(nPropInLit42, hasLabel("Awesome")))
 
-      implicitExistsSolutions shouldEqual Seq.empty
+      implicitIsNotNullSolutions shouldEqual Seq.empty
     }
   }
 

@@ -345,7 +345,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         }.flatMap(indexDef => Selectivity.of(indexDef.uniqueValueSelectivity))
       }
 
-      override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+      override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         indexes.find { indexDef =>
           indexDef.entityType == resolveEntityType(index) &&
             indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)

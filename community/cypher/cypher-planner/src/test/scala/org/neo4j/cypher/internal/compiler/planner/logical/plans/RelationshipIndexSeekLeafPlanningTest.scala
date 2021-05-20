@@ -66,12 +66,12 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   private val lit42 = literalInt(42)
   private val lit6 = literalInt(6)
 
-  private val rPropExists = exists(rProp)
+  private val rPropIsNotNull = isNotNull(rProp)
   private val rPropInLit42 = in(rProp, listOf(lit42))
   private val rPropEndsWithLitText = endsWith(rProp, literalString("Text"))
   private val rPropContainsLitText = contains(rProp, literalString("Text"))
   private val rPropLessThanLit42 = AndedPropertyInequalities(varFor(relName), rProp, NonEmptyList(lessThan(rProp, lit42)))
-  private val rFooExists = exists(rFoo)
+  private val rFooIsNotNull = isNotNull(rFoo)
   private val rFooLessThanLit42 = AndedPropertyInequalities(varFor(relName), rFoo, NonEmptyList(lessThan(rFoo, lit42)))
 
   private def indexSeekLeafPlanner(restrictions: LeafPlanRestrictions) =
@@ -498,10 +498,10 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     }
   }
 
-  test("should not plan using implicit exists() if explicit exists() exists") {
+  test("should not plan using implicit IS NOT NULL if explicit IS NOT NULL exists") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(Seq(relTypeName), BOTH, rPropLessThanLit42, rFooExists)
+      qg = queryGraph(Seq(relTypeName), BOTH, rPropLessThanLit42, rFooIsNotNull)
 
       relationshipPropertyExistenceConstraintOn(relTypeName, Set(prop, foo))
       relationshipIndexOn(relTypeName, prop, foo)
@@ -516,14 +516,14 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .build()
       ))
 
-      // We should not consider solutions that use an implicit exists(r.foo), since we have one explicitly in the query
+      // We should not consider solutions that use an implicit r.foo IS NOT NULL, since we have one explicitly in the query
       // Otherwise we risk mixing up the solveds, since the plans would be exactly the same
-      val implicitExistsSolutions = ctx.planningAttributes.solveds.toSeq
+      val implicitIsNotNullSolutions = ctx.planningAttributes.solveds.toSeq
                                        .filter(_.hasValue)
                                        .map(_.value.asSinglePlannerQuery.queryGraph.selections.flatPredicates.toSet)
                                        .filter(_ == Set(rPropLessThanLit42))
 
-      implicitExistsSolutions shouldEqual Seq.empty
+      implicitIsNotNullSolutions shouldEqual Seq.empty
     }
   }
 
@@ -545,7 +545,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
         rFooLessThanLit42,
-        PartialPredicate(rPropExists, rPropEndsWithLitText),
+        PartialPredicate(rPropIsNotNull, rPropEndsWithLitText),
       ))
     }
   }
@@ -568,7 +568,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
         rFooLessThanLit42,
-        PartialPredicate(rPropExists, rPropContainsLitText),
+        PartialPredicate(rPropIsNotNull, rPropContainsLitText),
       ))
     }
   }
@@ -593,7 +593,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val plan = resultPlans.head
       solvedPredicates(plan, ctx) should equal(Set(
         rFooLessThanLit42,
-        PartialPredicate(rPropExists, reg),
+        PartialPredicate(rPropIsNotNull, reg),
       ))
     }
   }

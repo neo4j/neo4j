@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.getValueBehaviors
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.implicitExistsPredicates
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.implicitIsNotNullPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.predicatesForIndex
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.variable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.IndexMatch
@@ -97,7 +97,7 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
     generalCompatiblePredicates ++ patterns.flatMap {
       case PatternRelationship(name, _, _, Seq(RelTypeName(relTypeName)), _) if valid(relTypeName) =>
         val constrainedPropNames = context.planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
-        implicitExistsPredicates(variable(name), context, constrainedPropNames, generalCompatiblePredicates)
+        implicitIsNotNullPredicates(variable(name), context, constrainedPropNames, generalCompatiblePredicates)
 
       case _ => Set.empty[IndexCompatiblePredicate]
     }

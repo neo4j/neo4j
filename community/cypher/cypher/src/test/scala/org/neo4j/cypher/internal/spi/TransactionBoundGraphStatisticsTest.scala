@@ -60,7 +60,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
     //then
-    statistics.indexPropertyExistsSelectivity(index) should equal(Some(Selectivity(0.5)))
+    statistics.indexPropertyIsNotNullSelectivity(index) should equal(Some(Selectivity(0.5)))
   }
 
   test("indexPropertyExistsSelectivity should handle indexSize being out-of-sync with counts") {
@@ -72,7 +72,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
     //then
-    statistics.indexPropertyExistsSelectivity(index) should equal(Some(Selectivity.ONE))
+    statistics.indexPropertyIsNotNullSelectivity(index) should equal(Some(Selectivity.ONE))
   }
 
   test("indexPropertyExistsSelectivity should handle label count zero") {
@@ -84,7 +84,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
     //then
-    statistics.indexPropertyExistsSelectivity(index) should equal(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
+    statistics.indexPropertyIsNotNullSelectivity(index) should equal(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
   }
 
   test("indexPropertyExistsSelectivity should log if index returned from schema read but size cannot get computed") {
@@ -98,7 +98,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
 
     //then
-    statistics.indexPropertyExistsSelectivity(index) should equal(None)
+    statistics.indexPropertyIsNotNullSelectivity(index) should equal(None)
     verify(theLog).debug("Index not found for indexPropertyExistsSelectivity", exception)
   }
 
@@ -113,7 +113,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
 
     //then
-    statistics.indexPropertyExistsSelectivity(index) should equal(None)
+    statistics.indexPropertyIsNotNullSelectivity(index) should equal(None)
     verifyNoInteractions(theLog)
   }
 

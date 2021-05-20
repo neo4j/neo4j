@@ -61,9 +61,9 @@ trait GraphStatistics {
   /**
    * Probability of any node or relationship with the given label or relType, to have a particular property
    *
-   * indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
+   * indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop IS NOT NULL|
    */
-  def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity]
+  def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity]
 }
 
 class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatistics {
@@ -76,8 +76,8 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
   override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
     delegate.uniqueValueSelectivity(index)
 
-  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
-    delegate.indexPropertyExistsSelectivity(index)
+  override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    delegate.indexPropertyIsNotNullSelectivity(index)
 
   override def nodesAllCardinality(): Cardinality = delegate.nodesAllCardinality()
 }

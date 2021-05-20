@@ -134,7 +134,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
       val index = IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
-      planContext.statistics.indexPropertyExistsSelectivity(index) should be(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
+      planContext.statistics.indexPropertyIsNotNullSelectivity(index) should be(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
     })
   }
 

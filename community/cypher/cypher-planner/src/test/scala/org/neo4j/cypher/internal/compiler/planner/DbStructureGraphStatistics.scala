@@ -46,7 +46,7 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
     }
   }
 
-  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+  override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = {
     index.entityType match {
       case IndexDescriptor.EntityType.Node(label) =>
         val result = lookup.indexPropertyExistsSelectivity(label.id, index.property.id)

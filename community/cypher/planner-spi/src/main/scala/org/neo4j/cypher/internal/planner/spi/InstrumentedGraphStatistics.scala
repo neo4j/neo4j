@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import java.lang.Math.abs
-import java.lang.Math.max
-
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 
+import java.lang.Math.abs
+import java.lang.Math.max
 import scala.collection.mutable
 
 sealed trait StatisticsKey
@@ -57,7 +56,7 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
       case IndexSelectivity(index) =>
         instrumented.uniqueValueSelectivity(index)
       case IndexPropertyExistsSelectivity(index) =>
-        instrumented.indexPropertyExistsSelectivity(index)
+        instrumented.indexPropertyIsNotNullSelectivity(index)
     }
     snapshot.freeze
   }
@@ -94,8 +93,8 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
     selectivity
   }
 
-  def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-    val selectivity = inner.indexPropertyExistsSelectivity(index)
+  def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    val selectivity = inner.indexPropertyIsNotNullSelectivity(index)
     snapshot.map.getOrElseUpdate(IndexPropertyExistsSelectivity(index), selectivity.fold(0.0)(_.factor))
     selectivity
   }
