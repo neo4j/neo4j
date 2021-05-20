@@ -64,7 +64,6 @@ import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
@@ -99,10 +98,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private static final String propKey1 = "key1";
 
     private static final Path neo4jHome = Path.of( "neo4j_home" ).toAbsolutePath();
-    // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0
+    // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0 and token indexes
     private EphemeralFileSystemAbstraction sourceSnapshot;
-    // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0 and token index enabled
-    private EphemeralFileSystemAbstraction sourceSnapshotWithTokenIndex;
     // Database layout for database created in @BeforeAll
     private DatabaseLayout databaseLayout;
     // Re-instantiated in @BeforeEach using sourceSnapshot
@@ -111,11 +108,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @BeforeAll
     void createIndex() throws Exception
     {
-        {
-            final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-            fs.mkdirs( neo4jHome );
-
-            dbmsAction( neo4jHome, fs, NATIVE_BTREE10,
+        final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        fs.mkdirs( neo4jHome );
+        dbmsAction( neo4jHome, fs, NATIVE_BTREE10,
                     // Data
                     db ->
                     {
@@ -124,25 +119,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     },
                     // Config
                     builder -> {} );
-            sourceSnapshot = fs.snapshot();
-        }
-
-        // Separate snapshot for enable scan store as token index
-        {
-            final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-            fs.mkdirs( neo4jHome );
-
-            dbmsAction( neo4jHome, fs, NATIVE_BTREE10,
-                    // Data
-                    db ->
-                    {
-                        indexWithStringData( db, label );
-                    },
-                    // Config
-                    builder -> builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
-            );
-            sourceSnapshotWithTokenIndex = fs.snapshot();
-        }
+        sourceSnapshot = fs.snapshot();
     }
 
     @BeforeEach
@@ -590,7 +567,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
-    void corruptionInLabelScanStore() throws Exception
+    void corruptionInNodeLabelIndex() throws Exception
     {
         MutableObject<Long> rootNode = new MutableObject<>();
         Path labelScanStoreFile = labelScanStoreFile();
@@ -607,28 +584,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
-    void corruptionInNodeLabelIndex() throws Exception
-    {
-        doRestoreSnapshot( sourceSnapshotWithTokenIndex );
-        MutableObject<Long> rootNode = new MutableObject<>();
-        Path labelScanStoreFile = labelScanStoreFile();
-        corruptIndexes( readOnly(), ( tree, inspection ) -> {
-            rootNode.setValue( inspection.getRootNode() );
-            tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
-                    CursorContext.NULL );
-        }, labelScanStoreFile );
-
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(),
-                config -> config.set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ) );
-        assertFalse( result.isSuccessful() );
-        assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
-        assertResultContainsMessage( result, "Number of inconsistent LABEL_SCAN_DOCUMENT records: 1" );
-    }
-
-    @Test
     void corruptionInRelationshipTypeIndex() throws Exception
     {
-        doRestoreSnapshot( sourceSnapshotWithTokenIndex );
         MutableObject<Long> rootNode = new MutableObject<>();
         Path relationshipTypeScanStoreFile = relationshipTypeScanStoreFile();
         corruptIndexes( readOnly(), ( tree, inspection ) -> {
@@ -637,8 +594,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     CursorContext.NULL );
         }, relationshipTypeScanStoreFile );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(),
-                config -> config.set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ) );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
         assertFalse( result.isSuccessful() );
         assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
         assertResultContainsMessage( result, "Number of inconsistent RELATIONSHIP_TYPE_SCAN_DOCUMENT records: 1" );
