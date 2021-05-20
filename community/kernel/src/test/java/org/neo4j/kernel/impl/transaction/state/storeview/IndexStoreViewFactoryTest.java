@@ -30,7 +30,6 @@ import org.neo4j.logging.LogProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 class IndexStoreViewFactoryTest
 {
@@ -53,19 +52,5 @@ class IndexStoreViewFactoryTest
 
         //Then
         assertThat( indexStoreView.getClass() ).isEqualTo( DynamicIndexStoreView.class );
-    }
-
-    @Test
-    void shouldCreateLegacyIndexStoreView()
-    {
-        //Given
-        var config = Config.newBuilder().set( enable_scan_stores_as_token_indexes, false ).build();
-        var factory = new IndexStoreViewFactory( config, () -> null, locks, fullScanStoreView, labelScanStore, lockService, logProvider );
-
-        //When
-        var indexStoreView = factory.createTokenIndexStoreView( indexProxies );
-
-        //Then
-        assertThat( indexStoreView.getClass() ).isEqualTo( LegacyDynamicIndexStoreView.class );
     }
 }
