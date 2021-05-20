@@ -34,8 +34,6 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodes;
@@ -45,15 +43,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
     @Override
     public WriteTestSupport newTestSupport()
     {
-        return new WriteTestSupport()
-        {
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-            {
-                builder = builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-                return super.configure( builder );
-            }
-        };
+        return new WriteTestSupport();
     }
 
     private int labelOne = 1;

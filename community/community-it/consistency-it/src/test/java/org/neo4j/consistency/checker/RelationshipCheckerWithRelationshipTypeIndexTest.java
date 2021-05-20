@@ -28,7 +28,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.function.Consumer;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
@@ -47,11 +46,9 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -90,21 +87,6 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
         {
             throw new RuntimeException( e );
         }
-    }
-
-    @Override
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        super.configure( builder );
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
-
-    @Override
-    Config additionalConfigToCC( Config config )
-    {
-        config = super.additionalConfigToCC( config );
-        config.set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-        return config;
     }
 
     @Override

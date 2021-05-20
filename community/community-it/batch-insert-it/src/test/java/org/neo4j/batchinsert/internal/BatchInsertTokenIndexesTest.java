@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -160,7 +159,6 @@ public class BatchInsertTokenIndexesTest
         return Config.newBuilder()
                      .set( neo4j_home, testDirectory.absolutePath() )
                      .set( preallocate_logical_logs, false )
-                     .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
                      .build();
     }
 

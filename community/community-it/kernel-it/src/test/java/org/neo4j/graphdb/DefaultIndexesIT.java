@@ -25,16 +25,13 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DbmsExtension( configurationCallback = "configure" )
+@DbmsExtension
 public class DefaultIndexesIT
 {
 
@@ -43,12 +40,6 @@ public class DefaultIndexesIT
 
     @Inject
     DbmsController dbmsController;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
 
     @Test
     void defaultIndexesCreatedOnFirstStart()

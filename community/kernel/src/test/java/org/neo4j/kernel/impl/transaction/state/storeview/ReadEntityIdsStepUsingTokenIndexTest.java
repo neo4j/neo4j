@@ -63,7 +63,6 @@ import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
@@ -208,7 +207,6 @@ class ReadEntityIdsStepUsingTokenIndexTest
         return Config.newBuilder()
                      .set( neo4j_home, testDir.absolutePath() )
                      .set( preallocate_logical_logs, false )
-                     .set( enable_scan_stores_as_token_indexes, true )
                      .build();
     }
 }

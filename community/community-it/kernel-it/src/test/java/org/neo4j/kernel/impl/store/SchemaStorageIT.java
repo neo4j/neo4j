@@ -54,10 +54,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
@@ -76,7 +73,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 class SchemaStorageIT
 {
     private static final String LABEL1 = "Label1";
@@ -94,12 +91,6 @@ class SchemaStorageIT
 
     private static SchemaStore schemaStore;
     private static SchemaStorage storage;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
 
     @BeforeEach
     void initStorage() throws Exception

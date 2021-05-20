@@ -45,7 +45,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -58,7 +57,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -225,8 +223,7 @@ class IndexConfigMigrationIT
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
         DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, true )
-                .setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+                .setConfig( GraphDatabaseSettings.allow_upgrade, true );
         DatabaseManagementService dbms = builder.build();
         try
         {

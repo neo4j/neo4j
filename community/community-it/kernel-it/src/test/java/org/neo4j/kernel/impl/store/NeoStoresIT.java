@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -62,8 +61,7 @@ class NeoStoresIT
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 )
-               .setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
     }
 
     @Test

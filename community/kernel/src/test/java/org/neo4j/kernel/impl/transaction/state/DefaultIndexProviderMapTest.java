@@ -28,7 +28,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -82,7 +81,6 @@ class DefaultIndexProviderMapTest
         DefaultIndexProviderMap defaultIndexProviderMap = new DefaultIndexProviderMap( dependencies,
                 Config.newBuilder()
                       .set( GraphDatabaseSettings.default_schema_provider, provider.getProviderDescriptor().name() )
-                      .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
                       .build() );
         defaultIndexProviderMap.init();
         Assertions.assertThat( defaultIndexProviderMap.getTokenIndexProvider() ).isEqualTo( tokenIndexProvider );

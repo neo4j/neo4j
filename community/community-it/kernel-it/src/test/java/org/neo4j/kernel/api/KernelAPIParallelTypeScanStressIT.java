@@ -37,11 +37,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -50,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
-@DbmsExtension( configurationCallback = "configure" )
+@DbmsExtension
 @ExtendWith( RandomExtension.class )
 class KernelAPIParallelTypeScanStressIT
 {
@@ -139,11 +136,5 @@ class KernelAPIParallelTypeScanStressIT
             }
             assertThat( n ).as( "correct number of relationships" ).isEqualTo( N_RELS );
         };
-    }
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
     }
 }

@@ -48,7 +48,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -109,8 +108,7 @@ class RecoveryWithTokenIndexesIT
     @MethodSource( "arguments" )
     void recoverDatabaseWithTokenIndexes( String name, boolean checkpointIndexes ) throws Throwable
     {
-        config = Config.newBuilder().set( neo4j_home, testDirectory.homePath() )
-                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ).build();
+        config = Config.newBuilder().set( neo4j_home, testDirectory.homePath() ).build();
 
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         GraphDatabaseService db = startDatabase( fs );
@@ -162,8 +160,7 @@ class RecoveryWithTokenIndexesIT
 
         config = Config.newBuilder()
                 .set( allow_single_automatic_upgrade, false )
-                .set( allow_upgrade, true )
-                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ).build();
+                .set( allow_upgrade, true ).build();
 
         // Database with 10 nodes with label 'label' and 10 relationships with type 'type'.
         int numberOfEntities = 10;
@@ -205,8 +202,7 @@ class RecoveryWithTokenIndexesIT
 
         config = Config.newBuilder()
                 .set( allow_single_automatic_upgrade, true )
-                .set( allow_upgrade, true )
-                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ).build();
+                .set( allow_upgrade, true ).build();
 
         // Database with 10 nodes with label 'label' and 10 relationships with type 'type'.
         int numberOfEntities = 10;

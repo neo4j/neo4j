@@ -23,19 +23,11 @@ package org.neo4j.graphdb.schema;
 import org.junit.jupiter.api.BeforeEach;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
-@ImpermanentDbmsExtension( configurationCallback = "configuration" )
+@ImpermanentDbmsExtension
 class UpdateDeletedNodeTokenIndexIT extends UpdateDeletedNodeIndexBase
 {
-    @ExtensionCallback
-    void configuration( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
 
     @BeforeEach
     void before()

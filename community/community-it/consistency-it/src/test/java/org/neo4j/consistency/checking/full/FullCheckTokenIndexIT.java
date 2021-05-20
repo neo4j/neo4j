@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -97,8 +96,7 @@ public class FullCheckTokenIndexIT
         config = Config.newBuilder()
                 .set( allow_single_automatic_upgrade, false )
                 .set( allow_upgrade, true )
-                .set( neo4j_home, testDirectory.homePath() )
-                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ).build();
+                .set( neo4j_home, testDirectory.homePath() ).build();
     }
 
     @AfterEach

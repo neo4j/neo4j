@@ -34,16 +34,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@DbmsExtension( configurationCallback = "configuration" )
+@DbmsExtension
 public class FindRelationshipsIT
 {
     private static final RelationshipType REL_TYPE = RelationshipType.withName( "REL_TYPE" );
@@ -51,12 +48,6 @@ public class FindRelationshipsIT
 
     @Inject
     GraphDatabaseService db;
-
-    @ExtensionCallback
-    void configuration( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
 
     private static Stream<Arguments> indexConfiguration()
     {

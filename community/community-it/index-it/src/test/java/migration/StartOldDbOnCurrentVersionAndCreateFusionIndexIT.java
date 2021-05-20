@@ -59,7 +59,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -340,7 +339,6 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         return new TestDatabaseManagementServiceBuilder( storeDir )
                 .setMonitors( monitors )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
-                .setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
                 .build();
     }
 

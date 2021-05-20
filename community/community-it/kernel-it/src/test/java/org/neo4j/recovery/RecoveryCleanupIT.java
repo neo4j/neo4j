@@ -44,7 +44,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -81,7 +80,6 @@ class RecoveryCleanupIT
     @BeforeEach
     void setup()
     {
-        testSpecificConfig.put( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
         factory = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() );
     }
 

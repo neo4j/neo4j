@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriteMonitor;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -63,7 +62,6 @@ class TokenIndexWriteMonitorIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( GraphDatabaseInternalSettings.token_scan_write_log_enabled, true );
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
     }
 
     @BeforeEach

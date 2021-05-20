@@ -33,7 +33,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -41,9 +40,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.Race;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -53,11 +50,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
-@DbmsExtension( configurationCallback = "configure" )
+@DbmsExtension
 public class DynamicIndexStoreViewIT
 {
     private static final Label PERSON = Label.label( "person" );
@@ -81,12 +77,6 @@ public class DynamicIndexStoreViewIT
     private final JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     private DynamicIndexStoreView storeView;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( enable_scan_stores_as_token_indexes, true );
-    }
 
     @BeforeEach
     void setUp()

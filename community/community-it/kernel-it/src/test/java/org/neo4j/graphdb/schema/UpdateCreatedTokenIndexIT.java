@@ -30,11 +30,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -45,7 +42,7 @@ import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @ExtendWith( RandomExtension.class )
-@ImpermanentDbmsExtension( configurationCallback = "configuration" )
+@ImpermanentDbmsExtension
 class UpdateCreatedTokenIndexIT
 {
     @Inject
@@ -59,12 +56,6 @@ class UpdateCreatedTokenIndexIT
 
     private static final int NODES = 100;
     private static final int SKIP_NODES = 100;
-
-    @ExtensionCallback
-    void configuration( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
 
     @BeforeEach
     void before()

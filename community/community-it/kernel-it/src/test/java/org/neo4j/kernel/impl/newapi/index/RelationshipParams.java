@@ -32,8 +32,6 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.values.storable.Value;
 
@@ -42,13 +40,6 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class RelationshipParams implements EntityParams<RelationshipValueIndexCursor>
 {
-    @Override
-    public void enrichSettings( ReadTestSupport testSupport )
-    {
-        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-    }
-
     @Override
     public long entityWithProp( Transaction tx, String token, String key, Object value )
     {

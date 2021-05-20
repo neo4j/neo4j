@@ -46,8 +46,7 @@ class IndexStoreViewFactoryTest
     void shouldCreateIndexStoreView()
     {
         //Given
-        var config = Config.newBuilder().set( enable_scan_stores_as_token_indexes, true ).build();
-        var factory = new IndexStoreViewFactory( config, () -> null, locks, fullScanStoreView, labelScanStore, lockService, logProvider );
+        var factory = new IndexStoreViewFactory( Config.defaults(), () -> null, locks, fullScanStoreView, labelScanStore, lockService, logProvider );
 
         //When
         var indexStoreView = factory.createTokenIndexStoreView( indexProxies );

@@ -30,11 +30,8 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -44,7 +41,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.test.Race.throwing;
 
-@DbmsExtension( configurationCallback = "configure" )
+@DbmsExtension
 @ExtendWith( RandomExtension.class )
 class KernelAPIParallelLabelScanStressIT
 {
@@ -57,12 +54,6 @@ class KernelAPIParallelLabelScanStressIT
     private RandomRule random;
     @Inject
     private Kernel kernel;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-    }
 
     @Test
     void shouldDoParallelLabelScans() throws Throwable

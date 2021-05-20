@@ -27,10 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -43,7 +40,7 @@ import static org.neo4j.graphdb.schema.AnyTokens.ANY_LABELS;
 import static org.neo4j.graphdb.schema.AnyTokens.ANY_RELATIONSHIP_TYPES;
 
 @TestDirectoryExtension
-@DbmsExtension( configurationCallback = "configure" )
+@DbmsExtension
 class PropertyIndexPopulationIT
 {
     private static final Label PERSON = Label.label( "person" );
@@ -54,13 +51,6 @@ class PropertyIndexPopulationIT
 
     @Inject
     private GraphDatabaseService db;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-    }
 
     @Test
     void shouldCreatePropertyIndexUsingTokenIndexes()

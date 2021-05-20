@@ -30,8 +30,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -94,15 +92,7 @@ abstract class TokenIndexOrderTestBase<TOKEN_INDEX_CURSOR extends Cursor> extend
     @Override
     public WriteTestSupport newTestSupport()
     {
-        return new WriteTestSupport()
-        {
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-            {
-                builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-                return super.configure( builder );
-            }
-        };
+        return new WriteTestSupport();
     }
 
     protected void assertTokenResultsInOrder( List<Long> expected, TOKEN_INDEX_CURSOR cursor, IndexOrder indexOrder )

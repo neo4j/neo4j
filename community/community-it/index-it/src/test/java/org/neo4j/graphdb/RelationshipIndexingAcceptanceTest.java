@@ -24,21 +24,11 @@ import java.util.Map;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
-@ImpermanentDbmsExtension( configurationCallback = "configureRelSearch" )
+@ImpermanentDbmsExtension
 public class RelationshipIndexingAcceptanceTest extends IndexingAcceptanceTestBase<RelationshipType,Relationship>
 {
-    @ExtensionCallback
-    void configureRelSearch( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-    }
-
     @Override
     protected RelationshipType createToken( String name )
     {

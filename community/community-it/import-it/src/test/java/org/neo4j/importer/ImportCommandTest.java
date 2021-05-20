@@ -2557,7 +2557,6 @@ class ImportCommandTest
     {
         return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setConfig( default_database, DEFAULT_DATABASE_NAME )
-                .setConfig( enable_scan_stores_as_token_indexes, true )
                 .build();
     }
 

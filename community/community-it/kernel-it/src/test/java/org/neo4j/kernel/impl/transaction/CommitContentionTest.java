@@ -36,7 +36,6 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -125,9 +124,7 @@ class CommitContentionTest
 
     private GraphDatabaseService createDb()
     {
-        Config cfg = Config.newBuilder().set( neo4j_home, testDirectory.absolutePath() )
-                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
-                .build();
+        Config cfg = Config.newBuilder().set( neo4j_home, testDirectory.absolutePath() ).build();
         managementService = new DatabaseManagementServiceFactory( DbmsInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override

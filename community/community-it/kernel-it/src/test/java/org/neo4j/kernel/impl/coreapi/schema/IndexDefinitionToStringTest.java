@@ -27,27 +27,16 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_property_indexes;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 class IndexDefinitionToStringTest
 {
     @Inject
     private GraphDatabaseService db;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( enable_scan_stores_as_token_indexes, true );
-        builder.setConfig( enable_relationship_property_indexes, true );
-    }
 
     @BeforeEach
     void setup()

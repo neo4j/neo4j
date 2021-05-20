@@ -48,7 +48,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -120,7 +119,6 @@ class DumpCommandIT
         Config config = Config.newBuilder()
                 .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
-                .set(RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true)
                 .build();
         ConfigUtils.disableAllConnectors( config );
         return config;
