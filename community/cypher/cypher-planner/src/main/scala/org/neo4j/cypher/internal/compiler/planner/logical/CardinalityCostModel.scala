@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -201,6 +202,16 @@ object CardinalityCostModel {
   val INDEX_SEEK_COST_PER_ROW = 1.9
   // When reading from node store or relationship store
   val STORE_LOOKUP_COST_PER_ROW = 6.2
+
+  /**
+   * PartialSort always has to Sort whole buckets, even when under a Limit.
+   * The work reduction from the Limit does therefore not propagate 100 % to the
+   * child of the PartialSort.
+   *
+   * We have no way of determining the size of buckets currently, so we simply guess
+   * that the work of the child is 10 % more than the work of the PartialSort.
+   */
+  val PARTIAL_SORT_WORK_INCREASE = 0.1
 
   /**
    * The cost of evaluating an expression, per row.
@@ -454,6 +465,13 @@ object CardinalityCostModel {
 
     case HashJoin() =>
       (WorkReduction.NoReduction, parentWorkReduction)
+
+    case _:PartialSort =>
+      // Let's assume the child has to do "a little more" work.
+      // This happens because PartialSort has to process at least a whole bucket of identical values.
+      val parentFraction = parentWorkReduction.fraction.factor
+      val childFraction = Math.min(1.0, parentFraction * (1.0 + PARTIAL_SORT_WORK_INCREASE))
+      (parentWorkReduction.withFraction(Selectivity(childFraction)), WorkReduction.NoReduction)
 
     case _: ExhaustiveLogicalPlan =>
       (WorkReduction.NoReduction, WorkReduction.NoReduction)
