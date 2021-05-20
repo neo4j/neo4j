@@ -193,7 +193,7 @@ class RelationshipChainCheckerTest extends CheckerTestBase
         RelationshipRecord arbitraryRelationship = relationshipStore.newRecord();
         try ( var cursor = relationshipStore.openPageCursorForReading( 0, CursorContext.NULL ) )
         {
-            relationshipStore.getRecordByCursor( relationshipIds[relationshipIds.length / 2], relationshipStore.newRecord(), NORMAL, cursor );
+            relationshipStore.getRecordByCursor( relationshipIds[relationshipIds.length / 2], arbitraryRelationship, NORMAL, cursor );
         }
         vandal.accept( arbitraryRelationship );
         relationshipStore.updateRecord( arbitraryRelationship, CursorContext.NULL );

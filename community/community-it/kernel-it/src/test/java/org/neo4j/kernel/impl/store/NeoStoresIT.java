@@ -208,9 +208,9 @@ class NeoStoresIT
         propertyKeys.getAllReadableTokens( cursorContext );
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 22, cursorTracer.hits() );
-        assertEquals( 22, cursorTracer.pins() );
-        assertEquals( 22, cursorTracer.unpins() );
+        assertEquals( 12, cursorTracer.hits() );
+        assertEquals( 12, cursorTracer.pins() );
+        assertEquals( 12, cursorTracer.unpins() );
     }
 
     @Test

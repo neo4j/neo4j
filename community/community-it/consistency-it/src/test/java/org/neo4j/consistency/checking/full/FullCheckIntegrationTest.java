@@ -1267,7 +1267,7 @@ public class FullCheckIntegrationTest
         LabelTokenRecord record = labelTokenStore.newRecord();
         try ( var cursor = labelTokenStore.openPageCursorForReading( 1, NULL ) )
         {
-            labelTokenStore.getRecordByCursor( 1, labelTokenStore.newRecord(), FORCE, cursor );
+            labelTokenStore.getRecordByCursor( 1, record, FORCE, cursor );
         }
         record.setNameId( 20 );
         record.setInUse( true );
