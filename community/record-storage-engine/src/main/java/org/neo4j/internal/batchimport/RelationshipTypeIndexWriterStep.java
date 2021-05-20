@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
 
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.io.IOUtils.closeAll;
 
 public class RelationshipTypeIndexWriterStep extends IndexWriterStep<RelationshipRecord[]>
@@ -44,7 +45,7 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
     {
         super( control, "RELATIONSHIP TYPE INDEX", config, 1, pageCacheTracer );
         this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_INDEX_WRITE_STEP_TAG ) );
-        this.importer = indexImporter( dbConfig, indexImporterFactory, neoStores, EntityType.RELATIONSHIP, memoryTracker, cursorContext );
+        this.importer = indexImporter( dbConfig, config.indexConfig(), indexImporterFactory, neoStores, RELATIONSHIP, memoryTracker, cursorContext );
     }
 
     @Override

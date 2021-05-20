@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.cli.AbstractCommand;
-import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.ByteUnitConverter;
 import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
@@ -44,6 +43,7 @@ import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -312,15 +312,9 @@ public class ImportCommand extends AbstractCommand
             }
 
             @Override
-            public boolean populateRelationshipIndex()
+            public IndexConfig indexConfig()
             {
-                return true;
-            }
-
-            @Override
-            public boolean populateNodeIndex()
-            {
-                return true;
+                return IndexConfig.create().withLabelIndex().withRelationshipTypeIndex();
             }
 
             @Override

@@ -31,6 +31,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
+import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.ParallelBatchImporter;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.DataGeneratorInput;
@@ -147,15 +148,9 @@ public class QuickImport
             }
 
             @Override
-            public boolean populateRelationshipIndex()
+            public IndexConfig indexConfig()
             {
-                return true;
-            }
-
-            @Override
-            public boolean populateNodeIndex()
-            {
-                return true;
+                return IndexConfig.create().withLabelIndex().withRelationshipTypeIndex();
             }
         };
 

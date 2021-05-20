@@ -32,21 +32,20 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAccess;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaRule.generateName;
 import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 public abstract class IndexWriterStep<T> extends ProcessorStep<T>
@@ -57,41 +56,33 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
     }
 
     protected IndexImporter indexImporter(
-            Config dbConfig, IndexImporterFactory importerFactory, BatchingNeoStores neoStores, EntityType entityType,
+            Config dbConfig, IndexConfig indexConfig, IndexImporterFactory importerFactory, BatchingNeoStores neoStores, EntityType entityType,
             MemoryTracker memoryTracker, CursorContext cursorContext )
     {
 
         if ( dbConfig.get( enable_scan_stores_as_token_indexes ) )
         {
-            if ( entityType == RELATIONSHIP && !config.populateRelationshipIndex() )
-            {
-                return EMPTY_IMPORTER;
-            }
-
-            if ( entityType == NODE && !config.populateNodeIndex() )
-            {
-                return EMPTY_IMPORTER;
-            }
             var schemaStore = neoStores.getNeoStores().getSchemaStore();
             var metaDataStore = neoStores.getNeoStores().getMetaDataStore();
             var tokenHolders = neoStores.getTokenHolders();
             var schemaRuleAccess = getSchemaRuleAccess( schemaStore, tokenHolders, metaDataStore, true );
             var index = findIndex( entityType, schemaRuleAccess )
-                    .orElseGet( () -> createIndex( entityType, schemaRuleAccess, schemaStore, memoryTracker, cursorContext ) );
+                    .orElseGet( () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext ) );
             return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
         }
         return entityType == NODE ? new ScanStoreLabelIndexImporter( neoStores.getLabelScanStore(), cursorContext ) : EMPTY_IMPORTER;
     }
 
     private IndexDescriptor createIndex(
-            EntityType entityType, SchemaRuleAccess schemaRule, SchemaStore schemaStore, MemoryTracker memoryTracker, CursorContext cursorContext )
+            EntityType entityType, IndexConfig config, SchemaRuleAccess schemaRule, SchemaStore schemaStore,
+            MemoryTracker memoryTracker, CursorContext cursorContext )
     {
         try
         {
             IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "token-lookup", "1.0" );
             IndexPrototype prototype = forSchema( forAnyEntityTokens( entityType ) ).withIndexType( LOOKUP ).withIndexProvider( providerDescriptor );
-            prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{}, new String[]{} ) );
-            IndexDescriptor descriptor = prototype.materialise( schemaStore.nextId( cursorContext ) );
+            String name = defaultIfEmpty( config.indexName( entityType ), generateName( prototype, new String[]{}, new String[]{} ) );
+            IndexDescriptor descriptor = prototype.withName( name ).materialise( schemaStore.nextId( cursorContext ) );
             schemaRule.writeSchemaRule( descriptor, cursorContext, memoryTracker );
             return descriptor;
         }

@@ -181,19 +181,11 @@ public interface Configuration
     }
 
     /**
-     * Controls whether or not to create and populate relationship index.
+     * @return index related configurations.
      */
-    default boolean populateRelationshipIndex()
+    default IndexConfig indexConfig()
     {
-        return false;
-    }
-
-    /**
-     * Controls whether or not to create and populate the node label index.
-     */
-    default boolean populateNodeIndex()
-    {
-        return false;
+        return IndexConfig.DEFAULT;
     }
 
     Configuration DEFAULT = new Configuration()

@@ -50,7 +50,10 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage
         super( NAME, null, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
-        add( new LabelIndexWriterStep( control(), config, dbConfig, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
+        if ( config.indexConfig().createLabelIndex() )
+        {
+            add( new LabelIndexWriterStep( control(), config, dbConfig, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
+        }
         add( new RecordProcessorStep<>( control(), "COUNT", config, () -> new NodeCountsProcessor(
                 nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer, additionalStatsProviders ) );
     }

@@ -57,6 +57,8 @@ public interface SchemaRuleAccess
 
     Iterator<IndexDescriptor> indexesGetAll( CursorContext cursorContext );
 
+    Iterator<IndexDescriptor> tokenIndexes( CursorContext cursorContext );
+
     Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( CursorContext cursorContext );
 
     /**

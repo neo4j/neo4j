@@ -51,7 +51,10 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ), relationshipStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, pageCacheTracer ) );
-        add( new RelationshipTypeIndexWriterStep( control(), config, dbConfig,neoStores,  indexImporterFactory, memoryTracker, pageCacheTracer ) );
+        if ( config.indexConfig().createRelationshipIndex() )
+        {
+            add( new RelationshipTypeIndexWriterStep( control(), config, dbConfig, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
+        }
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
                 highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, memoryTracker ) );
     }
