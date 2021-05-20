@@ -379,7 +379,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.ShowDatabase(sd.scope, sd.defaultColumnNames, sd.yields, sd.returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
-      case CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
+      case c@CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
         val source = ifExistsDo match {
           case IfExistsReplace =>
             plans.DropDatabase(plans.AssertAllowedDbmsActions(Some(plans.AssertNotBlocked(CreateDatabaseAction)), Seq(DropDatabaseAction, CreateDatabaseAction)),
@@ -391,24 +391,27 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
           case _ => plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(CreateDatabaseAction), CreateDatabaseAction)
         }
-        Some(wrapInWait(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName, options)), dbName, waitUntilComplete))
+        val plan = wrapInWait(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName, options)), dbName, waitUntilComplete)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
-      case DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
+      case c@DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
         val assertAllowed = plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(DropDatabaseAction),DropDatabaseAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "Database", dbName, "delete", s => new NormalizedDatabaseName(s).name()) else assertAllowed
-        Some(wrapInWait(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction), dbName, waitUntilComplete))
+        val plan = wrapInWait(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction), dbName, waitUntilComplete)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // START DATABASE foo
-      case StartDatabase(dbName, waitUntilComplete) =>
+      case c@StartDatabase(dbName, waitUntilComplete) =>
         val assertAllowed = plans.AssertAllowedDatabaseAction(StartDatabaseAction, dbName, Some(plans.AssertNotBlocked(StartDatabaseAction)))
-        Some(wrapInWait(plans.StartDatabase(assertAllowed, dbName), dbName, waitUntilComplete))
+        val plan = wrapInWait(plans.StartDatabase(assertAllowed, dbName), dbName, waitUntilComplete)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // STOP DATABASE foo
-      case StopDatabase(dbName, waitUntilComplete) =>
+      case c@StopDatabase(dbName, waitUntilComplete) =>
         val assertAllowed = plans.AssertAllowedDatabaseAction(StopDatabaseAction, dbName, Some(plans.AssertNotBlocked(StopDatabaseAction)))
-        Some(wrapInWait(plans.StopDatabase(
-          plans.EnsureValidNonSystemDatabase(assertAllowed, dbName, "stop"), dbName), dbName, waitUntilComplete))
+        val plan = wrapInWait(plans.StopDatabase(plans.EnsureValidNonSystemDatabase(assertAllowed, dbName, "stop"), dbName), dbName, waitUntilComplete)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
