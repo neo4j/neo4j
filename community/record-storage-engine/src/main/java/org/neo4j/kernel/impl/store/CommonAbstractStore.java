@@ -813,12 +813,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public long getNextRecordReference( RECORD record )
-    {
-        return recordFormat.getNextRecordReference( record );
-    }
-
-    @Override
     public RECORD newRecord()
     {
         return recordFormat.newRecord();
@@ -1034,7 +1028,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 {
                     return;
                 }
-                id = getNextRecordReference( record );
+                id = recordFormat.getNextRecordReference( record );
             }
             while ( !Record.NULL_REFERENCE.is( id ) );
         }

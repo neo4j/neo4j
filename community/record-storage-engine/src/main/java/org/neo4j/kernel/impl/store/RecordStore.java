@@ -210,15 +210,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                         RecordSubscriber<RECORD> subscriber );
 
     /**
-     * Returns another record id which the given {@code record} references, if it exists in a chain of records.
-     *
-     * @param record to read the "next" reference from.
-     * @return record id of "next" record that the given {@code record} references, or {@link Record#NULL_REFERENCE}
-     * if the record doesn't reference a next record.
-     */
-    long getNextRecordReference( RECORD record );
-
-    /**
      * Updates this store with the contents of {@code record} at the record id
      * {@link AbstractBaseRecord#getId() specified} by the record. The whole record will be written if
      * the given record is {@link AbstractBaseRecord#inUse() in use}, not necessarily so if it's not in use.
