@@ -26,6 +26,7 @@ import org.neo4j.internal.batchimport.cache.LongArray;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.memory.MemoryTracker;
 
@@ -316,7 +317,6 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
     @Override
     public void close()
     {
-        cache.close();
-        offsets.close();
+        IOUtils.closeAllUnchecked( cache, offsets, groupCountCache );
     }
 }
