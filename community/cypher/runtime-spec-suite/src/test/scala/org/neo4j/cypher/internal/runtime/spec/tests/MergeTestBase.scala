@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
@@ -1164,4 +1165,43 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
+// Supported by pipelined only
+trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
+  self: MergeTestBase[CONTEXT] =>
+
+  test("merge should fail if deeply nested in pipelined runtime") {
+    // given no nodes
+
+    // when
+    // query with 21 merges
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: null}")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    a[CantCompileQueryException] shouldBe thrownBy(execute(logicalQuery, runtime))
+  }
+}
 
