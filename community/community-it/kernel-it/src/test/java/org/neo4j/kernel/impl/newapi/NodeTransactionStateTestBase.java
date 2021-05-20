@@ -23,17 +23,24 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.TestAccessMode;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -540,7 +547,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             // when
             tx.dataWrite().nodeDelete( node.node );
-            tx.dataRead().nodeLabelScan( node.labels[0], cursor, IndexOrder.NONE );
+            tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node.labels[0] ) );
 
             // then
             assertFalse( cursor.next() );
@@ -558,7 +566,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[0] );
-            tx.dataRead().nodeLabelScan( node.labels[0], cursor, IndexOrder.NONE );
+            tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node.labels[0] ) );
 
             // then
             assertFalse( cursor.next() );
@@ -577,7 +586,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             int label = tx.tokenWrite().labelGetOrCreateForName( "label" );
             tx.dataWrite().nodeAddLabel( node.node, label );
-            tx.dataRead().nodeLabelScan( label, cursor, IndexOrder.NONE );
+            tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( label ) );
 
             // then
             assertTrue( cursor.next() );
@@ -598,7 +608,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeRemoveLabel( node1.node, node1.labels[0] );
             tx.dataWrite().nodeAddLabel( node2.node, node1.labels[0] );
-            tx.dataRead().nodeLabelScan( node1.labels[0], cursor, IndexOrder.NONE );
+            tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), cursor,
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( node1.labels[0] ) );
 
             // then
             assertTrue( cursor.next() );
@@ -954,5 +965,13 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             return labels;
         }
+    }
+
+    private static TokenReadSession getTokenReadSession( KernelTransaction tx, EntityType entityType ) throws IndexNotFoundKernelException
+    {
+        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        IndexDescriptor index = indexes.next();
+        assertThat( indexes.hasNext() ).isFalse();
+        return tx.dataRead().tokenReadSession( index );
     }
 }

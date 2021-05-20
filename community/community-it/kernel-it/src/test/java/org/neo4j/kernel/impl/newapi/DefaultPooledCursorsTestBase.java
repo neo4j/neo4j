@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,8 +38,10 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -239,7 +243,8 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         try ( KernelTransaction tx = beginTransaction() )
         {
             NodeLabelIndexCursor c1 = tx.cursors().allocateNodeLabelIndexCursor( NULL );
-            tx.dataRead().nodeLabelScan( 1, c1, IndexOrder.NONE );
+            tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), c1,
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( 1 ) );
             c1.close();
 
             NodeLabelIndexCursor c2 = tx.cursors().allocateNodeLabelIndexCursor( NULL );
@@ -254,7 +259,8 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         try ( KernelTransaction tx = beginTransaction() )
         {
             NodeLabelIndexCursor c1 = tx.cursors().allocateFullAccessNodeLabelIndexCursor( NULL );
-            tx.dataRead().nodeLabelScan( 1, c1, IndexOrder.NONE );
+            tx.dataRead().nodeLabelScan( getTokenReadSession( tx, EntityType.NODE ), c1,
+                                         IndexQueryConstraints.unconstrained(), new TokenPredicate( 1 ) );
             c1.close();
 
             NodeLabelIndexCursor c2 = tx.cursors().allocateFullAccessNodeLabelIndexCursor( NULL );
@@ -309,5 +315,13 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         Node p = tx.createNode();
         p.setProperty( propertyKey, value );
         return p.getId();
+    }
+
+    private static TokenReadSession getTokenReadSession( KernelTransaction tx, EntityType entityType ) throws IndexNotFoundKernelException
+    {
+        Iterator<IndexDescriptor> indexes = tx.schemaRead().index( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        IndexDescriptor index = indexes.next();
+        assertThat( indexes.hasNext() ).isFalse();
+        return tx.dataRead().tokenReadSession( index );
     }
 }
