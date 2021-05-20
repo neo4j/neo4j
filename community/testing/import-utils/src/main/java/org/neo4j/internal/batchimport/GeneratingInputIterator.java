@@ -26,6 +26,7 @@ import java.util.function.LongFunction;
 import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 
+import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 
 /**
@@ -49,12 +50,14 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
     public GeneratingInputIterator( long totalCount, int batchSize, LongFunction<CHUNKSTATE> states,
             Generator<CHUNKSTATE> generator, long startId )
     {
-        this.totalCount = totalCount;
-        this.batchSize = batchSize;
+        this.totalCount = max( totalCount, 0 );
+        this.batchSize = max( batchSize, 0 );
         this.states = states;
         this.generator = generator;
         this.startId = startId;
-        this.numberOfBatches = batchSize == 0 ? 0 : (totalCount - 1) / batchSize + 1;
+        this.numberOfBatches = this.totalCount > 0 && this.batchSize > 0
+                               ? 1 + (this.totalCount - 1) / this.batchSize
+                               : 0;
     }
 
     @Override
@@ -73,18 +76,17 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
     {
         if ( numberOfBatches > 1 )
         {
-            numberOfBatches--;
             long batch = nextBatch++;
             ((Chunk) chunk).initialize( states.apply( batch ), batch, batchSize );
+            numberOfBatches--;
             return true;
         }
         else if ( numberOfBatches == 1 )
         {
-            numberOfBatches--;
-            int rest = toIntExact( totalCount % batchSize );
-            int size = rest != 0 ? rest : batchSize;
+            long remaining = 1 + (totalCount - 1) % batchSize;
             long batch = nextBatch++;
-            ((Chunk) chunk).initialize( states.apply( batch ), batch, size );
+            ((Chunk) chunk).initialize( states.apply( batch ), batch, toIntExact( remaining ) );
+            numberOfBatches--;
             return true;
         }
         return false;
