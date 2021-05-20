@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
@@ -62,7 +63,6 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -150,10 +150,12 @@ class RecoveryIT
     @Test
     void recoverEmptyDatabase() throws Throwable
     {
-        // The database is only completely empty if we don't have token index feature.
-        // With the feature on there will be entries in the transaction logs for the default token indexes, so recovery is required if we remove the checkpoint.
-        Config config = Config.newBuilder().set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false )
-                .set( preallocate_logical_logs, false ).build();
+        // The database is only completely empty if we skip the creation of the default indexes initially.
+        // Without skipping there will be entries in the transaction logs for the default token indexes, so recovery is required if we remove the checkpoint.
+        Config config = Config.newBuilder()
+                              .set( GraphDatabaseInternalSettings.skip_default_indexes_on_creation, true )
+                              .set( preallocate_logical_logs, false )
+                              .build();
 
         managementService = new TestDatabaseManagementServiceBuilder( neo4jLayout ).setConfig( config ).build();
         managementService.database( databaseLayout.getDatabaseName() );
