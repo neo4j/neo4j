@@ -1234,8 +1234,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     val providedOrder = providedOrders.get(left.id).commonPrefixWith(providedOrders.get(right.id)).fromBoth
 
-    val plan = OrderedUnion(left, right, sortedColumns)
-    annotate(plan, solved, providedOrder, context)
+    val plan = annotate(OrderedUnion(left, right, sortedColumns), solved, providedOrder, context)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    plan
   }
 
   def planDistinctForUnion(left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -1262,7 +1263,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     if (returnAll.isEmpty) {
       annotate(left.copyPlanWithIdGen(idGen), solved, providedOrders.get(left.id).fromLeft, context)
     } else {
-      annotate(OrderedDistinct(left, returnAll.toMap, orderToLeverage), solved, providedOrders.get(left.id).fromLeft, context)
+      val plan = annotate(OrderedDistinct(left, returnAll.toMap, orderToLeverage), solved, providedOrders.get(left.id).fromLeft, context)
+      markOrderAsLeveragedBackwardsUntilOrigin(plan)
+      plan
     }
   }
 
@@ -1298,7 +1301,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved: SinglePlannerQuery = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
     val providedOrder =  ProvidedOrder(columnsWithRenames, ProvidedOrder.Left)
-    annotate(OrderedDistinct(left, expressions, orderToLeverage), solved, providedOrder, context)
+    val plan = annotate(OrderedDistinct(left, expressions, orderToLeverage), solved, providedOrder, context)
+    markOrderAsLeveragedBackwardsUntilOrigin(plan)
+    plan
   }
 
   def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression], context: LogicalPlanningContext): LogicalPlan = {
