@@ -814,6 +814,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         withClue(name) {
           context.planningAttributes.leveragedOrders.get(result.id) should be(true)
           result.lhs.foreach { lhs => context.planningAttributes.leveragedOrders.get(lhs.id) should be(true) }
+          result.rhs.foreach { rhs => context.planningAttributes.leveragedOrders.get(rhs.id) should be(true) }
         }
       }
     }
