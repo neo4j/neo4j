@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
@@ -43,6 +44,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -50,6 +52,9 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
@@ -82,7 +87,7 @@ public class FullCheck
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
-        InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log ), summary );
+        InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log, moreDescriptiveRecordToStrings( stores ) ), summary );
         CountsStore countsStore = getCountsStore( countsSupplier, log, summary );
         RelationshipGroupDegreesStore groupDegreesStore = getGroupDegreesStore( groupDegreesStoreSupplier, log, summary );
         execute( pageCache, stores, report, countsStore, groupDegreesStore, indexAccessorLookup, pageCacheTracer, memoryTracker );
@@ -92,6 +97,29 @@ public class FullCheck
             log.warn( "Inconsistencies found: " + summary );
         }
         return summary;
+    }
+
+    private static Function<AbstractBaseRecord,String> moreDescriptiveRecordToStrings( DirectStoreAccess stores )
+    {
+        return record ->
+        {
+            String result = record.toString();
+            if ( record instanceof SchemaRecord )
+            {
+                try
+                {
+                    SchemaRule schemaRule =
+                            SchemaStore.readSchemaRule( (SchemaRecord) record, stores.nativeStores().getPropertyStore(), stores.tokenHolders(),
+                                    CursorContext.NULL );
+                    result += " (" + schemaRule.userDescription( stores.tokenHolders() ) + ")";
+                }
+                catch ( Exception e )
+                {
+                    result += " (schema user description not available due to: " + e + ")";
+                }
+            }
+            return result;
+        };
     }
 
     private CountsStore getCountsStore( ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log, ConsistencySummaryStatistics summary )

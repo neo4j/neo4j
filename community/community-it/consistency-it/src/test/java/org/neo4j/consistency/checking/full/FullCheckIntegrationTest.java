@@ -1065,6 +1065,9 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.SCHEMA, 4 ).andThatsAllFolks();
+        String logContents = logStream.toString();
+        assertThat( logContents ).contains( descriptor1.get().userDescription( fixture.directStoreAccess().tokenHolders() ) );
+        assertThat( logContents ).contains( descriptor2.get().userDescription( fixture.directStoreAccess().tokenHolders() ) );
     }
 
     @Test

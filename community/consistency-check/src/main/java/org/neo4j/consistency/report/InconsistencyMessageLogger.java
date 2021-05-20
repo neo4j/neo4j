@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.report;
 
+import java.util.function.Function;
+
 import org.neo4j.consistency.RecordType;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -29,10 +31,17 @@ import static org.neo4j.internal.helpers.Strings.TAB;
 public class InconsistencyMessageLogger implements InconsistencyLogger
 {
     private final Log log;
+    private final Function<AbstractBaseRecord,String> recordToStringFunction;
 
     public InconsistencyMessageLogger( Log log )
     {
+        this( log, AbstractBaseRecord::toString );
+    }
+
+    public InconsistencyMessageLogger( Log log, Function<AbstractBaseRecord,String> recordToStringFunction )
+    {
         this.log = log;
+        this.recordToStringFunction = recordToStringFunction;
     }
 
     @Override
@@ -73,24 +82,24 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         log.warn( buildMessage( message ) );
     }
 
-    private static String buildMessage( String message )
+    private String buildMessage( String message )
     {
         StringBuilder builder = tabAfterLinebreak( message );
         return builder.toString();
     }
 
-    private static String buildMessage( String message, AbstractBaseRecord record, Object... args )
+    private String buildMessage( String message, AbstractBaseRecord record, Object... args )
     {
         StringBuilder builder = joinLines( message ).append( System.lineSeparator() ).append( TAB ).append( safeToString( record ) );
         appendArgs( builder, args );
         return builder.toString();
     }
 
-    private static String safeToString( AbstractBaseRecord record )
+    private String safeToString( AbstractBaseRecord record )
     {
         try
         {
-            return record.toString();
+            return recordToStringFunction.apply( record );
         }
         catch ( Exception e )
         {
@@ -98,7 +107,7 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         }
     }
 
-    private static String buildMessage( String message, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Object... args )
+    private String buildMessage( String message, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Object... args )
     {
         StringBuilder builder = joinLines( message );
         builder.append( System.lineSeparator() ).append( TAB ).append( "- " ).append( oldRecord );
@@ -129,17 +138,20 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
         return builder;
     }
 
-    private static StringBuilder appendArgs( StringBuilder builder, Object[] args )
+    private void appendArgs( StringBuilder builder, Object[] args )
     {
         if ( args == null || args.length == 0 )
         {
-            return builder;
+            return;
         }
         builder.append( System.lineSeparator() ).append( TAB ).append( "Inconsistent with:" );
         for ( Object arg : args )
         {
-            builder.append( ' ' ).append( Strings.prettyPrint( arg ) );
+            builder.append( ' ' );
+            String argToString = arg instanceof AbstractBaseRecord
+                                 ? recordToStringFunction.apply( (AbstractBaseRecord) arg )
+                                 : Strings.prettyPrint( arg );
+            builder.append( argToString );
         }
-        return builder;
     }
 }
