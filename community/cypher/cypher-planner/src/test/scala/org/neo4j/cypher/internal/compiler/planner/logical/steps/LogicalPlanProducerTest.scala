@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -779,6 +780,11 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         context.planningAttributes.providedOrders.set(p.id, initialOrder)
         p
       }
+      def plan2() = {
+        val p = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+        context.planningAttributes.providedOrders.set(p.id, initialOrder)
+        p
+      }
 
       val vx = varFor("x")
       val x_vx = Map("x" -> vx)
@@ -786,11 +792,16 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val foo_collect = Map("foo" -> FunctionInvocation(vx, FunctionName(Collect.name)(pos)))
       val interesting_vx = InterestingOrder.required(RequiredOrderCandidate.asc(vx))
       val one = literalInt(1)
+      val unionMappings = List(UnionMapping(varFor("x"),varFor("x"),varFor("x")),
+                               UnionMapping(varFor("y"),varFor("y"),varFor("y")))
 
       //when
       val resultsAndNames = Seq(
         ("PartialSort", lpp.planPartialSort(plan(), Seq(Ascending("x")), Seq(Ascending("y")), initialOrder.asc(varFor("y")).columns, InterestingOrder.empty, context)),
         ("OrderedAggregation with grouping", lpp.planOrderedAggregation(plan(), x_vx, foo_vx, Seq(vx), x_vx, foo_vx, context)),
+        ("OrderedDistinct", lpp.planOrderedDistinct(plan(), foo_vx, Seq(vx), foo_vx, context)),
+        ("OrderedUnion", lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending("x")), context)),
+        ("OrderedDistinct for Union", lpp.planOrderedDistinctForUnion(lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending("x")), context), Seq(vx), context)),
         ("Limit for aggregation", lpp.planLimitForAggregation(plan(), x_vx, foo_vx, InterestingOrder.empty, context).lhs.get), // Get the Limit under the Optional
         ("Limit", lpp.planLimit(plan(), one, one, interesting_vx, context)),
         ("Skip", lpp.planSkip(plan(), one, interesting_vx, context)),
