@@ -166,7 +166,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "value. For optimal performance this value shouldn't be greater than the number of available processors." )
     public static final Setting<Integer> upgrade_processors = newBuilder( "dbms.upgrade_max_processors", INT, 0 ).addConstraint( min( 0 ) ).dynamic().build();
 
-    @Description( "Database record format. Valid values: `standard`, `aligned`, and `high_limit`. " +
+    @Description( "Database record format. Valid values are `standard`, `aligned`, or `high_limit`. " +
             "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single " +
             "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. " +
             "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. " +
@@ -625,16 +625,16 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> pagecache_flush_buffer_size_in_pages =
             newBuilder( "dbms.memory.pagecache.flush.buffer.size_in_pages", INT, 128 ).addConstraint( range( 1, 512 ) ).dynamic().build();
 
-    @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
-            "warmup after a restart, reducing the mean time to performance. " +
-            "This feature available in Neo4j Enterprise Edition." )
+    @Description( "The profiling frequency for the page cache. " +
+            "Accurate profiles allow the page cache to do active warmup after a restart, reducing the mean time to performance.\n" +
+            "This feature is available in Neo4j Enterprise Edition." )
     public static final Setting<Duration> pagecache_warmup_profiling_interval =
             newBuilder( "dbms.memory.pagecache.warmup.profile.interval", DURATION, ofMinutes( 1 ) ).build();
 
     @Description( "Page cache can be configured to perform usage sampling of loaded pages that can be used to construct active load profile. " +
             "According to that profile pages can be reloaded on the restart, replication, etc. " +
-            "This setting allows disabling that behavior. " +
-            "This feature available in Neo4j Enterprise Edition." )
+            "This setting allows disabling that behavior.\n" +
+            "This feature is available in Neo4j Enterprise Edition." )
     public static final Setting<Boolean> pagecache_warmup_enabled =
             newBuilder( "dbms.memory.pagecache.warmup.enable", BOOL, true ).build();
 
@@ -645,33 +645,35 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.memory.pagecache.warmup.preload", BOOL, false ).build();
 
     @Deprecated( since = "4.2.0", forRemoval = true )
-    @Description( "Page cache warmup prefetch file whitelist regex. By default matches all files. " +
-            "Deprecated, use dbms.memory.pagecache.warmup.preload.allowlist" )
+    @Description( "Page cache warmup prefetch file whitelist regex. " +
+            "By default matches all files.\n" +
+            "Deprecated, use 'dbms.memory.pagecache.warmup.preload.allowlist'." )
     public static final Setting<String> pagecache_warmup_prefetch_whitelist =
             newBuilder( "dbms.memory.pagecache.warmup.preload.whitelist", STRING, ".*" ).build();
 
-    @Description( "Page cache warmup prefetch file allowlist regex. By default matches all files" )
+    @Description( "Page cache warmup prefetch file allowlist regex. " +
+            "By default matches all files." )
     public static final Setting<String> pagecache_warmup_prefetch_allowlist =
             newBuilder( "dbms.memory.pagecache.warmup.preload.allowlist", STRING, ".*" ).build();
 
-    @Description( "Use direct I/O for page cache. Setting is supported only on Linux and only for a subset of record formats" +
-            " that use platform aligned page size." )
+    @Description( "Use direct I/O for page cache. " +
+            "Setting is supported only on Linux and only for a subset of record formats that use platform aligned page size." )
     public static final Setting<Boolean> pagecache_direct_io =
             newBuilder( "dbms.memory.pagecache.directio", BOOL, false ).build();
 
-    @Description( "Allows the enabling or disabling of the file watcher service." +
-            " This is an auxiliary service but should be left enabled in almost all cases." )
+    @Description( "Allows the enabling or disabling of the file watcher service. " +
+            "This is an auxiliary service but should be left enabled in almost all cases." )
     public static final Setting<Boolean> filewatcher_enabled = newBuilder( "dbms.filewatcher.enabled", BOOL, true ).build();
 
-    @Description( "Relationship count threshold for considering a node to be dense" )
+    @Description( "Relationship count threshold for considering a node to be dense." )
     public static final Setting<Integer> dense_node_threshold =
             newBuilder( "dbms.relationship_grouping_threshold", INT, 50 ).addConstraint( min( 1 ) ).build();
 
-    @Description( "Log executed queries. Valid values are 'OFF', 'INFO' & 'VERBOSE'.\n" +
+    @Description( "Log executed queries. Valid values are 'OFF', 'INFO', or 'VERBOSE'.\n" +
             "OFF:  no logging.\n" +
             "INFO: log queries at the end of execution, that take longer than the configured threshold, dbms.logs.query.threshold.\n" +
             "VERBOSE: log queries at the start and end of execution, regardless of dbms.logs.query.threshold.\n" +
-            "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
+            "Log entries are written to the query log (dbms.logs.query.path).\n" +
             "This feature is available in the Neo4j Enterprise Edition." )
     public static final Setting<LogQueryLevel> log_queries =
             newBuilder( "dbms.logs.query.enabled", ofEnum( LogQueryLevel.class ), LogQueryLevel.VERBOSE ).dynamic().build();
@@ -685,14 +687,16 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<FormattedLogFormat> log_query_format =
             newBuilder( "dbms.logs.query.format", ofEnum( FormattedLogFormat.class ), null ).setDependency( default_log_format ).build();
 
-    @Description( "Log transaction ID for the executed queries being logged" )
+    @Description( "Log transaction ID for the executed queries." )
     public static final Setting<Boolean> log_queries_transaction_id =
             newBuilder( "dbms.logs.query.transaction_id.enabled", BOOL, false ).dynamic().build();
 
-    @Description( "Log executed transactions.\n" +
-                  "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
-                  "For location of the Logs directory, see <<file-locations>>. " +
-                  "This feature is available in the Neo4j Enterprise Edition." )
+    @Description( "Log the start and end of a transaction. Valid values are 'OFF', 'INFO', or 'VERBOSE'.\n" +
+            "OFF:  no logging.\n" +
+            "INFO: log start and end of transactions that take longer than the configured threshold, dbms.logs.query.transaction.threshold.\n" +
+            "VERBOSE: log start and end of all transactions.\n" +
+            "Log entries are written to the query log (dbms.logs.query.path).\n" +
+            "This feature is available in the Neo4j Enterprise Edition." )
     public static final Setting<LogQueryLevel> log_queries_transactions_level =
             newBuilder( "dbms.logs.query.transaction.enabled", ofEnum( LogQueryLevel.class ), LogQueryLevel.OFF ).dynamic().build();
 
@@ -759,7 +763,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_allocation_logging_enabled =
             newBuilder( "dbms.logs.query.allocation_logging_enabled", BOOL, true ).dynamic().build();
 
-    @Description( "Logs which runtime that was used to run the query" )
+    @Description( "Logs which runtime that was used to run the query." )
     public static final Setting<Boolean> log_queries_runtime_logging_enabled =
             newBuilder( "dbms.logs.query.runtime_logging_enabled", BOOL, true ).dynamic().build();
 
@@ -778,7 +782,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "dbms.logs.query.threshold", DURATION, Duration.ZERO ).dynamic().build();
 
     @Description( "If the transaction is open for more time than this threshold, the transaction is logged once completed - " +
-                  "provided transaction logging is set to INFO. Defaults to 0 seconds, that is all transactions are logged." )
+                  "provided transaction logging (dbms.logs.query.transaction.enabled) is set to `INFO`. " +
+                  "Defaults to 0 seconds (all transactions are logged)." )
     public static final Setting<Duration> log_queries_transaction_threshold =
             newBuilder( "dbms.logs.query.transaction.threshold", DURATION, Duration.ZERO ).dynamic().build();
 
@@ -800,7 +805,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_obfuscate_literals =
             newBuilder( "dbms.logs.query.obfuscate_literals", BOOL, false ).dynamic().build();
 
-    @Description( "Log query plan description table, useful for debugging purposes" )
+    @Description( "Log query plan description table, useful for debugging purposes." )
     @DocumentedDefaultValue( "false" )
     public static final Setting<Boolean> log_queries_query_plan =
             newBuilder( "dbms.logs.query.plan_description_enabled", BOOL, false ).dynamic().build();
