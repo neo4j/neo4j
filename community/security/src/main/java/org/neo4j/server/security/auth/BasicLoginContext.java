@@ -97,12 +97,13 @@ public class BasicLoginContext extends LoginContext
         SecurityContext securityContext = new SecurityContext( subject(), accessMode, connectionInfo(), dbName );
         if ( subject().getAuthenticationResult().equals( FAILURE ) || subject().getAuthenticationResult().equals( TOO_MANY_ATTEMPTS ) )
         {
-            securityLog.error( securityContext, String.format( "Authentication failed for database %s.", dbName ) );
+            securityLog.error( securityContext, String.format( "Authentication failed for database '%s'.", dbName ) );
             throw new AuthorizationViolationException( AuthorizationViolationException.PERMISSION_DENIED, Status.Security.Unauthorized );
         }
         else if ( !dbName.equals( SYSTEM_DATABASE_NAME ) && subject().getAuthenticationResult().equals( PASSWORD_CHANGE_REQUIRED ) )
         {
-            String message = SecurityAuthorizationHandler.generateCredentialsExpiredMessage( String.format( "ACCESS on database %s is not allowed.", dbName ) );
+            String message =
+                    SecurityAuthorizationHandler.generateCredentialsExpiredMessage( String.format( "ACCESS on database '%s' is not allowed.", dbName ) );
             securityLog.error( securityContext, message );
             throw new AuthorizationViolationException( message, Status.Security.CredentialsExpired );
         }

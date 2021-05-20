@@ -87,7 +87,7 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
 
     protected void assertPermissionErrorAtDataAccess( HTTP.Response response ) throws JsonParseException
     {
-        assertPermissionError( response, Collections.singletonList( CredentialsExpired.code().serialize() ), "ACCESS on database neo4j is not allowed." );
+        assertPermissionError( response, Collections.singletonList( CredentialsExpired.code().serialize() ), "ACCESS on database 'neo4j' is not allowed." );
     }
 
     void assertPermissionErrorAtSystemAccess( HTTP.Response response ) throws JsonParseException
