@@ -210,7 +210,7 @@ abstract class LogicalPlan(idGen: IdGen)
       case nodeIndexPlan: NodeIndexLeafPlan =>
         acc =>
           acc :+
-            SchemaLabelIndexScanUsage(
+            SchemaLabelIndexUsage(
               nodeIndexPlan.idName,
               nodeIndexPlan.label.nameId.id,
               nodeIndexPlan.label.name,
@@ -361,7 +361,6 @@ sealed trait IndexUsage {
   def identifier:String
 }
 
-final case class SchemaLabelIndexSeekUsage(identifier: String, labelId: Int, label: String, propertyTokens: Seq[PropertyKeyToken]) extends IndexUsage
-final case class SchemaLabelIndexScanUsage(identifier: String, labelId: Int, label: String, propertyTokens: Seq[PropertyKeyToken]) extends IndexUsage
+final case class SchemaLabelIndexUsage(identifier: String, labelId: Int, label: String, propertyTokens: Seq[PropertyKeyToken]) extends IndexUsage
 final case class SchemaRelationshipIndexUsage(identifier: String, relTypeId: Int, relType: String, propertyTokens: Seq[PropertyKeyToken]) extends IndexUsage
 final case class SchemaIndexLookupUsage(identifier: String, entityType: EntityType) extends IndexUsage

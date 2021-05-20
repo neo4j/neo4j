@@ -29,8 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureDbmsAccess
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.SchemaIndexLookupUsage
-import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexScanUsage
-import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexSeekUsage
+import org.neo4j.cypher.internal.logical.plans.SchemaLabelIndexUsage
 import org.neo4j.cypher.internal.logical.plans.SchemaRelationshipIndexUsage
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
@@ -198,9 +197,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                 scanStoreAsTokenIndexEnabled: Boolean): CompilerInfo = {
     val (lookupIndexes, schemaIndexes) = logicalPlan.indexUsage(scanStoreAsTokenIndexEnabled).partition(_.isInstanceOf[SchemaIndexLookupUsage])
     val schemaIndexUsage = schemaIndexes.collect {
-      case SchemaLabelIndexSeekUsage(identifier, labelId, label, propertyKeys) =>
-        new SchemaIndexUsage(identifier, labelId, label, propertyKeys.map(_.nameId.id).toArray, propertyKeys.map(_.name): _*)
-      case SchemaLabelIndexScanUsage(identifier, labelId, label, propertyKeys) =>
+      case SchemaLabelIndexUsage(identifier, labelId, label, propertyKeys) =>
         new SchemaIndexUsage(identifier, labelId, label, propertyKeys.map(_.nameId.id).toArray, propertyKeys.map(_.name): _*)
     }.asJava
     val relationshipTypeIndexUsage = schemaIndexes.collect {
