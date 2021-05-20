@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Relationship
-import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.ValueType
 
 // Supported by all runtimes

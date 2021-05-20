@@ -359,7 +359,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???, foo = ???)]-($endNodeName)",
-            paramExpr = Some(xProp),
+            paramExpr = Seq(xProp, xProp),
             argumentIds = Set(x),
             getValue = _ => CanGetValue)
           .build(),

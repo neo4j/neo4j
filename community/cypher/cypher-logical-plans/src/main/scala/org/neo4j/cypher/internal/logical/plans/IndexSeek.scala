@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
+import scala.collection.GenTraversable
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -105,7 +107,7 @@ object IndexSeek {
   def nodeIndexSeek(indexSeekString: String,
                     getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                     indexOrder: IndexOrder = IndexOrderNone,
-                    paramExpr: Option[Expression] = None,
+                    paramExpr: Iterable[Expression] = Seq.empty,
                     argumentIds: Set[String] = Set.empty,
                     propIds: Option[PartialFunction[String, Int]] = None,
                     labelId: Int = 0,
@@ -156,7 +158,7 @@ object IndexSeek {
   def relationshipIndexSeek(indexSeekString: String,
                             getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                             indexOrder: IndexOrder = IndexOrderNone,
-                            paramExpr: Option[Expression] = None,
+                            paramExpr: Iterable[Expression] = Seq.empty,
                             argumentIds: Set[String] = Set.empty,
                             propIds: Option[PartialFunction[String, Int]] = None,
                             typeId: Int = 0,
@@ -221,7 +223,7 @@ object IndexSeek {
   private def createPlan[T <: LogicalLeafPlan](predicates: Array[String],
                                                entityType: EntityType,
                                                getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
-                                               paramExpr: Option[Expression],
+                                               paramExpr: Iterable[Expression],
                                                propIds: Option[PartialFunction[String, Int]],
                                                customQueryExpression: Option[QueryExpression[Expression]],
                                                createSeek: (Seq[IndexedProperty], QueryExpression[Expression]) => T,
@@ -250,11 +252,14 @@ object IndexSeek {
       IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue(prop), entityType)
     }
 
+    val paramQueue = mutable.Queue(paramExpr.toArray:_*)
     def value(value: String): Expression =
       value match {
         case INT(int) => SignedDecimalIntegerLiteral(int)(pos)
         case STRING(str) => StringLiteral(str)(pos)
-        case PARAM => paramExpr.getOrElse(throw new IllegalArgumentException("Cannot use parameter syntax '???' without providing parameter expression 'paramExpr' to IndexSeek()"))
+        case PARAM =>
+          if (paramQueue.isEmpty) throw new IllegalArgumentException("Cannot use parameter syntax '???' without providing parameter expression 'paramExpr'")
+          paramQueue.dequeue()
         case _ => throw new IllegalArgumentException(s"Value `$value` is not supported")
       }
 
@@ -265,9 +270,7 @@ object IndexSeek {
           createSeek(List(prop(propStr)), valueExpr)
 
         case IN(propStr) =>
-          val expression = paramExpr.getOrElse(throw new IllegalArgumentException(
-            "Cannot use parameter syntax '???' without providing parameter expression 'paramExpr' to IndexSeek()"))
-          val valueExpr = ManyQueryExpression(expression)
+          val valueExpr = ManyQueryExpression(paramQueue.dequeue())
           createSeek(List(prop(propStr)), valueExpr)
 
         case EXACT(propStr, valueStr) =>

@@ -197,6 +197,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.collection.GenTraversable
+import scala.collection.GenTraversableOnce
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -719,13 +721,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nodeIndexOperator(indexSeekString: String,
                         getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                         indexOrder: IndexOrder = IndexOrderNone,
-                        paramExpr: Option[Expression] = None,
+                        paramExpr: GenTraversableOnce[Expression] = None,
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
-
     val planBuilder = (idGen: IdGen) => {
-      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, unique, customQueryExpression)(idGen)
+      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr.seq.toSeq, argumentIds, unique, customQueryExpression)(idGen)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
@@ -734,10 +735,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def relationshipIndexOperator(indexSeekString: String,
                                 getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                                 indexOrder: IndexOrder = IndexOrderNone,
-                                paramExpr: Option[Expression] = None,
+                                paramExpr: Iterable[Expression] = Seq.empty,
                                 argumentIds: Set[String] = Set.empty,
                                 customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
-
     val planBuilder = (idGen: IdGen) => {
       val plan = relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, customQueryExpression)(idGen)
       plan
@@ -748,7 +748,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nodeIndexSeek(indexSeekString: String,
                     getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                     indexOrder: IndexOrder = IndexOrderNone,
-                    paramExpr: Option[Expression] = None,
+                    paramExpr: Iterable[Expression] = Seq.empty,
                     argumentIds: Set[String] = Set.empty,
                     unique: Boolean = false,
                     customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => NodeIndexLeafPlan = {
@@ -768,7 +768,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def relationshipIndexSeek(indexSeekString: String,
                             getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                             indexOrder: IndexOrder = IndexOrderNone,
-                            paramExpr: Option[Expression] = None,
+                            paramExpr: Iterable[Expression] = Seq.empty,
                             argumentIds: Set[String] = Set.empty,
                             customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => RelationshipIndexLeafPlan = {
     val relType = resolver.getRelTypeId(IndexSeek.relTypeFromIndexSeekString(indexSeekString))
