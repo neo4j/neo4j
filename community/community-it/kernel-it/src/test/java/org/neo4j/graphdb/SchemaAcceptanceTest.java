@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -67,7 +68,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -141,7 +141,6 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         };
         monitors.addMonitorListener( trappingMonitor );
         builder.setMonitors( monitors );
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
     @BeforeEach
@@ -181,6 +180,20 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
+    @ParameterizedTest
+    @EnumSource( AnyTokens.class )
+    void addingTokenIndexRuleShouldSucceed( AnyTokens tokens )
+    {
+        // When
+        IndexDefinition index = createIndex( db, tokens, null );
+
+        // Then
+        try ( var tx = db.beginTx() )
+        {
+            assertThat( tx.schema().getIndexes() ).containsOnly( index );
+        }
+    }
+
     @Test
     void addingNamedIndexRuleShouldSucceed()
     {
@@ -195,18 +208,48 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
+    @ParameterizedTest
+    @EnumSource( AnyTokens.class )
+    void addingNamedTokenIndexRuleShouldSucceed( AnyTokens tokens )
+    {
+        // When
+        IndexDefinition index = createIndex( db, tokens, "MyIndex" );
+
+        // Then
+        assertThat( index.getName() ).isEqualTo( "MyIndex" );
+        try ( var tx = db.beginTx() )
+        {
+            assertThat( tx.schema().getIndexes() ).containsOnly( index );
+        }
+    }
+
     @ParameterizedTest()
     @EnumSource( SchemaTxStrategy.class )
     void shouldThrowIfEquivalentIndexExist( SchemaTxStrategy txStrategy )
     {
         final ConstraintViolationException exception = txStrategy.execute( db,
-                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
-                schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
-                ConstraintViolationException.class );
+                                                                           schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                                                                           schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                                                                           ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
-                "An equivalent index already exists, 'Index( id=", "name='name', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), " +
-                                                                   "indexProvider='native-btree-1.0' )'." );
+                                 "An equivalent index already exists, 'Index( id=",
+                                 "name='name', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), " +
+                                 "indexProvider='native-btree-1.0' )'." );
+    }
+
+    @ParameterizedTest
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfEquivalentTokenIndexExist( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                                                                           schema -> schema.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
+                                                                           schema1 -> schema1.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
+                                                                           ConstraintViolationException.class );
+        Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
+        assertExpectedException( exception, expectedCause,
+                                 "An equivalent index already exists, 'Index( id=",
+                                 "name='name', type='TOKEN LOOKUP', schema=(:<any-labels>), indexProvider='token-lookup-1.0' )'." );
     }
 
     @ParameterizedTest()
@@ -215,9 +258,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
 
         final ConstraintViolationException exception = txStrategy.execute( db,
-                schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
-                schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
-                ConstraintViolationException.class );
+                                                                           schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey )
+                                                                                           .withName( "name" ).create(),
+                                                                           schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey )
+                                                                                             .withName( "name" ).create(),
+                                                                           ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
                 "An equivalent constraint already exists, 'Constraint( ",
@@ -284,6 +329,45 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         final ConstraintViolationException exception = txStrategy.execute( db,
                 schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
                 schema1 -> schema1.indexFor( label ).on( secondPropertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<IndexWithNameAlreadyExistsException> expectedCause = IndexWithNameAlreadyExistsException.class;
+        String expectedMessage = "There already exists an index called 'name'.";
+        assertExpectedException( exception, expectedCause, expectedMessage );
+    }
+
+    @ParameterizedTest
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfTokenIndexWithNameExistsWhenCreatingTokenIndex( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<IndexWithNameAlreadyExistsException> expectedCause = IndexWithNameAlreadyExistsException.class;
+        String expectedMessage = "There already exists an index called 'name'.";
+        assertExpectedException( exception, expectedCause, expectedMessage );
+    }
+
+    @ParameterizedTest
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfPropertyIndexWithNameExistsWhenCreatingTokenIndex( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
+                ConstraintViolationException.class );
+        Class<IndexWithNameAlreadyExistsException> expectedCause = IndexWithNameAlreadyExistsException.class;
+        String expectedMessage = "There already exists an index called 'name'.";
+        assertExpectedException( exception, expectedCause, expectedMessage );
+    }
+
+    @ParameterizedTest
+    @EnumSource( SchemaTxStrategy.class )
+    void shouldThrowIfTokenIndexWithNameExistsWhenCreatingPropertyIndex( SchemaTxStrategy txStrategy )
+    {
+        final ConstraintViolationException exception = txStrategy.execute( db,
+                schema -> schema.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
                 ConstraintViolationException.class );
         Class<IndexWithNameAlreadyExistsException> expectedCause = IndexWithNameAlreadyExistsException.class;
         String expectedMessage = "There already exists an index called 'name'.";
@@ -363,6 +447,21 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
+    @ParameterizedTest
+    @EnumSource( AnyTokens.class )
+    void droppingExistingIndexRuleShouldSucceed( AnyTokens token )
+    {
+        IndexDefinition index = createIndex( db, token, null );
+
+        dropIndex( index );
+
+        // THEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( tx.schema().getIndexes() ).isEmpty();
+        }
+    }
+
     @Test
     void droppingNonExistingIndexShouldGiveHelpfulExceptionInSameTransaction()
     {
@@ -385,6 +484,28 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( getIndexes( tx, label ) ).doesNotContain( index );
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( AnyTokens.class )
+    void droppingNonExistingIndexShouldGiveHelpfulExceptionInSameTransaction( AnyTokens token )
+    {
+        IndexDefinition index = createIndex( db, token, null );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            index = tx.schema().getIndexByName( index.getName() );
+            index.drop();
+            ConstraintViolationException e = assertThrows( ConstraintViolationException.class, index::drop );
+            assertThat( e ).hasMessageContaining( "Unable to drop index: Index does not exist: ");
+            tx.commit();
+        }
+
+        // THEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( tx.schema().getIndexes() ).doesNotContain( index );
         }
     }
 
@@ -425,6 +546,20 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
+    @ParameterizedTest
+    @EnumSource( AnyTokens.class )
+    void awaitingTokenIndexComingOnlineWorks( AnyTokens token )
+    {
+        IndexDefinition index = createIndex( db, token, null );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( index, 2L, TimeUnit.MINUTES );
+
+            assertThat( tx.schema().getIndexState( index ) ).isEqualTo( ONLINE );
+        }
+    }
+
     @Test
     void awaitingIndexComingOnlineByNameWorks()
     {
@@ -437,6 +572,20 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
             // THEN
             assertEquals( ONLINE, getIndexState( tx, index ) );
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( AnyTokens.class )
+    void awaitingTokenIndexComingOnlineByNameWorks( AnyTokens token )
+    {
+        IndexDefinition index = createIndex( db, token, "my_index" );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( "my_index", 2L, TimeUnit.MINUTES );
+
+            assertThat( tx.schema().getIndexState( index ) ).isEqualTo( ONLINE );
         }
     }
 
@@ -461,6 +610,21 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
+    void awaitingAllIndexesComingOnlineWorksWhenThereIsTokenIndex()
+    {
+        IndexDefinition index1 = createIndex( db, AnyTokens.ANY_LABELS, null );
+        IndexDefinition index2 = createIndex( db, AnyTokens.ANY_RELATIONSHIP_TYPES, null );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2L, TimeUnit.MINUTES );
+
+            assertThat( tx.schema().getIndexState( index1 ) ).isEqualTo( ONLINE );
+            assertThat( tx.schema().getIndexState( index2 ) ).isEqualTo( ONLINE );
+        }
+    }
+
+    @Test
     void shouldPopulateIndex()
     {
         // GIVEN
@@ -474,6 +638,23 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction transaction = db.beginTx() )
         {
             assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", transaction ) ).containsOnly( node );
+        }
+    }
+
+    @Test
+    void shouldPopulateTokenIndex()
+    {
+        // GIVEN
+        Node node = createNode( db, propertyKey, "Neo", label );
+
+        // create an index
+        IndexDefinition index = createIndex( db, AnyTokens.ANY_LABELS, null );
+        waitForIndex( db, index );
+
+        // THEN
+        try ( var tx = db.beginTx() )
+        {
+            assertThat( asSet( tx.findNodes( label ) ) ).containsOnly( node );
         }
     }
 
@@ -1168,6 +1349,34 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertThatThrownBy( () -> indexCreator.withIndexType( IndexType.LOOKUP ).create() )
                     .isInstanceOf( ConstraintViolationException.class )
                     .hasMessageContaining( "Index type LOOKUP is not supported for property indexes." );
+        }
+    }
+
+    @Test
+    void tokenIndexCreatorThrowsOnProperty()
+    {
+        try ( var tx = db.beginTx() )
+        {
+            IndexCreator indexCreator = tx.schema().indexFor( AnyTokens.ANY_LABELS );
+
+            assertThatThrownBy( () -> indexCreator.on( "property" ) ).isInstanceOf( ConstraintViolationException.class )
+                                                                     .hasMessageContaining( "LOOKUP indexes doesn't support inclusion of property keys." );
+        }
+    }
+
+    @Test
+    void tokenIndexCreatorThrowsOnUnsupportedIndexTypes()
+    {
+        try ( var tx = db.beginTx() )
+        {
+            IndexCreator indexCreator = tx.schema().indexFor( AnyTokens.ANY_LABELS );
+
+            assertThatThrownBy( () -> indexCreator.withIndexType( IndexType.BTREE ) )
+                    .isInstanceOf( ConstraintViolationException.class )
+                    .hasMessageContaining( "Only LOOKUP index type supported for token indexes." );
+            assertThatThrownBy( () -> indexCreator.withIndexType( IndexType.FULLTEXT ) )
+                    .isInstanceOf( ConstraintViolationException.class )
+                    .hasMessageContaining( "Only LOOKUP index type supported for token indexes." );
         }
     }
 
@@ -2286,6 +2495,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
     @Nested
     @ActorsExtension
+    @ImpermanentDbmsExtension( configurationCallback = "configure" )
     class SchemaConcurrency
     {
         @Inject
@@ -2294,10 +2504,29 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         Actor second;
         BinaryLatch startLatch;
 
+        @ExtensionCallback
+        void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        SchemaAcceptanceTest.this.configure( builder );
+    }
+
         @BeforeEach
         void setUp()
         {
             startLatch = new BinaryLatch();
+        }
+
+        @RepeatedTest( 20 )
+        void cannotCreateTokenIndexesWithTheSameSchemaInConcurrentTransactions() throws Exception
+        {
+            Future<Void> firstFuture = first.submit( schemaTransaction(
+                    tx -> tx.schema().indexFor( AnyTokens.ANY_LABELS ).withName( "index-1" ) ) );
+            Future<Void> secondFuture = second.submit( schemaTransaction(
+                    tx -> tx.schema().indexFor( AnyTokens.ANY_LABELS ).withName( "index-2" ) ) );
+
+            raceTransactions( firstFuture, secondFuture );
+
+            assertOneSuccessAndOneFailure( firstFuture, secondFuture );
         }
 
         @RepeatedTest( 20 )
@@ -2631,6 +2860,23 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         IndexDefinition indexDef = createIndexNoWait( db, name, label, properties );
         waitForIndex( db, indexDef );
         return indexDef;
+    }
+
+    public static IndexDefinition createIndex( GraphDatabaseService db, AnyTokens tokens, String name )
+    {
+        IndexDefinition index;
+        try ( var tx = db.beginTx() )
+        {
+            IndexCreator creator = tx.schema().indexFor( tokens );
+            if ( name != null )
+            {
+                creator = creator.withName( name );
+            }
+            index = creator.create();
+            tx.commit();
+        }
+        waitForIndex( db, index );
+        return index;
     }
 
     static IndexDefinition createIndexNoWait( GraphDatabaseService db, String name, Label label, String... properties )
