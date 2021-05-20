@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
-public interface SchemaRuleAccess
+public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.SchemaStorage
 {
     /**
      * @param versionRepository Used to know whether or not to inject a rule for NLI (that was formerly labelscanstore).
@@ -50,8 +50,6 @@ public interface SchemaRuleAccess
     }
 
     long newRuleId( CursorContext cursorContext );
-
-    Iterable<SchemaRule> getAll( CursorContext cursorContext );
 
     SchemaRule loadSingleSchemaRule( long ruleId, CursorContext cursorContext ) throws MalformedSchemaRuleException;
 

@@ -55,7 +55,7 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.storemigration.SchemaStorage
+public class SchemaStorage implements SchemaRuleAccess
 {
     private final SchemaStore schemaStore;
     private final TokenHolders tokenHolders;
