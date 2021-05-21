@@ -122,7 +122,7 @@
     <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>2.10.5</jackson.version>
     <jackson.databind.version>2.10.5.1</jackson.databind.version>
-    <amazon-sdk.version>1.11.850</amazon-sdk.version>
+    <amazon-sdk.version>1.11.1022</amazon-sdk.version>
     <guava.version>28.1-jre</guava.version>
     <slf4j.version>1.7.30</slf4j.version>
   </properties>
