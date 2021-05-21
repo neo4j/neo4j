@@ -355,7 +355,7 @@ case class Match(
     error.getOrElse(success)
   }
 
-  private def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
+  private[ast] def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
     val propertiesInPredicates: Seq[String] = (where match {
       case Some(w) => w.treeFold(Seq.empty[String]) {
         case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
@@ -396,6 +396,8 @@ case class Match(
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop))) if variable == id =>
+        acc => SkipChildren(acc ++ prop.map(_._1.name))
+      case RelationshipPattern(Some(Variable(id)), _, _, Some(MapExpression(prop)), _, _) if variable == id =>
         acc => SkipChildren(acc ++ prop.map(_._1.name))
     }
 

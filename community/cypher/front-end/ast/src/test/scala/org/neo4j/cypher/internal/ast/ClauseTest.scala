@@ -131,4 +131,23 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     `match`.containsLabelOrRelTypePredicate("r", "N") should be(false)
     `match`.containsLabelOrRelTypePredicate("r", "R") should be(true)
   }
+
+  test("containsPropertyPredicates with inlined rel property predicate") {
+    // MATCH ()-[r:R {prop: 42}]-()
+    val `match` = Match(optional = false,
+      Pattern(Seq(EveryPath(
+        RelationshipChain(nodePat(),
+          RelationshipPattern(Some(varFor("r")), Seq(relTypeName("R")), None, Some(mapOfInt("prop" -> 42)), SemanticDirection.BOTH)(pos),
+          nodePat())(pos)
+      )))(pos),
+      hints = Seq.empty,
+      None
+    )(pos)
+
+    // assert
+    `match`.containsPropertyPredicates("n", Seq(propName("prop"))) should be(false)
+    `match`.containsPropertyPredicates("n", Seq(propName("flop"))) should be(false)
+    `match`.containsPropertyPredicates("r", Seq(propName("prop"))) should be(true)
+    `match`.containsPropertyPredicates("r", Seq(propName("flop"))) should be(false)
+  }
 }
