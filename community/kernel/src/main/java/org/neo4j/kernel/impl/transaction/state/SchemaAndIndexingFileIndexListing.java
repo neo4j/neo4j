@@ -29,19 +29,16 @@ import java.util.function.Function;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 public class SchemaAndIndexingFileIndexListing
 {
     private static final Function<Path,StoreFileMetadata> toStoreFileMetadata = path -> new StoreFileMetadata( path, 1 );
 
-    private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
 
-    SchemaAndIndexingFileIndexListing( LabelScanStore labelScanStore, IndexingService indexingService )
+    SchemaAndIndexingFileIndexListing( IndexingService indexingService )
     {
-        this.labelScanStore = labelScanStore;
         this.indexingService = indexingService;
     }
 
@@ -53,15 +50,6 @@ public class SchemaAndIndexingFileIndexListing
     Resource gatherSchemaIndexFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
     {
         ResourceIterator<Path> snapshot = indexingService.snapshotIndexFiles();
-        getSnapshotFilesMetadata( snapshot, targetFiles );
-        // Intentionally don't close the snapshot here, return it for closing by the consumer of
-        // the targetFiles list.
-        return snapshot;
-    }
-
-    Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles )
-    {
-        ResourceIterator<Path> snapshot = labelScanStore.snapshotStoreFiles();
         getSnapshotFilesMetadata( snapshot, targetFiles );
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.

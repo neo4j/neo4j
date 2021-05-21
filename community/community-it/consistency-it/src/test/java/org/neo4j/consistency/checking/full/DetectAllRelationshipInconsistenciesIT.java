@@ -49,7 +49,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -132,7 +131,6 @@ public class DetectAllRelationshipInconsistenciesIT
             CountsStore counts = (CountsStore) storageEngine.countsAccessor();
             RelationshipGroupDegreesStore groupDegreesStore = storageEngine.relationshipGroupDegreesStore();
             DirectStoreAccess directStoreAccess = new DirectStoreAccess( neoStores,
-                    db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
                     db.getDependencyResolver().resolveDependency( IndexProviderMap.class ),
                     db.getDependencyResolver().resolveDependency( TokenHolders.class ),
                     db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ),

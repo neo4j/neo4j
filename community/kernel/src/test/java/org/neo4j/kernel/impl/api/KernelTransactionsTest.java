@@ -44,8 +44,8 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -70,7 +70,6 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -704,7 +703,7 @@ class KernelTransactionsTest
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ),
+                mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
                 new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
                 TransactionExecutionMonitor.NO_OP
@@ -774,7 +773,7 @@ class KernelTransactionsTest
                    storageEngine, globalProcedures, transactionIdStore, () -> KernelVersion.LATEST, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                    accessCapabilityFactory,
                    versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
-                   DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ),
+                   DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
                    new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
                    TransactionExecutionMonitor.NO_OP );

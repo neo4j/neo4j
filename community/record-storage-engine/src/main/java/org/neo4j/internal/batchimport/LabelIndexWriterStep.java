@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -40,13 +39,13 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]>
     private final IndexImporter importer;
     private final NodeStore nodeStore;
 
-    public LabelIndexWriterStep( StageControl control, Configuration config, Config dbConfig, BatchingNeoStores neoStores,
-                                 IndexImporterFactory indexImporterFactory,
-                                 MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer )
+    public LabelIndexWriterStep( StageControl control, Configuration config, BatchingNeoStores neoStores,
+            IndexImporterFactory indexImporterFactory,
+            MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer )
     {
         super( control, "LABEL INDEX", config, 1, pageCacheTracer );
         this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( LABEL_INDEX_WRITE_STEP_TAG ) );
-        this.importer = indexImporter( dbConfig, config.indexConfig(), indexImporterFactory, neoStores, NODE, memoryTracker, cursorContext );
+        this.importer = indexImporter( config.indexConfig(), indexImporterFactory, neoStores, NODE, memoryTracker, cursorContext );
         this.nodeStore = neoStores.getNodeStore();
     }
 

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Iterator;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -44,20 +43,16 @@ import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
-import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -81,14 +76,12 @@ abstract class Read implements TxStateHolder,
     protected final StorageReader storageReader;
     protected final DefaultPooledCursors cursors;
     final KernelTransactionImplementation ktx;
-    private final boolean scanStoreAsTokenIndexEnabled;
 
-    Read( StorageReader storageReader, DefaultPooledCursors cursors, KernelTransactionImplementation ktx, Config config )
+    Read( StorageReader storageReader, DefaultPooledCursors cursors, KernelTransactionImplementation ktx )
     {
         this.storageReader = storageReader;
         this.cursors = cursors;
         this.ktx = ktx;
-        this.scanStoreAsTokenIndexEnabled = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
 
     @Override
@@ -215,46 +208,26 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order )
-    {
-        ktx.assertOpen();
-
-        DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
-        indexCursor.setRead( this );
-        CursorContext cursorContext = ktx.cursorContext();
-        TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorContext );
-        IndexProgressor progressor = labelScan.initialize( indexCursor, order, cursorContext );
-        indexCursor.initialize( progressor, label, order );
-    }
-
-    @Override
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
         CursorContext cursorContext = ktx.cursorContext();
 
         TokenScan tokenScan;
-        if ( scanStoreAsTokenIndexEnabled )
+        try
         {
-            try
+            Iterator<IndexDescriptor> index = index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+            if ( !index.hasNext() )
             {
-                Iterator<IndexDescriptor> index = index( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
-                if ( !index.hasNext() )
-                {
-                    throw new IndexNotFoundKernelException( "There is no index that can back a node label scan." );
-                }
-                IndexDescriptor nliDescriptor = index.next();
-                DefaultTokenReadSession session = (DefaultTokenReadSession) tokenReadSession( nliDescriptor );
-                tokenScan = session.reader.entityTokenScan( label, cursorContext );
+                throw new IndexNotFoundKernelException( "There is no index that can back a node label scan." );
             }
-            catch ( IndexNotFoundKernelException e )
-            {
-                throw new RuntimeException( e );
-            }
+            IndexDescriptor nliDescriptor = index.next();
+            DefaultTokenReadSession session = (DefaultTokenReadSession) tokenReadSession( nliDescriptor );
+            tokenScan = session.reader.entityTokenScan( label, cursorContext );
         }
-        else
+        catch ( IndexNotFoundKernelException e )
         {
-            tokenScan = labelScanReader().entityTokenScan( label, cursorContext );
+            throw new RuntimeException( e );
         }
         return new NodeLabelIndexCursorScan( this, label, tokenScan, cursorContext );
     }
@@ -264,11 +237,6 @@ abstract class Read implements TxStateHolder,
             throws KernelException
     {
         ktx.assertOpen();
-
-        if ( !scanStoreAsTokenIndexEnabled )
-        {
-            throw new IllegalStateException( "Cannot scan label index when feature is not enabled." );
-        }
 
         if ( session.reference().schema().entityType() != EntityType.NODE )
         {
@@ -332,11 +300,6 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
 
-        if ( !scanStoreAsTokenIndexEnabled )
-        {
-            throw new IllegalStateException( "Cannot scan relationship type index when feature is not enabled." );
-        }
-
         if ( session.reference().schema().entityType() != EntityType.RELATIONSHIP )
         {
             throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index " +
@@ -369,8 +332,6 @@ abstract class Read implements TxStateHolder,
     }
 
     public abstract ValueIndexReader newValueIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    abstract TokenScanReader labelScanReader();
 
     @Override
     public TransactionState txState()
@@ -494,12 +455,6 @@ abstract class Read implements TxStateHolder,
     void acquireSharedLock( ResourceType resource, long resourceId )
     {
         ktx.lockClient().acquireShared( ktx.lockTracer(), resource, resourceId );
-    }
-
-    @Override
-    public boolean scanStoreAsTokenIndexEnabled()
-    {
-        return scanStoreAsTokenIndexEnabled;
     }
 
     private void acquireExclusiveLock( ResourceTypes types, long... ids )

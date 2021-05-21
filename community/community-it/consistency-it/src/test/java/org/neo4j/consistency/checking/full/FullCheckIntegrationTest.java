@@ -2767,7 +2767,7 @@ public class FullCheckIntegrationTest
     private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule ) throws KernelException
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders(),
-                () -> KernelVersion.LATEST, false );
+                () -> KernelVersion.LATEST );
         schemaRuleAccess.writeSchemaRule( rule, NULL, INSTANCE );
     }
 

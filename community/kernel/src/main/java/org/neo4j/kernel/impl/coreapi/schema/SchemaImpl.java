@@ -129,10 +129,6 @@ public class SchemaImpl implements Schema
     @Override
     public IndexCreator indexFor( AnyTokens tokens )
     {
-        if ( !transaction.schemaRead().scanStoreAsTokenIndexEnabled() )
-        {
-            throw new IllegalStateException( "Cannot create token indexes when feature is not enabled." );
-        }
         return new TokenIndexCreator( actions, tokens );
     }
 

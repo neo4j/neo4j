@@ -29,19 +29,18 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexOrder;
 
-import static org.neo4j.kernel.impl.index.schema.NativeTokenScanWriter.offsetOf;
-import static org.neo4j.kernel.impl.index.schema.NativeTokenScanWriter.rangeOf;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
  * {@link LongIterator} which iterate over multiple {@link TokenScanValue} and for each
  * iterate over each set bit, returning actual entity ids, i.e. {@code entityIdRange+bitOffset}.
  *
- * The provided {@link Seeker} is managed externally, e.g. {@link NativeTokenScanReader},
+ * The provided {@link Seeker} is managed externally,
  * this because implemented interface lacks close-method.
  */
 class TokenScanValueIterator extends TokenScanValueIndexAccessor implements PrimitiveLongResourceIterator
 {
+    public static final long NO_ID = -1;
     private long fromId;
     private boolean hasNextDecided;
     private boolean hasNext;
@@ -114,10 +113,10 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
             baseEntityId = key.idRange * RANGE_SIZE;
             bits = cursor.value().bits;
 
-            if ( fromId != TokenScanReader.NO_ID )
+            if ( fromId != NO_ID )
             {
                 // If we've been told to start at a specific id then trim off ids in this range less than or equal to that id
-                long range = rangeOf( fromId );
+                long range = TokenIndexUpdater.rangeOf( fromId );
                 if ( range == key.idRange )
                 {
                     // Only do this if we're in the idRange that fromId is in, otherwise there were no ids this time in this range
@@ -126,11 +125,16 @@ class TokenScanValueIterator extends TokenScanValueIndexAccessor implements Prim
                     bits &= ~mask;
                 }
                 // ... and let's not do that again, only for the first idRange
-                fromId = TokenScanReader.NO_ID;
+                fromId = NO_ID;
             }
 
             //noinspection AssertWithSideEffects
             assert keysInOrder( key, IndexOrder.ASCENDING );
         }
+    }
+
+    private static int offsetOf( long entityId )
+    {
+        return (int) (entityId % RANGE_SIZE);
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -43,7 +42,7 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage
 {
     public static final String NAME = "Relationship counts and relationship type index build";
 
-    public RelationshipCountsAndTypeIndexBuildStage( Configuration config, Config dbConfig, BatchingNeoStores neoStores, NodeLabelsCache cache,
+    public RelationshipCountsAndTypeIndexBuildStage( Configuration config, BatchingNeoStores neoStores, NodeLabelsCache cache,
             RelationshipStore relationshipStore, int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
             NumberArrayFactory cacheFactory, ProgressReporter progressReporter, IndexImporterFactory indexImporterFactory,
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
@@ -53,7 +52,7 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, pageCacheTracer ) );
         if ( config.indexConfig().createRelationshipIndex() )
         {
-            add( new RelationshipTypeIndexWriterStep( control(), config, dbConfig, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
+            add( new RelationshipTypeIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
         }
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
                 highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, memoryTracker ) );

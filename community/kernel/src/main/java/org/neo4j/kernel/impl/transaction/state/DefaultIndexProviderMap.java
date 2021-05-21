@@ -32,7 +32,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -155,17 +154,10 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
             fulltextIndexProvider = IndexProvider.EMPTY;
         }
 
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
-        {
-            var configuredTokenIndexProvider = indexProvidersByName.get( TOKEN_INDEX_PROVIDER_NAME );
-            requireNonNull( configuredTokenIndexProvider, () -> format( "Token index provider: `%s` not found. Available index providers: %s.",
-                    TOKEN_INDEX_PROVIDER_NAME, indexProvidersByName.keySet().toString() ) );
-            tokenIndexProvider = configuredTokenIndexProvider;
-        }
-        else
-        {
-            tokenIndexProvider = IndexProvider.EMPTY;
-        }
+        var configuredTokenIndexProvider = indexProvidersByName.get( TOKEN_INDEX_PROVIDER_NAME );
+        requireNonNull( configuredTokenIndexProvider, () -> format( "Token index provider: `%s` not found. Available index providers: %s.",
+                TOKEN_INDEX_PROVIDER_NAME, indexProvidersByName.keySet().toString() ) );
+        tokenIndexProvider = configuredTokenIndexProvider;
     }
 
     private IndexProvider put( IndexProviderDescriptor providerDescriptor, IndexProvider provider )

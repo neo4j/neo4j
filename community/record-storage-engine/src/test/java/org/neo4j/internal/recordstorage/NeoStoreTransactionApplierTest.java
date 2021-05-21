@@ -68,7 +68,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
@@ -100,7 +99,6 @@ class NeoStoreTransactionApplierTest
     private final NeoStores neoStores = mock( NeoStores.class );
     private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
-    private final EntityTokenUpdateListener labelUpdateListener = mock( EntityTokenUpdateListener.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = mock( LockService.class );
 
@@ -119,7 +117,6 @@ class NeoStoreTransactionApplierTest
     private final DynamicRecord one = new DynamicRecord( 1 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
     private final DynamicRecord two = new DynamicRecord( 2 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
     private final DynamicRecord three = new DynamicRecord( 3 ).initialize( true, true, Record.NO_NEXT_BLOCK.intValue(), -1 );
-    private final WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final CommandsToApply transactionToApply = mock( CommandsToApply.class );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final IndexActivator indexActivator = new IndexActivator( indexingService );
@@ -628,8 +625,8 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        var batchContext = new LegacyBatchContext( indexingService, labelScanStoreSynchronizer, indexUpdatesSync, nodeStore,
-                propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE );
+        var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore,
+                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE );
         TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
@@ -652,8 +649,8 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        var batchContext = new LegacyBatchContext( indexingService, labelScanStoreSynchronizer, indexUpdatesSync, nodeStore,
-                propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE );
+        var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore,
+                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE );
         TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
@@ -676,7 +673,7 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem()
     {
         // given
-        var batchContext = mock( LegacyBatchContext.class );
+        var batchContext = mock( BatchContext.class );
         var indexActivator = mock( IndexActivator.class );
         when( batchContext.getIndexActivator() ).thenReturn( indexActivator );
         TransactionApplierFactory applier = newIndexApplier( );

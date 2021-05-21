@@ -20,21 +20,11 @@
 
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-
 public class RelationshipIndexProvidedOrderLuceneNative30Test extends IndexProvidedOrderLuceneNative30Test
 {
     @Override
     EntityControl getEntityControl()
     {
         return EntityControl.RELATIONSHIP;
-    }
-
-    @Override
-    public ReadTestSupport newTestSupport()
-    {
-        ReadTestSupport readTestSupport = super.newTestSupport();
-        readTestSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-        return readTestSupport;
     }
 }

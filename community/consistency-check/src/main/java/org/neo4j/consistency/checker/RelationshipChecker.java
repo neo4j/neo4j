@@ -215,13 +215,10 @@ class RelationshipChecker implements Checker
     private BoundedIterable<EntityTokenRange> getRelationshipTypeIndexReader( long fromRelationshipId, long toRelationshipId, boolean last,
             CursorContext cursorContext )
     {
-        if ( context.useScanStoresAsTokenIndexes )
+        if ( context.relationshipTypeIndex != null )
         {
-            if ( context.relationshipTypeIndex != null )
-            {
-                return context.relationshipTypeIndex.newAllEntriesTokenReader( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId,
-                        cursorContext );
-            }
+            return context.relationshipTypeIndex.newAllEntriesTokenReader( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId,
+                    cursorContext );
         }
         return BoundedIterable.empty();
     }

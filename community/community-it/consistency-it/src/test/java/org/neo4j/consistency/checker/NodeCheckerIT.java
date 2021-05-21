@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -71,8 +70,6 @@ class NodeCheckerIT
     private Config config;
     @Inject
     private PageCache pageCache;
-    @Inject
-    private LabelScanStore labelScanStore;
     @Inject
     private TokenHolders tokenHolders;
     private long nodeId;
@@ -126,11 +123,11 @@ class NodeCheckerIT
     {
         var neoStores = storageEngine.testAccessNeoStores();
         var indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), PageCacheTracer.NULL, SIMPLE_NAME_LOOKUP,
-                config, () -> KernelVersion.LATEST );
-        context = new CheckerContext( neoStores, indexAccessors, labelScanStore,
+                () -> KernelVersion.LATEST );
+        context = new CheckerContext( neoStores, indexAccessors,
                 execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
                 tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( NodeBasedMemoryLimiter.class ),
-                ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, pageCacheTracer, INSTANCE, false, ConsistencyFlags.DEFAULT, true );
+                ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, pageCacheTracer, INSTANCE, false, ConsistencyFlags.DEFAULT );
         context.initialize();
     }
 }

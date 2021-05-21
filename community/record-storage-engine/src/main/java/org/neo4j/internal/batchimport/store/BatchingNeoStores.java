@@ -54,8 +54,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -67,11 +65,9 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
@@ -87,7 +83,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
-import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
@@ -138,8 +133,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private BatchingLabelTokenRepository labelRepository;
     private BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private TokenHolders tokenHolders;
-    private LifeSupport life = new LifeSupport();
-    private LabelScanStore labelScanStore;
     private PageCacheFlusher flusher;
     private boolean doubleRelationshipRecordUnits;
 
@@ -248,15 +241,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
     }
 
-    private void instantiateExtensions()
-    {
-        life = new LifeSupport();
-        life.start();
-        labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(), immediate(),
-                neo4jConfig, pageCacheTracer, memoryTracker );
-        life.add( labelScanStore );
-    }
-
     private void instantiateStores() throws IOException
     {
         neoStores = newStoreFactory( databaseLayout, idGeneratorFactory, pageCacheTracer, immutable.empty() ).openAllNeoStores( true );
@@ -270,7 +254,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( CursorContext.NULL ) );
 
         temporaryNeoStores = instantiateTempStores();
-        instantiateExtensions();
 
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( BATCHING_STORE_CREATION_TAG ) ) )
         {
@@ -433,7 +416,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
 
         // Close the neo store
-        life.shutdown();
         closeAll( neoStores, temporaryNeoStores );
         if ( !externalPageCache )
         {
@@ -468,11 +450,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public long getLastCommittedTransactionId()
     {
         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-    }
-
-    public LabelScanStore getLabelScanStore()
-    {
-        return labelScanStore;
     }
 
     public NeoStores getNeoStores()
@@ -543,10 +520,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         if ( temporaryNeoStores != null )
         {
             temporaryNeoStores.flush( cursorContext );
-        }
-        if ( labelScanStore != null )
-        {
-            labelScanStore.force( cursorContext );
         }
     }
 

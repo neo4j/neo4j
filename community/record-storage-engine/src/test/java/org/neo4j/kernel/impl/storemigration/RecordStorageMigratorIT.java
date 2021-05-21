@@ -446,7 +446,7 @@ class RecordStorageMigratorIT
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
             TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, NULL );
-            SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST, false );
+            SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
             List<SchemaRule> migratedRules = new ArrayList<>();
             storage.getAll( NULL ).iterator().forEachRemaining( migratedRules::add );
 

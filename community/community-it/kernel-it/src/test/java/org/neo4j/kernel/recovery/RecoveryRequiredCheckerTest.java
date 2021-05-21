@@ -33,7 +33,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -49,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -284,12 +282,6 @@ class RecoveryRequiredCheckerTest
     {
         for ( Path file : databaseLayout.storeFiles() )
         {
-            if ( file.getFileName().toString().equals( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() ) &&
-                 !Config.defaults().get( enable_scan_stores_as_token_indexes ) )
-            {
-                // Skip
-                continue;
-            }
             assertTrue( fileSystem.fileExists( file ), "Store file " + file + " does not exist" );
         }
     }

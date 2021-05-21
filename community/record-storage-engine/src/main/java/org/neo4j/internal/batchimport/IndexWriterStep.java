@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
@@ -38,15 +37,12 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAccess;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaRule.generateName;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 public abstract class IndexWriterStep<T> extends ProcessorStep<T>
 {
@@ -56,21 +52,16 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
     }
 
     protected IndexImporter indexImporter(
-            Config dbConfig, IndexConfig indexConfig, IndexImporterFactory importerFactory, BatchingNeoStores neoStores, EntityType entityType,
+            IndexConfig indexConfig, IndexImporterFactory importerFactory, BatchingNeoStores neoStores, EntityType entityType,
             MemoryTracker memoryTracker, CursorContext cursorContext )
     {
-
-        if ( dbConfig.get( enable_scan_stores_as_token_indexes ) )
-        {
-            var schemaStore = neoStores.getNeoStores().getSchemaStore();
-            var metaDataStore = neoStores.getNeoStores().getMetaDataStore();
-            var tokenHolders = neoStores.getTokenHolders();
-            var schemaRuleAccess = getSchemaRuleAccess( schemaStore, tokenHolders, metaDataStore, true );
-            var index = findIndex( entityType, schemaRuleAccess )
-                    .orElseGet( () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext ) );
-            return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
-        }
-        return entityType == NODE ? new ScanStoreLabelIndexImporter( neoStores.getLabelScanStore(), cursorContext ) : EMPTY_IMPORTER;
+        var schemaStore = neoStores.getNeoStores().getSchemaStore();
+        var metaDataStore = neoStores.getNeoStores().getMetaDataStore();
+        var tokenHolders = neoStores.getTokenHolders();
+        var schemaRuleAccess = getSchemaRuleAccess( schemaStore, tokenHolders, metaDataStore );
+        var index = findIndex( entityType, schemaRuleAccess )
+                .orElseGet( () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext ) );
+        return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
     }
 
     private IndexDescriptor createIndex(

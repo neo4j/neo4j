@@ -73,8 +73,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
@@ -98,26 +96,23 @@ public class AllStoreHolder extends Read
     private final GlobalProcedures globalProcedures;
     private final SchemaState schemaState;
     private final IndexingService indexingService;
-    private final LabelScanStore labelScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependencies;
     private final MemoryTracker memoryTracker;
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
-    private TokenScanReader labelScanReader;
 
     public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultPooledCursors cursors, GlobalProcedures globalProcedures,
-                           SchemaState schemaState, IndexingService indexingService, LabelScanStore labelScanStore,
+                           SchemaState schemaState, IndexingService indexingService,
                            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, Config config,
                            MemoryTracker memoryTracker )
     {
-        super( storageReader, cursors, ktx, config );
+        super( storageReader, cursors, ktx );
         this.globalProcedures = globalProcedures;
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>( index -> indexingService.getIndexProxy( index ).newValueReader() );
         this.tokenIndexReaderCache = new IndexReaderCache<>( index -> indexingService.getIndexProxy( index ).newTokenReader() );
         this.indexingService = indexingService;
-        this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependencies = databaseDependencies;
         this.memoryTracker = memoryTracker;
@@ -288,7 +283,7 @@ public class AllStoreHolder extends Read
         }
 
         // token index scan can only scan for single relationship type
-        if ( scanStoreAsTokenIndexEnabled() && typeId != TokenRead.ANY_RELATIONSHIP_TYPE )
+        if ( typeId != TokenRead.ANY_RELATIONSHIP_TYPE )
         {
             try
             {
@@ -449,22 +444,6 @@ public class AllStoreHolder extends Read
     {
         assertValidIndex( index );
         return new DefaultTokenReadSession( tokenIndexReaderCache.getOrCreate( index ), index );
-    }
-
-    @Override
-    public void prepareForLabelScans()
-    {
-        labelScanReader();
-    }
-
-    @Override
-    TokenScanReader labelScanReader()
-    {
-        if ( labelScanReader == null )
-        {
-            labelScanReader = labelScanStore.newReader();
-        }
-        return labelScanReader;
     }
 
     @Override

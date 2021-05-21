@@ -21,7 +21,6 @@ package org.neo4j.test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -29,8 +28,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public class GraphDatabaseServiceCleaner
 {
@@ -61,19 +58,15 @@ public class GraphDatabaseServiceCleaner
             tx.commit();
         }
         // re-create the default indexes
-        Config config = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Config.class );
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        try ( Transaction tx = db.beginTx() )
         {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "rti" ).create();
-                tx.schema().indexFor( AnyTokens.ANY_LABELS ).withName( "lti" ).create();
-                tx.commit();
-            }
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            }
+            tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "rti" ).create();
+            tx.schema().indexFor( AnyTokens.ANY_LABELS ).withName( "lti" ).create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
     }
 

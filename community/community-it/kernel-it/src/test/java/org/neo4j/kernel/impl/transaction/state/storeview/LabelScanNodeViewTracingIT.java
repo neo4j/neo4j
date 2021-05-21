@@ -21,27 +21,31 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
+import static java.util.stream.StreamSupport.stream;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-@DbmsExtension( configurationCallback = "configuration" )
+@DbmsExtension
 class LabelScanNodeViewTracingIT
 {
     @Inject
@@ -51,15 +55,9 @@ class LabelScanNodeViewTracingIT
     @Inject
     private LockService lockService;
     @Inject
-    private LabelScanStore labelScanStore;
-    @Inject
     private JobScheduler jobScheduler;
-
-    @ExtensionCallback
-    void configuration( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
-    }
+    @Inject
+    private IndexingService indexingService;
 
     @Test
     void tracePageCacheAccess() throws Exception
@@ -78,9 +76,10 @@ class LabelScanNodeViewTracingIT
 
         var labelId = getLabelId( label );
 
-        var jobScheduler = database.getDependencyResolver().resolveDependency( JobScheduler.class );
         var cacheTracer = new DefaultPageCacheTracer();
-        var scan = new LegacyLabelViewNodeStoreScan( Config.defaults(), storageEngine.newReader(), lockService, labelScanStore,
+        IndexProxy indexProxy = indexingService.getIndexProxy( findTokenIndex() );
+
+        var scan = new LabelIndexedNodeStoreScan( Config.defaults(), storageEngine.newReader(), lockService, indexProxy.newTokenReader(),
                 new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
                 INSTANCE );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
@@ -95,6 +94,18 @@ class LabelScanNodeViewTracingIT
         try ( var tx = database.beginTx() )
         {
             return ((InternalTransaction)tx).kernelTransaction().tokenRead().nodeLabel( label.name() );
+        }
+    }
+
+    private IndexDescriptor findTokenIndex()
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            var nodeIndex = stream( tx.schema().getIndexes().spliterator(), false )
+                    .map( indexDef -> ((IndexDefinitionImpl) indexDef).getIndexReference() )
+                    .filter( index -> index.isTokenIndex() && index.schema().entityType() == EntityType.NODE ).findFirst();
+            assertTrue( nodeIndex.isPresent() );
+            return nodeIndex.get();
         }
     }
 }

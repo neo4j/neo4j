@@ -106,7 +106,7 @@ class SchemaStorageIT
             transaction.commit();
         }
         schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
-        storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST, false );
+        storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
     }
 
     @Test

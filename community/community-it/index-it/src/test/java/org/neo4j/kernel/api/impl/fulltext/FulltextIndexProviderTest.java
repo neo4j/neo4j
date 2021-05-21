@@ -537,7 +537,7 @@ class FulltextIndexProviderTest
                 {
                     TokenHolders tokens = StoreTokens.readOnlyTokenHolders( neoStores, CursorContext.NULL );
                     SchemaStore schemaStore = neoStores.getSchemaStore();
-                    SchemaStorage storage = new SchemaStorage( schemaStore, tokens, () -> KernelVersion.LATEST, false );
+                    SchemaStorage storage = new SchemaStorage( schemaStore, tokens, () -> KernelVersion.LATEST );
                     IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule( indexId, CursorContext.NULL );
                     Map<String,Value> indexConfigMap = new HashMap<>( index.getIndexConfig().asMap() );
                     for ( Map.Entry<String,Value> entry : indexConfigMap.entrySet() )

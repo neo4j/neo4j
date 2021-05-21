@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -218,7 +217,6 @@ public class FullCheckTokenIndexIT
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         IndexingService indexingService = dependencyResolver.resolveDependency( IndexingService.class );
         DirectStoreAccess directStoreAccess = new DirectStoreAccess( neoStores,
-                dependencyResolver.resolveDependency( LabelScanStore.class ),
                 dependencyResolver.resolveDependency( IndexProviderMap.class ),
                 dependencyResolver.resolveDependency( TokenHolders.class ),
                 dependencyResolver.resolveDependency( IndexStatisticsStore.class ),

@@ -24,13 +24,10 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageReader;
-
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 public class IndexStoreViewFactory
 {
@@ -40,14 +37,12 @@ public class IndexStoreViewFactory
     private final Config config;
     private final Supplier<StorageReader> storageReader;
     private final LogProvider logProvider;
-    private final LabelScanStore labelScanStore;
 
     public IndexStoreViewFactory(
             Config config,
             Supplier<StorageReader> storageReader,
             Locks locks,
             FullScanStoreView fullScanStoreView,
-            LabelScanStore labelScanStore,
             LockService lockService,
             LogProvider logProvider )
     {
@@ -56,20 +51,11 @@ public class IndexStoreViewFactory
         this.config = config;
         this.storageReader = storageReader;
         this.logProvider = logProvider;
-        this.labelScanStore = labelScanStore;
         this.fullScanStoreView = fullScanStoreView;
     }
 
     public IndexStoreView createTokenIndexStoreView( IndexProxyProvider indexProxies )
     {
-        if ( config.get( enable_scan_stores_as_token_indexes ) )
-        {
-            return new DynamicIndexStoreView( fullScanStoreView, locks, lockService, config, indexProxies, storageReader, logProvider );
-        }
-        else
-        {
-            return new LegacyDynamicIndexStoreView(
-                    fullScanStoreView, labelScanStore, lockService, storageReader, logProvider, config );
-        }
+        return new DynamicIndexStoreView( fullScanStoreView, locks, lockService, config, indexProxies, storageReader, logProvider );
     }
 }

@@ -73,7 +73,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -134,7 +133,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Monitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
-    private final boolean usingTokenIndexes;
     private static final String INIT_TAG = "Initialize IndexingService";
     private final IndexStoreView storeView;
 
@@ -251,7 +249,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
         this.storeView = indexStoreViewFactory.createTokenIndexStoreView( descriptor -> indexMapRef.getIndexProxy( descriptor.getId() ) );
-        this.usingTokenIndexes = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
 
     /**
@@ -270,7 +267,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 for ( IndexDescriptor descriptor : indexDescriptors )
                 {
                     // No index (except NLI) is allowed to have the name generated for NLI.
-                    if ( usingTokenIndexes && descriptor.getName().equals( IndexDescriptor.NLI_GENERATED_NAME ) &&
+                    if ( descriptor.getName().equals( IndexDescriptor.NLI_GENERATED_NAME ) &&
                          !(descriptor.schema().isAnyTokenSchemaDescriptor() && descriptor.schema().entityType() == NODE) )
                     {
                         throw new IllegalStateException( "Index '" + descriptor.userDescription( tokenNameLookup ) + "' is using a reserved name: '" +

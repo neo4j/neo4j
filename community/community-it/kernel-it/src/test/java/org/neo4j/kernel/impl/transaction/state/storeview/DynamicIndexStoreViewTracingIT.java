@@ -26,8 +26,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
@@ -49,7 +50,9 @@ class DynamicIndexStoreViewTracingIT
     @Inject
     private LockService lockService;
     @Inject
-    private LabelScanStore labelScanStore;
+    private Locks locks;
+    @Inject
+    private IndexingService indexingService;
     @Inject
     private RecordStorageEngine storageEngine;
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -77,14 +80,14 @@ class DynamicIndexStoreViewTracingIT
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         var neoStoreStoreView = new FullScanStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
-        var indexStoreView = new LegacyDynamicIndexStoreView( neoStoreStoreView, labelScanStore,
-                lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
+        var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, locks, lockService, Config.defaults(),
+                indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ), storageEngine::newReader, NullLogProvider.nullLogProvider() );
         var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
                 new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 4 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 4 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 4 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 5 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 5 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 5 );
     }
 }

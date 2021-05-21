@@ -524,12 +524,12 @@ public class ImportLogic implements Closeable
                     nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getNodeStore().getHighId(), neoStore.getLabelRepository().getHighId(),
                             memoryTracker );
                     MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
-                    executeStage( new NodeCountsAndLabelIndexBuildStage( config, dbConfig, neoStore, nodeLabelsCache, neoStore.getNodeStore(),
+                    executeStage( new NodeCountsAndLabelIndexBuildStage( config, neoStore, nodeLabelsCache, neoStore.getNodeStore(),
                             neoStore.getLabelRepository().getHighId(),
                             updater, progressMonitor.startSection( "Nodes" ),
                             indexImporterFactory, pageCacheTracer, memoryTracker, memoryUsageStats ) );
                     // Count label-[type]->label
-                    executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, dbConfig, neoStore, nodeLabelsCache, neoStore.getRelationshipStore(),
+                    executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, neoStore, nodeLabelsCache, neoStore.getRelationshipStore(),
                             neoStore.getLabelRepository().getHighId(),
                             neoStore.getRelationshipTypeRepository().getHighId(), updater, numberArrayFactory,
                             progressMonitor.startSection( "Relationships" ),indexImporterFactory, pageCacheTracer, memoryTracker ) );

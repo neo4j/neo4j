@@ -109,7 +109,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -119,8 +118,6 @@ import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefin
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -232,8 +229,6 @@ public class BatchInserterImpl implements BatchInserter
     private final MemoryTracker memoryTracker;
     private final RelationshipGroupDegreesStore.Updater degreeUpdater;
     private final RelationshipGroupGetter relationshipGroupGetter;
-    private boolean labelsTouched;
-    private boolean relationshipTypesTouched;
     private boolean isShutdown;
 
     private final LongFunction<Label> labelIdToLabelFunction;
@@ -362,7 +357,7 @@ public class BatchInserterImpl implements BatchInserter
 
             indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
 
-            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders, neoStores.getMetaDataStore(), false );
+            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders, neoStores.getMetaDataStore() );
             schemaCache = new SchemaCache( getConstraintSemantics(), indexProviderMap );
             schemaCache.load( schemaRuleAccess.getAll( cursorContext ) );
 
@@ -563,7 +558,6 @@ public class BatchInserterImpl implements BatchInserter
         {
             schemaRuleAccess.writeSchemaRule( index, cursorContext, memoryTracker );
             schemaCache.addSchemaRule( index );
-            updateTouchToken( index.schema() );
             flushStrategy.forceFlush();
             return index;
         }
@@ -573,31 +567,19 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void updateTouchToken( SchemaDescriptor schema )
-    {
-        if ( schema.entityType() == EntityType.NODE )
-        {
-            labelsTouched = true;
-        }
-        else
-        {
-            relationshipTypesTouched = true;
-        }
-    }
-
     private static boolean isFullTextIndexType( IndexPrototype prototype )
     {
         return prototype.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT;
     }
 
-    private void repopulateAllIndexes( LabelScanStore labelIndex ) throws IOException
+    private void repopulateAllIndexes() throws IOException
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         LogProvider userLogProvider = logService.getUserLogProvider();
         var cacheTracer = PageCacheTracer.NULL;
 
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                config, () -> new RecordStorageReader( neoStores, schemaCache ), NO_LOCKS, fullScanStoreView, labelIndex, NO_LOCK_SERVICE, logProvider );
+                config, () -> new RecordStorageReader( neoStores, schemaCache ), NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
@@ -708,7 +690,6 @@ public class BatchInserterImpl implements BatchInserter
             schemaCache.addSchemaRule( constraint );
             schemaRuleAccess.writeSchemaRule( index, cursorContext, memoryTracker );
             schemaCache.addSchemaRule( index );
-            updateTouchToken( constraint.schema() );
             flushStrategy.forceFlush();
             return constraint;
         }
@@ -796,7 +777,6 @@ public class BatchInserterImpl implements BatchInserter
         {
             schemaRuleAccess.writeSchemaRule( rule, cursorContext, memoryTracker );
             schemaCache.addSchemaRule( rule );
-            updateTouchToken( rule.schema() );
             flushStrategy.forceFlush();
             return rule;
         }
@@ -909,7 +889,6 @@ public class BatchInserterImpl implements BatchInserter
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
         nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore(), cursorContext, memoryTracker );
-        labelsTouched = true;
     }
 
     private long[] getOrCreateLabelIds( Label[] labels )
@@ -1012,7 +991,6 @@ public class BatchInserterImpl implements BatchInserter
             record.setNextProp( propertyCreator.createPropertyChain( record,
                     propertiesIterator( properties ), recordAccess.getPropertyRecords() ) );
         }
-        relationshipTypesTouched = true;
         flushStrategy.flush();
         return id;
     }
@@ -1139,8 +1117,7 @@ public class BatchInserterImpl implements BatchInserter
               groupDegreesStore )
         {
             rebuildCounts( pageCacheTracer, memoryTracker );
-            LabelScanStore labelIndex = buildLabelIndex();
-            repopulateAllIndexes( labelIndex );
+            repopulateAllIndexes();
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( cursorContext );
             groupDegreesStore.checkpoint( cursorContext );
@@ -1152,20 +1129,6 @@ public class BatchInserterImpl implements BatchInserter
             throw new RuntimeException( e );
         }
         msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
-    }
-
-    private LabelScanStore buildLabelIndex() throws IOException
-    {
-        FullLabelStream labelStream = new FullLabelStream( fullScanStoreView );
-        LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, readOnlyChecker, monitors, immediate(),
-                config, pageCacheTracer, memoryTracker );
-        if ( labelsTouched )
-        {
-            labelIndex.drop();
-        }
-        // Rebuild will happen as part of this call if it was dropped
-        life.add( labelIndex );
-        return labelIndex;
     }
 
     @Override

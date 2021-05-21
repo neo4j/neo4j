@@ -64,7 +64,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -91,7 +90,6 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -133,7 +131,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
     private final boolean consistencyCheckApply;
-    private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final IdController idController;
     private final PageCacheTracer cacheTracer;
@@ -145,11 +142,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
     private final Map<TransactionApplicationMode,TransactionApplierFactoryChain> applierChains = new EnumMap<>( TransactionApplicationMode.class );
-    private final boolean usingTokenIndexes;
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
-    private EntityTokenUpdateListener nodeLabelUpdateListener;
 
     public RecordStorageEngine( DatabaseLayout databaseLayout,
             Config config,
@@ -184,7 +179,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.otherMemoryTracker = otherMemoryTracker;
         this.commandLockVerificationFactory = commandLockVerificationFactory;
         this.lockVerificationFactory = lockVerificationFactory;
-        this.usingTokenIndexes = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer, readOnlyChecker );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
@@ -196,7 +190,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             schemaRuleAccess =
-                    SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore(), usingTokenIndexes );
+                    SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore() );
             schemaCache = new SchemaCache( constraintSemantics, indexConfigCompleter );
 
             integrityValidator = new IntegrityValidator( neoStores );
@@ -323,15 +317,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.integrityValidator.setIndexValidator( listener );
     }
 
-    @Override
-    public void addNodeLabelUpdateListener( EntityTokenUpdateListener listener )
-    {
-        Preconditions.checkState( this.nodeLabelUpdateListener == null,
-                "Only supports a single listener. Tried to add " + listener + ", but " + this.nodeLabelUpdateListener + " has already been added" );
-        this.nodeLabelUpdateListener = listener;
-        this.labelScanStoreSync = new WorkSync<>( listener );
-    }
-
     /**
      * @throws TransactionFailureException if command generation fails or some prerequisite of some command didn't validate,
      * for example if trying to delete a node that still has relationships.
@@ -421,12 +406,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // it in the schemaStore.
         if ( currentVersion.isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
         {
-            // We always should have token index feature on when we have upgrade enabled, but keeping this for now
-            // to be able to disable quickly if we need to.
-            if ( usingTokenIndexes )
-            {
-                commands.add( createSchemaUpgradeCommand( serialization ) );
-            }
+            commands.add( createSchemaUpgradeCommand( serialization ) );
         }
         return commands;
     }
@@ -502,15 +482,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private BatchContext createBatchContext( TransactionApplierFactoryChain batchApplier, CommandsToApply initialBatch )
     {
-        if ( usingTokenIndexes )
-        {
-            return new BatchContextImpl( indexUpdateListener, indexUpdatesSync, neoStores.getNodeStore(), neoStores.getPropertyStore(),
-                    this, schemaCache, initialBatch.cursorContext(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get() );
-        }
-
-        return new LegacyBatchContext( indexUpdateListener, labelScanStoreSync, indexUpdatesSync, neoStores.getNodeStore(),
-                neoStores.getPropertyStore(), this, schemaCache, initialBatch.cursorContext(), otherMemoryTracker,
-                batchApplier.getIdUpdateListenerSupplier().get() );
+        return new BatchContextImpl( indexUpdateListener, indexUpdatesSync, neoStores.getNodeStore(), neoStores.getPropertyStore(),
+                this, schemaCache, initialBatch.cursorContext(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get() );
     }
 
     /**

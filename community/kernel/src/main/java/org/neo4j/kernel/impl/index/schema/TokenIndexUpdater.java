@@ -37,13 +37,13 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
- * {@link IndexUpdater} for {@link NativeTokenScanStore}, or rather a {@link Writer} for its
+ * {@link IndexUpdater} for token index, or rather a {@link Writer} for its
  * internal {@link GBPTree}.
  * <p>
  * {@link #process(IndexEntryUpdate) updates} are queued up to a maximum batch size and, for performance,
  * applied in sorted order (by the token and entity id) when reaches batch size or on {@link #close()}.
  * <p>
- * Updates aren't visible to {@link TokenScanReader readers} immediately, rather when queue happens to be applied.
+ * Updates aren't visible to {@link TokenIndexReader readers} immediately, rather when queue happens to be applied.
  * <p>
  * Incoming {@link TokenIndexEntryUpdate updates} are actually modified from representing physical before/after
  * state to represent logical to-add/to-remove state. These changes are done directly inside the provided
@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  * relying on the fact that those arrays are returned in its essential form, instead of copies.
  * This conversion is done like so mostly to reduce garbage.
  *
- * @see PhysicalToLogicalTokenChanges2
+ * @see PhysicalToLogicalTokenChanges
  */
 class TokenIndexUpdater implements IndexUpdater
 {
@@ -71,7 +71,7 @@ class TokenIndexUpdater implements IndexUpdater
      */
     private final ValueMerger<TokenScanKey,TokenScanValue> removeMerger;
 
-    private final NativeTokenScanWriter.WriteMonitor monitor;
+    private final TokenIndex.WriteMonitor monitor;
 
     /**
      * {@link Writer} acquired when acquiring this {@link TokenIndexUpdater},
@@ -122,7 +122,7 @@ class TokenIndexUpdater implements IndexUpdater
 
     private boolean closed = true;
 
-    TokenIndexUpdater( int batchSize, NativeTokenScanWriter.WriteMonitor monitor )
+    TokenIndexUpdater( int batchSize, TokenIndex.WriteMonitor monitor )
     {
         this.pendingUpdates = new TokenIndexEntryUpdate[batchSize];
         this.addMerger = new AddMerger( monitor );
@@ -169,7 +169,7 @@ class TokenIndexUpdater implements IndexUpdater
         }
 
         pendingUpdates[pendingUpdatesCursor++] = tokenUpdate;
-        PhysicalToLogicalTokenChanges2.convertToAdditionsAndRemovals( tokenUpdate );
+        PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( tokenUpdate );
         checkNextTokenId( tokenUpdate.beforeValues() );
         checkNextTokenId( tokenUpdate.values() );
     }

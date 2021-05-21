@@ -242,12 +242,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                      indexOrder: IndexOrder): RelationshipValueIndexCursor =
     manyDbHits(inner.relationshipIndexScan(index, needsValues, indexOrder))
 
-  override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] =
-    manyDbHits(inner.getNodesByLabel(id, indexOrder))
-
-  override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator =
-    manyDbHits(inner.getNodesByLabelPrimitive(id, indexOrder))
-
   override def getNodesByLabel(tokenReadSession: TokenReadSession,
                                id: Int,
                                indexOrder: IndexOrder): ClosingIterator[NodeValue] =

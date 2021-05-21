@@ -97,7 +97,7 @@ class IndexStatisticsIT
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ),
-                        () -> KernelVersion.LATEST, false );
+                        () -> KernelVersion.LATEST );
         long indexId = single( schemaRuleAccess.indexGetForSchema( index, NULL ) ).getId();
 
         // for which we don't have index counts

@@ -20,11 +20,9 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.lock.LockGroup;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 public interface BatchContext extends AutoCloseable
 {
@@ -37,8 +35,4 @@ public interface BatchContext extends AutoCloseable
     IndexUpdates indexUpdates();
 
     IdUpdateListener getIdUpdateListener();
-
-    List<EntityTokenUpdate> labelUpdates();
-
-    boolean specialHandlingOfScanStoresNeeded();
 }

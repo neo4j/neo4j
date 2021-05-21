@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
-class PhysicalToLogicalTokenChanges2
+class PhysicalToLogicalTokenChanges
 {
-    private PhysicalToLogicalTokenChanges2()
+    private PhysicalToLogicalTokenChanges()
     {
     }
 

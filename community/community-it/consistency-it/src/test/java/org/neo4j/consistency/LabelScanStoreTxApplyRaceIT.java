@@ -38,7 +38,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
@@ -59,7 +58,7 @@ import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 /**
  * This is a test for triggering a race which was found in and around {@link RecordStorageEngine#apply(CommandsToApply, TransactionApplicationMode)}
  * where e.g. a transaction A which did CREATE NODE N and transaction B which did DELETE NODE N would have a chance to be applied to the
- * {@link LabelScanStore} in the reverse order, i.e. transaction B before transaction A, resulting in outdated label data remaining in the label index.
+ * label index in the reverse order, i.e. transaction B before transaction A, resulting in outdated label data remaining in the label index.
  */
 @DbmsExtension
 @ExtendWith( SuppressOutputExtension.class )

@@ -63,16 +63,12 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -89,8 +85,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -132,7 +126,6 @@ class CheckerTestBase
     RelationshipGroupStore relationshipGroupStore;
     RelationshipStore relationshipStore;
     SchemaStore schemaStore;
-    LabelScanStore labelIndex;
     ConsistencyReporter reporter;
     ConsistencyReporter.Monitor monitor;
     SchemaStorage schemaStorage;
@@ -149,7 +142,6 @@ class CheckerTestBase
     {
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.homePath() );
         builder.setFileSystem( directory.getFileSystem() );
-        configure( builder );
         dbms = builder.build();
         db = (GraphDatabaseAPI) dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
 
@@ -169,9 +161,7 @@ class CheckerTestBase
         relationshipStore = neoStores.getRelationshipStore();
         schemaStore = neoStores.getSchemaStore();
         tokenHolders = dependencies.resolveDependency( TokenHolders.class );
-        schemaStorage = new SchemaStorage( schemaStore, tokenHolders, neoStores.getMetaDataStore(),
-                additionalConfigToCC( Config.defaults() ).get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
-        labelIndex = dependencies.resolveDependency( LabelScanStore.class );
+        schemaStorage = new SchemaStorage( schemaStore, tokenHolders, neoStores.getMetaDataStore() );
         cacheAccess = new DefaultCacheAccess( NumberArrayFactories.HEAP.newDynamicByteArray( 10_000, new byte[MAX_BYTES], INSTANCE ),
                                               Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
@@ -185,7 +175,7 @@ class CheckerTestBase
         dbms.shutdown();
     }
 
-    TokenScanWriter labelIndexWriter()
+    IndexUpdater labelIndexWriter()
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
@@ -202,47 +192,7 @@ class CheckerTestBase
         {
             throw new RuntimeException( e );
         }
-        IndexUpdater indexUpdater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
-        return new TokenScanWriter()
-        {
-            @Override
-            public void write( EntityTokenUpdate update )
-            {
-                try
-                {
-                    indexUpdater.process( IndexEntryUpdate.change( update.getEntityId(), nli, update.getTokensBefore(), update.getTokensAfter() ) );
-                }
-                catch ( IndexEntryConflictException e )
-                {
-                    //The TokenIndexUpdater should never throw IndexEntryConflictException.
-                    throw new RuntimeException( e );
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                try
-                {
-                    indexUpdater.close();
-                }
-                catch ( IndexEntryConflictException e )
-                {
-                    //The TokenIndexUpdater should never throw IndexEntryConflictException.
-                    throw new RuntimeException( e );
-                }
-            }
-        };
-    }
-
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {   // no-op
-    }
-
-    Config additionalConfigToCC( Config config )
-    {
-        // no-op
-        return config;
+        return indexProxy.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL );
     }
 
     void initialData( KernelTransaction tx ) throws KernelException
@@ -273,12 +223,12 @@ class CheckerTestBase
 
         // We do this as late as possible because of how it eagerly caches which indexes exist so if the test creates an index
         // this lazy instantiation allows the context to pick it up
-        Config config = additionalConfigToCC( Config.defaults( neo4j_home, directory.homePath() ) );
+        Config config = Config.defaults( neo4j_home, directory.homePath() );
         DependencyResolver dependencies = db.getDependencyResolver();
         IndexProviderMap indexProviders = dependencies.resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders, neoStores, new IndexSamplingConfig( config ),
-                new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL, tokenHolders, config, neoStores.getMetaDataStore() );
+                new LookupAccessorsFromRunningDb( indexingService ), PageCacheTracer.NULL, tokenHolders, neoStores.getMetaDataStore() );
         ConsistencySummaryStatistics inconsistenciesSummary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
@@ -288,9 +238,8 @@ class CheckerTestBase
                 Runtime.getRuntime().maxMemory(), Long.MAX_VALUE, CacheSlots.CACHE_LINE_SIZE_BYTES, nodeStore.getHighId() );
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
-        context = new CheckerContext( neoStores, indexAccessors, labelIndex, execution, reporter, cacheAccess, tokenHolders,
-                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, false, consistencyFlags, config.get(
-                RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
+        context = new CheckerContext( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders,
+                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, false, consistencyFlags );
         context.initialize();
         return context;
     }

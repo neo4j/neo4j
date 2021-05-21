@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
@@ -139,13 +138,13 @@ public class FullCheck
             throws ConsistencyCheckIncompleteException
     {
         try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), directStoreAccess.nativeStores(), samplingConfig,
-                indexAccessorLookup, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds(), config,
+                indexAccessorLookup, pageCacheTracer, directStoreAccess.tokenHolders().lookupWithIds(),
                 directStoreAccess.nativeStores().getMetaDataStore() ) )
         {
             if ( flags.isCheckIndexStructure() )
             {
-                ConsistencyCheckable labelScanStore = getLabelScanStructure( directStoreAccess, indexes );
-                ConsistencyCheckable relationshipTypeIndex = getRelationshipTypeIndex( directStoreAccess, indexes );
+                ConsistencyCheckable labelScanStore = getLabelScanStructure( indexes );
+                ConsistencyCheckable relationshipTypeIndex = getRelationshipTypeIndex( indexes );
 
                 consistencyCheckIndexStructure( labelScanStore, relationshipTypeIndex,
                         directStoreAccess.indexStatisticsStore(), countsStore, groupDegreesStore, indexes, allIdGenerators( directStoreAccess ), report,
@@ -153,7 +152,7 @@ public class FullCheck
             }
 
             try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
-                    directStoreAccess.nativeStores(), countsStore, directStoreAccess.labelScanStore(),
+                    directStoreAccess.nativeStores(), countsStore,
                     indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
                     pageCacheTracer, memoryTracker ) )
             {
@@ -166,34 +165,22 @@ public class FullCheck
         }
     }
 
-    private ConsistencyCheckable getRelationshipTypeIndex( DirectStoreAccess directStoreAccess, IndexAccessors indexes )
+    private ConsistencyCheckable getRelationshipTypeIndex( IndexAccessors indexes )
     {
-        ConsistencyCheckable result = ( reporterFactory, cursorContext ) -> true;
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        ConsistencyCheckable relationshipTypeIndex = indexes.relationshipTypeIndex();
+        if ( relationshipTypeIndex == null )
         {
-            ConsistencyCheckable relationshipTypeIndex = indexes.relationshipTypeIndex();
-            if ( relationshipTypeIndex != null )
-            {
-                result = relationshipTypeIndex;
-            }
+            relationshipTypeIndex = ( reporterFactory, cursorContext ) -> true;
         }
-        return result;
+        return relationshipTypeIndex;
     }
 
-    private ConsistencyCheckable getLabelScanStructure( DirectStoreAccess directStoreAccess, IndexAccessors indexes )
+    private ConsistencyCheckable getLabelScanStructure( IndexAccessors indexes )
     {
-        ConsistencyCheckable labelScanStore;
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        ConsistencyCheckable labelScanStore = indexes.nodeLabelIndex();
+        if ( labelScanStore == null )
         {
-            labelScanStore = indexes.nodeLabelIndex();
-            if ( labelScanStore == null )
-            {
-                labelScanStore = ( reporterFactory, cursorContext ) -> true;
-            }
-        }
-        else
-        {
-            labelScanStore = directStoreAccess.labelScanStore();
+            labelScanStore = ( reporterFactory, cursorContext ) -> true;
         }
         return labelScanStore;
     }
@@ -213,7 +200,15 @@ public class FullCheck
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) ) )
         {
             final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
-            long additionalCount = 1 /*LabelScanStore*/ + 1 /*RelationshipTypeScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
+            long additionalCount = 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
+            if ( indexes.nodeLabelIndex() != null )
+            {
+                additionalCount += 1;
+            }
+            if ( indexes.relationshipTypeIndex() != null )
+            {
+                additionalCount += 1;
+            }
             if ( hasGroupDegreesStore( groupDegreesStore ) )
             {
                 additionalCount += 1;

@@ -59,13 +59,6 @@ public interface StorageEngine extends Lifecycle
     void addIndexUpdateListener( IndexUpdateListener indexUpdateListener );
 
     /**
-     * Adds an {@link EntityTokenUpdateListener} which will receive streams of node label updates from changes that gets
-     * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage engine.
-     * @param entityTokenUpdateListener {@link EntityTokenUpdateListener} to add.
-     */
-    void addNodeLabelUpdateListener( EntityTokenUpdateListener entityTokenUpdateListener );
-
-    /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
      * ({@code state}.
      * The returned commands can be used to form {@link CommandsToApply} batches, which can be applied to this

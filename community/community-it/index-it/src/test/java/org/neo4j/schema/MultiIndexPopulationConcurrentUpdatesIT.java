@@ -73,11 +73,11 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
-import org.neo4j.kernel.impl.transaction.state.storeview.LegacyDynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
@@ -323,7 +323,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Runnable customAction ) throws Throwable
     {
         RecordStorageEngine storageEngine = getStorageEngine();
-        LabelScanStore labelScanStore = getLabelScanStore();
 
         try ( Transaction transaction = db.beginTx() )
         {
@@ -332,11 +331,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             JobScheduler scheduler = getJobScheduler();
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
 
-            LegacyDynamicIndexStoreView storeView =
-                    dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, config, scheduler );
-
             IndexStoreViewFactory indexStoreViewFactory = mock( IndexStoreViewFactory.class );
-            when( indexStoreViewFactory.createTokenIndexStoreView( any() ) ).thenReturn( storeView );
+            when( indexStoreViewFactory.createTokenIndexStoreView( any() ) )
+                    .thenAnswer( invocation -> dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, invocation.getArgument( 0 ),
+                            config, scheduler ) );
 
             IndexProviderMap providerMap = getIndexProviderMap();
 
@@ -355,14 +353,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private LegacyDynamicIndexStoreView dynamicIndexStoreViewWrapper(
-            Runnable customAction, Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore,
+    private DynamicIndexStoreView dynamicIndexStoreViewWrapper(
+            Runnable customAction, Supplier<StorageReader> readerSupplier, IndexingService.IndexProxyProvider indexProxies,
             Config config, JobScheduler scheduler )
     {
-        LockService locks = LockService.NO_LOCK_SERVICE;
-        FullScanStoreView fullScanStoreView = new FullScanStoreView( locks, readerSupplier, Config.defaults(), scheduler );
-        return new DynamicIndexStoreViewWrapper( fullScanStoreView, labelScanStore, locks, readerSupplier, customAction,
-                                                 config, scheduler );
+        LockService lockService = LockService.NO_LOCK_SERVICE;
+        Locks locks = org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
+        FullScanStoreView fullScanStoreView = new FullScanStoreView( lockService, readerSupplier, Config.defaults(), scheduler );
+        return new DynamicIndexStoreViewWrapper( fullScanStoreView, indexProxies, lockService, locks, readerSupplier, customAction, config, scheduler );
     }
 
     private void waitAndActivateIndexes( Map<String,Integer> labelsIds, int propertyId )
@@ -477,11 +475,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return node;
     }
 
-    private LabelScanStore getLabelScanStore()
-    {
-        return db.getDependencyResolver().resolveDependency( LabelScanStore.class );
-    }
-
     private RecordStorageEngine getStorageEngine()
     {
         return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
@@ -502,15 +495,15 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return db.getDependencyResolver().resolveDependency( JobScheduler.class );
     }
 
-    private class DynamicIndexStoreViewWrapper extends LegacyDynamicIndexStoreView
+    private static class DynamicIndexStoreViewWrapper extends DynamicIndexStoreView
     {
         private final Runnable customAction;
         private final JobScheduler jobScheduler;
 
-        DynamicIndexStoreViewWrapper( FullScanStoreView fullScanStoreView, LabelScanStore labelScanStore,
-                LockService locks, Supplier<StorageReader> storageEngine, Runnable customAction, Config config, JobScheduler jobScheduler )
+        DynamicIndexStoreViewWrapper( FullScanStoreView fullScanStoreView, IndexingService.IndexProxyProvider indexProxies,
+                LockService lockService, Locks locks, Supplier<StorageReader> storageReader, Runnable customAction, Config config, JobScheduler jobScheduler )
         {
-            super( fullScanStoreView, labelScanStore, locks, storageEngine, NullLogProvider.getInstance(), config );
+            super( fullScanStoreView, locks, lockService, config, indexProxies, storageReader, NullLogProvider.getInstance() );
             this.customAction = customAction;
             this.jobScheduler = jobScheduler;
         }
@@ -522,7 +515,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyScanConsumer,
                     labelScanConsumer, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
-            return new LabelViewNodeStoreWrapper( storageEngine.get(), locks,
+            return new LabelViewNodeStoreWrapper( storageReader.get(), lockService,
                     null, propertyScanConsumer, labelIds, propertyKeyIdFilter,
                     (NodeStoreScan) storeScan, customAction, jobScheduler );
         }

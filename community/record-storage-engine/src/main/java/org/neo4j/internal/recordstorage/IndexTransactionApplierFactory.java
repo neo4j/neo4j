@@ -27,13 +27,8 @@ import org.neo4j.common.Subject;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.impl.store.NodeLabels;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
  * Factory for applier that gather node and property changes,
@@ -98,27 +93,6 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command )
         {
-            if ( batchContext.specialHandlingOfScanStoresNeeded() )
-            {
-
-                // for label store updates
-                NodeRecord before = command.getBefore();
-                NodeRecord after = command.getAfter();
-
-                NodeLabels labelFieldBefore = parseLabelsField( before );
-                NodeLabels labelFieldAfter = parseLabelsField( after );
-                if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined() &&
-                        before.getLabelField() == after.getLabelField()) )
-                {
-                    long[] labelsBefore = labelFieldBefore.getIfLoaded();
-                    long[] labelsAfter = labelFieldAfter.getIfLoaded();
-                    if ( labelsBefore != null && labelsAfter != null )
-                    {
-                        batchContext.labelUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
-                    }
-                }
-            }
-
             // for indexes
             return indexUpdatesExtractor.visitNodeCommand( command );
         }

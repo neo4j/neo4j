@@ -45,10 +45,10 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -94,7 +94,7 @@ public class IndexPopulationMissConcurrentUpdateIT
     /**
      * Tests an issue where the {@link MultipleIndexPopulator} had a condition when applying external concurrent updates that any given
      * update would only be applied if the entity id was lower than the highest entity id the scan had seen (i.e. where the scan was currently at).
-     * This would be a problem because of how the {@link TokenScanReader} works internally, which is that it reads one bit-set of node ids
+     * This would be a problem because of how the {@link TokenIndexReader} works internally, which is that it reads one bit-set of node ids
      * at the time, effectively caching a small range of ids. If a concurrent creation would happen right in front of where the scan was
      * after it had read and cached that bit-set it would not apply the update and miss that entity in the scan and would end up with an index
      * that was inconsistent with the store.

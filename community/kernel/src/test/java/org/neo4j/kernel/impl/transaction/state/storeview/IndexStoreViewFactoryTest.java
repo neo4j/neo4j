@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
@@ -33,9 +32,7 @@ import static org.mockito.Mockito.mock;
 
 class IndexStoreViewFactoryTest
 {
-
     FullScanStoreView fullScanStoreView = mock( FullScanStoreView.class );
-    LabelScanStore labelScanStore = mock( LabelScanStore.class );
     LockService lockService = mock( LockService.class );
     LogProvider logProvider = mock( LogProvider.class );
     IndexProxyProvider indexProxies = mock( IndexProxyProvider.class );
@@ -45,7 +42,7 @@ class IndexStoreViewFactoryTest
     void shouldCreateIndexStoreView()
     {
         //Given
-        var factory = new IndexStoreViewFactory( Config.defaults(), () -> null, locks, fullScanStoreView, labelScanStore, lockService, logProvider );
+        var factory = new IndexStoreViewFactory( Config.defaults(), () -> null, locks, fullScanStoreView, lockService, logProvider );
 
         //When
         var indexStoreView = factory.createTokenIndexStoreView( indexProxies );

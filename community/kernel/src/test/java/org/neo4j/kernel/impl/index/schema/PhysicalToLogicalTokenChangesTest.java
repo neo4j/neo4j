@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @Execution( CONCURRENT )
-class PhysicalToLogicalTokenChanges2Test
+class PhysicalToLogicalTokenChangesTest
 {
     @Test
     void shouldSeeSimpleAddition()
@@ -85,7 +85,7 @@ class PhysicalToLogicalTokenChanges2Test
     private static void convertAndAssert( long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded )
     {
         TokenIndexEntryUpdate<?> update = TokenIndexEntryUpdate.change( 0, null, before, after );
-        PhysicalToLogicalTokenChanges2.convertToAdditionsAndRemovals( update );
+        PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals( update );
         assertArrayEquals( terminate( update.beforeValues() ), expectedRemoved );
         assertArrayEquals( terminate( update.values() ), expectedAdded );
     }

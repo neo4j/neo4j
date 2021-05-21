@@ -36,7 +36,6 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
@@ -50,9 +49,7 @@ class CheckerContext
     final NeoStores neoStores;
     final IndexAccessors indexAccessors;
     final ConsistencyFlags consistencyFlags;
-    final boolean useScanStoresAsTokenIndexes;
     final IndexSizes indexSizes;
-    final LabelScanStore labelScanStore;
     final ParallelExecution execution;
     final ConsistencyReport.Reporter reporter;
     final CacheAccess cacheAccess;
@@ -74,7 +71,6 @@ class CheckerContext
     CheckerContext(
             NeoStores neoStores,
             IndexAccessors indexAccessors,
-            LabelScanStore labelScanStore,
             ParallelExecution execution,
             ConsistencyReport.Reporter reporter,
             CacheAccess cacheAccess,
@@ -87,18 +83,15 @@ class CheckerContext
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             boolean debug,
-            ConsistencyFlags consistencyFlags,
-            boolean useScanStoresAsTokenIndexes )
+            ConsistencyFlags consistencyFlags )
     {
-        this( neoStores, indexAccessors, labelScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader,
-                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, new AtomicBoolean(), consistencyFlags,
-                useScanStoresAsTokenIndexes );
+        this( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders, recordLoader,
+                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, new AtomicBoolean(), consistencyFlags );
     }
 
     private CheckerContext(
             NeoStores neoStores,
             IndexAccessors indexAccessors,
-            LabelScanStore labelScanStore,
             ParallelExecution execution,
             ConsistencyReport.Reporter reporter,
             CacheAccess cacheAccess,
@@ -112,8 +105,7 @@ class CheckerContext
             MemoryTracker memoryTracker,
             boolean debug,
             AtomicBoolean cancelled,
-            ConsistencyFlags consistencyFlags,
-            boolean useScanStoresAsTokenIndexes )
+            ConsistencyFlags consistencyFlags )
     {
         this.neoStores = neoStores;
         this.highNodeId = neoStores.getNodeStore().getHighId();
@@ -122,9 +114,7 @@ class CheckerContext
         this.relationshipTypeIndex = indexAccessors.relationshipTypeIndex();
         this.debug = debug;
         this.consistencyFlags = consistencyFlags;
-        this.useScanStoresAsTokenIndexes = useScanStoresAsTokenIndexes;
         this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId(), pageCacheTracer );
-        this.labelScanStore = labelScanStore;
         this.execution = execution;
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;
@@ -142,9 +132,8 @@ class CheckerContext
 
     CheckerContext withoutReporting()
     {
-        return new CheckerContext( neoStores, indexAccessors, labelScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess,
-                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, cancelled, consistencyFlags,
-                useScanStoresAsTokenIndexes );
+        return new CheckerContext( neoStores, indexAccessors, execution, ConsistencyReport.NO_REPORT, cacheAccess,
+                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, cancelled, consistencyFlags );
     }
 
     void initialize() throws Exception

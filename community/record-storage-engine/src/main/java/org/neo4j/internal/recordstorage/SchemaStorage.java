@@ -60,19 +60,17 @@ public class SchemaStorage implements SchemaRuleAccess
     private final SchemaStore schemaStore;
     private final TokenHolders tokenHolders;
     private final KernelVersionRepository versionSupplier;
-    private final boolean tokenIndexFeatureOn;
 
     /**
      * @param versionSupplier Used to know whether or not to inject a rule for NLI (that was formerly labelscanstore).
      *                        Use metadatastore as versionSupplier if you are not absolutely sure that the injected
      *                        rule is never needed.
      */
-    public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders, KernelVersionRepository versionSupplier, boolean tokenIndexFeatureOn )
+    public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders, KernelVersionRepository versionSupplier )
     {
         this.schemaStore = schemaStore;
         this.tokenHolders = tokenHolders;
         this.versionSupplier = versionSupplier;
-        this.tokenIndexFeatureOn = tokenIndexFeatureOn;
     }
 
     @Override
@@ -261,23 +259,20 @@ public class SchemaStorage implements SchemaRuleAccess
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
         Stream<IndexDescriptor> nli = Stream.empty();
-        if ( tokenIndexFeatureOn )
+        KernelVersion currentVersion;
+        try
         {
-            KernelVersion currentVersion;
-            try
-            {
-                currentVersion = versionSupplier.kernelVersion();
-            }
-            catch ( IllegalStateException ignored )
-            {
-                // If KernelVersion is missing we are an older store.
-                currentVersion = KernelVersion.V4_2;
-            }
+            currentVersion = versionSupplier.kernelVersion();
+        }
+        catch ( IllegalStateException ignored )
+        {
+            // If KernelVersion is missing we are an older store.
+            currentVersion = KernelVersion.V4_2;
+        }
 
-            if ( currentVersion.isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
-            {
-                nli = Stream.of( IndexDescriptor.INJECTED_NLI );
-            }
+        if ( currentVersion.isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        {
+            nli = Stream.of( IndexDescriptor.INJECTED_NLI );
         }
 
         return Stream.concat( LongStream.range( startId, endId )

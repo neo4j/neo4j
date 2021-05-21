@@ -53,11 +53,6 @@ public interface Read
     TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
-     * Ensure this transaction is prepared for node label scans. This avoids concurrency issues. Not Thread-safe.
-     */
-    void prepareForLabelScans();
-
-    /**
      * Seek all nodes matching the provided index query in an index.
      * @param index {@link IndexReadSession} referencing index to query. This must be an index of nodes.
      * @param cursor the cursor to use for consuming the results.
@@ -117,15 +112,6 @@ public interface Read
      * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
      */
     void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints ) throws KernelException;
-
-    /**
-     * Scan all nodes with a label.
-     *
-     * @param label the label
-     * @param cursor the cursor to use for consuming the results.
-     * @param order the requested order on the query result.
-     */
-    void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order );
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 

@@ -188,11 +188,11 @@ abstract class LogicalPlan(idGen: IdGen)
 
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
-  def indexUsage(lookupIndexAvailable: Boolean): Seq[IndexUsage] = {
+  def indexUsage(): Seq[IndexUsage] = {
     this.fold(Seq.empty[IndexUsage]) {
       case MultiNodeIndexSeek(indexPlans) =>
-        acc => acc ++ indexPlans.flatMap(_.indexUsage(lookupIndexAvailable))
-      case NodeByLabelScan(idName, _, _, _) if lookupIndexAvailable =>
+        acc => acc ++ indexPlans.flatMap(_.indexUsage())
+      case NodeByLabelScan(idName, _, _, _) =>
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
       case DirectedRelationshipTypeScan(idName, _, _, _, _, _) =>
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)

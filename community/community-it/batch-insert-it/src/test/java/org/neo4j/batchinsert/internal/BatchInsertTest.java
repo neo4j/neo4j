@@ -37,12 +37,10 @@ import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -88,11 +86,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.TokenScanReader;
-import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -103,7 +97,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -135,7 +128,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
@@ -144,7 +136,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
-import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -777,7 +768,7 @@ class BatchInsertTest
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
             TokenHolders tokenHolders = graphdb.getDependencyResolver().resolveDependency( TokenHolders.class );
-            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders, () -> KernelVersion.LATEST, false );
+            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders, () -> KernelVersion.LATEST );
             List<Long> inUse = new ArrayList<>();
             SchemaRecord record = store.newRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse( NULL ); i <= high; i++ )
@@ -996,37 +987,6 @@ class BatchInsertTest
         verify( populator ).close( eq( true ), any() );
         verify( provider ).stop();
         verify( provider ).shutdown();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "params" )
-    void shouldPopulateLabelScanStoreOnShutdown( int denseNodeThreshold ) throws Exception
-    {
-        // GIVEN
-        // -- a database and a mocked label scan store
-        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
-
-        // -- and some data that we insert
-        long node1 = inserter.createNode( null, Labels.FIRST );
-        long node2 = inserter.createNode( null, Labels.SECOND );
-        long node3 = inserter.createNode( null, Labels.THIRD );
-        long node4 = inserter.createNode( null, Labels.FIRST, Labels.SECOND );
-        long node5 = inserter.createNode( null, Labels.FIRST, Labels.THIRD );
-
-        // WHEN we shut down the batch inserter
-        LabelScanStore labelScanStore = getLabelScanStore();
-        inserter.shutdown();
-
-        labelScanStore.init();
-        labelScanStore.start();
-
-        // THEN the label scan store should receive all the updates.
-        // of course, we don't know the label ids at this point, but we're assuming 0..2 (bad boy)
-        assertLabelScanStoreContains( labelScanStore, 0, node1, node4, node5 );
-        assertLabelScanStoreContains( labelScanStore, 1, node2, node4 );
-        assertLabelScanStoreContains( labelScanStore, 2, node3, node5 );
-
-        labelScanStore.shutdown();
     }
 
     @ParameterizedTest
@@ -1557,7 +1517,6 @@ class BatchInsertTest
     {
         return configurationBuilder()
                 .set( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold )
-                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false )
                 .build();
     }
 
@@ -1593,35 +1552,6 @@ class BatchInsertTest
             // Shouldn't be necessary to set dense node threshold since it's a stick config
             .setConfig( configuration( denseNodeThreshold ) ).build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    private LabelScanStore getLabelScanStore()
-    {
-        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, readOnly(), new Monitors(), immediate(),
-                Config.defaults( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false ),
-                PageCacheTracer.NULL, INSTANCE );
-    }
-
-    private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
-    {
-        TokenScanReader labelScanReader = labelScanStore.newReader();
-        List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
-        List<Long> actualNodeIds;
-        try ( PrimitiveLongResourceIterator itr = labelScanReader.entitiesWithToken( labelId, NULL ) )
-        {
-            actualNodeIds = extractPrimitiveLongIteratorAsList( itr );
-        }
-        assertEquals( expectedNodeIds, actualNodeIds );
-    }
-
-    private static List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongResourceIterator longIterator )
-    {
-        List<Long> actualNodeIds = new ArrayList<>();
-        while ( longIterator.hasNext() )
-        {
-            actualNodeIds.add( longIterator.next() );
-        }
-        return actualNodeIds;
     }
 
     private static void createRelationships( BatchInserter inserter, long node, RelationshipType relType, int out )

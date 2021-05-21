@@ -84,7 +84,7 @@ class SchemaStorageTest
                         pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
         neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
             StoreType.RELATIONSHIP_TYPE_TOKEN );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores, NULL ), () -> KernelVersion.LATEST, false );
+        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores, NULL ), () -> KernelVersion.LATEST );
     }
 
     @AfterEach

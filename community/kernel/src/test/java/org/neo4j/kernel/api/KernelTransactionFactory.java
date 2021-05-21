@@ -27,7 +27,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.KernelVersion;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -98,7 +96,7 @@ public final class KernelTransactionFactory
                                                      mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
                                                      any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                                                      new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                                                     mock( IndexingService.class ), mock( LabelScanStore.class ),
+                                                     mock( IndexingService.class ),
                                                      mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
                                                      LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
                                                      TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST, CommunitySecurityLog.NULL_LOG );

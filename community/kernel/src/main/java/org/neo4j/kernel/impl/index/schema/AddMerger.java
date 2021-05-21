@@ -17,24 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.index.internal.gbptree.ValueMerger;
 
-public interface EntityTokenUpdateListener
+class AddMerger implements ValueMerger<TokenScanKey,TokenScanValue>
 {
-    /**
-     * Applies node label updates from changes in underlying storage.
-     * @param labelUpdates stream of updates to apply.
-     * @param cursorContext underlying page cursor context.
-     */
-    void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, CursorContext cursorContext );
+    private final TokenIndex.WriteMonitor monitor;
 
-    class Adapter implements EntityTokenUpdateListener
+    AddMerger( TokenIndex.WriteMonitor monitor )
     {
-        @Override
-        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, CursorContext cursorContext )
-        {
-        }
+        this.monitor = monitor;
+    }
+
+    @Override
+    public MergeResult merge( TokenScanKey existingKey, TokenScanKey newKey, TokenScanValue existingValue, TokenScanValue newValue )
+    {
+        monitor.mergeAdd( existingValue, newValue );
+        existingValue.add( newValue );
+        return MergeResult.MERGED;
     }
 }

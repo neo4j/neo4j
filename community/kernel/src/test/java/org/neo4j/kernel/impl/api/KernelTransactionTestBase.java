@@ -36,9 +36,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
@@ -190,8 +189,7 @@ class KernelTransactionTestBase
                                                     mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
                                                     any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                                                     new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                                                    mock( IndexingService.class ), mock( LabelScanStore.class ),
-                                                    mock( IndexStatisticsStore.class ), dependencies, databaseId,
+                                                    mock( IndexingService.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool,
                                                     new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
                                                     TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST, CommunitySecurityLog.NULL_LOG );

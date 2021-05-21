@@ -166,8 +166,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         throw e
     }
 
-    val scanStoreAsTokenIndexEnabled = transactionalContext.kernelTransaction().schemaRead().scanStoreAsTokenIndexEnabled()
-
     new CypherExecutableQuery(
       logicalPlan,
       logicalQuery.readOnly,
@@ -181,7 +179,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames.toArray,
       logicalPlanResult.extractedParams,
-      buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan.runtimeName, scanStoreAsTokenIndexEnabled),
+      buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan.runtimeName),
       planState.plannerName,
       query.options.queryOptions.version,
       queryType,
@@ -193,9 +191,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
   private def buildCompilerInfo(logicalPlan: LogicalPlan,
                                 plannerName: PlannerName,
-                                runtimeName: RuntimeName,
-                                scanStoreAsTokenIndexEnabled: Boolean): CompilerInfo = {
-    val (lookupIndexes, schemaIndexes) = logicalPlan.indexUsage(scanStoreAsTokenIndexEnabled).partition(_.isInstanceOf[SchemaIndexLookupUsage])
+                                runtimeName: RuntimeName) = {
+    val (lookupIndexes, schemaIndexes) = logicalPlan.indexUsage().partition(_.isInstanceOf[SchemaIndexLookupUsage])
     val schemaIndexUsage = schemaIndexes.collect {
       case SchemaLabelIndexUsage(identifier, labelId, label, propertyKeys) =>
         new SchemaIndexUsage(identifier, labelId, label, propertyKeys.map(_.nameId.id).toArray, propertyKeys.map(_.name): _*)

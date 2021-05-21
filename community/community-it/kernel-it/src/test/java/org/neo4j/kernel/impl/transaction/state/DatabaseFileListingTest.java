@@ -33,20 +33,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -126,10 +121,9 @@ class DatabaseFileListingTest
     }
 
     @Test
-    void shouldCloseIndexAndScanStoreSnapshots() throws Exception
+    void shouldCloseIndexSnapshots() throws Exception
     {
         // Given
-        LabelScanStore labelScanStore = mock( LabelScanStore.class );
         IndexingService indexingService = mock( IndexingService.class );
         DatabaseLayout databaseLayout = mock( DatabaseLayout.class );
         when( databaseLayout.metadataStore() ).thenReturn( mock( Path.class ) );
@@ -137,11 +131,9 @@ class DatabaseFileListingTest
         filesInStoreDirAre( databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-        DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore,
+        DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles,
                 indexingService, storageEngine, idGeneratorFactory );
 
-        ResourceIterator<Path> labelScanSnapshot = scanStoreFilesAre( labelScanStore,
-                new String[]{"blah/scan.store", "scan.more"} );
         ResourceIterator<Path> indexSnapshot = indexFilesAre( indexingService, new String[]{"schema/index/my.index"} );
 
         ResourceIterator<StoreFileMetadata> result = fileListing.builder().excludeLogFiles().build();
@@ -150,7 +142,6 @@ class DatabaseFileListingTest
         result.close();
 
         // Then
-        verify( labelScanSnapshot ).close();
         verify( indexSnapshot ).close();
     }
 
@@ -216,10 +207,6 @@ class DatabaseFileListingTest
     {
         DatabaseLayout layout = database.getDatabaseLayout();
         Set<Path> expectedFiles = layout.storeFiles();
-        if ( !database.getDependencyResolver().resolveDependency( Config.class ).get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
-        {
-            expectedFiles.removeIf( f -> DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName().equals( f.getFileName().toString() ) );
-        }
         // there was no rotation
         ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
         Set<Path> listedStoreFiles = storeFiles.stream()
@@ -259,15 +246,6 @@ class DatabaseFileListingTest
         mockFiles( filenames, files, false );
         mockFiles( dirs, files, true );
         when( databaseLayout.listDatabaseFiles( any() ) ).thenReturn( files.toArray( new Path[0] ) );
-    }
-
-    private static ResourceIterator<Path> scanStoreFilesAre( TokenScanStore labelScanStore, String[] fileNames )
-    {
-        List<Path> files = new ArrayList<>();
-        mockFiles( fileNames, files, false );
-        ResourceIterator<Path> snapshot = spy( asResourceIterator( files.iterator() ) );
-        when( labelScanStore.snapshotStoreFiles() ).thenReturn( snapshot );
-        return snapshot;
     }
 
     private static ResourceIterator<Path> indexFilesAre( IndexingService indexingService, String[] fileNames )

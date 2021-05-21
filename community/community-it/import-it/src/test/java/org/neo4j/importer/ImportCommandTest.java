@@ -54,7 +54,6 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -125,7 +124,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 @Neo4jLayoutExtension
 @ExtendWith( { RandomExtension.class, SuppressOutputExtension.class} )
@@ -158,34 +156,11 @@ class ImportCommandTest
     }
 
     @Test
-    void shouldImportWithAsManyDefaultsAsAvailable() throws Exception
-    {
-        // GIVEN
-        List<String> nodeIds = nodeIds();
-        Configuration config = COMMAS;
-        Path dbConfig = prepareConfigFileTokenIndexesOff();
-
-        // WHEN
-        runImport(
-                "--additional-config", dbConfig.toAbsolutePath().toString(),
-                "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
-                "--high-io", "false",
-                "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
-
-        // THEN
-        assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
-        assertThat( databaseLayout.labelScanStore().toFile().exists() ).isTrue();
-        assertThat( databaseLayout.relationshipTypeScanStore().toFile().exists() ).isFalse();
-        verifyData();
-    }
-
-    @Test
     void shouldImportAndCreateTokenIndexes() throws Exception
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
-        Path dbConfig = file( "neo4j.properties" );
-        enableTokenIndexes( dbConfig );
+        Path dbConfig = defaultConfig();
 
         // WHEN
         runImport(
@@ -197,28 +172,29 @@ class ImportCommandTest
         // THEN
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
         assertTokenIndexesCreated();
+        verifyData();
     }
 
     @Test
     void shouldNotCreateDuplicateTokenIndexes() throws Exception
     {
-        // GIVEN
+        // Given a db with default token indexes
         createDefaultDatabaseWithTokenIndexes();
         List<String> nodeIds = nodeIds();
         Configuration config = COMMAS;
-        Path dbConfig = file( "neo4j.properties" );
-        enableTokenIndexes( dbConfig );
+        Path dbConfig = defaultConfig();
 
-        // WHEN
+        // When csv is imported
         runImport(
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
                 "--high-io", "false",
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
-        // THEN
+        // Then no duplicate token indexes are created
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
         assertTokenIndexesCreated();
+        verifyData();
     }
 
     private void assertTokenIndexesCreated()
@@ -2518,18 +2494,6 @@ class ImportCommandTest
         return dbConfig;
     }
 
-    private Path prepareConfigFileTokenIndexesOff() throws IOException
-    {
-        Path dbConfig = file( "neo4j.properties" );
-        store( Map.of(
-                neo4j_home.name(), testDirectory.absolutePath().toString(),
-                preallocate_logical_logs.name(), FALSE,
-                enable_scan_stores_as_token_indexes.name(), FALSE
-        ), dbConfig );
-
-        return dbConfig;
-    }
-
     private GraphDatabaseAPI getDatabaseApi()
     {
         return getDatabaseApi( DEFAULT_DATABASE_NAME );
@@ -2560,13 +2524,14 @@ class ImportCommandTest
                 .build();
     }
 
-    private void enableTokenIndexes( Path dbConfig ) throws IOException
+    private Path defaultConfig() throws IOException
     {
+        Path dbConfig = file( "neo4j.properties" );
         store( Map.of(
                 neo4j_home.name(), testDirectory.absolutePath().toString(),
-                preallocate_logical_logs.name(), FALSE,
-                enable_scan_stores_as_token_indexes.name(), SettingValueParsers.TRUE
+                preallocate_logical_logs.name(), FALSE
         ), dbConfig );
+        return dbConfig;
     }
 
     private void runImport( String... arguments )

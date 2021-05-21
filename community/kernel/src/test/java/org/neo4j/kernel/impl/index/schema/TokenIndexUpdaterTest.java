@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
@@ -46,11 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
-import static org.neo4j.kernel.impl.index.schema.LabelScanStoreIT.flipRandom;
-import static org.neo4j.kernel.impl.index.schema.LabelScanStoreIT.getLabels;
-import static org.neo4j.kernel.impl.index.schema.LabelScanStoreIT.nodesWithLabel;
-import static org.neo4j.kernel.impl.index.schema.TokenScanReader.NO_ID;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValueIterator.NO_ID;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
@@ -85,7 +83,7 @@ class TokenIndexUpdaterTest
     {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), TokenIndex.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -113,7 +111,7 @@ class TokenIndexUpdaterTest
         // GIVEN
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () ->
         {
-            try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, NativeTokenScanWriter.EMPTY ) )
+            try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, TokenIndex.EMPTY ) )
             {
                 writer.initialize( tree.writer( NULL ) );
 
@@ -134,7 +132,7 @@ class TokenIndexUpdaterTest
         int numberOfNodesInEach = 5;
         int labelId = 1;
         long[] labels = {labelId};
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), TokenIndex.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -153,7 +151,7 @@ class TokenIndexUpdaterTest
 
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
-        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), TokenIndex.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
@@ -207,5 +205,49 @@ class TokenIndexUpdaterTest
             set.add( i );
         }
         return set;
+    }
+
+    static long[] nodesWithLabel( long[] expected, int labelId )
+    {
+        int mask = 1 << labelId;
+        int count = 0;
+        for ( long labels : expected )
+        {
+            if ( (labels & mask) != 0 )
+            {
+                count++;
+            }
+        }
+
+        long[] result = new long[count];
+        int cursor = 0;
+        for ( int nodeId = 0; nodeId < expected.length; nodeId++ )
+        {
+            long labels = expected[nodeId];
+            if ( (labels & mask) != 0 )
+            {
+                result[cursor++] = nodeId;
+            }
+        }
+        return result;
+    }
+
+    static long flipRandom( long existingLabels, int highLabelId, Random random )
+    {
+        return existingLabels ^ (1L << random.nextInt( highLabelId ));
+    }
+
+    public static long[] getLabels( long bits )
+    {
+        long[] result = new long[Long.bitCount( bits )];
+        for ( int labelId = 0, c = 0; labelId < LABEL_COUNT; labelId++ )
+        {
+            int mask = 1 << labelId;
+            if ( (bits & mask) != 0 )
+            {
+                result[c++] = labelId;
+            }
+        }
+        return result;
     }
 }

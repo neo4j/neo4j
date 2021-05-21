@@ -54,7 +54,6 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 
@@ -491,8 +490,6 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
     @Override
     public ReadTestSupport newTestSupport()
     {
-        ReadTestSupport testSupport = new ReadTestSupport();
-        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-        return testSupport;
+        return new ReadTestSupport();
     }
 }

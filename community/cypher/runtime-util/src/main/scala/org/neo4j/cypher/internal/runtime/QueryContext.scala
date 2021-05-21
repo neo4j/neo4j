@@ -190,15 +190,7 @@ trait QueryContext extends TokenContext with DbAccess {
                             needsValues: Boolean,
                             indexOrder: IndexOrder): RelationshipValueIndexCursor
 
-  //TODO remove once moved over to new token index api
-  @deprecated
-  def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue]
-
   def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue]
-
-  //TODO remove once moved over to new token index api
-  @deprecated
-  def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator
 
   def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator
 

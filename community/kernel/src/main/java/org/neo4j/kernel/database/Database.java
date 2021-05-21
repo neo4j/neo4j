@@ -86,11 +86,9 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
@@ -100,10 +98,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
-import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.LoggingMonitor;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -186,8 +180,6 @@ import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.labelScanStore;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.transactionLogRotation;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
@@ -450,12 +442,8 @@ public class Database extends LifecycleAdapter
 
             // Token indexes
             FullScanStoreView fullScanStoreView = new FullScanStoreView( lockService, storageEngine::newReader, databaseConfig, scheduler );
-            LabelScanStore labelScanStore =
-                    buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, databaseMonitors,
-                            pageCacheTracer, otherDatabaseMemoryTracker );
-
             IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                    databaseConfig, storageEngine::newReader, locks, fullScanStoreView, labelScanStore, lockService, internalLogProvider );
+                    databaseConfig, storageEngine::newReader, locks, fullScanStoreView, lockService, internalLogProvider );
 
             // Schema indexes
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
@@ -468,7 +456,7 @@ public class Database extends LifecycleAdapter
             versionContextSupplier.init( metadataProvider::getLastClosedTransactionId );
 
             CheckPointerImpl.ForceOperation forceOperation =
-                    new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
+                    new DefaultForceOperation( indexingService, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
                     buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation,
                             logEntryReader, metadataProvider, databaseMonitors, databaseDependencies );
@@ -479,7 +467,6 @@ public class Database extends LifecycleAdapter
                     transactionLogModule.transactionAppender(),
                     indexingService,
                     databaseSchemaState,
-                    labelScanStore,
                     storageEngine,
                     metadataProvider,
                     metadataProvider,
@@ -495,7 +482,6 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( databaseSchemaState );
             databaseDependencies.satisfyDependency( logEntryReader );
             databaseDependencies.satisfyDependency( storageEngine );
-            databaseDependencies.satisfyDependency( labelScanStore );
             databaseDependencies.satisfyDependency( indexingService );
             databaseDependencies.satisfyDependency( indexStoreViewFactory );
             databaseDependencies.satisfyDependency( indexStatisticsStore );
@@ -539,7 +525,7 @@ public class Database extends LifecycleAdapter
 
     private void postStartupInit( boolean storageExists ) throws KernelException
     {
-        if ( !storageExists && databaseConfig.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        if ( !storageExists )
         {
             if ( databaseConfig.get( GraphDatabaseInternalSettings.skip_default_indexes_on_creation ) )
             {
@@ -724,42 +710,6 @@ public class Database extends LifecycleAdapter
         return namedDatabaseId.isSystemDatabase();
     }
 
-    /**
-     * Builds a {@link LabelScanStore} and adds it to this database's {@link LifeSupport}.
-     */
-    private LabelScanStore buildLabelIndex( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                            StorageEngine storageEngine, FullScanStoreView fullScanStoreView, Monitors monitors,
-                                            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
-    {
-        return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, monitors, internalLogProvider,
-                pageCache, databaseLayout, fs, readOnlyDatabaseChecker, databaseConfig, pageCacheTracer, memoryTracker ) );
-    }
-
-    /**
-     * Convenience method for building a {@link LabelScanStore}. Doesn't add it to a {@link LifeSupport}.
-     */
-    public static LabelScanStore buildLabelIndex(
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            StorageEngine storageEngine,
-            IndexStoreView indexStoreView,
-            Monitors monitors,
-            LogProvider logProvider,
-            PageCache pageCache,
-            DatabaseLayout databaseLayout,
-            FileSystemAbstraction fs,
-            DatabaseReadOnlyChecker readOnlyChecker,
-            Config config,
-            PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker )
-    {
-        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( LabelScanStore.class ), EntityType.NODE ), LABEL_SCAN_STORE_MONITOR_TAG );
-        FullStoreChangeStream labelStream = new FullLabelStream( indexStoreView );
-        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnlyChecker, monitors, recoveryCleanupWorkCollector,
-                config, cacheTracer, memoryTracker );
-        storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );
-        return labelScanStore;
-    }
-
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, LogProvider logProvider, JobScheduler scheduler,
             CheckPointerImpl.ForceOperation forceOperation, LogEntryReader logEntryReader, MetadataProvider metadataProvider, Monitors monitors,
             Dependencies databaseDependencies )
@@ -797,7 +747,7 @@ public class Database extends LifecycleAdapter
     }
 
     private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
-            IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
+            IndexingService indexingService, DatabaseSchemaState databaseSchemaState,
             StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             KernelVersionRepository kernelVersionRepository,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
@@ -824,7 +774,7 @@ public class Database extends LifecycleAdapter
                                         storageEngine, globalProcedures, transactionIdStore, kernelVersionRepository,
                                         clock, cpuClockRef,
                                         accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
-                                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
+                                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService,
                                         indexStatisticsStore, databaseDependencies,
                                         tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor ) );
 
@@ -836,7 +786,7 @@ public class Database extends LifecycleAdapter
         life.add( kernel );
 
         final DatabaseFileListing fileListing =
-                new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine, idGeneratorFactory );
+                new DatabaseFileListing( databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory );
         databaseDependencies.satisfyDependency( fileListing );
 
         return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );

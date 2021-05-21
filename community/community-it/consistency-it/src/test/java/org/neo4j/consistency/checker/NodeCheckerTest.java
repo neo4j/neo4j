@@ -32,13 +32,14 @@ import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -115,9 +116,10 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // Label index having (N) which is not in use in the store
-            try ( TokenScanWriter writer = labelIndexWriter() )
+            try ( IndexUpdater writer = labelIndexWriter() )
             {
-                writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( CursorContext.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                writer.process( IndexEntryUpdate.change( nodeStore.nextId( CursorContext.NULL ), IndexDescriptor.NO_INDEX,
+                        EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
 
@@ -135,19 +137,20 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // A couple of nodes w/ correct label indexing
-            try ( TokenScanWriter writer = labelIndexWriter() )
+            try ( IndexUpdater writer = labelIndexWriter() )
             {
                 for ( int i = 0; i < 10; i++ )
                 {
                     long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL, label1 );
-                    writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                    writer.process( IndexEntryUpdate.change( nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[]{label1} ) );
                 }
             }
 
             // Label index having (N) which is not in use in the store
-            try ( TokenScanWriter writer = labelIndexWriter() )
+            try ( IndexUpdater writer = labelIndexWriter() )
             {
-                writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( CursorContext.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                writer.process(
+                        IndexEntryUpdate.change( nodeStore.nextId( CursorContext.NULL ), IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
 
@@ -245,9 +248,9 @@ class NodeCheckerTest extends CheckerTestBase
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
             long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL );
-            try ( TokenScanWriter writer = labelIndexWriter() )
+            try ( IndexUpdater writer = labelIndexWriter() )
             {
-                writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
+                writer.process( IndexEntryUpdate.change( nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
         }
 
@@ -282,13 +285,13 @@ class NodeCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            try ( TokenScanWriter writer = labelIndexWriter() )
+            try ( IndexUpdater writer = labelIndexWriter() )
             {
                 for ( int i = 0; i < 20; i++ )
                 {
                     long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, NULL, label1, label2 );
                     // node 10 missing label2 in index
-                    writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY,
+                    writer.process( IndexEntryUpdate.change( nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY,
                             i == 10 ? new long[]{label1} : new long[]{label1, label2} ) );
                 }
             }

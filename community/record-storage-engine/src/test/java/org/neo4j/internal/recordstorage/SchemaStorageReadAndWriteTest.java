@@ -97,7 +97,7 @@ class SchemaStorageReadAndWriteTest
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.propertyKeyTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.labelTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.relationshipTypeTokens().size() ) );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), tokens, () -> KernelVersion.LATEST, false );
+        storage = new SchemaStorage( neoStores.getSchemaStore(), tokens, () -> KernelVersion.LATEST );
     }
 
     @AfterAll

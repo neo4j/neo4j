@@ -38,9 +38,9 @@ import static java.lang.Long.min;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 /**
- * {@link AllEntriesTokenScanReader} for {@link NativeTokenScanStore}.
+ * {@link AllEntriesTokenScanReader} for token index.
  * <p>
- * {@link NativeTokenScanStore} uses {@link GBPTree} for storage and it doesn't have means of aggregating
+ * Token index uses {@link GBPTree} for storage and it doesn't have means of aggregating
  * results, so the approach this implementation is taking is to create one (lazy) seek cursor per token id
  * and coordinate those simultaneously over the scan. Each {@link EntityTokenRange} returned is a view
  * over all cursors at that same range, giving an aggregation of all tokens in that entity id range.

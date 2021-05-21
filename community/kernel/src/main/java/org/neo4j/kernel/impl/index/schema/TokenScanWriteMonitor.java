@@ -45,7 +45,6 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -55,10 +54,10 @@ import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
- * A {@link NativeTokenScanWriter.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
+ * A {@link TokenIndex.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
  * This class also has a {@link #main(String[])} method for dumping the contents of such write log to console or file, as text.
  */
-public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
+public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
 {
     private static final byte TYPE_PREPARE_ADD = 0;
     private static final byte TYPE_PREPARE_REMOVE = 1;
@@ -371,7 +370,7 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
      *  │ │ │   └─────────────────── id of transaction making this particular change
      *  │ │ └─────────────────────── addition, a minus means removal
      *  │ └───────────────────────── flush, local to each write session, incremented when a batch of changes is flushed internally in a writer session
-     *  └─────────────────────────── write session, incremented for each {@link TokenScanStore#newWriter(CursorContext)}
+     *  └─────────────────────────── write session, incremented for each token index writer
      * </pre>
      * How to interpret a message like:
      * <pre>

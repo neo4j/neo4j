@@ -38,8 +38,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
@@ -51,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
+@ImpermanentDbmsExtension
 @ExtendWith( OtherThreadExtension.class )
 public class NestedIndexReadersIT
 {
@@ -64,12 +62,6 @@ public class NestedIndexReadersIT
     private GraphDatabaseAPI db;
     @Inject
     private OtherThreadRule t2;
-
-    @ExtensionCallback
-    void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-    }
 
     @ParameterizedTest
     @MethodSource( "parameters" )

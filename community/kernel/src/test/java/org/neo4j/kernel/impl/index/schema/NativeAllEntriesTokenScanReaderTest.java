@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -40,10 +41,6 @@ import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.helpers.collection.Iterables.reverse;
@@ -137,19 +134,19 @@ class NativeAllEntriesTokenScanReaderTest
             SortedMap<Long/*nodeId*/,List<Long>/*labelIds*/> expected = rangeOf( data, rangeId );
             if ( expected != null )
             {
-                assertTrue( iterator.hasNext(), "Was expecting range " + expected );
+                Assertions.assertTrue( iterator.hasNext(), "Was expecting range " + expected );
                 EntityTokenRange range = iterator.next();
 
-                assertEquals( rangeId, range.id() );
+                Assertions.assertEquals( rangeId, range.id() );
                 for ( Map.Entry<Long,List<Long>> expectedEntry : expected.entrySet() )
                 {
                     long[] labels = range.tokens( expectedEntry.getKey() );
-                    assertArrayEquals( asArray( expectedEntry.getValue().iterator() ), labels );
+                    Assertions.assertArrayEquals( asArray( expectedEntry.getValue().iterator() ), labels );
                 }
             }
             // else there was nothing in this range
         }
-        assertFalse( iterator.hasNext() );
+        Assertions.assertFalse( iterator.hasNext() );
     }
 
     private static SortedMap<Long,List<Long>> rangeOf( Labels[] data, long rangeId )
@@ -272,14 +269,14 @@ class NativeAllEntriesTokenScanReaderTest
         @Override
         public TokenScanKey key()
         {
-            assertFalse( closed );
+            Assertions.assertFalse( closed );
             return entries.get( cursor ).first();
         }
 
         @Override
         public TokenScanValue value()
         {
-            assertFalse( closed );
+            Assertions.assertFalse( closed );
             return entries.get( cursor ).other();
         }
 

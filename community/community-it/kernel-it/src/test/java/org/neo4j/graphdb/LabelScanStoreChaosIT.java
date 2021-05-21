@@ -24,11 +24,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.index.schema.TokenScanStoreTest;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
@@ -36,8 +39,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.io.fs.FileUtils.writeAll;
 
 /**
  * Tests functionality around missing or corrupted label scan store index, and that
@@ -119,7 +125,7 @@ public class LabelScanStoreChaosIT
 
     private void scrambleFile( java.nio.file.Path path )
     {
-        TokenScanStoreTest.scrambleFile( random.random(), path );
+        scrambleFile( random.random(), path );
     }
 
     private void deleteNode( Node node )
@@ -134,5 +140,30 @@ public class LabelScanStoreChaosIT
     private enum Labels implements Label
     {
         First, Second, Third
+    }
+
+    public static void scrambleFile( Random random, Path file )
+    {
+        try ( FileChannel channel = FileChannel.open( file, READ, WRITE ) )
+        {
+            // The files will be small, so OK to allocate a buffer for the full size
+            byte[] bytes = new byte[(int) channel.size()];
+            putRandomBytes( random, bytes );
+            ByteBuffer buffer = ByteBuffer.wrap( bytes );
+            channel.position( 0 );
+            writeAll( channel, buffer );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private static void putRandomBytes( Random random, byte[] bytes )
+    {
+        for ( int i = 0; i < bytes.length; i++ )
+        {
+            bytes[i] = (byte) random.nextInt();
+        }
     }
 }

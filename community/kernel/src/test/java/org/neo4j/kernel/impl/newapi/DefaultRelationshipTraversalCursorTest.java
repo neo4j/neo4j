@@ -28,7 +28,6 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -53,7 +52,6 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -412,17 +410,11 @@ class DefaultRelationshipTraversalCursorTest
     {
         TestRead( KernelTransactionImplementation ktx )
         {
-            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), ktx, Config.defaults() );
+            super( mock( StorageReader.class ), mock( DefaultPooledCursors.class ), ktx );
         }
 
         @Override
         public ValueIndexReader newValueIndexReader( IndexDescriptor index )
-        {
-            return null;
-        }
-
-        @Override
-        TokenScanReader labelScanReader()
         {
             return null;
         }
@@ -521,12 +513,6 @@ class DefaultRelationshipTraversalCursorTest
         public TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException
         {
             return null;
-        }
-
-        @Override
-        public void prepareForLabelScans()
-        {
-
         }
 
         @Override

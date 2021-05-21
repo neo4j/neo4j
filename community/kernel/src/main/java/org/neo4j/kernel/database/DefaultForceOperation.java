@@ -23,20 +23,17 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.storageengine.api.StorageEngine;
 
 public class DefaultForceOperation implements CheckPointerImpl.ForceOperation
 {
     private final IndexingService indexingService;
-    private final LabelScanStore labelScanStore;
     private final StorageEngine storageEngine;
 
-    public DefaultForceOperation( IndexingService indexingService, LabelScanStore labelScanStore, StorageEngine storageEngine )
+    public DefaultForceOperation( IndexingService indexingService, StorageEngine storageEngine )
     {
         this.indexingService = indexingService;
-        this.labelScanStore = labelScanStore;
         this.storageEngine = storageEngine;
     }
 
@@ -44,7 +41,6 @@ public class DefaultForceOperation implements CheckPointerImpl.ForceOperation
     public void flushAndForce( CursorContext cursorContext ) throws IOException
     {
         indexingService.forceAll( cursorContext );
-        labelScanStore.force( cursorContext );
         storageEngine.flushAndForce( cursorContext );
     }
 }

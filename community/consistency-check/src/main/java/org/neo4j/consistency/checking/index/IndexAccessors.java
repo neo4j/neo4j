@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -46,7 +45,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.api.KernelVersionRepository;
@@ -66,11 +64,11 @@ public class IndexAccessors implements Closeable
             IndexProviderMap providers,
             NeoStores neoStores,
             IndexSamplingConfig samplingConfig, PageCacheTracer pageCacheTracer, TokenNameLookup tokenNameLookup,
-            Config config, KernelVersionRepository versionProvider )
+            KernelVersionRepository versionProvider )
             throws IOException
     {
         this( providers, neoStores, samplingConfig, null /*we'll use a default below, if this is null*/, pageCacheTracer, tokenNameLookup,
-                config, versionProvider );
+                versionProvider );
     }
 
     public IndexAccessors(
@@ -80,15 +78,13 @@ public class IndexAccessors implements Closeable
             IndexAccessorLookup accessorLookup,
             PageCacheTracer pageCacheTracer,
             TokenNameLookup tokenNameLookup,
-            Config config,
             KernelVersionRepository versionProvider )
             throws IOException
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) ) )
         {
             TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, cursorContext );
-            Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, versionProvider, config.get(
-                    RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+            Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, versionProvider )
                     .indexesGetAll( cursorContext );
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null ? accessorLookup

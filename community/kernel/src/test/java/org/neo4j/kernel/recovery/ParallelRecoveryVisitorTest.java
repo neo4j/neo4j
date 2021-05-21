@@ -52,7 +52,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -347,12 +346,6 @@ class ParallelRecoveryVisitorTest
 
         @Override
         public void addIndexUpdateListener( IndexUpdateListener indexUpdateListener )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addNodeLabelUpdateListener( EntityTokenUpdateListener entityTokenUpdateListener )
         {
             throw new UnsupportedOperationException();
         }

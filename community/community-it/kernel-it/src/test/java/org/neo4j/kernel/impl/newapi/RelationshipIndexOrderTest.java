@@ -30,8 +30,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -39,20 +37,6 @@ public class RelationshipIndexOrderTest extends IndexOrderTestBase<RelationshipV
 {
 
     public static final String DEFAULT_REl_TYPE = "Rel";
-
-    @Override
-    public WriteTestSupport newTestSupport()
-    {
-        return new WriteTestSupport()
-        {
-            @Override
-            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
-            {
-                builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
-                return super.configure( builder );
-            }
-        };
-    }
 
     protected Pair<Long,Value> entityWithProp( KernelTransaction tx, Object value ) throws Exception
     {

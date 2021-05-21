@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -152,7 +151,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
         neoStores = storageEngine.testAccessNeoStores();
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );
         directStoreAccess = new DirectStoreAccess( neoStores,
-                dependencyResolver.resolveDependency( LabelScanStore.class ),
                 dependencyResolver.resolveDependency( IndexProviderMap.class ),
                 dependencyResolver.resolveDependency( TokenHolders.class ),
                 dependencyResolver.resolveDependency( IndexStatisticsStore.class ),

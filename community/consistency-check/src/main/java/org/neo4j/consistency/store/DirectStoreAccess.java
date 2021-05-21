@@ -22,25 +22,21 @@ package org.neo4j.consistency.store;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
 public class DirectStoreAccess
 {
     private final NeoStores nativeStores;
-    private final LabelScanStore labelScanStore;
     private final IndexProviderMap indexes;
     private final TokenHolders tokenHolders;
     private final IndexStatisticsStore indexStatisticsStore;
     private final IdGeneratorFactory idGeneratorFactory;
 
-    public DirectStoreAccess( NeoStores nativeStores, LabelScanStore labelScanStore,
-            IndexProviderMap indexes, TokenHolders tokenHolders,
+    public DirectStoreAccess( NeoStores nativeStores, IndexProviderMap indexes, TokenHolders tokenHolders,
             IndexStatisticsStore indexStatisticsStore, IdGeneratorFactory idGeneratorFactory )
     {
         this.nativeStores = nativeStores;
-        this.labelScanStore = labelScanStore;
         this.indexes = indexes;
         this.tokenHolders = tokenHolders;
         this.indexStatisticsStore = indexStatisticsStore;
@@ -50,11 +46,6 @@ public class DirectStoreAccess
     public NeoStores nativeStores()
     {
         return nativeStores;
-    }
-
-    public LabelScanStore labelScanStore()
-    {
-        return labelScanStore;
     }
 
     public IndexProviderMap indexes()

@@ -43,10 +43,9 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      *                          Use metadatastore as versionRepository if you are not absolutely sure that the injected
      *                          rule is never needed.
      */
-    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders, KernelVersionRepository versionRepository,
-            boolean tokenIndexFeatureOn )
+    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders, KernelVersionRepository versionRepository )
     {
-        return new SchemaStorage( store, tokenHolders, versionRepository, tokenIndexFeatureOn );
+        return new SchemaStorage( store, tokenHolders, versionRepository );
     }
 
     long newRuleId( CursorContext cursorContext );

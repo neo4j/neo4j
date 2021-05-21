@@ -58,9 +58,10 @@ import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
@@ -77,7 +78,6 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
@@ -86,7 +86,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.locking.FrozenLockClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
@@ -122,7 +121,6 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
-import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -230,7 +228,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine, AccessCapabilityFactory accessCapabilityFactory,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
-            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
+            IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor,
             KernelVersionRepository kernelVersionRepository, AbstractSecurityLog securityLog )
@@ -262,7 +260,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, config );
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
         this.allStoreHolder =
-                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
+                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, indexStatisticsStore,
                         dependencies, config, memoryTracker );
         this.operations =
                 new Operations(

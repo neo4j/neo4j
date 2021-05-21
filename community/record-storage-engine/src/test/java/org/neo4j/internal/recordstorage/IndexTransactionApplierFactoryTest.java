@@ -21,6 +21,9 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.common.EntityType;
+import org.neo4j.common.Subject;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -35,8 +38,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockGroup;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityTokenUpdateListener;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -56,17 +58,17 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class IndexTransactionApplierFactoryTest
 {
     @Test
-    void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
+    void shouldProvideTokenIndexUpdatesSortedByNodeId() throws Exception
     {
         // GIVEN
-        IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
-        OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
-        WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
-        WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
+        OrderVerifyingUpdateListener indexUpdateListener = new OrderVerifyingUpdateListener( 10, 15, 20 );
+        WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = spy( new WorkSync<>( indexUpdateListener ) );
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
-        try ( var batchContext = new LegacyBatchContext( indexUpdateListener, labelScanSync, indexUpdatesSync,
-                mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE,
+        final SchemaCache mock = mock( SchemaCache.class );
+        when( mock.getTokenIndex( EntityType.NODE ) ).thenReturn( IndexDescriptor.INJECTED_NLI );
+        try ( var batchContext = new BatchContextImpl( indexUpdateListener, indexUpdatesSync,
+                mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock, NULL, INSTANCE,
                 mock( IdUpdateListener.class ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), batchContext ) )
@@ -77,9 +79,9 @@ class IndexTransactionApplierFactoryTest
                 txApplier.visitNodeCommand( node( 10 ) );
             }
         }
-        listener.done();
-        // THEN all assertions happen inside the LabelScanWriter#write and #close
-        verify( labelScanSync ).applyAsync( any() );
+        indexUpdateListener.done();
+        // THEN all assertions happen inside the UpdateListener and #close
+        verify( indexUpdatesSync ).apply( any() );
     }
 
     @Test
@@ -87,10 +89,6 @@ class IndexTransactionApplierFactoryTest
     {
         // given
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
-        OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
-        WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
-        WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
-        PropertyStore propertyStore = mock( PropertyStore.class );
         IndexActivator indexActivator = new IndexActivator( indexUpdateListener );
         long indexId1 = 1;
         long indexId2 = 2;
@@ -104,7 +102,7 @@ class IndexTransactionApplierFactoryTest
         IndexDescriptor rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
         IndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
-        var batchContext = mock( LegacyBatchContext.class );
+        var batchContext = mock( BatchContext.class );
         when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
         when( batchContext.indexUpdates() ).thenReturn( mock( IndexUpdates.class ) );
         when( batchContext.getIndexActivator() ).thenReturn( indexActivator );
@@ -151,7 +149,7 @@ class IndexTransactionApplierFactoryTest
         return new NodeCommand( new NodeRecord( nodeId ), after );
     }
 
-    private static class OrderVerifyingUpdateListener implements EntityTokenUpdateListener
+    private static class OrderVerifyingUpdateListener implements IndexUpdateListener
     {
         private final long[] expectedNodeIds;
         private int cursor;
@@ -162,13 +160,37 @@ class IndexTransactionApplierFactoryTest
         }
 
         @Override
-        public void applyUpdates( Iterable<EntityTokenUpdate> labelUpdates, CursorContext cursorContext )
+        public void createIndexes( Subject subject, IndexDescriptor... indexes )
         {
-            for ( EntityTokenUpdate update : labelUpdates )
+
+        }
+
+        @Override
+        public void activateIndex( IndexDescriptor index ) throws KernelException
+        {
+
+        }
+
+        @Override
+        public void dropIndex( IndexDescriptor index )
+        {
+
+        }
+
+        @Override
+        public void applyUpdates( Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext )
+        {
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
             {
                 assertEquals( expectedNodeIds[cursor], update.getEntityId() );
                 cursor++;
             }
+        }
+
+        @Override
+        public void validateIndex( long indexReference ) throws KernelException
+        {
+
         }
 
         void done()

@@ -54,7 +54,7 @@ public class DynamicIndexStoreView implements IndexStoreView
 {
     private final FullScanStoreView fullScanStoreView;
     private final Locks locks;
-    private final LockService lockService;
+    protected final LockService lockService;
     private final Config config;
     private final IndexProxyProvider indexProxies;
     protected final Supplier<StorageReader> storageReader;

@@ -53,8 +53,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -89,7 +87,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
-import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class ConsistencyCheckService
@@ -245,15 +242,11 @@ public class ConsistencyCheckService
 
             life.start();
 
-            LabelScanStore labelScanStore =
-                    TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnlyChecker, monitors, workCollector, config,
-                            pageCacheTracer, memoryTracker );
-            life.add( labelScanStore );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, readOnlyChecker, pageCacheTracer );
             life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
-            DirectStoreAccess stores = new DirectStoreAccess( neoStores, labelScanStore, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
+            DirectStoreAccess stores = new DirectStoreAccess( neoStores, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker,
                     new DuplicatingLog( log, reportLog ) );

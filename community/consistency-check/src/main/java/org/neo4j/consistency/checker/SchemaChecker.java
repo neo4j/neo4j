@@ -107,7 +107,7 @@ class SchemaChecker
             // not be found when going through the file in performSchemaCheck anyway so we can use latest KernelVersion here.
             // If an injected NLI exist but is not online that will not be reported, but this is an unlikely corner case that we
             // ignore. The index itself will be checked as long as it is online (it is found by IndexAccessors).
-            SchemaStorage schemaStorage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST, true );
+            SchemaStorage schemaStorage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
             // Build map of obligations and such
             buildObligationsMap( highId, schemaReader, schemaStorage, indexObligations, constraintObligations, verifiedRulesWithRecords, cursorContext );
 

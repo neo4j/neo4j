@@ -54,9 +54,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
-import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
@@ -75,7 +73,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -856,50 +853,33 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int labelId, PropertyIndexQuery... queries )
     {
-        if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+
+        if ( index != IndexDescriptor.NO_INDEX )
         {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
-
-            if ( index != IndexDescriptor.NO_INDEX )
+            try
             {
-                try
-                {
-                    var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
-                    ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
+                var session = ktx.dataRead().tokenReadSession( index );
+                var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
+                ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
 
-                    var nodeCursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
-                    var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
+                var nodeCursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
+                var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
 
-                    return new NodeLabelPropertyIterator( ktx.dataRead(),
-                            cursor,
-                            nodeCursor,
-                            propertyCursor,
-                            c -> newNodeEntity( c.nodeReference() ),
-                            coreApiResourceTracker,
-                            queries );
-                }
-                catch ( KernelException e )
-                {
-                    // ignore, fallback to all node scan
-                }
+                return new NodeLabelPropertyIterator( ktx.dataRead(),
+                        cursor,
+                        nodeCursor,
+                        propertyCursor,
+                        c -> newNodeEntity( c.nodeReference() ),
+                        coreApiResourceTracker,
+                        queries );
             }
-            return getNodesByLabelAndPropertyViaAllNodesScan( ktx, labelId, queries );
+            catch ( KernelException e )
+            {
+                // ignore, fallback to all node scan
+            }
         }
-
-        NodeLabelIndexCursor nodeLabelCursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
-        NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor( ktx.cursorContext() );
-        PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
-
-        ktx.dataRead().nodeLabelScan( labelId, nodeLabelCursor, IndexOrder.NONE );
-
-        return new NodeLabelPropertyIterator( ktx.dataRead(),
-                nodeLabelCursor,
-                nodeCursor,
-                propertyCursor,
-                c -> newNodeEntity( c.nodeReference() ),
-                coreApiResourceTracker,
-                queries );
+        return getNodesByLabelAndPropertyViaAllNodesScan( ktx, labelId, queries );
     }
 
     private CursorIterator<FilteringNodeCursorWrapper,Node> getNodesByLabelAndPropertyViaAllNodesScan( KernelTransaction ktx, int labelId,
@@ -919,33 +899,30 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int typeId,
             PropertyIndexQuery... queries )
     {
-        if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
+
+        if ( index != IndexDescriptor.NO_INDEX )
         {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
-
-            if ( index != IndexDescriptor.NO_INDEX )
+            try
             {
-                try
-                {
-                    var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
-                    ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
+                var session = ktx.dataRead().tokenReadSession( index );
+                var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
+                ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
 
-                    var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
-                    var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
+                var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.cursorContext() );
+                var propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.cursorContext(), ktx.memoryTracker() );
 
-                    return new RelationshipTypePropertyIterator( ktx.dataRead(),
-                            cursor,
-                            relationshipScanCursor,
-                            propertyCursor,
-                            c -> newRelationshipEntity( c.relationshipReference() ),
-                            coreApiResourceTracker,
-                            queries );
-                }
-                catch ( KernelException e )
-                {
-                    // ignore, fallback to all node scan
-                }
+                return new RelationshipTypePropertyIterator( ktx.dataRead(),
+                        cursor,
+                        relationshipScanCursor,
+                        propertyCursor,
+                        c -> newRelationshipEntity( c.relationshipReference() ),
+                        coreApiResourceTracker,
+                        queries );
+            }
+            catch ( KernelException e )
+            {
+                // ignore, fallback to all node scan
             }
         }
 
@@ -1025,31 +1002,24 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
+
+        if ( index != IndexDescriptor.NO_INDEX )
         {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
-
-            if ( index != IndexDescriptor.NO_INDEX )
+            try
             {
-                try
-                {
-                    var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
-                    ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
-                    return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
-                }
-                catch ( KernelException e )
-                {
-                    // ignore, fallback to all node scan
-                }
+                var session = ktx.dataRead().tokenReadSession( index );
+                var cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
+                ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
+                return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
             }
-
-            return allNodesByLabelWithoutIndex( ktx, labelId );
+            catch ( KernelException e )
+            {
+                // ignore, fallback to all node scan
+            }
         }
 
-        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( ktx.cursorContext() );
-        ktx.dataRead().nodeLabelScan( labelId, cursor, IndexOrder.NONE );
-        return new CursorIterator<>( cursor, NodeIndexCursor::nodeReference, c -> newNodeEntity( c.nodeReference() ), coreApiResourceTracker );
+        return allNodesByLabelWithoutIndex( ktx, labelId );
     }
 
     private ResourceIterator<Node> allNodesByLabelWithoutIndex( KernelTransaction ktx, int labelId )
@@ -1070,24 +1040,21 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
-        {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
+        var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
 
-            if ( index != IndexDescriptor.NO_INDEX )
+        if ( index != IndexDescriptor.NO_INDEX )
+        {
+            try
             {
-                try
-                {
-                    var session = ktx.dataRead().tokenReadSession( index );
-                    var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
-                    ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
-                    return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference,
-                            c -> newRelationshipEntity( c.relationshipReference() ), coreApiResourceTracker );
-                }
-                catch ( KernelException e )
-                {
-                    // ignore, fallback to all node scan
-                }
+                var session = ktx.dataRead().tokenReadSession( index );
+                var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.cursorContext() );
+                ktx.dataRead().relationshipTypeScan( session, cursor, unconstrained(), new TokenPredicate( typeId ) );
+                return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference,
+                        c -> newRelationshipEntity( c.relationshipReference() ), coreApiResourceTracker );
+            }
+            catch ( KernelException e )
+            {
+                // ignore, fallback to all node scan
             }
         }
 

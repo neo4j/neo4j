@@ -35,7 +35,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.util.MultiResource;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -54,7 +53,7 @@ public class DatabaseFileListing
     private final Collection<StoreFileProvider> additionalProviders;
 
     public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
-            LabelScanStore labelScanStore, IndexingService indexingService,
+            IndexingService indexingService,
             StorageEngine storageEngine,
             IdGeneratorFactory idGeneratorFactory )
     {
@@ -62,7 +61,7 @@ public class DatabaseFileListing
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.fileIndexListing = new SchemaAndIndexingFileIndexListing( labelScanStore, indexingService );
+        this.fileIndexListing = new SchemaAndIndexingFileIndexListing( indexingService );
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
@@ -118,7 +117,6 @@ public class DatabaseFileListing
         private boolean excludeLogFiles;
         private boolean excludeAtomicStorageFiles;
         private boolean excludeReplayableStorageFiles;
-        private boolean excludeLabelScanStoreFiles;
         private boolean excludeSchemaIndexStoreFiles;
         private boolean excludeAdditionalProviders;
         private boolean excludeIdFiles;
@@ -132,7 +130,6 @@ public class DatabaseFileListing
             this.excludeLogFiles = initiateInclusive;
             this.excludeAtomicStorageFiles = initiateInclusive;
             this.excludeReplayableStorageFiles = initiateInclusive;
-            this.excludeLabelScanStoreFiles = initiateInclusive;
             this.excludeSchemaIndexStoreFiles = initiateInclusive;
             this.excludeAdditionalProviders = initiateInclusive;
             this.excludeIdFiles = initiateInclusive;
@@ -165,12 +162,6 @@ public class DatabaseFileListing
         public StoreFileListingBuilder excludeReplayableStorageFiles()
         {
             excludeReplayableStorageFiles = true;
-            return this;
-        }
-
-        public StoreFileListingBuilder excludeLabelScanStoreFiles()
-        {
-            excludeLabelScanStoreFiles = true;
             return this;
         }
 
@@ -210,12 +201,6 @@ public class DatabaseFileListing
             return this;
         }
 
-        public StoreFileListingBuilder includeLabelScanStoreFiles()
-        {
-            excludeLabelScanStoreFiles = false;
-            return this;
-        }
-
         public StoreFileListingBuilder includeSchemaIndexStoreFiles()
         {
             excludeSchemaIndexStoreFiles = false;
@@ -251,10 +236,6 @@ public class DatabaseFileListing
                 if ( !excludeIdFiles )
                 {
                     gatherIdFiles( files );
-                }
-                if ( !excludeLabelScanStoreFiles )
-                {
-                    resources.add( fileIndexListing.gatherLabelScanStoreFiles( files ) );
                 }
                 if ( !excludeSchemaIndexStoreFiles )
                 {

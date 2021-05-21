@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -51,6 +52,9 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 public class TokenIndex implements ConsistencyCheckable
 {
+    static final WriteMonitor EMPTY = new WriteMonitor()
+    {
+    };
     /**
      * Written in header to indicate native token index is clean
      *
@@ -127,7 +131,7 @@ public class TokenIndex implements ConsistencyCheckable
     /**
      * Monitor for all writes going into this token index.
      */
-    NativeTokenScanWriter.WriteMonitor writeMonitor;
+    WriteMonitor writeMonitor;
 
     /**
      * Name of the store that will be used when describing work related to this store.
@@ -169,7 +173,7 @@ public class TokenIndex implements ConsistencyCheckable
     {
         writeMonitor = config.get( GraphDatabaseInternalSettings.token_scan_write_log_enabled )
                        ? new TokenScanWriteMonitor( fs, directoryStructure, entityType, config )
-                       : NativeTokenScanWriter.EMPTY;
+                       : EMPTY;
         singleUpdater = new TokenIndexUpdater( 1_000, writeMonitor );
     }
 
@@ -208,6 +212,46 @@ public class TokenIndex implements ConsistencyCheckable
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    interface WriteMonitor extends Closeable
+    {
+        default void range( long range, int tokenId )
+        {
+        }
+
+        default void prepareAdd( long txId, int offset )
+        {
+        }
+
+        default void prepareRemove( long txId, int offset )
+        {
+        }
+
+        default void mergeAdd( TokenScanValue existingValue, TokenScanValue newValue )
+        {
+        }
+
+        default void mergeRemove( TokenScanValue existingValue, TokenScanValue newValue )
+        {
+        }
+
+        default void flushPendingUpdates()
+        {
+        }
+
+        default void writeSessionEnded()
+        {
+        }
+
+        default void force()
+        {
+        }
+
+        @Override
+        default void close()
+        {
         }
     }
 }

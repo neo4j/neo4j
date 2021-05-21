@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.io.IOUtils;
@@ -30,7 +29,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
@@ -124,17 +122,5 @@ public class BatchContextImpl implements BatchContext
     public IdUpdateListener getIdUpdateListener()
     {
         return idUpdateListener;
-    }
-
-    @Override
-    public List<EntityTokenUpdate> labelUpdates()
-    {
-        throw new IllegalStateException( "Scan store updates are not supported" );
-    }
-
-    @Override
-    public boolean specialHandlingOfScanStoresNeeded()
-    {
-        return false;
     }
 }

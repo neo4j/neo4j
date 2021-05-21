@@ -119,17 +119,12 @@ class NodeChecker implements Checker
 
     private BoundedIterable<EntityTokenRange> getLabelIndexReader( long fromNodeId, long toNodeId, boolean last, CursorContext cursorContext )
     {
-        if ( context.useScanStoresAsTokenIndexes )
+        if ( context.nodeLabelIndex != null )
         {
-            if ( context.nodeLabelIndex != null )
-            {
-                return context.nodeLabelIndex.newAllEntriesTokenReader( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
-                        cursorContext );
-            }
-            return BoundedIterable.empty();
+            return context.nodeLabelIndex.newAllEntriesTokenReader( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
+                    cursorContext );
         }
-        return context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
-                cursorContext );
+        return BoundedIterable.empty();
     }
 
     private void check( long fromNodeId, long toNodeId, boolean last ) throws Exception

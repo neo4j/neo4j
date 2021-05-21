@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.values.storable.Value;
 
@@ -51,11 +50,6 @@ public class StubRead implements Read
     public TokenReadSession tokenReadSession( IndexDescriptor index )
     {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void prepareForLabelScans()
-    {
     }
 
     @Override
@@ -89,12 +83,6 @@ public class StubRead implements Read
     public void relationshipIndexScan( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints )
     {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order )
-    {
-        ((StubNodeLabelIndexCursor) cursor).initialize( label );
     }
 
     @Override

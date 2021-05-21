@@ -115,12 +115,4 @@ public interface SchemaRead extends SchemaReadCore
      * Flush the schema state
      */
     void schemaStateFlush();
-
-    /**
-     * NOTE this is a temporary method to be able to check if
-     * we should use scan store or token index.
-     * Will be removed/changed.
-     */
-    @Deprecated
-    boolean scanStoreAsTokenIndexEnabled();
 }

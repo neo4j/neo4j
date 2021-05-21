@@ -84,7 +84,7 @@ class IndexIteratorIT
 
         var neoStores = storageEngine.testAccessNeoStores();
         indexAccessors = new IndexAccessors( providerMap, neoStores, new IndexSamplingConfig( config ), PageCacheTracer.NULL, SIMPLE_NAME_LOOKUP,
-                config, () -> KernelVersion.LATEST );
+                () -> KernelVersion.LATEST );
         pageCacheTracer = new DefaultPageCacheTracer();
     }
 

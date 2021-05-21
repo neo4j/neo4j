@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
@@ -29,20 +28,19 @@ import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 /**
- * Counts nodes and their labels and also builds {@link LabelScanStore label index} while doing so.
+ * Counts nodes and their labels and also builds node label index while doing so.
  */
 public class NodeCountsAndLabelIndexBuildStage extends Stage
 {
     public static final String NAME = "Node counts and label index build";
 
-    public NodeCountsAndLabelIndexBuildStage( Configuration config, Config dbConfig, BatchingNeoStores neoStores, NodeLabelsCache cache,
+    public NodeCountsAndLabelIndexBuildStage( Configuration config, BatchingNeoStores neoStores, NodeLabelsCache cache,
             NodeStore nodeStore, int highLabelId, CountsAccessor.Updater countsUpdater, ProgressReporter progressReporter,
             IndexImporterFactory indexImporterFactory, PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker, MemoryUsageStatsProvider additionalStatsProviders )
@@ -52,7 +50,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
         if ( config.indexConfig().createLabelIndex() )
         {
-            add( new LabelIndexWriterStep( control(), config, dbConfig, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
+            add( new LabelIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
         }
         add( new RecordProcessorStep<>( control(), "COUNT", config, () -> new NodeCountsProcessor(
                 nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer, additionalStatsProviders ) );

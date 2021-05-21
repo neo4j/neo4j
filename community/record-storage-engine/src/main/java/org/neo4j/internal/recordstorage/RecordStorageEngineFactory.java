@@ -252,7 +252,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             stores.start( cursorContext );
             TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), cursorContext );
             List<SchemaRule> rules = new ArrayList<>();
-            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST, false ).getAll( cursorContext ).forEach( rules::add );
+            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).getAll( cursorContext ).forEach( rules::add );
             return rules;
         }
         catch ( IOException e )
@@ -319,7 +319,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             return Math.toIntExact( tokenId );
         };
         TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, cursorContext );
-        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST, false ),
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST ),
                 cursorContext, memoryTracker );
     }
 
