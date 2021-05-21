@@ -48,9 +48,27 @@
     </license>
   </licenses>
 
-  <dependencies>
+    <!-- Since this is a test utility, we need to disable some enforcer rules -->
+    <build>
+        <plugins>
+            <!-- Override parent configuration to only allow "com.neo4j" packages -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <configuration combine.self="override">
+                    <rules>
+                        <bannedDependencies>
 
-    <!-- shared versions are defined in the parent pom -->
+                        </bannedDependencies>
+                    </rules>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+      <dependencies>
+
+        <!-- shared versions are defined in the parent pom -->
 
     <!-- scala -->
 
@@ -109,8 +127,8 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-planner</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
       <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j-cypher test -->
