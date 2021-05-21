@@ -1410,6 +1410,7 @@ Eclipse Public License v2.0
   JUnit Platform Engine API
   JUnit Platform Launcher
   JUnit Vintage Engine
+  OSGi resource locator
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
 

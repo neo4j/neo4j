@@ -1458,6 +1458,7 @@ Eclipse Public License v2.0
   jersey-core-server
   jersey-inject-hk2
   jersey-media-jaxb
+  OSGi resource locator
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
 

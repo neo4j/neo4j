@@ -118,7 +118,7 @@
     <asm.version>8.0.1</asm.version>
     <metrics.version>4.1.7</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
-    <jersey.version>2.32</jersey.version>
+    <jersey.version>2.34</jersey.version>
     <junit.version>5.6.2</junit.version>
     <junit.platform.version>1.6.2</junit.platform.version>
     <opencypher.version>1.0.0-M15</opencypher.version>
@@ -1390,6 +1390,21 @@
             <artifactId>jakarta.annotation-api</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.media</groupId>
+        <artifactId>jersey-media-jaxb</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>2.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.activation</groupId>
+        <artifactId>jakarta.activation</artifactId>
+        <version>2.0.1</version>
       </dependency>
       <dependency>
         <groupId>javax.ws.rs</groupId>
