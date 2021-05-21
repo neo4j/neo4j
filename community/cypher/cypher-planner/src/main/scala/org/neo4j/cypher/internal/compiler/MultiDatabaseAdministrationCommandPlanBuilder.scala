@@ -393,7 +393,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         Some(plans.ShowDatabase(new NormalizedDatabaseName(dbName)))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
-      case CreateDatabase(dbName, ifExistsDo) =>
+      case c@CreateDatabase(dbName, ifExistsDo) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         try {
           DatabaseNameValidator.validateExternalDatabaseName(normalizedName)
@@ -405,26 +405,29 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case _: IfExistsDoNothing => Some(plans.DoNothingIfExists(Some(plans.AssertDbmsAdmin(CreateDatabaseAction)), "Database", normalizedName.name()))
           case _ => Some(plans.AssertDbmsAdmin(CreateDatabaseAction))
         }
-        Some(plans.EnsureValidNumberOfDatabases(Some(plans.CreateDatabase(source, normalizedName))))
+        val plan = plans.EnsureValidNumberOfDatabases(Some(plans.CreateDatabase(source, normalizedName)))
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DROP DATABASE foo [IF EXISTS]
-      case DropDatabase(dbName, ifExists) =>
+      case c@DropDatabase(dbName, ifExists) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         val admin = Some(plans.AssertDbmsAdmin(DropDatabaseAction))
         val source = if (ifExists) Some(plans.DoNothingIfNotExists(admin, "Database", normalizedName.name())) else admin
-        Some(plans.DropDatabase(Some(plans.EnsureValidNonSystemDatabase(source, normalizedName, "delete")), normalizedName))
+        val plan = plans.DropDatabase(Some(plans.EnsureValidNonSystemDatabase(source, normalizedName, "delete")), normalizedName)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // START DATABASE foo
-      case StartDatabase(dbName) =>
+      case c@StartDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
-        Some(plans.StartDatabase(Some(plans.AssertDatabaseAdmin(StartDatabaseAction, normalizedName)), normalizedName))
+        val plan = plans.StartDatabase(Some(plans.AssertDatabaseAdmin(StartDatabaseAction, normalizedName)), normalizedName)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // STOP DATABASE foo
-      case StopDatabase(dbName) =>
+      case c@StopDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
-        Some(plans.StopDatabase(
-          Some(plans.EnsureValidNonSystemDatabase(
-            Some(plans.AssertDatabaseAdmin(StopDatabaseAction, normalizedName)), normalizedName, "stop")), normalizedName))
+        val source = Some(plans.AssertDatabaseAdmin(StopDatabaseAction, normalizedName))
+        val plan = plans.StopDatabase(Some(plans.EnsureValidNonSystemDatabase(source, normalizedName, "stop")), normalizedName)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
