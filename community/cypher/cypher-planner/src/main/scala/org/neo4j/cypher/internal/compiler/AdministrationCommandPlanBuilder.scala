@@ -408,29 +408,31 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.ShowDatabase(dbName, sd.returnColumnNames, yields, where, returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
-      case CreateDatabase(dbName, ifExistsDo) =>
+      case c@CreateDatabase(dbName, ifExistsDo) =>
         val source = ifExistsDo match {
           case _: IfExistsReplace => plans.DropDatabase(plans.AssertDbmsAdmin(Seq(DropDatabaseAction, CreateDatabaseAction)), dbName, DestroyData)
           case _: IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertDbmsAdmin(CreateDatabaseAction), "Database", dbName, s => new NormalizedDatabaseName(s).name())
           case _ => plans.AssertDbmsAdmin(CreateDatabaseAction)
         }
-        Some(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)))
+        val plan = plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName))
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
-      case DropDatabase(dbName, ifExists, additionalAction) =>
+      case c@DropDatabase(dbName, ifExists, additionalAction) =>
         val admin = plans.AssertDbmsAdmin(DropDatabaseAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else admin
-        Some(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction))
+        val plan = plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // START DATABASE foo
-      case StartDatabase(dbName) =>
-        Some(plans.StartDatabase(plans.AssertDatabaseAdmin(StartDatabaseAction, dbName), dbName))
+      case c@StartDatabase(dbName) =>
+        val plan = plans.StartDatabase(plans.AssertDatabaseAdmin(StartDatabaseAction, dbName), dbName)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // STOP DATABASE foo
-      case StopDatabase(dbName) =>
-        Some(plans.StopDatabase(
-          plans.EnsureValidNonSystemDatabase(
-            plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), dbName, "stop"), dbName))
+      case c@StopDatabase(dbName) =>
+        val plan = plans.StopDatabase(plans.EnsureValidNonSystemDatabase(plans.AssertDatabaseAdmin(StopDatabaseAction, dbName), dbName, "stop"), dbName)
+        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
