@@ -46,9 +46,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private val allNodesScanLeafPlanner: LeafPlanner = (qg, _, context) =>
-    qg.patternNodes.toSeq.map(node => context.logicalPlanProducer.planAllNodesScan(node, Set.empty, context))
+    qg.patternNodes.map(node => context.logicalPlanProducer.planAllNodesScan(node, Set.empty, context))
   private val labelScanLeafPlanner: LeafPlanner = (qg, _, context) =>
-    qg.patternNodes.toSeq.map(node =>
+    qg.patternNodes.map(node =>
       context.logicalPlanProducer.planNodeByLabelScan(
         varFor(node),
         LabelName(node.toUpperCase())(pos),
@@ -185,7 +185,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("should group plans with same available symbols after selection") {
     val plan: LogicalPlan = Projection(AllNodesScan("a", Set.empty), Map("b" -> varFor("a")))
-    val projectionPlanner: LeafPlanner = (_, _, _) => Seq(plan)
+    val projectionPlanner: LeafPlanner = (_, _, _) => Set(plan)
     val queryPlanConfig = QueryPlannerConfiguration(
       pickBestCandidate = _ =>
         new CandidateSelector {
@@ -213,7 +213,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("should group plans with same available symbols not considering generated variables that are not part of the queryGraph") {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
-    val plans = Seq(
+    val plans = Set[LogicalPlan](
      Argument(Set("a", anonymousVariableNameGenerator.nextName)),
      Argument(Set("a", anonymousVariableNameGenerator.nextName))
     )
@@ -247,7 +247,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
     val fresh1 = anonymousVariableNameGenerator.nextName
     val fresh2 = anonymousVariableNameGenerator.nextName
-    val plans = Seq(
+    val plans = Set[LogicalPlan](
      Argument(Set("a", fresh1)),
      Argument(Set("a", fresh2))
     )
@@ -271,10 +271,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         ctx
       )
 
-      options.shouldEqual(List(
-        BestResults(plans(0), None),
-        BestResults(plans(1), None)
-      ))
+      options should contain theSameElementsAs plans.map(p => BestResults(p, None))
     }
   }
 

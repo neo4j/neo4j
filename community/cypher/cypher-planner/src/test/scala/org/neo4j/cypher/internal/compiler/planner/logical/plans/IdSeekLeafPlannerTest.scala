@@ -81,7 +81,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Seq(NodeByIdSeek("n", ManySeekableArgs(listOfInt(42, 43, 43)), Set.empty))
+      Set(NodeByIdSeek("n", ManySeekableArgs(listOfInt(42, 43, 43)), Set.empty))
     )
   }
 
@@ -131,7 +131,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Seq(NodeByIdSeek("n", ManySeekableArgs(varFor("arr")), Set("arr")))
+      Set(NodeByIdSeek("n", ManySeekableArgs(varFor("arr")), Set("arr")))
     )
   }
 
@@ -156,7 +156,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
-    resultPlans should equal(Seq.empty)
+    resultPlans shouldBe empty
   }
 
   test("node by id seek should not be produced when the node variable is an argument") {
@@ -180,7 +180,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
 
     // then
-    resultPlans should equal(Seq.empty)
+    resultPlans shouldBe empty
   }
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
@@ -208,7 +208,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Seq(DirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
+      Set(DirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
     )
   }
 
@@ -236,7 +236,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Seq(UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
+      Set(UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
     )
   }
 
@@ -275,7 +275,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Seq(Selection(
+      Set(Selection(
         ands(equals(function("type", varFor("r")), literalString("X"))),
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
       ))
@@ -319,7 +319,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Seq(Selection(
+      Set(Selection(
         ands(
           ors(
             equals(function("type", varFor("r")), literalString("X")),
@@ -362,7 +362,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       .directedRelationshipByIdSeek("r", newFrom, end, Set(from), 42, 43, 43)
       .build()
 
-    resultPlans shouldEqual Seq(expectedPlan)
+    resultPlans shouldEqual Set(expectedPlan)
   }
 
   test("simple directed relationship by id seek with a collection of relationship ids, start and end nodes already bound") {
@@ -398,6 +398,6 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       .directedRelationshipByIdSeek("r", newFrom, newTo, Set(from, end), 42, 43, 43)
       .build()
 
-    resultPlans shouldEqual Seq(expectedPlan)
+    resultPlans shouldEqual Set(expectedPlan)
   }
 }

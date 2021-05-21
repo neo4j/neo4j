@@ -47,7 +47,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
     override def apply(queryGraph: QueryGraph,
                        interestingOrderConfig: InterestingOrderConfig,
-                       context: LogicalPlanningContext): Seq[LogicalPlan] = ???
+                       context: LogicalPlanningContext): Set[LogicalPlan] = ???
 
     override protected def implicitIndexCompatiblePredicates(context: LogicalPlanningContext,
                                                              predicates: Set[Expression],

@@ -114,7 +114,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ${lit42.stringVal})]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
@@ -132,7 +132,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)<-[$relName:$relTypeName($prop = ${lit42.stringVal})]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
@@ -150,7 +150,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ${lit42.stringVal})]->($endNodeName)", getValue = _ => CanGetValue)
           .build()
@@ -169,7 +169,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop < ${lit42.stringVal})]-($endNodeName)")
           .build()
@@ -188,7 +188,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop < ${lit42.stringVal})]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
@@ -210,7 +210,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???)]-($endNodeName)",
             paramExpr = Some(x),
@@ -282,7 +282,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = ???)]-($endNodeName)",
             paramExpr = Some(xProp),
@@ -467,7 +467,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
@@ -488,7 +488,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop = 42)]-($endNodeName)", getValue = _ => CanGetValue)
           .build()
@@ -510,7 +510,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($prop < 42, foo)]-($endNodeName)")
           .build()
@@ -520,7 +520,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       // Otherwise we risk mixing up the solveds, since the plans would be exactly the same
       val implicitIsNotNullSolutions = ctx.planningAttributes.solveds.toSeq
                                        .filter(_.hasValue)
-                                       .map(_.value.asSinglePlannerQuery.queryGraph.selections.flatPredicates.toSet)
+                                       .map(_.value.asSinglePlannerQuery.queryGraph.selections.flatPredicatesSet)
                                        .filter(_ == Set(rPropLessThanLit42))
 
       implicitIsNotNullSolutions shouldEqual Seq.empty
@@ -537,7 +537,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($foo < 42, prop)]-($endNodeName)")
           .build()
@@ -560,7 +560,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($foo < 42, prop)]-($endNodeName)")
           .build()
@@ -584,7 +584,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
       val resultPlans = indexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      resultPlans should equal(Seq(
+      resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(s"($startNodeName)-[$relName:$relTypeName($foo < 42, prop)]-($endNodeName)")
           .build()

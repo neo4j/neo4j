@@ -283,7 +283,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   private def testTriadic(in: LogicalPlan, qg: QueryGraph, context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val unsolvedPredicates = qg.selections.flatPredicates.toSet
+    val unsolvedPredicates = qg.selections.flatPredicatesSet
     val candidates = triadicSelectionFinder(in, unsolvedPredicates, qg, InterestingOrderConfig.empty, context).toSeq
     candidates.foreach {
       case SelectionCandidate(_, solvedPredicates) =>
