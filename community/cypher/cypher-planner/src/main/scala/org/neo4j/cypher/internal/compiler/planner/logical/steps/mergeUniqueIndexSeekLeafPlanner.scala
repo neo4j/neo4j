@@ -48,12 +48,12 @@ import org.neo4j.cypher.internal.macros.AssertMacros
  */
 object mergeUniqueIndexSeekLeafPlanner extends NodeIndexLeafPlanner(Seq(nodeSingleUniqueIndexSeekPlanProvider), LeafPlanRestrictions.NoRestrictions) {
 
-  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
     def solvedQueryGraph(plan: LogicalPlan): QueryGraph = context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
-    val resultPlans: Seq[LogicalPlan] = super.apply(qg, interestingOrderConfig, context)
+    val resultPlans: Set[LogicalPlan] = super.apply(qg, interestingOrderConfig, context)
 
-    val grouped: Map[String, Seq[LogicalPlan]] = resultPlans.groupBy { p =>
+    val grouped: Map[String, Set[LogicalPlan]] = resultPlans.groupBy { p =>
       val solvedQG = solvedQueryGraph(p)
       val patternNodes = solvedQG.patternNodes
 
@@ -66,7 +66,7 @@ object mergeUniqueIndexSeekLeafPlanner extends NodeIndexLeafPlanner(Seq(nodeSing
         plans.reduce[LogicalPlan] {
           case (p1, p2) => context.logicalPlanProducer.planAssertSameNode(id, p1, p2, context)
         }
-    }.toSeq
+    }.toSet
   }
 }
 

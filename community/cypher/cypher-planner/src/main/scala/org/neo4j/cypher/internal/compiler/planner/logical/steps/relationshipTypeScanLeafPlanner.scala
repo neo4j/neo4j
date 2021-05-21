@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  override def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
       !context.planContext.canLookupRelationshipsByType ||
       queryGraph.argumentIds.contains(pattern.name) ||
@@ -51,7 +51,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
         Some(context.logicalPlanProducer.planRelationshipByTypeScan(name, typ, p, hint(queryGraph, p), queryGraph.argumentIds, providedOrderFor(name), context))
 
       case _ => None
-    }.toIndexedSeq
+    }
   }
 
   private def hint(queryGraph: QueryGraph, patternRelationship: PatternRelationship): Option[UsingScanHint] = {

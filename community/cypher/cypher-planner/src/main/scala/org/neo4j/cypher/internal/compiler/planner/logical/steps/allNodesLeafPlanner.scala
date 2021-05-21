@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class allNodesLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
-  override def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] =
+  override def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] =
     queryGraph.patternNodes
       .diff(queryGraph.argumentIds)
       .diff(skipIDs)
-      .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context)).toIndexedSeq
+      .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context))
 }

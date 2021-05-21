@@ -57,12 +57,12 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
 
   override def apply(qg: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val predicates = qg.selections.flatPredicates.toSet
+                     context: LogicalPlanningContext): Set[LogicalPlan] = {
+    val predicates = qg.selections.flatPredicatesSet
     val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
 
     // Find plans solving given property predicates together with any label predicates from QG
-    val result: Seq[LogicalPlan] = if (allLabelPredicatesMap.isEmpty) Seq.empty[LogicalPlan] else {
+    val result: Set[LogicalPlan] = if (allLabelPredicatesMap.isEmpty) Set.empty[LogicalPlan] else {
       val compatiblePropertyPredicates: Set[IndexCompatiblePredicate] = findIndexCompatiblePredicates(predicates, qg.argumentIds, context)
 
       for {
@@ -71,7 +71,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
         labelPredicates = allLabelPredicatesMap.getOrElse(variableName, Set.empty)
         plan <- producePlansForSpecificVariable(variableName, propertyPredicates._2, labelPredicates, qg.hints, qg.argumentIds, context, interestingOrderConfig)
       } yield plan
-    }.toSeq
+    }.toSet
 
     issueNotifications(result, qg, context)
 
@@ -136,7 +136,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
   private def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.indexesGetForLabel(labelId)
 
-  private def issueNotifications(result: Seq[LogicalPlan], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
+  private def issueNotifications(result: Set[LogicalPlan], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
     if (result.isEmpty) {
       val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
       DynamicPropertyNotifier.process(nonSolvable, IndexLookupUnfulfillableNotification, qg, context)

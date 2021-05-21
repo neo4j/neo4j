@@ -57,8 +57,11 @@ case class Selections private (predicates: Set[Predicate]) {
 
   def patternPredicatesGiven(ids: Set[String]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
 
+  def flatPredicatesSet: Set[Expression] =
+    predicates.map(_.expr)
+
   def flatPredicates: Seq[Expression] =
-    predicates.map(_.expr).toIndexedSeq
+    flatPredicatesSet.toIndexedSeq
 
   /**
    * The top level label predicates for each variable.

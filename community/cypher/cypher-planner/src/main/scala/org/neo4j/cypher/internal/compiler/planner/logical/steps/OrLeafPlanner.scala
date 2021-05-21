@@ -279,9 +279,9 @@ object OrLeafPlanner {
 
 case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
 
-  private val predicateKinds = Seq(WhereClausePredicateKind, InlinedRelationshipTypePredicateKind)
+  private val predicateKinds = Set(WhereClausePredicateKind, InlinedRelationshipTypePredicateKind)
 
-  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
     val pickBest = context.config.pickBestCandidate(context)
     val select = context.config.applySelections
 

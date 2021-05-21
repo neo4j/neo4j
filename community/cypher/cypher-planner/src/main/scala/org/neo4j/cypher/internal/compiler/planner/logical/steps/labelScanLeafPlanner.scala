@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
-  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    qg.selections.flatPredicates.flatMap {
+  override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan] = {
+    qg.selections.flatPredicatesSet.flatMap {
       case labelPredicate@HasLabels(variable@Variable(varName), labels) if !skipIDs.contains(varName) && context.planContext.canLookupNodesByLabel =>
       if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
         val labelName = labels.head

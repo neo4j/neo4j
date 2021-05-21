@@ -48,14 +48,10 @@ object leafPlanOptions extends LeafPlanFinder {
     val queryPlannerKit = config.toKit(interestingOrderConfig, context)
     val pickBest = config.pickBestCandidate(context)
 
-    // `candidates` can return the same plan, multiple times, thus we call `distinct` to have to compare less plans in `pickBest`.
-    // The reason for not using a Set at this point already, is that the order of `leafPlanners`
-    // secretly prefers index seeks over index scans over label scans if they have the same cost.
-    // Fixing this appropriately would be more intrusive.
-    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context).distinct
-    val leafPlanCandidateListsWithSelections = queryPlannerKit.select(leafPlanCandidateLists, queryGraph)
+    val leafPlanCandidates = config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context)
+    val leafPlanCandidatesWithSelections = queryPlannerKit.select(leafPlanCandidates, queryGraph)
 
-    val bestPlansPerAvailableSymbols = leafPlanCandidateListsWithSelections
+    val bestPlansPerAvailableSymbols = leafPlanCandidatesWithSelections
       // Group by available symbols which are part of the query graph.
       .groupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
       .values

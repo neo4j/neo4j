@@ -36,7 +36,7 @@ trait PlanTransformer {
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner {
-  def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan]
+  def apply(queryGraph: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Set[LogicalPlan]
 }
 
 /**

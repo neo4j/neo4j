@@ -45,8 +45,8 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
   override def apply(queryGraph: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    queryGraph.selections.flatPredicates.flatMap { e =>
+                     context: LogicalPlanningContext): Set[LogicalPlan] = {
+    queryGraph.selections.flatPredicatesSet.flatMap { e =>
       val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(n => Variable(n)(null))
       val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
         // MATCH (a)-[r]-(b) WHERE id(r) IN expr

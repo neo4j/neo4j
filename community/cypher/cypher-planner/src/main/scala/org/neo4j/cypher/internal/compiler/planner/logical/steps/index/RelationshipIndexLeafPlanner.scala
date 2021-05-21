@@ -53,14 +53,14 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
 
   override def apply(qg: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val predicates = qg.selections.flatPredicates.toSet
+                     context: LogicalPlanningContext): Set[LogicalPlan] = {
+    val predicates = qg.selections.flatPredicatesSet
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
       case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if pattern.coveredIds.intersect(qg.argumentIds).isEmpty => name -> pattern
     }).toMap
 
     // Find plans solving given property predicates together with any label predicates from QG
-    if (patternRelationshipsMap.isEmpty) Seq.empty[LogicalPlan] else {
+    if (patternRelationshipsMap.isEmpty) Set.empty[LogicalPlan] else {
       val compatiblePropertyPredicates = findIndexCompatiblePredicates(predicates, qg.argumentIds, context, patternRelationshipsMap.values)
 
       for {
@@ -70,7 +70,7 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
         plan <- producePlanForSpecificVariable(variableName, propertyPredicates._2, patternRelationship, qg.hints, qg.argumentIds, context,
           interestingOrderConfig)
       } yield plan
-    }.toSeq
+    }.toSet
   }
 
   override protected def implicitIndexCompatiblePredicates(context: LogicalPlanningContext,

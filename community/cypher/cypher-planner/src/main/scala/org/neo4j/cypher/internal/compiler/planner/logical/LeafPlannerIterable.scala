@@ -32,15 +32,15 @@ trait LeafPlannerIterable {
   def candidates(qg: QueryGraph,
                  f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
                  interestingOrderConfig: InterestingOrderConfig,
-                 context: LogicalPlanningContext): Seq[LogicalPlan]
+                 context: LogicalPlanningContext): Set[LogicalPlan]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan,
                           interestingOrderConfig: InterestingOrderConfig,
-                          context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    leafPlanners.flatMap(_.apply(qg, interestingOrderConfig, context)).map(f(_, qg))
+                          context: LogicalPlanningContext): Set[LogicalPlan] = {
+    leafPlanners.flatMap(_.apply(qg, interestingOrderConfig, context)).map(f(_, qg)).toSet
   }
 }
 
@@ -49,7 +49,7 @@ case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: Leaf
   override def candidates(qg: QueryGraph,
                           f: (LogicalPlan, QueryGraph) => LogicalPlan,
                           interestingOrderConfig: InterestingOrderConfig,
-                          context: LogicalPlanningContext): Seq[LogicalPlan] = {
+                          context: LogicalPlanningContext): Set[LogicalPlan] = {
     val priorityPlans = priority.candidates(qg, f, interestingOrderConfig, context)
     if (priorityPlans.nonEmpty) priorityPlans
     else fallback.candidates(qg, f, interestingOrderConfig, context)
