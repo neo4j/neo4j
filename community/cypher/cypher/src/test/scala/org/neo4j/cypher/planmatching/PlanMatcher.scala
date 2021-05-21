@@ -103,15 +103,28 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
     containingArgumentRegex(s".*cache\\[$varName\\.$propName].*".r)
   }
 
-  def containingArgumentForIndexPlan(varName: String,
-                                     labelName: String,
-                                     properties: Seq[String],
-                                     unique: Boolean = false,
-                                     caches: Boolean = false): PlanMatcher = {
+  def containingArgumentForNodeIndexPlan(varName: String,
+                                         labelName: String,
+                                         properties: Seq[String],
+                                         unique: Boolean = false,
+                                         caches: Boolean = false): PlanMatcher = {
     val u = if (unique) "UNIQUE " else ""
     val p = properties.mkString(", ")
     val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
     containingArgumentRegex(s"$u$varName:$labelName\\($p\\).*$c".r)
+  }
+
+  def containingArgumentForRelIndexPlan(varName: String,
+                                        start: String,
+                                        typeName: String,
+                                        end: String,
+                                        properties: Seq[String],
+                                        directed: Boolean,
+                                        caches: Boolean = false): PlanMatcher = {
+    val p = properties.mkString(", ")
+    val c = if (caches) properties.map(p => s", cache\\[$varName\\.$p]").mkString else ""
+    val endArrow = if (directed) "->" else "-"
+    containingArgumentRegex(s"\\($start\\)-\\[$varName:$typeName\\($p\\)\\]$endArrow\\($end\\).*$c".r)
   }
 
   def containingArgumentRegex(argument: Regex*): PlanMatcher
