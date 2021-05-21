@@ -52,8 +52,8 @@ public class FindRelationshipsIT
     private static Stream<Arguments> indexConfiguration()
     {
         return Stream.of(
-                Arguments.of( "with token index", false ),
-                Arguments.of( "without token index", true )
+                Arguments.of( "with token indexes", false ),
+                Arguments.of( "without token indexes", true )
         );
     }
 
@@ -151,11 +151,8 @@ public class FindRelationshipsIT
             try ( Transaction tx = db.beginTx() )
             {
                 // Drop the default indexes to be able to test fallback to store scan
-                Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-                for ( IndexDefinition index : indexes )
-                {
-                    index.drop();
-                }
+                tx.schema().getIndexes().forEach( IndexDefinition::drop );
+                tx.commit();
             }
         }
     }

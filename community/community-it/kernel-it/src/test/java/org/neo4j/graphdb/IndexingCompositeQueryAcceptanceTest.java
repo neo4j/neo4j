@@ -51,7 +51,7 @@ public class IndexingCompositeQueryAcceptanceTest
 
     public static Stream<Arguments> data()
     {
-        return generate( DataSet.values(), array( IndexingMode.PROPERTY, IndexingMode.TOKEN ), EntityTypes.values() );
+        return generate( DataSet.values(), IndexingMode.values(), EntityTypes.values() );
     }
 
     private static Stream<Arguments> generate( DataSet[] dataSets, IndexingMode[] indexingModes, EntityControl[] entityControls )
@@ -76,6 +76,14 @@ public class IndexingCompositeQueryAcceptanceTest
     {
         switch ( withIndex )
         {
+        case NONE:
+            try ( Transaction tx = db.beginTx() )
+            {
+                // remove all indexes, including the token indexes
+                tx.schema().getIndexes().forEach( IndexDefinition::drop );
+                tx.commit();
+            }
+            break;
         case PROPERTY:
             String indexName;
             try ( Transaction tx = db.beginTx() )
@@ -91,7 +99,6 @@ public class IndexingCompositeQueryAcceptanceTest
             }
             break;
         case TOKEN:
-        case NONE:
         default:
             break;
         }
@@ -297,8 +304,8 @@ public class IndexingCompositeQueryAcceptanceTest
 
     enum IndexingMode
     {
-        NONE, // to be used when NLSS and RTSS become optional
-        TOKEN, // NLSS or RTSS only
+        NONE, // No index, fallback to scan
+        TOKEN, // NLI or RTI only
         PROPERTY // property index
     }
 
