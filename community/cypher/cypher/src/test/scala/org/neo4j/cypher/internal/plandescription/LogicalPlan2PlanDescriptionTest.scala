@@ -530,31 +530,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("RelationshipIndexSeek") {
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop)]->(y)"), 23.0),
-      planDescription(id, "DirectedRelationshipIndexScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipIndexScan", NoChildren, Seq(details("(x)-[r:R(Prop)]->(y) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop)]-(y)"), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexScan", NoChildren, Seq(details("(x)-[r:R(Prop)]-(y) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
 
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = _ => GetValue), 23.0),
-      planDescription(id, "DirectedRelationshipIndexSeek", NoChildren, Seq(details("r:R(Prop) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipIndexSeek", NoChildren, Seq(details("(x)-[r:R(Prop)]->(y) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = _ => GetValue), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexSeek", NoChildren, Seq(details("r:R(Prop) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexSeek", NoChildren, Seq(details("(x)-[r:R(Prop)]-(y) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
 
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop CONTAINS 'Foo')]->(y)"), 23.0),
-      planDescription(id, "DirectedRelationshipIndexContainsScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipIndexContainsScan", NoChildren, Seq(details("(x)-[r:R(Prop)]->(y) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop CONTAINS 'Foo')]-(y)"), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexContainsScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexContainsScan", NoChildren, Seq(details("(x)-[r:R(Prop)]-(y) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
 
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop ENDS WITH 'Foo')]->(y)"), 23.0),
-      planDescription(id, "DirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("(x)-[r:R(Prop)]->(y) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop ENDS WITH 'Foo')]-(y)"), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("(x)-[r:R(Prop)]-(y) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
   }
 
   test("RelationshipTypeScan") {

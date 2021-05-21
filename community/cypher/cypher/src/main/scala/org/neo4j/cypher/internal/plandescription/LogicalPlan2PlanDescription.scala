@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
-import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -292,38 +292,38 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val (_, indexDescs) = indexLeafPlans.map(l => getNodeIndexDescriptions(l.idName, l.label, l.properties.map(_.propertyKeyToken), l.valueExpr, unique = l.isInstanceOf[NodeUniqueIndexSeek], readOnly, p.cachedProperties)).unzip
         PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", NoChildren, Seq(Details(indexDescs)), variables, withRawCardinalities)
       case p@DirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getRelIndexDescriptions(idName, typ, properties.map(_.propertyKeyToken), valueExpr, directed = true, p.cachedProperties)
+        val (indexMode, indexDesc) = getRelIndexDescriptions(idName, start, typ, end, isDirected = true, properties.map(_.propertyKeyToken), valueExpr, directed = true, p.cachedProperties)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables)
       case p@UndirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, _) =>
-        val (indexMode, indexDesc) = getRelIndexDescriptions(idName, typ, properties.map(_.propertyKeyToken), valueExpr, directed = false, p.cachedProperties)
+        val (indexMode, indexDesc) = getRelIndexDescriptions(idName, start, typ, end, isDirected = false, properties.map(_.propertyKeyToken), valueExpr, directed = false, p.cachedProperties)
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables,  withRawCardinalities)
-      case p@DirectedRelationshipIndexScan(idName, _, _, typ, properties, _, _) =>
+      case p@DirectedRelationshipIndexScan(idName, start, end, typ, properties, _, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
-        val info = indexInfoString(idName, unique = false, typ, tokens, predicates, p.cachedProperties)
+        val info = relIndexInfoString(idName, start, typ, end, isDirected = true, tokens, predicates, p.cachedProperties)
         PlanDescriptionImpl(id, "DirectedRelationshipIndexScan", NoChildren, Seq(Details(info)), variables,  withRawCardinalities)
-      case p@UndirectedRelationshipIndexScan(idName, _, _, typ, properties, _, _) =>
+      case p@UndirectedRelationshipIndexScan(idName, start, end, typ, properties, _, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
-        val info = indexInfoString(idName, unique = false, typ, tokens, predicates, p.cachedProperties)
+        val info = relIndexInfoString(idName, start, typ, end, isDirected = false,  tokens, predicates, p.cachedProperties)
         PlanDescriptionImpl(id, "UndirectedRelationshipIndexScan", NoChildren, Seq(Details(info)), variables,  withRawCardinalities)
-      case p@DirectedRelationshipIndexContainsScan(idName, _, _, typ, property, valueExpr, _, _) =>
+      case p@DirectedRelationshipIndexContainsScan(idName, start, end, typ, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} CONTAINS ${asPrettyString(valueExpr)}"
-        val info = indexInfoString(idName, unique = false, typ, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        val info = relIndexInfoString(idName, start, typ, end, isDirected = true, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "DirectedRelationshipIndexContainsScan", NoChildren, Seq(Details(info)), variables)
-      case p@UndirectedRelationshipIndexContainsScan(idName, _, _, typ, property, valueExpr, _, _) =>
+      case p@UndirectedRelationshipIndexContainsScan(idName, start, end, typ, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} CONTAINS ${asPrettyString(valueExpr)}"
-        val info = indexInfoString(idName, unique = false, typ, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        val info = relIndexInfoString(idName, start, typ, end, isDirected = false, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "UndirectedRelationshipIndexContainsScan", NoChildren, Seq(Details(info)), variables,  withRawCardinalities)
-      case p@DirectedRelationshipIndexEndsWithScan(idName, _, _, typ, property, valueExpr, _, _) =>
+      case p@DirectedRelationshipIndexEndsWithScan(idName, start, end, typ, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} ENDS WITH ${asPrettyString(valueExpr)}"
-        val info = indexInfoString(idName, unique = false, typ, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        val info = relIndexInfoString(idName, start, typ, end, isDirected = true, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "DirectedRelationshipIndexEndsWithScan", NoChildren, Seq(Details(info)), variables,  withRawCardinalities)
-      case p@UndirectedRelationshipIndexEndsWithScan(idName, _, _, typ, property, valueExpr, _, _) =>
+      case p@UndirectedRelationshipIndexEndsWithScan(idName, start, end, typ, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} ENDS WITH ${asPrettyString(valueExpr)}"
-        val info = indexInfoString(idName, unique = false, typ, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        val info = relIndexInfoString(idName, start, typ, end, isDirected = false, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "UndirectedRelationshipIndexEndsWithScan", NoChildren, Seq(Details(info)), variables,  withRawCardinalities)
 
       case plans.Argument(argumentIds) if argumentIds.nonEmpty =>
@@ -358,19 +358,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
       case p@NodeIndexContainsScan(idName, label, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} CONTAINS ${asPrettyString(valueExpr)}"
-        val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        val info = nodeIndexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case p@NodeIndexEndsWithScan(idName, label, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} ENDS WITH ${asPrettyString(valueExpr)}"
-        val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
+        val info = nodeIndexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case p@NodeIndexScan(idName, label, properties, _, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
-        val info = indexInfoString(idName, unique = false, label, tokens, predicates, p.cachedProperties)
+        val info = nodeIndexInfoString(idName, unique = false, label, tokens, predicates, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case ProcedureCall(_, call) =>
@@ -922,13 +922,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
     val name = nodeIndexOperatorName(valueExpr, unique, readOnly)
     val predicate = indexPredicateString(propertyKeys, valueExpr)
-    val info = indexInfoString(idName, unique, label, propertyKeys, predicate, caches)
+    val info = nodeIndexInfoString(idName, unique, label, propertyKeys, predicate, caches)
 
     (name, info)
   }
 
   private def getRelIndexDescriptions(idName: String,
+                                      start: String,
                                       typeToken: RelationshipTypeToken,
+                                      end: String,
+                                      isDirected: Boolean,
                                       propertyKeys: Seq[PropertyKeyToken],
                                       valueExpr: QueryExpression[expressions.Expression],
                                       directed: Boolean,
@@ -936,7 +939,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
     val name = relationshipIndexOperatorName(valueExpr, directed)
     val predicate = indexPredicateString(propertyKeys, valueExpr)
-    val info = indexInfoString(idName, unique = false, typeToken, propertyKeys, predicate, caches)
+    val info = relIndexInfoString(idName, start, typeToken, end, isDirected, propertyKeys, predicate, caches)
+
     (name, info)
   }
 
@@ -1128,15 +1132,31 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     pretty"(${asPrettyString(from)})$left$relInfo$right(${asPrettyString(to)})"
   }
 
-  private def indexInfoString(idName: String,
-                              unique: Boolean,
-                              label: NameToken[_],
-                              propertyKeys: Seq[PropertyKeyToken],
-                              predicate: PrettyString,
-                              caches: Seq[expressions.Expression]): PrettyString = {
+  private def nodeIndexInfoString(idName: String,
+                                  unique: Boolean,
+                                  label: NameToken[_],
+                                  propertyKeys: Seq[PropertyKeyToken],
+                                  predicate: PrettyString,
+                                  caches: Seq[expressions.Expression]): PrettyString = {
     val uniqueStr = if (unique) pretty"UNIQUE " else pretty""
     val propertyKeyString = propertyKeys.map(x => asPrettyString(x.name)).mkPrettyString(SEPARATOR)
     pretty"$uniqueStr${asPrettyString(idName)}:${asPrettyString(label.name)}($propertyKeyString) WHERE $predicate${cachesSuffix(caches)}"
+  }
+
+  private def relIndexInfoString(idName: String,
+                                 start: String,
+                                 relType: NameToken[_],
+                                 end: String,
+                                 isDirected: Boolean,
+                                 propertyKeys: Seq[PropertyKeyToken],
+                                 predicate: PrettyString,
+                                 caches: Seq[expressions.Expression]): PrettyString = {
+    val propertyKeyString = propertyKeys.map(x => asPrettyString(x.name)).mkPrettyString(SEPARATOR)
+    val left =  pretty"-"
+    val right = if (isDirected) pretty"->" else pretty"-"
+    val relInfo = pretty"[${asPrettyString(idName)}:${asPrettyString(relType.name)}($propertyKeyString)]"
+    val pattern =  pretty"(${asPrettyString(start)})$left$relInfo$right(${asPrettyString(end)})"
+    pretty"$pattern WHERE $predicate${cachesSuffix(caches)}"
   }
 
   private def aggregationInfo(groupingExpressions: Map[String, Expression],
