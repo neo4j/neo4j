@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -107,10 +105,6 @@ import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
                                               with LogicalPlanningTestSupport2
                                               with LogicalPlanningIntegrationTestSupport {
-
-  override val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.withSettings(
-    Map(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes -> java.lang.Boolean.TRUE)
-  )
 
   test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
     val plan = (new given {

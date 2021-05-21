@@ -87,8 +87,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-  private val pipeMapper =
-    InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator], enableScanStoreAsTokenIndexes = true)(semanticTable)
+  private val pipeMapper = InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator])(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =
     PipeTreeBuilder(pipeMapper).build(logicalPlan)

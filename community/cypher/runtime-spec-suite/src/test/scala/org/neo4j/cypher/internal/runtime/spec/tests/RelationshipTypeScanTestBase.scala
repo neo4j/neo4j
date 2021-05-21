@@ -26,13 +26,12 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes
 
 abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
                                                                sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition.copyWith(enable_scan_stores_as_token_indexes -> java.lang.Boolean.TRUE), runtime) {
+                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should support directed relationship scan") {
     // given

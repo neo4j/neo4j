@@ -98,22 +98,17 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
       Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))))
     } else None
 
-    QueryIndexes(labelScan, indexes, labelTokenIndex, typeTokenIndex)
+    QueryIndexes(indexes, labelTokenIndex, typeTokenIndex)
   }
 
   private case class InternalIndexReference(token: NameId, properties: Seq[Int])
   private case class InternalTokenReference(token: NameId)
 }
 
-case class QueryIndexes(private val labelScan: Boolean,
-                        private val indexes: Array[IndexDescriptor],
+case class QueryIndexes(private val indexes: Array[IndexDescriptor],
                         private val labelTokenIndex: Option[IndexDescriptor],
                         private val typeTokenIndex: Option[IndexDescriptor]) {
   def initiateLabelAndSchemaIndexes(queryContext: QueryContext): Array[IndexReadSession] = {
-    //TODO once completely moved over to new API this and prepareForLabelScans can go away
-    if (labelScan) {
-      queryContext.transactionalContext.dataRead.prepareForLabelScans()
-    }
     val indexReadSessions = new Array[IndexReadSession](indexes.length)
     var i = 0
     while (i < indexReadSessions.length) {

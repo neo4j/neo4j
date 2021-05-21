@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.lang.Boolean.FALSE
-import java.net.URL
-import java.util.concurrent.atomic.AtomicReference
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.greaterThan
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
@@ -67,7 +64,6 @@ import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
@@ -76,6 +72,9 @@ import org.neo4j.resources.CpuClock
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
+import java.lang.Boolean.FALSE
+import java.net.URL
+import java.util.concurrent.atomic.AtomicReference
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 class TransactionBoundQueryContextTest extends CypherFunSuite {
@@ -90,8 +89,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   override def beforeEach() {
     super.beforeEach()
-    managementService = new TestDatabaseManagementServiceBuilder().impermanent().
-      setConfig(RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, java.lang.Boolean.TRUE).build()
+    managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
     transactionFactory = mock[KernelTransactionFactory]

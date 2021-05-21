@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -44,10 +42,6 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
   private def register[X](registry: IdRegistry[X], elements: X*): Goal = Goal(registry.registerAll(elements))
 
   private val singleComponentPlanner = SingleComponentPlanner()(mock[IDPQueryGraphSolverMonitor])
-
-  override val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.withSettings(
-    Map(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes -> java.lang.Boolean.TRUE)
-  )
 
   test("produces nested index joins of two components connected by property equality") {
     val table = IDPTable.empty[LogicalPlan]
