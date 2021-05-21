@@ -560,11 +560,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("RelationshipTypeScan") {
     assertGood(
       attach(DirectedRelationshipTypeScan("r", "x", RelTypeName("R")(InputPosition.NONE), "y", Set.empty, IndexOrderNone), 23.0),
-      planDescription(id, "DirectedRelationshipTypeScan", NoChildren, Seq(details("r:R")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipTypeScan", NoChildren, Seq(details("(x)-[r:R]->(y)")), Set("r", "x", "y")))
 
     assertGood(
       attach(UndirectedRelationshipTypeScan("r", "x", RelTypeName("R")(InputPosition.NONE), "y", Set.empty, IndexOrderNone), 23.0),
-      planDescription(id, "UndirectedRelationshipTypeScan", NoChildren, Seq(details("r:R")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipTypeScan", NoChildren, Seq(details("(x)-[r:R]-(y)")), Set("r", "x", "y")))
   }
 
   test("MultiNodeIndexSeek") {

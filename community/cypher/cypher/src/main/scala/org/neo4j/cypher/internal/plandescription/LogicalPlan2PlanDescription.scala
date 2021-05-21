@@ -341,12 +341,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, false))
         PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details), variables, withRawCardinalities)
 
-      case DirectedRelationshipTypeScan(idName, _, typeName, _, _, _) =>
-        val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(typeName.name)}"
+      case DirectedRelationshipTypeScan(idName, start, typeName, end, _, _) =>
+        val prettyDetails = pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:${asPrettyString(typeName.name)}]->(${asPrettyString(end)})"
         PlanDescriptionImpl(id, "DirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables, withRawCardinalities)
 
-      case UndirectedRelationshipTypeScan(idName, _, typeName, _, _, _) =>
-        val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(typeName.name)}"
+      case UndirectedRelationshipTypeScan(idName, start, typeName, end, _, _) =>
+        val prettyDetails = pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:${asPrettyString(typeName.name)}]-(${asPrettyString(end)})"
         PlanDescriptionImpl(id, "UndirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables, withRawCardinalities)
 
       case Input(nodes, rels, inputVars, _) =>
