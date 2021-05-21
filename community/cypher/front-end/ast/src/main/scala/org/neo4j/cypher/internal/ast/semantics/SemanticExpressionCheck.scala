@@ -158,7 +158,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:UnarySubtract =>
         check(ctx, x.arguments, x +: parents) chain
-          checkTypes(x, x.signatures)
+          checkTypes(x, x.signatures) chain
+          checkUnarySubtractBoundary(x)
 
       case x:UnaryAdd =>
         check(ctx, x.arguments, x +: parents) chain
@@ -634,6 +635,13 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     (subtract.lhs, subtract.rhs) match {
       case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.subtractExact(l.value, r.value)).isFailure =>
         SemanticError(s"result of ${l.stringVal} - ${r.stringVal} cannot be represented as an integer", subtract.position)
+      case _ => SemanticCheckResult.success
+    }
+
+  private def checkUnarySubtractBoundary(subtract: UnarySubtract): SemanticCheck =
+    subtract.rhs match {
+      case r:IntegerLiteral if Try(Math.subtractExact(0, r.value)).isFailure =>
+        SemanticError(s"result of -${r.stringVal} cannot be represented as an integer", subtract.position)
       case _ => SemanticCheckResult.success
     }
 
