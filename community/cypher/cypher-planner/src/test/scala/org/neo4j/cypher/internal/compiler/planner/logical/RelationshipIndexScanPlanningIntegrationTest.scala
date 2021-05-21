@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -39,7 +38,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
-      .enablePlanningRelationshipIndexes()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
@@ -82,7 +80,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'test' RETURN r") should equal(
@@ -99,7 +96,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop CONTAINS 'test' RETURN r") should equal(
@@ -116,7 +112,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan("MATCH (a)<-[r:REL]-(b) WHERE r.prop CONTAINS 'test' RETURN r") should equal(
@@ -133,7 +128,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
@@ -150,7 +144,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
@@ -167,7 +160,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan("MATCH (a)<-[r:REL]-(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
@@ -263,19 +255,6 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)")
         .build()
     )
-  }
-
-  test("should not plan relationship index scan when not enabled") {
-    val planner = plannerBuilder()
-      .enablePlanningRelationshipIndexes(false)
-      .build()
-
-    withClue("Used relationship index even when not enabled:") {
-      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r").treeExists {
-        case _: UndirectedRelationshipIndexScan => true
-        case _: DirectedRelationshipIndexScan => true
-      } should be(false)
-    }
   }
 
   test("should not (yet) plan relationship index scan with filter for already bound start node") {
@@ -436,7 +415,6 @@ test("scan on inexact predicate if argument ids not provided") {
 
   test("with two possible relationship indexes, should plan index scan and expand if expands decrease cardinality") {
     val planner = super.plannerBuilder()
-      .enablePlanningRelationshipIndexes()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
       .setLabelCardinality("B", 700)
@@ -470,7 +448,6 @@ test("scan on inexact predicate if argument ids not provided") {
 
   test("with two possible relationship indexes, should plan two index scans and node hash join if expands increase cardinality and indexes are very selective") {
     val planner = super.plannerBuilder()
-      .enablePlanningRelationshipIndexes()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 50)
       .setLabelCardinality("B", 70)

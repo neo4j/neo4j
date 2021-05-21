@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
@@ -78,7 +77,6 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
                       relationshipByTypeLookupEnabled: Boolean = false,
-                      enablePlanningRelationshipIndexes: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -298,11 +296,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(relationshipByTypeLookupEnabled = enable))
   }
 
-  def enablePlanningRelationshipIndexes(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(options = options.copy(enablePlanningRelationshipIndexes = enable))
-  }
-
-
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -516,9 +509,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
   }
 
   def planState(queryString: String): LogicalPlanState = {
-    val plannerConfiguration = CypherPlannerConfiguration.withSettings(
-      Map(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes -> options.enablePlanningRelationshipIndexes.asInstanceOf[AnyRef])
-    )
+    val plannerConfiguration = CypherPlannerConfiguration.defaults()
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
     val metrics = SimpleMetricsFactory.newMetrics(planContext.statistics, simpleExpressionEvaluator, plannerConfiguration, options.executionModel)

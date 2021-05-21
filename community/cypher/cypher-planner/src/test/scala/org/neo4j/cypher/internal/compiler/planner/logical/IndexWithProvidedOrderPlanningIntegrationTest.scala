@@ -317,7 +317,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -341,7 +340,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -523,7 +521,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -545,7 +542,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -567,7 +563,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -589,7 +584,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -668,7 +662,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setRelationshipCardinality("()-[:REL2]-()", 50)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.1, withValues = true, providesOrder = orderCapability)
         .addRelationshipIndex("REL2", Seq("prop"), 1.0, 0.02, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -709,7 +702,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setRelationshipCardinality("()-[:REL2]-()", 500)
         .addRelationshipIndex("REL2", Seq("prop"), 0.1, 0.002)
         .enableRelationshipByTypeLookup()
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -881,7 +873,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -903,7 +894,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -972,7 +962,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -1001,7 +990,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(100)
         .setRelationshipCardinality("()-[:REL]-()", 100)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -1042,7 +1030,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
         .addRelationshipExistenceConstraint("REL", "prop")
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -1155,7 +1142,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -1181,7 +1167,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .setAllRelationshipsCardinality(10)
         .setRelationshipCardinality("()-[:REL]-()", 10)
         .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true, providesOrder = orderCapability)
-        .enablePlanningRelationshipIndexes()
         .build()
 
       val plan = planner
@@ -1208,7 +1193,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     .setAllNodesCardinality(100)
     .setAllRelationshipsCardinality(10)
     .setRelationshipCardinality("()-[:REL]-()", 10)
-    .enablePlanningRelationshipIndexes()
 
   // (orderByString, orderCapability, indexOrder, shouldFullSort, sortOnOnlyOne, sortItems, shouldPartialSort, alreadySorted)
   private def compositeIndexOnRangeTestData(variable: String) = Seq(
@@ -2113,7 +2097,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   private def relationshipIndexMinMaxSetup = plannerBuilder()
     .enableRelationshipByTypeLookup()
-    .enablePlanningRelationshipIndexes()
     .setAllNodesCardinality(500)
     .setAllRelationshipsCardinality(500)
     .setRelationshipCardinality("()-[:REL]->()", 100)

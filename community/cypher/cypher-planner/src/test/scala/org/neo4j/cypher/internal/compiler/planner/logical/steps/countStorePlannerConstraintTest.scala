@@ -196,7 +196,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -214,7 +213,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -234,7 +232,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -254,7 +251,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -273,7 +269,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -292,7 +287,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -312,7 +306,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setRelationshipCardinality("()-[:Q]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
       .addRelationshipExistenceConstraint("Q", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -334,7 +327,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setRelationshipCardinality("()-[:R]-()", 10)
       .setRelationshipCardinality("()-[:Q]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -352,7 +344,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:R]-()", 10)
       .setRelationshipCardinality("()-[:Q]-()", 10)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -373,7 +364,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setRelationshipCardinality("()-[:Q]-()", 10)
       .addRelationshipExistenceConstraint("R", "prop")
       .addRelationshipExistenceConstraint("Q", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -396,7 +386,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setRelationshipCardinality("()-[:Q]-(:A)", 7)
       .addRelationshipExistenceConstraint("R", "prop")
       .addRelationshipExistenceConstraint("Q", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -421,7 +410,6 @@ class countStorePlannerConstraintTest extends CypherFunSuite with LogicalPlannin
       .setRelationshipCardinality("()-[:R]-(:B)", 7)
       .setRelationshipCardinality("(:A)-[:R]-(:B)", 5)
       .addRelationshipExistenceConstraint("R", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner

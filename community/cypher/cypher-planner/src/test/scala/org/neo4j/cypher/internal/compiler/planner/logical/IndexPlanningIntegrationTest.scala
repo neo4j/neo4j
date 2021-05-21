@@ -333,7 +333,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
       .build()
 
@@ -370,7 +369,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
       .build()
 
@@ -409,7 +407,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
       .build()
 
@@ -450,7 +447,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
       .build()
 
@@ -491,7 +487,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
       .build()
 
@@ -533,7 +528,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 1.0)
       .addRelationshipIndex("REL", Seq("counted"), 1.0, 1.0)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
       .build()
 

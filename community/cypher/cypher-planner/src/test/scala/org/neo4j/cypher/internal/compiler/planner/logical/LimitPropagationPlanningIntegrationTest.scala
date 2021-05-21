@@ -52,7 +52,6 @@ class LimitPropagationPlanningIntegrationTest
       .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.ASC)
       .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.ASC)
       .addRelationshipIndex("REL_CB", Seq("id"), 0.5, 1.0 / 10000, providesOrder = IndexOrderCapability.ASC)
-      .enablePlanningRelationshipIndexes()
       .build()
 
   private def assertExpectedPlanForQueryGivenStatistics(queryString: String,

@@ -2012,36 +2012,4 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     plan shouldEqual expectedPlan
   }
-
-  // Remove or update once relationship index are supported in the planner
-  test("should not use relationship index yet") {
-    val q =
-      """MATCH (a)-[r:REL]->(b)
-        |WHERE r.prop > 100
-        |RETURN r
-        |ORDER BY r.prop""".stripMargin
-
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.5, providesOrder = IndexOrderCapability.BOTH)
-      .build()
-
-    val plan = cfg.plan(q).stripProduceResults
-
-    val planWithRelIndex = cfg.subPlanBuilder()
-      .relationshipIndexOperator("(a)-[r:REL(prop > 100)]->(b)", indexOrder = IndexOrderAscending)
-      .build()
-
-    val planWithSort = cfg.subPlanBuilder()
-      .sort(Seq(Ascending("r.prop")))
-      .projection("cacheR[r.prop] AS `r.prop`")
-      .filter("cacheRFromStore[r.prop] > 100")
-      .expandAll("(a)-[r:REL]->(b)")
-      .allNodeScan("a")
-      .build()
-
-    plan shouldNot equal(planWithRelIndex)
-    plan shouldEqual planWithSort
-  }
 }

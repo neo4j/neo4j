@@ -54,9 +54,6 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
   override def apply(qg: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    if (!context.enablePlanningRelationshipIndexes)
-      return Seq.empty
-
     val predicates = qg.selections.flatPredicates.toSet
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
       case pattern@PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if pattern.coveredIds.intersect(qg.argumentIds).isEmpty => name -> pattern

@@ -595,7 +595,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
   test("should solve pattern comprehension for relationship index seek") {
     val planner = plannerBuilder()
-      .enablePlanningRelationshipIndexes()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)

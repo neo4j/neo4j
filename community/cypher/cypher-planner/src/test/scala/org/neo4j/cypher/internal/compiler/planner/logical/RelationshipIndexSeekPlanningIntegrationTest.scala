@@ -33,7 +33,6 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
-      .enablePlanningRelationshipIndexes()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
@@ -123,19 +122,6 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       )
     }
 
-    test(s"should not plan relationship index seek when not enabled for $pred") {
-      val planner = plannerBuilder()
-        .enablePlanningRelationshipIndexes(false)
-        .build()
-
-      withClue("Used relationship index even when not enabled:") {
-        planner.plan(s"MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r").treeExists {
-          case _: UndirectedRelationshipIndexSeek => true
-          case _: DirectedRelationshipIndexSeek => true
-        } should be(false)
-      }
-    }
-
     test(s"should not (yet) plan relationship index seek with filter for already bound start node for $pred") {
       val planner = plannerBuilder().build()
       withClue("Used relationship index when not expected:") {
@@ -222,7 +208,6 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
   test("should pick index with smaller selectivity") {
     val planner = super.plannerBuilder()
-      .enablePlanningRelationshipIndexes()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)

@@ -315,7 +315,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .setRelationshipCardinality("()-[:REL2]-()", 50)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = cfg.plan(

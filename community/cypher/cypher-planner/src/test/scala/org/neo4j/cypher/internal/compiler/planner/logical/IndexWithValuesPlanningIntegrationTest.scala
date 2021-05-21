@@ -746,7 +746,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan(query) should equal(
@@ -766,7 +765,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan(query) should equal(
@@ -786,7 +784,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan(query) should equal(
@@ -826,7 +823,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -848,7 +844,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -892,7 +887,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -936,7 +930,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -978,7 +971,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
       .addRelationshipExistenceConstraint("REL", "prop")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -1021,7 +1013,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = true)
       .addRelationshipExistenceConstraint("REL", "prop1")
       .addRelationshipExistenceConstraint("REL", "prop2")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -1092,7 +1083,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01)
       .addRelationshipExistenceConstraint("REL", "prop1")
       .addRelationshipExistenceConstraint("REL", "prop2")
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -1173,7 +1163,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan(query) should equal(
@@ -1193,7 +1182,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan(query) should equal(
@@ -1213,7 +1201,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     planner.plan(query) should equal(
@@ -1254,7 +1241,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -1295,7 +1281,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -1336,7 +1321,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = true)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -1377,7 +1361,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
-      .enablePlanningRelationshipIndexes()
       .build()
 
     val plan = planner
@@ -1397,7 +1380,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, withValues = withValues)
-      .enablePlanningRelationshipIndexes()
 
   test("should plan seek with GetValue when the relationship property is projected") {
     val query = "MATCH (a)-[r:REL]-(b) WHERE r.prop = 123 RETURN r.prop"
@@ -1528,7 +1510,6 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .addRelationshipIndex("REL", Seq("prop1", "prop2"), 1.0, 0.01, withValues = withValues)
       .addRelationshipExistenceConstraint("REL", "prop1")
       .addRelationshipExistenceConstraint("REL", "prop2")
-      .enablePlanningRelationshipIndexes()
       .build()
 
   test("should plan seek (relationship) with GetValue when composite existence constraint on projected property") {

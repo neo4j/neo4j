@@ -98,7 +98,6 @@ case object QueryPlanner
       idGen = context.logicalPlanIdGen,
       executionModel = context.executionModel,
       debugOptions = context.debugOptions,
-      enablePlanningRelationshipIndexes = context.config.enablePlanningRelationshipIndexes
     )
   }
 

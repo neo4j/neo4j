@@ -82,7 +82,6 @@ class CypherConfiguration private (val config: Config) {
   val enableMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
   val useJavaCCParser: Boolean = config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED
   val disallowSplittingTop: Boolean = config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
-  val enablePlanningRelationshipIndexes: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_planning_relationship_indexes)
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)

@@ -366,7 +366,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         idGen = idGen,
         executionModel = ExecutionModel.default,
         debugOptions = CypherDebugOptions.default,
-        enablePlanningRelationshipIndexes = cypherCompilerConfig.enablePlanningRelationshipIndexes,
       )
       f(config, ctx)
     }
@@ -390,7 +389,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         idGen = idGen,
         executionModel = ExecutionModel.default,
         debugOptions = CypherDebugOptions.default,
-        enablePlanningRelationshipIndexes = cypherCompilerConfig.enablePlanningRelationshipIndexes,
       )
       f(config, ctx)
     }

@@ -143,5 +143,4 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def obfuscateLiterals: Boolean = config.obfuscateLiterals
   def pipelinedBatchSizeSmall: Int = config.pipelinedBatchSizeSmall
   def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
-  def enablePlanningRelationshipIndexes: Boolean = config.enablePlanningRelationshipIndexes
 }

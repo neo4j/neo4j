@@ -52,7 +52,6 @@ class OrLeafPlanningIntegrationTest
       .setAllRelationshipsCardinality(10)
       .setRelationshipCardinality("()-[:REL1]->()", 5)
       .setRelationshipCardinality("()-[:REL2]->()", 5)
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
 
   // This config favors linear plans without union/distinct in most cases.
@@ -64,7 +63,6 @@ class OrLeafPlanningIntegrationTest
       .setAllRelationshipsCardinality(2)
       .setRelationshipCardinality("()-[:REL1]->()", 1)
       .setRelationshipCardinality("()-[:REL2]->()", 1)
-      .enablePlanningRelationshipIndexes()
       .enableRelationshipByTypeLookup()
 
   test("should work with index seeks of property disjunctions") {
