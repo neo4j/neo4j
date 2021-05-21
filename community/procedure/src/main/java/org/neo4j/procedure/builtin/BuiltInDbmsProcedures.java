@@ -170,6 +170,7 @@ public class BuiltInDbmsProcedures
         Set<String> browserSettings = Stream.of( "browser.allow_outgoing_connections",
                                                  "browser.credential_timeout",
                                                  "browser.retain_connection_credentials",
+                                                 "browser.retain_editor_history",
                                                  "dbms.security.auth_enabled",
                                                  "browser.remote_content_hostname_whitelist",
                                                  "browser.post_connect_cmd",

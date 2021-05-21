@@ -409,6 +409,7 @@ class BuiltInProceduresTest
         settings.put( SettingImpl.newBuilder( "browser.allow_outgoing_connections", SettingValueParsers.STRING, "" ).build(), "" );
         settings.put( SettingImpl.newBuilder( "browser.credential_timeout", SettingValueParsers.STRING, "" ).build(), "" );
         settings.put( SettingImpl.newBuilder( "browser.retain_connection_credentials", SettingValueParsers.STRING, "" ).build(), "" );
+        settings.put( SettingImpl.newBuilder( "browser.retain_editor_history", SettingValueParsers.STRING, "" ).build(), "" );
         settings.put( SettingImpl.newBuilder( "dbms.security.auth_enabled", SettingValueParsers.STRING, "" ).build(), "" );
         settings.put( SettingImpl.newBuilder( "browser.remote_content_hostname_whitelist", SettingValueParsers.STRING, "" ).build(), "" );
         settings.put( SettingImpl.newBuilder( "browser.post_connect_cmd", SettingValueParsers.STRING, "" ).build(), "" );
@@ -426,6 +427,7 @@ class BuiltInProceduresTest
                 record( "browser.allow_outgoing_connections", "browser.allow_outgoing_connections, a string", "", false ),
                 record( "browser.credential_timeout", "browser.credential_timeout, a string", "", false ),
                 record( "browser.retain_connection_credentials", "browser.retain_connection_credentials, a string", "", false ),
+                record( "browser.retain_editor_history", "browser.retain_editor_history, a string", "", false ),
                 record( "dbms.security.auth_enabled", "dbms.security.auth_enabled, a string", "", false ),
                 record( "browser.remote_content_hostname_whitelist", "browser.remote_content_hostname_whitelist, a string", "", false ),
                 record( "browser.post_connect_cmd", "browser.post_connect_cmd, a string", "", false ),
