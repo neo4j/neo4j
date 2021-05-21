@@ -228,14 +228,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     void shouldThrowIfEquivalentIndexExist( SchemaTxStrategy txStrategy )
     {
         final ConstraintViolationException exception = txStrategy.execute( db,
-                                                                           schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
-                                                                           schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
-                                                                           ConstraintViolationException.class );
+                schema -> schema.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
-                                 "An equivalent index already exists, 'Index( id=",
-                                 "name='name', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), " +
-                                 "indexProvider='native-btree-1.0' )'." );
+                                 "An equivalent index already exists", "Index(", "id=", "name='name'",
+                                 "type='GENERAL BTREE'", "schema=(:MY_LABEL {my_property_key})", "indexProvider='native-btree-1.0'" );
     }
 
     @ParameterizedTest
@@ -243,13 +242,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     void shouldThrowIfEquivalentTokenIndexExist( SchemaTxStrategy txStrategy )
     {
         final ConstraintViolationException exception = txStrategy.execute( db,
-                                                                           schema -> schema.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
-                                                                           schema1 -> schema1.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
-                                                                           ConstraintViolationException.class );
+                schema -> schema.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
+                schema1 -> schema1.indexFor( AnyTokens.ANY_LABELS ).withName( "name" ).create(),
+                ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
-                                 "An equivalent index already exists, 'Index( id=",
-                                 "name='name', type='TOKEN LOOKUP', schema=(:<any-labels>), indexProvider='token-lookup-1.0' )'." );
+                                 "An equivalent index already exists", "Index(", "id=", "name='name'",
+                                 "type='TOKEN LOOKUP'", "schema=(:<any-labels>)", "indexProvider='token-lookup-1.0'" );
     }
 
     @ParameterizedTest()
@@ -258,11 +257,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
 
         final ConstraintViolationException exception = txStrategy.execute( db,
-                                                                           schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey )
-                                                                                           .withName( "name" ).create(),
-                                                                           schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey )
-                                                                                             .withName( "name" ).create(),
-                                                                           ConstraintViolationException.class );
+                schema -> schema.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                schema1 -> schema1.constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( "name" ).create(),
+                ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
                 "An equivalent constraint already exists, 'Constraint( ",
