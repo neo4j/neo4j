@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -99,7 +100,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
@@ -126,6 +126,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
+    private final Config config;
+    private final LogProvider internalLogProvider;
     private final TokenHolders tokenHolders;
     private final Health databaseHealth;
     private final SchemaCache schemaCache;
@@ -175,6 +177,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     )
     {
         this.databaseLayout = databaseLayout;
+        this.config = config;
+        this.internalLogProvider = internalLogProvider;
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
@@ -310,7 +314,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext newCommandCreationContext( MemoryTracker memoryTracker )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, this::relaxedLockingForDenseNodes, memoryTracker );
+        return new RecordStorageCommandCreationContext( neoStores, tokenHolders, internalLogProvider, denseNodeThreshold, this::relaxedLockingForDenseNodes,
+                config, memoryTracker );
     }
 
     @Override

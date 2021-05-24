@@ -21,6 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -28,6 +30,7 @@ import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -40,8 +43,11 @@ import static java.lang.Math.toIntExact;
 class RecordStorageCommandCreationContext extends CommandCreationLocking implements CommandCreationContext
 {
     private final NeoStores neoStores;
+    private final Config config;
     private final MemoryTracker memoryTracker;
     private final PropertyStore propertyStore;
+    private final TokenNameLookup tokenNameLookup;
+    private final LogProvider logProvider;
     private final int denseNodeThreshold;
     // The setting for relaxed dense node locking is a supplier since the command creation context instances are created once per
     // kernel transaction object and so will be reused between transactions. The relaxed locking feature may change from tx to tx
@@ -55,11 +61,15 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     private CursorContext cursorContext;
     private StoreCursors storeCursors;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, BooleanSupplier relaxedLockingForDenseNodes, MemoryTracker memoryTracker )
+    RecordStorageCommandCreationContext( NeoStores neoStores, TokenNameLookup tokenNameLookup, LogProvider logProvider, int denseNodeThreshold,
+            BooleanSupplier relaxedLockingForDenseNodes, Config config, MemoryTracker memoryTracker )
     {
+        this.tokenNameLookup = tokenNameLookup;
+        this.logProvider = logProvider;
         this.denseNodeThreshold = denseNodeThreshold;
         this.relaxedLockingForDenseNodes = relaxedLockingForDenseNodes;
         this.neoStores = neoStores;
+        this.config = config;
         this.memoryTracker = memoryTracker;
         this.propertyStore = neoStores.getPropertyStore();
     }
@@ -72,7 +82,8 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
         this.storeCursors = storeCursors;
         this.relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorContext );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
-        this.propertyDeleter = new PropertyDeleter( propertyTraverser );
+        this.propertyDeleter =
+                new PropertyDeleter( propertyTraverser, neoStores, tokenNameLookup, logProvider, config, cursorContext, memoryTracker, storeCursors );
         this.propertyCreator =
                 new PropertyCreator( new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
                         new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,

@@ -44,6 +44,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdSequence;
@@ -56,9 +57,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.test.extension.Inject;
@@ -121,7 +124,9 @@ class RelationshipModifierTest
     void setUp()
     {
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( new PropertyTraverser() );
+        PropertyDeleter propertyDeleter =
+                new PropertyDeleter( new PropertyTraverser(), null, null, NullLogProvider.nullLogProvider(), Config.defaults(),
+                        CursorContext.NULL, EmptyMemoryTracker.INSTANCE, StoreCursors.NULL );
         modifier = new RelationshipModifier( relationshipGroupGetter, propertyDeleter, DENSE_THRESHOLD - 1/*because the trigger happens on > */,
                 true, CursorContext.NULL, EmptyMemoryTracker.INSTANCE );
         monitors = new Monitors( null, ( t, m ) ->
