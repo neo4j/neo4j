@@ -92,4 +92,11 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
       "MATCH (n) WHERE exists(n.prop) = n.prop RETURN n"
     )
   }
+
+  test("should rewrite 01256 to 0o1256") {
+    assertRewritten(
+      "RETURN 01256 AS t",
+      "RETURN 0o1256 AS t"
+    )
+  }
 }

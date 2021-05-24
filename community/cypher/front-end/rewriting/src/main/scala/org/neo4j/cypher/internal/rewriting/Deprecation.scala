@@ -95,7 +95,7 @@ object Deprecations {
       // old octal literal syntax
       case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(1) != 'o' =>
         Deprecation(
-          None,
+          Some(p -> SignedOctalIntegerLiteral(stringVal.patch(1, "o", 0))(p.position)),
           Some(DeprecatedOctalLiteralSyntax(p.position))
         )
 
