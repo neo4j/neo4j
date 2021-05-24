@@ -35,9 +35,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -46,7 +50,11 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
+import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
@@ -125,16 +133,84 @@ class RecordPropertyCursorTest
         cursor.close();
     }
 
+    @Test
+    void shouldAbortChainTraversalOnLikelyCycle()
+    {
+        // given
+        Value[] values = createValues( 20 ); // many enough to create multiple records in the chain
+        long firstProp = storeValuesAsPropertyChain( creator, owner, values );
+
+        // and a cycle on the second record
+        PropertyStore store = neoStores.getPropertyStore();
+        PropertyRecord firstRecord = store.getRecord( firstProp, store.newRecord(), RecordLoad.NORMAL );
+        long secondProp = firstRecord.getNextProp();
+        PropertyRecord secondRecord = store.getRecord( secondProp, store.newRecord(), RecordLoad.NORMAL );
+        secondRecord.setNextProp( firstProp );
+        store.updateRecord( secondRecord );
+        owner.setId( 99 );
+
+        // when
+        RecordPropertyCursor cursor = createCursor();
+        cursor.initNodeProperties( firstProp, owner.getId() );
+        InconsistentDataReadException e = assertThrows( InconsistentDataReadException.class, () ->
+        {
+            while ( cursor.next() )
+            {
+                // just keep going, it should eventually hit the cycle detection threshold
+            }
+        } );
+
+        // then
+        assertEquals( format( "Aborting property reading due to detected chain cycle, starting at property record id:%d from owner NODE:%d", firstProp,
+                owner.getId() ), e.getMessage() );
+    }
+
+    @Test
+    void shouldAbortChainTraversalOnLikelyDynamicValueCycle()
+    {
+        // given
+        Value value = random.nextAlphaNumericTextValue( 1000, 1000 );
+        long firstProp = storeValuesAsPropertyChain( creator, owner, new Value[]{value} );
+
+        // and a cycle on the second record
+        PropertyStore store = neoStores.getPropertyStore();
+        PropertyRecord propertyRecord = store.getRecord( firstProp, store.newRecord(), RecordLoad.NORMAL );
+        store.ensureHeavy( propertyRecord );
+        PropertyBlock block = propertyRecord.iterator().next();
+        int cycleEndRecordIndex = random.nextInt( 1, block.getValueRecords().size() - 1 );
+        DynamicRecord cycle = block.getValueRecords().get( cycleEndRecordIndex );
+        int cycleStartIndex = random.nextInt( cycleEndRecordIndex );
+        cycle.setNextBlock( block.getValueRecords().get( cycleStartIndex ).getId() );
+        store.getStringStore().updateRecord( cycle );
+        owner.setId( 99 );
+
+        // when
+        RecordPropertyCursor cursor = createCursor();
+        cursor.initNodeProperties( firstProp, owner.getId() );
+        InconsistentDataReadException e = assertThrows( InconsistentDataReadException.class, () ->
+        {
+            while ( cursor.next() )
+            {
+                // just keep going, it should eventually hit the cycle detection threshold
+                cursor.propertyValue();
+            }
+        } );
+
+        // then
+        assertThat( e.getMessage(), containsString( "Unable to read property value in" ) );
+        assertThat( e.getMessage(), containsString( "owner NODE:" + owner.getId() ) );
+    }
+
     private RecordPropertyCursor createCursor()
     {
         return new RecordPropertyCursor( neoStores.getPropertyStore() );
     }
 
-    private static void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )
+    private void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )
     {
         Map<Integer, Value> expectedValues = asMap( values );
         // This is a specific test for RecordPropertyCursor and we know that node/relationships init methods are the same
-        cursor.initNodeProperties( firstPropertyId );
+        cursor.initNodeProperties( firstPropertyId, owner.getId() );
         while ( cursor.next() )
         {
             // then
@@ -145,7 +221,11 @@ class RecordPropertyCursorTest
 
     private Value[] createValues()
     {
-        int numberOfProperties = random.nextInt( 1, 20 );
+        return createValues( random.nextInt( 1, 20 ) );
+    }
+
+    private Value[] createValues( int numberOfProperties )
+    {
         Value[] values = new Value[numberOfProperties];
         for ( int key = 0; key < numberOfProperties; key++ )
         {
