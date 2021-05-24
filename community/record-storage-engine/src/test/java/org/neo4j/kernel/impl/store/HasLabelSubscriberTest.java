@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Bits;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -116,7 +116,7 @@ public class HasLabelSubscriberTest
 
     private HasLabelSubscriber labelSubscriberFor( int label )
     {
-        return new HasLabelSubscriber( label, labelStore, CursorContext.NULL );
+        return new HasLabelSubscriber( label, labelStore, StoreCursors.NULL );
     }
 
     private static DynamicRecord record( int numberOfLabels )

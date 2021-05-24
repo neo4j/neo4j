@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -223,7 +224,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
     private void openCountsStore( DegreesRebuilder builder ) throws IOException
     {
         instantiateCountsStore( builder, writable(), NO_MONITOR );
-        countsStore.start( NULL, INSTANCE );
+        countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
     }
 
     private void instantiateCountsStore( DegreesRebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor )

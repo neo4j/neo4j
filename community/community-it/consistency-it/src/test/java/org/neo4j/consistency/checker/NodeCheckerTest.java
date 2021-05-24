@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -225,7 +226,8 @@ class NodeCheckerTest extends CheckerTestBase
         {
             long nodeId = nodeStore.nextId( CursorContext.NULL );
             NodeRecord node = new NodeRecord( nodeId ).initialize( true, NULL, false, NULL, 0 );
-            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), CursorContext.NULL, INSTANCE );
+            new InlineNodeLabels( node ).put( toLongs( otherLabels ), nodeStore, nodeStore.getDynamicLabelStore(), CursorContext.NULL, StoreCursors.NULL,
+                    INSTANCE );
             assertThat( node.getDynamicLabelRecords().size() ).isGreaterThanOrEqualTo( 2 );
             nodeStore.updateRecord( node, CursorContext.NULL );
             vandal.accept( node );

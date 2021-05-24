@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -70,7 +71,7 @@ class StoreScanChunkIT
     {
         TestStoreScanChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( storageReader.allocateNodeCursor( NULL ), storageReader, requiresPropertyMigration, NULL, INSTANCE );
+            super( storageReader.allocateNodeCursor( NULL, StoreCursors.NULL ), storageReader, requiresPropertyMigration, NULL, StoreCursors.NULL, INSTANCE );
         }
 
         @Override

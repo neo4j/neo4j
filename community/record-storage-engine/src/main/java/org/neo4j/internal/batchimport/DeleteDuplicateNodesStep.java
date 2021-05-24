@@ -23,11 +23,12 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -44,16 +45,18 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     private final LongIterator nodeIds;
     private final DataImporter.Monitor storeMonitor;
     private final PageCacheTracer pageCacheTracer;
+    private final NeoStores neoStores;
 
     private long nodesRemoved;
     private long propertiesRemoved;
 
-    public DeleteDuplicateNodesStep( StageControl control, Configuration config, LongIterator nodeIds, NodeStore nodeStore,
-            PropertyStore propertyStore, DataImporter.Monitor storeMonitor, PageCacheTracer pageCacheTracer )
+    public DeleteDuplicateNodesStep( StageControl control, Configuration config, LongIterator nodeIds, NeoStores neoStores,
+            DataImporter.Monitor storeMonitor, PageCacheTracer pageCacheTracer )
     {
         super( control, "DEDUP", config );
-        this.nodeStore = nodeStore;
-        this.propertyStore = propertyStore;
+        this.neoStores = neoStores;
+        this.nodeStore = neoStores.getNodeStore();
+        this.propertyStore = neoStores.getPropertyStore();
         this.nodeIds = nodeIds;
         this.storeMonitor = storeMonitor;
         this.pageCacheTracer = pageCacheTracer;
@@ -65,24 +68,23 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( DELETE_DUPLICATE_IMPORT_STEP_TAG ) );
-              PageCursor cursor = nodeStore.openPageCursorForReading( 0, cursorContext );
-              PageCursor propertyCursor = propertyStore.openPageCursorForReading( 0, cursorContext ) )
+              var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
             while ( nodeIds.hasNext() )
             {
                 long duplicateNodeId = nodeIds.next();
-                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, cursor );
+                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, storeCursors.nodeCursor() );
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
-                nodeStore.ensureHeavy( nodeRecord, cursorContext );
+                nodeStore.ensureHeavy( nodeRecord, storeCursors );
 
                 // Delete property records
                 long nextProp = nodeRecord.getNextProp();
                 while ( !Record.NULL_REFERENCE.is( nextProp ) )
                 {
-                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, propertyCursor );
+                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, storeCursors.propertyCursor() );
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
-                    propertyStore.ensureHeavy( propertyRecord, cursorContext );
+                    propertyStore.ensureHeavy( propertyRecord, storeCursors );
                     propertiesRemoved += propertyRecord.numberOfProperties();
                     nextProp = propertyRecord.getNextProp();
                     deletePropertyRecordIncludingValueRecords( propertyRecord );

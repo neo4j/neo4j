@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.NamedToken;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -82,48 +83,46 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         return nameStore;
     }
 
-    public List<NamedToken> getTokens( CursorContext cursorContext )
+    public List<NamedToken> getTokens( StoreCursors storeCursors )
     {
-        return readAllTokens( false, cursorContext );
+        return readAllTokens( false, storeCursors );
     }
 
     /**
-     * Same as {@link #getTokens(CursorContext)}, except tokens that cannot be read due to inconsistencies will just be ignored,
-     * while {@link #getTokens(CursorContext)} would throw an exception in such cases.
+     * Same as {@link #getTokens(StoreCursors)}, except tokens that cannot be read due to inconsistencies will just be ignored,
+     * while {@link #getTokens(StoreCursors)} would throw an exception in such cases.
      * @return All tokens that could be read without any apparent problems.
      */
-    public List<NamedToken> getAllReadableTokens( CursorContext cursorContext )
+    public List<NamedToken> getAllReadableTokens( StoreCursors storeCursors )
     {
-        return readAllTokens( true, cursorContext );
+        return readAllTokens( true, storeCursors );
     }
 
-    private List<NamedToken> readAllTokens( boolean ignoreInconsistentTokens, CursorContext cursorContext )
+    private List<NamedToken> readAllTokens( boolean ignoreInconsistentTokens, StoreCursors storeCursors )
     {
         long highId = getHighId();
         ArrayList<NamedToken> records = new ArrayList<>( Math.toIntExact( highId ) );
         RECORD record = newRecord();
-        try ( var cursor = openPageCursorForReading( 0, cursorContext ) )
+        var cursor = getTokenStoreCursor( storeCursors );
+        for ( int i = 0; i < highId; i++ )
         {
-            for ( int i = 0; i < highId; i++ )
+            if ( !getRecordByCursor( i,record, RecordLoad.LENIENT_CHECK, cursor ).inUse() )
             {
-                if ( !getRecordByCursor( i,record, RecordLoad.LENIENT_CHECK, cursor ).inUse() )
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                if ( record.getNameId() != Record.RESERVED.intValue() )
+            if ( record.getNameId() != Record.RESERVED.intValue() )
+            {
+                try
                 {
-                    try
+                    String name = getStringFor( record, storeCursors );
+                    records.add( new NamedToken( name, i, record.isInternal() ) );
+                }
+                catch ( Exception e )
+                {
+                    if ( !ignoreInconsistentTokens )
                     {
-                        String name = getStringFor( record, cursorContext );
-                        records.add( new NamedToken( name, i, record.isInternal() ) );
-                    }
-                    catch ( Exception e )
-                    {
-                        if ( !ignoreInconsistentTokens )
-                        {
-                            throw e;
-                        }
+                        throw e;
                     }
                 }
             }
@@ -131,13 +130,10 @@ public abstract class TokenStore<RECORD extends TokenRecord>
         return records;
     }
 
-    public NamedToken getToken( int id, CursorContext cursorContext )
+    public NamedToken getToken( int id, StoreCursors storeCursors )
     {
-        try ( PageCursor pageCursor = openPageCursorForReading( id, cursorContext ) )
-        {
-            RECORD record = getRecordByCursor( id, newRecord(), NORMAL, pageCursor );
-            return new NamedToken( getStringFor( record, cursorContext ), record.getIntId(), record.isInternal() );
-        }
+        RECORD record = getRecordByCursor( id, newRecord(), NORMAL, getTokenStoreCursor( storeCursors ) );
+        return new NamedToken( getStringFor( record, storeCursors ), record.getIntId(), record.isInternal() );
     }
 
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars, CursorContext cursorContext, MemoryTracker memoryTracker )
@@ -161,7 +157,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     }
 
     @Override
-    public void ensureHeavy( RECORD record, CursorContext cursorContext )
+    public void ensureHeavy( RECORD record, StoreCursors storeCursors )
     {
         if ( !record.isLight() )
         {
@@ -170,15 +166,16 @@ public abstract class TokenStore<RECORD extends TokenRecord>
 
         // Guard for cycles in the name chain, since this might be called by the consistency checker on an inconsistent store.
         // This will throw an exception if there's a cycle, and we'll just ignore those tokens at this point.
-        try ( var cursor = nameStore.openPageCursorForReading( 0, cursorContext ) )
-        {
-            record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true, cursor ) );
-        }
+        record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true, getDynamicTokenCursor( storeCursors ) ) );
     }
 
-    public String getStringFor( RECORD nameRecord, CursorContext cursorContext )
+    public abstract PageCursor getTokenStoreCursor( StoreCursors storeCursors );
+
+    abstract PageCursor getDynamicTokenCursor( StoreCursors storeCursors );
+
+    public String getStringFor( RECORD nameRecord, StoreCursors storeCursors )
     {
-        ensureHeavy( nameRecord, cursorContext );
+        ensureHeavy( nameRecord, storeCursors );
         int recordToFind = nameRecord.getNameId();
         Iterator<DynamicRecord> records = nameRecord.getNameRecords().iterator();
         Collection<DynamicRecord> relevantRecords = new ArrayList<>();
@@ -192,6 +189,6 @@ public abstract class TokenStore<RECORD extends TokenRecord>
                 records = nameRecord.getNameRecords().iterator();
             }
         }
-        return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING, cursorContext ).other() );
+        return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING, storeCursors ).other() );
     }
 }

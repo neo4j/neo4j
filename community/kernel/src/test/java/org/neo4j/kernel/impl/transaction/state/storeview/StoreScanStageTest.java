@@ -48,6 +48,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,14 +97,14 @@ class StoreScanStageTest
     {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) );
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL, StoreCursors.NULL ) );
         var propertyConsumer = new ThreadCapturingPropertyConsumer();
         var tokenConsumer = new ThreadCapturingTokenConsumer();
         ControlledLockFunction lockFunction = new ControlledLockFunction();
         StoreScanStage<StorageNodeCursor> scan =
-                new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
-                        alwaysTrue(), propertyConsumer, tokenConsumer, new NodeCursorBehaviour( data ), lockFunction, parallelWrite,
-                        jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                new StoreScanStage<>( dbConfig, config, ( ct, sc ) -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data,
+                        any -> StoreCursors.NULL, new int[]{LABEL}, alwaysTrue(), propertyConsumer, tokenConsumer, new NodeCursorBehaviour( data ),
+                        lockFunction, parallelWrite, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
         // when
         runScan( scan );
@@ -127,14 +128,15 @@ class StoreScanStageTest
     {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) );
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL, StoreCursors.NULL ) );
 
         var failingWriter = new PropertyConsumer( () ->
         {
             throw new IllegalStateException( "Failed to write" );
         } );
         StoreScanStage<StorageNodeCursor> scan =
-                new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
+                new StoreScanStage<>( dbConfig, config, ( ct, sc ) -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data,
+                        any -> StoreCursors.NULL, new int[]{LABEL},
                         alwaysTrue(), failingWriter, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL,
                         EmptyMemoryTracker.INSTANCE );
 
@@ -147,13 +149,14 @@ class StoreScanStageTest
     {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) );
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL, StoreCursors.NULL ) );
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         ControlledExternalUpdatesCheck externalUpdatesCheck = new ControlledExternalUpdatesCheck( config.batchSize(), 2, numBatchesProcessed );
-        var writer = new PropertyConsumer( () -> numBatchesProcessed.incrementAndGet() );
+        var writer = new PropertyConsumer( numBatchesProcessed::incrementAndGet );
 
         StoreScanStage<StorageNodeCursor> scan =
-                new StoreScanStage( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, new AtomicBoolean( true ), data, new int[]{LABEL},
+                new StoreScanStage( dbConfig, config, ( ct, sc ) -> entityIdIterator, externalUpdatesCheck, new AtomicBoolean( true ), data,
+                        any -> StoreCursors.NULL, new int[]{LABEL},
                         alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler,
                         PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
@@ -169,14 +172,15 @@ class StoreScanStageTest
     {
         // given
         StubStorageCursors data = someData();
-        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) );
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL, StoreCursors.NULL ) );
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         AtomicBoolean continueScanning = new AtomicBoolean( true );
         AbortingExternalUpdatesCheck externalUpdatesCheck = new AbortingExternalUpdatesCheck( 1, continueScanning );
-        var writer = new PropertyConsumer( () -> numBatchesProcessed.incrementAndGet() );
+        var writer = new PropertyConsumer( numBatchesProcessed::incrementAndGet );
         StoreScanStage<StorageNodeCursor> scan =
-                new StoreScanStage( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, continueScanning, data, new int[]{LABEL}, alwaysTrue(),
-                        writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                new StoreScanStage( dbConfig, config, ( ct, sc ) -> entityIdIterator, externalUpdatesCheck, continueScanning, data, any -> StoreCursors.NULL,
+                        new int[]{LABEL}, alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL,
+                        EmptyMemoryTracker.INSTANCE );
 
         // when
         runScan( scan );
@@ -191,7 +195,7 @@ class StoreScanStageTest
         // given
         StubStorageCursors data = someData();
         AtomicReference<StoreScanStage<StorageNodeCursor>> stage = new AtomicReference<>();
-        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) )
+        EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL, StoreCursors.NULL ) )
         {
             private long manualCounter;
 
@@ -204,9 +208,9 @@ class StoreScanStageTest
             }
         };
         StoreScanStage<StorageNodeCursor> scan =
-                new StoreScanStage( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
-                        alwaysTrue(), new ThreadCapturingPropertyConsumer(), new ThreadCapturingTokenConsumer(), new NodeCursorBehaviour( data ),
-                        l -> LockService.NO_LOCK, true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                new StoreScanStage( dbConfig, config, ( ct, sc ) -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data,
+                        any -> StoreCursors.NULL, new int[]{LABEL}, alwaysTrue(), new ThreadCapturingPropertyConsumer(), new ThreadCapturingTokenConsumer(),
+                        new NodeCursorBehaviour( data ), l -> LockService.NO_LOCK, true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
         stage.set( scan );
 
         // when

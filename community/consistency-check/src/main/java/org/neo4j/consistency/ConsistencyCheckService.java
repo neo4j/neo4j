@@ -73,6 +73,8 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
@@ -260,9 +262,10 @@ public class ConsistencyCheckService
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             // Load tokens before starting extensions, etc.
-            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_READER_TAG ) ) )
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_READER_TAG ) );
+                  var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
             {
-                tokenHolders.setInitialTokens( StoreTokens.allReadableTokens( neoStores ), cursorContext );
+                tokenHolders.setInitialTokens( StoreTokens.allReadableTokens( neoStores ), storeCursors );
             }
 
             life.start();
@@ -426,7 +429,7 @@ public class ConsistencyCheckService
         public T get() throws IOException
         {
             store = open();
-            store.start( NULL, memoryTracker );
+            store.start( NULL, StoreCursors.NULL, memoryTracker );
             return store;
         }
 

@@ -36,6 +36,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -47,10 +48,16 @@ public interface StorageEngine extends Lifecycle
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
      * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, LockTracer, long,
-     * TxStateVisitor.Decorator, CursorContext, MemoryTracker)}.
+     * TxStateVisitor.Decorator, CursorContext, StoreCursors, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext newCommandCreationContext( MemoryTracker memoryTracker );
+
+    /**
+     * Provide access level for underlying store cursors
+     * @param initialContext cursor context to use for store cursors before reset call
+     */
+    StoreCursors createStorageCursors( CursorContext initialContext );
 
     /**
      * Adds an {@link IndexUpdateListener} which will receive streams of index updates from changes that gets
@@ -94,6 +101,7 @@ public interface StorageEngine extends Lifecycle
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
+            StoreCursors storeCursors,
             MemoryTracker memoryTracker )
             throws KernelException;
 

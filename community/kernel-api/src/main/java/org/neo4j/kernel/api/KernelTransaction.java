@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * A transaction with the graph database.
@@ -430,6 +431,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * @return page cursor context
      */
     CursorContext cursorContext();
+
+    /**
+     * Get transaction local store cursors used to access underlying stores
+     */
+    StoreCursors storeCursors();
 
     /**
      * Get the memory tracker for this transaction.

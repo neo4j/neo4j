@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StubStorageCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,7 +76,7 @@ class RelationshipIndexedRelationshipStoreScanTest
         mockIdsReturnedFromTokenQueries();
 
         RelationshipIndexedRelationshipStoreScan storeScan = getRelationshipTypeScanViewStoreScan( types );
-        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( CursorContext.NULL );
+        PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( CursorContext.NULL, StoreCursors.NULL );
 
         // See that the idIterator asked about both types and was able to merge the results correctly.
         assertThat( idIterator.next() ).isEqualTo( 1L );
@@ -127,7 +128,8 @@ class RelationshipIndexedRelationshipStoreScanTest
 
     private RelationshipIndexedRelationshipStoreScan getRelationshipTypeScanViewStoreScan( int[] relationshipTypeIds )
     {
-        return new RelationshipIndexedRelationshipStoreScan( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE, relationshipTypeScanReader,
-                typeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
+        return new RelationshipIndexedRelationshipStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, LockService.NO_LOCK_SERVICE,
+                relationshipTypeScanReader, typeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, false, jobScheduler,
+                PageCacheTracer.NULL, INSTANCE );
     }
 }

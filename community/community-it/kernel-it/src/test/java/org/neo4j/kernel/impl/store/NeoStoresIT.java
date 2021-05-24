@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
@@ -208,12 +209,15 @@ class NeoStoresIT
         }
 
         var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnTokenReads" ) );
-        propertyKeys.getAllReadableTokens( cursorContext );
+        try ( StoreCursors storageCursors = storageEngine.createStorageCursors( cursorContext ) )
+        {
+            propertyKeys.getAllReadableTokens( storageCursors );
+        }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertEquals( 12, cursorTracer.hits() );
-        assertEquals( 12, cursorTracer.pins() );
-        assertEquals( 12, cursorTracer.unpins() );
+        assertEquals( 2, cursorTracer.hits() );
+        assertEquals( 2, cursorTracer.pins() );
+        assertEquals( 2, cursorTracer.unpins() );
     }
 
     @Test

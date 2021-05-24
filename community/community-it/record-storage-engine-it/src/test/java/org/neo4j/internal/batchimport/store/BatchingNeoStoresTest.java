@@ -82,6 +82,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -287,7 +288,7 @@ class BatchingNeoStoresTest
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
                 DEFAULT_DATABASE_NAME, 1_000 ) )
         {
-            countsStore.start( NULL, INSTANCE );
+            countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
             countsStore.checkpoint( NULL );
         }
 
@@ -313,7 +314,7 @@ class BatchingNeoStoresTest
                 {
                     return BASE_TX_ID + 1;
                 }
-            }, PageCacheTracer.NULL, NULL, INSTANCE );
+            }, PageCacheTracer.NULL, NULL, StoreCursors.NULL, INSTANCE );
         }
 
         // then
@@ -400,7 +401,7 @@ class BatchingNeoStoresTest
             TxState txState = new TxState();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
-            commandCreationContext.initialize( NULL );
+            commandCreationContext.initialize( NULL, StoreCursors.NULL );
             propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
             labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
@@ -425,8 +426,9 @@ class BatchingNeoStoresTest
         try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
             storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.IGNORE, LockTracer.NONE,
-                    BASE_TX_ID, v -> v, NULL, INSTANCE );
-            CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL );
+                    BASE_TX_ID, v -> v, NULL, StoreCursors.NULL, INSTANCE );
+            CommandsToApply apply =
+                    new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, ANONYMOUS ), NULL, StoreCursors.NULL );
             storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }
     }

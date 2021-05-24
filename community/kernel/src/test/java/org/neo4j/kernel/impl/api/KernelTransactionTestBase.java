@@ -78,6 +78,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.Clocks;
@@ -121,6 +122,7 @@ class KernelTransactionTestBase
         when( storageEngine.newReader() ).thenReturn( storageReader );
         when( storageEngine.newCommandCreationContext( any() ) ).thenReturn( commandCreationContext );
         when( storageEngine.metadataProvider() ).thenReturn( metadataProvider );
+        when( storageEngine.createStorageCursors( any() ) ).thenReturn( StoreCursors.NULL );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),
@@ -130,7 +132,7 @@ class KernelTransactionTestBase
                     any( ResourceLocker.class ),
                     any( LockTracer.class ),
                     anyLong(),
-                    any( TxStateVisitor.Decorator.class ), any( CursorContext.class ), any( MemoryTracker.class ) );
+                    any( TxStateVisitor.Decorator.class ), any( CursorContext.class ), any( StoreCursors.class ), any( MemoryTracker.class ) );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

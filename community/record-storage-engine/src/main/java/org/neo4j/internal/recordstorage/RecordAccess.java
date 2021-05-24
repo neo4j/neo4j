@@ -24,15 +24,16 @@ import java.util.Collection;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Provides access to records, both for reading and for writing.
  */
 public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
 {
-    default RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, CursorContext cursorContext )
+    default RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData )
     {
-        return getOrLoad( key, additionalData, RecordLoad.NORMAL, cursorContext );
+        return getOrLoad( key, additionalData, RecordLoad.NORMAL );
     }
 
     /**
@@ -45,7 +46,7 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
      * @param additionalData additional data to put in the record after loaded.
      * @return a {@link RecordProxy} for the record for {@code key}.
      */
-    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext );
+    RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load );
 
     RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key );
 
@@ -97,9 +98,9 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     {
         RECORD newUnused( long key, ADDITIONAL additionalData );
 
-        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext );
+        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load );
 
-        void ensureHeavy( RECORD record, CursorContext cursorContext );
+        void ensureHeavy( RECORD record, StoreCursors storeCursors );
 
         RECORD copy( RECORD record );
     }

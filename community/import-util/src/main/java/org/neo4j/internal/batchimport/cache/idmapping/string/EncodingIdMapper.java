@@ -43,8 +43,6 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.max;
@@ -153,19 +151,18 @@ public class EncodingIdMapper implements IdMapper
     private long numberOfCollisions;
     private final LongFunction<CollisionValues> collisionValuesFactory;
     private CollisionValues collisionValues;
-    private final PageCacheTracer pageCacheTracer;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
             Monitor monitor, TrackerFactory trackerFactory, ReadableGroups groups, LongFunction<CollisionValues> collisionValuesFactory,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker )
     {
         this( cacheFactory, encoder, radixFactory, monitor, trackerFactory, groups, collisionValuesFactory, DEFAULT_CACHE_CHUNK_SIZE,
-                Runtime.getRuntime().availableProcessors() - 1, DEFAULT, pageCacheTracer, memoryTracker );
+                Runtime.getRuntime().availableProcessors() - 1, DEFAULT, memoryTracker );
     }
 
     EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
             Monitor monitor, TrackerFactory trackerFactory, ReadableGroups groups, LongFunction<CollisionValues> collisionValuesFactory,
-            int chunkSize, int processorsForParallelWork, Comparator comparator, PageCacheTracer pageCacheTracer,
+            int chunkSize, int processorsForParallelWork, Comparator comparator,
             MemoryTracker memoryTracker )
     {
         this.radixFactory = radixFactory;
@@ -181,7 +178,6 @@ public class EncodingIdMapper implements IdMapper
         this.groups = groups;
         this.encoder = encoder;
         this.radix = radixFactory.newInstance();
-        this.pageCacheTracer = pageCacheTracer;
     }
 
     /**
@@ -502,30 +498,27 @@ public class EncodingIdMapper implements IdMapper
         collisionNodeIdCache = cacheFactory.newByteArray( pessimisticNumberOfCollisions, new byte[COLLISION_ENTRY_SIZE], memoryTracker );
         collisionTrackerCache = trackerFactory.create( cacheFactory, pessimisticNumberOfCollisions );
         collisionValues = collisionValuesFactory.apply( pessimisticNumberOfCollisions );
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( IMPORT_COLLISION_INFO_TAG ) ) )
+        for ( long nodeId = 0; nodeId <= highestSetIndex; nodeId++ )
         {
-            for ( long nodeId = 0; nodeId <= highestSetIndex; nodeId++ )
+            long eId = dataCache.get( nodeId );
+            if ( isCollision( eId ) )
             {
-                long eId = dataCache.get( nodeId );
-                if ( isCollision( eId ) )
-                {
-                    // Store this collision input id for matching later in get()
-                    long collisionIndex = numberOfCollisions++;
-                    Object id = inputIdLookup.lookupProperty( nodeId, cursorContext );
-                    long eIdFromInputId = encode( id );
-                    long eIdWithoutCollisionBit = clearCollision( eId );
-                    assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +
-                            "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
-                            "%d when put, but was now encoded into %d", id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
-                    long offset = collisionValues.add( id );
-                    collisionNodeIdCache.set5ByteLong( collisionIndex, 0, nodeId );
-                    collisionNodeIdCache.set6ByteLong( collisionIndex, 5, offset );
+                // Store this collision input id for matching later in get()
+                long collisionIndex = numberOfCollisions++;
+                Object id = inputIdLookup.lookupProperty( nodeId );
+                long eIdFromInputId = encode( id );
+                long eIdWithoutCollisionBit = clearCollision( eId );
+                assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +
+                        "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
+                        "%d when put, but was now encoded into %d", id, id.getClass().getSimpleName(), eIdWithoutCollisionBit, eIdFromInputId );
+                long offset = collisionValues.add( id );
+                collisionNodeIdCache.set5ByteLong( collisionIndex, 0, nodeId );
+                collisionNodeIdCache.set6ByteLong( collisionIndex, 5, offset );
 
-                    // The base of our sorting this time is going to be node id, so register that in the radix
-                    radix.registerRadixOf( eIdWithoutCollisionBit );
-                }
-                progress.add( 1 );
+                // The base of our sorting this time is going to be node id, so register that in the radix
+                radix.registerRadixOf( eIdWithoutCollisionBit );
             }
+            progress.add( 1 );
         }
         progress.done();
 

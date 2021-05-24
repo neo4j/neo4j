@@ -39,6 +39,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -210,8 +211,8 @@ public class EntityUpdates
      * @param type EntityType of the indexes
      * @return IndexEntryUpdates for all relevant index keys
      */
-    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> valueUpdatesForIndexKeys(
-            Iterable<INDEX_KEY> indexKeys, StorageReader reader, EntityType type, CursorContext cursorContext, MemoryTracker memoryTracker )
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> valueUpdatesForIndexKeys( Iterable<INDEX_KEY> indexKeys,
+            StorageReader reader, EntityType type, CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
         final MutableIntSet additionalPropertiesToLoad = new IntHashSet();
@@ -227,7 +228,7 @@ public class EntityUpdates
 
         if ( !additionalPropertiesToLoad.isEmpty() )
         {
-            loadProperties( reader, additionalPropertiesToLoad, type, cursorContext, memoryTracker );
+            loadProperties( reader, additionalPropertiesToLoad, type, cursorContext, storeCursors, memoryTracker );
         }
 
         return gatherUpdatesForPotentials( potentiallyRelevant );
@@ -291,23 +292,23 @@ public class EntityUpdates
     }
 
     private void loadProperties( StorageReader reader, MutableIntSet additionalPropertiesToLoad, EntityType type, CursorContext cursorContext,
-            MemoryTracker memoryTracker )
+            StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         hasLoadedAdditionalProperties = true;
         if ( type == EntityType.NODE )
         {
-            try ( StorageNodeCursor cursor = reader.allocateNodeCursor( cursorContext ) )
+            try ( StorageNodeCursor cursor = reader.allocateNodeCursor( cursorContext, storeCursors ) )
             {
                 cursor.single( entityId );
-                loadProperties( reader, cursor, additionalPropertiesToLoad, cursorContext, memoryTracker );
+                loadProperties( reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker );
             }
         }
         else if ( type == EntityType.RELATIONSHIP )
         {
-            try ( StorageRelationshipScanCursor cursor = reader.allocateRelationshipScanCursor( cursorContext ) )
+            try ( StorageRelationshipScanCursor cursor = reader.allocateRelationshipScanCursor( cursorContext, storeCursors ) )
             {
                 cursor.single( entityId );
-                loadProperties( reader, cursor, additionalPropertiesToLoad, cursorContext, memoryTracker );
+                loadProperties( reader, cursor, additionalPropertiesToLoad, cursorContext, storeCursors, memoryTracker );
             }
         }
 
@@ -320,11 +321,11 @@ public class EntityUpdates
     }
 
     private void loadProperties( StorageReader reader, StorageEntityCursor cursor, MutableIntSet additionalPropertiesToLoad,
-            CursorContext cursorContext, MemoryTracker memoryTracker )
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         if ( cursor.next() && cursor.hasProperties() )
         {
-            try ( StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorContext, memoryTracker ) )
+            try ( StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker ) )
             {
                 cursor.properties( propertyCursor );
                 while ( propertyCursor.next() )

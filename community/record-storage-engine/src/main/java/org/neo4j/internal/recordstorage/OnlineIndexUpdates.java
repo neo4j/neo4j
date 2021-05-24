@@ -38,6 +38,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.recordstorage.Command.Mode.CREATE;
 import static org.neo4j.internal.recordstorage.Command.Mode.DELETE;
@@ -62,12 +63,13 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final StorageReader reader;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
+    private final StoreCursors storeCursors;
     private final Collection<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
     private StorageNodeCursor nodeCursor;
     private StorageRelationshipScanCursor relationshipCursor;
 
     public OnlineIndexUpdates( NodeStore nodeStore, SchemaCache schemaCache, PropertyPhysicalToLogicalConverter converter, StorageReader reader,
-            CursorContext cursorContext, MemoryTracker memoryTracker )
+            CursorContext cursorContext, MemoryTracker memoryTracker, StoreCursors storeCursors )
     {
         this.nodeStore = nodeStore;
         this.schemaCache = schemaCache;
@@ -75,6 +77,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         this.reader = reader;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
+        this.storeCursors = storeCursors;
     }
 
     @Override
@@ -127,7 +130,7 @@ public class OnlineIndexUpdates implements IndexUpdates
                 entityType );
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        entityUpdates.valueUpdatesForIndexKeys( relatedIndexes, reader, entityType, cursorContext, memoryTracker ).forEach( updates::add );
+        entityUpdates.valueUpdatesForIndexKeys( relatedIndexes, reader, entityType, cursorContext, storeCursors, memoryTracker ).forEach( updates::add );
     }
 
     private EntityUpdates gatherUpdatesFromCommandsForNode( long nodeId,
@@ -139,8 +142,8 @@ public class OnlineIndexUpdates implements IndexUpdates
         if ( nodeChanges != null )
         {
             // Special case since the node may not be heavy, i.e. further loading may be required
-            nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore, cursorContext );
-            nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore, cursorContext );
+            nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore, storeCursors );
+            nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore, storeCursors );
         }
         else
         {
@@ -196,7 +199,8 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
         else
         {
-            reltypeBefore = reltypeAfter = loadRelationship( relationshipId ).type();
+            reltypeAfter = loadRelationship( relationshipId ).type();
+            reltypeBefore = reltypeAfter;
         }
         boolean complete = providesCompleteListOfProperties( relationshipCommand );
         EntityUpdates.Builder relationshipPropertyUpdates =
@@ -209,7 +213,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     {
         if ( nodeCursor == null )
         {
-            nodeCursor = reader.allocateNodeCursor( cursorContext );
+            nodeCursor = reader.allocateNodeCursor( cursorContext, storeCursors );
         }
         nodeCursor.single( nodeId );
         if ( !nodeCursor.next() )
@@ -223,7 +227,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     {
         if ( relationshipCursor == null )
         {
-            relationshipCursor = reader.allocateRelationshipScanCursor( cursorContext );
+            relationshipCursor = reader.allocateRelationshipScanCursor( cursorContext, storeCursors );
         }
         relationshipCursor.single( relationshipId );
         if ( !relationshipCursor.next() )

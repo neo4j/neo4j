@@ -482,7 +482,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     protected StorageNodeCursor newCursor( long nodeId )
     {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, storageCursors );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         return nodeCursor;

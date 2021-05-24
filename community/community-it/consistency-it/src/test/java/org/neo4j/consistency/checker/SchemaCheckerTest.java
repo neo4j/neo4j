@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -616,7 +617,7 @@ class SchemaCheckerTest extends CheckerTestBase
             {
                 store.getRecordByCursor( tokenId, record, RecordLoad.NORMAL, cursor );
             }
-            store.ensureHeavy( record, CursorContext.NULL );
+            store.ensureHeavy( record, storeCursors );
             vandal.accept( record );
             DynamicStringStore nameStore = store.getNameStore();
             for ( DynamicRecord nameRecord : record.getNameRecords() )
@@ -634,7 +635,7 @@ class SchemaCheckerTest extends CheckerTestBase
 
     private void check() throws Exception
     {
-        new SchemaChecker( context() ).check( mandatoryNodeProperties, mandatoryRelationshipProperties, CursorContext.NULL );
+        new SchemaChecker( context() ).check( mandatoryNodeProperties, mandatoryRelationshipProperties, CursorContext.NULL, storeCursors );
     }
 
     interface TokenCreator

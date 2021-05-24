@@ -69,6 +69,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 
@@ -251,7 +253,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 new DelegatingTokenHolder( ( key, internal ) -> propertyKeyRepository.getOrCreateId( key, internal ), TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( ( key, internal ) -> labelRepository.getOrCreateId( key, internal ), TYPE_LABEL ),
                 new DelegatingTokenHolder( ( key, internal ) -> relationshipTypeRepository.getOrCreateId( key, internal ), TYPE_RELATIONSHIP_TYPE ) );
-        tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( CursorContext.NULL ) );
+        try ( var cachedCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
+        {
+            tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( cachedCursors ) );
+        }
 
         temporaryNeoStores = instantiateTempStores();
 
@@ -377,7 +382,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getRelationshipGroupStore();
     }
 
-    public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, CursorContext cursorContext, MemoryTracker memoryTracker )
+    public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, CursorContext cursorContext, StoreCursors storeCursors,
+            MemoryTracker memoryTracker )
     {
         try
         {
@@ -391,7 +397,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 RecoveryCleanupWorkCollector.immediate(), builder, writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName,
                 neo4jConfig.get( counts_store_max_cached_entries ) ) )
         {
-            countsStore.start( cursorContext, memoryTracker );
+            countsStore.start( cursorContext, storeCursors, memoryTracker );
             countsStore.checkpoint( cursorContext );
         }
         catch ( IOException e )
@@ -455,6 +461,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public NeoStores getNeoStores()
     {
         return neoStores;
+    }
+
+    public NeoStores getTemporaryNeoStores()
+    {
+        return temporaryNeoStores;
     }
 
     public TokenHolders getTokenHolders()

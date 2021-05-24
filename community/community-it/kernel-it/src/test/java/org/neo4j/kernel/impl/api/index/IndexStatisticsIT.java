@@ -37,6 +37,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -56,7 +57,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -98,7 +98,7 @@ class IndexStatisticsIT
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ),
                         () -> KernelVersion.LATEST );
-        long indexId = single( schemaRuleAccess.indexGetForSchema( index, NULL ) ).getId();
+        long indexId = single( loadIndexes( index, schemaRuleAccess ) ).getId();
 
         // for which we don't have index counts
         resetIndexCounts( indexId );
@@ -115,6 +115,14 @@ class IndexStatisticsIT
         assertEquals( 32, indexSample.sampleSize() );
         // and also
         assertLogExistsForRecoveryOn( "(:Alien {specimen})" );
+    }
+
+    private IndexDescriptor[] loadIndexes( IndexDescriptor index, SchemaRuleAccess schemaRuleAccess )
+    {
+        try ( var storeCursors = storageEngine().createStorageCursors( CursorContext.NULL ) )
+        {
+            return schemaRuleAccess.indexGetForSchema( index, storeCursors );
+        }
     }
 
     private void assertLogExistsForRecoveryOn( String labelAndProperty )
@@ -184,7 +192,12 @@ class IndexStatisticsIT
 
     private NeoStores neoStores()
     {
-        return resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        return storageEngine().testAccessNeoStores();
+    }
+
+    private RecordStorageEngine storageEngine()
+    {
+        return resolveDependency( RecordStorageEngine.class );
     }
 
     private IndexStatisticsStore indexStatistics()

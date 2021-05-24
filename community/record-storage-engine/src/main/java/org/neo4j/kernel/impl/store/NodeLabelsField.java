@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Logic for parsing and constructing {@link NodeRecord#getLabelField()} and dynamic label
@@ -52,17 +52,17 @@ public class NodeLabelsField
                 : new InlineNodeLabels( node );
     }
 
-    public static long[] get( NodeRecord node, NodeStore nodeStore, CursorContext cursorContext )
+    public static long[] get( NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors )
     {
         return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
-                ? DynamicNodeLabels.get( node, nodeStore, cursorContext )
+                ? DynamicNodeLabels.get( node, nodeStore, storeCursors )
                 : InlineNodeLabels.get( node );
     }
 
-    public static boolean hasLabel( NodeRecord node, NodeStore nodeStore, CursorContext cursorContext, int label )
+    public static boolean hasLabel( NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors, int label )
     {
         return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
-               ? DynamicNodeLabels.hasLabel( node, nodeStore, cursorContext, label )
+               ? DynamicNodeLabels.hasLabel( node, nodeStore, storeCursors, label )
                : InlineNodeLabels.hasLabel( node, label);
     }
 
@@ -86,22 +86,5 @@ public class NodeLabelsField
     {
         assert fieldPointsToDynamicRecordOfLabels( labelField );
         return parseLabelsBody( labelField );
-    }
-
-    /**
-     * Checks so that a label id array is sane, i.e. that it's sorted and contains no duplicates.
-     */
-    public static boolean isSane( long[] labelIds )
-    {
-        long prev = -1;
-        for ( long labelId : labelIds )
-        {
-            if ( labelId <= prev )
-            {
-                return false;
-            }
-            prev = labelId;
-        }
-        return true;
     }
 }

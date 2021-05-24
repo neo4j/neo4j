@@ -58,6 +58,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -133,7 +134,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
     private static TransactionToApply tx( List<StorageCommand> commands )
     {
         PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1, ANONYMOUS );
-        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL );
+        TransactionToApply tx = new TransactionToApply( txRepresentation, NULL, StoreCursors.NULL );
         tx.commitment( NO_COMMITMENT, 0 );
         return tx;
     }
@@ -166,7 +167,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             try ( StorageReader reader = storageEngine.newReader();
                   CommandCreationContext creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
             {
-                creationContext.initialize( NULL );
+                creationContext.initialize( NULL, StoreCursors.NULL );
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {
                     // Apply
@@ -196,7 +197,8 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             List<StorageCommand> commands = new ArrayList<>();
-            storageEngine.createCommands( commands, txState, reader, creationContext, null, LockTracer.NONE, 0, NO_DECORATION, NULL, INSTANCE );
+            storageEngine.createCommands( commands, txState, reader, creationContext, null, LockTracer.NONE, 0, NO_DECORATION, NULL, StoreCursors.NULL,
+                    INSTANCE );
             return tx( commands );
         }
 

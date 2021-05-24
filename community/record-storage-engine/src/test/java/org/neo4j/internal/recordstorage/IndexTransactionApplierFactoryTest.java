@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +70,7 @@ class IndexTransactionApplierFactoryTest
         when( mock.getTokenIndex( EntityType.NODE ) ).thenReturn( IndexDescriptor.INJECTED_NLI );
         try ( var batchContext = new BatchContextImpl( indexUpdateListener, indexUpdatesSync,
                 mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock, NULL, INSTANCE,
-                mock( IdUpdateListener.class ) ) )
+                mock( IdUpdateListener.class ), StoreCursors.NULL ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands(), batchContext ) )
             {
@@ -145,7 +145,7 @@ class IndexTransactionApplierFactoryTest
     private static NodeCommand node( long nodeId )
     {
         NodeRecord after = new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0 );
-        NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL, INSTANCE );
+        NodeLabelsField.parseLabelsField( after ).add( 1, null, null, NULL, StoreCursors.NULL, INSTANCE );
 
         return new NodeCommand( new NodeRecord( nodeId ), after );
     }
@@ -167,7 +167,7 @@ class IndexTransactionApplierFactoryTest
         }
 
         @Override
-        public void activateIndex( IndexDescriptor index ) throws KernelException
+        public void activateIndex( IndexDescriptor index )
         {
 
         }
@@ -189,7 +189,7 @@ class IndexTransactionApplierFactoryTest
         }
 
         @Override
-        public void validateIndex( long indexReference ) throws KernelException
+        public void validateIndex( long indexReference )
         {
 
         }

@@ -79,7 +79,7 @@ public class RelationshipCreator
         @Override
         public RecordProxy<RelationshipGroupRecord,Integer> group( long nodeId, int type, boolean create )
         {
-            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext );
+            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null );
             return relationshipGroupGetter.getOrCreateRelationshipGroup( nodeChange, type, recordChanges.getRelGroupRecords() );
         }
     }
@@ -110,9 +110,9 @@ public class RelationshipCreator
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId, RecordAccessSet recordChanges,
             RelationshipGroupDegreesStore.Updater groupDegreesUpdater, NodeDataLookup nodeDataLookup )
     {
-        RecordProxy<NodeRecord,Void> firstNode = recordChanges.getNodeRecords().getOrLoad( firstNodeId, null, cursorContext );
+        RecordProxy<NodeRecord,Void> firstNode = recordChanges.getNodeRecords().getOrLoad( firstNodeId, null );
         RecordProxy<NodeRecord,Void> secondNode =
-                firstNodeId == secondNodeId ? firstNode : recordChanges.getNodeRecords().getOrLoad( secondNodeId, null, cursorContext );
+                firstNodeId == secondNodeId ? firstNode : recordChanges.getNodeRecords().getOrLoad( secondNodeId, null );
         RecordAccess<RelationshipRecord,Void> relRecords = recordChanges.getRelRecords();
         convertNodeToDenseIfNecessary( firstNode, relRecords, groupDegreesUpdater, nodeDataLookup );
         convertNodeToDenseIfNecessary( secondNode, relRecords, groupDegreesUpdater, nodeDataLookup );
@@ -140,7 +140,7 @@ public class RelationshipCreator
         long relId = node.getNextRel();
         if ( !isNull( relId ) )
         {
-            RecordProxy<RelationshipRecord, Void> relProxy = relRecords.getOrLoad( relId, null, cursorContext );
+            RecordProxy<RelationshipRecord, Void> relProxy = relRecords.getOrLoad( relId, null );
             if ( relCount( node.getId(), relProxy.forReadingData() ) >= denseNodeThreshold )
             {
                 convertNodeToDenseNode( nodeChange, relProxy.forChangingLinkage(), relRecords, groupDegreesUpdater, nodeDataLookup );
@@ -236,7 +236,7 @@ public class RelationshipCreator
             connectRelationshipToDenseNode( nodeChange, relRecord, relRecords, groupDegreesUpdater, null, nodeDataLookup );
             if ( !isNull( relId ) )
             {   // Lock and load the next relationship in the chain
-                relRecord = relRecords.getOrLoad( relId, null, cursorContext ).forChangingLinkage();
+                relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
             }
         }
     }
@@ -275,7 +275,7 @@ public class RelationshipCreator
             long next = insertionPoint.forReadingLinkage().getNextRel( nodeId );
             if ( !isNull( next ) )
             {
-                relationshipAfter = relRecords.getOrLoad( next, null, cursorContext );
+                relationshipAfter = relRecords.getOrLoad( next, null );
             }
         }
 
@@ -285,7 +285,7 @@ public class RelationshipCreator
             // first, i.e. there's no relationship at all for this type and direction or we failed to get a lock in the chain
             if ( !isNull( firstRelId ) )
             {
-                RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorContext ).forChangingLinkage();
+                RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
                 if ( !firstRel.isFirstInChain( nodeId ) )
                 {
                     throw new IllegalStateException( "Expected " + firstRel + " to be first in chain for " + nodeId );
@@ -337,7 +337,7 @@ public class RelationshipCreator
         }
         else
         {
-            RecordProxy<RelationshipRecord,Void> firstRelProxy = relRecords.getOrLoad( firstRelId, null, cursorContext );
+            RecordProxy<RelationshipRecord,Void> firstRelProxy = relRecords.getOrLoad( firstRelId, null );
             long prevCount = firstRelProxy.forReadingLinkage().getPrevRel( nodeId );
             long count = prevCount + 1;
             //If we can we switch to external degrees for better concurrency in future updates
@@ -360,7 +360,7 @@ public class RelationshipCreator
         long newCount = 1;
         if ( !isNull( firstRelId ) )
         {
-            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorContext ).forChangingLinkage();
+            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
             boolean changed = false;
             if ( firstRel.getFirstNode() == nodeId )
             {

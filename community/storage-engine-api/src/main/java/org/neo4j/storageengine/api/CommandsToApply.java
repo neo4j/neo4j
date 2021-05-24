@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Group of commands to apply onto {@link StorageEngine}, as well as reference to {@link #next()} group of commands.
@@ -45,6 +46,11 @@ public interface CommandsToApply extends CommandStream
      * @return underlying page cursor tracer
      */
     CursorContext cursorContext();
+
+    /**
+     * Transaction store cursors to access underlying stores
+     */
+    StoreCursors storeCursors();
 
     /**
      * @return next group of commands in this batch.

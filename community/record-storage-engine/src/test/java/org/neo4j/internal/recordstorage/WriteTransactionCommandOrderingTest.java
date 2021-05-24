@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -158,8 +159,8 @@ class WriteTransactionCommandOrderingTest
         RelationshipStore relationshipStore = mock( RelationshipStore.class );
         when( neoStores.getRelationshipStore() ).thenReturn( relationshipStore );
 
-        return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet,
-                0, null, LockTracer.NONE, null, null, null, NULL, INSTANCE, LATEST_LOG_SERIALIZATION );
+        return new TransactionRecordState( neoStores, mock( IntegrityValidator.class ), recordChangeSet, 0, null, LockTracer.NONE, null, null, null, NULL,
+                StoreCursors.NULL, INSTANCE, LATEST_LOG_SERIALIZATION );
     }
 
     private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter

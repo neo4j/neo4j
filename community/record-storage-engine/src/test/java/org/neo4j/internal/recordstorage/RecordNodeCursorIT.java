@@ -36,9 +36,11 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -65,6 +67,7 @@ class RecordNodeCursorIT
 
     private NeoStores neoStores;
     private NodeStore nodeStore;
+    private CachedStoreCursors storeCursors;
 
     @BeforeEach
     void startNeoStores()
@@ -73,11 +76,13 @@ class RecordNodeCursorIT
                 new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), "db" ), pageCache, directory.getFileSystem(),
                 NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, DatabaseReadOnlyChecker.writable() ).openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
+        storeCursors = new CachedStoreCursors( neoStores, NULL );
     }
 
     @AfterEach
     void stopNeoStores()
     {
+        storeCursors.close();
         neoStores.close();
     }
 
@@ -89,8 +94,8 @@ class RecordNodeCursorIT
         long nodeId = createNodeWithRandomLabels( labels );
 
         // then
-        try ( RecordNodeCursor nodeCursor =
-                new RecordNodeCursor( nodeStore, neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null, NULL ) )
+        try ( RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore(), null,
+                NULL, storeCursors ) )
         {
             nodeCursor.single( nodeId );
             assertThat( nodeCursor.next() ).isTrue();
@@ -110,7 +115,7 @@ class RecordNodeCursorIT
         nodeRecord.setId( nodeStore.nextId( NULL ) );
         nodeRecord.initialize( true, Record.NO_NEXT_PROPERTY.longValue(), false, Record.NO_NEXT_RELATIONSHIP.longValue(), Record.NO_LABELS_FIELD.longValue() );
         nodeRecord.setCreated();
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
+        NodeLabelsField.parseLabelsField( nodeRecord ).put( labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL, storeCursors, INSTANCE );
         nodeStore.updateRecord( nodeRecord, NULL );
         return nodeRecord.getId();
     }

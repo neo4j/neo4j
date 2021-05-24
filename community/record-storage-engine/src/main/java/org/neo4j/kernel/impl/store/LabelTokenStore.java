@@ -29,9 +29,11 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Implementation of the label store.
@@ -56,5 +58,17 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
         super( path, idFile, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, TYPE_DESCRIPTOR, recordFormats.labelToken(),
                 recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
+    }
+
+    @Override
+    public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.labelTokenStoreCursor();
+    }
+
+    @Override
+    PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.dynamicLabelTokeStoreCursor();
     }
 }

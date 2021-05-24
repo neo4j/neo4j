@@ -30,6 +30,7 @@ import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -263,16 +265,17 @@ public class LockVerificationMonitor implements LoadMonitor
 
     public interface Factory
     {
-        RecordAccess.LoadMonitor create( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess );
+        RecordAccess.LoadMonitor create( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess,
+                StoreCursors storeCursors );
 
         static Factory defaultFactory( Config config )
         {
             boolean enabled = config.get( GraphDatabaseInternalSettings.additional_lock_verification );
-            return enabled ? ( locks, txState, neoStores, schemaRuleAccess ) -> new LockVerificationMonitor( locks, txState,
-                    new NeoStoresLoader( neoStores, schemaRuleAccess ) ) : IGNORE;
+            return enabled ? ( locks, txState, neoStores, schemaRuleAccess, storeCursors ) -> new LockVerificationMonitor( locks, txState,
+                    new NeoStoresLoader( neoStores, schemaRuleAccess, storeCursors ) ) : IGNORE;
         }
 
-        Factory IGNORE = ( locks, txState, neoStores, schemaRuleAccess ) -> LoadMonitor.NULL_MONITOR;
+        Factory IGNORE = ( locks, txState, neoStores, schemaRuleAccess, storeCursors ) -> LoadMonitor.NULL_MONITOR;
     }
 
     public interface StoreLoader
@@ -294,37 +297,39 @@ public class LockVerificationMonitor implements LoadMonitor
     {
         private final NeoStores neoStores;
         private final SchemaRuleAccess schemaRuleAccess;
+        private final StoreCursors storeCursors;
 
-        public NeoStoresLoader( NeoStores neoStores, SchemaRuleAccess schemaRuleAccess )
+        public NeoStoresLoader( NeoStores neoStores, SchemaRuleAccess schemaRuleAccess, StoreCursors storeCursors )
         {
             this.neoStores = neoStores;
             this.schemaRuleAccess = schemaRuleAccess;
+            this.storeCursors = storeCursors;
         }
 
         @Override
         public NodeRecord loadNode( long id )
         {
-            return readRecord( id, neoStores.getNodeStore() );
+            return readRecord( id, neoStores.getNodeStore(), storeCursors.nodeCursor() );
         }
 
         @Override
         public RelationshipRecord loadRelationship( long id )
         {
-            return readRecord( id, neoStores.getRelationshipStore() );
+            return readRecord( id, neoStores.getRelationshipStore(), storeCursors.relationshipCursor() );
         }
 
         @Override
         public RelationshipGroupRecord loadRelationshipGroup( long id )
         {
-            return readRecord( id, neoStores.getRelationshipGroupStore() );
+            return readRecord( id, neoStores.getRelationshipGroupStore(), storeCursors.groupCursor() );
         }
 
         @Override
         public PropertyRecord loadProperty( long id )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
-            PropertyRecord record = readRecord( id, propertyStore );
-            propertyStore.ensureHeavy( record, NULL );
+            PropertyRecord record = readRecord( id, propertyStore, storeCursors.propertyCursor() );
+            propertyStore.ensureHeavy( record, storeCursors );
             return record;
         }
 
@@ -333,7 +338,7 @@ public class LockVerificationMonitor implements LoadMonitor
         {
             try
             {
-                return schemaRuleAccess.loadSingleSchemaRule( id, NULL );
+                return schemaRuleAccess.loadSingleSchemaRule( id, storeCursors );
             }
             catch ( MalformedSchemaRuleException e )
             {
@@ -344,15 +349,12 @@ public class LockVerificationMonitor implements LoadMonitor
         @Override
         public SchemaRecord loadSchemaRecord( long id )
         {
-            return readRecord( id, neoStores.getSchemaStore() );
+            return readRecord( id, neoStores.getSchemaStore(), storeCursors.schemaCursor() );
         }
 
-        private static <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )
+        private static <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store, PageCursor pageCursor )
         {
-            try ( var cursor = store.openPageCursorForReading( id, NULL ) )
-            {
-                return store.getRecordByCursor( id, store.newRecord(), RecordLoad.ALWAYS, cursor );
-            }
+            return store.getRecordByCursor( id, store.newRecord(), RecordLoad.ALWAYS, pageCursor );
         }
     }
 }

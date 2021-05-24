@@ -36,6 +36,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -79,6 +81,7 @@ class DeleteDuplicateNodesStepTest
     private EphemeralFileSystemAbstraction fs;
 
     private NeoStores neoStores;
+    private CachedStoreCursors storeCursors;
 
     @BeforeEach
     void before()
@@ -87,11 +90,13 @@ class DeleteDuplicateNodesStepTest
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
         neoStores = storeFactory.openAllNeoStores( true );
+        storeCursors = new CachedStoreCursors( neoStores, NULL );
     }
 
     @AfterEach
     void after()
     {
+        storeCursors.close();
         neoStores.close();
     }
 
@@ -116,7 +121,7 @@ class DeleteDuplicateNodesStepTest
         SimpleStageControl control = new SimpleStageControl();
         NodeStore nodeStore = neoStores.getNodeStore();
         try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
-                iterator( duplicateNodeIds ), nodeStore, neoStores.getPropertyStore(), monitor, PageCacheTracer.NULL ) )
+                iterator( duplicateNodeIds ), neoStores, monitor, PageCacheTracer.NULL ) )
         {
             control.steps( step );
             startAndAwaitCompletionOf( step );
@@ -126,52 +131,48 @@ class DeleteDuplicateNodesStepTest
         // then
         int expectedNodes = 0;
         int expectedProperties = 0;
-        try ( var nodeCursor = nodeStore.openPageCursorForReading( 0, NULL );
-              var labelCursor = nodeStore.getDynamicLabelStore().openPageCursorForReading( 0, NULL );
-              var propertyCursor = neoStores.getPropertyStore().openPageCursorForReading( 0, NULL ) )
+        var nodeCursor = storeCursors.nodeCursor();
+        for ( Ids entity : ids )
         {
-            for ( Ids entity : ids )
+            boolean expectedToBeInUse = !ArrayUtils.contains( duplicateNodeIds, entity.node.getId() );
+            int stride = expectedToBeInUse ? 1 : 0;
+            expectedNodes += stride;
+
+            // Verify node record
+            assertEquals( expectedToBeInUse, nodeStore.isInUse( entity.node.getId(), nodeCursor ) );
+
+            // Verify label records
+            for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
             {
-                boolean expectedToBeInUse = !ArrayUtils.contains( duplicateNodeIds, entity.node.getId() );
-                int stride = expectedToBeInUse ? 1 : 0;
-                expectedNodes += stride;
+                assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(), storeCursors.dynamicLabelStoreCursor() ) );
+            }
 
-                // Verify node record
-                assertEquals( expectedToBeInUse, nodeStore.isInUse( entity.node.getId(), nodeCursor ) );
-
-                // Verify label records
-                for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
+            // Verify property records
+            for ( PropertyRecord propertyRecord : entity.properties )
+            {
+                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), storeCursors.propertyCursor() ) );
+                for ( PropertyBlock property : propertyRecord )
                 {
-                    assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(), labelCursor ) );
-                }
-
-                // Verify property records
-                for ( PropertyRecord propertyRecord : entity.properties )
-                {
-                    assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), propertyCursor ) );
-                    for ( PropertyBlock property : propertyRecord )
+                    // Verify property dynamic value records
+                    for ( DynamicRecord valueRecord : property.getValueRecords() )
                     {
-                        // Verify property dynamic value records
-                        for ( DynamicRecord valueRecord : property.getValueRecords() )
+                        AbstractDynamicStore valueStore;
+                        PageCursor valueCursor;
+                        switch ( property.getType() )
                         {
-                            AbstractDynamicStore valueStore;
-                            switch ( property.getType() )
-                            {
-                            case STRING:
-                                valueStore = neoStores.getPropertyStore().getStringStore();
-                                break;
-                            case ARRAY:
-                                valueStore = neoStores.getPropertyStore().getArrayStore();
-                                break;
-                            default: throw new IllegalArgumentException( propertyRecord + " " + property );
-                            }
-                            try ( var valueCursor = valueStore.openPageCursorForReading( 0, NULL ) )
-                            {
-                                assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), valueCursor ) );
-                            }
+                        case STRING:
+                            valueStore = neoStores.getPropertyStore().getStringStore();
+                            valueCursor = storeCursors.dynamicStringStoreCursor();
+                            break;
+                        case ARRAY:
+                            valueStore = neoStores.getPropertyStore().getArrayStore();
+                            valueCursor = storeCursors.dynamicArrayStoreCursor();
+                            break;
+                        default: throw new IllegalArgumentException( propertyRecord + " " + property );
                         }
-                        expectedProperties += stride;
+                        assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), valueCursor ) );
                     }
+                    expectedProperties += stride;
                 }
             }
         }
@@ -195,7 +196,7 @@ class DeleteDuplicateNodesStepTest
         SimpleStageControl control = new SimpleStageControl();
         var cacheTracer = new DefaultPageCacheTracer();
         try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
-                iterator( duplicateNodeIds ), neoStores.getNodeStore(), neoStores.getPropertyStore(), monitor, cacheTracer ) )
+                iterator( duplicateNodeIds ), neoStores, monitor, cacheTracer ) )
         {
             control.steps( step );
             startAndAwaitCompletionOf( step );
@@ -247,7 +248,8 @@ class DeleteDuplicateNodesStepTest
         NodeRecord nodeRecord = nodeStore.newRecord();
         nodeRecord.setId( nodeStore.nextId( NULL ) );
         nodeRecord.setInUse( true );
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
+        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore(), NULL, storeCursors,
+                INSTANCE );
         PropertyRecord[] propertyRecords = createPropertyChain( nodeRecord, propertyCount, propertyStore );
         if ( propertyRecords.length > 0 )
         {

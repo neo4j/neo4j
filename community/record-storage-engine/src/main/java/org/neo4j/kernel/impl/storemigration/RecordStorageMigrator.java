@@ -43,9 +43,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
+import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.InputIterator;
 import org.neo4j.internal.batchimport.input.Collector;
@@ -85,6 +85,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -96,12 +97,14 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35StoreCursors;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -113,6 +116,7 @@ import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -288,12 +292,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
         StoreFactory oldStoreFactory = createStoreFactory( directoryLayout, oldFormat, new ScanOnOpenReadOnlyIdGeneratorFactory() );
         try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
+                var storeCursors = new CachedStoreCursors( oldStores, cursorContext );
                 GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
                         new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout, memoryTracker, logService.getInternalLog( getClass() ) ),
                         writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, migrationLayout.getDatabaseName(),
                         config.get( counts_store_max_cached_entries ) ) )
         {
-            countsStore.start( cursorContext, memoryTracker );
+            countsStore.start( cursorContext, storeCursors, memoryTracker );
             countsStore.checkpoint( cursorContext );
         }
     }
@@ -447,25 +452,25 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             AdditionalInitialIds additionalInitialIds =
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
-            // We have to make sure to keep the token ids if we're migrating properties/labels
-            BatchImporter importer = batchImporterFactory.instantiate(
-                    migrationDirectoryStructure, fileSystem, cacheTracer, importConfig, logService,
-                    migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler,
-                    Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker );
-            InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
-            InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker );
-            long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
-                storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
-                storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
-            Estimates estimates = Input.knownEstimates(
-                    legacyStore.getNodeStore().getNumberOfIdsInUse(),
-                    legacyStore.getRelationshipStore().getNumberOfIdsInUse(),
-                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
-                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
-                    propertyStoreSize / 2, propertyStoreSize / 2,
-                    0 /*node labels left as 0 for now*/);
-            importer.doImport( Input.input( nodes, relationships, IdType.ACTUAL, estimates, ReadableGroups.EMPTY ) );
+            try ( var storeCursors = new CachedStoreCursors( legacyStore, CursorContext.NULL ) )
+            {
+                // We have to make sure to keep the token ids if we're migrating properties/labels
+                BatchImporter importer = batchImporterFactory.instantiate(
+                        migrationDirectoryStructure, fileSystem, cacheTracer, importConfig, logService,
+                        migrationBatchImporterMonitor( legacyStore, progressReporter,
+                                importConfig ), additionalInitialIds, config, newFormat, ImportLogic.NO_MONITOR, jobScheduler,
+                        Collector.STRICT, LogFilesInitializer.NULL, indexImporterFactory, memoryTracker );
+                InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker, storeCursors );
+                InputIterable relationships =
+                        () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cacheTracer, memoryTracker, storeCursors );
+                long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 + storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
+                        storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
+                Estimates estimates =
+                        Input.knownEstimates( legacyStore.getNodeStore().getNumberOfIdsInUse(), legacyStore.getRelationshipStore().getNumberOfIdsInUse(),
+                                legacyStore.getPropertyStore().getNumberOfIdsInUse(), legacyStore.getPropertyStore().getNumberOfIdsInUse(),
+                                propertyStoreSize / 2, propertyStoreSize / 2, 0 /*node labels left as 0 for now*/ );
+                importer.doImport( Input.input( nodes, relationships, IdType.ACTUAL, estimates, ReadableGroups.EMPTY ) );
+            }
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written
@@ -533,8 +538,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 DatabaseFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
-            fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture,
-                    Arrays.asList( storesFilesToMigrate ), true, !requiresIdFilesMigration( oldFormat, newFormat ), ExistingTargetStrategy.OVERWRITE );
+            fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture, Arrays.asList( storesFilesToMigrate ), true,
+                    !requiresIdFilesMigration( oldFormat, newFormat ), ExistingTargetStrategy.OVERWRITE );
         }
         else
         {
@@ -610,7 +615,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     private static InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, StoreCursors storeCursors )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getRelationshipStore() )
         {
@@ -618,13 +623,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public InputChunk newChunk()
             {
                 var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( RELATIONSHIP_CHUNK_MIGRATION_TAG ) );
-                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, memoryTracker );
+                return new RelationshipRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, storeCursors,
+                        memoryTracker );
             }
         };
     }
 
     private static InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration, PageCacheTracer cacheTracer,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker, StoreCursors storeCursors )
     {
         return new StoreScanAsInputIterator<>( legacyStore.getNodeStore() )
         {
@@ -632,7 +638,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public InputChunk newChunk()
             {
                 var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( NODE_CHUNK_MIGRATION_TAG ) );
-                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, memoryTracker );
+                return new NodeRecordChunk( new RecordStorageReader( legacyStore ), requiresPropertyMigration, cursorContext, storeCursors,
+                        memoryTracker );
             }
         };
     }
@@ -662,9 +669,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
                     directoryLayout.relationshipGroupDegreesStore(), fileSystem, immediate(), rebuilder, writable(),
                     cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, directoryLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
-                    CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "empty group degrees store rebuild" ) ) )
+                    var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "empty group degrees store rebuild" ) ) )
             {
-                groupDegreesStore.start( cursorContext, memoryTracker );
+                groupDegreesStore.start( cursorContext, StoreCursors.NULL, memoryTracker );
                 groupDegreesStore.checkpoint( cursorContext );
             }
         }
@@ -776,6 +783,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
             sourceStoresToOpen = ArrayUtil.concat( sourceStoresToOpen, schemaStorageCreator.additionalStoresToOpen() );
             try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
+                 var srcCursors = new CachedStoreCursors( srcStore, cursorContext );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
                   schemaStorageCreator )
             {
@@ -784,13 +792,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-                srcTokenHolders.setInitialTokens( allTokens( srcStore ), cursorContext );
+                srcTokenHolders.setInitialTokens( allTokens( srcStore ), srcCursors );
                 SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
 
                 SchemaRuleMigrationAccess dstAccess =
                         RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore, cursorContext, memoryTracker );
 
-                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, cursorContext );
+                try ( var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
+                {
+                    migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, schemaCursors );
+                }
 
                 dstStore.flush( cursorContext );
             }
@@ -798,11 +809,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess,
-            CursorContext cursorContext ) throws KernelException
+            StoreCursors storeCursors ) throws KernelException
     {
         LinkedHashMap<Long,SchemaRule> rules = new LinkedHashMap<>();
 
-        schemaGenerateNames( srcAccess, srcTokenHolders, rules, cursorContext );
+        schemaGenerateNames( srcAccess, srcTokenHolders, rules, storeCursors );
 
         // Once all rules have been processed, write them out.
         for ( SchemaRule rule : rules.values() )
@@ -812,12 +823,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     }
 
     public static void schemaGenerateNames( SchemaStorage srcAccess, TokenHolders srcTokenHolders,
-            Map<Long,SchemaRule> rules, CursorContext cursorContext ) throws KernelException
+            Map<Long,SchemaRule> rules, StoreCursors storeCursors ) throws KernelException
     {
         SchemaNameGiver nameGiver = new SchemaNameGiver( srcTokenHolders );
         List<SchemaRule> namedRules = new ArrayList<>();
         List<SchemaRule> unnamedRules = new ArrayList<>();
-        srcAccess.getAll( cursorContext ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
+        srcAccess.getAll( storeCursors ).forEach( r -> (hasName( r ) ? namedRules : unnamedRules).add( r ) );
         // Make sure that we process explicitly named schemas first.
         namedRules.forEach( r -> rules.put( r.getId(), r ) );
         unnamedRules.forEach( r -> rules.put( r.getId(), r ) );
@@ -982,6 +993,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             }
 
             @Override
+            public StoreCursors getSchemaStorageTokenCursors( StoreCursors srcCursors )
+            {
+                return srcCursors;
+            }
+
+            @Override
             public void close() throws IOException
             {
                 IOUtils.closeAll( schemaStore );
@@ -994,11 +1011,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         return new SchemaStorageCreator()
         {
+            private CursorContext cursorContext;
             SchemaStore35 srcSchema;
 
             @Override
             public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext )
             {
+                this.cursorContext = cursorContext;
                 srcSchema = new SchemaStore35(
                         directoryLayout.schemaStore(),
                         directoryLayout.idSchemaStore(),
@@ -1022,6 +1041,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             }
 
             @Override
+            public StoreCursors getSchemaStorageTokenCursors( StoreCursors srcCursors )
+            {
+                return new SchemaStore35StoreCursors( srcSchema, cursorContext );
+            }
+
+            @Override
             public void close() throws IOException
             {
                 IOUtils.closeAll( srcSchema );
@@ -1034,13 +1059,17 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext );
 
         StoreType[] additionalStoresToOpen();
+
+        StoreCursors getSchemaStorageTokenCursors( StoreCursors srcCursors );
     }
 
     private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor>
     {
-        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext, MemoryTracker memoryTracker )
+        NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext, StoreCursors storeCursors,
+                MemoryTracker memoryTracker )
         {
-            super( storageReader.allocateNodeCursor( cursorContext ), storageReader, requiresPropertyMigration, cursorContext, memoryTracker );
+            super( storageReader.allocateNodeCursor( cursorContext, storeCursors ), storageReader, requiresPropertyMigration, cursorContext, storeCursors,
+                    memoryTracker );
         }
 
         @Override
@@ -1060,10 +1089,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static class RelationshipRecordChunk extends StoreScanChunk<StorageRelationshipScanCursor>
     {
-        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext,
+        RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext, StoreCursors storeCursors,
                 MemoryTracker memoryTracker )
         {
-            super( storageReader.allocateRelationshipScanCursor( cursorContext ), storageReader, requiresPropertyMigration, cursorContext, memoryTracker );
+            super( storageReader.allocateRelationshipScanCursor( cursorContext, storeCursors ), storageReader, requiresPropertyMigration, cursorContext,
+                    storeCursors, memoryTracker );
         }
 
         @Override

@@ -32,6 +32,7 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertRecordsEquals;
@@ -58,11 +59,11 @@ public interface CommandLockVerification
         private final ReadableTransactionState txState;
         private final StoreLoader loader;
 
-        RealChecker( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess )
+        RealChecker( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess, StoreCursors storeCursors )
         {
             this.locks = locks;
             this.txState = txState;
-            this.loader = new NeoStoresLoader( neoStores, schemaRuleAccess );
+            this.loader = new NeoStoresLoader( neoStores, schemaRuleAccess, storeCursors );
         }
 
         @Override
@@ -179,9 +180,10 @@ public interface CommandLockVerification
     interface Factory
     {
 
-        Factory IGNORE = ( locker, txState, storageReader, schemaRuleAccess ) -> CommandLockVerification.IGNORE;
+        Factory IGNORE = ( locker, txState, storageReader, schemaRuleAccess, storeCursors ) -> CommandLockVerification.IGNORE;
 
-        CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess );
+        CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess,
+                StoreCursors storeCursors );
 
         class RealFactory implements Factory
         {
@@ -194,10 +196,10 @@ public interface CommandLockVerification
 
             @Override
             public CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores,
-                    SchemaRuleAccess schemaRuleAccess )
+                    SchemaRuleAccess schemaRuleAccess, StoreCursors storeCursors )
             {
                 boolean enabled = config.get( GraphDatabaseInternalSettings.additional_lock_verification );
-                return enabled ? new RealChecker( locker, txState, neoStores, schemaRuleAccess ) : CommandLockVerification.IGNORE;
+                return enabled ? new RealChecker( locker, txState, neoStores, schemaRuleAccess, storeCursors ) : CommandLockVerification.IGNORE;
             }
         }
     }

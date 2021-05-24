@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -48,9 +49,10 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final SchemaRecordChangeTranslator schemaStateChanger;
     private final ConstraintRuleAccessor constraintSemantics;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
 
     TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState, SchemaRuleAccess schemaRuleAccess,
-            ConstraintRuleAccessor constraintSemantics, CursorContext cursorContext )
+            ConstraintRuleAccessor constraintSemantics, CursorContext cursorContext, StoreCursors storeCursors )
     {
         this.recordState = recordState;
         this.schemaState = schemaState;
@@ -58,6 +60,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         this.schemaStateChanger = schemaRuleAccess.getSchemaRecordChangeTranslator();
         this.constraintSemantics = constraintSemantics;
         this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     @Override
@@ -176,7 +179,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId(), cursorContext );
+        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId(), storeCursors );
         ConstraintDescriptor constraint = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -184,7 +187,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId(), cursorContext );
+        IndexDescriptor indexRule = (IndexDescriptor) schemaStorage.loadSingleSchemaRule( uniqueConstraint.ownedIndexId(), storeCursors );
         ConstraintDescriptor constraint = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -196,13 +199,13 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         clearSchemaState = true;
         try
         {
-            ConstraintDescriptor rule = schemaStorage.constraintsGetSingle( constraint, cursorContext );
+            ConstraintDescriptor rule = schemaStorage.constraintsGetSingle( constraint, storeCursors );
             schemaStateChanger.dropSchemaRule( recordState, rule );
 
             if ( constraint.enforcesUniqueness() )
             {
                 // Remove the index for the constraint as well
-                IndexDescriptor[] indexes = schemaStorage.indexGetForSchema( constraint.schema(), cursorContext );
+                IndexDescriptor[] indexes = schemaStorage.indexGetForSchema( constraint.schema(), storeCursors );
                 for ( IndexDescriptor index : indexes )
                 {
                     OptionalLong owningConstraintId = index.getOwningConstraintId();

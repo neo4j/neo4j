@@ -140,7 +140,7 @@ public class ConstraintIndexCreator
             reacquiredLabelLock = true;
 
             try ( NodePropertyAccessor propertyAccessor = new DefaultNodePropertyAccessor( transaction.newStorageReader(), transaction.cursorContext(),
-                    transaction.memoryTracker() ) )
+                    transaction.storeCursors(), transaction.memoryTracker() ) )
             {
                 indexingService.getIndexProxy( index ).verifyDeferredConstraints( propertyAccessor );
             }

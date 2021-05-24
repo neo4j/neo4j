@@ -69,6 +69,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -312,7 +313,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( new TestCommand() ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, ANONYMOUS );
-        return new TransactionToApply( tx, NULL );
+        return new TransactionToApply( tx, NULL, StoreCursors.NULL );
     }
 
     private static Predicate<StackFrame> failMethod( final Class<?> klass, final String methodName )

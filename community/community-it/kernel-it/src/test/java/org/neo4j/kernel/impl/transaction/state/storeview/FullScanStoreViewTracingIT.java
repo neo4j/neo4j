@@ -73,7 +73,8 @@ class FullScanStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var indexStoreView = new FullScanStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
+        var indexStoreView =
+                new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
         var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
                 new TestTokenScanConsumer(), true, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );

@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -148,6 +149,12 @@ public abstract class AbstractNeo4jTestCase
     protected static long dynamicArrayRecordsInUse()
     {
         return numberOfRecordsInUse( propertyStore().getArrayStore() );
+    }
+
+    protected static StoreCursors createStoreCursors()
+    {
+        var storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        return storageEngine.createStorageCursors( NULL );
     }
 
     protected static PropertyStore propertyStore()

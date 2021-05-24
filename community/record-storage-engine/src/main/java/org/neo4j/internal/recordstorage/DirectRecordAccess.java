@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever transaction is committed.
@@ -41,25 +42,29 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
 {
     private final RecordStore<RECORD> store;
     private final Loader<RECORD, ADDITIONAL> loader;
+    private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private final Map<Long,DirectRecordProxy> batch = new HashMap<>();
 
     private final MutableInt changeCounter = new MutableInt();
 
-    public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD, ADDITIONAL> loader )
+    public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD, ADDITIONAL> loader, CursorContext cursorContext, StoreCursors storeCursors )
     {
         this.store = store;
         this.loader = loader;
+        this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext )
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load )
     {
         DirectRecordProxy loaded = batch.get( key );
         if ( loaded != null )
         {
             return loaded;
         }
-        return proxy( key, loader.load( key, additionalData, load, cursorContext ), additionalData, false, cursorContext );
+        return proxy( key, loader.load( key, additionalData, load ), additionalData, false, cursorContext );
     }
 
     private RecordProxy<RECORD, ADDITIONAL> putInBatch( long key, DirectRecordProxy proxy )
@@ -152,7 +157,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD forChangingData()
         {
-            loader.ensureHeavy( record, cursorContext );
+            loader.ensureHeavy( record, storeCursors );
             prepareChange();
             return record;
         }
@@ -166,7 +171,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD forReadingData()
         {
-            loader.ensureHeavy( record, cursorContext );
+            loader.ensureHeavy( record, storeCursors );
             return record;
         }
 
@@ -179,7 +184,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD getBefore()
         {
-            return loader.load( key, additionalData, RecordLoad.NORMAL, cursorContext );
+            return loader.load( key, additionalData, RecordLoad.NORMAL );
         }
 
         @Override

@@ -68,12 +68,12 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
     {
         // (Temporarily?) we can create groups lazily here
         NodeContext nodeContext = contexts.getIfAbsentPutWithKey( nodeId,
-                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorContext ), memoryTracker ) );
+                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null ), memoryTracker ) );
         NodeContext.DenseContext context = nodeContext.denseContext( type );
         RecordProxy<RelationshipGroupRecord,Integer> group = context.group();
         if ( group == null )
         {
-            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext );
+            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null );
             group = create
                     ? relGroupGetter.getOrCreateRelationshipGroup( nodeChange, type, recordChanges.getRelGroupRecords() )
                     : relGroupGetter.getRelationshipGroup( nodeChange.forReadingLinkage(), type, recordChanges.getRelGroupRecords(), EMPTY ).group();
@@ -87,10 +87,10 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
      */
     public RecordProxy<RelationshipGroupRecord,Integer> group( long groupId )
     {
-        RecordProxy<RelationshipGroupRecord,Integer> groupProxy = recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorContext );
+        RecordProxy<RelationshipGroupRecord,Integer> groupProxy = recordChanges.getRelGroupRecords().getOrLoad( groupId, null );
         RelationshipGroupRecord group = groupProxy.forReadingData();
         NodeContext nodeContext = contexts.getIfAbsentPutWithKey( group.getOwningNode(),
-                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null, cursorContext ), memoryTracker ) );
+                n -> NodeContext.createNodeContext( recordChanges.getNodeRecords().getOrLoad( n, null ), memoryTracker ) );
         NodeContext.DenseContext context = nodeContext.denseContext( group.getType() );
         context.setGroup( groupProxy );
         return groupProxy;

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.internal.batchimport.Configuration;
@@ -30,6 +31,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.lock.LockWaitStrategies.INCREMENTAL_BACKOFF;
 
@@ -39,18 +41,22 @@ public class ReadEntityIdsStep extends PullingProducerStep
 
     private final StoreScan.ExternalUpdatesCheck externalUpdatesCheck;
     private final AtomicBoolean continueScanning;
-    private final Function<CursorContext,EntityIdIterator> entityIdIteratorSupplier;
+    private final BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier;
+    private final Function<CursorContext,StoreCursors> storeCursorsFactory;
     private final PageCacheTracer pageCacheTracer;
     private volatile long position;
     private CursorContext cursorContext;
+    private StoreCursors storeCursors;
     private EntityIdIterator entityIdIterator;
     private long lastEntityId;
 
-    public ReadEntityIdsStep( StageControl control, Configuration configuration, Function<CursorContext,EntityIdIterator> entityIdIteratorSupplier,
+    public ReadEntityIdsStep( StageControl control, Configuration configuration,
+            BiFunction<CursorContext,StoreCursors,EntityIdIterator> entityIdIteratorSupplier, Function<CursorContext,StoreCursors> storeCursorsFactory,
             PageCacheTracer cacheTracer, StoreScan.ExternalUpdatesCheck externalUpdatesCheck, AtomicBoolean continueScanning )
     {
         super( control, configuration );
         this.entityIdIteratorSupplier = entityIdIteratorSupplier;
+        this.storeCursorsFactory = storeCursorsFactory;
         this.pageCacheTracer = cacheTracer;
         this.externalUpdatesCheck = externalUpdatesCheck;
         this.continueScanning = continueScanning;
@@ -60,7 +66,8 @@ public class ReadEntityIdsStep extends PullingProducerStep
     protected void process()
     {
         cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CURSOR_TRACER_TAG ) );
-        entityIdIterator = entityIdIteratorSupplier.apply( cursorContext );
+        storeCursors = storeCursorsFactory.apply( cursorContext );
+        entityIdIterator = entityIdIteratorSupplier.apply( cursorContext, storeCursors );
         super.process();
     }
 
@@ -104,7 +111,7 @@ public class ReadEntityIdsStep extends PullingProducerStep
     protected void done()
     {
         super.done();
-        IOUtils.closeAllUnchecked( entityIdIterator, cursorContext );
+        IOUtils.closeAllUnchecked( entityIdIterator, storeCursors, cursorContext );
     }
 
     @Override

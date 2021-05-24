@@ -36,6 +36,6 @@ public class CacheInvalidationTransactionApplierFactory implements TransactionAp
     @Override
     public TransactionApplier startTx( CommandsToApply transaction, BatchContext batchContext )
     {
-        return new CacheInvalidationTransactionApplier( neoStores, cacheAccess, transaction.cursorContext() );
+        return new CacheInvalidationTransactionApplier( neoStores, cacheAccess, transaction.storeCursors() );
     }
 }

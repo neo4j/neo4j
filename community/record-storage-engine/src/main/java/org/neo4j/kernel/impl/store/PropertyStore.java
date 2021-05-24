@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
@@ -250,15 +251,15 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     }
 
     @Override
-    public void ensureHeavy( PropertyRecord record, CursorContext cursorContext )
+    public void ensureHeavy( PropertyRecord record, StoreCursors storeCursors )
     {
         for ( PropertyBlock block : record )
         {
-            ensureHeavy( block, cursorContext );
+            ensureHeavy( block, storeCursors );
         }
     }
 
-    public void ensureHeavy( PropertyBlock block, CursorContext cursorContext )
+    public void ensureHeavy( PropertyBlock block, StoreCursors storeCursors )
     {
         if ( !block.isLight() )
         {
@@ -269,15 +270,26 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         RecordStore<DynamicRecord> dynamicStore = dynamicStoreForValueType( type );
         if ( dynamicStore != null )
         {
-            try ( var dynamicCursor = dynamicStore.openPageCursorForReading( 0, cursorContext ) )
+            var cursorForType = dynamicStoreCursorForType( storeCursors, type );
+            List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL, false, cursorForType );
+            for ( DynamicRecord dynamicRecord : dynamicRecords )
             {
-                List<DynamicRecord> dynamicRecords = dynamicStore.getRecords( block.getSingleValueLong(), NORMAL, false, dynamicCursor );
-                for ( DynamicRecord dynamicRecord : dynamicRecords )
-                {
-                    dynamicRecord.setType( type.intValue() );
-                }
-                block.setValueRecords( dynamicRecords );
+                dynamicRecord.setType( type.intValue() );
             }
+            block.setValueRecords( dynamicRecords );
+        }
+    }
+
+    private PageCursor dynamicStoreCursorForType( StoreCursors storeCursors, PropertyType type )
+    {
+        switch ( type )
+        {
+        case ARRAY:
+            return storeCursors.dynamicArrayStoreCursor();
+        case STRING:
+            return storeCursors.dynamicStringStoreCursor();
+        default:
+            throw new IllegalArgumentException( "Unsupported type of dynamic property " + type );
         }
     }
 
@@ -285,15 +297,18 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     {
         switch ( type )
         {
-        case ARRAY: return arrayStore;
-        case STRING: return stringStore;
-        default: return null;
+        case ARRAY:
+            return arrayStore;
+        case STRING:
+            return stringStore;
+        default:
+            return null;
         }
     }
 
-    public Value getValue( PropertyBlock propertyBlock, CursorContext cursorContext )
+    public Value getValue( PropertyBlock propertyBlock, StoreCursors cursors )
     {
-        return propertyBlock.getType().value( propertyBlock, this, cursorContext );
+        return propertyBlock.getType().value( propertyBlock, this, cursors );
     }
 
     private static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars, DynamicRecordAllocator allocator, CursorContext cursorContext,
@@ -635,28 +650,28 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return UTF8.decode( byteArray );
     }
 
-    TextValue getTextValueFor( PropertyBlock propertyBlock, CursorContext cursorContext )
+    TextValue getTextValueFor( PropertyBlock propertyBlock, StoreCursors storeCursors )
     {
-        ensureHeavy( propertyBlock, cursorContext );
-        return getTextValueFor( propertyBlock.getValueRecords(), cursorContext );
+        ensureHeavy( propertyBlock, storeCursors );
+        return getTextValueFor( propertyBlock.getValueRecords(), storeCursors );
     }
 
-    public TextValue getTextValueFor( Collection<DynamicRecord> dynamicRecords, CursorContext cursorContext )
+    public TextValue getTextValueFor( Collection<DynamicRecord> dynamicRecords, StoreCursors storeCursors )
     {
-        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, cursorContext );
+        Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING, storeCursors );
         // A string doesn't have a header in the data array
         return Values.utf8Value( source.other() );
     }
 
-    Value getArrayFor( PropertyBlock propertyBlock, CursorContext cursorContext )
+    Value getArrayFor( PropertyBlock propertyBlock, StoreCursors storeCursors )
     {
-        ensureHeavy( propertyBlock, cursorContext );
-        return getArrayFor( propertyBlock.getValueRecords(), cursorContext );
+        ensureHeavy( propertyBlock, storeCursors );
+        return getArrayFor( propertyBlock.getValueRecords(), storeCursors );
     }
 
-    public Value getArrayFor( Iterable<DynamicRecord> records, CursorContext cursorContext )
+    public Value getArrayFor( Collection<DynamicRecord> records, StoreCursors storeCursors )
     {
-        return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY, cursorContext ) );
+        return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY, storeCursors ) );
     }
 
     @Override

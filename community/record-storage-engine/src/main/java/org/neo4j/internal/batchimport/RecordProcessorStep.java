@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.batchimport.staging.BatchSender;
@@ -34,6 +35,8 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * {@link RecordProcessor} in {@link Step Step-form}.
@@ -42,6 +45,7 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
 {
     private final Supplier<RecordProcessor<T>> processorFactory;
     private final boolean endOfLine;
+    private final Function<CursorContext,StoreCursors> storeCursorsCreator;
     private final List<RecordProcessor<T>> allProcessors = Collections.synchronizedList( new ArrayList<>() );
     private final ThreadLocal<RecordProcessor<T>> threadProcessors = new ThreadLocal<>()
     {
@@ -56,25 +60,29 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
 
     public RecordProcessorStep( StageControl control, String name, Configuration config,
             Supplier<RecordProcessor<T>> processorFactory, boolean endOfLine, int maxProcessors, PageCacheTracer pageCacheTracer,
-            StatsProvider... additionalStatsProviders )
+            Function<CursorContext, StoreCursors> storeCursorsCreator, StatsProvider... additionalStatsProviders )
     {
         super( control, name, config, maxProcessors, pageCacheTracer, additionalStatsProviders );
         this.processorFactory = processorFactory;
         this.endOfLine = endOfLine;
+        this.storeCursorsCreator = storeCursorsCreator;
     }
 
     @Override
     protected void process( T[] batch, BatchSender sender, CursorContext cursorContext )
     {
         RecordProcessor<T> processor = threadProcessors.get();
-        for ( T item : batch )
+        try ( var storeCursor = storeCursorsCreator.apply( cursorContext ) )
         {
-            if ( item != null && item.inUse() )
+            for ( T item : batch )
             {
-                if ( !processor.process( item, cursorContext ) )
+                if ( item != null && item.inUse() )
                 {
-                    // No change for this record
-                    item.setInUse( false );
+                    if ( !processor.process( item, storeCursor ) )
+                    {
+                        // No change for this record
+                        item.setInUse( false );
+                    }
                 }
             }
         }

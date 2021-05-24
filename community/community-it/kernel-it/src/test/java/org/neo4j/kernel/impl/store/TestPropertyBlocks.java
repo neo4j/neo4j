@@ -34,6 +34,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -183,12 +184,15 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             propertyStore.getRecordByCursor( recordId, record, RecordLoad.FORCE, cursor );
         }
-        record.forEach( block ->
+        try ( StoreCursors storeCursors = createStoreCursors() )
         {
-            final Object value = propertyStore.getValue( block, NULL ).asObject();
-            final String name = propertyStore.getPropertyKeyTokenStore().getToken( block.getKeyIndexId(), NULL ).name();
-            props.add( pair( name, value ) );
-        } );
+            record.forEach( block ->
+            {
+                final Object value = propertyStore.getValue( block, storeCursors ).asObject();
+                final String name = propertyStore.getPropertyKeyTokenStore().getToken( block.getKeyIndexId(), storeCursors ).name();
+                props.add( pair( name, value ) );
+            } );
+        }
         return props;
     }
 

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.api.KernelVersionRepository;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.token.TokenHolders;
 
 public class IndexAccessors implements Closeable
@@ -81,11 +82,12 @@ public class IndexAccessors implements Closeable
             KernelVersionRepository versionProvider )
             throws IOException
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG ) );
+              var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
-            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, cursorContext );
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
             Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, versionProvider )
-                    .indexesGetAll( cursorContext );
+                    .indexesGetAll( storeCursors );
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null ? accessorLookup
                                                     : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );

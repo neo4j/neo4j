@@ -25,9 +25,13 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -35,10 +39,71 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<RelationshipTypeTokenRecord>
 {
     @Override
+    protected PageCursor storeCursor()
+    {
+        return storeCursors.relationshipTypeTokenCursor();
+    }
+
+    @Override
+    protected StoreCursors createCursors( TokenStore<RelationshipTypeTokenRecord> store, DynamicStringStore nameStore )
+    {
+        return new RelTypeTokenStoreCursors( store, nameStore );
+    }
+
+    @Override
     protected TokenStore<RelationshipTypeTokenRecord> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
         return new RelationshipTypeTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats,
                 DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
+    }
+
+    private static class RelTypeTokenStoreCursors extends StoreCursorsAdapter
+    {
+        private final TokenStore<?> store;
+        private final DynamicStringStore nameStore;
+        private PageCursor storeCursor;
+        private PageCursor dynamicCursor;
+
+        RelTypeTokenStoreCursors( TokenStore<?> store, DynamicStringStore nameStore )
+        {
+            this.store = store;
+            this.nameStore = nameStore;
+        }
+
+        @Override
+        public PageCursor relationshipTypeTokenCursor()
+        {
+            if ( storeCursor == null )
+            {
+                storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+            }
+            return storeCursor;
+        }
+
+        @Override
+        public PageCursor dynamicRelationshipTypeTokenCursor()
+        {
+            if ( dynamicCursor == null )
+            {
+                dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
+            }
+            return dynamicCursor;
+        }
+
+        @Override
+        public void close()
+        {
+            if ( dynamicCursor != null )
+            {
+                dynamicCursor.close();
+                dynamicCursor = null;
+            }
+            if ( storeCursor != null )
+            {
+                storeCursor.close();
+                storeCursor = null;
+            }
+        }
     }
 }

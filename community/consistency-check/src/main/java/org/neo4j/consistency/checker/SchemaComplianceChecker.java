@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -62,17 +63,19 @@ class SchemaComplianceChecker implements AutoCloseable
     private final IndexAccessors.IndexReaders indexReaders;
     private final Iterable<IndexDescriptor> indexes;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private final DefaultNodePropertyAccessor propertyAccessor;
 
     SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes,
-            CursorContext cursorContext, MemoryTracker memoryTracker )
+            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         this.context = context;
         this.mandatoryProperties = mandatoryProperties;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
         this.cursorContext = cursorContext;
-        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorContext, memoryTracker );
+        this.storeCursors = storeCursors;
+        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorContext, storeCursors, memoryTracker );
     }
 
     <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties( ENTITY entity, long[] entityTokens, IntObjectMap<Value> values,
@@ -172,12 +175,12 @@ class SchemaComplianceChecker implements AutoCloseable
             // Fulltext indexes only index text values, so if the entity only have non-string properties it is correct to not find it in the index.
             if ( !(indexRule.getIndexType() == IndexType.FULLTEXT && !valuesContainTextProperty( propertyValues ) ) )
             {
-                reportSupplier.apply( context.recordLoader.entity( entity, cursorContext ) ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
+                reportSupplier.apply( context.recordLoader.entity( entity, storeCursors ) ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
             }
         }
         else if ( count != 1 )
         {
-            reportSupplier.apply( context.recordLoader.entity( entity, cursorContext ) )
+            reportSupplier.apply( context.recordLoader.entity( entity, storeCursors ) )
                     .indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
         }
     }

@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class RecordChangeSet implements RecordAccessSet
 {
@@ -46,7 +47,7 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final MutableInt changeCounter = new MutableInt();
 
-    public RecordChangeSet( Loaders loaders, MemoryTracker memoryTracker, RecordAccess.LoadMonitor monitor )
+    public RecordChangeSet( Loaders loaders, MemoryTracker memoryTracker, RecordAccess.LoadMonitor monitor, StoreCursors storeCursors )
     {
         this( loaders.nodeLoader(),
               loaders.propertyLoader(),
@@ -57,7 +58,8 @@ public class RecordChangeSet implements RecordAccessSet
               loaders.labelTokenLoader(),
               loaders.relationshipTypeTokenLoader(),
               memoryTracker,
-              monitor );
+              monitor,
+              storeCursors );
     }
 
     public RecordChangeSet(
@@ -70,16 +72,17 @@ public class RecordChangeSet implements RecordAccessSet
             Loader<LabelTokenRecord,Void> labelTokenLoader,
             Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader,
             MemoryTracker memoryTracker,
-            RecordAccess.LoadMonitor monitor )
+            RecordAccess.LoadMonitor monitor,
+            StoreCursors storeCursors )
     {
-        this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter, memoryTracker, monitor );
-        this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter, memoryTracker, monitor );
-        this.relRecords = new RecordChanges<>( relationshipLoader, changeCounter, memoryTracker, monitor );
-        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, changeCounter, memoryTracker, monitor );
-        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter, memoryTracker, monitor );
-        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter, memoryTracker, monitor );
-        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter, memoryTracker, monitor );
-        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter, memoryTracker, monitor );
+        this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.relRecords = new RecordChanges<>( relationshipLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
     }
 
     @Override

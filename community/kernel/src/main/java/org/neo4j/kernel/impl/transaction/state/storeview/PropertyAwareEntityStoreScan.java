@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
@@ -38,13 +39,14 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 /**
- * Scan store with the view given by iterator created by {@link #getEntityIdIterator(CursorContext)}. This might be a full scan of the store
+ * Scan store with the view given by iterator created by {@link #getEntityIdIterator(CursorContext, StoreCursors)}. This might be a full scan of the store
  * or a partial scan backed by the node label index.
  *
  * @param <CURSOR> the type of cursor used to read the records.
@@ -52,6 +54,7 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor<?>> implements StoreScan
 {
     protected final StorageReader storageReader;
+    private final Function<CursorContext,StoreCursors> storeCursorsFactory;
     protected final EntityScanCursorBehaviour<CURSOR> cursorBehaviour;
     private final boolean parallelWrite;
     private final JobScheduler scheduler;
@@ -68,12 +71,13 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     protected final PropertyScanConsumer propertyScanConsumer;
     private volatile StoreScanStage<CURSOR> stage;
 
-    protected PropertyAwareEntityStoreScan( Config config, StorageReader storageReader, long totalEntityCount, int[] entityTokenIdFilter,
-            IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer, LongFunction<Lock> lockFunction,
-            EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite, JobScheduler scheduler,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+    protected PropertyAwareEntityStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory,
+            long totalEntityCount, int[] entityTokenIdFilter, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
+            TokenScanConsumer tokenScanConsumer, LongFunction<Lock> lockFunction, EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite,
+            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         this.storageReader = storageReader;
+        this.storeCursorsFactory = storeCursorsFactory;
         this.cursorBehaviour = cursorBehaviour;
         this.parallelWrite = parallelWrite;
         this.scheduler = scheduler;
@@ -97,8 +101,8 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             continueScanning.set( true );
             Configuration config = Configuration.DEFAULT;
             stage = new StoreScanStage<>( dbConfig, config, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
-                    entityTokenIdFilter, propertyKeyIdFilter, propertyScanConsumer, tokenScanConsumer, cursorBehaviour, lockFunction, parallelWrite,
-                    scheduler, cacheTracer, memoryTracker );
+                    storeCursorsFactory, entityTokenIdFilter, propertyKeyIdFilter, propertyScanConsumer, tokenScanConsumer, cursorBehaviour, lockFunction,
+                    parallelWrite, scheduler, cacheTracer, memoryTracker );
             superviseDynamicExecution( INVISIBLE, stage );
             stage.reportTo( phaseTracker );
         }
@@ -133,9 +137,9 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.phaseTracker = phaseTracker;
     }
 
-    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
+    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext, StoreCursors storeCursors )
     {
-        return new CursorEntityIdIterator<>( cursorBehaviour.allocateEntityScanCursor( cursorContext ) );
+        return new CursorEntityIdIterator<>( cursorBehaviour.allocateEntityScanCursor( cursorContext, storeCursors ) );
     }
 
     static class CursorEntityIdIterator<CURSOR extends StorageEntityScanCursor<?>> extends AbstractPrimitiveLongBaseResourceIterator

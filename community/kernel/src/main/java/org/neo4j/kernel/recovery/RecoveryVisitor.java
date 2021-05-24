@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
 final class RecoveryVisitor implements RecoveryApplier
@@ -33,12 +36,14 @@ final class RecoveryVisitor implements RecoveryApplier
     private final StorageEngine storageEngine;
     private final TransactionApplicationMode mode;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
 
     RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
     {
         this.storageEngine = storageEngine;
         this.mode = mode;
         this.cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( tracerTag ) );
+        this.storeCursors = storageEngine.createStorageCursors( cursorContext );
     }
 
     @Override
@@ -46,7 +51,7 @@ final class RecoveryVisitor implements RecoveryApplier
     {
         var txRepresentation = transaction.getTransactionRepresentation();
         var txId = transaction.getCommitEntry().getTxId();
-        var tx = new TransactionToApply( txRepresentation, txId, cursorContext );
+        var tx = new TransactionToApply( txRepresentation, txId, cursorContext, storeCursors );
         tx.commitment( NO_COMMITMENT, txId );
         tx.logPosition( transaction.getStartEntry().getStartPosition() );
         storageEngine.apply( tx, mode );
@@ -56,6 +61,6 @@ final class RecoveryVisitor implements RecoveryApplier
     @Override
     public void close()
     {
-        cursorContext.close();
+        closeAllUnchecked( storeCursors, cursorContext );
     }
 }

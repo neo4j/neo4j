@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.KernelVersionRepository;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
@@ -50,13 +51,13 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
 
     long newRuleId( CursorContext cursorContext );
 
-    SchemaRule loadSingleSchemaRule( long ruleId, CursorContext cursorContext ) throws MalformedSchemaRuleException;
+    SchemaRule loadSingleSchemaRule( long ruleId, StoreCursors storeCursors ) throws MalformedSchemaRuleException;
 
-    Iterator<IndexDescriptor> indexesGetAll( CursorContext cursorContext );
+    Iterator<IndexDescriptor> indexesGetAll( StoreCursors storeCursors );
 
-    Iterator<IndexDescriptor> tokenIndexes( CursorContext cursorContext );
+    Iterator<IndexDescriptor> tokenIndexes( StoreCursors storeCursors );
 
-    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( CursorContext cursorContext );
+    Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( StoreCursors storeCursors );
 
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
@@ -64,7 +65,7 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * @return an array of all the matching index rules. Empty array if none found.
      * @param index the target {@link IndexDescriptor}
      */
-    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index, CursorContext cursorContext );
+    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index, StoreCursors storeCursors );
 
     /**
      * Find the IndexRule that has the given user supplied name.
@@ -72,7 +73,7 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * @param indexName the user supplied index name to look for.
      * @return the matching IndexRule, or null if no matching index rule was found.
      */
-    IndexDescriptor indexGetForName( String indexName, CursorContext cursorContext );
+    IndexDescriptor indexGetForName( String indexName, StoreCursors storeCursors );
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor
@@ -81,10 +82,10 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * @throws SchemaRuleNotFoundException if no ConstraintDescriptor matches the given descriptor
      * @throws DuplicateSchemaRuleException if two or more ConstraintDescriptors match the given descriptor
      */
-    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor, CursorContext cursorContext )
+    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor, StoreCursors storeCursors )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
-    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed( CursorContext cursorContext );
+    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed( StoreCursors storeCursors );
 
     SchemaRecordChangeTranslator getSchemaRecordChangeTranslator();
 
@@ -99,5 +100,5 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
      * This is a non-transactional operation that is primarily used for testing.
      */
     @VisibleForTesting
-    void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext );
+    void deleteSchemaRule( SchemaRule rule, CursorContext cursorContext, StoreCursors storeCursors );
 }

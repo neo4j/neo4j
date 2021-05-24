@@ -53,7 +53,6 @@ import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.internal.recordstorage.CommandLockVerification;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.recordstorage.TransactionRecordState.PropertyReceiver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
@@ -70,11 +69,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
@@ -92,6 +87,7 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
@@ -122,7 +118,6 @@ import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.lock.LockTracer.NONE;
@@ -148,8 +143,6 @@ public class NeoStoresTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private PropertyStore pStore;
-    private NodeStore nodeStore;
     private TransactionState transactionState;
     private StorageReader storageReader;
     private TokenHolder propertyKeyTokenHolder;
@@ -232,7 +225,7 @@ public class NeoStoresTest
     {
         StorageProperty property = new PropertyKeyValue( key, Values.of( value ) );
         StorageProperty oldProperty = null;
-        try ( StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL ) )
+        try ( StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL ) )
         {
             nodeCursor.single( nodeId );
             if ( nodeCursor.next() )
@@ -258,7 +251,7 @@ public class NeoStoresTest
 
     private StorageProperty getProperty( int key, long propertyId )
     {
-        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, INSTANCE ) )
+        try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE ) )
         {
             propertyCursor.initNodeProperties( propertyId );
             if ( propertyCursor.next() )
@@ -309,7 +302,7 @@ public class NeoStoresTest
                 transactionState.relationshipDoDelete( relId, type, startNode, endNode );
         if ( !transactionState.relationshipVisit( id, visitor ) )
         {
-            try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor( NULL ) )
+            try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor( NULL, StoreCursors.NULL ) )
             {
                 cursor.single( id );
                 if ( !cursor.next() )
@@ -742,8 +735,6 @@ public class NeoStoresTest
         life.start();
 
         NeoStores neoStores = storageEngine.testAccessNeoStores();
-        pStore = neoStores.getPropertyStore();
-        nodeStore = neoStores.getNodeStore();
         storageReader = storageEngine.newReader();
     }
 
@@ -754,16 +745,17 @@ public class NeoStoresTest
 
     private void commitTx() throws Exception
     {
-        try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
+        CursorContext cursorContext = NULL;
+        try ( CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( INSTANCE );
+              var storeCursors = storageEngine.createStorageCursors( NULL ) )
         {
-            CursorContext cursorContext = NULL;
-            commandCreationContext.initialize( cursorContext );
+            commandCreationContext.initialize( cursorContext, storeCursors );
             List<StorageCommand> commands = new ArrayList<>();
             storageEngine.createCommands( commands, transactionState, storageReader, commandCreationContext, IGNORE, NONE,
-                    storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(), tx -> tx, cursorContext, INSTANCE );
+                    storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(), tx -> tx, cursorContext, storeCursors, INSTANCE );
             PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
             tx.setHeader( EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED );
-            storageEngine.apply( new TransactionToApply( tx, cursorContext ), INTERNAL );
+            storageEngine.apply( new TransactionToApply( tx, cursorContext, storeCursors ), INTERNAL );
         }
     }
 
@@ -796,14 +788,14 @@ public class NeoStoresTest
 
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
     {
-        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor( NULL );
+        StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor( NULL, StoreCursors.NULL );
         node.relationships( relationships, ALL_RELATIONSHIPS );
         return relationships;
     }
 
     private StorageNodeCursor allocateNodeCursor( long nodeId )
     {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL );
         nodeCursor.single( nodeId );
         return nodeCursor;
     }
@@ -830,33 +822,6 @@ public class NeoStoresTest
                 .impermanent()
                 .build();
         managementService.shutdown();
-    }
-
-    private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void nodeLoadProperties( long nodeId, RECEIVER receiver )
-    {
-        NodeRecord nodeRecord = nodeStore.newRecord();
-        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, NULL ) )
-        {
-            nodeStore.getRecordByCursor( nodeId, nodeRecord, NORMAL, cursor );
-        }
-        loadProperties( nodeRecord.getNextProp(), receiver );
-    }
-
-    private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void loadProperties( long nextProp, RECEIVER receiver )
-    {
-        PropertyRecord record = pStore.newRecord();
-        try ( var propertyCursor = pStore.openPageCursorForReading( nextProp, NULL ) )
-        {
-            while ( !Record.NULL_REFERENCE.is( nextProp ) )
-            {
-                pStore.getRecordByCursor( nextProp, record, NORMAL, propertyCursor );
-                for ( PropertyBlock propBlock : record )
-                {
-                    receiver.receive( propBlock.newPropertyKeyValue( pStore, NULL ), record.getId() );
-                }
-                nextProp = record.getNextProp();
-            }
-        }
     }
 
     private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs,

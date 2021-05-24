@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleKind;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.consistency.checker.RecordLoading.checkValidInternalToken;
@@ -87,14 +88,14 @@ class SchemaChecker
     }
 
     void check( MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties, MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
-            CursorContext cursorContext ) throws Exception
+            CursorContext cursorContext, StoreCursors storeCursors ) throws Exception
     {
-        checkSchema( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext );
+        checkSchema( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext, storeCursors );
         checkTokens();
     }
 
     private void checkSchema( MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties, MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
-            CursorContext cursorContext )
+            CursorContext cursorContext, StoreCursors storeCursors )
     {
         long highId = schemaStore.getHighId();
         try ( RecordReader<SchemaRecord> schemaReader = new RecordReader<>( schemaStore, true, cursorContext ) )
@@ -109,16 +110,16 @@ class SchemaChecker
             // ignore. The index itself will be checked as long as it is online (it is found by IndexAccessors).
             SchemaStorage schemaStorage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
             // Build map of obligations and such
-            buildObligationsMap( highId, schemaReader, schemaStorage, indexObligations, constraintObligations, verifiedRulesWithRecords, cursorContext );
+            buildObligationsMap( highId, schemaReader, schemaStorage, indexObligations, constraintObligations, verifiedRulesWithRecords, storeCursors );
 
             // Verify all things, now that we have the complete map of obligations back and forth
             performSchemaCheck( highId, schemaReader, indexObligations, constraintObligations, schemaStorage,
-                    mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext );
+                    mandatoryNodeProperties, mandatoryRelationshipProperties, storeCursors );
         }
     }
 
     private void buildObligationsMap( long highId, RecordReader<SchemaRecord> reader, SchemaStorage schemaStorage, Map<Long,SchemaRecord> indexObligations,
-            Map<Long,SchemaRecord> constraintObligations, Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords, CursorContext cursorContext )
+            Map<Long,SchemaRecord> constraintObligations, Map<SchemaRuleKey,SchemaRecord> verifiedRulesWithRecords, StoreCursors storeCursors )
     {
         for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
         {
@@ -130,7 +131,7 @@ class SchemaChecker
                     continue;
                 }
 
-                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, cursorContext );
+                SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, storeCursors );
                 SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( new SchemaRuleKey( schemaRule ), record.copy() );
                 if ( previousContentRecord != null )
                 {
@@ -171,10 +172,10 @@ class SchemaChecker
 
     private void performSchemaCheck( long highId, RecordReader<SchemaRecord> reader, Map<Long,SchemaRecord> indexObligations,
             Map<Long,SchemaRecord> constraintObligations, SchemaStorage schemaStorage, MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
-            MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties, CursorContext cursorContext )
+            MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties, StoreCursors storeCursors )
     {
         SchemaRecord record = reader.record();
-        SchemaProcessor basicSchemaCheck = new BasicSchemaCheck( record, cursorContext );
+        SchemaProcessor basicSchemaCheck = new BasicSchemaCheck( record, storeCursors );
         SchemaProcessor mandatoryPropertiesBuilder = new MandatoryPropertiesBuilder( mandatoryNodeProperties, mandatoryRelationshipProperties );
         for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
         {
@@ -183,7 +184,7 @@ class SchemaChecker
                 reader.read( id );
                 if ( record.inUse() )
                 {
-                    SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, cursorContext );
+                    SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, storeCursors );
                     schemaRule.schema().processWith( basicSchemaCheck );
                     if ( schemaRule instanceof IndexDescriptor )
                     {
@@ -296,19 +297,19 @@ class SchemaChecker
     private class BasicSchemaCheck implements SchemaProcessor
     {
         private final SchemaRecord record;
-        private final CursorContext cursorContext;
+        private final StoreCursors storeCursors;
 
-        BasicSchemaCheck( SchemaRecord record, CursorContext cursorContext )
+        BasicSchemaCheck( SchemaRecord record, StoreCursors storeCursors )
         {
             this.record = record;
-            this.cursorContext = cursorContext;
+            this.storeCursors = storeCursors;
         }
 
         @Override
         public void processSpecific( LabelSchemaDescriptor schema )
         {
             checkValidInternalToken( null, schema.getLabelId(), tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
-                    ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), cursorContext );
+                    ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), storeCursors );
             checkValidPropertyKeyIds( schema );
         }
 
@@ -316,7 +317,7 @@ class SchemaChecker
         public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
             checkValidInternalToken( null, schema.getRelTypeId(), tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
-                    ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), cursorContext );
+                    ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), storeCursors );
             checkValidPropertyKeyIds( schema );
         }
 
@@ -329,14 +330,14 @@ class SchemaChecker
                 for ( int labelTokenId : schema.getEntityTokenIds() )
                 {
                     checkValidInternalToken( null, labelTokenId, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
-                            ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), cursorContext );
+                            ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), storeCursors );
                 }
                 break;
             case RELATIONSHIP:
                 for ( int relationshipTypeTokenId : schema.getEntityTokenIds() )
                 {
                     checkValidInternalToken( null, relationshipTypeTokenId, tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
-                            ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), cursorContext );
+                            ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), storeCursors );
                 }
                 break;
             default:
@@ -350,7 +351,7 @@ class SchemaChecker
             for ( int propertyKeyId : schema.getPropertyIds() )
             {
                 checkValidInternalToken( null, propertyKeyId, tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(), ( record, id ) -> {},
-                        ( ignore, token ) -> reporter.forSchema( record ).propertyKeyNotInUse( token ), cursorContext );
+                        ( ignore, token ) -> reporter.forSchema( record ).propertyKeyNotInUse( token ), storeCursors );
             }
         }
     }

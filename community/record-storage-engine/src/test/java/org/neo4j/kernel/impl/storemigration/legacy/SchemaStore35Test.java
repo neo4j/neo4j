@@ -83,6 +83,7 @@ class SchemaStore35Test
     private TestDirectory testDirectory;
 
     private SchemaStore35 store;
+    private SchemaStore35StoreCursors storeCursors;
 
     @BeforeEach
     void before()
@@ -93,11 +94,13 @@ class SchemaStore35Test
         store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, IdType.SCHEMA,
                 idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS, writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store.initialise( true, NULL );
+        storeCursors = new SchemaStore35StoreCursors( store, NULL );
     }
 
     @AfterEach
     void after()
     {
+        storeCursors.close();
         store.close();
     }
 
@@ -220,7 +223,7 @@ class SchemaStore35Test
 
         // WHEN
         SchemaStorage35 storage35 = new SchemaStorage35( store );
-        Collection<SchemaRule> readRules = asCollection( storage35.getAll( NULL ) );
+        Collection<SchemaRule> readRules = asCollection( storage35.getAll( storeCursors ) );
 
         // THEN
         assertEquals( rules, readRules );

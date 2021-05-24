@@ -77,6 +77,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -216,6 +217,7 @@ class TransactionLogsRecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
+            when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
             final LogEntryReader reader = logEntryReader();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
@@ -570,6 +572,7 @@ class TransactionLogsRecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
+            when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
             final LogEntryReader reader = logEntryReader();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();

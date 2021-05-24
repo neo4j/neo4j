@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.function.Function;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -27,8 +29,10 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
@@ -42,13 +46,13 @@ public class NodeCountsStage extends Stage
 
     public NodeCountsStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore, int highLabelId,
             CountsAccessor.Updater countsUpdater, ProgressReporter progressReporter, PageCacheTracer pageCacheTracer,
-            StatsProvider... additionalStatsProviders )
+            Function<CursorContext,StoreCursors> storeCursorsCreator, StatsProvider... additionalStatsProviders )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( nodeStore, config ), nodeStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, nodeStore, pageCacheTracer ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config,
                 () -> new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater, progressReporter ), true, 0, pageCacheTracer,
-                additionalStatsProviders ) );
+                storeCursorsCreator, additionalStatsProviders ) );
     }
 }

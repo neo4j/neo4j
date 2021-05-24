@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -84,10 +85,11 @@ class PropertyCreatorTest
                 pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
-        records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, NULL ) );
+        StoreCursors storeCursors = StoreCursors.NULL;
         var pageCacheTracer = new DefaultPageCacheTracer();
         cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "propertyStore" ) );
-        creator = new PropertyCreator( propertyStore, new PropertyTraverser( NULL ), cursorContext, INSTANCE );
+        records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, storeCursors ), cursorContext, storeCursors );
+        creator = new PropertyCreator( propertyStore, new PropertyTraverser(), cursorContext, INSTANCE );
     }
 
     @AfterEach
@@ -433,7 +435,7 @@ class PropertyCreatorTest
         {
             PropertyBlock block = record.getPropertyBlock( expectedProperty.key );
             assertNotNull( block );
-            assertEquals( expectedProperty.value, block.getType().value( block, propertyStore, NULL ) );
+            assertEquals( expectedProperty.value, block.getType().value( block, propertyStore, StoreCursors.NULL ) );
             if ( expectedProperty.assertHasDynamicRecords != null )
             {
                 if ( expectedProperty.assertHasDynamicRecords )

@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.helpers.Format.date;
 
@@ -69,6 +70,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     private final TransactionRepresentation transactionRepresentation;
     private long transactionId;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private TransactionToApply nextTransactionInBatch;
 
     // These fields are provided by commit process, storage engine, or recovery process
@@ -79,16 +81,17 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
      */
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, CursorContext cursorContext )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, CursorContext cursorContext, StoreCursors storeCursors )
     {
-        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, cursorContext );
+        this( transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, cursorContext, storeCursors );
     }
 
-    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, CursorContext cursorContext )
+    public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId, CursorContext cursorContext, StoreCursors storeCursors )
     {
         this.transactionRepresentation = transactionRepresentation;
         this.transactionId = transactionId;
         this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     // These methods are called by the user when building a batch
@@ -136,6 +139,12 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     public CursorContext cursorContext()
     {
         return cursorContext;
+    }
+
+    @Override
+    public StoreCursors storeCursors()
+    {
+        return storeCursors;
     }
 
     @Override

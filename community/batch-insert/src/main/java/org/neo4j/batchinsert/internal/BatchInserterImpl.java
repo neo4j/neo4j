@@ -135,6 +135,7 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -167,6 +168,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
@@ -227,6 +229,7 @@ public class BatchInserterImpl implements BatchInserter
     private final SchemaRuleAccess schemaRuleAccess;
     private final PageCacheTracer pageCacheTracer;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private final MemoryTracker memoryTracker;
     private final RelationshipGroupDegreesStore.Updater degreeUpdater;
     private final RelationshipGroupGetter relationshipGroupGetter;
@@ -312,6 +315,8 @@ public class BatchInserterImpl implements BatchInserter
             neoStores.verifyStoreOk();
             neoStores.start( cursorContext );
 
+            storeCursors = new CachedStoreCursors( neoStores, cursorContext );
+
             nodeStore = neoStores.getNodeStore();
             relationshipStore = neoStores.getRelationshipStore();
             relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
@@ -324,7 +329,7 @@ public class BatchInserterImpl implements BatchInserter
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
                     databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
-            groupDegreesStore.start( cursorContext, memoryTracker );
+            groupDegreesStore.start( cursorContext, storeCursors, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorContext );
 
@@ -332,7 +337,7 @@ public class BatchInserterImpl implements BatchInserter
             TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
             TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
             tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
-            tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), cursorContext );
+            tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), storeCursors );
             labelIdToLabelFunction = from ->
             {
                 try
@@ -347,7 +352,7 @@ public class BatchInserterImpl implements BatchInserter
 
             monitors = new Monitors();
 
-            fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), config, jobScheduler );
+            fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), any -> storeCursors, config, jobScheduler );
             Dependencies deps = new Dependencies();
             deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, fullScanStoreView, tokenHolders, pageCache, monitors, immediate(),
                                       pageCacheTracer, databaseLayout, readOnlyChecker );
@@ -360,7 +365,7 @@ public class BatchInserterImpl implements BatchInserter
 
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders, neoStores.getMetaDataStore() );
             schemaCache = new SchemaCache( getConstraintSemantics(), indexProviderMap );
-            schemaCache.load( schemaRuleAccess.getAll( cursorContext ) );
+            schemaCache.load( schemaRuleAccess.getAll( storeCursors ) );
 
             actions = new BatchSchemaActions();
 
@@ -369,9 +374,9 @@ public class BatchInserterImpl implements BatchInserter
             relationshipGroupGetter = new RelationshipGroupGetter( relationshipGroupStore, cursorContext );
             relationshipCreator =
                     new RelationshipCreator( relationshipGroupStore.getStoreHeaderInt(), DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, cursorContext );
-            propertyTraverser = new PropertyTraverser( cursorContext );
+            propertyTraverser = new PropertyTraverser();
             propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, cursorContext, memoryTracker );
-            propertyDeletor = new PropertyDeleter( propertyTraverser, cursorContext );
+            propertyDeletor = new PropertyDeleter( propertyTraverser );
 
             flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseInternalSettings
                 .batch_inserter_batch_size ) );
@@ -430,7 +435,7 @@ public class BatchInserterImpl implements BatchInserter
     public boolean relationshipHasProperty( long relationship, String propertyName )
     {
         return primitiveHasProperty(
-                recordAccess.getRelRecords().getOrLoad( relationship, null, cursorContext ).forReadingData(), propertyName );
+                recordAccess.getRelRecords().getOrLoad( relationship, null ).forReadingData(), propertyName );
     }
 
     @Override
@@ -579,8 +584,8 @@ public class BatchInserterImpl implements BatchInserter
         LogProvider userLogProvider = logService.getUserLogProvider();
         var cacheTracer = PageCacheTracer.NULL;
 
-        IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                config, () -> new RecordStorageReader( neoStores, schemaCache ), NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider );
+        IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory( config, context -> new CachedStoreCursors( neoStores, context ),
+                () -> new RecordStorageReader( neoStores, schemaCache ), NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
@@ -637,9 +642,10 @@ public class BatchInserterImpl implements BatchInserter
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
                 initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(),
-                config.get( counts_store_max_cached_entries ) ) )
+                config.get( counts_store_max_cached_entries ) );
+                var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
         {
-            countsStore.start( CursorContext.NULL, memoryTracker );
+            countsStore.start( CursorContext.NULL, storeCursors, memoryTracker );
             countsStore.checkpoint( CursorContext.NULL );
         }
     }
@@ -889,7 +895,7 @@ public class BatchInserterImpl implements BatchInserter
     private void setNodeLabels( NodeRecord nodeRecord, Label... labels )
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
-        nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore(), cursorContext, memoryTracker );
+        nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore(), cursorContext, storeCursors, memoryTracker );
     }
 
     private long[] getOrCreateLabelIds( Label[] labels )
@@ -956,7 +962,7 @@ public class BatchInserterImpl implements BatchInserter
         return () ->
         {
             NodeRecord record = getNodeRecord( node ).forReadingData();
-            long[] labels = parseLabelsField( record ).get( nodeStore, cursorContext );
+            long[] labels = parseLabelsField( record ).get( nodeStore, storeCursors );
             return LongStream.of( labels ).mapToObj( labelIdToLabelFunction ).iterator();
         };
     }
@@ -971,7 +977,7 @@ public class BatchInserterImpl implements BatchInserter
     private boolean nodeHasLabel( long node, int labelId )
     {
         NodeRecord record = getNodeRecord( node ).forReadingData();
-        for ( long label : parseLabelsField( record ).get( nodeStore, cursorContext ) )
+        for ( long label : parseLabelsField( record ).get( nodeStore, storeCursors ) )
         {
             if ( label == labelId )
             {
@@ -991,7 +997,7 @@ public class BatchInserterImpl implements BatchInserter
                 new RelationshipCreator.InsertFirst( relationshipGroupGetter, recordAccess, cursorContext ) );
         if ( properties != null && !properties.isEmpty() )
         {
-            RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null, cursorContext ).forChangingData();
+            RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null ).forChangingData();
             record.setNextProp( propertyCreator.createPropertyChain( record,
                     propertiesIterator( properties ), recordAccess.getPropertyRecords() ) );
         }
@@ -1015,7 +1021,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public void setRelationshipProperties( long rel, Map<String, Object> properties )
     {
-        RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( rel, null, cursorContext ).forChangingData();
+        RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( rel, null ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
             propertyDeletor.deletePropertyChain( record, recordAccess.getPropertyRecords() );
@@ -1050,7 +1056,7 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<>( storageReader, nodeId, cursorContext )
+        return new BatchRelationshipIterable<>( storageReader, nodeId, cursorContext, storeCursors )
         {
             @Override
             protected Long nextFrom( long relId, int type, long startNode, long endNode )
@@ -1064,7 +1070,7 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<BatchRelationship> getRelationships( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<>( storageReader, nodeId, cursorContext )
+        return new BatchRelationshipIterable<>( storageReader, nodeId, cursorContext, storeCursors )
         {
             @Override
             protected BatchRelationship nextFrom( long relId, int type, long startNode, long endNode )
@@ -1097,7 +1103,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public Map<String,Object> getRelationshipProperties( long relId )
     {
-        RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( relId, null, cursorContext ).forChangingData();
+        RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( relId, null ).forChangingData();
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
             return getPropertyChain( record.getNextProp() );
@@ -1121,7 +1127,8 @@ public class BatchInserterImpl implements BatchInserter
               var ignore = new Lifespan( life );
               locker;
               neoStores;
-              groupDegreesStore )
+              groupDegreesStore;
+              storeCursors )
         {
             rebuildCounts( pageCacheTracer, memoryTracker );
             repopulateAllIndexes();
@@ -1152,7 +1159,7 @@ public class BatchInserterImpl implements BatchInserter
             try
             {
                 String key = tokenHolders.propertyKeyTokens().getTokenById( propBlock.getKeyIndexId() ).name();
-                Value propertyValue = propBlock.newPropertyValue( propertyStore, cursorContext );
+                Value propertyValue = propBlock.newPropertyValue( propertyStore, storeCursors );
                 map.put( key, propertyValue.asObject() );
             }
             catch ( TokenNotFoundException e )
@@ -1199,7 +1206,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new NotFoundException( "id=" + id );
         }
-        return recordAccess.getNodeRecords().getOrLoad( id, null, cursorContext );
+        return recordAccess.getNodeRecords().getOrLoad( id, null );
     }
 
     private RecordProxy<RelationshipRecord,Void> getRelationshipRecord( long id )
@@ -1208,7 +1215,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new NotFoundException( "id=" + id );
         }
-        return recordAccess.getRelRecords().getOrLoad( id, null, cursorContext );
+        return recordAccess.getRelRecords().getOrLoad( id, null );
     }
 
     @Override

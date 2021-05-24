@@ -22,10 +22,12 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -38,16 +40,17 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable
 {
-    private final DirectRecordAccess<NodeRecord, Void> nodeRecords;
+    private final DirectRecordAccess<NodeRecord,Void> nodeRecords;
     private final DirectRecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords;
-    private final DirectRecordAccess<RelationshipRecord, Void> relationshipRecords;
-    private final DirectRecordAccess<RelationshipGroupRecord, Integer> relationshipGroupRecords;
-    private final DirectRecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
-    private final DirectRecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
-    private final DirectRecordAccess<LabelTokenRecord, Void> labelTokenRecords;
+    private final DirectRecordAccess<RelationshipRecord,Void> relationshipRecords;
+    private final DirectRecordAccess<RelationshipGroupRecord,Integer> relationshipGroupRecords;
+    private final DirectRecordAccess<PropertyKeyTokenRecord,Void> propertyKeyTokenRecords;
+    private final DirectRecordAccess<RelationshipTypeTokenRecord,Void> relationshipTypeTokenRecords;
+    private final DirectRecordAccess<LabelTokenRecord,Void> labelTokenRecords;
     private final DirectRecordAccess[] all;
     private final IdGeneratorFactory idGeneratorFactory;
     private final Loaders loaders;
+    private final CachedStoreCursors storeCursors;
 
     public DirectRecordAccessSet( NeoStores neoStores, IdGeneratorFactory idGeneratorFactory, CursorContext cursorContext )
     {
@@ -58,67 +61,65 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable
         RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
         RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         RecordStore<LabelTokenRecord> labelTokenStore = neoStores.getLabelTokenStore();
-        loaders = new Loaders( neoStores, cursorContext );
-        nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
-        propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
-        relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );
-        relationshipGroupRecords = new DirectRecordAccess<>(
-                relationshipGroupStore, loaders.relationshipGroupLoader() );
-        propertyKeyTokenRecords = new DirectRecordAccess<>( propertyKeyTokenStore, loaders.propertyKeyTokenLoader() );
-        relationshipTypeTokenRecords = new DirectRecordAccess<>(
-                relationshipTypeTokenStore, loaders.relationshipTypeTokenLoader() );
-        labelTokenRecords = new DirectRecordAccess<>( labelTokenStore, loaders.labelTokenLoader() );
-        all = new DirectRecordAccess[] {
-                nodeRecords, propertyRecords, relationshipRecords, relationshipGroupRecords,
-                propertyKeyTokenRecords, relationshipTypeTokenRecords, labelTokenRecords
-        };
+        storeCursors = new CachedStoreCursors( neoStores, cursorContext );
+        loaders = new Loaders( neoStores, storeCursors );
+        nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader(), cursorContext, storeCursors );
+        propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader(), cursorContext, storeCursors );
+        relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader(), cursorContext, storeCursors );
+        relationshipGroupRecords = new DirectRecordAccess<>( relationshipGroupStore, loaders.relationshipGroupLoader(), cursorContext, storeCursors );
+        propertyKeyTokenRecords = new DirectRecordAccess<>( propertyKeyTokenStore, loaders.propertyKeyTokenLoader(), cursorContext, storeCursors );
+        relationshipTypeTokenRecords =
+                new DirectRecordAccess<>( relationshipTypeTokenStore, loaders.relationshipTypeTokenLoader(), cursorContext, storeCursors );
+        labelTokenRecords = new DirectRecordAccess<>( labelTokenStore, loaders.labelTokenLoader(), cursorContext, storeCursors );
+        all = new DirectRecordAccess[]{nodeRecords, propertyRecords, relationshipRecords, relationshipGroupRecords, propertyKeyTokenRecords,
+                relationshipTypeTokenRecords, labelTokenRecords};
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
-    public RecordAccess<NodeRecord, Void> getNodeRecords()
+    public RecordAccess<NodeRecord,Void> getNodeRecords()
     {
         return nodeRecords;
     }
 
     @Override
-    public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
+    public RecordAccess<PropertyRecord,PrimitiveRecord> getPropertyRecords()
     {
         return propertyRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipRecord, Void> getRelRecords()
+    public RecordAccess<RelationshipRecord,Void> getRelRecords()
     {
         return relationshipRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
+    public RecordAccess<RelationshipGroupRecord,Integer> getRelGroupRecords()
     {
         return relationshipGroupRecords;
     }
 
     @Override
-    public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<SchemaRecord,SchemaRule> getSchemaRuleChanges()
     {
         throw new UnsupportedOperationException( "Not needed. Implement if needed" );
     }
 
     @Override
-    public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+    public RecordAccess<PropertyKeyTokenRecord,Void> getPropertyKeyTokenChanges()
     {
         return propertyKeyTokenRecords;
     }
 
     @Override
-    public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
+    public RecordAccess<LabelTokenRecord,Void> getLabelTokenChanges()
     {
         return labelTokenRecords;
     }
 
     @Override
-    public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+    public RecordAccess<RelationshipTypeTokenRecord,Void> getRelationshipTypeTokenChanges()
     {
         return relationshipTypeTokenRecords;
     }
@@ -159,6 +160,6 @@ public class DirectRecordAccessSet implements RecordAccessSet, AutoCloseable
     @Override
     public void close()
     {
-        loaders.close();
+        IOUtils.closeAllSilently( storeCursors );
     }
 }

@@ -371,14 +371,14 @@ class CsvInputBatchImportIT
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             CountsAccessor counts = storageEngine.countsAccessor();
             Function<String, Integer> labelTranslationTable =
-                    translationTable( neoStores.getLabelTokenStore(), ANY_LABEL );
+                    translationTable( neoStores.getLabelTokenStore(), ANY_LABEL, storageEngine );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( count.other().longValue(), counts.nodeCount( count.first(), NULL ), "Label count mismatch for label " + count.first() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
-                    translationTable( neoStores.getRelationshipTypeTokenStore(), ANY_RELATIONSHIP_TYPE );
+                    translationTable( neoStores.getRelationshipTypeTokenStore(), ANY_RELATIONSHIP_TYPE, storageEngine );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
@@ -450,14 +450,17 @@ class CsvInputBatchImportIT
         return result;
     }
 
-    private static Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
+    private static Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue, RecordStorageEngine storageEngine )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
-        for ( NamedToken token : tokenStore.getTokens( NULL ) )
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
         {
-            translationTable.put( token.name(), token.id() );
+            for ( NamedToken token : tokenStore.getTokens( storeCursors ) )
+            {
+                translationTable.put( token.name(), token.id() );
+            }
+            return from -> from == null ? anyValue : translationTable.get( from );
         }
-        return from -> from == null ? anyValue : translationTable.get( from );
     }
 
     private static Set<String> names( Iterable<Label> labels )

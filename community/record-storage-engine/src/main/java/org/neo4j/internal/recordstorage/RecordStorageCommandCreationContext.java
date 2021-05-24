@@ -30,6 +30,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.Math.toIntExact;
 
@@ -52,6 +53,7 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     private RelationshipGroupGetter relationshipGroupGetter;
     private Loaders loaders;
     private CursorContext cursorContext;
+    private StoreCursors storeCursors;
 
     RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, BooleanSupplier relaxedLockingForDenseNodes, MemoryTracker memoryTracker )
     {
@@ -63,13 +65,14 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     }
 
     @Override
-    public void initialize( CursorContext cursorContext )
+    public void initialize( CursorContext cursorContext, StoreCursors storeCursors )
     {
         this.cursorContext = cursorContext;
-        this.loaders = new Loaders( neoStores, cursorContext );
+        this.loaders = new Loaders( neoStores, storeCursors );
+        this.storeCursors = storeCursors;
         this.relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorContext );
-        PropertyTraverser propertyTraverser = new PropertyTraverser( cursorContext );
-        this.propertyDeleter = new PropertyDeleter( propertyTraverser, cursorContext );
+        PropertyTraverser propertyTraverser = new PropertyTraverser();
+        this.propertyDeleter = new PropertyDeleter( propertyTraverser );
         this.propertyCreator =
                 new PropertyCreator( new StandardDynamicRecordAllocator( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordDataSize() ),
                         new StandardDynamicRecordAllocator( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordDataSize() ), propertyStore,
@@ -120,17 +123,16 @@ class RecordStorageCommandCreationContext extends CommandCreationLocking impleme
     @Override
     public void close()
     {
-        loaders.close();
     }
 
     TransactionRecordState createTransactionRecordState( IntegrityValidator integrityValidator, long lastTransactionIdWhenStarted,
             ResourceLocker locks, LockTracer lockTracer, LogCommandSerialization commandSerialization, RecordAccess.LoadMonitor monitor )
     {
-        RecordChangeSet recordChangeSet = new RecordChangeSet( loaders, memoryTracker, monitor );
+        RecordChangeSet recordChangeSet = new RecordChangeSet( loaders, memoryTracker, monitor, storeCursors );
         RelationshipModifier relationshipModifier =
                 new RelationshipModifier( relationshipGroupGetter, propertyDeleter, denseNodeThreshold, relaxedLockingForDenseNodes.getAsBoolean(),
                         cursorContext, memoryTracker );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, lastTransactionIdWhenStarted, locks, lockTracer,
-                relationshipModifier, propertyCreator, propertyDeleter, cursorContext, memoryTracker, commandSerialization );
+                relationshipModifier, propertyCreator, propertyDeleter, cursorContext, storeCursors, memoryTracker, commandSerialization );
     }
 }

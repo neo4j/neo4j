@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -104,10 +106,15 @@ class KernelRecoveryTest
 
     private static void applyTransactions( List<TransactionRepresentation> transactions, GraphDatabaseAPI rebuilt ) throws TransactionFailureException
     {
-        TransactionCommitProcess commitProcess = rebuilt.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
-        for ( TransactionRepresentation transaction : transactions )
+        DependencyResolver dependencyResolver = rebuilt.getDependencyResolver();
+        StorageEngine storageEngine = dependencyResolver.resolveDependency( StorageEngine.class );
+        TransactionCommitProcess commitProcess = dependencyResolver.resolveDependency( TransactionCommitProcess.class );
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
         {
-            commitProcess.commit( new TransactionToApply( transaction, NULL ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            for ( TransactionRepresentation transaction : transactions )
+            {
+                commitProcess.commit( new TransactionToApply( transaction, NULL, storeCursors ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+            }
         }
     }
 

@@ -24,8 +24,10 @@ import org.opentest4j.TestAbortedException;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +44,12 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
     protected LabelTokenStore getStore( NeoStores neoStores )
     {
         return neoStores.getLabelTokenStore();
+    }
+
+    @Override
+    protected PageCursor getCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.labelTokenStoreCursor();
     }
 
     @Override
@@ -81,7 +89,7 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
     }
 
     @Override
-    protected LabelTokenRecord getLight( long id, LabelTokenStore store )
+    protected LabelTokenRecord getLight( long id, LabelTokenStore store, PageCursor pageCursor )
     {
         throw new TestAbortedException( "No light loading of LabelTokenRecords" );
     }

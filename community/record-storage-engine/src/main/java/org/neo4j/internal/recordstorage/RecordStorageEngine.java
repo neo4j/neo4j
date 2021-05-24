@@ -100,6 +100,8 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -310,6 +312,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
+    public StoreCursors createStorageCursors( CursorContext cursorContext )
+    {
+        return new CachedStoreCursors( neoStores, cursorContext );
+    }
+
+    @Override
     public void addIndexUpdateListener( IndexUpdateListener listener )
     {
         Preconditions.checkState( this.indexUpdateListener == null,
@@ -337,6 +345,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor,
             CursorContext cursorContext,
+            StoreCursors storeCursors,
             MemoryTracker transactionMemoryTracker )
             throws KernelException
     {
@@ -353,14 +362,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( version );
             TransactionRecordState recordState =
                     creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, lockTracer,
-                            serialization, lockVerificationFactory.create( locks, txState, neoStores, schemaRuleAccess ) );
+                            serialization, lockVerificationFactory.create( locks, txState, neoStores, schemaRuleAccess, storeCursors ) );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
-                    schemaRuleAccess, constraintSemantics, cursorContext );
+                    schemaRuleAccess, constraintSemantics, cursorContext, storeCursors );
             CountsRecordState countsRecordState = new CountsRecordState( serialization );
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
-            txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorContext );
+            txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorContext, storeCursors );
             try ( TxStateVisitor visitor = txStateVisitor )
             {
                 txState.accept( visitor );
@@ -371,7 +380,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             countsRecordState.extractCommands( commands, transactionMemoryTracker );
 
             //Verify sufficient locks
-            CommandLockVerification commandLockVerification = commandLockVerificationFactory.create( locks, txState, neoStores, schemaRuleAccess );
+            CommandLockVerification commandLockVerification =
+                    commandLockVerificationFactory.create( locks, txState, neoStores, schemaRuleAccess, storeCursors );
             commandLockVerification.verifySufficientlyLocked( commands );
         }
     }
@@ -489,7 +499,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private BatchContext createBatchContext( TransactionApplierFactoryChain batchApplier, CommandsToApply initialBatch )
     {
         return new BatchContextImpl( indexUpdateListener, indexUpdatesSync, neoStores.getNodeStore(), neoStores.getPropertyStore(),
-                this, schemaCache, initialBatch.cursorContext(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get() );
+                this, schemaCache, initialBatch.cursorContext(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get(),
+                initialBatch.storeCursors() );
     }
 
     /**
@@ -516,11 +527,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void start() throws Exception
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( STORAGE_ENGINE_START_TAG ) );
+              var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
             neoStores.start( cursorContext );
-            countsStore.start( cursorContext, otherMemoryTracker );
-            groupDegreesStore.start( cursorContext, otherMemoryTracker );
+            countsStore.start( cursorContext, storeCursors, otherMemoryTracker );
+            groupDegreesStore.start( cursorContext, storeCursors, otherMemoryTracker );
             idController.start();
         }
     }
@@ -528,9 +540,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @VisibleForTesting
     public void loadSchemaCache()
     {
-        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CACHE_START_TAG ) ) )
+        try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CACHE_START_TAG ) );
+              var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
-            schemaCache.load( schemaRuleAccess.getAll( cursorContext ) );
+            schemaCache.load( schemaRuleAccess.getAll( storeCursors ) );
         }
     }
 
@@ -628,9 +641,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             @Override
             public void init()
             {
-                try ( var cursorContext = new CursorContext(  cacheTracer.createPageCursorTracer( TOKENS_INIT_TAG ) ) )
+                try ( var cursorContext = new CursorContext(  cacheTracer.createPageCursorTracer( TOKENS_INIT_TAG ) );
+                      var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
                 {
-                    tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), cursorContext );
+                    tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ), storeCursors );
                 }
                 loadSchemaCache();
             }

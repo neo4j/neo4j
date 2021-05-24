@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<RelationshipRecord, RelationshipStore>
@@ -55,12 +56,9 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
     }
 
     @Override
-    protected RelationshipRecord getLight( long id, RelationshipStore store )
+    protected RelationshipRecord getLight( long id, RelationshipStore store, PageCursor pageCursor )
     {
-        try ( var cursor = store.openPageCursorForReading( id, NULL ) )
-        {
-            return store.getRecordByCursor( id, store.newRecord(), NORMAL, cursor );
-        }
+        return store.getRecordByCursor( id, store.newRecord(), NORMAL, pageCursor );
     }
 
     @Override
@@ -87,5 +85,11 @@ class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<
     protected RelationshipStore getStore( NeoStores neoStores )
     {
         return neoStores.getRelationshipStore();
+    }
+
+    @Override
+    protected PageCursor getCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.relationshipCursor();
     }
 }

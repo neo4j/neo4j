@@ -441,9 +441,11 @@ public class Database extends LifecycleAdapter
             life.add( logFiles );
 
             // Token indexes
-            FullScanStoreView fullScanStoreView = new FullScanStoreView( lockService, storageEngine::newReader, databaseConfig, scheduler );
-            IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                    databaseConfig, storageEngine::newReader, locks, fullScanStoreView, lockService, internalLogProvider );
+            FullScanStoreView fullScanStoreView =
+                    new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, databaseConfig, scheduler );
+            IndexStoreViewFactory indexStoreViewFactory =
+                    new IndexStoreViewFactory( databaseConfig, storageEngine::createStorageCursors, storageEngine::newReader, locks, fullScanStoreView,
+                            lockService, internalLogProvider );
 
             // Schema indexes
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
@@ -578,11 +580,14 @@ public class Database extends LifecycleAdapter
             long time = clock.millis();
             transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, time, storageEngine.metadataProvider().getLastClosedTransactionId(), time,
                     leaseService.newClient().leaseId(), AuthSubject.AUTH_DISABLED );
-            TransactionToApply toApply =
-                    new TransactionToApply( transactionRepresentation, CursorContext.NULL );
+            try ( var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL ) )
+            {
+                TransactionToApply toApply =
+                        new TransactionToApply( transactionRepresentation, CursorContext.NULL, storeCursors );
 
-            TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
-            commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+                TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
+                commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+            }
         } );
 
     }

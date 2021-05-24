@@ -40,8 +40,8 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -361,6 +362,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public CursorContext cursorContext()
+    {
+        return null;
+    }
+
+    @Override
+    public StoreCursors storeCursors()
     {
         return null;
     }

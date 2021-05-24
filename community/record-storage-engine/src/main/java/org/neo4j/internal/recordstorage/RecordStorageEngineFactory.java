@@ -85,6 +85,8 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -247,12 +249,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
                         NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, readOnly() );
-        try ( NeoStores stores = factory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
+        try ( NeoStores stores = factory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
+              var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
         {
             stores.start( cursorContext );
-            TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), cursorContext );
+            TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), storeCursors );
             List<SchemaRule> rules = new ArrayList<>();
-            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).getAll( cursorContext ).forEach( rules::add );
+            new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).getAll( storeCursors ).forEach( rules::add );
             return rules;
         }
         catch ( IOException e )
@@ -292,8 +295,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return StorageFilesState.recoveredState();
     }
 
-    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext,
-            MemoryTracker memoryTracker )
+    public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContext cursorContext, MemoryTracker memoryTracker )
     {
         SchemaStore dstSchema = stores.getSchemaStore();
         TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
@@ -318,17 +320,20 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
             return Math.toIntExact( tokenId );
         };
-        TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, cursorContext );
-        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST ),
-                cursorContext, memoryTracker );
+        try ( var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
+        {
+            TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, storeCursors );
+            return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST ), cursorContext,
+                    memoryTracker, storeCursors );
+        }
     }
 
-    private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, CursorContext cursorContext )
+    private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, StoreCursors storeCursors )
     {
         TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
         TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens( cursorContext ) );
+        dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens( storeCursors ) );
         return dstTokenHolders;
     }
 }

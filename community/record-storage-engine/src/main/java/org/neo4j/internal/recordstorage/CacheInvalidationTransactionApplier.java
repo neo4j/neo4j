@@ -22,11 +22,11 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.NamedToken;
 
 public class CacheInvalidationTransactionApplier extends TransactionApplier.Adapter
@@ -35,22 +35,22 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final LabelTokenStore labelTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
-    private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
 
     public CacheInvalidationTransactionApplier( NeoStores neoStores,
-                                                CacheAccessBackDoor cacheAccess, CursorContext cursorContext )
+                                                CacheAccessBackDoor cacheAccess, StoreCursors storeCursors )
     {
         this.cacheAccess = cacheAccess;
         this.relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         this.labelTokenStore = neoStores.getLabelTokenStore();
         this.propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
-        this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
     {
-        NamedToken type = relationshipTypeTokenStore.getToken( command.tokenId(), cursorContext );
+        NamedToken type = relationshipTypeTokenStore.getToken( command.tokenId(), storeCursors );
         cacheAccess.addRelationshipTypeToken( type );
 
         return false;
@@ -59,7 +59,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command )
     {
-        NamedToken labelId = labelTokenStore.getToken( command.tokenId(), cursorContext );
+        NamedToken labelId = labelTokenStore.getToken( command.tokenId(), storeCursors );
         cacheAccess.addLabelToken( labelId );
 
         return false;
@@ -68,7 +68,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
     {
-        NamedToken index = propertyKeyTokenStore.getToken( command.tokenId(), cursorContext );
+        NamedToken index = propertyKeyTokenStore.getToken( command.tokenId(), storeCursors );
         cacheAccess.addPropertyKeyToken( index );
 
         return false;

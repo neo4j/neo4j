@@ -118,6 +118,7 @@ import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
@@ -220,6 +221,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
     private KernelTransactionMonitor kernelTransactionMonitor;
+    private final StoreCursors transactionalCursors;
 
     public KernelTransactionImplementation( Config config,
             DatabaseTransactionEventListeners eventListeners, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
@@ -258,7 +260,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statistics = new Statistics( this, cpuClockRef, config.get( GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking ) );
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
-        DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, config );
+        this.transactionalCursors = storageEngine.createStorageCursors( CursorContext.NULL );
+        DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, transactionalCursors, config );
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
         this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, indexStatisticsStore,
@@ -292,8 +295,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Locks.Client lockClient, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
-        this.cursorContext =
-                new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.createVersionContext() );
+        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_TAG ), versionContextSupplier.createVersionContext() );
+        this.transactionalCursors.reset( cursorContext );
         this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
@@ -318,7 +321,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
         this.statistics.init( currentThread().getId(), cursorContext );
-        this.commandCreationContext.initialize( cursorContext );
+        this.commandCreationContext.initialize( cursorContext, transactionalCursors );
         this.currentStatement.initialize( lockClient, cursorContext, startTimeMillis );
         this.operations.initialize( cursorContext );
         this.initializationTrace = traceProvider.getTraceInfo();
@@ -431,6 +434,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public CursorContext cursorContext()
     {
         return cursorContext;
+    }
+
+    @Override
+    public StoreCursors storeCursors()
+    {
+        return transactionalCursors;
     }
 
     @Override
@@ -777,6 +786,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         lastTransactionIdWhenStarted,
                         this::enforceConstraints,
                         cursorContext,
+                        transactionalCursors,
                         memoryTracker );
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
@@ -799,7 +809,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation, cursorContext );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation, cursorContext, transactionalCursors );
                     kernelTransactionMonitor.beforeApply();
                     txId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
@@ -1046,6 +1056,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             releaseStatementResources();
             operations.release();
             commandCreationContext.close();
+            transactionalCursors.close();
             cursorContext.close();
             initializationTrace = NONE;
             memoryTracker.reset();

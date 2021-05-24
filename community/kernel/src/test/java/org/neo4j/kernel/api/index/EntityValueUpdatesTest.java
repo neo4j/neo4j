@@ -39,6 +39,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
@@ -104,41 +105,43 @@ class EntityValueUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), assertNoLoading(), entity.type(), NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), assertNoLoading(), entity.type(), NULL, StoreCursors.NULL, INSTANCE ) ).isEmpty();
     }
 
     @Test
     void useProvidedCursorForPropertiesOnNodesLoad()
     {
         var cursorContext = mock( CursorContext.class );
+        var storeCursors = mock( StoreCursors.class );
         var nodeCursor = mock( StorageNodeCursor.class );
         var storageReader = mock( StorageReader.class, RETURNS_MOCKS );
         when( nodeCursor.hasProperties() ).thenReturn( true );
         when( nodeCursor.next() ).thenReturn( true );
-        when( storageReader.allocateNodeCursor( any() ) ).thenReturn( nodeCursor );
+        when( storageReader.allocateNodeCursor( any(), any() ) ).thenReturn( nodeCursor );
 
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( EMPTY ).withTokensAfter( TOKEN ).build();
-        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.NODE, cursorContext, INSTANCE );
+        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.NODE, cursorContext, storeCursors, INSTANCE );
 
-        verify( storageReader ).allocateNodeCursor( cursorContext );
-        verify( storageReader ).allocatePropertyCursor( cursorContext, INSTANCE );
+        verify( storageReader ).allocateNodeCursor( cursorContext, storeCursors );
+        verify( storageReader ).allocatePropertyCursor( cursorContext, storeCursors, INSTANCE );
     }
 
     @Test
     void useProvidedCursorForPropertiesOnRelationshipLoad()
     {
         var cursorContext = mock( CursorContext.class );
+        var storeCursors = mock( StoreCursors.class );
         var relationshipCursor = mock( StorageRelationshipScanCursor.class );
         var storageReader = mock( StorageReader.class, RETURNS_MOCKS );
         when( relationshipCursor.hasProperties() ).thenReturn( true );
         when( relationshipCursor.next() ).thenReturn( true );
-        when( storageReader.allocateRelationshipScanCursor( any() ) ).thenReturn( relationshipCursor );
+        when( storageReader.allocateRelationshipScanCursor( any(), any() ) ).thenReturn( relationshipCursor );
 
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( EMPTY ).withTokensAfter( TOKEN ).build();
-        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.RELATIONSHIP, cursorContext, INSTANCE );
+        updates.valueUpdatesForIndexKeys( NODE_INDEXES, storageReader, EntityType.RELATIONSHIP, cursorContext, storeCursors, INSTANCE );
 
-        verify( storageReader ).allocateRelationshipScanCursor( cursorContext );
-        verify( storageReader ).allocatePropertyCursor( cursorContext, INSTANCE );
+        verify( storageReader ).allocateRelationshipScanCursor( cursorContext, storeCursors );
+        verify( storageReader ).allocatePropertyCursor( cursorContext, storeCursors, INSTANCE );
     }
 
     @ParameterizedTest
@@ -153,7 +156,7 @@ class EntityValueUpdatesTest
                                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), assertNoLoading(), entity.type(), NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), assertNoLoading(), entity.type(), NULL, StoreCursors.NULL, INSTANCE ) ).isEmpty();
     }
 
     @ParameterizedTest
@@ -164,7 +167,7 @@ class EntityValueUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( EMPTY ).withTokensAfter( TOKEN ).build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), propertyLoader(), entity.type(), NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), propertyLoader(), entity.type(), NULL, StoreCursors.NULL, INSTANCE ) ).isEmpty();
     }
 
     @Test
@@ -174,7 +177,8 @@ class EntityValueUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( EMPTY ).withTokensAfter( TOKEN ).build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1 ), EntityType.NODE, NULL, INSTANCE ) ).contains(
+        assertThat(
+                updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1 ), EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE ) ).contains(
                 IndexEntryUpdate.add( ENTITY_ID, NODE_INDEX_1, PROPERTY_1.value() ) );
     }
 
@@ -190,7 +194,9 @@ class EntityValueUpdatesTest
                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE, NULL, INSTANCE ) )
+        assertThat(
+                updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE, NULL, StoreCursors.NULL,
+                        INSTANCE ) )
                 .contains(
                         IndexEntryUpdate.add( ENTITY_ID, NODE_INDEX_1, PROPERTY_1.value() ),
                         IndexEntryUpdate.add( ENTITY_ID, NODE_INDEX_2, PROPERTY_2.value() ),
@@ -211,7 +217,8 @@ class EntityValueUpdatesTest
                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.index123() ), propertyLoader(), entity.type(), NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.index123() ), propertyLoader(), entity.type(), NULL, StoreCursors.NULL,
+                INSTANCE ) ).isEmpty();
     }
 
     @ParameterizedTest
@@ -226,7 +233,8 @@ class EntityValueUpdatesTest
                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.index123() ), propertyLoader( PROPERTY_2 ), entity.type(), NULL, INSTANCE ) )
+        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.index123() ), propertyLoader( PROPERTY_2 ), entity.type(), NULL, StoreCursors.NULL,
+                INSTANCE ) )
                 .contains( IndexEntryUpdate.add( ENTITY_ID, entity.index123(), VALUES_123 ) );
     }
 
@@ -238,7 +246,7 @@ class EntityValueUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN ).withTokensAfter( EMPTY ).build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), propertyLoader(), entity.type(), NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), propertyLoader(), entity.type(), NULL, StoreCursors.NULL, INSTANCE ) ).isEmpty();
     }
 
     @Test
@@ -249,7 +257,7 @@ class EntityValueUpdatesTest
                 EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN ).withTokensAfter( EMPTY ).build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1 ), EntityType.NODE, NULL, INSTANCE ) )
+        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1 ), EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.remove( ENTITY_ID, NODE_INDEX_1, PROPERTY_1.value() ) );
     }
 
@@ -261,7 +269,9 @@ class EntityValueUpdatesTest
                 EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN ).withTokensAfter( EMPTY ).build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE, NULL, INSTANCE ) )
+        assertThat(
+                updates.valueUpdatesForIndexKeys( NODE_INDEXES, propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE, NULL, StoreCursors.NULL,
+                        INSTANCE ) )
                 .contains(
                         IndexEntryUpdate.remove( ENTITY_ID, NODE_INDEX_1, PROPERTY_1.value() ),
                         IndexEntryUpdate.remove( ENTITY_ID, NODE_INDEX_2, PROPERTY_2.value() ),
@@ -279,7 +289,7 @@ class EntityValueUpdatesTest
                                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, assertNoLoading(), EntityType.NODE, NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, assertNoLoading(), EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE ) ).isEmpty();
     }
 
     @ParameterizedTest
@@ -292,7 +302,7 @@ class EntityValueUpdatesTest
                                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), propertyLoader(), entity.type(), NULL, INSTANCE ) )
+        assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), propertyLoader(), entity.type(), NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.add( ENTITY_ID, entity.index1(), PROPERTY_1.value() ) );
     }
 
@@ -309,7 +319,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( entity.indexes(), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), entity.type(), NULL,
-                INSTANCE ) )
+                StoreCursors.NULL, INSTANCE ) )
                 .contains(
                         IndexEntryUpdate.add( ENTITY_ID, entity.index1(), PROPERTY_1.value() ),
                         IndexEntryUpdate.add( ENTITY_ID, entity.index2(), PROPERTY_2.value() ),
@@ -329,7 +339,7 @@ class EntityValueUpdatesTest
                                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, assertNoLoading(), EntityType.NODE, NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, assertNoLoading(), EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE ) ).isEmpty();
     }
 
     @Test
@@ -343,7 +353,7 @@ class EntityValueUpdatesTest
                                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, assertNoLoading(), EntityType.NODE, NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( NODE_INDEXES, assertNoLoading(), EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE ) ).isEmpty();
     }
 
     @ParameterizedTest
@@ -354,7 +364,8 @@ class EntityValueUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).withTokens( TOKEN ).build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.index1() ), assertNoLoading(), entity.type(), NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.index1() ), assertNoLoading(), entity.type(), NULL, StoreCursors.NULL,
+                INSTANCE ) ).isEmpty();
     }
 
     @Test
@@ -366,7 +377,8 @@ class EntityValueUpdatesTest
                                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( singleton( NODE_INDEX_1 ), assertNoLoading(), EntityType.NODE, NULL, INSTANCE ) ).isEmpty();
+        assertThat( updates.valueUpdatesForIndexKeys( singleton( NODE_INDEX_1 ), assertNoLoading(), EntityType.NODE, NULL, StoreCursors.NULL,
+                INSTANCE ) ).isEmpty();
     }
 
     @ParameterizedTest
@@ -379,7 +391,8 @@ class EntityValueUpdatesTest
                                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader(), entity.type(), NULL, INSTANCE ) )
+        assertThat(
+                updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader(), entity.type(), NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.add( ENTITY_ID, entity.nonSchemaIndex(), PROPERTY_1.value(), null, null ) );
     }
 
@@ -396,8 +409,8 @@ class EntityValueUpdatesTest
                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader(), entity.type(), NULL, INSTANCE ) ).contains(
-                IndexEntryUpdate.add( ENTITY_ID, entity.nonSchemaIndex(), VALUES_123 ) );
+        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader(), entity.type(), NULL, StoreCursors.NULL,
+                INSTANCE ) ).contains( IndexEntryUpdate.add( ENTITY_ID, entity.nonSchemaIndex(), VALUES_123 ) );
     }
 
     @ParameterizedTest
@@ -413,7 +426,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ),
-                propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), entity.type(), NULL, INSTANCE ) )
+                propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), entity.type(), NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.change( ENTITY_ID, entity.nonSchemaIndex(), VALUES_123,
                         new Value[]{PROPERTY_1.value(), newValue2, PROPERTY_3.value()} ) );
     }
@@ -435,7 +448,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ),
-                entity.type(), NULL, INSTANCE ) )
+                entity.type(), NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.change( ENTITY_ID, entity.nonSchemaIndex(), VALUES_123, new Value[]{newValue1, newValue2, newValue3} ) );
     }
 
@@ -450,7 +463,9 @@ class EntityValueUpdatesTest
                              .build();
 
         // Then
-        assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader( PROPERTY_2 ), entity.type(), NULL, INSTANCE ) )
+        assertThat(
+                updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader( PROPERTY_2 ), entity.type(), NULL, StoreCursors.NULL,
+                        INSTANCE ) )
                 .contains( IndexEntryUpdate.remove( ENTITY_ID, entity.nonSchemaIndex(), null, PROPERTY_2.value(), null ) );
     }
 
@@ -466,7 +481,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( entity.nonSchemaIndex() ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), entity.type(),
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains(
                         IndexEntryUpdate.change( ENTITY_ID, entity.nonSchemaIndex(), VALUES_123, new Value[]{PROPERTY_1.value(), null, PROPERTY_3.value()} ) );
     }
@@ -480,7 +495,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( NON_SCHEMA_NODE_INDEX ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE,
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.add( ENTITY_ID, NON_SCHEMA_NODE_INDEX, VALUES_123 ) );
     }
 
@@ -493,7 +508,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( NON_SCHEMA_NODE_INDEX ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE,
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.add( ENTITY_ID, NON_SCHEMA_NODE_INDEX, VALUES_123 ) );
     }
 
@@ -506,7 +521,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( NON_SCHEMA_NODE_INDEX ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE,
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .isEmpty();
     }
 
@@ -519,7 +534,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( NON_SCHEMA_NODE_INDEX ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE,
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .isEmpty();
     }
 
@@ -532,7 +547,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( NON_SCHEMA_NODE_INDEX ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE,
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.remove( ENTITY_ID, NON_SCHEMA_NODE_INDEX, VALUES_123 ) );
     }
 
@@ -545,7 +560,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( NON_SCHEMA_NODE_INDEX ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE,
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .isEmpty();
     }
 
@@ -558,7 +573,7 @@ class EntityValueUpdatesTest
 
         // Then
         assertThat( updates.valueUpdatesForIndexKeys( singleton( NON_SCHEMA_NODE_INDEX ), propertyLoader( PROPERTY_1, PROPERTY_2, PROPERTY_3 ), EntityType.NODE,
-                NULL, INSTANCE ) )
+                NULL, StoreCursors.NULL, INSTANCE ) )
                 .contains( IndexEntryUpdate.remove( ENTITY_ID, NON_SCHEMA_NODE_INDEX, VALUES_123 ) );
     }
 
@@ -583,10 +598,10 @@ class EntityValueUpdatesTest
     {
         StorageReader reader = mock( StorageReader.class );
         IllegalStateException exception = new IllegalStateException( "Should never attempt to load properties!" );
-        when( reader.allocateNodeCursor( any() ) ).thenThrow( exception );
-        when( reader.allocateRelationshipScanCursor( any() ) ).thenThrow( exception );
-        when( reader.allocateRelationshipTraversalCursor( any() ) ).thenThrow( exception );
-        when( reader.allocatePropertyCursor( any(), any() ) ).thenThrow( exception );
+        when( reader.allocateNodeCursor( any(), any() ) ).thenThrow( exception );
+        when( reader.allocateRelationshipScanCursor( any(), any() ) ).thenThrow( exception );
+        when( reader.allocateRelationshipTraversalCursor( any(), any() ) ).thenThrow( exception );
+        when( reader.allocatePropertyCursor( any(), any(), any() ) ).thenThrow( exception );
         return reader;
     }
 

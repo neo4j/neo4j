@@ -41,6 +41,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
@@ -48,6 +49,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -95,6 +97,7 @@ public abstract class RecordStorageReaderTestBase
     protected RecordStorageEngine storageEngine;
     private RecordStorageReader commitReader;
     private CommandCreationContext commitContext;
+    protected StoreCursors storageCursors;
 
     @BeforeEach
     public void before() throws Throwable
@@ -111,13 +114,15 @@ public abstract class RecordStorageReaderTestBase
         this.storageReader = storageEngine.newReader();
         this.commitReader = storageEngine.newReader();
         this.commitContext = storageEngine.newCommandCreationContext( INSTANCE );
-        commitContext.initialize( NULL );
+        storageCursors = storageEngine.createStorageCursors( NULL );
+        commitContext.initialize( NULL, storageCursors );
         storageEngineRule.before();
     }
 
     @AfterEach
     public void after() throws Throwable
     {
+        storageCursors.close();
         storageEngineRule.after( true );
     }
 
@@ -162,7 +167,7 @@ public abstract class RecordStorageReaderTestBase
     protected void deleteRelationship( long relationshipId ) throws Exception
     {
         TxState txState = new TxState();
-        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor( NULL ) )
+        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor( NULL, StoreCursors.NULL ) )
         {
             cursor.single( relationshipId );
             assertTrue( cursor.next() );
@@ -273,7 +278,8 @@ public abstract class RecordStorageReaderTestBase
     {
         List<StorageCommand> commands = new ArrayList<>();
         long txId = nextTxId.incrementAndGet();
-        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, LockTracer.NONE, txId, state -> state, NULL, INSTANCE );
+        storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, LockTracer.NONE, txId, state -> state, NULL,
+                storageCursors, INSTANCE );
         storageEngine.apply( new GroupOfCommands( txId, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
     }
 

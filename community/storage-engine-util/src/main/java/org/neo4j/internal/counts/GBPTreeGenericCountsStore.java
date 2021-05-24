@@ -53,6 +53,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
@@ -171,7 +172,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     // === Life cycle ===
 
     @Override
-    public void start( CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
+    public void start( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker ) throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( rebuilder != null )

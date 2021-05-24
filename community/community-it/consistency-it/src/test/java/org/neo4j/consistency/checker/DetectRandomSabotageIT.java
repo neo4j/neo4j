@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -144,6 +145,7 @@ public class DetectRandomSabotageIT
     private GraphDatabaseAPI db;
     private NeoStores neoStores;
     private DependencyResolver resolver;
+    private StoreCursors storageCursors;
 
     private DatabaseManagementService getDbms( Path home )
     {
@@ -192,13 +194,16 @@ public class DetectRandomSabotageIT
         // Create some indexes and constraints
         createSchema( db );
 
-        neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        RecordStorageEngine recordStorageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        neoStores = recordStorageEngine.testAccessNeoStores();
+        storageCursors = recordStorageEngine.createStorageCursors( NULL );
         resolver = db.getDependencyResolver();
     }
 
     @AfterEach
     void tearDown()
     {
+        storageCursors.close();
         dbms.shutdown();
     }
 
@@ -209,7 +214,7 @@ public class DetectRandomSabotageIT
         SabotageType type = random.among( SabotageType.values() );
 
         // when
-        Sabotage sabotage = type.run( random, neoStores, resolver, db );
+        Sabotage sabotage = type.run( random, neoStores, resolver, db, storageCursors );
 
         // then
         ConsistencyCheckService.Result result = shutDownAndRunConsistencyChecker();
@@ -238,7 +243,7 @@ public class DetectRandomSabotageIT
         {
             propertyStore.getRecordByCursor( schemaRecord.getNextProp(), indexConfigPropertyRecord, RecordLoad.FORCE, propertyCursor );
         }
-        propertyStore.ensureHeavy( indexConfigPropertyRecord, NULL );
+        propertyStore.ensureHeavy( indexConfigPropertyRecord, storageCursors );
 
         //When
         int[] tokenId = new int[1];
@@ -479,7 +484,7 @@ public class DetectRandomSabotageIT
         NODE_PROP
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), PrimitiveRecord::getNextProp, PrimitiveRecord::setNextProp,
                                 () -> randomLargeSometimesNegative( random ) );
@@ -488,7 +493,7 @@ public class DetectRandomSabotageIT
         NODE_REL
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), NodeRecord::getNextRel, NodeRecord::setNextRel );
                     }
@@ -496,7 +501,7 @@ public class DetectRandomSabotageIT
         NODE_LABELS
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         NodeStore store = stores.getNodeStore();
                         NodeRecord node = randomRecord( random, store, usedRecord() );
@@ -506,7 +511,7 @@ public class DetectRandomSabotageIT
                             store.getRecordByCursor( node.getId(), before, RecordLoad.NORMAL, cursor );
                         }
                         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
-                        long[] existing = nodeLabels.get( store, NULL );
+                        long[] existing = nodeLabels.get( store, storageCursors );
                         if ( random.nextBoolean() )
                         {
                             // Change inlined
@@ -518,7 +523,7 @@ public class DetectRandomSabotageIT
                                     node.setLabelField( labelField, node.getDynamicLabelRecords() );
                                 }
                             }
-                            while ( Arrays.equals( existing, NodeLabelsField.get( node, store, NULL ) ) );
+                            while ( Arrays.equals( existing, NodeLabelsField.get( node, store, storageCursors ) ) );
                         }
                         else
                         {
@@ -537,7 +542,7 @@ public class DetectRandomSabotageIT
         NODE_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return setRandomRecordNotInUse( random, stores.getNodeStore() );
                     }
@@ -545,7 +550,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         RelationshipStore store = stores.getRelationshipStore();
                         RelationshipRecord relationship = randomRecord( random, store, usedRecord() );
@@ -585,7 +590,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_NODES
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         boolean startNode = random.nextBoolean();
                         ToLongFunction<RelationshipRecord> getter = startNode ? RelationshipRecord::getFirstNode : RelationshipRecord::getSecondNode;
@@ -596,7 +601,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_PROP
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), PrimitiveRecord::getNextProp,
                                 PrimitiveRecord::setNextProp, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), propertyId ->
@@ -621,7 +626,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_TYPE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), RelationshipRecord::getType,
                                 ( relationship, type ) -> relationship.setType( type.intValue() ),
@@ -631,7 +636,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return setRandomRecordNotInUse( random, stores.getRelationshipStore() );
                     }
@@ -639,7 +644,7 @@ public class DetectRandomSabotageIT
         PROPERTY_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         boolean prev = random.nextBoolean();
                         if ( prev )
@@ -656,7 +661,7 @@ public class DetectRandomSabotageIT
         PROPERTY_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return setRandomRecordNotInUse( random, stores.getPropertyStore() );
                     }
@@ -665,18 +670,18 @@ public class DetectRandomSabotageIT
         STRING_LENGTH
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getStringStore(),
                                 PropertyType.STRING, record ->
-                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true );
+                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true, storageCursors );
                     }
                 },
 //        STRING_DATA - format doesn't allow us to detect these
         STRING_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return setRandomRecordNotInUse( random, stores.getPropertyStore().getStringStore() );
                     }
@@ -684,29 +689,29 @@ public class DetectRandomSabotageIT
         ARRAY_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record ->
                                         record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ),
-                                v -> v.asObjectCopy() instanceof String[] );
+                                v -> v.asObjectCopy() instanceof String[], storageCursors );
                     }
                 },
         ARRAY_LENGTH
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record ->
-                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true );
+                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true, storageCursors );
                     }
                 },
 //        ARRAY_DATA?
         ARRAY_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return setRandomRecordNotInUse( random, stores.getPropertyStore().getArrayStore() );
                     }
@@ -714,7 +719,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         // prev isn't stored in the record format
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getNext,
@@ -724,7 +729,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_TYPE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getType,
                                 ( group, type ) -> group.setType( type.intValue() ),
@@ -734,7 +739,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_FIRST_RELATIONSHIP
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         ToLongFunction<RelationshipGroupRecord> getter;
                         BiConsumer<RelationshipGroupRecord,Long> setter;
@@ -760,7 +765,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return setRandomRecordNotInUse( random, stores.getRelationshipGroupStore() );
                     }
@@ -768,7 +773,8 @@ public class DetectRandomSabotageIT
         SCHEMA_INDEX_ENTRY
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
+                            throws Exception
                     {
                         IndexingService indexing = otherDependencies.resolveDependency( IndexingService.class );
                         boolean add = random.nextBoolean();
@@ -839,7 +845,8 @@ public class DetectRandomSabotageIT
         NODE_LABEL_INDEX_ENTRY
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
+                            throws Exception
                     {
                         IndexDescriptor nliDescriptor = null;
                         try ( Transaction tx = db.beginTx() )
@@ -871,7 +878,7 @@ public class DetectRandomSabotageIT
                             {
                                 // Our node is in use, make sure it's a label it doesn't already have
                                 NodeLabels labelsField = NodeLabelsField.parseLabelsField( nodeRecord );
-                                long[] labelsBefore = labelsField.get( store, NULL );
+                                long[] labelsBefore = labelsField.get( store, storageCursors );
                                 for ( long labelIdBefore : labelsBefore )
                                 {
                                     labelNames.remove( tokenHolders.labelTokens().getTokenById( (int) labelIdBefore ).name() );
@@ -909,7 +916,8 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_TYPE_INDEX_ENTRY
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
+                            throws Exception
                     {
                         IndexDescriptor rtiDescriptor = null;
                         try ( Transaction tx = db.beginTx() )
@@ -983,7 +991,8 @@ public class DetectRandomSabotageIT
         GRAPH_ENTITY_USES_INTERNAL_TOKEN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
+                            throws Exception
                     {
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         String tokenName = "Token-" + currentTimeMillis();
@@ -995,7 +1004,7 @@ public class DetectRandomSabotageIT
                             tokenHolders.labelTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
                             NodeRecord node = randomRecord( random, stores.getNodeStore(), usedRecord() );
                             NodeLabelsField.parseLabelsField( node ).add( tokenId[0], stores.getNodeStore(), stores.getNodeStore().getDynamicLabelStore(),
-                                    NULL, INSTANCE );
+                                    NULL, storageCursors, INSTANCE );
                             stores.getNodeStore().updateRecord( node, NULL );
                             return new Sabotage( "Node has label token which is internal", node.toString() );
                         }
@@ -1077,7 +1086,7 @@ public class DetectRandomSabotageIT
         }
 
         private static Sabotage loadChangeUpdateDynamicChain( RandomRule random, PropertyStore propertyStore, AbstractDynamicStore dynamicStore,
-                PropertyType valueType, Consumer<DynamicRecord> vandal, Predicate<Value> checkability )
+                PropertyType valueType, Consumer<DynamicRecord> vandal, Predicate<Value> checkability, StoreCursors storeCursors )
         {
             PropertyRecord propertyRecord = propertyStore.newRecord();
             try ( var propertyCursor = propertyStore.openPageCursorForReading( 0, NULL ) )
@@ -1089,9 +1098,9 @@ public class DetectRandomSabotageIT
                     {
                         for ( PropertyBlock block : propertyRecord )
                         {
-                            if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore, NULL ) ) )
+                            if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore, storeCursors ) ) )
                             {
-                                propertyStore.ensureHeavy( block, NULL );
+                                propertyStore.ensureHeavy( block, storeCursors );
                                 if ( block.getValueRecords().size() > 1 )
                                 {
                                     DynamicRecord dynamicRecord = block.getValueRecords().get( random.nextInt( block.getValueRecords().size() - 1 ) );
@@ -1149,7 +1158,8 @@ public class DetectRandomSabotageIT
             return record;
         }
 
-        abstract Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception;
+        abstract Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
+                throws Exception;
     }
 
     private static class Sabotage

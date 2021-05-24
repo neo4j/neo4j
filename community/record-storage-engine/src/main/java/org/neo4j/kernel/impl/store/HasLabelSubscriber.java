@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Bits;
 
 /**
@@ -36,14 +36,14 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
     private boolean found;
     private final int label;
     private final DynamicArrayStore labelStore;
-    private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private int bitsUsedInLastByte;
 
-    HasLabelSubscriber( int label, DynamicArrayStore labelStore, CursorContext cursorContext )
+    HasLabelSubscriber( int label, DynamicArrayStore labelStore, StoreCursors storeCursors )
     {
         this.label = label;
         this.labelStore = labelStore;
-        this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     boolean hasLabel()
@@ -58,7 +58,7 @@ class HasLabelSubscriber implements RecordSubscriber<DynamicRecord>
         {
             return true;
         }
-        labelStore.ensureHeavy( record, cursorContext );
+        labelStore.ensureHeavy( record, storeCursors );
 
         boolean lastRecord = Record.NO_NEXT_BLOCK.is( record.getNextBlock() );
         if ( firstRecord )

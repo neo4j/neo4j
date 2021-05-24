@@ -1317,7 +1317,7 @@ class IndexingServiceTest
         IndexingService.Monitor monitor = mock( IndexingService.Monitor.class );
         IndexStoreViewFactory storeViewFactory = mock( IndexStoreViewFactory.class );
         when( storeViewFactory.createTokenIndexStoreView( any() ) ).thenReturn( storeView );
-        when( storeView.newPropertyAccessor( any(), any() )).thenReturn( propertyAccessor );
+        when( storeView.newPropertyAccessor( any(), any() ) ).thenReturn( propertyAccessor );
         IndexingService indexingService = new IndexingService(
                 indexProxyCreator, indexProviderMap, indexMapReference, storeViewFactory, schemaRules,
                 samplingController, nameLookup, scheduler, null, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),

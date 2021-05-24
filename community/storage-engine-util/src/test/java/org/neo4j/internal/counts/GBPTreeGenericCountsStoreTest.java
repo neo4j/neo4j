@@ -53,6 +53,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -416,7 +417,7 @@ class GBPTreeGenericCountsStoreTest
         // applying this negative delta would have failed in the updater.
         incrementNodeCount( BASE_TX_ID + 2, labelId, -2 );
         verify( monitor ).ignoredTransaction( BASE_TX_ID + 2 );
-        countsStore.start( NULL, INSTANCE );
+        countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
 
         // then
         assertEquals( 2, countsStore.read( nodeKey( labelId ), NULL ) );
@@ -503,7 +504,7 @@ class GBPTreeGenericCountsStoreTest
         countsStore.checkpoint( NULL );
         closeCountsStore();
         instantiateCountsStore( EMPTY_REBUILD, readOnly(), NO_MONITOR );
-        countsStore.start( NULL, INSTANCE );
+        countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
 
         // then
         assertDoesNotThrow( () -> countsStore.updater( BASE_TX_ID + 1, NULL ) );
@@ -516,7 +517,7 @@ class GBPTreeGenericCountsStoreTest
         countsStore.checkpoint( NULL );
         closeCountsStore();
         instantiateCountsStore( EMPTY_REBUILD, readOnly(), NO_MONITOR );
-        countsStore.start( NULL, INSTANCE );
+        countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
         countsStore.checkpoint( NULL );
@@ -758,7 +759,7 @@ class GBPTreeGenericCountsStoreTest
     private void openCountsStore( Rebuilder builder ) throws IOException
     {
         instantiateCountsStore( builder, writable(), NO_MONITOR );
-        countsStore.start( NULL, INSTANCE );
+        countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
     }
 
     private void instantiateCountsStore( Rebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeGenericCountsStore.Monitor monitor )

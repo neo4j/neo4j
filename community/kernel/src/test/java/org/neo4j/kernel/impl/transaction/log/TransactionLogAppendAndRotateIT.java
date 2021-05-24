@@ -60,6 +60,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -121,7 +122,7 @@ class TransactionLogAppendAndRotateIT
                 {
                     try
                     {
-                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ), CursorContext.NULL ), LogAppendEvent.NULL );
+                        appender.append( new TransactionToApply( sillyTransaction( 1_000 ), CursorContext.NULL, StoreCursors.NULL ), LogAppendEvent.NULL );
                     }
                     catch ( Exception e )
                     {

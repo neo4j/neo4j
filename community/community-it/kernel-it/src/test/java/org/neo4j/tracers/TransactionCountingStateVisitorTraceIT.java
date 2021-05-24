@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -100,7 +101,7 @@ public class TransactionCountingStateVisitorTraceIT
             var counts = new CountsDelta();
 
             try ( StorageReader storageReader = kernelTransaction.newStorageReader();
-                    var stateVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, transactionState, counts, cursorContext ) )
+                    var stateVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, transactionState, counts, cursorContext, StoreCursors.NULL ) )
             {
                 transactionState.accept( stateVisitor );
             }

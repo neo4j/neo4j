@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -286,6 +287,6 @@ class TestArrayStore
 
     private Pair<byte[], byte[]> loadArray( Collection<DynamicRecord> records )
     {
-        return arrayStore.readFullByteArray( records, PropertyType.ARRAY, NULL );
+        return arrayStore.readFullByteArray( records, PropertyType.ARRAY, StoreCursors.NULL );
     }
 }

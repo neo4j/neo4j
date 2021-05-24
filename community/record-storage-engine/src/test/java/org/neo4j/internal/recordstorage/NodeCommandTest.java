@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -147,7 +148,7 @@ class NodeCommandTest
         NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
+        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL, StoreCursors.NULL, INSTANCE );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
@@ -181,7 +182,7 @@ class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
         {
-            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
+            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL, StoreCursors.NULL, INSTANCE );
         }
         // When
         assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
@@ -259,7 +260,7 @@ class NodeCommandTest
 
     private Set<Integer> labels( NodeRecord record )
     {
-        long[] rawLabels = parseLabelsField( record ).get( nodeStore, NULL );
+        long[] rawLabels = parseLabelsField( record ).get( nodeStore, StoreCursors.NULL );
         Set<Integer> labels = new HashSet<>( rawLabels.length );
         for ( long label : rawLabels )
         {

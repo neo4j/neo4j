@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -42,7 +43,7 @@ class IndexStoreViewFactoryTest
     void shouldCreateIndexStoreView()
     {
         //Given
-        var factory = new IndexStoreViewFactory( Config.defaults(), () -> null, locks, fullScanStoreView, lockService, logProvider );
+        var factory = new IndexStoreViewFactory( Config.defaults(), any -> StoreCursors.NULL, () -> null, locks, fullScanStoreView, lockService, logProvider );
 
         //When
         var indexStoreView = factory.createTokenIndexStoreView( indexProxies );

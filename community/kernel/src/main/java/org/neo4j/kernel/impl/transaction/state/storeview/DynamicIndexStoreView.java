@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -46,6 +47,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -58,6 +60,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     private final Config config;
     private final IndexProxyProvider indexProxies;
     protected final Supplier<StorageReader> storageReader;
+    private final Function<CursorContext,StoreCursors> cursorFactory;
     private final Log log;
 
     public DynamicIndexStoreView( FullScanStoreView fullScanStoreView,
@@ -66,6 +69,7 @@ public class DynamicIndexStoreView implements IndexStoreView
                                   Config config,
                                   IndexProxyProvider indexProxies,
                                   Supplier<StorageReader> storageReader,
+                                  Function<CursorContext,StoreCursors> cursorFactory,
                                   LogProvider logProvider )
     {
         this.fullScanStoreView = fullScanStoreView;
@@ -74,6 +78,7 @@ public class DynamicIndexStoreView implements IndexStoreView
         this.config = config;
         this.indexProxies = indexProxies;
         this.storageReader = storageReader;
+        this.cursorFactory = cursorFactory;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -86,7 +91,7 @@ public class DynamicIndexStoreView implements IndexStoreView
         if ( tokenIndex.isPresent() )
         {
             var nodeStoreScan = new LabelIndexedNodeStoreScan(
-                    config, storageReader.get(), lockService, tokenIndex.get().reader, labelScanConsumer, propertyScanConsumer, labelIds,
+                    config, storageReader.get(), cursorFactory, lockService, tokenIndex.get().reader, labelScanConsumer, propertyScanConsumer, labelIds,
                     propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, cacheTracer, memoryTracker );
             return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, nodeStoreScan );
         }
@@ -105,7 +110,8 @@ public class DynamicIndexStoreView implements IndexStoreView
         if ( tokenIndex.isPresent() )
         {
             var relationshipStoreScan = new RelationshipIndexedRelationshipStoreScan(
-                    config, storageReader.get(), lockService, tokenIndex.get().reader, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds,
+                    config, storageReader.get(), cursorFactory, lockService, tokenIndex.get().reader, relationshipTypeScanConsumer, propertyScanConsumer,
+                    relationshipTypeIds,
                     propertyKeyIdFilter, parallelWrite, fullScanStoreView.scheduler, cacheTracer, memoryTracker );
             return new IndexedStoreScan( locks, tokenIndex.get().descriptor, config, relationshipStoreScan );
         }

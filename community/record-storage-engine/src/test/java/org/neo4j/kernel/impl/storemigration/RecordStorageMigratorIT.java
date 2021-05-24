@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -76,6 +77,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
@@ -93,6 +95,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -111,8 +114,8 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -250,7 +253,7 @@ class RecordStorageMigratorIT
                 PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue() ) )
         {
             // The rebuild would happen here in start and will throw exception (above) if invoked
-            groupDegreesStore.start( NULL, INSTANCE );
+            groupDegreesStore.start( NULL, StoreCursors.NULL, INSTANCE );
 
             // The store keeps track of committed transactions.
             // It is essential that it starts with the transaction
@@ -448,13 +451,14 @@ class RecordStorageMigratorIT
 
         // Then the new store should retain an exact representation of the old-format schema rules.
         StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, logProvider, PageCacheTracer.NULL, writable() );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores();
+              var storeCursors = new CachedStoreCursors( neoStores, NULL ) )
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
-            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, NULL );
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
             SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
             List<SchemaRule> migratedRules = new ArrayList<>();
-            storage.getAll( NULL ).iterator().forEachRemaining( migratedRules::add );
+            storage.getAll( storeCursors ).iterator().forEachRemaining( migratedRules::add );
 
             // Nerf the rule names, since migration may change those around.
             migratedRules = migratedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );

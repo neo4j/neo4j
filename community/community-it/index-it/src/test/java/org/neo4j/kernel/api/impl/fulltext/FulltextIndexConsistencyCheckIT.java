@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -75,6 +76,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -610,20 +612,21 @@ class FulltextIndexConsistencyCheckIT
         NeoStores stores = getNeoStores( db );
         NodeStore nodeStore = stores.getNodeStore();
         NodeRecord record = nodeStore.newRecord();
-        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, NULL ) )
+        try ( var cursors = new CachedStoreCursors( stores, NULL ) )
         {
-            nodeStore.getRecordByCursor( nodeId, record, RecordLoad.NORMAL, cursor );
+            nodeStore.getRecordByCursor( nodeId, record, RecordLoad.NORMAL, cursors.nodeCursor() );
         }
         long propId = record.getNextProp();
 
         // Find and remove property p2
         PropertyStore propertyStore = stores.getPropertyStore();
         PropertyRecord propRecord = propertyStore.newRecord();
-        try ( var cursor = propertyStore.openPageCursorForReading( propId, NULL ) )
+        List<NamedToken> propertyKeyTokens;
+        try ( var cursors = new CachedStoreCursors( stores, NULL ) )
         {
-            propertyStore.getRecordByCursor( propId, propRecord, RecordLoad.NORMAL, cursor );
+            propertyStore.getRecordByCursor( propId, propRecord, RecordLoad.NORMAL, cursors.propertyCursor() );
+            propertyKeyTokens = stores.getPropertyKeyTokenStore().getAllReadableTokens( cursors );
         }
-        List<NamedToken> propertyKeyTokens = stores.getPropertyKeyTokenStore().getAllReadableTokens( NULL );
         NamedToken propertyKeyToken = propertyKeyTokens.stream().filter( token -> "p2".equals( token.name() ) ).findFirst().orElseThrow();
         propRecord.removePropertyBlock( propertyKeyToken.id() );
         propertyStore.updateRecord( propRecord, NULL );

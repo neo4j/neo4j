@@ -29,10 +29,11 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Stopwatch;
 
 import static java.lang.Math.max;
@@ -214,7 +215,7 @@ class RelationshipChainChecker implements Checker
         return () ->
         {
             try ( var cursorContext = new CursorContext( context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_CONSISTENCY_CHECKER_TAG ) );
-                  var otherRelationshipCursor = store.openPageCursorForReading( 0, cursorContext ) )
+                    var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext ) )
             {
                 while ( (!end.get() || !queue.isEmpty()) && !context.isCancelled() )
                 {
@@ -232,17 +233,13 @@ class RelationshipChainChecker implements Checker
                                     Math.abs( secondNode % numberOfChainCheckers ) == threadId && nodeIdRange.isWithinRangeExclusiveTo( secondNode );
                             if ( processStartNode )
                             {
-                                checkRelationshipLink( direction, SOURCE_PREV, relationship, client, otherRelationship, otherRelationshipCursor, store,
-                                        cursorContext );
-                                checkRelationshipLink( direction, SOURCE_NEXT, relationship, client, otherRelationship, otherRelationshipCursor, store,
-                                        cursorContext );
+                                checkRelationshipLink( direction, SOURCE_PREV, relationship, client, otherRelationship, store, storeCursors );
+                                checkRelationshipLink( direction, SOURCE_NEXT, relationship, client, otherRelationship, store, storeCursors );
                             }
                             if ( processEndNode )
                             {
-                                checkRelationshipLink( direction, TARGET_PREV, relationship, client, otherRelationship, otherRelationshipCursor, store,
-                                        cursorContext );
-                                checkRelationshipLink( direction, TARGET_NEXT, relationship, client, otherRelationship, otherRelationshipCursor, store,
-                                        cursorContext );
+                                checkRelationshipLink( direction, TARGET_PREV, relationship, client, otherRelationship, store, storeCursors );
+                                checkRelationshipLink( direction, TARGET_NEXT, relationship, client, otherRelationship, store, storeCursors );
                             }
                             if ( processStartNode )
                             {
@@ -283,8 +280,8 @@ class RelationshipChainChecker implements Checker
     }
 
     private void checkRelationshipLink( ScanDirection direction, RelationshipLink link, RelationshipRecord relationshipCursor,
-            CacheAccess.Client client, RelationshipRecord otherRelationship, PageCursor otherRelationshipCursor, RelationshipStore store,
-            CursorContext cursorContext )
+            CacheAccess.Client client, RelationshipRecord otherRelationship, RelationshipStore store,
+            StoreCursors storeCursors )
     {
         long relationshipId = relationshipCursor.getId();
         long nodeId = link.node( relationshipCursor );
@@ -303,12 +300,12 @@ class RelationshipChainChecker implements Checker
                 else if ( !NULL_REFERENCE.is( fromCache ) )
                 {
                     // Load it from store
-                    store.getRecordByCursor( linkId, otherRelationship, FORCE, otherRelationshipCursor );
+                    store.getRecordByCursor( linkId, otherRelationship, FORCE, storeCursors.relationshipCursor() );
                 }
                 else
                 {
                     otherRelationship.clear();
-                    link.reportDoesNotReferenceBack( reporter, recordLoader.relationship( relationshipCursor.getId(), cursorContext ), otherRelationship );
+                    link.reportDoesNotReferenceBack( reporter, recordLoader.relationship( relationshipCursor.getId(), storeCursors ), otherRelationship );
                 }
             }
             else
@@ -323,18 +320,18 @@ class RelationshipChainChecker implements Checker
                 otherRelationship.setInUse( client.getBooleanFromCache( nodeId, SLOT_IN_USE ) );
                 otherRelationship.setCreated();
             }
-            checkRelationshipLink( direction, link, otherRelationship, relationshipId, nodeId, linkId, cursorContext );
+            checkRelationshipLink( direction, link, otherRelationship, relationshipId, nodeId, linkId, storeCursors );
         }
     }
 
     private void checkRelationshipLink( ScanDirection direction, RelationshipLink thing, RelationshipRecord otherRelationship, long relationshipId, long nodeId,
-            long linkId, CursorContext cursorContext )
+            long linkId, StoreCursors storeCursors )
     {
         // Perform the checks
         NodeLink nodeLink = NodeLink.select( otherRelationship, nodeId );
         if ( nodeLink == null )
         {
-            thing.reportOtherNode( reporter, recordLoader.relationship( relationshipId, cursorContext ), recordLoader.relationship( linkId, cursorContext ) );
+            thing.reportOtherNode( reporter, recordLoader.relationship( relationshipId, storeCursors ), recordLoader.relationship( linkId, storeCursors ) );
         }
         else
         {
@@ -343,21 +340,21 @@ class RelationshipChainChecker implements Checker
                 // Read the relationship from store and do the check on that actual record instead, should happen rarely anyway
                 if ( otherRelationship.isCreated() )
                 {
-                    recordLoader.relationship( otherRelationship, otherRelationship.getId(), cursorContext );
+                    recordLoader.relationship( otherRelationship, otherRelationship.getId(), storeCursors );
                     // Call this method one more time, now with !created
-                    checkRelationshipLink( direction, thing, otherRelationship, relationshipId, nodeId, linkId, cursorContext );
+                    checkRelationshipLink( direction, thing, otherRelationship, relationshipId, nodeId, linkId, storeCursors );
                     return;
                 }
 
-                thing.reportDoesNotReferenceBack( reporter, recordLoader.relationship( relationshipId, cursorContext ),
-                        recordLoader.relationship( linkId, cursorContext ) );
+                thing.reportDoesNotReferenceBack( reporter, recordLoader.relationship( relationshipId, storeCursors ),
+                        recordLoader.relationship( linkId, storeCursors ) );
             }
             else
             {
                 if ( !direction.exclude( relationshipId, linkId ) && !otherRelationship.inUse() )
                 {
-                    thing.reportNotUsedRelationshipReferencedInChain( reporter, recordLoader.relationship( relationshipId, cursorContext ),
-                            recordLoader.relationship( linkId, cursorContext ) );
+                    thing.reportNotUsedRelationshipReferencedInChain( reporter, recordLoader.relationship( relationshipId, storeCursors ),
+                            recordLoader.relationship( linkId, storeCursors ) );
                 }
             }
         }

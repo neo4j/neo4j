@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Store and accessor of entity counts. Counts changes revolves around one or a combination of multiple tokens and are applied as deltas.
@@ -55,7 +56,7 @@ public interface CountsStore extends CountsStorage, CountsAccessor
         }
 
         @Override
-        public void start( CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException
+        public void start( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker ) throws IOException
         {   // no-op
         }
 

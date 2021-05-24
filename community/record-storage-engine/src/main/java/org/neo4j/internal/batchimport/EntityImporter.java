@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -54,6 +56,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final PropertyStore propertyStore;
     private final PropertyRecord propertyRecord;
     private final PageCursor propertyUpdateCursor;
+    protected final StoreCursors storeCursors;
     private PropertyBlock[] propertyBlocks = new PropertyBlock[100];
     private int propertyBlocksCursor;
     private final BatchingIdGetter propertyIds;
@@ -72,6 +75,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     EntityImporter( BatchingNeoStores stores, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( ENTITY_IMPORTER_TAG ) );
+        this.storeCursors = new CachedStoreCursors( stores.getNeoStores(), cursorContext );
         this.propertyStore = stores.getPropertyStore();
         this.propertyKeyTokenRepository = stores.getPropertyKeyRepository();
         this.monitor = monitor;

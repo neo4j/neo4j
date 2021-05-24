@@ -322,9 +322,11 @@ public final class Recovery
                 true, readOnlyChecker, memoryTracker );
 
         // Schema indexes
-        FullScanStoreView fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, storageEngine::newReader, config, scheduler );
+        FullScanStoreView fullScanStoreView =
+                new FullScanStoreView( NO_LOCK_SERVICE, storageEngine::newReader, storageEngine::createStorageCursors, config, scheduler );
         IndexStoreViewFactory indexStoreViewFactory =
-                new IndexStoreViewFactory( config, storageEngine::newReader, NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider );
+                new IndexStoreViewFactory( config, storageEngine::createStorageCursors, storageEngine::newReader, NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE,
+                        logProvider );
 
         IndexStatisticsStore indexStatisticsStore =
                 new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, tracers.getPageCacheTracer() );

@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -75,7 +76,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ), CursorContext.NULL );
+                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ), storeCursors );
         // The Relationship Type Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         rtiDescriptor = indexDescriptors[0];

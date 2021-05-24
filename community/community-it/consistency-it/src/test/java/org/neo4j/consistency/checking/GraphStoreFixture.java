@@ -52,6 +52,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -81,6 +83,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -172,7 +175,10 @@ public abstract class GraphStoreFixture implements AutoCloseable
     {
         TransactionRepresentation representation =
                 transaction.representation( idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService );
-        commitProcess.commit( new TransactionToApply( representation, NULL ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        {
+            commitProcess.commit( new TransactionToApply( representation, NULL, storeCursors ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+        }
     }
 
     public void apply( Consumer<org.neo4j.graphdb.Transaction> tx )
@@ -236,8 +242,9 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
         try ( StorageReader storeReader = storageEngine.newReader();
-              StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL );
-              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, INSTANCE ) )
+              var storeCursors = storageEngine.createStorageCursors( NULL );
+              StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL, storeCursors );
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, storeCursors, INSTANCE ) )
         {
             nodeCursor.single( nodeId );
             long[] labels;
@@ -258,9 +265,9 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public EntityUpdates relationshipAsUpdates( long relId )
     {
         try ( StorageReader storeReader = storageEngine.newReader();
-              StorageRelationshipScanCursor relCursor = storeReader.allocateRelationshipScanCursor( NULL );
-              StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL );
-              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, INSTANCE ) )
+              var storeCursors = storageEngine.createStorageCursors( NULL );
+              StorageRelationshipScanCursor relCursor = storeReader.allocateRelationshipScanCursor( NULL, storeCursors );
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, storeCursors, INSTANCE ) )
         {
             relCursor.single( relId );
             if ( !relCursor.next() || !relCursor.hasProperties() )
@@ -335,7 +342,10 @@ public abstract class GraphStoreFixture implements AutoCloseable
             return id;
         } ), TokenHolder.TYPE_RELATIONSHIP_TYPE );
         TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-        tokenHolders.setInitialTokens( allReadableTokens( directStoreAccess().nativeStores() ), NULL );
+        try ( var storeCursors = new CachedStoreCursors( neoStores, NULL ) )
+        {
+            tokenHolders.setInitialTokens( allReadableTokens( directStoreAccess().nativeStores() ), storeCursors );
+        }
         return tokenHolders;
     }
 
@@ -488,10 +498,13 @@ public abstract class GraphStoreFixture implements AutoCloseable
             }, TokenHolder.TYPE_RELATIONSHIP_TYPE );
 
             this.tokenHolders = new TokenHolders( propTokens, labelTokens, relTypeTokens );
-            tokenHolders.setInitialTokens( allReadableTokens( neoStores ), NULL );
-            tokenHolders.propertyKeyTokens().getAllTokens().forEach( token -> propKeyDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
-            tokenHolders.labelTokens().getAllTokens().forEach( token -> labelDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
-            tokenHolders.relationshipTypeTokens().getAllTokens().forEach( token -> relTypeDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
+            try ( var storeCursors = new CachedStoreCursors( neoStores, NULL ) )
+            {
+                tokenHolders.setInitialTokens( allReadableTokens( neoStores ), storeCursors );
+                tokenHolders.propertyKeyTokens().getAllTokens().forEach( token -> propKeyDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
+                tokenHolders.labelTokens().getAllTokens().forEach( token -> labelDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
+                tokenHolders.relationshipTypeTokens().getAllTokens().forEach( token -> relTypeDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
+            }
         }
 
         private static int[] dynIds( int externalBase, AtomicInteger idGenerator, String name )
@@ -612,7 +625,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         private void updateCounts( NodeRecord node, int delta )
         {
             writer.incrementNodeCount( ANY_LABEL, delta );
-            for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes, NULL ) )
+            for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes, StoreCursors.NULL ) )
             {
                 writer.incrementNodeCount( (int)label, delta );
             }

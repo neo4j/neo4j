@@ -76,7 +76,7 @@ public class RelationshipModifier
         this.memoryTracker = memoryTracker;
         long externalDegreesThreshold = relaxedLockingForDenseNodes ? DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH : Long.MAX_VALUE;
         this.creator = new RelationshipCreator( denseNodeThreshold, externalDegreesThreshold, cursorContext );
-        this.deleter = new RelationshipDeleter( relGroupGetter, propertyChainDeleter, externalDegreesThreshold, cursorContext );
+        this.deleter = new RelationshipDeleter( relGroupGetter, propertyChainDeleter, externalDegreesThreshold );
     }
 
     /**
@@ -116,7 +116,7 @@ public class RelationshipModifier
         modifications.forEachSplit( byNode ->
         {
             long nodeId = byNode.nodeId();
-            RecordProxy<NodeRecord,Void> nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext );
+            RecordProxy<NodeRecord,Void> nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null );
             NodeRecord node = nodeProxy.forReadingLinkage(); //optimistic (unlocked) read
             boolean nodeIsAddedInTx = node.isCreated();
             if ( !node.isDense() ) //we can not trust this as the node is not locked
@@ -124,7 +124,7 @@ public class RelationshipModifier
                 if ( !nodeIsAddedInTx ) // to avoid locking unnecessarily
                 {
                     locks.acquireExclusive( lockTracer, NODE, nodeId ); //lock and re-read, now we can trust it
-                    nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext );
+                    nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null );
                     node = nodeProxy.forReadingLinkage();
                     if ( node.isDense() )
                     {
@@ -166,7 +166,7 @@ public class RelationshipModifier
                                 locks.acquireExclusive( lockTracer, NODE, nodeId );
                                 locks.acquireExclusive( lockTracer, RELATIONSHIP_GROUP, nodeId );
                             }
-                            nodeContext.setNode( recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext ) );
+                            nodeContext.setNode( recordChanges.getNodeRecords().getOrLoad( nodeId, null ) );
                             long groupStartingId = nodeContext.node().forReadingLinkage().getNextRel();
                             long groupStartingPrevId = NULL_REFERENCE.longValue();
                             if ( groupPosition.closestPrevious() != null )
@@ -223,7 +223,7 @@ public class RelationshipModifier
                         {
                             NodeContext.DenseContext denseContext = nodeContext.denseContext( byType.type() );
                             RelationshipGroupRecord group = denseContext.getOrLoadGroup( relGroupGetter, nodeContext.node().forReadingLinkage(), byType.type(),
-                                    recordChanges.getRelGroupRecords(), cursorContext );
+                                    recordChanges.getRelGroupRecords() );
                             //here we have the shared lock, so we can trust the read
                             if ( byType.hasOut() && !group.hasExternalDegreesOut()
                                     || byType.hasIn() && !group.hasExternalDegreesIn()
@@ -269,7 +269,7 @@ public class RelationshipModifier
                             if ( nodeContext.hasEmptyFirstGroup() )
                             {
                                 // It's possible that we need to delete the first group, i.e. we just now locked the node and therefore need to re-read it
-                                nodeContext.setNode( recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext ) );
+                                nodeContext.setNode( recordChanges.getNodeRecords().getOrLoad( nodeId, null ) );
                             }
                             Predicate<RelationshipGroupRecord> canDeleteGroup = group -> !byNode.hasCreations( group.getType() );
                             if ( RelationshipGroupGetter.deleteEmptyGroups( nodeContext.node(), canDeleteGroup, nodeDataLookup ) )
@@ -319,7 +319,7 @@ public class RelationshipModifier
         modifications.forEachSplit( byNode ->
         {
             long nodeId = byNode.nodeId();
-            NodeRecord node = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext ).forReadingLinkage();
+            NodeRecord node = recordChanges.getNodeRecords().getOrLoad( nodeId, null ).forReadingLinkage();
             if ( !node.isDense() )
             {
                 //Since it is a sparse node we know that it is exclusively locked
@@ -329,7 +329,7 @@ public class RelationshipModifier
                     if ( byNode.hasDeletions() )
                     {
                         //Lock all relationships we're deleting, including the first in chain to update degrees
-                        lockRelationshipsInOrder( byNode.deletions(), node.getNextRel(), relRecords, locks, cursorContext, memoryTracker );
+                        lockRelationshipsInOrder( byNode.deletions(), node.getNextRel(), relRecords, locks, memoryTracker );
                     }
                     else if ( byNode.hasCreations() )
                     {
@@ -353,15 +353,15 @@ public class RelationshipModifier
                         //We have some deletions on this group. The group is minimum shared locked so the first in chains (for non-external degrees) are stable
                         NodeContext.DenseContext context = nodeContext.denseContext( byType.type() );
                         RelationshipGroupRecord group =
-                                context.getOrLoadGroup( relGroupGetter, node, byType.type(), recordChanges.getRelGroupRecords(), cursorContext );
+                                context.getOrLoadGroup( relGroupGetter, node, byType.type(), recordChanges.getRelGroupRecords() );
                         long outFirstInChainForDegrees = group.hasExternalDegreesOut() ? NULL_REFERENCE.longValue() : group.getFirstOut();
                         long inFirstInChainForDegrees = group.hasExternalDegreesIn() ? NULL_REFERENCE.longValue() : group.getFirstIn();
                         long loopFirstInChainForDegrees = group.hasExternalDegreesLoop() ? NULL_REFERENCE.longValue() : group.getFirstLoop();
                         //Lock each chain individually. It may cause deadlocks in some extremely unlikely scenarios but heavily reduce the number of iterations
                         //needed to get a stable lock on all the relationships when there a lot of contention on these particular chains
-                        lockRelationshipsInOrder( byType.out(), outFirstInChainForDegrees, relRecords, locks, cursorContext, memoryTracker );
-                        lockRelationshipsInOrder( byType.in(), inFirstInChainForDegrees, relRecords, locks, cursorContext, memoryTracker );
-                        lockRelationshipsInOrder( byType.loop(), loopFirstInChainForDegrees, relRecords, locks, cursorContext, memoryTracker );
+                        lockRelationshipsInOrder( byType.out(), outFirstInChainForDegrees, relRecords, locks, memoryTracker );
+                        lockRelationshipsInOrder( byType.in(), inFirstInChainForDegrees, relRecords, locks, memoryTracker );
+                        lockRelationshipsInOrder( byType.loop(), loopFirstInChainForDegrees, relRecords, locks, memoryTracker );
 
                         //If we've locked some relationships for deletion, then we can use that as an insertion point for any creations we might have
                         //It will save us some time finding and locking an additional point, also reduce the likelihood of deadlocks
@@ -378,7 +378,7 @@ public class RelationshipModifier
                         //Now handle the creations by finding a suitable place to insert at
                         NodeContext.DenseContext context = nodeContext.denseContext( byType.type() );
                         RelationshipGroupRecord group =
-                                context.getOrLoadGroup( relGroupGetter, node, byType.type(), recordChanges.getRelGroupRecords(), cursorContext );
+                                context.getOrLoadGroup( relGroupGetter, node, byType.type(), recordChanges.getRelGroupRecords() );
                         context.setInsertionPoint( DIR_OUT, findAndLockInsertionPointForDense(
                                 byType.out(), context.insertionPoint( DIR_OUT ), relRecords, locks, lockTracer, group, DirectionWrapper.OUTGOING, nodeId ) );
                         context.setInsertionPoint( DIR_IN, findAndLockInsertionPointForDense(
@@ -405,7 +405,7 @@ public class RelationshipModifier
         long nextRel = node.getNextRel();
         if ( !isNull( nextRel ) )
         {
-            RelationshipRecord rel = relRecords.getOrLoad( nextRel, null, cursorContext ).forReadingData();
+            RelationshipRecord rel = relRecords.getOrLoad( nextRel, null ).forReadingData();
             long nodeId = node.getId();
             if ( !rel.isFirstInChain( nodeId ) )
             {
@@ -422,7 +422,7 @@ public class RelationshipModifier
                 do
                 {
                     ids[index++] = nextRel;
-                    nextRel = relRecords.getOrLoad( nextRel, null, cursorContext ).forReadingData().getNextRel( nodeId );
+                    nextRel = relRecords.getOrLoad( nextRel, null ).forReadingData().getNextRel( nodeId );
                 }
                 while ( !isNull( nextRel ) );
 
@@ -440,7 +440,7 @@ public class RelationshipModifier
 
     private RecordProxy<RelationshipRecord,Void> insertionPointFromDeletion( RelationshipBatch deletions, RecordAccess<RelationshipRecord,Void> relRecords )
     {
-        return deletions.isEmpty() ? null : relRecords.getOrLoad( deletions.first(), null, ALWAYS, cursorContext );
+        return deletions.isEmpty() ? null : relRecords.getOrLoad( deletions.first(), null, ALWAYS );
     }
 
     private RecordProxy<RelationshipRecord,Void> findAndLockInsertionPointForDense( RelationshipBatch creations,
@@ -465,7 +465,7 @@ public class RelationshipModifier
                     locks.acquireExclusive( lockTracer, RELATIONSHIP, firstInChain );
                 }
                 //and a good insertion point by walking the chain with try-locks
-                return findAndLockInsertionPoint( firstInChain, nodeId, relRecords, locks, lockTracer, cursorContext );
+                return findAndLockInsertionPoint( firstInChain, nodeId, relRecords, locks, lockTracer );
             }
         }
         return null;

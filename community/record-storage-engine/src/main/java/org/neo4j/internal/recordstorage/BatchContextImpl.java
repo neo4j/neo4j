@@ -32,6 +32,7 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.WorkSync;
 
 /**
@@ -49,6 +50,7 @@ public class BatchContextImpl implements BatchContext
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final IdUpdateListener idUpdateListener;
+    private final StoreCursors storeCursors;
 
     private final IndexActivator indexActivator;
     private final LockGroup lockGroup;
@@ -57,7 +59,7 @@ public class BatchContextImpl implements BatchContext
     public BatchContextImpl( IndexUpdateListener indexUpdateListener,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, PropertyStore propertyStore,
             RecordStorageEngine recordStorageEngine, SchemaCache schemaCache, CursorContext cursorContext, MemoryTracker memoryTracker,
-            IdUpdateListener idUpdateListener )
+            IdUpdateListener idUpdateListener, StoreCursors storeCursors )
     {
         this.indexActivator = new IndexActivator( indexUpdateListener );
         this.indexUpdatesSync = indexUpdatesSync;
@@ -68,6 +70,7 @@ public class BatchContextImpl implements BatchContext
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
         this.idUpdateListener = idUpdateListener;
+        this.storeCursors = storeCursors;
         this.lockGroup = new LockGroup();
     }
 
@@ -112,8 +115,8 @@ public class BatchContextImpl implements BatchContext
     {
         if ( indexUpdates == null )
         {
-            indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, cursorContext ),
-                    storageEngine.newReader(), cursorContext, memoryTracker );
+            indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, new PropertyPhysicalToLogicalConverter( propertyStore, storeCursors ),
+                    storageEngine.newReader(), cursorContext, memoryTracker, storeCursors );
         }
         return indexUpdates;
     }

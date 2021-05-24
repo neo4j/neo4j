@@ -98,6 +98,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -762,10 +763,10 @@ class BatchInsertTest
 
         // then
         GraphDatabaseAPI graphdb = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
-        try
+        RecordStorageEngine storageEngine = graphdb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        NeoStores neoStores = storageEngine.testAccessNeoStores();
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
         {
-            NeoStores neoStores = graphdb.getDependencyResolver()
-                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
             TokenHolders tokenHolders = graphdb.getDependencyResolver().resolveDependency( TokenHolders.class );
             SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders, () -> KernelVersion.LATEST );
@@ -783,8 +784,8 @@ class BatchInsertTest
                 }
             }
             assertEquals( 2, inUse.size(), "records in use" );
-            SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ), NULL );
-            SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ), NULL );
+            SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ), storeCursors );
+            SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ), storeCursors );
             IndexDescriptor indexRule;
             ConstraintDescriptor constraint;
             if ( rule0 instanceof IndexDescriptor )
@@ -1166,7 +1167,7 @@ class BatchInsertTest
             nodeStore.getRecordByCursor( nodeId, node, NORMAL, cursor );
         }
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
-        long[] labelIds = labels.get( nodeStore, NULL );
+        long[] labelIds = labels.get( nodeStore, StoreCursors.NULL );
         assertEquals( 1, labelIds.length );
         inserter.shutdown();
     }
@@ -1193,7 +1194,7 @@ class BatchInsertTest
         }
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
-        long[] labelIds = labels.get( nodeStore, NULL );
+        long[] labelIds = labels.get( nodeStore, StoreCursors.NULL );
         long[] sortedLabelIds = Arrays.copyOf( labelIds, labelIds.length );
         Arrays.sort( sortedLabelIds );
         assertArrayEquals( sortedLabelIds, labelIds );
@@ -1488,7 +1489,7 @@ class BatchInsertTest
                         }
                     }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1000 ) )
             {
-                countsStore.start( NULL, INSTANCE );
+                countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
                 assertEquals( (r + 1) * 100, countsStore.nodeCount( 0, NULL ) );
             }
         }

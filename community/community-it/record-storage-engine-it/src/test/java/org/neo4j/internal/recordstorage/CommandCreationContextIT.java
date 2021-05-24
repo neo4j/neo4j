@@ -40,6 +40,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
@@ -91,7 +92,7 @@ public class CommandCreationContextIT
             prepareIdGenerator( storeProvider.apply( neoStores ).getIdGenerator() );
             try ( var creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
             {
-                creationContext.initialize( cursorContext );
+                creationContext.initialize( cursorContext, StoreCursors.NULL );
                 idReservation.applyAsLong( creationContext );
                 assertCursorOne( cursorContext );
             }
@@ -103,10 +104,11 @@ public class CommandCreationContextIT
     void trackMemoryAllocationInCommandCreationContext( BiConsumer<TransactionRecordState, ContextHolder> operation )
     {
         var memoryTracker = new LocalMemoryTracker();
-        try ( var commandCreationContext = storageEngine.newCommandCreationContext( memoryTracker ) )
+        try ( var commandCreationContext = storageEngine.newCommandCreationContext( memoryTracker );
+              var storeCursors = storageEngine.createStorageCursors( NULL ) )
         {
             var integrityValidator = mock( IntegrityValidator.class );
-            commandCreationContext.initialize( NULL );
+            commandCreationContext.initialize( NULL, storeCursors );
             var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE, LockTracer.NONE,
                     LATEST_LOG_SERIALIZATION, RecordAccess.LoadMonitor.NULL_MONITOR );
             long heapBefore = memoryTracker.estimatedHeapMemory();

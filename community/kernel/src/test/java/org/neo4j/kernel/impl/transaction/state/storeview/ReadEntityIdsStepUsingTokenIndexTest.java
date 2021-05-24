@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
@@ -102,8 +103,9 @@ class ReadEntityIdsStepUsingTokenIndexTest
                 {
                     add( new ReadEntityIdsStep( control(),
                                                 configuration,
-                                                cursorContext -> new TokenIndexScanIdIterator(
+                                                ( cursorContext, storeCursors ) -> new TokenIndexScanIdIterator(
                                                         indexAccessor.newTokenReader(), new int[]{TOKEN_ID}, CursorContext.NULL ),
+                                                any -> StoreCursors.NULL,
                                                 NULL,
                                                 new ControlledUpdatesCheck( indexAccessor, expectedEntityIds ),
                                                 new AtomicBoolean( true ) ) );

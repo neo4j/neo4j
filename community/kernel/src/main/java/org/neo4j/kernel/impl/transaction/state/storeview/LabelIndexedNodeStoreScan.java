@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
@@ -32,25 +33,28 @@ import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class LabelIndexedNodeStoreScan extends NodeStoreScan
 {
     private final TokenIndexReader tokenIndexReader;
 
-    public LabelIndexedNodeStoreScan( Config config, StorageReader storageReader, LockService locks,
+    public LabelIndexedNodeStoreScan( Config config, StorageReader storageReader,
+                                      Function<CursorContext,StoreCursors> storeCursorsFactory,
+                                      LockService locks,
                                       TokenIndexReader tokenIndexReader,
                                       @Nullable TokenScanConsumer labelScanConsumer,
                                       @Nullable PropertyScanConsumer propertyScanConsumer,
                                       int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
                                       JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, locks, labelScanConsumer, propertyScanConsumer, labelIds,
+        super( config, storageReader, storeCursorsFactory, locks, labelScanConsumer, propertyScanConsumer, labelIds,
                propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
         this.tokenIndexReader = tokenIndexReader;
     }
 
     @Override
-    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
+    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext, StoreCursors storeCursors )
     {
         return new TokenIndexScanIdIterator( tokenIndexReader, entityTokenIdFilter, cursorContext );
     }

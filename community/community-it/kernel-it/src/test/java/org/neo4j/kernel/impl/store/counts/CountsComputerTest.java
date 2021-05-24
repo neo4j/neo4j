@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -124,7 +125,7 @@ class CountsComputerTest
             var pageCacheTracer = new DefaultPageCacheTracer();
             var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" ) );
 
-            countsStore.start( cursorContext, INSTANCE );
+            countsStore.start( cursorContext, StoreCursors.NULL, INSTANCE );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             softly.assertThat( cursorTracer.pins() ).as( "Pins" ).isEqualTo( 1 );
@@ -150,7 +151,7 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            store.start( NULL, INSTANCE );
+            store.start( NULL, StoreCursors.NULL, INSTANCE );
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
             store.accept( new AssertEmptyCountStoreVisitor(), NULL );
         }
@@ -171,7 +172,7 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            store.start( NULL, INSTANCE );
+            store.start( NULL, StoreCursors.NULL, INSTANCE );
             softly.assertThat( store.txId() ).as( "Store Transaction id" ).isEqualTo( lastCommittedTransactionId );
             store.accept( new AssertEmptyCountStoreVisitor(), NULL );
         }
@@ -183,9 +184,9 @@ class CountsComputerTest
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
-        Label[] labels = null;
-        int[] labelIds = null;
-        Node[] nodes = null;
+        Label[] labels;
+        int[] labelIds;
+        Node[] nodes;
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -221,9 +222,9 @@ class CountsComputerTest
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
-        Label[] labels = null;
-        int[] labelIds = null;
-        Node[] nodes = null;
+        Label[] labels;
+        int[] labelIds;
+        Node[] nodes;
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -260,12 +261,12 @@ class CountsComputerTest
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
-        Label[] labels = null;
-        int[] labelIds = null;
-        RelationshipType[] relTypes = null;
-        int[] relTypeIds = null;
-        Node[] nodes = null;
-        Relationship[] rels = null;
+        Label[] labels;
+        int[] labelIds;
+        RelationshipType[] relTypes;
+        int[] relTypeIds;
+        Node[] nodes;
+        Relationship[] rels;
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -309,12 +310,12 @@ class CountsComputerTest
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
-        Label[] labels = null;
-        int[] labelIds = null;
-        RelationshipType[] relTypes = null;
-        int[] relTypeIds = null;
-        Node[] nodes = null;
-        Relationship[] rels = null;
+        Label[] labels;
+        int[] labelIds;
+        RelationshipType[] relTypes;
+        int[] relTypeIds;
+        Node[] nodes;
+        Relationship[] rels;
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -364,12 +365,12 @@ class CountsComputerTest
         DatabaseManagementService managementService = dbBuilder.setConfig( GraphDatabaseSettings.dense_node_threshold, 2 ).build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
-        Label[] labels = null;
-        int[] labelIds = null;
-        RelationshipType[] relTypes = null;
-        int[] relTypeIds = null;
-        Node[] nodes = null;
-        Relationship[] rels = null;
+        Label[] labels;
+        int[] labelIds;
+        RelationshipType[] relTypes;
+        int[] relTypeIds;
+        Node[] nodes;
+        Relationship[] rels;
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -508,12 +509,11 @@ class CountsComputerTest
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
-            CountsComputer countsComputer = new CountsComputer(
-                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId, NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
-                    databaseLayout, progressReporter, PageCacheTracer.NULL, INSTANCE );
+            CountsComputer countsComputer = new CountsComputer( neoStores, lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId,
+                    highRelationshipTypeId, NumberArrayFactories.AUTO_WITHOUT_PAGECACHE, databaseLayout, progressReporter, PageCacheTracer.NULL, INSTANCE );
             try ( GBPTreeCountsStore countsStore = createCountsStore( countsComputer ) )
             {
-                countsStore.start( NULL, INSTANCE );
+                countsStore.start( NULL, StoreCursors.NULL, INSTANCE );
                 countsStore.checkpoint( NULL );
             }
             catch ( IOException e )

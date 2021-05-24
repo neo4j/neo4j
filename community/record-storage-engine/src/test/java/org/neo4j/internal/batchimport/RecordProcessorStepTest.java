@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +46,7 @@ class RecordProcessorStepTest
         AtomicInteger doneCalls = new AtomicInteger();
         AtomicInteger closeCalls = new AtomicInteger();
         try ( RecordProcessorStep<NodeRecord> step = new RecordProcessorStep<>( new SimpleStageControl(), "test", config,
-                () -> new TestProcessor( result, doneCalls, closeCalls ), true, numThreads, NULL ) )
+                () -> new TestProcessor( result, doneCalls, closeCalls ), true, numThreads, NULL, any -> StoreCursors.NULL ) )
         {
             // when
             step.start( 0 );
@@ -92,7 +93,7 @@ class RecordProcessorStepTest
         }
 
         @Override
-        public boolean process( NodeRecord item, CursorContext cursorContext )
+        public boolean process( NodeRecord item, StoreCursors storeCursors )
         {
             counter++;
             return false;

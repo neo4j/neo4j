@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -89,6 +90,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
@@ -359,8 +361,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         LockService lockService = LockService.NO_LOCK_SERVICE;
         Locks locks = org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
-        FullScanStoreView fullScanStoreView = new FullScanStoreView( lockService, readerSupplier, Config.defaults(), scheduler );
-        return new DynamicIndexStoreViewWrapper( fullScanStoreView, indexProxies, lockService, locks, readerSupplier, customAction, config, scheduler );
+        FullScanStoreView fullScanStoreView = new FullScanStoreView( lockService, readerSupplier, any -> StoreCursors.NULL, Config.defaults(), scheduler );
+        return new DynamicIndexStoreViewWrapper( fullScanStoreView, indexProxies, lockService, locks, readerSupplier, ant -> StoreCursors.NULL, customAction,
+                config, scheduler );
     }
 
     private void waitAndActivateIndexes( Map<String,Integer> labelsIds, int propertyId )
@@ -501,9 +504,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         private final JobScheduler jobScheduler;
 
         DynamicIndexStoreViewWrapper( FullScanStoreView fullScanStoreView, IndexingService.IndexProxyProvider indexProxies,
-                LockService lockService, Locks locks, Supplier<StorageReader> storageReader, Runnable customAction, Config config, JobScheduler jobScheduler )
+                LockService lockService, Locks locks, Supplier<StorageReader> storageReader, Function<CursorContext,StoreCursors> cursorFactory,
+                Runnable customAction, Config config, JobScheduler jobScheduler )
         {
-            super( fullScanStoreView, locks, lockService, config, indexProxies, storageReader, NullLogProvider.getInstance() );
+            super( fullScanStoreView, locks, lockService, config, indexProxies, storageReader, cursorFactory, NullLogProvider.getInstance() );
             this.customAction = customAction;
             this.jobScheduler = jobScheduler;
         }
@@ -532,16 +536,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 NodeStoreScan delegate, Runnable customAction,
                 JobScheduler jobScheduler )
         {
-            super( Config.defaults(), storageReader, locks, labelScanConsumer, propertyUpdatesConsumer, labelIds, propertyKeyIdFilter, false,
-                    jobScheduler, PageCacheTracer.NULL, INSTANCE );
+            super( Config.defaults(), storageReader, any -> StoreCursors.NULL, locks, labelScanConsumer, propertyUpdatesConsumer, labelIds, propertyKeyIdFilter,
+                    false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
             this.delegate = delegate;
             this.customAction = customAction;
         }
 
         @Override
-        public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
+        public EntityIdIterator getEntityIdIterator( CursorContext cursorContext, StoreCursors storeCursors )
         {
-            EntityIdIterator originalIterator = delegate.getEntityIdIterator( cursorContext );
+            EntityIdIterator originalIterator = delegate.getEntityIdIterator( cursorContext, storeCursors );
             return new DelegatingEntityIdIterator( originalIterator, customAction );
         }
     }
@@ -643,7 +647,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 update.entityTokensUnchanged(),
                                 update.propertiesChanged(), false, EntityType.NODE );
                         Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates =
-                                update.valueUpdatesForIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL, INSTANCE );
+                                update.valueUpdatesForIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL, StoreCursors.NULL, INSTANCE );
                         indexService.applyUpdates( entryUpdates, NULL );
                     }
                 }

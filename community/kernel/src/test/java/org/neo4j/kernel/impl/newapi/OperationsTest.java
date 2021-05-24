@@ -73,6 +73,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -116,6 +117,7 @@ abstract class OperationsTest
     protected SecurityLogHelper logHelper;
     protected CommunitySecurityLog securityLog;
     protected static final String DB_NAME = "db.test";
+    private StoreCursors storeCursors;
 
     abstract FormattedLogFormat getFormat();
 
@@ -124,12 +126,14 @@ abstract class OperationsTest
     {
         TxState realTxState = new TxState();
         txState = Mockito.spy( realTxState );
+        storeCursors = mock( StoreCursors.class );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
         when( transaction.lockClient() ).thenReturn( locks );
         when( transaction.dataWrite() ).thenReturn( write );
         when( transaction.isOpen() ).thenReturn( true );
         when( transaction.lockTracer() ).thenReturn( LockTracer.NONE );
         when( transaction.txState() ).thenReturn( txState );
+        when( transaction.storeCursors() ).thenReturn( storeCursors );
         when( transaction.securityContext() ).thenReturn( SecurityContext.authDisabled( AccessMode.Static.FULL, EMBEDDED_CONNECTION, DB_NAME ) );
         logHelper = new SecurityLogHelper( getFormat() );
         securityLog = new CommunitySecurityLog( (LogExtended) logHelper.getLogProvider().getLog( this.getClass() ) );
@@ -150,6 +154,7 @@ abstract class OperationsTest
         when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( storageReader.schemaSnapshot() ).thenReturn( storageReaderSnapshot );
         when( engine.newReader() ).thenReturn( storageReader );
+        when( engine.createStorageCursors( any() ) ).thenReturn( storeCursors );
         indexingService = mock( IndexingService.class );
         Dependencies dependencies = new Dependencies();
         var facade = mock( GraphDatabaseFacade.class );

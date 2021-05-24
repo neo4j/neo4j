@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public interface CountsStorage extends AutoCloseable, ConsistencyCheckable
 {
@@ -38,7 +39,7 @@ public interface CountsStorage extends AutoCloseable, ConsistencyCheckable
      * before this call is made are considered recovery repairs from a previous non-clean shutdown.
      * @throws IOException any type of error happening when transitioning to started state.
      */
-    void start( CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException;
+    void start( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker ) throws IOException;
 
     /**
      * Checkpoints changes made up until this point so that they are available even after next restart.

@@ -44,6 +44,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
@@ -133,9 +134,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
             SchemaChecker schemaChecker = new SchemaChecker( context );
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties = new IntObjectHashMap<>();
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties = new IntObjectHashMap<>();
-            try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CONSISTENCY_CHECKER_TAG ) ) )
+            try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_CONSISTENCY_CHECKER_TAG ) );
+                  var storeCursors = new CachedStoreCursors( context.neoStores, cursorContext ) )
             {
-                schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext );
+                schemaChecker.check( mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext, storeCursors );
             }
 
             // Some pieces of check logic are extracted from this main class to reduce the size of this class. Instantiate those here first

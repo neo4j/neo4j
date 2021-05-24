@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
@@ -40,7 +41,7 @@ class TransactionRepresentationFactory
     {
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( createRandomCommands() );
         representation.setHeader( new byte[0], currentTimeMillis(), txId, currentTimeMillis(), 42, ANONYMOUS );
-        return new TransactionToApply( representation, NULL );
+        return new TransactionToApply( representation, NULL, StoreCursors.NULL );
     }
 
     private List<StorageCommand> createRandomCommands()

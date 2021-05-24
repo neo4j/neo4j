@@ -121,7 +121,7 @@ class RelationshipModifierTest
     void setUp()
     {
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( new PropertyTraverser( CursorContext.NULL ), CursorContext.NULL );
+        PropertyDeleter propertyDeleter = new PropertyDeleter( new PropertyTraverser() );
         modifier = new RelationshipModifier( relationshipGroupGetter, propertyDeleter, DENSE_THRESHOLD - 1/*because the trigger happens on > */,
                 true, CursorContext.NULL, EmptyMemoryTracker.INSTANCE );
         monitors = new Monitors( null, ( t, m ) ->

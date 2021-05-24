@@ -31,6 +31,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -87,7 +88,10 @@ class DropBrokenUniquenessConstraintIT
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.deleteSchemaRule( schemaRules.indexGetForName( backingIndexName, NULL ), NULL );
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        {
+            schemaRules.deleteSchemaRule( schemaRules.indexGetForName( backingIndexName, storeCursors ), NULL, storeCursors );
+        }
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
@@ -95,9 +99,6 @@ class DropBrokenUniquenessConstraintIT
             single( tx.schema().getConstraints( label ).iterator() ).drop();
             tx.commit();
         }
-
-        // then
-        // AfterEach
     }
 
     @Test
@@ -112,7 +113,10 @@ class DropBrokenUniquenessConstraintIT
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        writeSchemaRulesWithoutConstraint( schemaRules );
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        {
+            writeSchemaRulesWithoutConstraint( schemaRules, storeCursors );
+        }
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
@@ -137,7 +141,10 @@ class DropBrokenUniquenessConstraintIT
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.constraintsGetAllIgnoreMalformed( NULL ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL ) );
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        {
+            schemaRules.constraintsGetAllIgnoreMalformed( storeCursors ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL, storeCursors ) );
+        }
 
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
@@ -149,8 +156,6 @@ class DropBrokenUniquenessConstraintIT
             tx.commit();
         }
 
-        // then
-        // AfterEach
     }
 
     @Test
@@ -165,8 +170,11 @@ class DropBrokenUniquenessConstraintIT
 
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.constraintsGetAllIgnoreMalformed( NULL ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL ) );
-        writeSchemaRulesWithoutConstraint( schemaRules );
+        try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
+        {
+            schemaRules.constraintsGetAllIgnoreMalformed( storeCursors ).forEachRemaining( rule -> schemaRules.deleteSchemaRule( rule, NULL, storeCursors ) );
+            writeSchemaRulesWithoutConstraint( schemaRules, storeCursors );
+        }
 
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
@@ -177,14 +185,11 @@ class DropBrokenUniquenessConstraintIT
             tx.schema().getIndexes( label ).forEach( IndexDefinition::drop );
             tx.commit();
         }
-
-        // then
-        // AfterEach
     }
 
-    private static void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules ) throws KernelException
+    private static void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules, StoreCursors storeCursors ) throws KernelException
     {
-        for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( NULL ) ) )
+        for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( storeCursors ) ) )
         {
             schemaRules.writeSchemaRule( rule, NULL, INSTANCE );
         }

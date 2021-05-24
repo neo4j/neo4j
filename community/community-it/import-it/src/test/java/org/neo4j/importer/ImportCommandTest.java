@@ -227,11 +227,9 @@ class ImportCommandTest
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
-                nodeHeader( config ).toAbsolutePath().toString() + "," +
-                nodeData( false, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                nodeHeader( config ).toAbsolutePath() + "," + nodeData( false, config, nodeIds, TRUE ).toAbsolutePath(),
                 "--relationships",
-                relationshipHeader( config ).toAbsolutePath().toString() + "," +
-                relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
+                relationshipHeader( config ).toAbsolutePath() + "," + relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath() );
 
         // THEN
         verifyData();
@@ -663,11 +661,10 @@ class ImportCommandTest
                 runImport(
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes", nodeHeader( config ).toAbsolutePath().toString() + "," +
-                        nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
-                                .toAbsolutePath().toString(),
-                "--relationships", relationshipHeader( config ).toAbsolutePath().toString() + "," +
-                        relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() ) );
+                "--nodes", nodeHeader( config ).toAbsolutePath() + "," + nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
+                        .toAbsolutePath(),
+                "--relationships", relationshipHeader( config ).toAbsolutePath() + "," +
+                                relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath() ) );
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT FAILED" ) );
         assertFalse( suppressOutput.getErrorVoice().containsMessage( e.getClass().getName() ) );
         assertTrue( e.getMessage().contains( "Extra column not present in header on line" ) );
@@ -689,11 +686,10 @@ class ImportCommandTest
                 "--ignore-extra-columns",
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
-                "--nodes=" + nodeHeader( config ).toAbsolutePath().toString() + "," +
-                        nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
-                                .toAbsolutePath().toString(),
-                "--relationships", relationshipHeader( config ).toAbsolutePath().toString() + "," +
-                        relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
+                "--nodes=" + nodeHeader( config ).toAbsolutePath() + "," + nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns )
+                        .toAbsolutePath(),
+                "--relationships", relationshipHeader( config ).toAbsolutePath() + "," +
+                        relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath() );
 
         // THEN
         String badContents = Files.readString( bad, Charset.defaultCharset() );
@@ -713,15 +709,13 @@ class ImportCommandTest
         runImport(
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes", // One group with one header file and one data file
-                nodeHeader( config ).toAbsolutePath().toString() + "," +
-                nodeData( false, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).toAbsolutePath().toString(),
+                nodeHeader( config ).toAbsolutePath() + "," + nodeData( false, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).toAbsolutePath(),
                 "--nodes", // One group with two data files, where the header sits in the first file
                 nodeData( true, config, nodeIds,
-                        lines( NODE_COUNT / 2, NODE_COUNT * 3 / 4 ) ).toAbsolutePath().toString() + "," +
-                nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).toAbsolutePath().toString(),
+                        lines( NODE_COUNT / 2, NODE_COUNT * 3 / 4 ) ).toAbsolutePath() + "," +
+                        nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).toAbsolutePath(),
                 "--relationships",
-                relationshipHeader( config ).toAbsolutePath().toString() + "," +
-                relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
+                relationshipHeader( config ).toAbsolutePath() + "," + relationshipData( false, config, nodeIds, TRUE, true ).toAbsolutePath() );
 
         // THEN
         verifyData();
@@ -743,15 +737,11 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
-                "--nodes=" + join( ":", firstLabels ) + "=" +
-                nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).toAbsolutePath().toString(),
-                "--nodes=" + join( ":", secondLabels ) + "=" +
-                nodeData( true, config, nodeIds, lines( NODE_COUNT / 2, NODE_COUNT ) ).toAbsolutePath().toString(),
-                "--relationships=" + firstType + "=" +
-                relationshipData( true, config, nodeIds, lines( 0, RELATIONSHIP_COUNT / 2 ), false ).toAbsolutePath().toString(),
-                "--relationships=" + secondType + "=" +
-                relationshipData( true, config, nodeIds,
-                        lines( RELATIONSHIP_COUNT / 2, RELATIONSHIP_COUNT ), false ).toAbsolutePath().toString() );
+                "--nodes=" + join( ":", firstLabels ) + "=" + nodeData( true, config, nodeIds, lines( 0, NODE_COUNT / 2 ) ).toAbsolutePath(),
+                "--nodes=" + join( ":", secondLabels ) + "=" + nodeData( true, config, nodeIds, lines( NODE_COUNT / 2, NODE_COUNT ) ).toAbsolutePath(),
+                "--relationships=" + firstType + "=" + relationshipData( true, config, nodeIds, lines( 0, RELATIONSHIP_COUNT / 2 ), false ).toAbsolutePath(),
+                "--relationships=" + secondType + "=" + relationshipData( true, config, nodeIds,
+                        lines( RELATIONSHIP_COUNT / 2, RELATIONSHIP_COUNT ), false ).toAbsolutePath() );
 
         // THEN
         MutableInt numberOfNodesWithFirstSetOfLabels = new MutableInt();
@@ -944,10 +934,8 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
-                "--nodes", nodeHeader( config, "MyGroup" ).toAbsolutePath().toString() + "," +
-                           nodeData( false, config, groupOneNodeIds, TRUE ).toAbsolutePath().toString(),
-                "--nodes", nodeHeader( config ).toAbsolutePath().toString() + "," +
-                           nodeData( false, config, groupTwoNodeIds, TRUE ).toAbsolutePath().toString() );
+                "--nodes", nodeHeader( config, "MyGroup" ).toAbsolutePath() + "," + nodeData( false, config, groupOneNodeIds, TRUE ).toAbsolutePath(),
+                "--nodes", nodeHeader( config ).toAbsolutePath() + "," + nodeData( false, config, groupTwoNodeIds, TRUE ).toAbsolutePath() );
 
         // THEN
         verifyData( 6, 0, Validators.emptyValidator(), Validators.emptyValidator() );
@@ -968,7 +956,7 @@ class ImportCommandTest
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--nodes", nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
                 // there will be no :TYPE specified in the header of the relationships below
-                "--relationships", type + "=" + relationshipData( true, config, nodeIds, TRUE, false ).toAbsolutePath().toString() );
+                "--relationships", type + "=" + relationshipData( true, config, nodeIds, TRUE, false ).toAbsolutePath() );
 
         // THEN
         verifyData();
@@ -986,9 +974,7 @@ class ImportCommandTest
 
         // WHEN
         var e = assertThrows( Exception.class, () -> runImport(
-                "--nodes", nodeHeaderFile.toAbsolutePath().toString() + "," +
-                        nodeData1.toAbsolutePath().toString() + "," +
-                        nodeData2.toAbsolutePath().toString() ) );
+                "--nodes", nodeHeaderFile.toAbsolutePath() + "," + nodeData1.toAbsolutePath() + "," + nodeData2.toAbsolutePath() ) );
         assertExceptionContains( e, "'a' is defined more than once", DuplicateInputIdException.class );
     }
 
@@ -1008,9 +994,7 @@ class ImportCommandTest
         runImport(
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
                 "--skip-duplicate-nodes",
-                "--nodes", nodeHeaderFile.toAbsolutePath().toString() + "," +
-                           nodeData1.toAbsolutePath().toString() + "," +
-                           nodeData2.toAbsolutePath().toString() );
+                "--nodes", nodeHeaderFile.toAbsolutePath() + "," + nodeData1.toAbsolutePath() + "," + nodeData2.toAbsolutePath() );
 
         // THEN there should not be duplicates of any node
         GraphDatabaseService db = getDatabaseApi();
@@ -1074,8 +1058,7 @@ class ImportCommandTest
                 "--skip-bad-relationships",
                 "--bad-tolerance", "2",
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
-                "--relationships", relationshipData1.toAbsolutePath().toString() + "," +
-                                   relationshipData2.toAbsolutePath().toString() );
+                "--relationships", relationshipData1.toAbsolutePath() + "," + relationshipData2.toAbsolutePath() );
 
         // THEN
         String badContents = Files.readString( bad, Charset.defaultCharset() );
@@ -1109,8 +1092,7 @@ class ImportCommandTest
                 "--nodes", nodeData.toAbsolutePath().toString(),
                 "--bad-tolerance", "2",
                 "--skip-bad-entries-logging", "true",
-                "--relationships", relationshipData1.toAbsolutePath().toString() + "," +
-                        relationshipData2.toAbsolutePath().toString() );
+                "--relationships", relationshipData1.toAbsolutePath() + "," + relationshipData2.toAbsolutePath() );
 
         assertFalse( Files.exists( badFile() ) );
         verifyRelationships( relationships );
@@ -1164,8 +1146,7 @@ class ImportCommandTest
                     "--nodes", nodeData.toAbsolutePath().toString(),
                     "--report-file", bad.toAbsolutePath().toString(),
                     "--skip-bad-relationships=false",
-                    "--relationships", relationshipData1.toAbsolutePath().toString() + "," +
-                                       relationshipData2.toAbsolutePath().toString() ) );
+                    "--relationships", relationshipData1.toAbsolutePath() + "," + relationshipData2.toAbsolutePath() ) );
         assertExceptionContains( e, relationshipData1.toAbsolutePath().toString(), InputException.class );
     }
 
@@ -1183,7 +1164,7 @@ class ImportCommandTest
         // WHEN
         runImport(
                 "--additional-config", dbConfig.toAbsolutePath().toString(),
-                "--nodes=My First Label:My Other Label=" + nodeData( true, config, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--nodes=My First Label:My Other Label=" + nodeData( true, config, nodeIds, TRUE ).toAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, TRUE, true ).toAbsolutePath().toString() );
 
         // THEN
@@ -1351,7 +1332,7 @@ class ImportCommandTest
 
         // WHEN
         runImport(
-                "--nodes=" + nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).toAbsolutePath().toString(),
+                "--nodes=" + nodeData( true, Configuration.COMMAS, nodeIds, TRUE ).toAbsolutePath(),
                 "--skip-duplicate-nodes",
                 "--bad-tolerance=-1" );
 
@@ -1841,9 +1822,9 @@ class ImportCommandTest
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
         var e = assertThrows( InputException.class, () -> runImport(
-                    "--additional-config=" + configFile.toAbsolutePath().toString(),
-                    "--nodes", nodeHeader( config ).toAbsolutePath().toString() + "," +
-                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).toAbsolutePath().toString() ) );
+                    "--additional-config=" + configFile.toAbsolutePath(),
+                    "--nodes", nodeHeader( config ).toAbsolutePath() + "," +
+                        nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).toAbsolutePath() ) );
         // THEN the store files should be there
         for ( StoreType storeType : StoreType.values() )
         {
@@ -1867,13 +1848,12 @@ class ImportCommandTest
         String arguments = format(
                 "--additional-config=%s%n" +
                 "--nodes=%s%n" +
-                "--relationships=%s%n",
-                dbConfig.toAbsolutePath().toString(),
+                "--relationships=%s%n", dbConfig.toAbsolutePath(),
                 nodesEscapedSpaces, relationshipsEscapedSpaced );
         writeToFile( argumentFile, arguments, false );
 
         // when
-        runImport( "@" + argumentFile.toAbsolutePath().toString() );
+        runImport( "@" + argumentFile.toAbsolutePath() );
 
         // then
         verifyData();
@@ -1920,13 +1900,13 @@ class ImportCommandTest
         SuppressOutput.Voice out = suppressOutput.getOutputVoice();
         assertTrue( out.containsMessage( "IMPORT DONE" ) );
         assertTrue(
-                out.containsMessage( format( "Property type of 'prop1' normalized from 'short' --> 'long' in %s", nodeData.toAbsolutePath().toString() ) ) );
+                out.containsMessage( format( "Property type of 'prop1' normalized from 'short' --> 'long' in %s", nodeData.toAbsolutePath() ) ) );
         assertTrue(
-                out.containsMessage( format( "Property type of 'prop2' normalized from 'float' --> 'double' in %s", nodeData.toAbsolutePath().toString() ) ) );
+                out.containsMessage( format( "Property type of 'prop2' normalized from 'float' --> 'double' in %s", nodeData.toAbsolutePath() ) ) );
         assertTrue( out.containsMessage(
-                format( "Property type of 'prop1' normalized from 'int' --> 'long' in %s", relationshipData.toAbsolutePath().toString() ) ) );
+                format( "Property type of 'prop1' normalized from 'int' --> 'long' in %s", relationshipData.toAbsolutePath() ) ) );
         assertTrue( out.containsMessage(
-                format( "Property type of 'prop2' normalized from 'byte' --> 'long' in %s", relationshipData.toAbsolutePath().toString() ) ) );
+                format( "Property type of 'prop2' normalized from 'byte' --> 'long' in %s", relationshipData.toAbsolutePath() ) ) );
         // The properties should have been normalized, let's verify that
         GraphDatabaseService db = getDatabaseApi();
         try ( Transaction tx = db.beginTx() )

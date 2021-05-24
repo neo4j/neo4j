@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -103,6 +104,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
 import static org.neo4j.consistency.checker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_BYTES;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intArray;
@@ -136,6 +138,7 @@ class CheckerTestBase
     private CacheAccess cacheAccess;
     private TokenHolders tokenHolders;
     private PageCache pageCache;
+    protected CachedStoreCursors storeCursors;
 
     @BeforeEach
     void setUpDb() throws Exception
@@ -166,12 +169,13 @@ class CheckerTestBase
                                               Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
         pageCache = dependencies.resolveDependency( PageCache.class );
+        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
     }
 
     @AfterEach
     void tearDownDb()
     {
-        countsState.close();
+        closeAllUnchecked( storeCursors, countsState );
         dbms.shutdown();
     }
 
@@ -179,7 +183,7 @@ class CheckerTestBase
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), CursorContext.NULL );
+                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), storeCursors );
         // The Node Label Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         IndexDescriptor nli = indexDescriptors[0];
@@ -362,7 +366,7 @@ class CheckerTestBase
 
     long[] nodeLabels( NodeRecord node )
     {
-        return NodeLabelsField.get( node, neoStores.getNodeStore(), CursorContext.NULL );
+        return NodeLabelsField.get( node, neoStores.getNodeStore(), storeCursors );
     }
 
     NodeRecord loadNode( long id )
@@ -378,7 +382,8 @@ class CheckerTestBase
     {
         NodeRecord node = new NodeRecord( id ).initialize( true, nextProp, false, NULL, 0 );
         long[] labelIds = toLongs( labels );
-        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, CursorContext.NULL, INSTANCE );
+        InlineNodeLabels.putSorted( node, labelIds, nodeStore, null /*<-- intentionally prevent dynamic labels here*/, CursorContext.NULL, storeCursors,
+                INSTANCE );
         nodeStore.updateRecord( node, CursorContext.NULL );
         return id;
     }

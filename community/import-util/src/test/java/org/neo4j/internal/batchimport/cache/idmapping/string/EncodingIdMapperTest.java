@@ -44,9 +44,6 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RandomRule;
 
@@ -64,7 +61,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @RunWith( Parameterized.class )
@@ -99,13 +95,13 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
-        PropertyValueLookup inputIdLookup = ( id, cursorContext ) -> String.valueOf( id );
+        PropertyValueLookup inputIdLookup = String::valueOf;
         int count = 300_000;
 
         // WHEN
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            idMapper.put( inputIdLookup.lookupProperty( nodeId, NULL ), nodeId, Group.GLOBAL );
+            idMapper.put( inputIdLookup.lookupProperty( nodeId ), nodeId, Group.GLOBAL );
         }
         idMapper.prepare( inputIdLookup, mock( Collector.class ), NONE );
 
@@ -113,7 +109,7 @@ public class EncodingIdMapperTest
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
             // the UUIDs here will be generated in the same sequence as above because we reset the random
-            Object id = inputIdLookup.lookupProperty( nodeId, NULL );
+            Object id = inputIdLookup.lookupProperty( nodeId );
             if ( idMapper.get( id, Group.GLOBAL ) == IdMapper.ID_NOT_FOUND )
             {
                 fail( "Couldn't find " + id + " even though I added it just previously" );
@@ -180,7 +176,7 @@ public class EncodingIdMapperTest
         ValueGenerator values = new ValueGenerator( type.data( random.random() ) );
         for ( int nodeId = 0; nodeId < size; nodeId++ )
         {
-            mapper.put( values.lookupProperty( nodeId, NULL ), nodeId, Group.GLOBAL );
+            mapper.put( values.lookupProperty( nodeId ), nodeId, Group.GLOBAL );
         }
         mapper.prepare( values, mock( Collector.class ), NONE );
 
@@ -200,7 +196,7 @@ public class EncodingIdMapperTest
         PropertyValueLookup values = values( "10", "9", "10" );
         for ( int i = 0; i < 3; i++ )
         {
-            mapper.put( values.lookupProperty( i, NULL ), i, Group.GLOBAL );
+            mapper.put( values.lookupProperty( i ), i, Group.GLOBAL );
         }
 
         // WHEN
@@ -223,7 +219,7 @@ public class EncodingIdMapperTest
         PropertyValueLookup ids = values( "10", "9" );
         for ( int i = 0; i < 2; i++ )
         {
-            mapper.put( ids.lookupProperty( i, NULL ), i, Group.GLOBAL );
+            mapper.put( ids.lookupProperty( i ), i, Group.GLOBAL );
         }
 
         // WHEN
@@ -239,37 +235,6 @@ public class EncodingIdMapperTest
         // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
         verify( progress, times( 7 ) ).started( anyString() );
         verify( progress, times( 7 ) ).done();
-    }
-
-    @Test
-    public void tracePageCacheAccessOnCollisions()
-    {
-        EncodingIdMapper.Monitor monitor = mock( EncodingIdMapper.Monitor.class );
-        Encoder encoder = mock( Encoder.class );
-        when( encoder.encode( any() ) ).thenReturn( 12345L );
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        IdMapper mapper = mapper( encoder, Radix.STRING, monitor, pageCacheTracer );
-
-        PropertyValueLookup ids = ( nodeId, cursorContext ) ->
-        {
-            cursorContext.getCursorTracer().beginPin( false, 1, null ).done();
-            return nodeId + "";
-        };
-        int expectedCollisions = 2;
-        for ( int i = 0; i < expectedCollisions; i++ )
-        {
-            mapper.put( ids.lookupProperty( i, NULL ), i, Group.GLOBAL );
-        }
-
-        ProgressListener progress = mock( ProgressListener.class );
-        Collector collector = mock( Collector.class );
-        mapper.prepare( ids, collector, progress );
-
-        verifyNoMoreInteractions( collector );
-        verify( monitor ).numberOfCollisions( expectedCollisions );
-
-        assertEquals( expectedCollisions, pageCacheTracer.pins() );
-        assertEquals( expectedCollisions, pageCacheTracer.unpins() );
     }
 
     @Test
@@ -307,7 +272,7 @@ public class EncodingIdMapperTest
         // WHEN
         for ( int i = 0; i < 6; i++ )
         {
-            mapper.put( ids.lookupProperty( i, NULL ), i, groups[i] );
+            mapper.put( ids.lookupProperty( i ), i, groups[i] );
         }
         Collector collector = mock( Collector.class );
         mapper.prepare( ids, collector, mock( ProgressListener.class ) );
@@ -333,10 +298,10 @@ public class EncodingIdMapperTest
         PropertyValueLookup ids = values( "10", "9", "10" );
         int id = 0;
         // group 0
-        mapper.put( ids.lookupProperty( id, NULL ), id++, firstGroup );
-        mapper.put( ids.lookupProperty( id, NULL ), id++, firstGroup );
+        mapper.put( ids.lookupProperty( id ), id++, firstGroup );
+        mapper.put( ids.lookupProperty( id ), id++, firstGroup );
         // group 1
-        mapper.put( ids.lookupProperty( id, NULL ), id, secondGroup );
+        mapper.put( ids.lookupProperty( id ), id, secondGroup );
         Collector collector = mock( Collector.class );
         mapper.prepare( ids, collector, NONE );
 
@@ -359,9 +324,9 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR );
         PropertyValueLookup ids = values( "8", "9", "10" );
         int id = 0;
-        mapper.put( ids.lookupProperty( id, NULL ), id++, firstGroup );
-        mapper.put( ids.lookupProperty( id, NULL ), id++, secondGroup );
-        mapper.put( ids.lookupProperty( id, NULL ), id, thirdGroup );
+        mapper.put( ids.lookupProperty( id ), id++, firstGroup );
+        mapper.put( ids.lookupProperty( id ), id++, secondGroup );
+        mapper.put( ids.lookupProperty( id ), id, thirdGroup );
         mapper.prepare( ids, mock( Collector.class ), NONE );
 
         // WHEN/THEN
@@ -418,7 +383,7 @@ public class EncodingIdMapperTest
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
                                   numberOfCollisions -> new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE ) );
         final AtomicReference<Group> group = new AtomicReference<>();
-        PropertyValueLookup ids = ( nodeId, cursorContext ) ->
+        PropertyValueLookup ids = nodeId ->
         {
             int groupId = toIntExact( nodeId / idsPerGroup );
             if ( groupId == groupCount )
@@ -445,7 +410,7 @@ public class EncodingIdMapperTest
         int count = idsPerGroup * groupCount;
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            mapper.put( ids.lookupProperty( nodeId, NULL ), nodeId, group.get() );
+            mapper.put( ids.lookupProperty( nodeId ), nodeId, group.get() );
         }
         Collector collector = mock( Collector.class );
 
@@ -455,7 +420,7 @@ public class EncodingIdMapperTest
         verifyNoMoreInteractions( collector );
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            assertEquals( nodeId, mapper.get( ids.lookupProperty( nodeId, NULL ), group.get() ) );
+            assertEquals( nodeId, mapper.get( ids.lookupProperty( nodeId ), group.get() ) );
         }
         verifyNoMoreInteractions( collector );
         assertFalse( mapper.leftOverDuplicateNodesIds().hasNext() );
@@ -555,7 +520,7 @@ public class EncodingIdMapperTest
         AtomicLong highNodeId = new AtomicLong();
         int batchSize = 1234;
         Race race = new Race();
-        PropertyValueLookup inputIdLookup = ( id, cursorContext ) -> String.valueOf( id );
+        PropertyValueLookup inputIdLookup = String::valueOf;
         int countPerThread = 30_000;
         race.addContestants( processors, () ->
         {
@@ -571,7 +536,7 @@ public class EncodingIdMapperTest
                 long nodeId = nextNodeId++;
                 cursor++;
 
-                idMapper.put( inputIdLookup.lookupProperty( nodeId, NULL ), nodeId, Group.GLOBAL );
+                idMapper.put( inputIdLookup.lookupProperty( nodeId ), nodeId, Group.GLOBAL );
             }
         } );
 
@@ -585,7 +550,7 @@ public class EncodingIdMapperTest
         int correctHits = 0;
         for ( long nodeId = 0; nodeId < countWithGapsWorstCase; nodeId++ )
         {
-            long result = idMapper.get( inputIdLookup.lookupProperty( nodeId, NULL ), Group.GLOBAL );
+            long result = idMapper.get( inputIdLookup.lookupProperty( nodeId ), Group.GLOBAL );
             if ( result != -1 )
             {
                 assertEquals( nodeId, result );
@@ -597,18 +562,13 @@ public class EncodingIdMapperTest
 
     private static PropertyValueLookup values( Object... values )
     {
-        return ( value, cursor ) -> values[toIntExact( value )];
-    }
-
-    private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, PageCacheTracer pageCacheTracer )
-    {
-        return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups, autoDetect( encoder ),
-                                     1_000, processors, ParallelSort.DEFAULT, pageCacheTracer, INSTANCE );
+        return value -> values[toIntExact( value )];
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor )
     {
-        return mapper( encoder, radix, monitor, ParallelSort.DEFAULT );
+        return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups, autoDetect( encoder ),
+                                     1_000, processors, ParallelSort.DEFAULT, INSTANCE );
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, ParallelSort.Comparator comparator )
@@ -620,7 +580,7 @@ public class EncodingIdMapperTest
             LongFunction<CollisionValues> collisionValuesFactory )
     {
         return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
-                                     collisionValuesFactory, 1_000, processors, comparator, PageCacheTracer.NULL, INSTANCE );
+                                     collisionValuesFactory, 1_000, processors, comparator, INSTANCE );
     }
 
     private static LongFunction<CollisionValues> autoDetect( Encoder encoder )
@@ -648,7 +608,7 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public Object lookupProperty( long nodeId, CursorContext cursorContext )
+        public Object lookupProperty( long nodeId )
         {
             while ( true )
             {

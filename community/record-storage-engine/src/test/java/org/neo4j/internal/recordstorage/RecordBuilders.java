@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
@@ -208,7 +209,7 @@ public class RecordBuilders
                             group.setType( extra );
                             return group;
                         } ),
-                null, null, null, null, EmptyMemoryTracker.INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
+                null, null, null, null, EmptyMemoryTracker.INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL );
     }
 
     public static RelationshipGroupGetter newRelGroupGetter( AbstractBaseRecord... records )
@@ -243,13 +244,13 @@ public class RecordBuilders
         }
 
         @Override
-        public T load( long key, E additionalData, RecordLoad load, CursorContext cursorContext )
+        public T load( long key, E additionalData, RecordLoad load )
         {
             return records.stream().filter( r -> r.getId() == key ).findFirst().get();
         }
 
         @Override
-        public void ensureHeavy( T relationshipRecord, CursorContext cursorContext )
+        public void ensureHeavy( T relationshipRecord, StoreCursors storeCursors )
         {
 
         }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.greaterThan
+import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.lock.LockTracer
 import org.neo4j.resources.CpuClock
+import org.neo4j.storageengine.api.cursor.StoreCursors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -115,7 +116,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
 
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, Config.defaults()))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults() ))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
@@ -138,7 +139,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, Config.defaults()))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults()))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
@@ -371,7 +372,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     tx.getNodeById(2)
     tx.getNodeById(1)
     val accesses = tracer.getPageCacheHits + tracer.getPageCacheMisses
-    assertThat(Long.box(accesses), greaterThan(Long.box(1L)))
+    assertThat(Long.box(accesses), greaterThanOrEqualTo(Long.box(1L)))
 
     transactionalContext.close()
     tx.close()
@@ -381,7 +382,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, Config.defaults()))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null, StoreCursors.NULL, Config.defaults()))
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)

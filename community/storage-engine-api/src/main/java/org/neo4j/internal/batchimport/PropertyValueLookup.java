@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.neo4j.io.pagecache.context.CursorContext;
-
 @FunctionalInterface
 public interface PropertyValueLookup
 {
-    Object lookupProperty( long nodeId, CursorContext cursorContext );
+    Object lookupProperty( long nodeId );
 }

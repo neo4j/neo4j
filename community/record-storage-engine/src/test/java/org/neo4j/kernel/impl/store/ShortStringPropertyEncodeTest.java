@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -201,7 +202,7 @@ class ShortStringPropertyEncodeTest
         TextValue expectedValue = Values.stringValue( string );
         propertyStore.encodeValue( block, KEY_ID, expectedValue, CursorContext.NULL, INSTANCE );
         assertEquals( 0, block.getValueRecords().size() );
-        Value readValue = block.getType().value( block, propertyStore, CursorContext.NULL );
+        Value readValue = block.getType().value( block, propertyStore, StoreCursors.NULL );
         assertEquals( expectedValue, readValue );
     }
 }

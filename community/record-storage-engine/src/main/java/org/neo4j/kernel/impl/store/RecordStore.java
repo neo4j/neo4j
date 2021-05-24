@@ -27,8 +27,8 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 /**
@@ -162,9 +162,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * This method can load those records and enrich the target record with those, marking it as heavy.
      *
      * @param record record to make heavy, if not already.
-     * @param cursorContext underlying page cursor context.
+     * @param storeCursors pageCursor provider to be used for record loading.
      */
-    void ensureHeavy( RECORD record, CursorContext cursorContext );
+    void ensureHeavy( RECORD record, StoreCursors storeCursors );
 
     /**
      * Reads records that belong together, a chain of records that as a whole forms the entirety of a data item.

@@ -26,6 +26,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
 public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
@@ -34,19 +35,22 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     private final SchemaStorage schemaStorage;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
+    private final StoreCursors storeCursors;
 
-    SchemaRuleMigrationAccessImpl( NeoStores neoStores, SchemaStorage schemaStorage, CursorContext cursorContext, MemoryTracker memoryTracker )
+    SchemaRuleMigrationAccessImpl( NeoStores neoStores, SchemaStorage schemaStorage, CursorContext cursorContext, MemoryTracker memoryTracker,
+            StoreCursors storeCursors )
     {
         this.neoStores = neoStores;
         this.schemaStorage = schemaStorage;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
+        this.storeCursors = storeCursors;
     }
 
     @Override
     public Iterable<SchemaRule> getAll()
     {
-        return schemaStorage.getAll( cursorContext );
+        return schemaStorage.getAll( storeCursors );
     }
 
     @Override

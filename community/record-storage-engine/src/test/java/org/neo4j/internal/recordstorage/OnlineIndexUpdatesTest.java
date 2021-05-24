@@ -58,6 +58,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -124,10 +125,12 @@ class OnlineIndexUpdatesTest
         PropertyStore propertyStore = neoStores.getPropertyStore();
 
         schemaCache = new SchemaCache( new StandardConstraintRuleAccessor(), index -> index );
-        propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), CursorContext.NULL );
+        StoreCursors storeCursors = StoreCursors.NULL;
+        propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), storeCursors );
         life.start();
-        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( CursorContext.NULL ), CursorContext.NULL, INSTANCE );
-        recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore, CursorContext.NULL ) );
+        propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser(), CursorContext.NULL, INSTANCE );
+        recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore, storeCursors ), CursorContext.NULL,
+                storeCursors );
     }
 
     @AfterEach
@@ -141,7 +144,7 @@ class OnlineIndexUpdatesTest
     void shouldContainFedNodeUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE );
+                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, StoreCursors.NULL );
 
         int nodeId = 0;
         NodeRecord inUse = getNode( nodeId, true );
@@ -170,7 +173,7 @@ class OnlineIndexUpdatesTest
     void shouldContainFedRelationshipUpdate()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE );
+                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, StoreCursors.NULL );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -199,7 +202,7 @@ class OnlineIndexUpdatesTest
     void shouldDifferentiateNodesAndRelationships()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE );
+                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, StoreCursors.NULL );
 
         int nodeId = 0;
         NodeRecord inUseNode = getNode( nodeId, true );
@@ -245,7 +248,7 @@ class OnlineIndexUpdatesTest
     void shouldUpdateCorrectIndexes()
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
-                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE );
+                new RecordStorageReader( neoStores ), CursorContext.NULL, INSTANCE, StoreCursors.NULL );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -334,7 +337,7 @@ class OnlineIndexUpdatesTest
         if ( inUse )
         {
             InlineNodeLabels labelFieldWriter = new InlineNodeLabels( nodeRecord );
-            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null, CursorContext.NULL, INSTANCE );
+            labelFieldWriter.put( new long[]{ENTITY_TOKEN}, null, null, CursorContext.NULL, StoreCursors.NULL, INSTANCE );
         }
         return nodeRecord;
     }
@@ -356,7 +359,7 @@ class OnlineIndexUpdatesTest
             @Override
             public void start() throws IOException
             {
-                countsStore.start( CursorContext.NULL, INSTANCE );
+                countsStore.start( CursorContext.NULL, StoreCursors.NULL, INSTANCE );
             }
 
             @Override

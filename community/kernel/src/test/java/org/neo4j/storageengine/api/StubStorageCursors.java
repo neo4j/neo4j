@@ -38,8 +38,10 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
@@ -306,13 +308,13 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public boolean nodeExists( long id, CursorContext cursorContext )
+    public boolean nodeExists( long id, PageCursor pageCursor )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public boolean relationshipExists( long id, CursorContext cursorContext )
+    public boolean relationshipExists( long id, PageCursor pageCursor )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
@@ -336,25 +338,25 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public StorageNodeCursor allocateNodeCursor( CursorContext cursorContext )
+    public StorageNodeCursor allocateNodeCursor( CursorContext cursorContext, StoreCursors storeCursors )
     {
         return new StubStorageNodeCursor();
     }
 
     @Override
-    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
+    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         return new StubStoragePropertyCursor();
     }
 
     @Override
-    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
+    public StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext, StoreCursors storeCursors )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public StorageRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
+    public StorageRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext, StoreCursors storeCursors )
     {
         return new StubStorageRelationshipScanCursor();
     }

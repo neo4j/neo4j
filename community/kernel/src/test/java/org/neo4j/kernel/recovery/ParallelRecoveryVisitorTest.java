@@ -61,6 +61,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.Barrier;
@@ -192,7 +193,7 @@ class ParallelRecoveryVisitorTest
     }
 
     @Test
-    void shouldPropagateApplyFailureOnVisit() throws Exception
+    void shouldPropagateApplyFailureOnVisit()
     {
         // given
         String failure = "Deliberate failure applying transaction";
@@ -346,6 +347,12 @@ class ParallelRecoveryVisitorTest
         }
 
         @Override
+        public StoreCursors createStorageCursors( CursorContext initialContext )
+        {
+            return StoreCursors.NULL;
+        }
+
+        @Override
         public void addIndexUpdateListener( IndexUpdateListener indexUpdateListener )
         {
             throw new UnsupportedOperationException();
@@ -354,7 +361,8 @@ class ParallelRecoveryVisitorTest
         @Override
         public void createCommands( Collection<StorageCommand> target, ReadableTransactionState state, StorageReader storageReader,
                 CommandCreationContext creationContext, ResourceLocker locks, LockTracer lockTracer, long lastTransactionIdWhenStarted,
-                TxStateVisitor.Decorator additionalTxStateVisitor, CursorContext cursorContext, MemoryTracker memoryTracker ) throws KernelException
+                TxStateVisitor.Decorator additionalTxStateVisitor, CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
+                throws KernelException
         {
             throw new UnsupportedOperationException();
         }

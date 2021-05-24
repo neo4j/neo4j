@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class MapRecordStore implements LockVerificationMonitor.StoreLoader
 {
@@ -53,7 +53,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader
                 loader( groupStore, ( id, type ) -> withType( new RelationshipGroupRecord( id ), type ), monitor::relationshipGroupWasRead ),
                 noLoader(), noLoader(), noLoader(), noLoader(),
                 EmptyMemoryTracker.INSTANCE,
-                loadMonitor );
+                loadMonitor, StoreCursors.NULL );
     }
 
     void write( NodeRecord record )
@@ -161,13 +161,13 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader
             }
 
             @Override
-            public T load( long key, R additionalData, RecordLoad load, CursorContext cursorContext )
+            public T load( long key, R additionalData, RecordLoad load )
             {
                 return loadRecord( key, store, monitor );
             }
 
             @Override
-            public void ensureHeavy( T record, CursorContext cursorContext )
+            public void ensureHeavy( T record, StoreCursors storeCursors )
             {
                 // ignore
             }

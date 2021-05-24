@@ -40,7 +40,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
-import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 
 public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
 {
@@ -79,7 +78,7 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
     private void migrateIndexProviders( DatabaseLayout migrationLayout, String versionToMigrateTo ) throws IOException, KernelException
     {
         try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( INDEX_PROVIDER_MIGRATION_TAG ) );
-                SchemaRuleMigrationAccess ruleAccess = storageEngineFactory.schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService,
+              var ruleAccess = storageEngineFactory.schemaRuleMigrationAccess( fs, pageCache, config, migrationLayout, logService,
                         versionToMigrateTo, cacheTracer, cursorContext, memoryTracker ) )
         {
             for ( SchemaRule rule : ruleAccess.getAll() )

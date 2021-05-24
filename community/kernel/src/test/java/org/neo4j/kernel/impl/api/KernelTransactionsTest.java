@@ -94,6 +94,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.Race;
@@ -644,6 +645,7 @@ class KernelTransactionsTest
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.newReader() ).thenReturn( firstReader, otherReaders );
         when( storageEngine.newCommandCreationContext( any() ) ).thenReturn( mock( CommandCreationContext.class ) );
+        when( storageEngine.createStorageCursors( any() ) ).thenReturn( StoreCursors.NULL );
         doAnswer( invocation ->
         {
             Collection<StorageCommand> argument = invocation.getArgument( 0 );
@@ -657,7 +659,7 @@ class KernelTransactionsTest
                 any( ResourceLocker.class ),
                 any( LockTracer.class ),
                 anyLong(),
-                any( TxStateVisitor.Decorator.class ), any( CursorContext.class ), any( MemoryTracker.class ) );
+                any( TxStateVisitor.Decorator.class ), any( CursorContext.class ), any( StoreCursors.class ), any( MemoryTracker.class ) );
 
         return newKernelTransactions( locks, storageEngine, commitProcess, testKernelTransactions, config );
     }

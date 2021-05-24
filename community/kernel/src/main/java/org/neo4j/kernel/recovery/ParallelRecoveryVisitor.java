@@ -115,11 +115,12 @@ final class ParallelRecoveryVisitor implements RecoveryApplier
 
     private void apply( CommittedTransactionRepresentation transaction ) throws Exception
     {
-        try ( CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( tracerTag ) ) )
+        try ( CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( tracerTag ) );
+              var storeCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
             TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
             long txId = transaction.getCommitEntry().getTxId();
-            TransactionToApply tx = new TransactionToApply( txRepresentation, txId, cursorContext );
+            TransactionToApply tx = new TransactionToApply( txRepresentation, txId, cursorContext, storeCursors );
             tx.commitment( NO_COMMITMENT, txId );
             tx.logPosition( transaction.getStartEntry().getStartPosition() );
             storageEngine.apply( tx, mode );

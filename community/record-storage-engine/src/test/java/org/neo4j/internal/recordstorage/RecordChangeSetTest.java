@@ -21,6 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.storageengine.api.cursor.StoreCursors;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -31,7 +33,7 @@ class RecordChangeSetTest
     void shouldStartWithSetsInitializedAndEmpty()
     {
         // GIVEN
-        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
+        RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL );
 
         // WHEN
         // nothing really

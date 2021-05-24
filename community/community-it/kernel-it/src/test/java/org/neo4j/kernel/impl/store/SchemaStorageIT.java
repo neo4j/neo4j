@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
@@ -91,6 +92,7 @@ class SchemaStorageIT
 
     private static SchemaStore schemaStore;
     private static SchemaStorage storage;
+    private StoreCursors storageCursors;
 
     @BeforeEach
     void initStorage() throws Exception
@@ -105,6 +107,7 @@ class SchemaStorageIT
             tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
             transaction.commit();
         }
+        storageCursors = storageEngine.createStorageCursors( NULL );
         schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
         storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
     }
@@ -119,7 +122,7 @@ class SchemaStorageIT
                 index( LABEL2, PROP1 ) );
 
         // When
-        IndexDescriptor rule = single( storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ), NULL ) );
+        IndexDescriptor rule = single( storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ), storageCursors ) );
 
         // Then
         assertNotNull( rule );
@@ -139,7 +142,7 @@ class SchemaStorageIT
           .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
         IndexDescriptor rule = single( storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
-                labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ), NULL ) );
+                labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ), storageCursors ) );
 
         assertNotNull( rule );
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
@@ -167,7 +170,7 @@ class SchemaStorageIT
         } );
 
         IndexDescriptor rule = single( storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
-                labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ), NULL ) );
+                labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ), storageCursors ) );
 
         assertNotNull( rule );
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
@@ -186,7 +189,7 @@ class SchemaStorageIT
                 index( LABEL1, PROP1 ) );
 
         // When
-        IndexDescriptor[] rules = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ), NULL );
+        IndexDescriptor[] rules = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ), storageCursors );
 
         // Then
         assertThat( rules.length ).isEqualTo( 0 );
@@ -201,7 +204,7 @@ class SchemaStorageIT
                 index( LABEL1, PROP2 ) );
 
         // When
-        IndexDescriptor rule = single( storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ), NULL ) );
+        IndexDescriptor rule = single( storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ), storageCursors ) );
 
         // Then
         assertNotNull( rule );
@@ -221,7 +224,7 @@ class SchemaStorageIT
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        Set<IndexDescriptor> listedRules = asSet( storage.indexesGetAll( NULL ) );
+        Set<IndexDescriptor> listedRules = asSet( storage.indexesGetAll(storageCursors) );
 
         // Then
         Set<IndexDescriptor> expectedRules = new HashSet<>();
@@ -243,7 +246,7 @@ class SchemaStorageIT
 
         // When
         ConstraintDescriptor rule = storage.constraintsGetSingle(
-                ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ), NULL );
+                ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ), storageCursors );
 
         // Then
         assertNotNull( rule );
@@ -267,8 +270,8 @@ class SchemaStorageIT
         storage.writeSchemaRule( storeIndexDescriptor, cursorContext, INSTANCE );
 
         // when
-        IndexDescriptor schemaRule = (IndexDescriptor) storage.loadSingleSchemaRule( id, NULL );
-        storage.deleteSchemaRule( schemaRule, NULL ); // Clean up after ourselves.
+        IndexDescriptor schemaRule = (IndexDescriptor) storage.loadSingleSchemaRule( id, storageCursors );
+        storage.deleteSchemaRule( schemaRule, NULL, storageCursors ); // Clean up after ourselves.
 
         // then
         IndexConfig actual = schemaRule.getIndexConfig();

@@ -40,7 +40,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -71,6 +70,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -143,6 +143,7 @@ class NeoStoreTransactionApplierTest
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
         when( transactionToApply.cursorContext() ).thenReturn( NULL );
+        when( transactionToApply.storeCursors() ).thenReturn( StoreCursors.NULL );
         when( transactionToApply.subject() ).thenReturn( AUTH_DISABLED );
     }
 
@@ -471,7 +472,7 @@ class NeoStoreTransactionApplierTest
         Command.RelationshipTypeTokenCommand command =
                 new Command.RelationshipTypeTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( relationshipTypeTokenStore.getToken( eq( command.tokenId() ), any( CursorContext.class ) ) ).thenReturn( token );
+        when( relationshipTypeTokenStore.getToken( eq( command.tokenId() ), any( StoreCursors.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -518,7 +519,7 @@ class NeoStoreTransactionApplierTest
         Command.LabelTokenCommand command =
                 new Command.LabelTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( labelTokenStore.getToken( eq( command.tokenId() ), any( CursorContext.class ) ) ).thenReturn( token );
+        when( labelTokenStore.getToken( eq( command.tokenId() ), any( StoreCursors.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -566,7 +567,7 @@ class NeoStoreTransactionApplierTest
         Command.PropertyKeyTokenCommand command =
                 new Command.PropertyKeyTokenCommand( before, after );
         NamedToken token = new NamedToken( "token", 21 );
-        when( propertyKeyTokenStore.getToken( eq( command.tokenId() ), any( CursorContext.class ) ) ).thenReturn( token );
+        when( propertyKeyTokenStore.getToken( eq( command.tokenId() ), any( StoreCursors.class ) ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -629,7 +630,7 @@ class NeoStoreTransactionApplierTest
     {
         // given
         var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore,
-                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE );
+                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
         TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
@@ -653,7 +654,7 @@ class NeoStoreTransactionApplierTest
     {
         // given
         var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore,
-                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE );
+                mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL );
         TransactionApplierFactory applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.copy().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );

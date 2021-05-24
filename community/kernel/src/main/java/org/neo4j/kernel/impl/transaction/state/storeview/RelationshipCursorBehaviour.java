@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class RelationshipCursorBehaviour implements EntityScanCursorBehaviour<StorageRelationshipScanCursor>
 {
@@ -33,9 +34,9 @@ public class RelationshipCursorBehaviour implements EntityScanCursorBehaviour<St
     }
 
     @Override
-    public StorageRelationshipScanCursor allocateEntityScanCursor( CursorContext cursorContext )
+    public StorageRelationshipScanCursor allocateEntityScanCursor( CursorContext cursorContext, StoreCursors storeCursors )
     {
-        return storageReader.allocateRelationshipScanCursor( cursorContext );
+        return storageReader.allocateRelationshipScanCursor( cursorContext, storeCursors );
     }
 
     @Override

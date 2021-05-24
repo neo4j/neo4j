@@ -25,6 +25,7 @@ import java.lang.reflect.Array;
 
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -91,12 +92,12 @@ class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
             long nodeId = createNode( singletonMap( "prop", value ), label1 );
 
             // when
-            try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL ) )
+            try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL ) )
             {
                 node.single( nodeId );
                 assertTrue( node.next() );
 
-                try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor( NULL, INSTANCE ) )
+                try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE ) )
                 {
                     node.properties( props );
                     if ( props.next() )

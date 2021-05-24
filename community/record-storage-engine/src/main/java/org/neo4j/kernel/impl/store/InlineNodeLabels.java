@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Bits;
 
 import static java.lang.Long.highestOneBit;
@@ -48,7 +49,7 @@ public class InlineNodeLabels implements NodeLabels
     }
 
     @Override
-    public long[] get( NodeStore nodeStore, CursorContext cursorContext )
+    public long[] get( NodeStore nodeStore, StoreCursors storeCursors )
     {
         return get( node );
     }
@@ -66,35 +67,36 @@ public class InlineNodeLabels implements NodeLabels
 
     @Override
     public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator, CursorContext cursorContext,
-            MemoryTracker memoryTracker )
+            StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         Arrays.sort( labelIds );
-        return putSorted( node, labelIds, nodeStore, allocator, cursorContext, memoryTracker );
+        return putSorted( node, labelIds, nodeStore, allocator, cursorContext, storeCursors, memoryTracker );
     }
 
     public static Collection<DynamicRecord> putSorted( NodeRecord node, long[] labelIds,
-            NodeStore nodeStore, DynamicRecordAllocator allocator, CursorContext cursorContext, MemoryTracker memoryTracker )
+            NodeStore nodeStore, DynamicRecordAllocator allocator, CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         if ( tryInlineInNodeRecord( node, labelIds, node.getDynamicLabelRecords() ) )
         {
             return Collections.emptyList();
         }
 
-        return DynamicNodeLabels.putSorted( node, labelIds, nodeStore, allocator, cursorContext, memoryTracker );
+        return DynamicNodeLabels.putSorted( node, labelIds, nodeStore, allocator, cursorContext, storeCursors, memoryTracker );
     }
 
     @Override
     public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator, CursorContext cursorContext,
-            MemoryTracker memoryTracker )
+            StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         long[] augmentedLabelIds = labelCount( node.getLabelField() ) == 0 ? new long[]{labelId} :
                                    concatAndSort( parseInlined( node.getLabelField() ), labelId );
 
-        return putSorted( node, augmentedLabelIds, nodeStore, allocator, cursorContext, memoryTracker );
+        return putSorted( node, augmentedLabelIds, nodeStore, allocator, cursorContext, storeCursors, memoryTracker );
     }
 
     @Override
-    public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore, CursorContext cursorContext, MemoryTracker memoryTracker )
+    public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore, CursorContext cursorContext, StoreCursors storeCursors,
+            MemoryTracker memoryTracker )
     {
         long[] newLabelIds = filter( parseInlined( node.getLabelField() ), labelId );
         boolean inlined = tryInlineInNodeRecord( node, newLabelIds, node.getDynamicLabelRecords() );

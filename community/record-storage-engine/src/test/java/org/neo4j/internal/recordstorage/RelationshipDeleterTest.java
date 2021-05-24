@@ -54,9 +54,9 @@ class RelationshipDeleterTest
     void setUp()
     {
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
-        PropertyTraverser propertyTraverser = new PropertyTraverser( CursorContext.NULL );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, CursorContext.NULL );
-        deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, CursorContext.NULL );
+        PropertyTraverser propertyTraverser = new PropertyTraverser();
+        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser );
+        deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH );
         store = new MapRecordStore();
         recordChanges = store.newRecordChanges( NULL_MONITOR, MapRecordStore.Monitor.NULL );
     }
@@ -112,7 +112,7 @@ class RelationshipDeleterTest
         store.write( new RelationshipRecord( relC ).initialize( true, NULL, node, node, type, relB, NULL, relB, NULL, false, false ) );
         MappedNodeDataLookup groupLookup = mock( MappedNodeDataLookup.class );
         when( groupLookup.group( node, type, false ) ).thenAnswer(
-                invocationOnMock -> recordChanges.getRelGroupRecords().getOrLoad( groupH, null, CursorContext.NULL ) );
+                invocationOnMock -> recordChanges.getRelGroupRecords().getOrLoad( groupH, null ) );
 
         // when deleting relB
         deleter.relationshipDelete( singleDelete( relB, type, node, node ).deletions(), recordChanges, mock( RelationshipGroupDegreesStore.Updater.class ),

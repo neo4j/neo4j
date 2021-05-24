@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -92,6 +93,7 @@ public class RecordRelationshipTraversalCursorTest
     protected DatabaseLayout databaseLayout;
 
     protected NeoStores neoStores;
+    private CachedStoreCursors storeCursors;
 
     private static Stream<Arguments> parameters()
     {
@@ -117,6 +119,7 @@ public class RecordRelationshipTraversalCursorTest
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs,
                 getRecordFormats(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable(), Sets.immutable.empty() );
         neoStores = storeFactory.openAllNeoStores( true );
+        storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
     }
 
     protected RecordFormats getRecordFormats()
@@ -127,6 +130,7 @@ public class RecordRelationshipTraversalCursorTest
     @AfterEach
     void shutDownStores()
     {
+        storeCursors.close();
         neoStores.close();
     }
 

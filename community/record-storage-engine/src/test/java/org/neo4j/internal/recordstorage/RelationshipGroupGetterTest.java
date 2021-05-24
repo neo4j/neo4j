@@ -36,11 +36,13 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -85,8 +87,9 @@ class RelationshipGroupGetterTest
         stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL );
         groupStore = spy( stores.getRelationshipGroupStore() );
         NodeStore nodeStore = stores.getNodeStore();
-        groupRecords = new DirectRecordAccess<>( groupStore, Loaders.relationshipGroupLoader( groupStore, NULL ) );
-        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore, NULL ) );
+        StoreCursors storeCursors = new CachedStoreCursors( stores, NULL );
+        groupRecords = new DirectRecordAccess<>( groupStore, Loaders.relationshipGroupLoader( groupStore, storeCursors ), NULL, storeCursors );
+        nodeRecords = new DirectRecordAccess<>( nodeStore, Loaders.nodeLoader( nodeStore, storeCursors ), NULL, storeCursors );
         groupGetter = new RelationshipGroupGetter( groupStore, NULL );
     }
 
@@ -165,7 +168,7 @@ class RelationshipGroupGetterTest
         int newType = 1;
         // The "prev" field is very special in that it's not persistent, this means that the group getter will not mark the previously-first group
         // as changed, but it will still update its prev field. Let's fake an update to this record so that it sticks in the record changes.
-        groupRecords.getOrLoad( group2.getId(), null, NULL ).forChangingLinkage();
+        groupRecords.getOrLoad( group2.getId(), null ).forChangingLinkage();
         RelationshipGroupRecord createdGroup = groupGetter.getOrCreateRelationshipGroup( nodeChange, newType, groupRecords ).forReadingLinkage();
 
         // then all next and prev links should match
@@ -188,7 +191,7 @@ class RelationshipGroupGetterTest
         int count = 0;
         while ( !NULL_REFERENCE.is( groupId ) )
         {
-            RelationshipGroupRecord group = groupRecords.getOrLoad( groupId, null, NULL ).forReadingLinkage();
+            RelationshipGroupRecord group = groupRecords.getOrLoad( groupId, null ).forReadingLinkage();
             if ( count > 0 )
             {
                 if ( count < numPrevsToAssert )

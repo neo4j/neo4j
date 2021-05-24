@@ -87,7 +87,7 @@ public enum RecordStorageCapability implements Capability
     GROUP_DEGREES_STORE( true, CapabilityType.STORE );
 
     private final CapabilityType[] types;
-    private boolean additive;
+    private final boolean additive;
 
     RecordStorageCapability( CapabilityType... types )
     {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
@@ -32,12 +33,14 @@ import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreScan
 {
     private final TokenIndexReader tokenIndexReader;
 
     public RelationshipIndexedRelationshipStoreScan( Config config, StorageReader storageReader,
+                                                     Function<CursorContext,StoreCursors> storeCursorsFactory,
                                                      LockService locks,
                                                      TokenIndexReader tokenIndexReader,
                                                      @Nullable TokenScanConsumer relationshipTypeScanConsumer,
@@ -47,13 +50,13 @@ public class RelationshipIndexedRelationshipStoreScan extends RelationshipStoreS
                                                      JobScheduler scheduler,
                                                      PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, parallelWrite,
-               scheduler, cacheTracer, memoryTracker );
+        super( config, storageReader, storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter,
+                parallelWrite, scheduler, cacheTracer, memoryTracker );
         this.tokenIndexReader = tokenIndexReader;
     }
 
     @Override
-    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext )
+    public EntityIdIterator getEntityIdIterator( CursorContext cursorContext, StoreCursors storeCursors )
     {
         return new TokenIndexScanIdIterator( tokenIndexReader, entityTokenIdFilter, cursorContext );
     }

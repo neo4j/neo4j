@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,6 +32,12 @@ class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<Schema
     protected SchemaStore getStore( NeoStores neoStores )
     {
         return neoStores.getSchemaStore();
+    }
+
+    @Override
+    protected PageCursor getCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.schemaCursor();
     }
 
     @Override
@@ -47,9 +55,9 @@ class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<Schema
     }
 
     @Override
-    protected SchemaRecord getLight( long id, SchemaStore store )
+    protected SchemaRecord getLight( long id, SchemaStore store, PageCursor pageCursor )
     {
-        return getHeavy( store, id );
+        return getHeavy( store, id, pageCursor );
     }
 
     @Override

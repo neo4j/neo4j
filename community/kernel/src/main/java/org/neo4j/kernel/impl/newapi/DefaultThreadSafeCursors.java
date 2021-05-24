@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -31,6 +32,7 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Cursor factory which simply creates new instances on allocation. As thread-safe as the underlying {@link StorageReader}.
@@ -38,67 +40,103 @@ import org.neo4j.storageengine.api.StorageReader;
 public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFactory
 {
     private final StorageReader storageReader;
+    private final Function<CursorContext, StoreCursors> storeCursorsFactory;
 
-    public DefaultThreadSafeCursors( StorageReader storageReader, Config config )
+    public DefaultThreadSafeCursors( StorageReader storageReader, Config config, Function<CursorContext, StoreCursors> storeCursorsFactory )
     {
         super( new ConcurrentLinkedQueue<>(), config );
         this.storageReader = storageReader;
+        this.storeCursorsFactory = storeCursorsFactory;
     }
 
     @Override
     public DefaultNodeCursor allocateNodeCursor( CursorContext cursorContext )
     {
-        return trace( new DefaultNodeCursor(
-                DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorContext ), storageReader.allocateNodeCursor( cursorContext ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new DefaultNodeCursor( defaultNodeCursor ->
+        {
+            defaultNodeCursor.release();
+            storeCursors.close();
+        }, storageReader.allocateNodeCursor( cursorContext, storeCursors ),
+                storageReader.allocateNodeCursor( cursorContext, storeCursors ) ) );
     }
 
     @Override
     public FullAccessNodeCursor allocateFullAccessNodeCursor( CursorContext cursorContext )
     {
-        return trace( new FullAccessNodeCursor( DefaultNodeCursor::release, storageReader.allocateNodeCursor( cursorContext ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new FullAccessNodeCursor( defaultNodeCursor ->
+        {
+            defaultNodeCursor.release();
+            storeCursors.close();
+        }, storageReader.allocateNodeCursor( cursorContext, storeCursors ) ) );
     }
 
     @Override
     public DefaultRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
     {
-        return trace( new DefaultRelationshipScanCursor( DefaultRelationshipScanCursor::release,
-                storageReader.allocateRelationshipScanCursor( cursorContext ), allocateNodeCursor( cursorContext ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new DefaultRelationshipScanCursor( defaultRelationshipScanCursor -> {
+            defaultRelationshipScanCursor.release();
+            storeCursors.close();
+        },
+        storageReader.allocateRelationshipScanCursor( cursorContext, storeCursors ), allocateNodeCursor( cursorContext ) ) );
     }
 
     @Override
     public FullAccessRelationshipScanCursor allocateFullAccessRelationshipScanCursor( CursorContext cursorContext )
     {
-        return trace( new FullAccessRelationshipScanCursor( DefaultRelationshipScanCursor::release,
-                storageReader.allocateRelationshipScanCursor( cursorContext ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new FullAccessRelationshipScanCursor( defaultRelationshipScanCursor -> {
+            defaultRelationshipScanCursor.release();
+            storeCursors.close();
+        },
+        storageReader.allocateRelationshipScanCursor( cursorContext, storeCursors ) ) );
     }
 
     @Override
     public DefaultRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
     {
-        return trace( new DefaultRelationshipTraversalCursor( DefaultRelationshipTraversalCursor::release,
-                storageReader.allocateRelationshipTraversalCursor( cursorContext ), allocateNodeCursor( cursorContext ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new DefaultRelationshipTraversalCursor( defaultRelationshipTraversalCursor -> {
+            defaultRelationshipTraversalCursor.release();
+            storeCursors.close();
+        },
+        storageReader.allocateRelationshipTraversalCursor( cursorContext, storeCursors ), allocateNodeCursor( cursorContext ) ) );
     }
 
     @Override
     public DefaultRelationshipTraversalCursor allocateFullAccessRelationshipTraversalCursor( CursorContext cursorContext )
     {
-        return trace( new FullAccessRelationshipTraversalCursor( DefaultRelationshipTraversalCursor::release,
-                storageReader.allocateRelationshipTraversalCursor( cursorContext ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new FullAccessRelationshipTraversalCursor( defaultRelationshipTraversalCursor -> {
+            defaultRelationshipTraversalCursor.release();
+            storeCursors.close();
+        },
+        storageReader.allocateRelationshipTraversalCursor( cursorContext, storeCursors ) ) );
     }
 
     @Override
     public PropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        return trace( new DefaultPropertyCursor( DefaultPropertyCursor::release,
-                storageReader.allocatePropertyCursor( cursorContext, memoryTracker ), allocateFullAccessNodeCursor( cursorContext ),
-                allocateFullAccessRelationshipScanCursor( cursorContext ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new DefaultPropertyCursor( defaultPropertyCursor -> {
+            defaultPropertyCursor.release();
+            storeCursors.close();
+        },
+        storageReader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker ), allocateFullAccessNodeCursor( cursorContext ),
+        allocateFullAccessRelationshipScanCursor( cursorContext ) ) );
     }
 
     @Override
     public PropertyCursor allocateFullAccessPropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        return trace( new FullAccessPropertyCursor( DefaultPropertyCursor::release,
-                storageReader.allocatePropertyCursor( cursorContext, memoryTracker ) ) );
+        var storeCursors = storeCursorsFactory.apply( cursorContext );
+        return trace( new FullAccessPropertyCursor( defaultPropertyCursor -> {
+            defaultPropertyCursor.release();
+            storeCursors.close();
+        },
+        storageReader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker ) ) );
     }
 
     @Override

@@ -122,10 +122,10 @@ public class IdMappers
      * @param memoryTracker underlying buffers allocation memory tracker
      * @return {@link IdMapper} for when input ids are strings.
      */
-    public static IdMapper strings( NumberArrayFactory cacheFactory, ReadableGroups groups, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+    public static IdMapper strings( NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker )
     {
         return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic( memoryTracker ), groups,
-                numberOfCollisions -> new StringCollisionValues( cacheFactory, numberOfCollisions, memoryTracker ), pageCacheTracer, memoryTracker );
+                numberOfCollisions -> new StringCollisionValues( cacheFactory, numberOfCollisions, memoryTracker ), memoryTracker );
     }
 
     /**
@@ -136,9 +136,9 @@ public class IdMappers
      * @param memoryTracker underlying buffers allocation memory tracker
      * @return {@link IdMapper} for when input ids are numbers.
      */
-    public static IdMapper longs( NumberArrayFactory cacheFactory, ReadableGroups groups, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+    public static IdMapper longs( NumberArrayFactory cacheFactory, ReadableGroups groups, MemoryTracker memoryTracker )
     {
         return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic( memoryTracker ), groups,
-                numberOfCollisions -> new LongCollisionValues( cacheFactory, numberOfCollisions, memoryTracker ), pageCacheTracer, memoryTracker );
+                numberOfCollisions -> new LongCollisionValues( cacheFactory, numberOfCollisions, memoryTracker ), memoryTracker );
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -51,15 +50,12 @@ class RelationshipDeleter
     private final RelationshipGroupGetter relGroupGetter;
     private final PropertyDeleter propertyChainDeleter;
     private final long externalDegreesThreshold;
-    private final CursorContext cursorContext;
 
-    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter, long externalDegreesThreshold,
-            CursorContext cursorContext )
+    RelationshipDeleter( RelationshipGroupGetter relGroupGetter, PropertyDeleter propertyChainDeleter, long externalDegreesThreshold )
     {
         this.relGroupGetter = relGroupGetter;
         this.propertyChainDeleter = propertyChainDeleter;
         this.externalDegreesThreshold = externalDegreesThreshold;
-        this.cursorContext = cursorContext;
     }
 
     /**
@@ -77,7 +73,7 @@ class RelationshipDeleter
     {
         deletions.forEach( ( id, type, startNode, endNode ) ->
         {
-            RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null, cursorContext ).forChangingLinkage();
+            RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
             propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );
             disconnectRelationship( record, recordChanges.getRelRecords() );
             updateNodesForDeletedRelationship( record, recordChanges, groupDegreesUpdater, nodeDataLookup, locks );
@@ -102,7 +98,7 @@ class RelationshipDeleter
             return;
         }
 
-        RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null, cursorContext ).forChangingLinkage();
+        RelationshipRecord otherRel = relChanges.getOrLoad( otherRelId, null ).forChangingLinkage();
         boolean changed = false;
         long newId = pointer.get( rel );
         boolean newIsFirst = pointer.isFirstInChain( rel );
@@ -151,7 +147,7 @@ class RelationshipDeleter
     {
         //When we reach here, all required locks (node/relationships/groups) should be taken for the required changes
         //The relationship is already disconnected, so we just need to fix the degrees and potentially update some pointers if we deleted the first
-        RecordProxy<NodeRecord,Void> nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext );
+        RecordProxy<NodeRecord,Void> nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null );
         NodeRecord node = nodeProxy.forReadingLinkage();
         if ( !node.isDense() )
         {
@@ -188,7 +184,7 @@ class RelationshipDeleter
                     if ( nodeLocked && locks.tryExclusiveLock( RELATIONSHIP_GROUP, nodeId ) )
                     {
                         //We got all the locks, delete it!
-                        nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorContext );
+                        nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null );
 
                         if ( isNull( group.getPrev() ) )
                         {
@@ -236,7 +232,7 @@ class RelationshipDeleter
                     }
                     else
                     {
-                        firstRelProxy = recordChanges.getRelRecords().getOrLoad( direction.getNextRel( group ), null, cursorContext );
+                        firstRelProxy = recordChanges.getRelRecords().getOrLoad( direction.getNextRel( group ), null );
                         prevCount = firstRelProxy.forReadingLinkage().getPrevRel( nodeId );
                     }
                     long count = prevCount - 1;
@@ -250,7 +246,7 @@ class RelationshipDeleter
                     {
                         if ( firstRelProxy == null )
                         {
-                            firstRelProxy = recordChanges.getRelRecords().getOrLoad( direction.getNextRel( group ), null, cursorContext );
+                            firstRelProxy = recordChanges.getRelRecords().getOrLoad( direction.getNextRel( group ), null );
                         }
                         firstRelProxy.forChangingLinkage().setPrevRel( count, nodeId );
                     }
@@ -267,7 +263,7 @@ class RelationshipDeleter
             return;
         }
         boolean deletingFirstInChain = rel.isFirstInChain( nodeId );
-        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null, cursorContext ).forChangingLinkage();
+        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
         if ( nodeId == firstRel.getFirstNode() )
         {
             firstRel.setFirstPrevRel( deletingFirstInChain ? relCount( nodeId, rel ) - 1 : firstRel.getFirstPrevRel() - 1 );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 
 import org.neo4j.configuration.Config;
@@ -33,6 +34,7 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.lock.LockType.SHARED;
 
@@ -47,13 +49,14 @@ public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCurso
 {
     private static final String TRACER_TAG = "NodeStoreScan_getNodeCount";
 
-    public NodeStoreScan( Config config, StorageReader storageReader, LockService locks,
+    public NodeStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory, LockService locks,
             TokenScanConsumer labelScanConsumer, PropertyScanConsumer propertyScanConsumer,
             int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, getNodeCount( storageReader, cacheTracer ), labelIds, propertyKeyIdFilter, propertyScanConsumer, labelScanConsumer,
-                id -> locks.acquireNodeLock( id, SHARED ), new NodeCursorBehaviour( storageReader ), parallelWrite, scheduler, cacheTracer, memoryTracker );
+        super( config, storageReader, storeCursorsFactory, getNodeCount( storageReader, cacheTracer ), labelIds, propertyKeyIdFilter, propertyScanConsumer,
+                labelScanConsumer, id -> locks.acquireNodeLock( id, SHARED ), new NodeCursorBehaviour( storageReader ), parallelWrite, scheduler, cacheTracer,
+                memoryTracker );
     }
 
     private static long getNodeCount( StorageReader storageReader, PageCacheTracer cacheTracer )

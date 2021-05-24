@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.EntityUpdates;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -77,7 +78,7 @@ class PropertyPhysicalToLogicalConverterTest
                         pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
-        converter = new PropertyPhysicalToLogicalConverter( store, NULL );
+        converter = new PropertyPhysicalToLogicalConverter( store, StoreCursors.NULL );
     }
 
     @AfterEach

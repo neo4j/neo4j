@@ -43,7 +43,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.internal.recordstorage.RelationshipLockHelper.SortedLockList;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
@@ -189,12 +188,12 @@ class RelationshipLockHelperTest
             }
         }
         RecordAccess<RelationshipRecord, Void> relRecords = mock( RecordAccess.class );
-        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any() ) )
+        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any() ) )
                 .thenAnswer( invocation -> proxies.get( invocation.getArgument( 0 ) ) );
         TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR ).withStrictAssertionsOn( ResourceTypes.RELATIONSHIP );
 
         //When
-        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), NULL_REFERENCE.longValue(), relRecords, locks, CursorContext.NULL,
+        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), NULL_REFERENCE.longValue(), relRecords, locks,
                 EmptyMemoryTracker.INSTANCE );
 
         //Then
@@ -217,12 +216,12 @@ class RelationshipLockHelperTest
         proxies.put( 1, proxy );
 
         RecordAccess<RelationshipRecord, Void> relRecords = mock( RecordAccess.class );
-        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any() ) )
+        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any() ) )
                 .thenAnswer( invocation -> proxies.get( invocation.getArgument( 0 ) ) );
 
         TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR ).withStrictAssertionsOn( ResourceTypes.RELATIONSHIP );
 
-        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), 2, relRecords, locks, CursorContext.NULL,
+        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), 2, relRecords, locks,
                 EmptyMemoryTracker.INSTANCE );
 
         List<ActiveLock> activeLocks = locks.activeLocks().collect( Collectors.toList() );
@@ -251,7 +250,7 @@ class RelationshipLockHelperTest
         } );
 
         RecordAccess<RelationshipRecord, Void> relRecords = mock( RecordAccess.class );
-        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any(), Mockito.any() ) )
+        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any() ) )
                 .thenAnswer( invocation -> proxies.get( invocation.getArgument( 0 ) ) );
 
         double chanceOfGettingLock = Math.sqrt( 0.8 / ((double) chainLength * 0.5) );
@@ -259,7 +258,7 @@ class RelationshipLockHelperTest
 
         //When
         RecordAccess.RecordProxy<RelationshipRecord,Void> entrypoint =
-                RelationshipLockHelper.findAndLockInsertionPoint( chain.get( 0 ).getId(), nodeId, relRecords, locks, LockTracer.NONE, CursorContext.NULL );
+                RelationshipLockHelper.findAndLockInsertionPoint( chain.get( 0 ).getId(), nodeId, relRecords, locks, LockTracer.NONE );
 
         //Then
         long[] actualLocks = locks.getExclusiveLocks( ResourceTypes.RELATIONSHIP ).toArray();

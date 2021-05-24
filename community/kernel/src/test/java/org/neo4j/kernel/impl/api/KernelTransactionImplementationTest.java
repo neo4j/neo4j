@@ -64,6 +64,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.DoubleLatch;
 
@@ -410,7 +411,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             any( CommandCreationContext.class ),
             any( ResourceLocker.class ),
             any( LockTracer.class ),
-            anyLong(), any( TxStateVisitor.Decorator.class ), any( CursorContext.class ), any( MemoryTracker.class ) );
+            anyLong(), any( TxStateVisitor.Decorator.class ), any( CursorContext.class ), any( StoreCursors.class ), any( MemoryTracker.class ) );
 
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext( isWriteTx ) ) )
         {

@@ -53,6 +53,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -99,10 +100,15 @@ class NodeStoreTest
     private NodeStore nodeStore;
     private NeoStores neoStores;
     private PageCache pageCache;
+    private CachedStoreCursors storeCursors;
 
     @AfterEach
     void tearDown()
     {
+        if ( storeCursors != null )
+        {
+            storeCursors.close();
+        }
         if ( neoStores != null )
         {
             neoStores.close();
@@ -179,13 +185,10 @@ class NodeStoreTest
 
         // WHEN
         // -- reading that record back
-        try ( var cursor = nodeStore.openPageCursorForReading( nodeId, NULL ) )
-        {
-            NodeRecord readRecord = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, cursor );
-            // THEN
-            // -- the label field must be the same
-            assertEquals( labels, readRecord.getLabelField() );
-        }
+        NodeRecord readRecord = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.nodeCursor() );
+        // THEN
+        // -- the label field must be the same
+        assertEquals( labels, readRecord.getLabelField() );
     }
 
     @Test
@@ -229,12 +232,9 @@ class NodeStoreTest
         store.updateRecord( new NodeRecord( deleted ).initialize( false, 20, false, 10, 0 ), NULL );
 
         // When & then
-        try ( var cursor = store.openPageCursorForReading( exists, NULL ) )
-        {
-            assertTrue( store.isInUse( exists, cursor ) );
-            assertFalse( store.isInUse( deleted, cursor ) );
-            assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), cursor ) );
-        }
+        assertTrue( store.isInUse( exists, storeCursors.nodeCursor() ) );
+        assertFalse( store.isInUse( deleted, storeCursors.nodeCursor() ) );
+        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), storeCursors.nodeCursor() ) );
     }
 
     @Test
@@ -272,10 +272,7 @@ class NodeStoreTest
             assertTrue( nextRelSet.remove( record.getNextRel() ) );
             return false;
         };
-        try ( var cursor = nodeStore.openPageCursorForReading( 0, NULL ) )
-        {
-            nodeStore.scanAllRecords( scanner, cursor );
-        }
+        nodeStore.scanAllRecords( scanner, storeCursors.nodeCursor() );
 
         // ...NOR do we have anything left in the set afterwards.
         assertTrue( nextRelSet.isEmpty() );
@@ -390,10 +387,7 @@ class NodeStoreTest
         nodeStore.updateRecord( record, NULL );
 
         // when
-        try ( var cursor = nodeStore.openPageCursorForReading( primaryUnitId, NULL ) )
-        {
-            nodeStore.getRecordByCursor( primaryUnitId, record, NORMAL, cursor );
-        }
+        nodeStore.getRecordByCursor( primaryUnitId, record, NORMAL, storeCursors.nodeCursor() );
         record.setSecondaryUnitIdOnCreate( secondaryUnitId );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
         nodeStore.updateRecord( record, idUpdateListener, NULL );
@@ -410,7 +404,7 @@ class NodeStoreTest
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L ).initialize( true, NULL_REFERENCE.longValue(), false, 1234, NO_LABELS_FIELD.longValue() );
         NodeLabels labels = NodeLabelsField.parseLabelsField( record );
-        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
+        labels.put( new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, nodeStore, nodeStore.getDynamicLabelStore(), NULL, storeCursors, INSTANCE );
         nodeStore.updateRecord( record, NULL );
 
         // ... and where e.g. the dynamic label record is unused
@@ -422,11 +416,8 @@ class NodeStoreTest
 
         // when loading that node and making it heavy
         NodeRecord loadedRecord = nodeStore.newRecord();
-        try ( var cursor = nodeStore.openPageCursorForReading( record.getId(), NULL ) )
-        {
-            nodeStore.getRecordByCursor( record.getId(), loadedRecord, NORMAL, cursor );
-        }
-        InvalidRecordException e = assertThrows( InvalidRecordException.class, () -> nodeStore.ensureHeavy( loadedRecord, NULL ) );
+        nodeStore.getRecordByCursor( record.getId(), loadedRecord, NORMAL, storeCursors.nodeCursor() );
+        InvalidRecordException e = assertThrows( InvalidRecordException.class, () -> nodeStore.ensureHeavy( loadedRecord, storeCursors ) );
 
         // then
         assertThat( e.getMessage(), containsString( loadedRecord.toString() ) );
@@ -454,6 +445,7 @@ class NodeStoreTest
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable() );
         neoStores = factory.openAllNeoStores( true );
+        storeCursors = new CachedStoreCursors( neoStores, NULL );
         nodeStore = neoStores.getNodeStore();
         return nodeStore;
     }

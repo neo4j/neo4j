@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.function.Function;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
@@ -28,9 +30,11 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
@@ -45,16 +49,17 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage
     public RelationshipCountsAndTypeIndexBuildStage( Configuration config, BatchingNeoStores neoStores, NodeLabelsCache cache,
             RelationshipStore relationshipStore, int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
             NumberArrayFactory cacheFactory, ProgressReporter progressReporter, IndexImporterFactory indexImporterFactory,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            PageCacheTracer pageCacheTracer, Function<CursorContext,StoreCursors> storeCursorsCreator, MemoryTracker memoryTracker )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ), relationshipStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, pageCacheTracer ) );
         if ( config.indexConfig().createRelationshipIndex() )
         {
-            add( new RelationshipTypeIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer ) );
+            add( new RelationshipTypeIndexWriterStep( control(), config, neoStores, indexImporterFactory, memoryTracker, pageCacheTracer,
+                    storeCursorsCreator ) );
         }
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
-                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, memoryTracker ) );
+                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, storeCursorsCreator, memoryTracker ) );
     }
 }

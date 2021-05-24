@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -122,7 +123,7 @@ class InternalTransactionCommitProcessTest
 
         // WHEN
 
-        commitProcess.commit( new TransactionToApply( noCommandTx, NULL ), commitEvent, INTERNAL );
+        commitProcess.commit( new TransactionToApply( noCommandTx, NULL, StoreCursors.NULL ), commitEvent, INTERNAL );
 
         verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, NULL );
     }
@@ -131,6 +132,6 @@ class InternalTransactionCommitProcessTest
     {
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
-        return new TransactionToApply( transaction, NULL );
+        return new TransactionToApply( transaction, NULL, StoreCursors.NULL );
     }
 }

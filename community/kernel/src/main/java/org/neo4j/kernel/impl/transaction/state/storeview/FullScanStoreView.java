@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -34,6 +35,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Node store view that will always visit all nodes during store scan.
@@ -42,13 +44,16 @@ public class FullScanStoreView implements IndexStoreView
 {
     protected final LockService locks;
     protected final Supplier<StorageReader> storageEngine;
+    private final Function<CursorContext,StoreCursors> storeCursorsFactory;
     protected final Config config;
     protected final JobScheduler scheduler;
 
-    public FullScanStoreView( LockService locks, Supplier<StorageReader> storageEngine, Config config, JobScheduler scheduler )
+    public FullScanStoreView( LockService locks, Supplier<StorageReader> storageEngine, Function<CursorContext,StoreCursors> storeCursorsFactory,
+            Config config, JobScheduler scheduler )
     {
         this.locks = locks;
         this.storageEngine = storageEngine;
+        this.storeCursorsFactory = storeCursorsFactory;
         this.config = config;
         this.scheduler = scheduler;
     }
@@ -58,7 +63,7 @@ public class FullScanStoreView implements IndexStoreView
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new NodeStoreScan( config, storageEngine.get(), locks, labelScanConsumer,
+        return new NodeStoreScan( config, storageEngine.get(), storeCursorsFactory, locks, labelScanConsumer,
                 propertyScanConsumer, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
@@ -67,14 +72,14 @@ public class FullScanStoreView implements IndexStoreView
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new RelationshipStoreScan( config, storageEngine.get(), locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds,
-                propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
+        return new RelationshipStoreScan( config, storageEngine.get(), storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer,
+                relationshipTypeIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
     @Override
     public NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker )
     {
-        return new DefaultNodePropertyAccessor( storageEngine.get(), cursorContext, memoryTracker );
+        return new DefaultNodePropertyAccessor( storageEngine.get(), cursorContext, storeCursorsFactory.apply( cursorContext ), memoryTracker );
     }
 
     @Override

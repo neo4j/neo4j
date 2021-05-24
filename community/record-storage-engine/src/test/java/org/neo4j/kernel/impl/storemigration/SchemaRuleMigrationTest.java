@@ -34,6 +34,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
@@ -43,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 class SchemaRuleMigrationTest
 {
@@ -91,7 +91,7 @@ class SchemaRuleMigrationTest
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "a", 2 ), new NamedToken( "b", 3 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule1, rule2 ) );
 
-        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, NULL );
+        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, StoreCursors.NULL );
 
         long distinctNames = writtenRules.stream().map( SchemaRule::getName ).distinct().count();
         assertEquals( 2, distinctNames );
@@ -105,7 +105,7 @@ class SchemaRuleMigrationTest
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
 
-        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, NULL );
+        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, StoreCursors.NULL );
 
         assertEquals( 1, writtenRules.size() );
         assertEquals( "constraint_952591e6", writtenRules.get( 0 ).getName() );
@@ -119,7 +119,7 @@ class SchemaRuleMigrationTest
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
 
-        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, NULL );
+        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, StoreCursors.NULL );
 
         assertEquals( 1, writtenRules.size() );
         assertEquals( "index_c3fbd584", writtenRules.get( 0 ).getName() );
@@ -133,7 +133,7 @@ class SchemaRuleMigrationTest
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule ) );
 
-        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, NULL );
+        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, StoreCursors.NULL );
 
         assertEquals( 1, writtenRules.size() );
         assertEquals( "constraint_952591e6", writtenRules.get( 0 ).getName() );
@@ -148,7 +148,7 @@ class SchemaRuleMigrationTest
         srcTokenHolders.propertyKeyTokens().setInitialTokens( List.of( new NamedToken( "prop", 2 ), new NamedToken( "bla", 3 ) ) );
         when( src.getAll( any() ) ).thenReturn( List.of( rule1, rule2 ) );
 
-        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, NULL );
+        RecordStorageMigrator.migrateSchemaRules( srcTokenHolders, src, dst, StoreCursors.NULL );
 
         assertEquals( 2, writtenRules.size() );
         Set<String> names = writtenRules.stream().map( SchemaRule::getName ).collect( Collectors.toSet() );

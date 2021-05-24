@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.concurrent.Runnables;
 
 import static java.lang.String.format;
@@ -1075,7 +1076,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public void ensureHeavy( RECORD record, CursorContext cursorContext )
+    public void ensureHeavy( RECORD record, StoreCursors storeCursors )
     {
         // Do nothing by default. Some record stores have this.
     }

@@ -22,10 +22,10 @@ package org.neo4j.internal.recordstorage;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.storageengine.api.EntityUpdates;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
 public class PropertyPhysicalToLogicalConverter
@@ -33,16 +33,16 @@ public class PropertyPhysicalToLogicalConverter
     private static final Comparator<PropertyBlock> BLOCK_COMPARATOR = Comparator.comparingInt( PropertyBlock::getKeyIndexId );
 
     private final PropertyStore propertyStore;
-    private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private PropertyBlock[] beforeBlocks = new PropertyBlock[8];
     private int beforeBlocksCursor;
     private PropertyBlock[] afterBlocks = new PropertyBlock[8];
     private int afterBlocksCursor;
 
-    public PropertyPhysicalToLogicalConverter( PropertyStore propertyStore, CursorContext cursorContext )
+    public PropertyPhysicalToLogicalConverter( PropertyStore propertyStore, StoreCursors storeCursors )
     {
         this.propertyStore = propertyStore;
-        this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     /**
@@ -157,6 +157,6 @@ public class PropertyPhysicalToLogicalConverter
         {
             return null;
         }
-        return block.getType().value( block, propertyStore, cursorContext );
+        return block.getType().value( block, propertyStore, storeCursors );
     }
 }

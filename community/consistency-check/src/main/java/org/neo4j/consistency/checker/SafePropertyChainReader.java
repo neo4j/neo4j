@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -83,7 +84,7 @@ class SafePropertyChainReader implements AutoCloseable
     }
 
     <PRIMITIVE extends PrimitiveRecord> boolean read( MutableIntObjectMap<Value> intoValues, PRIMITIVE entity,
-            Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter, CursorContext cursorContext )
+            Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter, StoreCursors storeCursors )
     {
         lightClear( seenRecords );
         long propertyRecordId = entity.getNextProp();
@@ -102,7 +103,7 @@ class SafePropertyChainReader implements AutoCloseable
             if ( !propertyRecord.inUse() )
             {
                 primitiveReporter.apply( entity ).propertyNotInUse( propertyRecord );
-                reporter.forProperty( context.recordLoader.property( previousRecordId, cursorContext ) ).nextNotInUse( propertyRecord );
+                reporter.forProperty( context.recordLoader.property( previousRecordId, storeCursors ) ).nextNotInUse( propertyRecord );
                 chainIsOk = false;
             }
             else
@@ -115,7 +116,7 @@ class SafePropertyChainReader implements AutoCloseable
                     }
                     else
                     {
-                        reporter.forProperty( context.recordLoader.property( previousRecordId, cursorContext ) ).nextDoesNotReferenceBack( propertyRecord );
+                        reporter.forProperty( context.recordLoader.property( previousRecordId, storeCursors ) ).nextDoesNotReferenceBack( propertyRecord );
                         // prevDoesNotReferenceBack is not reported, unnecessary double report (same inconsistency from different directions)
                     }
                     chainIsOk = false;
@@ -126,7 +127,7 @@ class SafePropertyChainReader implements AutoCloseable
                     int propertyKeyId = block.getKeyIndexId();
                     if ( !checkValidToken( propertyRecord, propertyKeyId, context.tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(),
                             ( property, token ) -> reporter.forProperty( property ).invalidPropertyKey( block ),
-                            ( property, token ) -> reporter.forProperty( property ).keyNotInUse( block, token ), cursorContext ) )
+                            ( property, token ) -> reporter.forProperty( property ).keyNotInUse( block, token ), storeCursors ) )
                     {
                         chainIsOk = false;
                     }
@@ -152,7 +153,7 @@ class SafePropertyChainReader implements AutoCloseable
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).recordNotFullReferencesNext(),
                                         record -> reporter.forDynamicBlock( RecordType.STRING_PROPERTY, record ).invalidLength() ) )
                                 {
-                                    value = propertyStore.getTextValueFor( dynamicRecords, cursorContext );
+                                    value = propertyStore.getTextValueFor( dynamicRecords, storeCursors );
                                 }
                                 break;
                             case ARRAY:
@@ -165,11 +166,11 @@ class SafePropertyChainReader implements AutoCloseable
                                         record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).recordNotFullReferencesNext(),
                                         record -> reporter.forDynamicBlock( RecordType.ARRAY_PROPERTY, record ).invalidLength() ) )
                                 {
-                                    value = propertyStore.getArrayFor( dynamicRecords, cursorContext );
+                                    value = propertyStore.getArrayFor( dynamicRecords, storeCursors );
                                 }
                                 break;
                             default:
-                                value = type.value( block, null, cursorContext );
+                                value = type.value( block, null, storeCursors );
                                 break;
                             }
                         }

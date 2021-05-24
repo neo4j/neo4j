@@ -42,6 +42,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -89,16 +90,18 @@ public class CommitProcessTracingIT
               var reader = storageEngine.newReader() )
         {
             assertZeroCursor( cursorContext );
-            try ( CommandCreationContext context = storageEngine.newCommandCreationContext( INSTANCE ) )
+            try ( CommandCreationContext context = storageEngine.newCommandCreationContext( INSTANCE );
+                  var storeCursors = storageEngine.createStorageCursors( CursorContext.NULL ) )
             {
-                context.initialize( cursorContext );
+                context.initialize( cursorContext, storeCursors );
                 List<StorageCommand> commands = new ArrayList<>();
                 var txState = new TxState();
                 txState.nodeDoAddLabel( 1, sourceId );
 
-                storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorContext, INSTANCE );
+                storageEngine.createCommands( commands, txState, reader, context, IGNORE, LockTracer.NONE, 0, NO_DECORATION, cursorContext, storeCursors,
+                        INSTANCE );
             }
-            assertCursor( cursorContext, 2 );
+            assertCursor( cursorContext, 1 );
         }
     }
 
@@ -111,7 +114,7 @@ public class CommitProcessTracingIT
         {
             assertZeroCursor( cursorContext );
 
-            commitProcess.commit( new TransactionToApply( transaction, cursorContext ), NULL, EXTERNAL );
+            commitProcess.commit( new TransactionToApply( transaction, cursorContext, StoreCursors.NULL ), NULL, EXTERNAL );
 
             assertCursor( cursorContext, 2 );
         }
@@ -126,7 +129,7 @@ public class CommitProcessTracingIT
         {
             assertZeroCursor( cursorContext );
 
-            commitProcess.commit( new TransactionToApply( transaction, cursorContext ), NULL, EXTERNAL );
+            commitProcess.commit( new TransactionToApply( transaction, cursorContext, StoreCursors.NULL ), NULL, EXTERNAL );
 
             assertCursor( cursorContext, 3 );
         }

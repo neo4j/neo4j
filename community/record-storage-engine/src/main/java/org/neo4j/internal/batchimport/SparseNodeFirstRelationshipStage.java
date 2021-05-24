@@ -19,15 +19,19 @@
  */
 package org.neo4j.internal.batchimport;
 
+import java.util.function.Function;
+
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.cache.NodeType;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Updates sparse {@link NodeRecord node records} with relationship heads after relationship linking. Steps:
@@ -44,13 +48,14 @@ public class SparseNodeFirstRelationshipStage extends Stage
 {
     public static final String NAME = "Node --> Relationship";
 
-    public SparseNodeFirstRelationshipStage( Configuration config, NodeStore nodeStore, NodeRelationshipCache cache, PageCacheTracer pageCacheTracer )
+    public SparseNodeFirstRelationshipStage( Configuration config, NodeStore nodeStore, NodeRelationshipCache cache, PageCacheTracer pageCacheTracer,
+            Function<CursorContext,StoreCursors> storeCursorsCreator )
     {
         super( NAME, null, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES );
         add( new ReadNodeIdsByCacheStep( control(), config, cache, NodeType.NODE_TYPE_SPARSE ) );
         add( new ReadRecordsStep<>( control(), config, true, nodeStore, pageCacheTracer ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                () -> new SparseNodeFirstRelationshipProcessor( cache ), false, 1, pageCacheTracer ) );
+                () -> new SparseNodeFirstRelationshipProcessor( cache ), false, 1, pageCacheTracer, storeCursorsCreator ) );
         add( new UpdateRecordsStep<>( control(), config, nodeStore, new StorePrepareIdSequence(), pageCacheTracer ) );
     }
 }

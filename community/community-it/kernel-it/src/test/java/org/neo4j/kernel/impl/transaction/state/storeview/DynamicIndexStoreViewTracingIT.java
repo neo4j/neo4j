@@ -79,9 +79,11 @@ class DynamicIndexStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var neoStoreStoreView = new FullScanStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
+        var neoStoreStoreView =
+                new FullScanStoreView( lockService, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
         var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, locks, lockService, Config.defaults(),
-                indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ), storageEngine::newReader, NullLogProvider.nullLogProvider() );
+                indexDescriptor -> indexingService.getIndexProxy( indexDescriptor ), storageEngine::newReader, storageEngine::createStorageCursors,
+                NullLogProvider.nullLogProvider() );
         var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
                 new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );

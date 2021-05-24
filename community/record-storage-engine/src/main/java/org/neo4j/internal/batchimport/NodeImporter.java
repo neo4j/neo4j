@@ -144,7 +144,7 @@ public class NodeImporter extends EntityImporter
         if ( !hasLabelField )
         {
             long[] labelIds = labelTokenRepository.getOrCreateIds( labels, labelsCursor );
-            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), cursorContext, memoryTracker );
+            InlineNodeLabels.putSorted( nodeRecord, labelIds, null, nodeStore.getDynamicLabelStore(), cursorContext, storeCursors, memoryTracker );
         }
         labelsCursor = 0;
 

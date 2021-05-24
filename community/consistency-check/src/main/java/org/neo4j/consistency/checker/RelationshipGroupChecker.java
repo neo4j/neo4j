@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -88,6 +90,7 @@ class RelationshipGroupChecker implements Checker
         final long highId = groupStore.getHighId();
 
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_GROUPS_CHECKER_TAG ) );
+                var storeCursors = new CachedStoreCursors( neoStores, cursorContext );
                 RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), true, cursorContext ) )
         {
             for ( long id = 0; id < highId && !context.isCancelled(); id++ )
@@ -120,7 +123,7 @@ class RelationshipGroupChecker implements Checker
                         boolean hasAlreadySeenLastGroup = client.getBooleanFromCache( owningNode, CacheSlots.NodeLink.SLOT_HAS_LAST_GROUP );
                         if ( hasAlreadySeenLastGroup )
                         {
-                            reporter.forRelationshipGroup( record ).multipleLastGroups( context.recordLoader.node( owningNode, cursorContext ) );
+                            reporter.forRelationshipGroup( record ).multipleLastGroups( context.recordLoader.node( owningNode, storeCursors ) );
                         }
                         client.putToCacheSingle( owningNode, CacheSlots.NodeLink.SLOT_HAS_LAST_GROUP, 1 );
                     }
@@ -136,10 +139,11 @@ class RelationshipGroupChecker implements Checker
     private void checkToRelationship( long fromGroupId, long toGroupId, PageCacheTracer pageCacheTracer )
     {
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RELATIONSHIP_GROUPS_CHECKER_TAG ) );
+              var storeCursors = new CachedStoreCursors( neoStores, cursorContext );
               RecordReader<RelationshipGroupRecord> groupReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), true, cursorContext );
               RecordReader<RelationshipGroupRecord> comparativeReader = new RecordReader<>( neoStores.getRelationshipGroupStore(), false, cursorContext );
               RecordStorageReader reader = new RecordStorageReader( neoStores );
-              RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorContext ) )
+              RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorContext, storeCursors ) )
         {
             for ( long id = fromGroupId; id < toGroupId && !context.isCancelled(); id++ )
             {
@@ -157,7 +161,7 @@ class RelationshipGroupChecker implements Checker
                 }
                 checkValidToken( record, record.getType(), context.tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
                         ( group, token ) -> reporter.forRelationshipGroup( group ).illegalRelationshipType(),
-                        ( group, token ) -> reporter.forRelationshipGroup( group ).relationshipTypeNotInUse( token ), cursorContext );
+                        ( group, token ) -> reporter.forRelationshipGroup( group ).relationshipTypeNotInUse( token ), storeCursors );
 
                 if ( !NULL_REFERENCE.is( record.getNext() ) )
                 {
@@ -184,19 +188,19 @@ class RelationshipGroupChecker implements Checker
                         group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipNotFirstInChain(),
                         group -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipOfOtherType(),
                         ( group, rel ) -> reporter.forRelationshipGroup( group ).firstOutgoingRelationshipDoesNotShareNodeWithGroup( rel ),
-                        cursorContext );
+                        storeCursors );
                 checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstIn(), RelationshipGroupLink.IN,
                         group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotInUse(),
                         group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipNotFirstInChain(),
                         group -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipOfOtherType(),
                         ( group, rel ) -> reporter.forRelationshipGroup( group ).firstIncomingRelationshipDoesNotShareNodeWithGroup( rel ),
-                        cursorContext );
+                        storeCursors );
                 checkRelationshipGroupRelationshipLink( relationshipCursor, record, record.getFirstLoop(), RelationshipGroupLink.LOOP,
                         group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotInUse(),
                         group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipNotFirstInChain(),
                         group -> reporter.forRelationshipGroup( group ).firstLoopRelationshipOfOtherType(),
                         ( group, rel ) -> reporter.forRelationshipGroup( group ).firstLoopRelationshipDoesNotShareNodeWithGroup( rel ),
-                        cursorContext );
+                        storeCursors );
             }
 
         }
@@ -205,7 +209,7 @@ class RelationshipGroupChecker implements Checker
     private void checkRelationshipGroupRelationshipLink( RecordRelationshipScanCursor relationshipCursor, RelationshipGroupRecord record, long relationshipId,
             RelationshipGroupLink relationshipGroupLink, Consumer<RelationshipGroupRecord> reportRelationshipNotInUse,
             Consumer<RelationshipGroupRecord> reportRelationshipNotFirstInChain, Consumer<RelationshipGroupRecord> reportRelationshipOfOtherType,
-            BiConsumer<RelationshipGroupRecord,RelationshipRecord> reportNodeNotSharedWithGroup, CursorContext cursorContext )
+            BiConsumer<RelationshipGroupRecord,RelationshipRecord> reportNodeNotSharedWithGroup, StoreCursors storeCursors )
     {
         if ( !NULL_REFERENCE.is( relationshipId ) )
         {
@@ -229,7 +233,7 @@ class RelationshipGroupChecker implements Checker
                         relationshipCursor.getFirstNode() == record.getOwningNode() || relationshipCursor.getSecondNode() == record.getOwningNode();
                 if ( !hasCorrectNode )
                 {
-                    reportNodeNotSharedWithGroup.accept( record, context.recordLoader.relationship( relationshipCursor.getId(), cursorContext ) );
+                    reportNodeNotSharedWithGroup.accept( record, context.recordLoader.relationship( relationshipCursor.getId(), storeCursors ) );
                 }
             }
         }

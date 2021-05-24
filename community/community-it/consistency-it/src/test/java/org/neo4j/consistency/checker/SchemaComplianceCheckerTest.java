@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
@@ -101,7 +102,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
         // when
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ),
-                CursorContext.NULL, INSTANCE ) )
+                CursorContext.NULL, storeCursors, INSTANCE ) )
         {
             checker.checkContainsMandatoryProperties( new NodeRecord( nodeId ), labels, propertyValues, reporter::forNode );
         }
@@ -237,7 +238,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private void checkIndexed( long nodeId ) throws Exception
     {
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL, INSTANCE ) )
+                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL, storeCursors, INSTANCE ) )
         {
             NodeRecord node = loadNode( nodeId );
             checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( node, reporter::forNode ), reporter::forNode );
@@ -247,7 +248,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private void checkRelationshipIndexed( long relId ) throws Exception
     {
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL, INSTANCE ) )
+                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL, StoreCursors.NULL, INSTANCE ) )
         {
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             RelationshipRecord record;
@@ -267,7 +268,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), CursorContext.NULL ) )
         {
             MutableIntObjectMap<Value> values = new IntObjectHashMap<>();
-            reader.read( values, entity, primitiveReporter, CursorContext.NULL );
+            reader.read( values, entity, primitiveReporter, storeCursors  );
             return values;
         }
     }

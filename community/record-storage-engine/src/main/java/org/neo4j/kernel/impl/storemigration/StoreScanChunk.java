@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
@@ -39,11 +40,12 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     private long id;
     private long endId;
 
-    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext, MemoryTracker memoryTracker )
+    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, CursorContext cursorContext,
+            StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         this.cursor = cursor;
         this.requiresPropertyMigration = requiresPropertyMigration;
-        this.storePropertyCursor = storageReader.allocatePropertyCursor( cursorContext, memoryTracker );
+        this.storePropertyCursor = storageReader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker );
         this.cursorContext = cursorContext;
     }
 

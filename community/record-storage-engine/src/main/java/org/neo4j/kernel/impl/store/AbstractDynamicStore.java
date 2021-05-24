@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
@@ -226,11 +227,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     }
 
     Pair<byte[]/*header in the first record*/, byte[]/*all other bytes*/> readFullByteArray( Iterable<DynamicRecord> records, PropertyType propertyType,
-            CursorContext cursorContext )
+            StoreCursors storeCursors )
     {
         for ( DynamicRecord record : records )
         {
-            ensureHeavy( record, cursorContext );
+            ensureHeavy( record, storeCursors );
         }
 
         return readFullByteArrayFromHeavyRecords( records, propertyType );

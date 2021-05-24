@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.CRSTable;
@@ -372,8 +373,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
     }
 
-    public Object getArrayFor( Iterable<DynamicRecord> records, CursorContext cursorContext )
+    public Object getArrayFor( Iterable<DynamicRecord> records, StoreCursors storeCursors )
     {
-        return getRightArray( readFullByteArray( records, PropertyType.ARRAY , cursorContext ) ).asObject();
+        return getRightArray( readFullByteArray( records, PropertyType.ARRAY, storeCursors ) ).asObject();
     }
 }

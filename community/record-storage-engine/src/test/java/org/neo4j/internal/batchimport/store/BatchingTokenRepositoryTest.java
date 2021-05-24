@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.store;
 
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -30,25 +31,27 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.token.api.NamedToken;
 
 import static java.lang.Integer.parseInt;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,6 +63,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 @Neo4jLayoutExtension
 class BatchingTokenRepositoryTest
 {
+    public static final Condition<long[]> ORDERED_IDS_CONDITION = new Condition<>( BatchingTokenRepositoryTest::areOrdered, "Label ids should be ordered" );
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
@@ -77,7 +81,7 @@ class BatchingTokenRepositoryTest
         long[] ids = repo.getOrCreateIds( new String[] {"One", "Two", "One"} );
 
         // THEN
-        assertTrue( NodeLabelsField.isSane( ids ) );
+        assertThat( ids ).satisfies( ORDERED_IDS_CONDITION );
     }
 
     @Test
@@ -96,7 +100,7 @@ class BatchingTokenRepositoryTest
 
         // THEN
         assertArrayEquals( expected, ids );
-        assertTrue( NodeLabelsField.isSane( ids ) );
+        assertThat( ids ).satisfies( ORDERED_IDS_CONDITION );
     }
 
     @Test
@@ -120,7 +124,8 @@ class BatchingTokenRepositoryTest
     void shouldFlushNewTokens()
     {
         // given
-        try ( NeoStores stores = newNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
+        try ( NeoStores stores = newNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
+              var storeCursors = new CachedStoreCursors( stores, NULL ) )
         {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;
@@ -143,7 +148,7 @@ class BatchingTokenRepositoryTest
             }
             repo.flush( NULL );
 
-            List<NamedToken> tokens = tokenStore.getTokens( NULL );
+            List<NamedToken> tokens = tokenStore.getTokens( storeCursors );
             assertEquals( tokensPerRound * rounds, tokens.size() );
             for ( NamedToken token : tokens )
             {
@@ -170,5 +175,19 @@ class BatchingTokenRepositoryTest
     {
         return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openNeoStores( true, storeTypes );
+    }
+
+    public static boolean areOrdered( long[] labelIds )
+    {
+        long prev = -1;
+        for ( long labelId : labelIds )
+        {
+            if ( labelId <= prev )
+            {
+                return false;
+            }
+            prev = labelId;
+        }
+        return true;
     }
 }

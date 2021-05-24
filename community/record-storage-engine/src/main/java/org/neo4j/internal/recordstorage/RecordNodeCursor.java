@@ -39,6 +39,7 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.Math.min;
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.encodeDense;
@@ -49,6 +50,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private final NodeStore read;
     private final RelationshipGroupDegreesStore groupDegreesStore;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
     private PageCursor pageCursor;
@@ -63,12 +65,13 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private RecordLoadOverride loadMode;
 
     RecordNodeCursor( NodeStore read, RelationshipStore relationshipStore, RelationshipGroupStore groupStore, RelationshipGroupDegreesStore groupDegreesStore,
-            CursorContext cursorContext )
+            CursorContext cursorContext, StoreCursors storeCursors )
     {
         super( NO_ID );
         this.read = read;
         this.groupDegreesStore = groupDegreesStore;
         this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
         this.loadMode = RecordLoadOverride.none();
@@ -156,13 +159,13 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     @Override
     public long[] labels()
     {
-        return NodeLabelsField.get( this, read, cursorContext );
+        return NodeLabelsField.get( this, read, storeCursors );
     }
 
     @Override
     public boolean hasLabel( int label )
     {
-        return NodeLabelsField.hasLabel( this, read, cursorContext, label );
+        return NodeLabelsField.hasLabel( this, read, storeCursors, label );
     }
 
     @Override

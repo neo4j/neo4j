@@ -74,6 +74,7 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -325,8 +326,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     public void close()
     {
         phaseTracker.stop();
-        propertyAccessor.close();
-        cursorContext.close();
+        closeAllUnchecked( propertyAccessor, cursorContext );
     }
 
     void resetIndexCounts( CursorContext cursorContext )

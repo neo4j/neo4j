@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
@@ -63,6 +64,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 
 import static java.lang.Long.max;
@@ -234,9 +237,9 @@ public class ImportLogic implements Closeable
         switch ( input.idType() )
         {
         case STRING:
-            return IdMappers.strings( numberArrayFactory, input.groups(), pageCacheTracer, memoryTracker );
+            return IdMappers.strings( numberArrayFactory, input.groups(), memoryTracker );
         case INTEGER:
-            return IdMappers.longs( numberArrayFactory, input.groups(), pageCacheTracer, memoryTracker );
+            return IdMappers.longs( numberArrayFactory, input.groups(), memoryTracker );
         case ACTUAL:
             return IdMappers.actual();
         default:
@@ -295,12 +298,16 @@ public class ImportLogic implements Closeable
         if ( idMapper.needsPreparation() )
         {
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
-            PropertyValueLookup inputIdLookup = new NodeInputIdPropertyLookup( neoStore.getTemporaryPropertyStore() );
-            executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup, badCollector, memoryUsageStats ) );
+            try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "Id mapper preparation." ) );
+                  var cursors = new CachedStoreCursors( neoStore.getTemporaryNeoStores(), cursorContext ) )
+            {
+                PropertyValueLookup inputIdLookup = new NodeInputIdPropertyLookup( neoStore.getTemporaryPropertyStore(), cursors );
+                executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup, badCollector, memoryUsageStats ) );
+            }
             final LongIterator duplicateNodeIds = idMapper.leftOverDuplicateNodesIds();
             if ( duplicateNodeIds.hasNext() )
             {
-                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore, storeUpdateMonitor, pageCacheTracer ) );
+                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore.getNeoStores(), storeUpdateMonitor, pageCacheTracer ) );
             }
             updatePeakMemoryUsage();
         }
@@ -423,7 +430,8 @@ public class ImportLogic implements Closeable
         {
             // Set node nextRel fields for sparse nodes
             executeStage( new SparseNodeFirstRelationshipStage( nodeConfig, neoStore.getNodeStore(),
-                    nodeRelationshipCache, pageCacheTracer ) );
+                    nodeRelationshipCache, pageCacheTracer,
+                    cursorContext -> new CachedStoreCursors( neoStore.getNeoStores(), cursorContext ) ) );
         }
 
         // LINK backward
@@ -513,7 +521,8 @@ public class ImportLogic implements Closeable
      */
     public void buildCountsStore()
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( IMPORT_COUNT_STORE_REBUILD_TAG ) ) )
+        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( IMPORT_COUNT_STORE_REBUILD_TAG ) );
+              var storeCursors = new CachedStoreCursors( neoStore.getNeoStores(), cursorContext ) )
         {
             neoStore.buildCountsStore( new CountsBuilder()
             {
@@ -524,15 +533,17 @@ public class ImportLogic implements Closeable
                     nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getNodeStore().getHighId(), neoStore.getLabelRepository().getHighId(),
                             memoryTracker );
                     MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
+                    Function<CursorContext,StoreCursors> storeCursorsFactory =
+                            context -> new CachedStoreCursors( neoStore.getNeoStores(), context );
                     executeStage( new NodeCountsAndLabelIndexBuildStage( config, neoStore, nodeLabelsCache, neoStore.getNodeStore(),
                             neoStore.getLabelRepository().getHighId(),
                             updater, progressMonitor.startSection( "Nodes" ),
-                            indexImporterFactory, pageCacheTracer, memoryTracker, memoryUsageStats ) );
+                            indexImporterFactory, pageCacheTracer, storeCursorsFactory, memoryTracker, memoryUsageStats ) );
                     // Count label-[type]->label
                     executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, neoStore, nodeLabelsCache, neoStore.getRelationshipStore(),
                             neoStore.getLabelRepository().getHighId(),
                             neoStore.getRelationshipTypeRepository().getHighId(), updater, numberArrayFactory,
-                            progressMonitor.startSection( "Relationships" ),indexImporterFactory, pageCacheTracer, memoryTracker ) );
+                            progressMonitor.startSection( "Relationships" ),indexImporterFactory, pageCacheTracer, storeCursorsFactory, memoryTracker ) );
                 }
 
                 @Override
@@ -540,7 +551,7 @@ public class ImportLogic implements Closeable
                 {
                     return neoStore.getLastCommittedTransactionId();
                 }
-            }, pageCacheTracer, cursorContext, memoryTracker );
+            }, pageCacheTracer, cursorContext, storeCursors, memoryTracker );
         }
     }
 

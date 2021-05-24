@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.Log;
@@ -106,11 +107,10 @@ public class FullCheck
             String result = record.toString();
             if ( record instanceof SchemaRecord )
             {
-                try
+                try ( var storeCursors = new CachedStoreCursors( stores.nativeStores(), CursorContext.NULL ) )
                 {
                     SchemaRule schemaRule =
-                            SchemaStore.readSchemaRule( (SchemaRecord) record, stores.nativeStores().getPropertyStore(), stores.tokenHolders(),
-                                    CursorContext.NULL );
+                            SchemaStore.readSchemaRule( (SchemaRecord) record, stores.nativeStores().getPropertyStore(), stores.tokenHolders(), storeCursors );
                     result += " (" + schemaRule.userDescription( stores.tokenHolders() ) + ")";
                 }
                 catch ( Exception e )

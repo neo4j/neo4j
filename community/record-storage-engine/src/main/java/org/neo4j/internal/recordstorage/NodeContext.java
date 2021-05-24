@@ -23,7 +23,6 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -189,13 +188,13 @@ class NodeContext
         }
 
         RelationshipGroupRecord getOrLoadGroup( RelationshipGroupGetter relationshipGroupGetter, NodeRecord node, int type,
-                RecordAccess<RelationshipGroupRecord,Integer> relGroupRecords, CursorContext cursorContext )
+                RecordAccess<RelationshipGroupRecord,Integer> relGroupRecords )
         {
             if ( group == null )
             {
                 if ( !isNull( groupId ) )
                 {
-                    group = relGroupRecords.getOrLoad( groupId, null, cursorContext );
+                    group = relGroupRecords.getOrLoad( groupId, null );
                 }
                 else
                 {

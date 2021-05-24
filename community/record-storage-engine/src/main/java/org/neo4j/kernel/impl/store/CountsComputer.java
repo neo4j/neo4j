@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.function.Function;
+
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.Configuration;
@@ -32,14 +34,17 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 public class CountsComputer implements CountsBuilder
 {
+    private final NeoStores neoStores;
     private final NodeStore nodes;
     private final RelationshipStore relationships;
     private final int highLabelId;
@@ -54,26 +59,17 @@ public class CountsComputer implements CountsBuilder
     public CountsComputer( NeoStores stores, PageCache pageCache, PageCacheTracer pageCacheTracer, DatabaseLayout databaseLayout,
             MemoryTracker memoryTracker, Log log )
     {
-        this( stores.getMetaDataStore().getLastCommittedTransactionId(),
-              stores.getNodeStore(), stores.getRelationshipStore(),
-              (int) stores.getLabelTokenStore().getHighId(),
-              (int) stores.getRelationshipTypeTokenStore().getHighId(),
+        this( stores, stores.getMetaDataStore().getLastCommittedTransactionId(), stores.getNodeStore(), stores.getRelationshipStore(),
+                (int) stores.getLabelTokenStore().getHighId(), (int) stores.getRelationshipTypeTokenStore().getHighId(),
                 NumberArrayFactories.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR, log,
-                        databaseLayout.getDatabaseName() ),
-              databaseLayout, pageCacheTracer, memoryTracker );
+                                databaseLayout.getDatabaseName() ), databaseLayout, ProgressReporter.SILENT, pageCacheTracer, memoryTracker );
     }
 
-    private CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,
-            NumberArrayFactory numberArrayFactory, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
-    {
-        this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
-                numberArrayFactory, databaseLayout, ProgressReporter.SILENT, pageCacheTracer, memoryTracker );
-    }
-
-    public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,
-            NumberArrayFactory numberArrayFactory, DatabaseLayout databaseLayout, ProgressReporter progressMonitor,
+    public CountsComputer( NeoStores stores, long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId,
+            int highRelationshipTypeId, NumberArrayFactory numberArrayFactory, DatabaseLayout databaseLayout, ProgressReporter progressMonitor,
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
+        this.neoStores = stores;
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
         this.relationships = relationships;
@@ -109,12 +105,14 @@ public class CountsComputer implements CountsBuilder
             Configuration configuration = Configuration.defaultConfiguration( databaseLayout.databaseDirectory() );
 
             // Count nodes
+            Function<CursorContext,StoreCursors> storeCursorsFunction = cursorContext -> new CachedStoreCursors( neoStores, cursorContext );
             superviseDynamicExecution(
-                    new NodeCountsStage( configuration, cache, nodes, highLabelId, countsUpdater, progressMonitor, pageCacheTracer ) );
+                    new NodeCountsStage( configuration, cache, nodes, highLabelId, countsUpdater, progressMonitor, pageCacheTracer,
+                            storeCursorsFunction ) );
             // Count relationships
             superviseDynamicExecution(
                     new RelationshipCountsStage( configuration, cache, relationships, highLabelId, highRelationshipTypeId, countsUpdater,
-                            numberArrayFactory, progressMonitor, pageCacheTracer, memoryTracker ) );
+                            numberArrayFactory, progressMonitor, pageCacheTracer, storeCursorsFunction, memoryTracker ) );
         }
     }
 

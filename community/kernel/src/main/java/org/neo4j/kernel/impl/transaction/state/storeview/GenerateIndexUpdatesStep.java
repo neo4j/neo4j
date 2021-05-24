@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
@@ -39,6 +40,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
@@ -48,6 +50,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     private static final String TRACER_TAG_PREFIX = "indexPopulationStep:";
 
     private final StorageReader reader;
+    private final Function<CursorContext,StoreCursors> storeCursorsFactory;
     private final IntPredicate propertyKeyIdFilter;
     private final EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour;
     private final long[] relevantTokenIds;
@@ -60,7 +63,8 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     private final MemoryTracker memoryTracker;
     private final long maxBatchSizeBytes;
 
-    public GenerateIndexUpdatesStep( StageControl control, Configuration config, StorageReader reader, IntPredicate propertyKeyIdFilter,
+    public GenerateIndexUpdatesStep( StageControl control, Configuration config, StorageReader reader, Function<CursorContext,StoreCursors> storeCursorsFactory,
+            IntPredicate propertyKeyIdFilter,
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour, int[] entityTokenIdFilter,
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer,
             LongFunction<Lock> lockFunction, int parallelism, long maxBatchSizeBytes, boolean alsoWrite, PageCacheTracer cacheTracer,
@@ -68,6 +72,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     {
         super( control, "generate updates", config, parallelism, cacheTracer );
         this.reader = reader;
+        this.storeCursorsFactory = storeCursorsFactory;
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.entityCursorBehaviour = entityCursorBehaviour;
         this.relevantTokenIds = intsToLongs( entityTokenIdFilter );
@@ -85,8 +90,9 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     protected void process( long[] entityIds, BatchSender sender, CursorContext cursorContext ) throws Exception
     {
         GeneratedIndexUpdates updates = new GeneratedIndexUpdates( gatherPropertyUpdates, gatherTokenUpdates );
-        try ( CURSOR nodeCursor = entityCursorBehaviour.allocateEntityScanCursor( cursorContext );
-              StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorContext, memoryTracker ) )
+        try ( var storeCursors = storeCursorsFactory.apply( cursorContext );
+              CURSOR nodeCursor = entityCursorBehaviour.allocateEntityScanCursor( cursorContext, storeCursors );
+              StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker ) )
         {
             for ( long entityId : entityIds )
             {

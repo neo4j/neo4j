@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.api.TransactionQueue.Applier;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -77,7 +78,7 @@ class TransactionQueueTest
         TransactionToApply[] txs = new TransactionToApply[batchSize];
         for ( int i = 0; i < batchSize; i++ )
         {
-            queue.queue( txs[i] = new TransactionToApply( mock( TransactionRepresentation.class ), NULL ) );
+            queue.queue( txs[i] = new TransactionToApply( mock( TransactionRepresentation.class ), NULL, StoreCursors.NULL ) );
         }
 
         // THEN

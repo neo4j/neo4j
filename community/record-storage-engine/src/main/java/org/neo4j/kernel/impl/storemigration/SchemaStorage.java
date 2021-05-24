@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public interface SchemaStorage
 {
-    Iterable<SchemaRule> getAll( CursorContext cursorContext );
+    Iterable<SchemaRule> getAll( StoreCursors storeCursors );
 }

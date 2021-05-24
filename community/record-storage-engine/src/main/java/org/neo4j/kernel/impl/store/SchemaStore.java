@@ -39,7 +39,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -48,11 +47,11 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.PropertyKeyValue;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.schema.SchemaRuleMapifier.PROP_OWNING_CONSTRAINT;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.mapifySchemaRule;
@@ -145,39 +144,36 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         return ids[0];
     }
 
-    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders, CursorContext cursorContext )
+    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders, StoreCursors storeCursors )
             throws MalformedSchemaRuleException
     {
-        Map<String,Value> map = schemaRecordToMap( record, propertyStore, tokenHolders, cursorContext );
+        Map<String,Value> map = schemaRecordToMap( record, propertyStore, tokenHolders, storeCursors );
         return unmapifySchemaRule( record.getId(), map );
     }
 
     private static Map<String,Value> schemaRecordToMap( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders,
-            CursorContext cursorContext ) throws MalformedSchemaRuleException
+            StoreCursors storeCursors ) throws MalformedSchemaRuleException
     {
         Map<String,Value> props = new HashMap<>();
         PropertyRecord propRecord = propertyStore.newRecord();
         long nextProp = record.getNextProp();
-        try ( var propertyCursor = propertyStore.openPageCursorForWriting( nextProp, cursorContext ) )
+        while ( nextProp != NO_NEXT_PROPERTY.longValue() )
         {
-            while ( nextProp != NO_NEXT_PROPERTY.longValue() )
+            try
             {
-                try
-                {
-                    propertyStore.getRecordByCursor( nextProp, propRecord, RecordLoad.NORMAL, propertyCursor );
-                }
-                catch ( InvalidRecordException e )
-                {
-                    throw new MalformedSchemaRuleException(
-                            "Cannot read schema rule because it is referencing a property record (id " + nextProp + ") that is invalid: " + propRecord, e );
-                }
-                for ( PropertyBlock propertyBlock : propRecord )
-                {
-                    PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore, cursorContext );
-                    insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
-                }
-                nextProp = propRecord.getNextProp();
+                propertyStore.getRecordByCursor( nextProp, propRecord, RecordLoad.NORMAL, storeCursors.propertyCursor() );
             }
+            catch ( InvalidRecordException e )
+            {
+                throw new MalformedSchemaRuleException(
+                        "Cannot read schema rule because it is referencing a property record (id " + nextProp + ") that is invalid: " + propRecord, e );
+            }
+            for ( PropertyBlock propertyBlock : propRecord )
+            {
+                PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore, storeCursors );
+                insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
+            }
+            nextProp = propRecord.getNextProp();
         }
         if ( props.isEmpty() )
         {
@@ -231,10 +227,5 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
 
         return tokenisedMap;
-    }
-
-    private static void putStringProperty( Map<String,Value> map, String property, String value )
-    {
-        map.put( property, Values.utf8Value( value ) );
     }
 }

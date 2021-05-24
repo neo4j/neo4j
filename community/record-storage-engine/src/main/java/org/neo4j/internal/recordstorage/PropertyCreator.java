@@ -85,7 +85,7 @@ public class PropertyCreator
         long prop = primitive.getNextProp();
         while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (4)
         {
-            RecordProxy<PropertyRecord, PrimitiveRecord> proxy = propertyRecords.getOrLoad( prop, primitive, cursorContext );
+            RecordProxy<PropertyRecord, PrimitiveRecord> proxy = propertyRecords.getOrLoad( prop, primitive );
             PropertyRecord propRecord = proxy.forReadingLinkage();
             assert propRecord.inUse() : propRecord;
 
@@ -151,7 +151,7 @@ public class PropertyCreator
             {
                 // This isn't the first property record for the entity, re-shuffle the first one so that
                 // the new one becomes the first
-                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(), primitive, cursorContext ).forChangingLinkage();
+                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(), primitive ).forChangingLinkage();
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( freeHost.getId() );
                 freeHost.setNextProp( prevProp.getId() );

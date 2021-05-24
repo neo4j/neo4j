@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,7 +71,7 @@ class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
 
     private boolean nodeExists( long id )
     {
-        try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL ) )
+        try ( StorageNodeCursor node = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL ) )
         {
             node.single( id );
             return node.next();
@@ -79,7 +80,7 @@ class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
 
     private boolean relationshipExists( long id )
     {
-        try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor( NULL ) )
+        try ( StorageRelationshipScanCursor relationship = storageReader.allocateRelationshipScanCursor( NULL, StoreCursors.NULL ) )
         {
             relationship.single( id );
             return relationship.next();

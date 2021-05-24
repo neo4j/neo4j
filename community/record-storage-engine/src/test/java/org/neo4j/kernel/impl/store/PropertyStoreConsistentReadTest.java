@@ -24,10 +24,12 @@ import org.opentest4j.TestAbortedException;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -42,6 +44,12 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     protected PropertyStore getStore( NeoStores neoStores )
     {
         return neoStores.getPropertyStore();
+    }
+
+    @Override
+    protected PageCursor getCursor( StoreCursors storeCursors )
+    {
+        return storeCursors.propertyCursor();
     }
 
     @Override
@@ -74,15 +82,15 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     }
 
     @Override
-    protected PropertyRecord getLight( long id, PropertyStore store )
+    protected PropertyRecord getLight( long id, PropertyStore store, PageCursor pageCursor )
     {
         throw new TestAbortedException( "Getting a light non-existing property record will throw." );
     }
 
     @Override
-    protected PropertyRecord getHeavy( PropertyStore store, long id )
+    protected PropertyRecord getHeavy( PropertyStore store, long id, PageCursor pageCursor )
     {
-        PropertyRecord record = super.getHeavy( store, id );
+        PropertyRecord record = super.getHeavy( store, id, pageCursor );
         ensureHeavy( store, record );
         return record;
     }
@@ -91,7 +99,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     {
         for ( PropertyBlock propertyBlock : record )
         {
-            store.ensureHeavy( propertyBlock, NULL );
+            store.ensureHeavy( propertyBlock, StoreCursors.NULL );
         }
     }
 

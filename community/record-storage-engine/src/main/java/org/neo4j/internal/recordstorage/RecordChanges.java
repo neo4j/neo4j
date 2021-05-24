@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.LocalIntCounter;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
@@ -46,13 +47,16 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
     private final Loader<RECORD,ADDITIONAL> loader;
     private final MutableInt changeCounter;
     private final LoadMonitor loadMonitor;
+    private final StoreCursors storeCursors;
 
-    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker, LoadMonitor loadMonitor )
+    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker, LoadMonitor loadMonitor,
+            StoreCursors storeCursors )
     {
         this.loader = loader;
         this.recordChanges = newLongObjectMap( memoryTracker );
         this.changeCounter = new LocalIntCounter( globalCounter );
         this.loadMonitor = loadMonitor;
+        this.storeCursors = storeCursors;
     }
 
     @Override
@@ -70,13 +74,13 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
     }
 
     @Override
-    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load, CursorContext cursorContext )
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData, RecordLoad load )
     {
         RecordProxy<RECORD, ADDITIONAL> result = recordChanges.get( key );
         if ( result == null )
         {
-            RECORD record = loader.load( key, additionalData, load, cursorContext );
-            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorContext );
+            RECORD record = loader.load( key, additionalData, load );
+            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, storeCursors );
         }
         return result;
     }
@@ -85,7 +89,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
     public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext )
     {
         RecordChange<RECORD, ADDITIONAL> recordChange =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, cursorContext );
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, storeCursors );
         recordChanges.put( key, recordChange );
         return recordChange;
     }
@@ -106,7 +110,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
 
         RECORD record = loader.newUnused( key, additionalData );
         RecordChange<RECORD,ADDITIONAL> change =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, loadMonitor, cursorContext );
+                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, loadMonitor, storeCursors );
         recordChanges.put( key, change );
         return change;
     }
@@ -125,7 +129,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
 
         private final ADDITIONAL additionalData;
         private final LoadMonitor loadMonitor;
-        private final CursorContext cursorContext;
+        private final StoreCursors storeCursors;
         private final RECORD record;
         private final boolean created;
         private final long key;
@@ -135,7 +139,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
 
         public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, MutableInt changeCounter,
                 long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData, LoadMonitor loadMonitor,
-                CursorContext cursorContext )
+                StoreCursors storeCursors )
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;
@@ -145,7 +149,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
             this.created = created;
             this.additionalData = additionalData;
             this.loadMonitor = loadMonitor;
-            this.cursorContext = cursorContext;
+            this.storeCursors = storeCursors;
         }
 
         @Override
@@ -169,7 +173,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         @Override
         public RECORD forChangingData()
         {
-            ensureHeavy( cursorContext );
+            ensureHeavy( storeCursors );
             return prepareForChange();
         }
 
@@ -191,14 +195,14 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
             return this.record;
         }
 
-        private void ensureHeavy( CursorContext cursorContext )
+        private void ensureHeavy( StoreCursors storeCursors )
         {
             if ( !created )
             {
-                loader.ensureHeavy( record, cursorContext );
+                loader.ensureHeavy( record, storeCursors );
                 if ( before != null )
                 {
-                    loader.ensureHeavy( before, cursorContext );
+                    loader.ensureHeavy( before, storeCursors );
                 }
             }
         }
@@ -212,7 +216,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         @Override
         public RECORD forReadingData()
         {
-            ensureHeavy( cursorContext );
+            ensureHeavy( storeCursors );
             return this.record;
         }
 

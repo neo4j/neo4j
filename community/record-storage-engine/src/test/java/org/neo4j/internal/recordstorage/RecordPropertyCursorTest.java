@@ -83,7 +83,7 @@ public class RecordPropertyCursorTest
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, getRecordFormats(), NullLogProvider.getInstance(),
                 PageCacheTracer.NULL, writable(), Sets.immutable.empty() ).openAllNeoStores( true );
-        creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( NULL ), NULL, INSTANCE );
+        creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser(), NULL, INSTANCE );
         owner = neoStores.getNodeStore().newRecord();
     }
 

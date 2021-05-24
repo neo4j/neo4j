@@ -27,10 +27,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.storageengine.api.PropertyKeyValue;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -227,7 +227,7 @@ public class PropertyBlock
                 result.append( ",firstDynamic=" ).append( getSingleValueLong() );
                 break;
             default:
-                Object value = type.value( this, null, CursorContext.NULL ).asObject();
+                Object value = type.value( this, null, null ).asObject();
                 if ( value != null && value.getClass().isArray() )
                 {
                     int length = Array.getLength( value );
@@ -275,15 +275,15 @@ public class PropertyBlock
         return Arrays.equals( valueBlocks, other.valueBlocks );
     }
 
-    public Value newPropertyValue( PropertyStore propertyStore, CursorContext cursorContext )
+    public Value newPropertyValue( PropertyStore propertyStore, StoreCursors cursors )
     {
-        return getType().value( this, propertyStore, cursorContext );
+        return getType().value( this, propertyStore, cursors );
     }
 
-    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore, CursorContext cursorContext )
+    public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore, StoreCursors cursors )
     {
         int propertyKeyId = getKeyIndexId();
-        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore, cursorContext ) );
+        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore, cursors ) );
     }
 
     public static int keyIndexId( long valueBlock )

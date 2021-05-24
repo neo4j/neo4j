@@ -68,7 +68,7 @@ public class RelationshipGroupGetter
         RecordProxy<RelationshipGroupRecord, Integer> current;
         while ( !isNull( groupId ) )
         {
-            current = relGroupRecords.getOrLoad( groupId, null, cursorContext );
+            current = relGroupRecords.getOrLoad( groupId, null );
             RelationshipGroupRecord record = current.forReadingData();
             monitor.visit( record );
             record.setPrev( previousGroupId ); // not persistent so not a "change"
@@ -120,7 +120,7 @@ public class RelationshipGroupGetter
                 // if there's' a group after the found insertion point we need to set its prev to this new group
                 if ( !isNull( closestPrevious.getNext() ) )
                 {
-                    relGroupRecords.getOrLoad( closestPrevious.getNext(), null, cursorContext ).forChangingLinkage().setPrev( id );
+                    relGroupRecords.getOrLoad( closestPrevious.getNext(), null ).forChangingLinkage().setPrev( id );
                 }
 
                 record.setNext( closestPrevious.getNext() );
@@ -133,7 +133,7 @@ public class RelationshipGroupGetter
                 long firstGroupId = node.getNextRel();
                 if ( !isNull( firstGroupId ) )
                 {   // There are others, make way for this new group
-                    RelationshipGroupRecord previousFirstRecord = relGroupRecords.getOrLoad( firstGroupId, type, cursorContext ).forReadingData();
+                    RelationshipGroupRecord previousFirstRecord = relGroupRecords.getOrLoad( firstGroupId, type ).forReadingData();
                     record.setNext( previousFirstRecord.getId() );
                     previousFirstRecord.setPrev( id );
                 }
@@ -237,7 +237,7 @@ public class RelationshipGroupGetter
         @Override
         public RecordProxy<RelationshipGroupRecord,Integer> group( long groupId )
         {
-            return recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorContext );
+            return recordChanges.getRelGroupRecords().getOrLoad( groupId, null );
         }
     }
 }

@@ -57,6 +57,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -113,7 +114,7 @@ class BatchingTransactionAppenderRotationIT
         List<StorageCommand> commands = createCommands();
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation( commands );
         transactionRepresentation.setHeader( new byte[0], 0, 0, 0, 0, ANONYMOUS );
-        return new TransactionToApply( transactionRepresentation, NULL );
+        return new TransactionToApply( transactionRepresentation, NULL, StoreCursors.NULL );
     }
 
     private static List<StorageCommand> createCommands()

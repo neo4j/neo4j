@@ -22,12 +22,11 @@ package org.neo4j.internal.recordstorage;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RecordChangesTest
@@ -41,13 +40,13 @@ class RecordChangesTest
         }
 
         @Override
-        public NodeRecord load( long id, Object additional, RecordLoad load, CursorContext cursorContext )
+        public NodeRecord load( long id, Object additional, RecordLoad load )
         {
             return new NodeRecord( id );
         }
 
         @Override
-        public void ensureHeavy( NodeRecord o, CursorContext cursorContext )
+        public void ensureHeavy( NodeRecord o, StoreCursors storeCursors )
         {
 
         }
@@ -63,13 +62,14 @@ class RecordChangesTest
     void shouldCountChanges()
     {
         // Given
-        RecordChanges<NodeRecord, Object> change = new RecordChanges<>( loader, new MutableInt(), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
+        RecordChanges<NodeRecord,Object> change =
+                new RecordChanges<>( loader, new MutableInt(), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL );
 
         // When
-        change.getOrLoad( 1, null, NULL ).forChangingData();
-        change.getOrLoad( 1, null, NULL ).forChangingData();
-        change.getOrLoad( 2, null, NULL ).forChangingData();
-        change.getOrLoad( 3, null, NULL ).forReadingData();
+        change.getOrLoad( 1, null ).forChangingData();
+        change.getOrLoad( 1, null ).forChangingData();
+        change.getOrLoad( 2, null ).forChangingData();
+        change.getOrLoad( 3, null ).forReadingData();
 
         // Then
         assertThat( change.changeSize() ).isEqualTo( 2 );

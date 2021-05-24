@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
@@ -115,5 +116,5 @@ public interface CommandCreationContext extends AutoCloseable
      * Initialise command creation context for specific transactional cursor context
      * @param cursorContext transaction cursor context
      */
-    void initialize( CursorContext cursorContext );
+    void initialize( CursorContext cursorContext, StoreCursors storeCursors );
 }

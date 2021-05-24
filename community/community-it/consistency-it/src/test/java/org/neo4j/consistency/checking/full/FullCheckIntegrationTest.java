@@ -117,6 +117,7 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -257,7 +258,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node() ).initialize( false, -1, false, -1, 0 );
-                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null, NULL, INSTANCE );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null, NULL, StoreCursors.NULL, INSTANCE );
                 tx.create( nodeRecord );
             }
         } );

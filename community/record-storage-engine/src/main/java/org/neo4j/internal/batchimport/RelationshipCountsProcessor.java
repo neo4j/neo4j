@@ -27,6 +27,7 @@ import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.internal.recordstorage.RelationshipCounter.MANUAL_INCREMENTER;
 import static org.neo4j.internal.recordstorage.RelationshipCounter.labelsCountsLength;
@@ -71,7 +72,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     }
 
     @Override
-    public boolean process( RelationshipRecord record, CursorContext cursorContext )
+    public boolean process( RelationshipRecord record, StoreCursors storeCursors )
     {
         counter.process( record );
         return false;

@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Bits;
 
 import static java.lang.String.format;
@@ -85,15 +86,15 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
     }
 
     @Override
-    public void ensureHeavy( NodeRecord node, CursorContext cursorContext )
+    public void ensureHeavy( NodeRecord node, StoreCursors storeCursors )
     {
         if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( node.getLabelField() ) )
         {
-            ensureHeavy( node, NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() ), cursorContext );
+            ensureHeavy( node, NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() ), storeCursors );
         }
     }
 
-    public void ensureHeavy( NodeRecord node, long firstDynamicLabelRecord, CursorContext cursorContext )
+    public void ensureHeavy( NodeRecord node, long firstDynamicLabelRecord, StoreCursors storeCursors )
     {
         if ( !node.isLight() )
         {
@@ -101,9 +102,10 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         }
 
         // Load any dynamic labels and populate the node record
-        try ( var dynamicCursor = dynamicLabelStore.openPageCursorForReading( 0, cursorContext ) )
+        try
         {
-            node.setLabelField( node.getLabelField(), dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, dynamicCursor ) );
+            node.setLabelField( node.getLabelField(),
+                    dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, storeCursors.dynamicLabelStoreCursor() ) );
         }
         catch ( InvalidRecordException e )
         {

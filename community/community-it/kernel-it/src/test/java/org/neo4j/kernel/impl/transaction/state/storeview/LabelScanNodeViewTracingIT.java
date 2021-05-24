@@ -79,8 +79,8 @@ class LabelScanNodeViewTracingIT
         var cacheTracer = new DefaultPageCacheTracer();
         IndexProxy indexProxy = indexingService.getIndexProxy( findTokenIndex() );
 
-        var scan = new LabelIndexedNodeStoreScan( Config.defaults(), storageEngine.newReader(), lockService, indexProxy.newTokenReader(),
-                new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
+        var scan = new LabelIndexedNodeStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, lockService,
+                indexProxy.newTokenReader(), new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
                 INSTANCE );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 

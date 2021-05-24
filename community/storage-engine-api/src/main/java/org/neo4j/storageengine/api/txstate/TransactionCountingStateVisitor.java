@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.EagerDegrees;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -44,13 +45,13 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private final StorageRelationshipScanCursor relationshipCursor;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
-            ReadableTransactionState txState, CountsDelta counts, CursorContext cursorContext )
+            ReadableTransactionState txState, CountsDelta counts, CursorContext cursorContext, StoreCursors storeCursors )
     {
         super( next );
         this.txState = txState;
         this.counts = counts;
-        this.nodeCursor = storageReader.allocateNodeCursor( cursorContext );
-        this.relationshipCursor = storageReader.allocateRelationshipScanCursor( cursorContext );
+        this.nodeCursor = storageReader.allocateNodeCursor( cursorContext, storeCursors );
+        this.relationshipCursor = storageReader.allocateRelationshipScanCursor( cursorContext, storeCursors );
     }
 
     @Override

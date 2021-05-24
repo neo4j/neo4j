@@ -47,6 +47,7 @@ import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -285,21 +286,15 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public boolean nodeExists( long id, CursorContext cursorContext )
+    public boolean nodeExists( long id, PageCursor pageCursor )
     {
-        try ( PageCursor pageCursor = nodeStore.openPageCursorForReading( id, cursorContext ) )
-        {
-            return nodeStore.isInUse( id, pageCursor );
-        }
+        return nodeStore.isInUse( id, pageCursor );
     }
 
     @Override
-    public boolean relationshipExists( long id, CursorContext cursorContext )
+    public boolean relationshipExists( long id, PageCursor pageCursor )
     {
-        try ( PageCursor pageCursor = relationshipStore.openPageCursorForReading( id, cursorContext ) )
-        {
-            return relationshipStore.isInUse( id, pageCursor );
-        }
+        return relationshipStore.isInUse( id, pageCursor );
     }
 
     @Override
@@ -328,19 +323,19 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public RecordNodeCursor allocateNodeCursor( CursorContext cursorContext )
+    public RecordNodeCursor allocateNodeCursor( CursorContext cursorContext, StoreCursors storeCursors )
     {
-        return new RecordNodeCursor( nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext );
+        return new RecordNodeCursor( nodeStore, relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext, storeCursors );
     }
 
     @Override
-    public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext )
+    public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor( CursorContext cursorContext, StoreCursors storeCursors )
     {
         return new RecordRelationshipTraversalCursor( relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext );
     }
 
     @Override
-    public RecordRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext )
+    public RecordRelationshipScanCursor allocateRelationshipScanCursor( CursorContext cursorContext, StoreCursors storeCursors )
     {
         return new RecordRelationshipScanCursor( relationshipStore, cursorContext );
     }
@@ -358,7 +353,7 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, MemoryTracker memoryTracker )
+    public StoragePropertyCursor allocatePropertyCursor( CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         return new RecordPropertyCursor( propertyStore, cursorContext, memoryTracker );
     }

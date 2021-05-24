@@ -137,7 +137,7 @@ public class AllStoreHolder extends Read
         }
 
         AccessMode mode = ktx.securityContext().mode();
-        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.cursorContext() );
+        boolean existsInNodeStore = storageReader.nodeExists( reference, ktx.storeCursors().nodeCursor() );
 
         if ( mode.allowsTraverseAllLabels() )
         {
@@ -239,7 +239,7 @@ public class AllStoreHolder extends Read
             {
                 TransactionState txState = ktx.txState();
                 CursorContext cursorContext = ktx.cursorContext();
-                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts, cursorContext ) )
+                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts, cursorContext, ktx.storeCursors() ) )
                 {
                     txState.accept( countingVisitor );
                 }
@@ -353,7 +353,7 @@ public class AllStoreHolder extends Read
             try
             {
                 TransactionState txState = ktx.txState();
-                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts, cursorContext ) )
+                try ( var countingVisitor = new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts, cursorContext, ktx.storeCursors() ) )
                 {
                     txState.accept( countingVisitor );
                 }
@@ -404,7 +404,7 @@ public class AllStoreHolder extends Read
         }
         AccessMode mode = ktx.securityContext().mode();
         CursorContext cursorContext = ktx.cursorContext();
-        boolean existsInRelStore = storageReader.relationshipExists( reference, cursorContext );
+        boolean existsInRelStore = storageReader.relationshipExists( reference, ktx.storeCursors().relationshipCursor() );
 
         if ( mode.allowsTraverseAllRelTypes() )
         {

@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.function.Function;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
@@ -33,6 +35,7 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.lock.LockType.SHARED;
 
@@ -45,14 +48,14 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class RelationshipStoreScan extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor>
 {
-    public RelationshipStoreScan( Config config, StorageReader storageReader, LockService locks,
+    public RelationshipStoreScan( Config config, StorageReader storageReader, Function<CursorContext,StoreCursors> storeCursorsFactory, LockService locks,
             @Nullable TokenScanConsumer relationshipTypeScanConsumer,
             @Nullable PropertyScanConsumer propertyScanConsumer,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, storageReader.relationshipsGetCount(), relationshipTypeIds, propertyKeyIdFilter, propertyScanConsumer,
-                relationshipTypeScanConsumer, id -> locks.acquireRelationshipLock( id, SHARED ), new RelationshipCursorBehaviour( storageReader ),
-                parallelWrite, scheduler, cacheTracer, memoryTracker );
+        super( config, storageReader, storeCursorsFactory, storageReader.relationshipsGetCount(), relationshipTypeIds, propertyKeyIdFilter,
+                propertyScanConsumer, relationshipTypeScanConsumer, id -> locks.acquireRelationshipLock( id, SHARED ),
+                new RelationshipCursorBehaviour( storageReader ), parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 }

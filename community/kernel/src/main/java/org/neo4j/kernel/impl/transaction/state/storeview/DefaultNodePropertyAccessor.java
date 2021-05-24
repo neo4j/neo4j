@@ -26,6 +26,7 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -33,14 +34,16 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 public class DefaultNodePropertyAccessor implements NodePropertyAccessor
 {
     private final StorageReader reader;
+    private final StoreCursors storeCursors;
     private final StorageNodeCursor nodeCursor;
     private final StoragePropertyCursor propertyCursor;
 
-    public DefaultNodePropertyAccessor( StorageReader reader, CursorContext cursorContext, MemoryTracker memoryTracker )
+    public DefaultNodePropertyAccessor( StorageReader reader, CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
     {
         this.reader = reader;
-        nodeCursor = reader.allocateNodeCursor( cursorContext );
-        propertyCursor = reader.allocatePropertyCursor( cursorContext, memoryTracker );
+        this.storeCursors = storeCursors;
+        nodeCursor = reader.allocateNodeCursor( cursorContext, storeCursors );
+        propertyCursor = reader.allocatePropertyCursor( cursorContext, storeCursors, memoryTracker );
     }
 
     @Override
@@ -64,6 +67,6 @@ public class DefaultNodePropertyAccessor implements NodePropertyAccessor
     @Override
     public void close()
     {
-        IOUtils.closeAllUnchecked( nodeCursor, propertyCursor, reader );
+        IOUtils.closeAllUnchecked( nodeCursor, propertyCursor, reader, storeCursors );
     }
 }

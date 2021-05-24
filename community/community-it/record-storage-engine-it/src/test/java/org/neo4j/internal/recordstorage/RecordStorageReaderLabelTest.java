@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +48,7 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         int labelId2 = labelId( label2 );
 
         // THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         assertEquals( newSetWith( labelId1, labelId2 ), newSetWith( nodeCursor.labels() ) );
@@ -61,8 +62,8 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
         int namePropertyKeyId = propertyKeyId( "name" );
 
         // WHEN THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL );
-        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, INSTANCE );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor( NULL, StoreCursors.NULL );
+        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor( NULL, StoreCursors.NULL, INSTANCE );
         nodeCursor.single( nodeId );
         assertTrue( nodeCursor.next() );
         nodeCursor.properties( propertyCursor );

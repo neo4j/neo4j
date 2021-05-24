@@ -51,6 +51,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Value;
@@ -122,7 +123,7 @@ class FullScanStoreViewTest
             Long nodeId = invocation.getArgument( 0 );
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
-        storeView = new FullScanStoreView( locks, storageEngine::newReader, Config.defaults(), jobScheduler );
+        storeView = new FullScanStoreView( locks, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
         propertyAccessor = storeView.newPropertyAccessor( CursorContext.NULL, INSTANCE );
         reader = storageEngine.newReader();
     }
@@ -229,7 +230,7 @@ class FullScanStoreViewTest
     }
 
     @Test
-    void shouldLockRelationshipsWhileReadingThem() throws Exception
+    void shouldLockRelationshipsWhileReadingThem()
     {
         // given
         StoreScan storeScan = storeView.visitRelationships( new int[]{relTypeId}, id -> id == relPropertyKeyId, new TestPropertyScanConsumer(), null,
@@ -266,8 +267,8 @@ class FullScanStoreViewTest
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         var propertyScanConsumer = new TestPropertyScanConsumer();
-        var scan = new NodeStoreScan( Config.defaults(), storageEngine.newReader(), locks, null, propertyScanConsumer, new int[]{labelId}, id -> true, false,
-                jobScheduler, pageCacheTracer, INSTANCE );
+        var scan = new NodeStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, locks, null, propertyScanConsumer,
+                new int[]{labelId}, id -> true, false, jobScheduler, pageCacheTracer, INSTANCE );
         scan.run( NO_EXTERNAL_UPDATES );
 
         assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( 2 );
@@ -284,8 +285,9 @@ class FullScanStoreViewTest
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         var propertyScanConsumer = new TestPropertyScanConsumer();
-        var scan = new RelationshipStoreScan( Config.defaults(), storageEngine.newReader(), locks, null, propertyScanConsumer, new int[]{relTypeId}, id -> true,
-                false, jobScheduler, pageCacheTracer, INSTANCE );
+        var scan =
+                new RelationshipStoreScan( Config.defaults(), storageEngine.newReader(), storageEngine::createStorageCursors, locks, null, propertyScanConsumer,
+                        new int[]{relTypeId}, id -> true, false, jobScheduler, pageCacheTracer, INSTANCE );
         scan.run( NO_EXTERNAL_UPDATES );
 
         assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( 2 );
@@ -295,7 +297,7 @@ class FullScanStoreViewTest
     }
 
     @Test
-    void processAllRelationshipTypes() throws Exception
+    void processAllRelationshipTypes()
     {
         // Given
         TestTokenScanConsumer tokenScanConsumer = new TestTokenScanConsumer();

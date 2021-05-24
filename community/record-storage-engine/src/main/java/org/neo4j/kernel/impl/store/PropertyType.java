@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Arrays;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -35,7 +35,7 @@ public enum PropertyType
     BOOL( 1 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return Values.booleanValue( getValue( block.getSingleValueLong() ) );
         }
@@ -48,7 +48,7 @@ public enum PropertyType
     BYTE( 2 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return Values.byteValue( block.getSingleValueByte() );
         }
@@ -56,7 +56,7 @@ public enum PropertyType
     SHORT( 3 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return Values.shortValue( block.getSingleValueShort() );
         }
@@ -64,7 +64,7 @@ public enum PropertyType
     CHAR( 4 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return Values.charValue( (char) block.getSingleValueShort() );
         }
@@ -72,7 +72,7 @@ public enum PropertyType
     INT( 5 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return Values.intValue( block.getSingleValueInt() );
         }
@@ -80,7 +80,7 @@ public enum PropertyType
     LONG( 6 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             long firstBlock = block.getSingleValueBlock();
             long value = valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
@@ -102,7 +102,7 @@ public enum PropertyType
     FLOAT( 7 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
         }
@@ -110,7 +110,7 @@ public enum PropertyType
     DOUBLE( 8 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return Values.doubleValue( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
         }
@@ -124,9 +124,9 @@ public enum PropertyType
     STRING( 9 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors storeCursors )
         {
-            return store.getTextValueFor( block, cursorContext );
+            return store.getTextValueFor( block, storeCursors );
         }
 
         @Override
@@ -138,9 +138,9 @@ public enum PropertyType
     ARRAY( 10 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
-            return store.getArrayFor( block, cursorContext );
+            return store.getArrayFor( block, cursors );
         }
 
         @Override
@@ -174,7 +174,7 @@ public enum PropertyType
     SHORT_STRING( 11 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return LongerShortString.decode( block );
         }
@@ -188,7 +188,7 @@ public enum PropertyType
     SHORT_ARRAY( 12 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return ShortArray.decode( block );
         }
@@ -202,7 +202,7 @@ public enum PropertyType
     GEOMETRY( 13 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return GeometryType.decode( block );
         }
@@ -216,7 +216,7 @@ public enum PropertyType
     TEMPORAL( 14 )
     {
         @Override
-        public Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext )
+        public Value value( PropertyBlock block, PropertyStore store, StoreCursors cursors )
         {
             return TemporalType.decode( block );
         }
@@ -263,7 +263,7 @@ public enum PropertyType
         return (byte) type;
     }
 
-    public abstract Value value( PropertyBlock block, PropertyStore store, CursorContext cursorContext );
+    public abstract Value value( PropertyBlock block, PropertyStore store, StoreCursors storeCursors );
 
     public static PropertyType getPropertyTypeOrNull( long propBlock )
     {

@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.memory.MemoryTracker;
@@ -68,8 +69,9 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
         // If not all data can fit in memory then do multiple passes (node id range)
 
         RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
-        try ( RecordStorageReader storageReader = new RecordStorageReader( neoStores );
-                StorageRelationshipTraversalCursor traversalCursor = storageReader.allocateRelationshipTraversalCursor( cursorContext );
+        try ( var storeCursors = new CachedStoreCursors( neoStores, cursorContext );
+                RecordStorageReader storageReader = new RecordStorageReader( neoStores );
+                StorageRelationshipTraversalCursor traversalCursor = storageReader.allocateRelationshipTraversalCursor( cursorContext, storeCursors );
                 PageCursor groupCursor = groupStore.openPageCursorForReadingWithPrefetching( 0, cursorContext ) )
         {
             RelationshipGroupRecord groupRecord = groupStore.newRecord();

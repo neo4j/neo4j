@@ -23,6 +23,7 @@ import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
@@ -38,24 +39,23 @@ class NodeInputIdPropertyLookup implements PropertyValueLookup
 {
     private final PropertyStore propertyStore;
     private final PropertyRecord propertyRecord;
+    private final StoreCursors storeCursors;
 
-    NodeInputIdPropertyLookup( PropertyStore propertyStore )
+    NodeInputIdPropertyLookup( PropertyStore propertyStore, StoreCursors storeCursors )
     {
         this.propertyStore = propertyStore;
         this.propertyRecord = propertyStore.newRecord();
+        this.storeCursors = storeCursors;
     }
 
     @Override
-    public Object lookupProperty( long nodeId, CursorContext cursorContext )
+    public Object lookupProperty( long nodeId )
     {
-        try ( var cursor = propertyStore.openPageCursorForReading( nodeId, cursorContext ) )
-        {
-            propertyStore.getRecordByCursor( nodeId, propertyRecord, CHECK, cursor );
-        }
+        propertyStore.getRecordByCursor( nodeId, propertyRecord, CHECK, storeCursors.propertyCursor() );
         if ( !propertyRecord.inUse() )
         {
             return null;
         }
-        return propertyRecord.iterator().next().newPropertyValue( propertyStore, cursorContext ).asObject();
+        return propertyRecord.iterator().next().newPropertyValue( propertyStore, storeCursors ).asObject();
     }
 }

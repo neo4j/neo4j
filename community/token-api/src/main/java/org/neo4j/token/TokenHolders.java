@@ -20,7 +20,7 @@
 package org.neo4j.token;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.token.api.TokensLoader;
@@ -58,11 +58,11 @@ public class TokenHolders implements TokenNameLookup
         return relationshipTypeTokens;
     }
 
-    public void setInitialTokens( TokensLoader loader, CursorContext cursorContext )
+    public void setInitialTokens( TokensLoader loader, StoreCursors storeCursors )
     {
-        propertyKeyTokens().setInitialTokens( loader.getPropertyKeyTokens( cursorContext ) );
-        labelTokens().setInitialTokens( loader.getLabelTokens( cursorContext ) );
-        relationshipTypeTokens().setInitialTokens( loader.getRelationshipTypeTokens( cursorContext ) );
+        propertyKeyTokens().setInitialTokens( loader.getPropertyKeyTokens( storeCursors ) );
+        labelTokens().setInitialTokens( loader.getLabelTokens( storeCursors ) );
+        relationshipTypeTokens().setInitialTokens( loader.getRelationshipTypeTokens( storeCursors ) );
     }
 
     @Override

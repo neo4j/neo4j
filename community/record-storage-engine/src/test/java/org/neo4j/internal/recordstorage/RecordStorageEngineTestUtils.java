@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -41,6 +42,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.token.TokenHolders;
@@ -84,11 +86,12 @@ public class RecordStorageEngineTestUtils
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         CursorContext cursorContext = CursorContext.NULL;
+        StoreCursors storeCursors = new CachedStoreCursors( neoStores, cursorContext );
         try ( RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( EmptyMemoryTracker.INSTANCE ) )
         {
-            commandCreationContext.initialize( cursorContext );
+            commandCreationContext.initialize( cursorContext, storeCursors );
             storageEngine.createCommands( commands, txState, storageEngine.newReader(), commandCreationContext, ResourceLocker.IGNORE, LockTracer.NONE,
-                    metaDataStore.getLastCommittedTransactionId(), t -> t, cursorContext, EmptyMemoryTracker.INSTANCE );
+                    metaDataStore.getLastCommittedTransactionId(), t -> t, cursorContext, storeCursors, EmptyMemoryTracker.INSTANCE );
             storageEngine.apply( new GroupOfCommands( metaDataStore.nextCommittingTransactionId(), commands.toArray( new StorageCommand[0] ) ),
                     TransactionApplicationMode.EXTERNAL );
         }

@@ -52,6 +52,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -86,6 +87,7 @@ public final class KernelTransactionFactory
         StorageReader storageReader = mock( StorageReader.class );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         when( storageEngine.newCommandCreationContext( any() ) ).thenReturn( mock( CommandCreationContext.class ) );
+        when( storageEngine.createStorageCursors( any() ) ).thenReturn( StoreCursors.NULL );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );

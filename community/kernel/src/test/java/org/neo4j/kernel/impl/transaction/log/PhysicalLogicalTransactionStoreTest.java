@@ -60,6 +60,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -302,7 +303,7 @@ class PhysicalLogicalTransactionStoreTest
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleTestCommand() );
         transaction.setHeader( additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1, ANONYMOUS );
-        appender.append( new TransactionToApply( transaction, NULL ), LogAppendEvent.NULL );
+        appender.append( new TransactionToApply( transaction, NULL, StoreCursors.NULL ), LogAppendEvent.NULL );
     }
 
     private static List<StorageCommand> singleTestCommand()

@@ -30,7 +30,6 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -176,7 +175,7 @@ class StageTest
                     private final ChaosMonkey chaosMonkey = new ChaosMonkey();
 
                     @Override
-                    protected void process( Object batch, BatchSender sender, CursorContext cursorContext ) throws Throwable
+                    protected void process( Object batch, BatchSender sender, CursorContext cursorContext )
                     {
                         chaosMonkey.makeChaos();
                         // don't pass the batch further, i.e. end of the line

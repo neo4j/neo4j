@@ -30,16 +30,19 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -77,28 +80,28 @@ class NodeImporterTest
                       INSTANCE ) )
         {
             stores.createNew();
-
-            // when
-            int numberOfLabels = 50;
-            long nodeId = 0;
-            try ( NodeImporter importer = new NodeImporter( stores, idMapper, new DataImporter.Monitor(), NULL, INSTANCE ) )
+            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL ) )
             {
-                importer.id( nodeId );
-                String[] labels = new String[numberOfLabels];
-                for ( int i = 0; i < labels.length; i++ )
+                // when
+                int numberOfLabels = 50;
+                long nodeId = 0;
+                try ( NodeImporter importer = new NodeImporter( stores, idMapper, new DataImporter.Monitor(), NULL, INSTANCE ) )
                 {
-                    labels[i] = "Label" + i;
+                    importer.id( nodeId );
+                    String[] labels = new String[numberOfLabels];
+                    for ( int i = 0; i < labels.length; i++ )
+                    {
+                        labels[i] = "Label" + i;
+                    }
+                    importer.labels( labels );
+                    importer.endOfEntity();
                 }
-                importer.labels( labels );
-                importer.endOfEntity();
-            }
 
-            // then
-            NodeStore nodeStore = stores.getNodeStore();
-            try ( var nodeCursor = nodeStore.openPageCursorForReading( nodeId, CursorContext.NULL ) )
-            {
+                // then
+                NodeStore nodeStore = stores.getNodeStore();
+                PageCursor nodeCursor = storeCursors.nodeCursor();
                 NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
-                long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, CursorContext.NULL );
+                long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
                 assertEquals( numberOfLabels, labels.length );
             }
         }
@@ -115,36 +118,38 @@ class NodeImporterTest
         {
             stores.createNew();
 
-            int numberOfLabels = 50;
-            long nodeId = 0;
-            var cacheTracer = new DefaultPageCacheTracer();
-            try ( NodeImporter importer = new NodeImporter( stores, IdMappers.actual(), new DataImporter.Monitor(), cacheTracer, INSTANCE ) )
+            try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL ) )
             {
-                importer.id( nodeId );
-                String[] labels = new String[numberOfLabels];
-                for ( int i = 0; i < labels.length; i++ )
+                int numberOfLabels = 50;
+                long nodeId = 0;
+                var cacheTracer = new DefaultPageCacheTracer();
+                try ( NodeImporter importer = new NodeImporter( stores, IdMappers.actual(), new DataImporter.Monitor(), cacheTracer, INSTANCE ) )
                 {
-                    labels[i] = "Label" + i;
+                    importer.id( nodeId );
+                    String[] labels = new String[numberOfLabels];
+                    for ( int i = 0; i < labels.length; i++ )
+                    {
+                        labels[i] = "Label" + i;
+                    }
+                    importer.labels( labels );
+                    importer.property( "a", randomAscii( 10 ) );
+                    importer.property( "b", randomAscii( 100 ) );
+                    importer.property( "c", randomAscii( 1000 ) );
+                    importer.endOfEntity();
                 }
-                importer.labels( labels );
-                importer.property( "a", randomAscii( 10 ) );
-                importer.property( "b", randomAscii( 100 ) );
-                importer.property( "c", randomAscii( 1000 ) );
-                importer.endOfEntity();
-            }
 
-            NodeStore nodeStore = stores.getNodeStore();
-            try ( var cursor = nodeStore.openPageCursorForReading( nodeId, CursorContext.NULL ) )
-            {
-                NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, cursor );
-                long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, CursorContext.NULL );
+                NodeStore nodeStore = stores.getNodeStore();
+
+                PageCursor nodeCursor = storeCursors.nodeCursor();
+                NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
+                long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
                 assertEquals( numberOfLabels, labels.length );
-            }
 
-            assertThat( cacheTracer.faults() ).isEqualTo( 2 );
-            assertThat( cacheTracer.pins() ).isEqualTo( 13 );
-            assertThat( cacheTracer.unpins() ).isEqualTo( 13 );
-            assertThat( cacheTracer.hits() ).isEqualTo( 11 );
+                assertThat( cacheTracer.faults() ).isEqualTo( 2 );
+                assertThat( cacheTracer.pins() ).isEqualTo( 13 );
+                assertThat( cacheTracer.unpins() ).isEqualTo( 13 );
+                assertThat( cacheTracer.hits() ).isEqualTo( 11 );
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
@@ -34,10 +35,10 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
     private final StorageRelationshipTraversalCursor relationshipCursor;
 
-    BatchRelationshipIterable( RecordStorageReader storageReader, long nodeId, CursorContext cursorContext )
+    BatchRelationshipIterable( RecordStorageReader storageReader, long nodeId, CursorContext cursorContext, StoreCursors storeCursors )
     {
-        relationshipCursor = storageReader.allocateRelationshipTraversalCursor( cursorContext );
-        RecordNodeCursor nodeCursor = storageReader.allocateNodeCursor( cursorContext );
+        relationshipCursor = storageReader.allocateRelationshipTraversalCursor( cursorContext, storeCursors );
+        RecordNodeCursor nodeCursor = storageReader.allocateNodeCursor( cursorContext, storeCursors );
         nodeCursor.single( nodeId );
         if ( !nodeCursor.next() )
         {

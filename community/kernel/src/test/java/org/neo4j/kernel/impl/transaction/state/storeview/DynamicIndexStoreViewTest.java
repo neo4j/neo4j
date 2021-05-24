@@ -39,6 +39,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -222,14 +223,14 @@ class DynamicIndexStoreViewTest
     private DynamicIndexStoreView dynamicIndexStoreView( StorageReader cursors, IndexProxyProvider indexingService )
     {
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
-        return dynamicIndexStoreView(
-                cursors, indexingService, new FullScanStoreView( NO_LOCK_SERVICE, storageReaderSupplier, Config.defaults(), jobScheduler ) );
+        return dynamicIndexStoreView( cursors, indexingService,
+                new FullScanStoreView( NO_LOCK_SERVICE, storageReaderSupplier, any -> StoreCursors.NULL, Config.defaults(), jobScheduler ) );
     }
 
     private static DynamicIndexStoreView dynamicIndexStoreView( StorageReader cursors, IndexProxyProvider indexingService, FullScanStoreView fullScanStoreView )
     {
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
-        return new DynamicIndexStoreView(
-                fullScanStoreView, NO_LOCKS, NO_LOCK_SERVICE, Config.defaults(), indexingService, storageReaderSupplier, NullLogProvider.getInstance() );
+        return new DynamicIndexStoreView( fullScanStoreView, NO_LOCKS, NO_LOCK_SERVICE, Config.defaults(), indexingService, storageReaderSupplier,
+                any -> StoreCursors.NULL, NullLogProvider.getInstance() );
     }
 }

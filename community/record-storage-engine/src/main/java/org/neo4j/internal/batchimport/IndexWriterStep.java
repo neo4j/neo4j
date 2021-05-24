@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport;
 
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -35,6 +36,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
@@ -53,15 +55,18 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
 
     protected IndexImporter indexImporter(
             IndexConfig indexConfig, IndexImporterFactory importerFactory, BatchingNeoStores neoStores, EntityType entityType,
-            MemoryTracker memoryTracker, CursorContext cursorContext )
+            MemoryTracker memoryTracker, CursorContext cursorContext, Function<CursorContext,StoreCursors> storeCursorsFactory )
     {
         var schemaStore = neoStores.getNeoStores().getSchemaStore();
         var metaDataStore = neoStores.getNeoStores().getMetaDataStore();
         var tokenHolders = neoStores.getTokenHolders();
         var schemaRuleAccess = getSchemaRuleAccess( schemaStore, tokenHolders, metaDataStore );
-        var index = findIndex( entityType, schemaRuleAccess )
-                .orElseGet( () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext ) );
-        return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
+        try ( var storeCursors = storeCursorsFactory.apply( cursorContext ) )
+        {
+            var index = findIndex( entityType, schemaRuleAccess, storeCursors ).orElseGet(
+                    () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext ) );
+            return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
+        }
     }
 
     private static IndexDescriptor createIndex(
@@ -83,9 +88,9 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
         }
     }
 
-    private static Optional<IndexDescriptor> findIndex( EntityType entityType, SchemaRuleAccess schemaRule )
+    private static Optional<IndexDescriptor> findIndex( EntityType entityType, SchemaRuleAccess schemaRule, StoreCursors storeCursors )
     {
-        Iterator<IndexDescriptor> descriptors = schemaRule.indexesGetAll( CursorContext.NULL );
+        Iterator<IndexDescriptor> descriptors = schemaRule.indexesGetAll( storeCursors );
         return stream( descriptors ).filter( index -> index.schema().entityType() == entityType && index.isTokenIndex() ).findFirst();
     }
 }

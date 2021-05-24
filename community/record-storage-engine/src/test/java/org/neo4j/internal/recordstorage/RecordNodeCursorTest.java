@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.SingleDegree;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +72,7 @@ class RecordNodeCursorTest
             record.initialize( record.getId() == 200, 1L, false, 1L, 0L );
             return null;
         } ).when( nodeStore ).nextRecordByCursor( any(), any(), any() );
-        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore, null, null, null, NULL );
+        RecordNodeCursor cursor = new RecordNodeCursor( nodeStore, null, null, null, NULL, StoreCursors.NULL );
 
         // when
         cursor.scan();
@@ -111,7 +112,7 @@ class RecordNodeCursorTest
         } ).when( relationshipStore ).getRecordByCursor( eq( relationshipId ), any(), any(), any() );
         RelationshipGroupStore groupStore = mock( RelationshipGroupStore.class );
         RelationshipGroupDegreesStore groupDegreesStore = mock( RelationshipGroupDegreesStore.class );
-        RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, relationshipStore, groupStore, groupDegreesStore, NULL );
+        RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, relationshipStore, groupStore, groupDegreesStore, NULL, StoreCursors.NULL );
 
         // when
         nodeCursor.single( nodeId );

@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StubStorageCursors;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -119,8 +120,8 @@ class NodeStoreScanTest
     void shouldSeeZeroProgressBeforeRunStarted()
     {
         // given
-        NodeStoreScan scan = new NodeStoreScan( Config.defaults(), cursors, locks, mock( TokenScanConsumer.class ), mock( PropertyScanConsumer.class ),
-                allPossibleLabelIds, k -> true, false, jobScheduler, NULL, INSTANCE );
+        NodeStoreScan scan = new NodeStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, locks, mock( TokenScanConsumer.class ),
+                mock( PropertyScanConsumer.class ), allPossibleLabelIds, k -> true, false, jobScheduler, NULL, INSTANCE );
 
         // when
         PopulationProgress progressBeforeStarted = scan.getProgress();
@@ -167,8 +168,8 @@ class NodeStoreScanTest
         var tokenConsumer = new TestTokenScanConsumer();
         var propertyConsumer = new TestPropertyScanConsumer();
         NodeStoreScan scan =
-                new NodeStoreScan( Config.defaults(), cursors, locks, tokenConsumer, propertyConsumer, labelFilter, propertyKeyFilter, false, jobScheduler,
-                        NULL, INSTANCE );
+                new NodeStoreScan( Config.defaults(), cursors, any -> StoreCursors.NULL, locks, tokenConsumer, propertyConsumer, labelFilter, propertyKeyFilter,
+                        false, jobScheduler, NULL, INSTANCE );
         assertThat( scan.getProgress().getCompleted() ).isZero();
 
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );

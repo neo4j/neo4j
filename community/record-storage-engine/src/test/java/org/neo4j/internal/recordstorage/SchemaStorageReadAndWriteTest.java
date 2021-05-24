@@ -37,7 +37,9 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -78,6 +80,7 @@ class SchemaStorageReadAndWriteTest
 
     private SchemaStorage storage;
     private NeoStores neoStores;
+    private CachedStoreCursors storeCursors;
 
     @BeforeAll
     void before() throws Exception
@@ -93,7 +96,8 @@ class SchemaStorageReadAndWriteTest
         TokenHolders tokens = new TokenHolders( new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        tokens.setInitialTokens( StoreTokens.allTokens( neoStores ), NULL );
+        storeCursors = new CachedStoreCursors( neoStores, NULL );
+        tokens.setInitialTokens( StoreTokens.allTokens( neoStores ), storeCursors );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.propertyKeyTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.labelTokens().size() ) );
         tokenIdCounter.set( Math.max( tokenIdCounter.get(), tokens.relationshipTypeTokens().size() ) );
@@ -103,6 +107,7 @@ class SchemaStorageReadAndWriteTest
     @AfterAll
     void after()
     {
+        storeCursors.close();
         neoStores.close();
     }
 
@@ -111,7 +116,7 @@ class SchemaStorageReadAndWriteTest
     {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
         storage.writeSchemaRule( schemaRule, NULL, INSTANCE );
-        SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId(), NULL );
+        SchemaRule returnedRule = storage.loadSingleSchemaRule( schemaRule.getId(), storeCursors );
         assertTrue( RandomSchema.schemaDeepEquals( returnedRule, schemaRule ),
                 () -> "\n" + returnedRule + "\nwas not equal to\n" + schemaRule );
     }
