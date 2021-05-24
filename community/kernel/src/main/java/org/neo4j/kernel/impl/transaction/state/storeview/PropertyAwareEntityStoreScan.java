@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -45,12 +46,13 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private volatile boolean continueScanning;
     private long count;
     private long totalCount;
+    private final EntityType entityType;
     private final IntPredicate propertyKeyIdFilter;
     private final LongFunction<Lock> lockFunction;
     private PhaseTracker phaseTracker;
 
     protected PropertyAwareEntityStoreScan( StorageReader storageReader, long totalEntityCount, IntPredicate propertyKeyIdFilter,
-            LongFunction<Lock> lockFunction )
+            LongFunction<Lock> lockFunction, EntityType entityType )
     {
         this.storageReader = storageReader;
         this.entityCursor = allocateCursor( storageReader );
@@ -58,6 +60,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;
+        this.entityType = entityType;
         this.phaseTracker = PhaseTracker.nullInstance;
     }
 
@@ -82,7 +85,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             return false;
         }
         boolean hasRelevantProperty = false;
-        propertyCursor.init( cursor.propertiesReference() );
+        propertyCursor.init( cursor.propertiesReference(), cursor.entityReference(), entityType );
         while ( propertyCursor.next() )
         {
             int propertyKeyId = propertyCursor.propertyKey();

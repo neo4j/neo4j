@@ -20,11 +20,14 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.apache.commons.lang3.exception.CloneFailedException;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.GeometryType;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -34,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
@@ -49,6 +53,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
+
 class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
 {
     private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
@@ -62,6 +68,12 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     private PageCursor stringPage;
     private PageCursor arrayPage;
     private boolean open;
+    private int numSeenPropertyRecords;
+    private long first;
+    private long ownerReference;
+    // Only instantiated used when crossing a certain threshold of the traversed property chain
+    private MutableLongSet cycleDetection;
+    private EntityType ownerEntityType;
 
     RecordPropertyCursor( PropertyStore read )
     {
@@ -70,7 +82,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     }
 
     @Override
-    public void init( long reference )
+    public void init( long reference, long ownerReference, EntityType ownerEntityType )
     {
         if ( getId() != NO_ID )
         {
@@ -79,6 +91,8 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
 
         //Set to high value to force a read
         this.block = Integer.MAX_VALUE;
+        this.ownerReference = ownerReference;
+        this.ownerEntityType = ownerEntityType;
         if ( reference != NO_ID )
         {
             if ( page == null )
@@ -89,6 +103,9 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
 
         // Store state
         this.next = reference;
+        this.first = reference;
+        this.numSeenPropertyRecords = 0;
+        this.cycleDetection = null;
         this.open = true;
     }
 
@@ -134,6 +151,20 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
             property( this, next, page );
             next = getNextProp();
             block = INITIAL_POSITION;
+
+            if ( ++numSeenPropertyRecords >= CYCLE_DETECTION_THRESHOLD )
+            {
+                if ( cycleDetection == null )
+                {
+                    cycleDetection = LongSets.mutable.empty();
+                }
+                if ( !cycleDetection.add( next ) )
+                {
+                    throw new InconsistentDataReadException(
+                            "Aborting property reading due to detected chain cycle, starting at property record id:%d from owner %s:%d", first,
+                            ownerEntityType, ownerReference );
+                }
+            }
         }
     }
 
@@ -149,6 +180,10 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
         {
             open = false;
             clear();
+            numSeenPropertyRecords = 0;
+            first = NO_ID;
+            ownerReference = NO_ID;
+            cycleDetection = null;
         }
     }
 
@@ -200,7 +235,15 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     @Override
     public Value propertyValue()
     {
-        return readValue();
+        try
+        {
+            return readValue();
+        }
+        catch ( InvalidRecordException | InconsistentDataReadException e )
+        {
+            throw new InconsistentDataReadException( e, "Unable to read property value in record:%d, starting at property record id:%d from owner %s:%d",
+                    getId(), first, ownerEntityType, ownerReference );
+        }
     }
 
     private Value readValue()

@@ -28,11 +28,23 @@ import org.neo4j.values.storable.ValueGroup;
 public interface StoragePropertyCursor extends StorageCursor
 {
     /**
-     * Initializes this cursor to that reading property data at the given {@code reference}.
+     * Initializes this cursor to read property data at the given {@code reference}.
      *
      * @param reference reference to start reading properties at.
      */
-    void init( long reference );
+    default void init( long reference )
+    {
+        init( reference, -1, null );
+    }
+
+    /**
+     * Initializes this cursor to read property data at the given {@code reference}.
+     *
+     * @param reference reference to start reading properties at.
+     * @param ownerReference reference to the owner.
+     * @param ownerEntityType type of owner
+     */
+    void init( long reference, long ownerReference, EntityType ownerEntityType );
 
     /**
      * @return property key of the property this cursor currently is placed at.

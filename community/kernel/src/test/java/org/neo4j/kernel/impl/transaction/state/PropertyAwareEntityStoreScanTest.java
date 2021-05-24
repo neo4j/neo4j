@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -76,7 +77,7 @@ public class PropertyAwareEntityStoreScanTest
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
         final PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException> scan =
                 new PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException>( new RecordStorageReader( neoStores ), total, IntPredicates.alwaysTrue(),
-                        id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
+                        id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ), EntityType.NODE )
                 {
                     private int read;
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storemigration.participant;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -30,16 +31,18 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
     protected final StoragePropertyCursor storePropertyCursor;
+    private final EntityType entityType;
     protected final T cursor;
     private final boolean requiresPropertyMigration;
     private long id;
     private long endId;
 
-    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration )
+    StoreScanChunk( T cursor, RecordStorageReader storageReader, boolean requiresPropertyMigration, EntityType entityType )
     {
         this.cursor = cursor;
         this.requiresPropertyMigration = requiresPropertyMigration;
         this.storePropertyCursor = storageReader.allocatePropertyCursor();
+        this.entityType = entityType;
     }
 
     void visitProperties( T record, InputEntityVisitor visitor )
@@ -50,7 +53,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
         }
         else
         {
-            storePropertyCursor.init( record.propertiesReference() );
+            storePropertyCursor.init( record.propertiesReference(), record.entityReference(), entityType );
             while ( storePropertyCursor.next() )
             {
                 // add key as int here as to have the importer use the token id

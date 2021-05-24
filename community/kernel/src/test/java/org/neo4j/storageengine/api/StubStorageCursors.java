@@ -687,7 +687,7 @@ public class StubStorageCursors implements StorageReader
         private Iterator<Map.Entry<String,Value>> iterator;
 
         @Override
-        public void init( long reference )
+        public void init( long reference, long ownerReference, EntityType entityType )
         {
             PropertyData properties = StubStorageCursors.this.propertyData.get( reference );
             iterator = properties != null ? properties.properties.entrySet().iterator() : emptyIterator();

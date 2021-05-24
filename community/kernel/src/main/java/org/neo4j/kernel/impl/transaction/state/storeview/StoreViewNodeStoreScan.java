@@ -25,6 +25,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -42,7 +43,8 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter )
     {
-        super( storageReader, storageReader.nodesGetCount(), propertyKeyIdFilter, id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) );
+        super( storageReader, storageReader.nodesGetCount(), propertyKeyIdFilter, id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ),
+                EntityType.NODE );
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.labelIds = labelIds;

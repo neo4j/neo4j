@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -34,6 +37,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.InconsistentDataReadException;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
@@ -53,6 +57,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
@@ -370,6 +375,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             buffer.clear();
         }
         DynamicRecord record = store.newRecord();
+        // Only instantiated if number of dynamic records reaches a certain threshold, at which point it's instantiated
+        // and the set of dynamic IDs is observed for cycles to allow aborting the read if cycle detected.
+        MutableLongSet seenDynamicIds = null;
+        long firstReference = reference;
+        int count = 0;
         do
         {
             //We need to load forcefully here since otherwise we can have inconsistent reads
@@ -382,6 +392,20 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
                 buffer = grow( buffer, data.length );
             }
             buffer.put( data, 0, data.length );
+
+            // An arbitrarily high threshold so that it's very likely only hit on actual chain cycle
+            if ( ++count >= CYCLE_DETECTION_THRESHOLD )
+            {
+                if ( seenDynamicIds == null )
+                {
+                    seenDynamicIds = LongSets.mutable.empty();
+                }
+                if ( !seenDynamicIds.add( reference ) )
+                {
+                    throw new InconsistentDataReadException( "Chain cycle detected in dynamic property value store %s starting at id:%d", store,
+                            firstReference );
+                }
+            }
         }
         while ( reference != NO_ID );
         return buffer;

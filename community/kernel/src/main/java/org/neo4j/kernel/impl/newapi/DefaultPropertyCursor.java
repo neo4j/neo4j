@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
@@ -53,7 +54,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         assert nodeReference != NO_ID;
 
-        init( reference, read, assertOpen );
+        init( reference, nodeReference, EntityType.NODE, read, assertOpen );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -67,7 +68,7 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         assert relationshipReference != NO_ID;
 
-        init( reference, read, assertOpen );
+        init( reference, relationshipReference, EntityType.RELATIONSHIP, read, assertOpen );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -79,7 +80,7 @@ public class DefaultPropertyCursor implements PropertyCursor
 
     void initGraph( long reference, Read read, AssertOpen assertOpen )
     {
-        init( reference, read, assertOpen );
+        init( reference, NO_ID, EntityType.GRAPH, read, assertOpen );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -92,11 +93,11 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
     }
 
-    private void init( long reference, Read read, AssertOpen assertOpen )
+    private void init( long reference, long ownerReference, EntityType ownerType, Read read, AssertOpen assertOpen )
     {
         this.assertOpen = assertOpen;
         this.read = read;
-        this.storeCursor.init( reference );
+        this.storeCursor.init( reference, ownerReference, ownerType );
     }
 
     @Override

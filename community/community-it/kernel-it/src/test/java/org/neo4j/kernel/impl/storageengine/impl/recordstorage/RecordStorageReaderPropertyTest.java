@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.lang.reflect.Array;
 
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.values.storable.Value;
@@ -96,7 +97,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
 
                 try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor() )
                 {
-                    props.init( node.propertiesReference() );
+                    props.init( node.propertiesReference(), node.entityReference(), EntityType.NODE );
                     if ( props.next() )
                     {
                         Value propVal = props.propertyValue();

@@ -24,6 +24,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
@@ -36,7 +37,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter )
     {
         super( storageReader, storageReader.relationshipsGetCount(), propertyKeyIdFilter,
-                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ) );
+                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ), EntityType.RELATIONSHIP );
         this.relationshipTypeIds = relationshipTypeIds;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
     }

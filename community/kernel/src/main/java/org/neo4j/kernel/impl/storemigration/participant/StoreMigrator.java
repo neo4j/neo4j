@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -620,7 +621,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         NodeRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( storageReader.allocateNodeCursor(), storageReader, requiresPropertyMigration );
+            super( storageReader.allocateNodeCursor(), storageReader, requiresPropertyMigration, EntityType.NODE );
         }
 
         @Override
@@ -642,7 +643,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         RelationshipRecordChunk( RecordStorageReader storageReader, boolean requiresPropertyMigration )
         {
-            super( storageReader.allocateRelationshipScanCursor(), storageReader, requiresPropertyMigration );
+            super( storageReader.allocateRelationshipScanCursor(), storageReader, requiresPropertyMigration, EntityType.RELATIONSHIP );
         }
 
         @Override
