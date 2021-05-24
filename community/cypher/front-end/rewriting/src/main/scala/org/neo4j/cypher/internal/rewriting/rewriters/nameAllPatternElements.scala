@@ -25,24 +25,24 @@ import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSema
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-case class nameAllPatternElements(allNameGenerators: AllNameGenerators) extends Rewriter {
+case class nameAllPatternElements(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = namingRewriter.apply(that)
 
   private def namingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case pattern: NodePattern if pattern.variable.isEmpty =>
-      val syntheticName = allNameGenerators.nodeNameGenerator.nextName
+      val syntheticName = anonymousVariableNameGenerator.nextName
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
     case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
-      val syntheticName = allNameGenerators.relNameGenerator.nextName
+      val syntheticName = anonymousVariableNameGenerator.nextName
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
   }, stopper = {
     case _: ShortestPathExpression => true
@@ -54,7 +54,7 @@ object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFactory
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           allNameGenerators: AllNameGenerators): Rewriter = nameAllPatternElements(allNameGenerators)
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = nameAllPatternElements(anonymousVariableNameGenerator)
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

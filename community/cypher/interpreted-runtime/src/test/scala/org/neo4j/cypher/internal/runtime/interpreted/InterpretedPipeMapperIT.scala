@@ -69,7 +69,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SingleSeekArg
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -87,9 +87,9 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
       "existing3" -> RelTypeId(3)))
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AllNameGenerators()))
+  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AnonymousVariableNameGenerator()))
   private val pipeMapper =
-    InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator], new AllNameGenerators())(semanticTable)
+    InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator], new AnonymousVariableNameGenerator())(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =
     PipeTreeBuilder(pipeMapper).build(logicalPlan)

@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
@@ -72,7 +72,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   executionModel: ExecutionModel,
                                   debugOptions: CypherDebugOptions,
                                   enablePlanningRelationshipIndexes: Boolean = false,
-                                  allNameGenerators: AllNameGenerators,
+                                  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
                                  ) {
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =

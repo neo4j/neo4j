@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -88,5 +88,5 @@ object desugarMapProjection extends StepSequencer.Step with ASTRewriterFactory {
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           allNameGenerators: AllNameGenerators): Rewriter = desugarMapProjection(semanticState)
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = desugarMapProjection(semanticState)
 }

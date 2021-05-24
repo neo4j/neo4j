@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.RangeConvertor
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.exceptions.InternalException
 
 object PatternConverters {
@@ -81,7 +81,7 @@ object PatternConverters {
   }
 
   implicit class PatternDestructor(val pattern: Pattern) extends AnyVal {
-    def destructed(allNameGenerators: AllNameGenerators): DestructResult = {
+    def destructed(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): DestructResult = {
       pattern.patternParts.foldLeft(DestructResult.empty) {
         case (acc, NamedPatternPart(ident, sps@ShortestPaths(element, single))) =>
           val destructedElement: DestructResult = element.destructed
@@ -93,7 +93,7 @@ object PatternConverters {
 
         case (acc, sps@ShortestPaths(element, single)) =>
           val destructedElement = element.destructed
-          val newShortest = ShortestPathPattern(Some(allNameGenerators.pathNameGenerator.nextName), destructedElement.rels.head, single)(sps)
+          val newShortest = ShortestPathPattern(Some(anonymousVariableNameGenerator.nextName), destructedElement.rels.head, single)(sps)
           acc.
             addNodeId(destructedElement.nodeIds:_*).
             addShortestPaths(newShortest)

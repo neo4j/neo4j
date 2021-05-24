@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.util.helpers
 
-import org.neo4j.cypher.internal.util.AllNameGenerators.generators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
@@ -28,8 +28,7 @@ object NameDeduplicator {
     s""" {2}($generatorName)(\\d+)""".r
 
   val UNNAMED_PATTERN: Regex = {
-    val gens = generators.map(_.generatorName).mkString("|")
-    nameGeneratorRegex(gens)
+    nameGeneratorRegex(AnonymousVariableNameGenerator.generatorName)
   }
 
   private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)""".r

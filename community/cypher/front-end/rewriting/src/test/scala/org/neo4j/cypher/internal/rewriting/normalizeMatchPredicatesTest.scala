@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerCha
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
@@ -40,7 +40,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
 
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
     normalizeHasLabelsAndHasType(semanticState),
-    normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(new AllNameGenerators), LabelPredicateNormalizer)),
+    normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(new AnonymousVariableNameGenerator), LabelPredicateNormalizer)),
   )
 
   def parseForRewriting(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None))
@@ -160,24 +160,24 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
   test("move single property from var length relationship to the where clause") {
     assertRewrite(
       "MATCH (n)-[r* {prop: 42}]->(b) RETURN n",
-      "MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID0` in r where `  FRESHID0`.prop = 42) RETURN n")
+      "MATCH (n)-[r*]->(b) WHERE ALL(`  UNNAMED0` in r where `  UNNAMED0`.prop = 42) RETURN n")
   }
 
   test("move multiple properties from var length relationship to the where clause") {
     assertRewrite(
       "MATCH (n)-[r* {prop: 42, p: 'aaa'}]->(b) RETURN n",
-      "MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID0` in r where `  FRESHID0`.prop = 42 AND `  FRESHID0`.p = 'aaa') RETURN n")
+      "MATCH (n)-[r*]->(b) WHERE ALL(`  UNNAMED0` in r where `  UNNAMED0`.prop = 42 AND `  UNNAMED0`.p = 'aaa') RETURN n")
   }
 
   test("varlength with labels") {
     assertRewrite(
       "MATCH (a:Artist)-[r:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *",
-      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  FRESHID0` in r where `  FRESHID0`.year = 1988) AND b:Artist  RETURN *")
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = 1988) AND b:Artist  RETURN *")
   }
 
   test("varlength with labels and parameters") {
     assertRewrite(
       "MATCH (a:Artist)-[r:WORKED_WITH* { year: $foo }]->(b:Artist) RETURN *",
-      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  FRESHID0` in r where `  FRESHID0`.year = $foo)  AND b:Artist RETURN *")
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  UNNAMED0` in r where `  UNNAMED0`.year = $foo)  AND b:Artist RETURN *")
   }
 }

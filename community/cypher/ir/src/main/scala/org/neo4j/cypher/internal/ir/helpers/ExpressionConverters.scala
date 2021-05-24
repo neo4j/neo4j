@@ -41,14 +41,14 @@ import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
 object ExpressionConverters {
-  private def normalizer(allNameGenerators: AllNameGenerators) = MatchPredicateNormalizerChain(PropertyPredicateNormalizer(allNameGenerators), LabelPredicateNormalizer)
+  private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = MatchPredicateNormalizerChain(PropertyPredicateNormalizer(anonymousVariableNameGenerator), LabelPredicateNormalizer)
 
   private def getQueryGraphArguments(expr: Expression, availableSymbols: Set[String]) = {
     val dependencies = expr.dependencies.map(_.name)
@@ -65,17 +65,17 @@ object ExpressionConverters {
    */
   def asQueryGraph(exp: PatternExpression,
                    availableSymbols: Set[String],
-                   allNameGenerators: AllNameGenerators): QueryGraph = {
-    val addUniquenessPredicates = AddUniquenessPredicates(allNameGenerators)
+                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator): QueryGraph = {
+    val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
     val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
-      case pattern: AnyRef if normalizer(allNameGenerators).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(allNameGenerators).extract(pattern)
+      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
       case _                                                          => identity
     }
 
-    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(allNameGenerators).replace)))
+    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
 
     val patternContent = rewrittenChain.destructed
     QueryGraph(
@@ -92,12 +92,12 @@ object ExpressionConverters {
    */
   def asQueryGraph(exp: NodePatternExpression,
                    availableSymbols: Set[String],
-                   allNameGenerators: AllNameGenerators): QueryGraph = {
+                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator): QueryGraph = {
     val predicates: Seq[Expression] = exp.patterns.collect {
-      case pattern if normalizer(allNameGenerators).extract.isDefinedAt(pattern) => normalizer(allNameGenerators).extract(pattern)
+      case pattern if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => normalizer(anonymousVariableNameGenerator).extract(pattern)
     }.flatten
 
-    val rewrittenPattern = exp.patterns.map(_.endoRewrite(topDown(Rewriter.lift(normalizer(allNameGenerators).replace))))
+    val rewrittenPattern = exp.patterns.map(_.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace))))
 
     // TODO it would be nicer to be able to use getQueryGraphArguments, but dependencies of NodePatternExpression are not correct
     val dependencies = exp.dependencies.map(_.name)
@@ -117,17 +117,17 @@ object ExpressionConverters {
    */
   def asQueryGraph(exp: PatternComprehension,
                    availableSymbols: Set[String],
-                   allNameGenerators: AllNameGenerators): QueryGraph = {
-    val addUniquenessPredicates = AddUniquenessPredicates(allNameGenerators)
+                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator): QueryGraph = {
+    val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
     val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
-      case pattern: AnyRef if normalizer(allNameGenerators).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(allNameGenerators).extract(pattern)
+      case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
       case _                                                          => identity
     } ++ exp.predicate
 
-    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(allNameGenerators).replace)))
+    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer(anonymousVariableNameGenerator).replace)))
 
     val patternContent = rewrittenChain.destructed
     QueryGraph(

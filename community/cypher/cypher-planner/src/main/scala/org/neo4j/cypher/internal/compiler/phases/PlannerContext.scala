@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -64,7 +64,7 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
 
-  val allNameGenerators = new AllNameGenerators()
+  val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
 
   def getParameterValueTypeMapping: Map[String, CypherType] = {
     ParameterValueTypeHelper.asCypherTypeMap(params)

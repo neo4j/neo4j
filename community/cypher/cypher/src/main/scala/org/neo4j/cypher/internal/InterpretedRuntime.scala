@@ -55,9 +55,9 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariableAllocation.allocate(query.logicalPlan)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
 
-    val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext, context.allNameGenerators))
+    val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext, context.anonymousVariableNameGenerator))
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
-    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexRegistrator, context.allNameGenerators)(query.semanticTable)
+    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexRegistrator, context.anonymousVariableNameGenerator)(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, withSlottedParameters, availableExpressionVars)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)

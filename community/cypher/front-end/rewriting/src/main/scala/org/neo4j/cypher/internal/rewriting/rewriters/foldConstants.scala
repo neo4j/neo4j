@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -172,5 +172,5 @@ object foldConstants extends StepSequencer.Step with ASTRewriterFactory {
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           allNameGenerators: AllNameGenerators): Rewriter = foldConstants(cypherExceptionFactory)
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = foldConstants(cypherExceptionFactory)
 }

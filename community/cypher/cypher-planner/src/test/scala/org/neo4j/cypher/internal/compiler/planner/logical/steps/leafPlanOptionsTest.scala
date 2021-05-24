@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Sort
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -212,10 +212,10 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should group plans with same available symbols not considering generated variables that are not part of the queryGraph") {
-    val allNameGenerators = new AllNameGenerators
+    val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
     val plans = Seq(
-     Argument(Set("a", allNameGenerators.freshIdNameGenerator.nextName)),
-     Argument(Set("a", allNameGenerators.freshIdNameGenerator.nextName))
+     Argument(Set("a", anonymousVariableNameGenerator.nextName)),
+     Argument(Set("a", anonymousVariableNameGenerator.nextName))
     )
     val customLeafPlanner: LeafPlanner = (_, _, _) => plans
     val queryPlanConfig = QueryPlannerConfiguration(
@@ -244,9 +244,9 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should group plans with same available symbols considering generated variables that are part of the queryGraph") {
-    val allNameGenerators = new AllNameGenerators
-    val fresh1 = allNameGenerators.freshIdNameGenerator.nextName
-    val fresh2 = allNameGenerators.freshIdNameGenerator.nextName
+    val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
+    val fresh1 = anonymousVariableNameGenerator.nextName
+    val fresh2 = anonymousVariableNameGenerator.nextName
     val plans = Seq(
      Argument(Set("a", fresh1)),
      Argument(Set("a", fresh2))

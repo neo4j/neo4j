@@ -276,7 +276,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.GroupingA
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.NonGroupingAggTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedGroupingAggTable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedNonGroupingAggTable
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Eagerly
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -292,7 +292,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                                  expressionConverters: ExpressionConverters,
                                  tokenContext: TokenContext,
                                  indexRegistrator: QueryIndexRegistrator,
-                                 allNameGenerators: AllNameGenerators)
+                                 anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
                                 (implicit semanticTable: SemanticTable) extends PipeMapper {
 
   private def getBuildExpression(id: Id): internal.expressions.Expression => Expression =
@@ -650,7 +650,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         OrderedAggregationPipe(source, tableFactory)(id = id)
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
-        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(id, shortestPathPattern.name, expressionConverters, allNameGenerators).head
+        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(id, shortestPathPattern.name, expressionConverters, anonymousVariableNameGenerator).head
         val pathVariables = Set(legacyShortestPath.pathName, legacyShortestPath.relIterator.getOrElse(""))
 
         def noDependency(expression: internal.expressions.Expression) =

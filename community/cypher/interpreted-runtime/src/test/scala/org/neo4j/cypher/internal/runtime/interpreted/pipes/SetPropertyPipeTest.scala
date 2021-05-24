@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityE
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -73,7 +73,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   private val emptyExpression = mock[Expression]
   when(emptyExpression.children).thenReturn(Seq.empty)
 
-  private val expressionConverter = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AllNameGenerators()))
+  private val expressionConverter = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AnonymousVariableNameGenerator()))
   private def convertExpression(astExpression: internal.expressions.Expression): Expression = {
     def resolveTokens(expr: Expression, ctx: TokenContext): Expression = expr match {
       case keyToken: KeyToken => keyToken.resolve(ctx)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -46,7 +46,7 @@ object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFacto
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           allNameGenerators: AllNameGenerators): Rewriter = normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(allNameGenerators), LabelPredicateNormalizer))
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(anonymousVariableNameGenerator), LabelPredicateNormalizer))
 
 
 }

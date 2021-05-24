@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctio
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.collection.Map
 import scala.collection.Seq
@@ -80,7 +80,7 @@ case class SingleNode(name: String,
   override def children: Seq[AstNode[_]] = labels ++ properties.values
 
   override def toString: String = {
-    val namePart = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
+    val namePart = if (AnonymousVariableNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
     val props = if (properties.isEmpty) "" else " " + toString(properties)
     s"($namePart$labelPart$props)"

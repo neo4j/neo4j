@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardina
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -106,7 +106,7 @@ abstract class RuntimeContext {
   def config: CypherRuntimeConfiguration
   def compileExpressions: Boolean
   def log: Log
-  def allNameGenerators: AllNameGenerators
+  def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
 }
 
 /**
@@ -127,7 +127,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
              materializedEntitiesMode: Boolean,
              operatorEngine: CypherOperatorEngineOption,
              interpretedPipesFallback: CypherInterpretedPipesFallbackOption,
-             allNameGenerators: AllNameGenerators,
+             anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
             ): CONTEXT
 
   def config: CypherRuntimeConfiguration

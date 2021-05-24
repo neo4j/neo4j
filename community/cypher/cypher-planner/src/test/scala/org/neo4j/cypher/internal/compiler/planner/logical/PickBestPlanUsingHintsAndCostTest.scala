@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -165,7 +165,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      allNameGenerators = new AllNameGenerators())
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator())
     pickBestPlanUsingHintsAndCost(context)(candidates, heuristic, "").get shouldBe theSameInstanceAs(winner)
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse, heuristic, "").get shouldBe theSameInstanceAs(winner)
   }

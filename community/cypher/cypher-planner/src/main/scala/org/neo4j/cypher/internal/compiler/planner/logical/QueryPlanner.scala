@@ -98,7 +98,7 @@ case object QueryPlanner
       executionModel = context.executionModel,
       debugOptions = context.debugOptions,
       enablePlanningRelationshipIndexes = context.config.enablePlanningRelationshipIndexes,
-      allNameGenerators = context.allNameGenerators,
+      anonymousVariableNameGenerator = context.anonymousVariableNameGenerator,
     )
   }
 

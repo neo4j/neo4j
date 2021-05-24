@@ -159,7 +159,7 @@ case object planShortestPaths {
     val pos = shortestPath.expr.position
     val pathVariable = Variable(pathName)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
-    val columnName = context.allNameGenerators.freshIdNameGenerator.nextName
+    val columnName = context.anonymousVariableNameGenerator.nextName
 
     val rhsProjMap = Map(columnName -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, Some(rhsProjMap), context)

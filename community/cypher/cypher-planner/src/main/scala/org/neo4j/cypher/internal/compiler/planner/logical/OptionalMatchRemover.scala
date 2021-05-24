@@ -50,7 +50,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -73,18 +73,18 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, queryInput)
       if validAggregations(aggregations) =>
       val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, context.allNameGenerators)
+      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, context.anonymousVariableNameGenerator)
 
     case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, queryInput) =>
       val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, context.allNameGenerators)
+      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, context.anonymousVariableNameGenerator)
   })
 
   private def rewrite(projectionDeps: Iterable[LogicalVariable],
                       graph: QueryGraph, interestingOrder: InterestingOrder,
                       proj: QueryProjection, tail: Option[SinglePlannerQuery],
                       queryInput: Option[Seq[String]],
-                      allNameGenerators: AllNameGenerators): RegularSinglePlannerQuery = {
+                      anonymousVariableNameGenerator: AnonymousVariableNameGenerator): RegularSinglePlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
     val gen = new PositionGenerator
@@ -129,7 +129,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
           val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
 
-          val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatternExpression, gen, _, allNameGenerators))
+          val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatternExpression, gen, _, anonymousVariableNameGenerator))
 
           val newOptionalGraph = original.
             withPatternRelationships(patternsToKeep).
@@ -241,11 +241,11 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
   }
 
-  private def toAst(elementsToKeep: Set[String], predicates: Map[String, Seq[LabelName]], gen: PositionGenerator, pattern: PatternRelationship, allNameGenerators: AllNameGenerators): PatternExpression = {
+  private def toAst(elementsToKeep: Set[String], predicates: Map[String, Seq[LabelName]], gen: PositionGenerator, pattern: PatternRelationship, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PatternExpression = {
     def createVariable(name: String): Variable =
       if (!elementsToKeep(name)) {
         val pos = gen.nextPosition()
-        Variable(allNameGenerators.unNamedNameGenerator.nextName)(pos)
+        Variable(anonymousVariableNameGenerator.nextName)(pos)
       } else {
         Variable(name)(gen.nextPosition())
       }
@@ -262,7 +262,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       gen.nextPosition())
     val chain = RelationshipChain(leftNode, relPattern, rightNode)(gen.nextPosition())
     val outerScope: Set[Variable] = elementsToKeep.map(createVariable)
-    PatternExpression(RelationshipsPattern(chain)(gen.nextPosition()))(outerScope, allNameGenerators.freshIdNameGenerator.nextName, allNameGenerators.rollupCollectionNameGenerator.nextName)
+    PatternExpression(RelationshipsPattern(chain)(gen.nextPosition()))(outerScope, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {

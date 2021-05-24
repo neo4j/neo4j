@@ -74,7 +74,7 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
           val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
             e =>
-              AliasedReturnItem(e, Variable(context.allNameGenerators.aggregationNameGenerator.nextName)(e.position))(e.position)
+              AliasedReturnItem(e, Variable(context.anonymousVariableNameGenerator.nextName)(e.position))(e.position)
           }
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), None, None, None, None)(pos)

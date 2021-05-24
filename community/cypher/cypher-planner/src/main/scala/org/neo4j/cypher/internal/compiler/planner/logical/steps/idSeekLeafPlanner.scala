@@ -155,8 +155,8 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with Leaf
                                        argumentIds: Set[String],
                                        context: LogicalPlanningContext): (String, String) = {
     val (left, right) = oldNodes
-    val newLeft = if (!argumentIds.contains(left)) left else context.allNameGenerators.nodeNameGenerator.nextName
-    val newRight = if (!argumentIds.contains(right)) right else context.allNameGenerators.nodeNameGenerator.nextName
+    val newLeft = if (!argumentIds.contains(left)) left else context.anonymousVariableNameGenerator.nextName
+    val newRight = if (!argumentIds.contains(right)) right else context.anonymousVariableNameGenerator.nextName
     (newLeft, newRight)
   }
 

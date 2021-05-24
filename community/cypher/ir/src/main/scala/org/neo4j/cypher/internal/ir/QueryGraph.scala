@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.collection.GenSet
@@ -107,8 +107,8 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
    *         is not safe to use for planning pattern expressions and pattern comprehensions.
    */
   lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
-    val patternComprehensions = this.findByAllClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
-    val patternExpressions = this.findByAllClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
+    val patternComprehensions = this.findByAllClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternExpressions = this.findByAllClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
     val allQgsWithLeafInfo = Seq(this) ++
       patternComprehensions ++
       patternExpressions

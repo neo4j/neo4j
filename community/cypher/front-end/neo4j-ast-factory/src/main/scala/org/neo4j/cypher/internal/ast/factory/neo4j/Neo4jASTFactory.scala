@@ -231,7 +231,7 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -245,7 +245,7 @@ import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.mapAsScalaMap
 import scala.util.Either
 
-class Neo4jASTFactory(query: String, allNameGenerators: AllNameGenerators)
+class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
   extends ASTFactory[Statement,
     Query,
     Clause,
@@ -747,7 +747,7 @@ class Neo4jASTFactory(query: String, allNameGenerators: AllNameGenerators)
     PatternComprehension(Option(v),
       RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p),
       Option(where),
-      projection)(p, Set.empty, allNameGenerators.freshIdNameGenerator.nextName, allNameGenerators.rollupCollectionNameGenerator.nextName)
+      projection)(p, Set.empty, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
 
   override def filterExpression(p: InputPosition,
                                 v: Variable,
@@ -799,7 +799,7 @@ class Neo4jASTFactory(query: String, allNameGenerators: AllNameGenerators)
       case paths: ShortestPaths =>
         ShortestPathExpression(paths)
       case _ =>
-        PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))(Set.empty, allNameGenerators.freshIdNameGenerator.nextName, allNameGenerators.rollupCollectionNameGenerator.nextName)
+        PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))(Set.empty, anonymousVariableNameGenerator.nextName, anonymousVariableNameGenerator.nextName)
     }
 
   override def existsSubQuery(p: InputPosition,

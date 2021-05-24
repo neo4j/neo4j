@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
@@ -143,5 +143,5 @@ class TestContext(override val monitors: Monitors) extends BaseContext {
 
   override def errorHandler: Seq[SemanticErrorDef] => Unit = ???
 
-  override def allNameGenerators: AllNameGenerators = ???
+  override def anonymousVariableNameGenerator: AnonymousVariableNameGenerator = ???
 }
