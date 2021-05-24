@@ -435,10 +435,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         {
             return NO_VALUE;
         }
-        return committedValue( properties, node, property );
+        return committedValue( properties, node, property, node.entityReference() );
     }
 
-    private static Value committedValue( StoragePropertyCursor properties, StorageEntityCursor cursor, int propertyKey )
+    private static Value committedValue( StoragePropertyCursor properties, StorageEntityCursor cursor, int propertyKey, long ownerReference )
     {
         cursor.properties( properties );
         while ( properties.next() )
@@ -465,6 +465,6 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             return NO_VALUE;
         }
 
-        return committedValue( properties, relationship, property );
+        return committedValue( properties, relationship, property, relationship.entityReference() );
     }
 }

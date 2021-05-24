@@ -679,13 +679,13 @@ public class StubStorageCursors implements StorageReader
         private Iterator<Map.Entry<String,Value>> iterator;
 
         @Override
-        public void initNodeProperties( long reference )
+        public void initNodeProperties( long reference, long ownerReference )
         {
             init( reference );
         }
 
         @Override
-        public void initRelationshipProperties( long reference )
+        public void initRelationshipProperties( long reference, long ownerReference )
         {
             init( reference );
         }
