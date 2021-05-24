@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
@@ -41,7 +43,8 @@ import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
-import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
+import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.MissingParametersNotification
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
@@ -103,7 +106,6 @@ import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
-import java.time.Clock
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -299,8 +301,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     }
     val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val executionModel = inferredRuntime match {
-      case CypherRuntimeOption.pipelined => Batched(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
-      case CypherRuntimeOption.parallel if !containsUpdates => Batched(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
+      case CypherRuntimeOption.pipelined => BatchedSingleThreaded(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
+      case CypherRuntimeOption.parallel if !containsUpdates => BatchedParallel(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
       case _ => Volcano
     }
 

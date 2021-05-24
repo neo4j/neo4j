@@ -45,7 +45,7 @@ trait OrderCandidate[T <: OrderCandidate[T]] {
 
   def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): T
 
-  def asProvidedOrder: ProvidedOrder = ProvidedOrder(order, ProvidedOrder.Self)
+  def asProvidedOrder(providedOrderFactory: ProvidedOrderFactory): ProvidedOrder = providedOrderFactory.providedOrder(order, ProvidedOrder.Self)
 }
 
 case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate[RequiredOrderCandidate] {

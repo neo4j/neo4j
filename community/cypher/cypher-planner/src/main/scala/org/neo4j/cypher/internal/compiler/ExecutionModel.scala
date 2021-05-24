@@ -44,6 +44,8 @@ sealed trait ExecutionModel {
   def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering
 
   def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize
+
+  def providedOrderPreserving: Boolean
 }
 
 object ExecutionModel {
@@ -52,9 +54,19 @@ object ExecutionModel {
   case object Volcano extends ExecutionModel {
     override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
     override def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize = VolcanoBatchSize
+    override def providedOrderPreserving: Boolean = true
   }
 
-  case class Batched(smallBatchSize: Int, bigBatchSize: Int) extends ExecutionModel {
+  case class BatchedSingleThreaded(smallBatchSize: Int, bigBatchSize: Int) extends Batched {
+    override def providedOrderPreserving: Boolean = true
+  }
+  case class BatchedParallel(smallBatchSize: Int, bigBatchSize: Int) extends Batched {
+    override def providedOrderPreserving: Boolean = false
+  }
+
+  abstract class Batched extends ExecutionModel {
+    def smallBatchSize: Int
+    def bigBatchSize: Int
 
     /**
      * Select the batch size for executing a logical plan.
@@ -140,7 +152,7 @@ object ExecutionModel {
   }
 
   object Batched {
-    val default: Batched = Batched(
+    val default: Batched = BatchedSingleThreaded(
       GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.defaultValue(),
       GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.defaultValue()
     )

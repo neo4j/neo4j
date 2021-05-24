@@ -120,7 +120,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
     labelName <- labelPredicate.labels
     labelId: LabelId <- context.semanticTable.id(labelName).toSet
     indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId, context).toSet
-    predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrderConfig, context.semanticTable)
+    predicatesForIndex <- predicatesForIndex(indexDescriptor, indexCompatiblePredicates, interestingOrderConfig, context)
     indexMatch = IndexMatch(
       variableName,
       labelPredicate,

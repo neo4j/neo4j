@@ -996,13 +996,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planCountStoreNodeAggregation(query: SinglePlannerQuery, projectedColumn: String, labels: List[Option[LabelName]], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(query.queryGraph, query.interestingOrder, query.horizon)
-    annotate(NodeCountFromCountStore(projectedColumn, labels, argumentIds), solved, query.interestingOrder.requiredOrderCandidate.asProvidedOrder, context)
+    annotate(NodeCountFromCountStore(projectedColumn, labels, argumentIds), solved, query.interestingOrder.requiredOrderCandidate.asProvidedOrder(context.providedOrderFactory), context)
   }
 
   def planCountStoreRelationshipAggregation(query: SinglePlannerQuery, idName: String, startLabel: Option[LabelName],
                                             typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved: SinglePlannerQuery = RegularSinglePlannerQuery(query.queryGraph, query.interestingOrder, query.horizon)
-    annotate(RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds), solved, query.interestingOrder.requiredOrderCandidate.asProvidedOrder, context)
+    annotate(RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds), solved, query.interestingOrder.requiredOrderCandidate.asProvidedOrder(context.providedOrderFactory), context)
   }
 
   def planSkip(inner: LogicalPlan, count: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {

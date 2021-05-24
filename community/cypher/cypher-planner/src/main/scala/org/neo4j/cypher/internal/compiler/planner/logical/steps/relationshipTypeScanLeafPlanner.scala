@@ -43,7 +43,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
       skipIDs.contains(pattern.nodes._1) ||
       skipIDs.contains(pattern.nodes._2)
 
-    def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(interestingOrderConfig.orderToSolve, _)
+    def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(interestingOrderConfig.orderToSolve, _, context.providedOrderFactory)
 
     queryGraph.patternRelationships.flatMap {
 

@@ -40,7 +40,7 @@ case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
         val hint = qg.hints.collectFirst {
           case hint@UsingScanHint(`variable`, LabelOrRelTypeName(labelName.name)) => hint
         }
-        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
+        val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable, context.providedOrderFactory)
         val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, providedOrder, context)
         Some(plan)
       } else {

@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.OrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -61,7 +63,8 @@ object ResultOrdering {
   def providedOrderForIndexOperator(interestingOrder: InterestingOrder,
                                     indexProperties: Seq[PropertyAndPredicateType],
                                     orderTypes: Seq[CypherType],
-                                    capabilityLookup: Seq[CypherType] => IndexOrderCapability): (ProvidedOrder, IndexOrder) = {
+                                    capabilityLookup: Seq[CypherType] => IndexOrderCapability,
+                                    providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory): (ProvidedOrder, IndexOrder) = {
     def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
       AggregationHelper.extractPropertyForValue(expression, projections).contains(indexProperty)
 
@@ -171,12 +174,12 @@ object ResultOrdering {
       val orderAccPerCandidate: Seq[Acc] = candidates.filter(_.nonEmpty).map(possibleOrdersForCandidate)
       val maybeResult = orderAccPerCandidate.collectFirst {
         case IndexOrderDecided(indexOrder, columns) if columns.nonEmpty =>
-          (ProvidedOrder(columns, ProvidedOrder.Self), indexOrder)
+          (providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
         case OrderNotYetDecided(columns) if columns.nonEmpty =>
           val indexOrder = if (indexOrderCapability.asc) IndexOrderAscending
                            else if (indexOrderCapability.desc) IndexOrderDescending
                            else IndexOrderNone
-          (ProvidedOrder(columns, ProvidedOrder.Self), indexOrder)
+          (providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
       }
 
       // If the required order cannot be satisfied, return empty
@@ -185,18 +188,21 @@ object ResultOrdering {
   }
 
   def providedOrderForLabelScan(interestingOrder: InterestingOrder,
-                                variable: Variable): ProvidedOrder = {
-    providedOrderForScan(interestingOrder, variable)
+                                variable: Variable,
+                                providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory): ProvidedOrder = {
+    providedOrderForScan(interestingOrder, variable, providedOrderFactory)
 
   }
 
   def providedOrderForRelationshipTypeScan(interestingOrder: InterestingOrder,
-                                           name: String): ProvidedOrder = {
-    providedOrderForScan(interestingOrder, Variable(name)(InputPosition.NONE))
+                                           name: String,
+                                           providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory): ProvidedOrder = {
+    providedOrderForScan(interestingOrder, Variable(name)(InputPosition.NONE), providedOrderFactory)
   }
 
   private def providedOrderForScan(interestingOrder: InterestingOrder,
-                                   variable: Variable): ProvidedOrder = {
+                                   variable: Variable,
+                                   providedOrderFactory: ProvidedOrderFactory): ProvidedOrder = {
     def satisfies(expression: Expression, projections: Map[String, Expression]): Boolean =
       extractVariableForValue(expression, projections).contains(variable)
 
@@ -204,9 +210,9 @@ object ResultOrdering {
 
     candidates.map(_.headOption).collectFirst {
       case Some(Desc(expression, projection)) if satisfies(expression, projection) =>
-        ProvidedOrder.desc(variable)
+        providedOrderFactory.desc(variable)
       case Some(Asc(expression, projection)) if satisfies(expression, projection) =>
-        ProvidedOrder.asc(variable)
+        providedOrderFactory.asc(variable)
     }.getOrElse(ProvidedOrder.empty)
   }
 

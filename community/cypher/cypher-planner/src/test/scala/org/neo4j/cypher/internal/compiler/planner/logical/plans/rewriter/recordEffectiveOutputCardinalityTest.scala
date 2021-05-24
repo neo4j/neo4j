@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
@@ -217,7 +217,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
       .allNodeScan("o").withCardinality(leafCardinality)
 
     // WHEN
-    val (plan, cardinalities) = rewrite(initialPlan, Batched(batchSize, batchSize))
+    val (plan, cardinalities) = rewrite(initialPlan, BatchedSingleThreaded(batchSize, batchSize))
 
     // THEN
 

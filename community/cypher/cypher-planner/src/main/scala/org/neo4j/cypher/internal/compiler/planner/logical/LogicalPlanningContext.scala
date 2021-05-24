@@ -31,6 +31,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
+import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -124,6 +127,14 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def cost: CostModel = metrics.cost
 
   def cardinality: CardinalityModel = metrics.cardinality
+
+  def providedOrderFactory: ProvidedOrderFactory = {
+    if (executionModel.providedOrderPreserving) {
+      DefaultProvidedOrderFactory
+    } else {
+      NoProvidedOrderFactory
+    }
+  }
 }
 
 object NodeIdName {

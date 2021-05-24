@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -196,11 +195,11 @@ object EntityIndexLeafPlanner {
   private[index] def predicatesForIndex(indexDescriptor: IndexDescriptor,
                                         predicates: Set[IndexCompatiblePredicate],
                                         interestingOrderConfig: InterestingOrderConfig,
-                                        semanticTable: SemanticTable): Set[PredicatesForIndex] = {
+                                        context: LogicalPlanningContext): Set[PredicatesForIndex] = {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
-      .groupBy(icp => semanticTable.id(icp.propertyKeyName))
+      .groupBy(icp => context.semanticTable.id(icp.propertyKeyName))
       // Sort out predicates that are not found in semantic table
       .collect { case (Some(x), v) => (x, v) }
 
@@ -214,12 +213,13 @@ object EntityIndexLeafPlanner {
     val matchingPredicateCombinations = SeqCombiner.combine(predicatesByIndexedProperty).toSet
 
     matchingPredicateCombinations
-      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrderConfig))
+      .map(matchingPredicates => matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates, indexDescriptor, interestingOrderConfig, context))
   }
 
   private def matchPredicateWithIndexDescriptorAndInterestingOrder(matchingPredicates: Seq[IndexCompatiblePredicate],
                                                                    indexDescriptor: IndexDescriptor,
-                                                                   interestingOrderConfig: InterestingOrderConfig): PredicatesForIndex = {
+                                                                   interestingOrderConfig: InterestingOrderConfig,
+                                                                   context: LogicalPlanningContext): PredicatesForIndex = {
     val types = matchingPredicates.map(mp => mp.propertyType)
 
     // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
@@ -229,7 +229,7 @@ object EntityIndexLeafPlanner {
     })
 
     val (providedOrder, indexOrder) =
-      ResultOrdering.providedOrderForIndexOperator(interestingOrderConfig.orderToSolve, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability)
+      ResultOrdering.providedOrderForIndexOperator(interestingOrderConfig.orderToSolve, indexPropertiesAndPredicateTypes, types, indexDescriptor.orderCapability, context.providedOrderFactory)
 
     PredicatesForIndex(matchingPredicates, providedOrder, indexOrder)
   }

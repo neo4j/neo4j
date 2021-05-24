@@ -54,6 +54,29 @@ object ProvidedOrder {
   def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
 }
 
+sealed trait ProvidedOrderFactory {
+  def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder
+}
+
+case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
+  override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder =
+    ProvidedOrder.apply(columns, orderOrigin)
+
+  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+    ProvidedOrder.asc(expression, projections)
+
+  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+    ProvidedOrder.desc(expression, projections)
+}
+
+case object NoProvidedOrderFactory extends ProvidedOrderFactory {
+  override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = ProvidedOrder.empty
+  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder.empty
+  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder.empty
+}
+
 /**
  * A LogicalPlan can guarantee to provide its results in a particular order. This trait
  * is used for the purpose of conveying the information of which order the results are in,
