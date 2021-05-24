@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.internal.kernel.api.TokenNameLookup;
+
+import static java.lang.String.format;
+
 /**
  * Holds onto all available {@link TokenHolder} for easily passing all those around
  * and for easily extending available instances in one place.
  */
-public class TokenHolders
+public class TokenHolders implements TokenNameLookup
 {
     private final TokenHolder propertyKeyTokens;
     private final TokenHolder labelTokens;
@@ -49,5 +53,36 @@ public class TokenHolders
     public TokenHolder relationshipTypeTokens()
     {
         return relationshipTypeTokens;
+    }
+
+    @Override
+    public String labelGetName( int labelId )
+    {
+        return getNameById( labelTokens, labelId );
+    }
+
+    @Override
+    public String relationshipTypeGetName( int relationshipTypeId )
+    {
+        return getNameById( relationshipTypeTokens, relationshipTypeId );
+    }
+
+    @Override
+    public String propertyKeyGetName( int propertyKeyId )
+    {
+        return getNameById( propertyKeyTokens, propertyKeyId );
+    }
+
+    private String getNameById( TokenHolder tokenHolder, int tokenId )
+    {
+        try
+        {
+            return tokenHolder.getTokenById( tokenId ).name();
+        }
+        catch ( TokenNotFoundException e )
+        {
+            // Ignore errors from reading key
+            return format( "<unknown name>[%d]", tokenId );
+        }
     }
 }

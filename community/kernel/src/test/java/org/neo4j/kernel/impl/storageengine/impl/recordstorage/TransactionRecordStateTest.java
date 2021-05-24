@@ -42,6 +42,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -90,6 +91,7 @@ import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PrepareTrackingRecordFormats;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -1369,7 +1371,7 @@ public class TransactionRecordStateTest
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         RelationshipGroupGetter relationshipGroupGetter =
                 new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser );
+        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, neoStores, null, NullLogProvider.getInstance(), Config.defaults() );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0,
                 new NoOpClient(),
                 new RelationshipCreator( relationshipGroupGetter,

@@ -123,6 +123,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private final IndexingService indexingService;
     private final NeoStores neoStores;
+    private final Config config;
+    private final LogProvider logProvider;
     private final TokenHolders tokenHolders;
     private final DatabaseHealth databaseHealth;
     private final IndexConfigStore indexConfigStore;
@@ -172,6 +174,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             OperationalMode operationalMode,
             VersionContextSupplier versionContextSupplier )
     {
+        this.config = config;
+        this.logProvider = logProvider;
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
@@ -235,7 +239,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext allocateCommandCreationContext()
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, recordIdBatchSize );
+        return new RecordStorageCommandCreationContext( neoStores, tokenHolders, logProvider, denseNodeThreshold, recordIdBatchSize, config );
     }
 
     @Override

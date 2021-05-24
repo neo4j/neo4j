@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +60,7 @@ class RelationshipDeleterTest
     {
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( new BatchingIdSequence() );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
-        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser );
+        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, null, null, NullLogProvider.getInstance(), null );
         deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
         nodeStore = LongObjectMaps.mutable.empty();
         relationshipStore = LongObjectMaps.mutable.empty();

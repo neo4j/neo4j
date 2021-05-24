@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -34,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.InconsistentDataReadException;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -49,6 +53,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
 import static java.lang.Math.max;
+import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
@@ -56,6 +61,7 @@ import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -954,7 +960,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     void logIdUsage( Logger logger )
     {
-        logger.log( String.format( "  %s[%s]: used=%s high=%s",
+        logger.log( format( "  %s[%s]: used=%s high=%s",
                 getTypeDescriptor(), getStorageFile().getName(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
@@ -1183,6 +1189,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
         List<RECORD> records = new ArrayList<>();
         long id = firstId;
+        MutableLongSet seenRecordIds = null;
+        int count = 0;
         try ( PageCursor cursor = openPageCursorForReading( firstId ) )
         {
             RECORD record;
@@ -1193,6 +1201,18 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 // Even unused records gets added and returned
                 records.add( record );
                 id = getNextRecordReference( record );
+
+                if ( ++count >= CYCLE_DETECTION_THRESHOLD )
+                {
+                    if ( seenRecordIds == null )
+                    {
+                        seenRecordIds = LongSets.mutable.empty();
+                    }
+                    if ( !seenRecordIds.add( id ) )
+                    {
+                        throw new InconsistentDataReadException( "Chain cycle detected while reading chain in store %s starting at id:%d", this, firstId );
+                    }
+                }
             }
             while ( !Record.NULL_REFERENCE.is( id ) );
         }

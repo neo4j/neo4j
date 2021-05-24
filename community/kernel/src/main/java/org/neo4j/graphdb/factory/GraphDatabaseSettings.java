@@ -1129,6 +1129,12 @@ public class GraphDatabaseSettings implements LoadableConfig
             .constraint( min( 16 ) )
             .build();
 
+    @Internal
+    @Description( "Whether or not to log contents of data that is inconsistent when deleting it." )
+    public static final Setting<Boolean> log_inconsistent_data_deletion = buildSetting(
+            "dbms.log_inconsistent_data_deletion", BOOLEAN, FALSE )
+            .build();
+
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final HttpConnectorValidator httpValidator = new HttpConnectorValidator();
