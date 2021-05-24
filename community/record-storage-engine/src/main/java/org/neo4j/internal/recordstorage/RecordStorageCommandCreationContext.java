@@ -19,12 +19,15 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 
@@ -44,7 +47,8 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private final PropertyDeleter propertyDeleter;
     private final PageCursorTracer cursorTracer;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+    RecordStorageCommandCreationContext( NeoStores neoStores, TokenNameLookup tokenNameLookup, LogProvider logProvider, int denseNodeThreshold, Config config,
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.cursorTracer = cursorTracer;
         this.neoStores = neoStores;
@@ -53,7 +57,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), cursorTracer );
         this.relationshipCreator = new RelationshipCreator( relationshipGroupGetter, denseNodeThreshold, cursorTracer );
         PropertyTraverser propertyTraverser = new PropertyTraverser( cursorTracer );
-        this.propertyDeleter = new PropertyDeleter( propertyTraverser, cursorTracer );
+        this.propertyDeleter = new PropertyDeleter( propertyTraverser, neoStores, tokenNameLookup, logProvider, config, cursorTracer, memoryTracker );
         this.relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, cursorTracer );
         PropertyStore propertyStore = neoStores.getPropertyStore();
         this.propertyCreator = new PropertyCreator(

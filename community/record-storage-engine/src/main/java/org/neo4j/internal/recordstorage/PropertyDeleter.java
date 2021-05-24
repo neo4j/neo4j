@@ -19,40 +19,157 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.storable.Value;
+
+import static java.lang.StrictMath.toIntExact;
+import static java.lang.String.format;
+import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 
 public class PropertyDeleter
 {
     private final PropertyTraverser traverser;
+    private final NeoStores neoStores;
+    private final TokenNameLookup tokenNameLookup;
+    private final LogProvider logProvider;
+    private final Config config;
     private final PageCursorTracer cursorTracer;
+    private final MemoryTracker memoryTracker;
 
-    public PropertyDeleter( PropertyTraverser traverser, PageCursorTracer cursorTracer )
+    public PropertyDeleter( PropertyTraverser traverser, NeoStores neoStores, TokenNameLookup tokenNameLookup, LogProvider logProvider, Config config,
+            PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         this.traverser = traverser;
+        this.neoStores = neoStores;
+        this.tokenNameLookup = tokenNameLookup;
+        this.logProvider = logProvider;
+        this.config = config;
         this.cursorTracer = cursorTracer;
+        this.memoryTracker = memoryTracker;
     }
 
     public void deletePropertyChain( PrimitiveRecord primitive,
             RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         long nextProp = primitive.getNextProp();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        MutableLongSet seenPropertyIds = null;
+        int count = 0;
+        try
         {
-            RecordProxy<PropertyRecord, PrimitiveRecord> propertyChange = propertyRecords.getOrLoad( nextProp, primitive, cursorTracer );
-
-            // TODO forChanging/forReading piggy-backing
-            PropertyRecord propRecord = propertyChange.forChangingData();
-            deletePropertyRecordIncludingValueRecords( propRecord );
-            nextProp = propRecord.getNextProp();
-            propRecord.setChanged( primitive );
+            while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() )
+            {
+                RecordProxy<PropertyRecord,PrimitiveRecord> propertyChange = propertyRecords.getOrLoad( nextProp, primitive, cursorTracer );
+                PropertyRecord propRecord = propertyChange.forChangingData();
+                deletePropertyRecordIncludingValueRecords( propRecord );
+                if ( ++count >= CYCLE_DETECTION_THRESHOLD )
+                {
+                    if ( seenPropertyIds == null )
+                    {
+                        seenPropertyIds = LongSets.mutable.empty();
+                    }
+                    if ( !seenPropertyIds.add( nextProp ) )
+                    {
+                        throw new InconsistentDataReadException( "Cycle detected in property chain for %s", primitive );
+                    }
+                }
+                nextProp = propRecord.getNextProp();
+                propRecord.setChanged( primitive );
+            }
+        }
+        catch ( InvalidRecordException e )
+        {
+            // This property chain, or a dynamic value record chain contains a record which is not in use, so it's somewhat broken.
+            // Abort reading the chain, but don't fail the deletion of this property record chain.
+            logInconsistentPropertyChain( primitive, "unused record", e );
+        }
+        catch ( InconsistentDataReadException e )
+        {
+            // This property chain, or a dynamic value record chain contains a cycle.
+            // Abort reading the chain, but don't fail the deletion of this property record chain.
+            logInconsistentPropertyChain( primitive, "cycle", e );
         }
         primitive.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+    }
+
+    private void logInconsistentPropertyChain( PrimitiveRecord primitive, String causeMessage, Throwable cause )
+    {
+        if ( !config.get( GraphDatabaseSettings.log_inconsistent_data_deletion ) )
+        {
+            return;
+        }
+
+        StringBuilder message = new StringBuilder( format( "Deleted inconsistent property chain with %s for %s", causeMessage, primitive ) );
+        try ( RecordPropertyCursor propertyCursor = new RecordPropertyCursor( neoStores.getPropertyStore(), cursorTracer, memoryTracker ) )
+        {
+            if ( primitive instanceof NodeRecord )
+            {
+                NodeRecord node = (NodeRecord) primitive;
+                message.append( " with labels: " );
+                long[] labelIds = NodeLabelsField.parseLabelsField( node ).get( neoStores.getNodeStore(), cursorTracer );
+                message.append(
+                        LongStream.of( labelIds ).mapToObj( labelId -> tokenNameLookup.labelGetName( toIntExact( labelId ) ) ).collect( Collectors.toList() ) );
+                propertyCursor.initNodeProperties( node.getNextProp(), node.getId() );
+            }
+            else if ( primitive instanceof RelationshipRecord )
+            {
+                RelationshipRecord relationship = (RelationshipRecord) primitive;
+                message.append( format( " with relationship type: %s", tokenNameLookup.relationshipTypeGetName( relationship.getType() ) ) );
+                propertyCursor.initRelationshipProperties( relationship.getNextProp(), relationship.getId() );
+            }
+
+            // Use the cursor to read property values, because it's more flexible in reading data
+            MutableIntSet seenKeyIds = IntSets.mutable.empty();
+            while ( propertyCursor.next() )
+            {
+                int keyId = propertyCursor.propertyKey();
+                if ( !seenKeyIds.add( keyId ) )
+                {
+                    continue;
+                }
+
+                String key = tokenNameLookup.propertyKeyGetName( keyId );
+                Value value;
+                try
+                {
+                    value = propertyCursor.propertyValue();
+                }
+                catch ( Exception e )
+                {
+                    value = null;
+                }
+                String valueToString = value != null ? value.toString() : "<value could not be read>";
+                message.append( format( "%n  %s = %s", key, valueToString ) );
+            }
+        }
+        catch ( InconsistentDataReadException e )
+        {
+            // Expected to occur on chain cycles, that's what we're here for
+        }
+        logProvider.getLog( InconsistentDataDeletion.class ).error( message.toString(), cause );
     }
 
     public static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
