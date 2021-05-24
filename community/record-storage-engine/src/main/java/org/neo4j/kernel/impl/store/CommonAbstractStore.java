@@ -43,6 +43,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.internal.recordstorage.InconsistentDataReadException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -58,6 +59,7 @@ import org.neo4j.util.concurrent.Runnables;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
@@ -1012,6 +1014,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
 
         long id = firstId;
+        MutableLongSet seenRecordIds = null;
+        int count = 0;
         try ( PageCursor cursor = openPageCursorForReading( firstId, cursorContext ) )
         {
             RECORD record;
@@ -1029,6 +1033,18 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     return;
                 }
                 id = recordFormat.getNextRecordReference( record );
+
+                if ( ++count >= CYCLE_DETECTION_THRESHOLD )
+                {
+                    if ( seenRecordIds == null )
+                    {
+                        seenRecordIds = LongSets.mutable.empty();
+                    }
+                    if ( !seenRecordIds.add( id ) )
+                    {
+                        throw new InconsistentDataReadException( "Chain cycle detected while reading chain in store %s starting at id:%d", this, firstId );
+                    }
+                }
             }
             while ( !Record.NULL_REFERENCE.is( id ) );
         }

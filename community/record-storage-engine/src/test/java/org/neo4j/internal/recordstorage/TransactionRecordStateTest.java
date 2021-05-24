@@ -1734,7 +1734,8 @@ class TransactionRecordStateTest
         recordChangeSet = new RecordChangeSet( loaders, INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR );
         PropertyTraverser propertyTraverser = new PropertyTraverser( NULL );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore(), NULL );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, NULL );
+        PropertyDeleter propertyDeleter =
+                new PropertyDeleter( propertyTraverser, neoStores, null, NullLogProvider.getInstance(), Config.defaults(), NULL, INSTANCE );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, ResourceLocker.IGNORE, LockTracer.NONE,
                 new RelationshipModifier( relationshipGroupGetter, propertyDeleter, neoStores.getRelationshipGroupStore().getStoreHeaderInt(),
                         true, NULL, EmptyMemoryTracker.INSTANCE ),

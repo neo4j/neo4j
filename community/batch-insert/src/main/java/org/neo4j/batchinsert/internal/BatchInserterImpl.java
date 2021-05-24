@@ -370,7 +370,8 @@ public class BatchInserterImpl implements BatchInserter
                     new RelationshipCreator( relationshipGroupStore.getStoreHeaderInt(), DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, cursorContext );
             propertyTraverser = new PropertyTraverser( cursorContext );
             propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, cursorContext, memoryTracker );
-            propertyDeletor = new PropertyDeleter( propertyTraverser, cursorContext );
+            propertyDeletor = new PropertyDeleter( propertyTraverser, neoStores, tokenHolders, logService.getInternalLogProvider(), config, cursorContext,
+                    memoryTracker );
 
             flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseInternalSettings
                 .batch_inserter_batch_size ) );

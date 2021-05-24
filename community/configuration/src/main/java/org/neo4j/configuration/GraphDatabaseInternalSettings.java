@@ -699,4 +699,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             "will be used" )
     @Internal
     public static final Setting<String> storage_engine = newBuilder( "unsupported.dbms.storage_engine", STRING, "record" ).build();
+
+    @Internal
+    @Description( "Whether or not to log contents of data that is inconsistent when deleting it." )
+    public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder( "dbms.log_inconsistent_data_deletion", BOOL, Boolean.FALSE )
+            .dynamic()
+            .build();
 }

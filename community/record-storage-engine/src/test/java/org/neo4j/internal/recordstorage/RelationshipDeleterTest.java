@@ -24,12 +24,15 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,7 +58,9 @@ class RelationshipDeleterTest
     {
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( idSequence(), CursorContext.NULL );
         PropertyTraverser propertyTraverser = new PropertyTraverser( CursorContext.NULL );
-        PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser, CursorContext.NULL );
+        PropertyDeleter propertyDeleter =
+                new PropertyDeleter( propertyTraverser, null, null, NullLogProvider.getInstance(), Config.defaults(), CursorContext.NULL,
+                        EmptyMemoryTracker.INSTANCE );
         deleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, CursorContext.NULL );
         store = new MapRecordStore();
         recordChanges = store.newRecordChanges( NULL_MONITOR, MapRecordStore.Monitor.NULL );
