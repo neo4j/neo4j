@@ -527,4 +527,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Whether or not to dump system and database diagnostics. This takes a non-negligible amount of time to do and therefore " +
             "test databases can disable this to reduce startup times" )
     public static final Setting<Boolean> dump_diagnostics = newBuilder( "unsupported.dbms.dump_diagnostics", BOOL, Boolean.TRUE ).build();
+
+    @Internal
+    @Description( "Whether or not to log contents of data that is inconsistent when deleting it." )
+    public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder( "dbms.log_inconsistent_data_deletion", BOOL, Boolean.FALSE )
+            .dynamic()
+            .build();
 }

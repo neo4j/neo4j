@@ -107,6 +107,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
+    private final Config config;
+    private final LogProvider logProvider;
     private final TokenHolders tokenHolders;
     private final Health databaseHealth;
     private final SchemaCache schemaCache;
@@ -152,6 +154,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             MemoryTracker otherMemoryTracker )
     {
         this.databaseLayout = databaseLayout;
+        this.config = config;
+        this.logProvider = logProvider;
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
@@ -267,7 +271,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, cursorTracer, memoryTracker );
+        return new RecordStorageCommandCreationContext( neoStores, tokenHolders, logProvider, denseNodeThreshold, config, cursorTracer, memoryTracker );
     }
 
     @Override
