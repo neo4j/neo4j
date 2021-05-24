@@ -81,7 +81,6 @@ object Deprecations {
   def renameFunctionTo(newName: String): FunctionInvocation => FunctionInvocation =
     f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
 
-  // Deprecated in 4.x
   case object deprecatedFeaturesIn4_X extends Deprecations {
 
     override val find: PartialFunction[Any, Deprecation] = {
@@ -248,7 +247,6 @@ object Deprecations {
     }
   }
 
-  // Deprecated in 4.x
   case object deprecatedFeaturesIn4_XAfterRewrite extends Deprecations {
     override def find: PartialFunction[Any, Deprecation] = PartialFunction.empty
 
