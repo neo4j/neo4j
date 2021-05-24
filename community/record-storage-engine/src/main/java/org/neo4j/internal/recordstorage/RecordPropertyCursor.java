@@ -19,13 +19,18 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.nio.ByteBuffer;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.GeometryType;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -50,6 +55,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
 
 public class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCursor
@@ -69,6 +75,12 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private PageCursor stringPage;
     private PageCursor arrayPage;
     private boolean open;
+    private int numSeenPropertyRecords;
+    private long first;
+    private long ownerReference;
+    // Only instantiated used when crossing a certain threshold of the traversed property chain
+    private MutableLongSet cycleDetection;
+    private EntityType ownerEntityType;
     private RecordLoadOverride loadMode;
 
     RecordPropertyCursor( PropertyStore propertyStore, CursorContext cursorContext, MemoryTracker memoryTracker )
@@ -81,22 +93,22 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public void initNodeProperties( long reference )
+    public void initNodeProperties( long reference, long ownerReference )
     {
-        init( reference );
+        init( reference, ownerReference, EntityType.NODE );
     }
 
     @Override
-    public void initRelationshipProperties( long reference )
+    public void initRelationshipProperties( long reference, long ownerReference )
     {
-        init( reference );
+        init( reference, ownerReference, EntityType.RELATIONSHIP );
     }
 
     /**
      * In this implementation property ids are unique among nodes AND relationships so they all init the same way
      * @param reference properties reference, actual property record id.
      */
-    private void init( long reference )
+    private void init( long reference, long ownerReference, EntityType ownerEntityType )
     {
         if ( getId() != NO_ID )
         {
@@ -105,6 +117,8 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
         //Set to high value to force a read
         this.block = Integer.MAX_VALUE;
+        this.ownerReference = ownerReference;
+        this.ownerEntityType = ownerEntityType;
         if ( reference != NO_ID )
         {
             if ( page == null )
@@ -115,6 +129,9 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
         // Store state
         this.next = reference;
+        this.first = reference;
+        this.numSeenPropertyRecords = 0;
+        this.cycleDetection = null;
         this.open = true;
     }
 
@@ -160,6 +177,20 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             property( this, next, page );
             next = getNextProp();
             block = INITIAL_POSITION;
+
+            if ( ++numSeenPropertyRecords >= CYCLE_DETECTION_THRESHOLD )
+            {
+                if ( cycleDetection == null )
+                {
+                    cycleDetection = LongSets.mutable.empty();
+                }
+                if ( !cycleDetection.add( next ) )
+                {
+                    throw new InconsistentDataReadException(
+                            "Aborting property reading due to detected chain cycle, starting at property record id:%d from owner %s:%d", first,
+                            ownerEntityType, ownerReference );
+                }
+            }
         }
     }
 
@@ -176,6 +207,10 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             open = false;
             loadMode = RecordLoadOverride.none();
             clear();
+            numSeenPropertyRecords = 0;
+            first = NO_ID;
+            ownerReference = NO_ID;
+            cycleDetection = null;
         }
     }
 
@@ -233,7 +268,15 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     @Override
     public Value propertyValue()
     {
-        return readValue();
+        try
+        {
+            return readValue();
+        }
+        catch ( InvalidRecordException | InconsistentDataReadException e )
+        {
+            throw new InconsistentDataReadException( e, "Unable to read property value in record:%d, starting at property record id:%d from owner %s:%d",
+                    getId(), first, ownerEntityType, ownerReference );
+        }
     }
 
     private Value readValue()
