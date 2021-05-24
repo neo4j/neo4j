@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.planning
 
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.fabric.FabricTest
 import org.neo4j.fabric.FragmentTestUtils
@@ -219,19 +220,31 @@ class FabricStitcherTest
     }
 
     "nested fragment, different USE" in {
-      stitching(
+      val executableFragment = stitching(
         init(defaultUse)
           .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
           .apply(_ => init(Declared(use("foo")), Seq("a"))
             .leaf(Seq(use("foo"), return_(literal(2).as("b"))), Seq("b")))
           .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
-      ).shouldEqual(
+      )
+
+      executableFragment.shouldEqual(
         init(defaultUse)
           .exec(query(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
           .apply(_ => init(Declared(use("foo")), Seq("a"))
             .exec(query(return_(literal(2).as("b"))), Seq("b")))
           .exec(query(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
       )
+
+      val firstLeafClauses =
+        executableFragment.as[Fragment.Exec]
+          .input.as[Fragment.Apply]
+          .input.as[Fragment.Exec]
+          .query.as[ast.Query]
+          .part.as[ast.SingleQuery]
+          .clauses
+
+      firstLeafClauses.head.position should not equal firstLeafClauses.last.position
     }
 
     "nested fragment, different USE, with imports" in {

@@ -36,8 +36,6 @@ import org.neo4j.fabric.planning.Use.Declared
 import org.neo4j.fabric.planning.Use.Inherited
 import org.scalatest.Inside
 
-import scala.reflect.ClassTag
-
 class FabricFragmenterTest
   extends FabricTest
     with Inside
@@ -519,11 +517,4 @@ class FabricFragmenterTest
 
   private def resolved(unresolved: FunctionInvocation): ResolvedFunctionInvocation =
     ResolvedFunctionInvocation(signatures.functionSignature)(unresolved)
-
-  implicit class Caster[A](a: A) {
-    def as[T](implicit ct: ClassTag[T]): T = {
-      assert(ct.runtimeClass.isInstance(a), s"expected: ${ct.runtimeClass.getName}, was: ${a.getClass.getName}")
-      a.asInstanceOf[T]
-    }
-  }
 }

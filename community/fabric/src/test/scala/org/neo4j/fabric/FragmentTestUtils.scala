@@ -19,8 +19,6 @@
  */
 package org.neo4j.fabric
 
-import java.util.concurrent.Executors
-
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.PreParsedQuery
@@ -54,6 +52,9 @@ import org.neo4j.fabric.planning.Use
 import org.neo4j.fabric.util.Rewritten.RewritingOps
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
+
+import java.util.concurrent.Executors
+import scala.reflect.ClassTag
 
 trait FragmentTestUtils {
 
@@ -141,5 +142,12 @@ trait FragmentTestUtils {
         .topDown {
           case e: Fragment.Exec => e.copy(localQuery = dummyLocalQuery, remoteQuery = dummyRemoteQuery)
         }
+  }
+
+  implicit class Caster[A](a: A) {
+    def as[T](implicit ct: ClassTag[T]): T = {
+      assert(ct.runtimeClass.isInstance(a), s"expected: ${ct.runtimeClass.getName}, was: ${a.getClass.getName}")
+      a.asInstanceOf[T]
+    }
   }
 }
