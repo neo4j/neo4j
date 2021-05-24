@@ -89,10 +89,10 @@ import org.neo4j.harness.internal.InProcessNeo4j;
 public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver
 {
     private static final String NEO4J_NAMESPACE = "neo4j-extension";
+    private static final String PER_METHOD_KEY = "perMethod";
     private static final Namespace NAMESPACE = Namespace.create( NEO4J_NAMESPACE );
 
     private final Neo4jBuilder builder;
-    private boolean perMethod;
 
     public static Neo4jExtensionBuilder builder()
     {
@@ -124,17 +124,24 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Befo
     @Override
     public void beforeEach( ExtensionContext context ) throws Exception
     {
-        if ( context.getStore( NAMESPACE ).get( Neo4j.class ) == null )
+        ExtensionContext.Store store = getStore( context );
+        if ( store.get( Neo4j.class ) == null )
         {
-            perMethod = true;
+            // beforeEach is the first method to be called with non-static field and per-method lifecycle
+            store.put( PER_METHOD_KEY, true );
             instantiateService( context );
         }
+    }
+
+    private static ExtensionContext.Store getStore( ExtensionContext context )
+    {
+        return context.getStore( NAMESPACE );
     }
 
     @Override
     public void afterEach( ExtensionContext extensionContext ) throws Exception
     {
-        if ( perMethod )
+        if ( getStore( extensionContext ).getOrDefault( PER_METHOD_KEY, Boolean.class, false ) )
         {
             destroyService( extensionContext );
         }
@@ -151,7 +158,7 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Befo
     public Object resolveParameter( ParameterContext parameterContext, ExtensionContext extensionContext ) throws ParameterResolutionException
     {
         Class<?> paramType = parameterContext.getParameter().getType();
-        return extensionContext.getStore( NAMESPACE ).get( paramType, paramType );
+        return getStore( extensionContext ).get( paramType, paramType );
     }
 
     private void instantiateService( ExtensionContext context )
@@ -159,14 +166,15 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Befo
         Neo4j neo = builder.build();
         DatabaseManagementService managementService = neo.databaseManagementService();
         GraphDatabaseService service = neo.defaultDatabaseService();
-        context.getStore( NAMESPACE ).put( Neo4j.class, neo );
-        context.getStore( NAMESPACE ).put( DatabaseManagementService.class, managementService );
-        context.getStore( NAMESPACE ).put( GraphDatabaseService.class, service );
+        ExtensionContext.Store store = getStore( context );
+        store.put( Neo4j.class, neo );
+        store.put( DatabaseManagementService.class, managementService );
+        store.put( GraphDatabaseService.class, service );
     }
 
     private static void destroyService( ExtensionContext context )
     {
-        ExtensionContext.Store store = context.getStore( NAMESPACE );
+        ExtensionContext.Store store = getStore( context );
         store.remove( GraphDatabaseService.class );
         store.remove( DatabaseManagementService.class );
         InProcessNeo4j controls = store.remove( Neo4j.class, InProcessNeo4j.class );
