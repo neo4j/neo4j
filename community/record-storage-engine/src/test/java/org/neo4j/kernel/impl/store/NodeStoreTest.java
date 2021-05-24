@@ -229,9 +229,12 @@ class NodeStoreTest
         store.updateRecord( new NodeRecord( deleted ).initialize( false, 20, false, 10, 0 ), NULL );
 
         // When & then
-        assertTrue( store.isInUse( exists, NULL ) );
-        assertFalse( store.isInUse( deleted, NULL ) );
-        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), NULL ) );
+        try ( var cursor = store.openPageCursorForReading( exists, NULL ) )
+        {
+            assertTrue( store.isInUse( exists, cursor ) );
+            assertFalse( store.isInUse( deleted, cursor ) );
+            assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), cursor ) );
+        }
     }
 
     @Test

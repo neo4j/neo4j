@@ -1513,11 +1513,16 @@ class TransactionRecordStateTest
         apply( state );
 
         // then
-        assertThat( nodeStore.isInUse( nodeId, NULL ) ).isFalse();
-        assertThat( groupStore.isInUse( groupA, NULL ) ).isFalse();
-        assertThat( groupStore.isInUse( groupB, NULL ) ).isFalse();
-        assertThat( groupStore.isInUse( groupC, NULL ) ).isFalse();
-        assertThat( relationshipStore.isInUse( relationshipId, NULL ) ).isFalse();
+        try ( var nodeCursor = nodeStore.openPageCursorForReading( nodeId, NULL );
+              var groupCursor = groupStore.openPageCursorForReading( groupA, NULL );
+              var relCursor = relationshipStore.openPageCursorForReading( relationshipId, NULL ) )
+        {
+            assertThat( nodeStore.isInUse( nodeId, nodeCursor ) ).isFalse();
+            assertThat( groupStore.isInUse( groupA, groupCursor ) ).isFalse();
+            assertThat( groupStore.isInUse( groupB, groupCursor ) ).isFalse();
+            assertThat( groupStore.isInUse( groupC, groupCursor ) ).isFalse();
+            assertThat( relationshipStore.isInUse( relationshipId, relCursor ) ).isFalse();
+        }
     }
 
     @Test
@@ -1550,10 +1555,14 @@ class TransactionRecordStateTest
         apply( state );
 
         // then
-        assertThat( nodeStore.isInUse( nodeId, NULL ) ).isFalse();
-        assertThat( groupStore.isInUse( groupA, NULL ) ).isFalse();
-        assertThat( groupStore.isInUse( groupB, NULL ) ).isFalse();
-        assertThat( groupStore.isInUse( groupC, NULL ) ).isFalse();
+        try ( var nodeCursor = nodeStore.openPageCursorForReading( nodeId, NULL );
+                var groupCursor = groupStore.openPageCursorForReading( groupA, NULL ) )
+        {
+            assertThat( nodeStore.isInUse( nodeId, nodeCursor ) ).isFalse();
+            assertThat( groupStore.isInUse( groupA, groupCursor ) ).isFalse();
+            assertThat( groupStore.isInUse( groupB, groupCursor ) ).isFalse();
+            assertThat( groupStore.isInUse( groupC, groupCursor ) ).isFalse();
+        }
     }
 
     private static void addLabelsToNode( TransactionRecordState recordState, long nodeId, long[] labelIds )

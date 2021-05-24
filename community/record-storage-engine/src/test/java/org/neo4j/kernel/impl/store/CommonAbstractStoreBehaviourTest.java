@@ -82,11 +82,16 @@ class CommonAbstractStoreBehaviourTest
     private int intsPerRecord = 1;
 
     private MyStore store;
+    private PageCursor readCursor;
     private final Config config = Config.defaults();
 
     @AfterEach
     void tearDown()
     {
+        if ( readCursor != null )
+        {
+            readCursor.close();
+        }
         if ( store != null )
         {
             store.close();
@@ -134,6 +139,7 @@ class CommonAbstractStoreBehaviourTest
     {
         store = new MyStore( config, pageCache, 8 );
         store.initialise( true, NULL );
+        readCursor = store.openPageCursorForReading( 0, NULL );
     }
 
     @Test
@@ -165,13 +171,13 @@ class CommonAbstractStoreBehaviourTest
     @Test
     void isInUseMustThrowOnPageOverflow()
     {
-        verifyExceptionOnOutOfBoundsAccess( () -> store.isInUse( 5, NULL ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.isInUse( 5, readCursor ) );
     }
 
     @Test
     void isInUseMustThrowOnCursorError()
     {
-        verifyExceptionOnCursorError( () -> store.isInUse( 5, NULL ) );
+        verifyExceptionOnCursorError( () -> store.isInUse( 5, readCursor ) );
     }
 
     @Test

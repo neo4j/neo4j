@@ -114,8 +114,9 @@ class DeleteDuplicateNodesStepTest
         // when
         long[] duplicateNodeIds = randomNodes( ids );
         SimpleStageControl control = new SimpleStageControl();
+        NodeStore nodeStore = neoStores.getNodeStore();
         try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
-                iterator( duplicateNodeIds ), neoStores.getNodeStore(), neoStores.getPropertyStore(), monitor, PageCacheTracer.NULL ) )
+                iterator( duplicateNodeIds ), nodeStore, neoStores.getPropertyStore(), monitor, PageCacheTracer.NULL ) )
         {
             control.steps( step );
             startAndAwaitCompletionOf( step );
@@ -125,44 +126,47 @@ class DeleteDuplicateNodesStepTest
         // then
         int expectedNodes = 0;
         int expectedProperties = 0;
-        for ( Ids entity : ids )
+        try ( var nodeCursor = nodeStore.openPageCursorForReading( 0, NULL ) )
         {
-            boolean expectedToBeInUse = !ArrayUtils.contains( duplicateNodeIds, entity.node.getId() );
-            int stride = expectedToBeInUse ? 1 : 0;
-            expectedNodes += stride;
-
-            // Verify node record
-            assertEquals( expectedToBeInUse, neoStores.getNodeStore().isInUse( entity.node.getId(), NULL ) );
-
-            // Verify label records
-            for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
+            for ( Ids entity : ids )
             {
-                assertEquals( expectedToBeInUse, neoStores.getNodeStore().getDynamicLabelStore().isInUse( labelRecord.getId(), NULL ) );
-            }
+                boolean expectedToBeInUse = !ArrayUtils.contains( duplicateNodeIds, entity.node.getId() );
+                int stride = expectedToBeInUse ? 1 : 0;
+                expectedNodes += stride;
 
-            // Verify property records
-            for ( PropertyRecord propertyRecord : entity.properties )
-            {
-                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), NULL ) );
-                for ( PropertyBlock property : propertyRecord )
+                // Verify node record
+                assertEquals( expectedToBeInUse, nodeStore.isInUse( entity.node.getId(), nodeCursor ) );
+
+                // Verify label records
+                for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
                 {
-                    // Verify property dynamic value records
-                    for ( DynamicRecord valueRecord : property.getValueRecords() )
+                    assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(), nodeCursor ) );
+                }
+
+                // Verify property records
+                for ( PropertyRecord propertyRecord : entity.properties )
+                {
+                    assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), nodeCursor ) );
+                    for ( PropertyBlock property : propertyRecord )
                     {
-                        AbstractDynamicStore valueStore;
-                        switch ( property.getType() )
+                        // Verify property dynamic value records
+                        for ( DynamicRecord valueRecord : property.getValueRecords() )
                         {
-                        case STRING:
-                            valueStore = neoStores.getPropertyStore().getStringStore();
-                            break;
-                        case ARRAY:
-                            valueStore = neoStores.getPropertyStore().getArrayStore();
-                            break;
-                        default: throw new IllegalArgumentException( propertyRecord + " " + property );
+                            AbstractDynamicStore valueStore;
+                            switch ( property.getType() )
+                            {
+                            case STRING:
+                                valueStore = neoStores.getPropertyStore().getStringStore();
+                                break;
+                            case ARRAY:
+                                valueStore = neoStores.getPropertyStore().getArrayStore();
+                                break;
+                            default: throw new IllegalArgumentException( propertyRecord + " " + property );
+                            }
+                            assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), nodeCursor ) );
                         }
-                        assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), NULL ) );
+                        expectedProperties += stride;
                     }
-                    expectedProperties += stride;
                 }
             }
         }

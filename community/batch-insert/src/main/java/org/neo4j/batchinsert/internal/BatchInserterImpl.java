@@ -94,6 +94,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -926,9 +927,12 @@ public class BatchInserterImpl implements BatchInserter
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
         IdValidator.assertValidId( IdType.NODE, id, maxNodeId );
-        if ( nodeStore.isInUse( id, cursorContext ) )
+        try ( PageCursor pageCursor = nodeStore.openPageCursorForReading( id, cursorContext ) )
         {
-            throw new IllegalArgumentException( "id=" + id + " already in use" );
+            if ( nodeStore.isInUse( id, pageCursor ) )
+            {
+                throw new IllegalArgumentException( "id=" + id + " already in use" );
+            }
         }
         long highId = nodeStore.getHighId();
         if ( highId <= id )
@@ -1025,7 +1029,10 @@ public class BatchInserterImpl implements BatchInserter
     public boolean nodeExists( long nodeId )
     {
         flushStrategy.forceFlush();
-        return nodeStore.isInUse( nodeId, cursorContext );
+        try ( PageCursor pageCursor = nodeStore.openPageCursorForReading( nodeId, cursorContext ) )
+        {
+            return nodeStore.isInUse( nodeId, pageCursor );
+        }
     }
 
     @Override

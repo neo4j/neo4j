@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -319,9 +320,12 @@ public class SchemaStorage implements SchemaRuleAccess
         catch ( MalformedSchemaRuleException e )
         {
             // In case we've raced with a record deletion, ignore malformed records that no longer appear to be in use.
-            if ( !ignoreMalformed && schemaStore.isInUse( record.getId(), cursorContext ) )
+            try ( PageCursor pageCursor = schemaStore.openPageCursorForReading( record.getId(), cursorContext ) )
             {
-                throw new RuntimeException( e );
+                if ( !ignoreMalformed && schemaStore.isInUse( record.getId(), pageCursor ) )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         }
         return Stream.empty();

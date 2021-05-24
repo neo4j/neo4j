@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -285,13 +286,19 @@ public class RecordStorageReader implements StorageReader
     @Override
     public boolean nodeExists( long id, CursorContext cursorContext )
     {
-        return nodeStore.isInUse( id, cursorContext );
+        try ( PageCursor pageCursor = nodeStore.openPageCursorForReading( id, cursorContext ) )
+        {
+            return nodeStore.isInUse( id, pageCursor );
+        }
     }
 
     @Override
     public boolean relationshipExists( long id, CursorContext cursorContext )
     {
-        return relationshipStore.isInUse( id, cursorContext );
+        try ( PageCursor pageCursor = relationshipStore.openPageCursorForReading( id, cursorContext ) )
+        {
+            return relationshipStore.isInUse( id, pageCursor );
+        }
     }
 
     @Override

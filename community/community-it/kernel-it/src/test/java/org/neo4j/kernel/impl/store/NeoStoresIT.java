@@ -128,7 +128,10 @@ class NeoStoresIT
         }
 
         var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnInUseCheck" ) );
-        propertyStore.isInUse( 1L, cursorContext );
+        try ( var cursor = propertyStore.openPageCursorForReading( 1L, cursorContext ) )
+        {
+            propertyStore.isInUse( 1L, cursor );
+        }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 1, cursorTracer.hits() );

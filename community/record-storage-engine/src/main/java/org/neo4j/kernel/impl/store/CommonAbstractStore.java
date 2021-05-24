@@ -383,15 +383,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         recordsEndOffset = recordsPerPage * recordSize; // Truncated file page size to whole multiples of record size.
     }
 
-    public boolean isInUse( long id, CursorContext cursorContext )
+    public boolean isInUse( long id, PageCursor cursor )
     {
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK, cursorContext ) )
+        try
         {
             boolean recordIsInUse = false;
-            if ( cursor.next() )
+            if ( cursor.next( pageId ) )
             {
                 cursor.setOffset( offset );
                 cursor.mark();
