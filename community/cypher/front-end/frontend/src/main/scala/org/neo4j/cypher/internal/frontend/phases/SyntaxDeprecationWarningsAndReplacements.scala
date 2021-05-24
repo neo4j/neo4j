@@ -29,28 +29,25 @@ import org.neo4j.cypher.internal.util.bottomUp
 case object DeprecatedSyntaxReplaced extends Condition
 
 /**
- * Find deprecated Cypher constructs and generate warnings for them.
- *
- * Replace deprecated syntax.
+ * Find deprecated Cypher constructs, generate warnings for them, and replace deprecated syntax with currently accepted syntax.
  */
 case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(state: BaseState, context: BaseContext): BaseState = {
     // collect notifications and replacements
     case class Acc(notifications: Set[InternalNotification], replacements: Map[ASTNode, ASTNode]) {
-      def +(deprecation: Deprecation): Acc = Acc(
-        notifications ++ deprecation.notification,
-        replacements ++ deprecation.replacement
-      )
+      def +(deprecation: Deprecation): Acc = Acc(notifications ++ deprecation.notification, replacements ++ deprecation.replacement)
+      def +(acc: Acc) = Acc(notifications ++ acc.notifications, replacements ++ acc.replacements)
     }
 
     val foundWithoutContext = state.statement().fold(Acc(Set.empty, Map.empty)) {
       deprecations.find.andThen(deprecation => acc => acc + deprecation)
     }
-
-    val Acc(notifications, replacements) = deprecations.findWithContext(state.statement(), state.maybeSemanticTable).foldLeft(foundWithoutContext) {
+    val foundWithContext = deprecations.findWithContext(state.statement(), state.maybeSemanticTable).foldLeft(Acc(Set.empty, Map.empty)) {
       case (acc, deprecation) => acc + deprecation
     }
+
+    val Acc(notifications, replacements) = foundWithoutContext + foundWithContext
 
     // issue notifications
     notifications.foreach(context.notificationLogger.log)

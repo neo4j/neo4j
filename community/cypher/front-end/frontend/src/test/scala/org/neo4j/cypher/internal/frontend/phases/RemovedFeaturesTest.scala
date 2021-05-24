@@ -35,7 +35,7 @@ class RemovedFeaturesTest extends CypherFunSuite with AstConstructionTestSupport
     }
   }
 
-  test("should not touch new function names of regardless of casing") {
+  test("should not touch new function names regardless of casing") {
     for (newName <- deprecatedNameMap4_0.values) {
       assertNotRewritten(s"RETURN $newName($$param) AS f")
       assertNotRewritten(s"RETURN ${newName.toLowerCase()}($$param) AS f")
