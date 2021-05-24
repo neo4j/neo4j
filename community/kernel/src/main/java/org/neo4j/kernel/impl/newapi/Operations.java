@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.function.ThrowingIntFunction;
@@ -150,6 +151,7 @@ public class Operations implements Write, SchemaWrite
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final KernelVersionRepository kernelVersionRepository;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -159,7 +161,8 @@ public class Operations implements Write, SchemaWrite
     public Operations( AllStoreHolder allStoreHolder, StorageReader storageReader, IndexTxStateUpdater updater, CommandCreationContext commandCreationContext,
             KernelTransactionImplementation ktx, KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
             ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config,
-            MemoryTracker memoryTracker, KernelVersionRepository kernelVersionRepository )
+            MemoryTracker memoryTracker, KernelVersionRepository kernelVersionRepository,
+            DbmsRuntimeRepository dbmsRuntimeRepository )
     {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
@@ -174,6 +177,7 @@ public class Operations implements Write, SchemaWrite
         this.config = config;
         this.memoryTracker = memoryTracker;
         this.kernelVersionRepository = kernelVersionRepository;
+        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         additionLockVerification = config.get( additional_lock_verification );
     }
 
@@ -903,36 +907,16 @@ public class Operations implements Write, SchemaWrite
         return indexProviders.indexProviderByName( providerName );
     }
 
-    private boolean tokenAndRelPropIndexFeaturesEnabled( KernelVersion currentVersion )
-    {
-        return currentVersion.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED );
-    }
-
-    private boolean tokenIndexFeatureEnabled( KernelVersion currentVersion )
-    {
-        return tokenAndRelPropIndexFeaturesEnabled( currentVersion );
-    }
-
     @Override
     public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
         if ( prototype.isTokenIndex() )
         {
-            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
-            if ( !tokenIndexFeatureEnabled( currentVersion ) )
-            {
-                throw new UnsupportedOperationException( "Lookup indexes are not supported in this version: " + currentVersion +
-                                                         ". Make sure that upgrade has been completed for the database." );
-            }
+            assertTokenAndRelationshipPropertyIndexesSupported( "Failed to create Token lookup index." );
         }
         if ( prototype.schema().entityType() == RELATIONSHIP && prototype.getIndexType() == IndexType.BTREE )
         {
-            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
-            if ( !tokenAndRelPropIndexFeaturesEnabled( currentVersion ) )
-            {
-                throw new UnsupportedOperationException( "Relationship property indexes are not supported in this version: " + currentVersion +
-                                                         ". Make sure that upgrade has been completed for the database." );
-            }
+            assertTokenAndRelationshipPropertyIndexesSupported( "Failed to create btree relationship property index." );
         }
 
         exclusiveSchemaLock( prototype.schema() );
@@ -947,6 +931,28 @@ public class Operations implements Write, SchemaWrite
         assertNoBlockingSchemaRulesExists( prototype );
 
         return indexDoCreate( prototype );
+    }
+
+    private void assertTokenAndRelationshipPropertyIndexesSupported( String message )
+    {
+        KernelVersion currentStoreVersion = kernelVersionRepository.kernelVersion();
+        if ( currentStoreVersion.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        {
+            // new or upgraded store, good to go
+            return;
+        }
+
+        // store version is old
+        KernelVersion currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
+        if ( currentDbmsVersion.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        {
+            // dbms runtime version is good, current transaction will trigger upgrade transaction
+            // we will double check kernel version during commit
+            return;
+        }
+        throw new UnsupportedOperationException(
+                format( "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'.",
+                        message, currentDbmsVersion.name(), KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED.name() ) );
     }
 
     @Override
@@ -1055,12 +1061,7 @@ public class Operations implements Write, SchemaWrite
         }
         if ( index.isTokenIndex() )
         {
-            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
-            if ( !tokenIndexFeatureEnabled( currentVersion ) )
-            {
-                throw new UnsupportedOperationException( "Lookup indexes can not be dropped in this version: " + currentVersion +
-                                                         ". Make sure that upgrade has been completed for the database." );
-            }
+            assertTokenAndRelationshipPropertyIndexesSupported( "Failed to drop token lookup index." );
         }
         exclusiveSchemaLock( index.schema() );
         exclusiveSchemaNameLock( index.getName() );
@@ -1121,12 +1122,7 @@ public class Operations implements Write, SchemaWrite
         }
         if ( index.isTokenIndex() )
         {
-            KernelVersion currentVersion = kernelVersionRepository.kernelVersion();
-            if ( !tokenIndexFeatureEnabled( currentVersion ) )
-            {
-                throw new UnsupportedOperationException( "Lookup indexes can not be dropped in this version: " + currentVersion +
-                                                         ". Make sure that upgrade has been completed for the database." );
-            }
+            assertTokenAndRelationshipPropertyIndexesSupported( "Failed to drop token lookup index." );
         }
         exclusiveSchemaLock( index.schema() );
         assertIndexExistsForDrop( index );

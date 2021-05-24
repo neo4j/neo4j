@@ -35,6 +35,7 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -359,7 +360,8 @@ class ParallelRecoveryVisitorTest
         }
 
         @Override
-        public List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo )
+        public List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo,
+                InjectedNLIUpgradeCallback injectedNLIUpgradeCallback )
         {
             throw new UnsupportedOperationException();
         }

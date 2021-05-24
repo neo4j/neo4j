@@ -228,7 +228,7 @@ class DatabaseUpgradeTransactionHandlerTest
             KernelVersion toKernelVersion = inv.getArgument( 0, KernelVersion.class );
             registeredTransactions.add( new RegisteredTransaction( toKernelVersion, true ) );
             return List.of( new FakeKernelVersionUpgradeCommand( toKernelVersion ) );
-        } ).when( storageEngine ).createUpgradeCommands( any() );
+        } ).when( storageEngine ).createUpgradeCommands( any(), any() );
         DbmsRuntimeRepository dbmsRuntimeRepository = mock( DbmsRuntimeRepository.class );
         doAnswer( inv -> currentDbmsRuntimeVersion ).when( dbmsRuntimeRepository ).getVersion();
         KernelVersionRepository kernelVersionRepository = this::getKernelVersion;

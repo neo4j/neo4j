@@ -70,6 +70,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
+import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -999,6 +1000,12 @@ class QueryExecutionLocksIT
         public Revertable overrideWith( SecurityContext context )
         {
             return internal.overrideWith( context );
+        }
+
+        @Override
+        public InjectedNLIUpgradeCallback injectedNLIUpgradeCallback()
+        {
+            return internal.injectedNLIUpgradeCallback();
         }
 
         @Override

@@ -36,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -192,7 +193,9 @@ class KernelTransactionTestBase
                                                     mock( IndexingService.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool,
                                                     new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
-                                                    TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST, CommunitySecurityLog.NULL_LOG );
+                                                    TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST,
+                                                    mock( DbmsRuntimeRepository.class )
+        );
     }
 
     KernelTransactionImplementation newNotInitializedTransaction( LeaseService leaseService )

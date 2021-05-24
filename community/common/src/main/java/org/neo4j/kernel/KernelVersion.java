@@ -40,7 +40,7 @@ public enum KernelVersion
     V4_2( (byte) 2 ), // 4.2+. Removed checkpoint entries.
     // 4.3(some drop)+. Not a change to log entry format, but record storage engine log format change. Since record storage commands
     // has no command version of their own it relies on a bump of the parser set version to distinguish between versions unfortunately.
-    // Also introduces token index and relationship type property index features.
+    // Also introduces token index and relationship property index features.
     V4_3_D4( (byte) 3 );
 
     public static final KernelVersion LATEST = V4_3_D4;

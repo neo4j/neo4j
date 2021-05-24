@@ -583,7 +583,7 @@ public class Database extends LifecycleAdapter
 
             TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
             commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
-        }  );
+        } );
 
     }
 
@@ -770,8 +770,8 @@ public class Database extends LifecycleAdapter
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( databaseConfig, locks, constraintIndexCreator,
                                         transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
-                                        databaseAvailabilityGuard,
-                                        storageEngine, globalProcedures, transactionIdStore, kernelVersionRepository,
+                                        databaseAvailabilityGuard, storageEngine, globalProcedures, transactionIdStore,
+                                        globalDependencies.resolveDependency( DbmsRuntimeRepository.class ), kernelVersionRepository,
                                         clock, cpuClockRef,
                                         accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
                                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService,

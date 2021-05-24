@@ -34,6 +34,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -92,6 +93,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final TransactionCommitProcess transactionCommitProcess;
     private final DatabaseTransactionEventListeners eventListeners;
     private final TransactionMonitor transactionMonitor;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final KernelVersionRepository kernelVersionRepository;
     private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final AvailabilityGuard databaseAvailabilityGuard;
@@ -148,7 +150,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     public KernelTransactions( Config config, Locks locks, ConstraintIndexCreator constraintIndexCreator,
                                TransactionCommitProcess transactionCommitProcess, DatabaseTransactionEventListeners eventListeners,
                                TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, StorageEngine storageEngine,
-                               GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, KernelVersionRepository kernelVersionRepository,
+                               GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, DbmsRuntimeRepository dbmsRuntimeRepository,
+                               KernelVersionRepository kernelVersionRepository,
                                SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, AccessCapabilityFactory accessCapabilityFactory,
                                VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                                ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId,
@@ -169,6 +172,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.globalProcedures = globalProcedures;
         this.transactionIdStore = transactionIdStore;
         this.kernelVersionRepository = kernelVersionRepository;
+        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.cpuClockRef = cpuClockRef;
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
@@ -406,7 +410,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                            kernelVersionRepository, securityLog );
+                            securityLog, kernelVersionRepository, dbmsRuntimeRepository );
             this.transactions.add( tx );
             return tx;
         }

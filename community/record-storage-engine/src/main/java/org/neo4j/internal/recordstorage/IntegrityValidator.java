@@ -23,13 +23,18 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.util.Preconditions;
+
+import static org.neo4j.kernel.KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED;
 
 /**
  * Validates data integrity during the prepare phase of {@link TransactionRecordState}.
@@ -84,6 +89,21 @@ class IntegrityValidator
     void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
         Preconditions.checkState( indexValidator != null, "No index validator installed" );
+        KernelVersion currentVersion = neoStores.getMetaDataStore().kernelVersion();
+        if ( currentVersion.isLessThan( VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        {
+            if ( schemaRule instanceof IndexDescriptor )
+            {
+                IndexDescriptor index = (IndexDescriptor) schemaRule;
+                if ( index.isTokenIndex() || isBtreeRelationshipPropertyIndex( index ) )
+                {
+                    throw new TransactionFailureException( Status.General.UpgradeRequired,
+                            "Index operation on index '%s' not allowed. " +
+                            "Required kernel version for this transaction is %s, but actual version was %s.",
+                            index, VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED.name(), currentVersion.name() );
+                }
+            }
+        }
         if ( schemaRule instanceof ConstraintDescriptor )
         {
             ConstraintDescriptor constraint = (ConstraintDescriptor) schemaRule;
@@ -107,5 +127,10 @@ class IntegrityValidator
                 }
             }
         }
+    }
+
+    private boolean isBtreeRelationshipPropertyIndex( IndexDescriptor index )
+    {
+        return index.getIndexType() == IndexType.BTREE && index.schema().isRelationshipTypeSchemaDescriptor();
     }
 }

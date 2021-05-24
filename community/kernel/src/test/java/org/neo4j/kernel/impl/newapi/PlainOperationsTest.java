@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -952,7 +953,7 @@ public class PlainOperationsTest extends OperationsTest
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                                                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
                                                 mock( ConstraintIndexCreator.class ), mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ),
-                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
+                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
 
         // when
         operations.nodeCreate();
@@ -982,7 +983,7 @@ public class PlainOperationsTest extends OperationsTest
         Operations operations = new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                                                 commandCreationContext, ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
                                                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ),
-                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
+                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
         operations.initialize( NULL );
 
         // when
@@ -1013,7 +1014,7 @@ public class PlainOperationsTest extends OperationsTest
                                                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
                                                 mock( ConstraintIndexCreator.class ),
                                                 mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(),
-                                                INSTANCE, () -> KernelVersion.LATEST );
+                                                INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
 
         // when
         operations.relationshipCreate( 0, 1, 2 );
@@ -1043,7 +1044,7 @@ public class PlainOperationsTest extends OperationsTest
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ),
                                                 commandCreationContext, ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ),
                                                 mock( ConstraintIndexCreator.class ), mock( ConstraintSemantics.class ), indexingProvidersService,
-                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
+                                                Config.defaults(), INSTANCE, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
 
         // when
         operations.indexCreate( IndexPrototype.forSchema( schema ).withName( "name" ) );

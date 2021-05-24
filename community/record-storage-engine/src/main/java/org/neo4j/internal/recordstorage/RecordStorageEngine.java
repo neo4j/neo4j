@@ -64,6 +64,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -375,7 +376,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo )
+    public List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo,
+            InjectedNLIUpgradeCallback injectedNLIUpgradeCallback )
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         KernelVersion currentVersion = metaDataStore.kernelVersion();
@@ -406,7 +408,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         // it in the schemaStore.
         if ( currentVersion.isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
         {
-            commands.add( createSchemaUpgradeCommand( serialization ) );
+            commands.add( createSchemaUpgradeCommand( serialization, injectedNLIUpgradeCallback ) );
         }
         return commands;
     }
@@ -417,8 +419,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      * the SchemaRecord is not connected to any properties at all.
      * Instead we interpret a SchemaRecord with no properties as the NLI rule when reading from the SchemaStore later.
      */
-    private StorageCommand createSchemaUpgradeCommand( LogCommandSerialization serialization )
+    private StorageCommand createSchemaUpgradeCommand( LogCommandSerialization serialization,
+            InjectedNLIUpgradeCallback injectedNLIUpgradeCallback )
     {
+        // Pass in callback with new id here and modify
         try ( var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( SCHEMA_UPGRADE_TAG ) ) )
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
@@ -434,6 +438,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             after.setCreated();
 
             var rule = IndexDescriptor.NLI_PROTOTYPE.materialise( nliId );
+            injectedNLIUpgradeCallback.apply( nliId );
             return new Command.SchemaRuleCommand( serialization, before, after, rule );
         }
     }

@@ -21,15 +21,22 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -93,5 +100,53 @@ class IntegrityValidatorTest
 
         // When
         assertThrows( Exception.class, () -> validator.validateTransactionStartKnowledge( 1 ) );
+    }
+
+    @Test
+    void tokenIndexesNotAllowedForOldKernelVersions()
+    {
+        // Given
+        NeoStores store = mock( NeoStores.class );
+        MetaDataStore metaDataStore = mock( MetaDataStore.class );
+        when( store.getMetaDataStore() ).thenReturn( metaDataStore );
+        when( metaDataStore.kernelVersion() ).thenReturn( KernelVersion.V4_2 );
+
+        IndexUpdateListener indexes = mock( IndexUpdateListener.class );
+        IntegrityValidator validator = new IntegrityValidator( store );
+        validator.setIndexValidator( indexes );
+
+        var index = IndexPrototype.forSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) )
+                                  .withIndexType( IndexType.LOOKUP )
+                                  .withName( "any name" )
+                                  .materialise( 4 );
+
+        // When
+        assertThatThrownBy( () -> validator.validateSchemaRule( index ) )
+                .isInstanceOf( TransactionFailureException.class )
+                .hasMessageContaining( "Required kernel version for this transaction is V4_3_D4, but actual version was V4_2." );
+    }
+
+    @Test
+    void relationshipPropertyIndexesNotAllowedForOldKernelVersions()
+    {
+        // Given
+        NeoStores store = mock( NeoStores.class );
+        MetaDataStore metaDataStore = mock( MetaDataStore.class );
+        when( store.getMetaDataStore() ).thenReturn( metaDataStore );
+        when( metaDataStore.kernelVersion() ).thenReturn( KernelVersion.V4_2 );
+
+        IndexUpdateListener indexes = mock( IndexUpdateListener.class );
+        IntegrityValidator validator = new IntegrityValidator( store );
+        validator.setIndexValidator( indexes );
+
+        var index = IndexPrototype.forSchema( SchemaDescriptor.forRelType( 3, 14 ) )
+                                  .withIndexType( IndexType.BTREE )
+                                  .withName( "any name" )
+                                  .materialise( 4 );
+
+        // When
+        assertThatThrownBy( () -> validator.validateSchemaRule( index ) )
+                .isInstanceOf( TransactionFailureException.class )
+                .hasMessageContaining( "Required kernel version for this transaction is V4_3_D4, but actual version was V4_2." );
     }
 }

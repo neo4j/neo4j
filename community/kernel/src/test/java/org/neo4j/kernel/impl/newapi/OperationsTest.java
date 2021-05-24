@@ -32,6 +32,7 @@ import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -167,7 +168,8 @@ abstract class OperationsTest
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
                  transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
-                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE, () -> KernelVersion.LATEST );
+                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE,
+                () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
         operations.initialize( NULL );
 
         this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext );

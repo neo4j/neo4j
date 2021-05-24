@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
@@ -699,7 +700,7 @@ class KernelTransactionsTest
         return new KernelTransactions( config, locks, null,
                 commitProcess, mock( DatabaseTransactionEventListeners.class ),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore,
-                () -> KernelVersion.LATEST, clock,
+                mock( DbmsRuntimeRepository.class ), () -> KernelVersion.LATEST, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
@@ -770,8 +771,8 @@ class KernelTransactionsTest
         {
             super( Config.defaults(), locks, constraintIndexCreator,
                    transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
-                   storageEngine, globalProcedures, transactionIdStore, () -> KernelVersion.LATEST, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                   accessCapabilityFactory,
+                   storageEngine, globalProcedures, transactionIdStore, mock( DbmsRuntimeRepository.class ), () -> KernelVersion.LATEST, clock,
+                   new AtomicReference<>( CpuClock.NOT_AVAILABLE ), accessCapabilityFactory,
                    versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,

@@ -32,9 +32,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
+import org.neo4j.lock.Lock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.lock.Lock;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -125,7 +125,8 @@ class DatabaseUpgradeTransactionHandler
                         if ( kernelVersionToUpgradeTo.isGreaterThan( currentKernelVersion ) )
                         {
                             log.info( "Upgrade transaction from %s to %s started", currentKernelVersion, kernelVersionToUpgradeTo );
-                            internalTransactionCommitHandler.commit( storageEngine.createUpgradeCommands( kernelVersionToUpgradeTo ) );
+                            var callback = tx.injectedNLIUpgradeCallback();
+                            internalTransactionCommitHandler.commit( storageEngine.createUpgradeCommands( kernelVersionToUpgradeTo, callback ) );
                             log.info( "Upgrade transaction from %s to %s completed", currentKernelVersion, kernelVersionToUpgradeTo );
                         }
                     }

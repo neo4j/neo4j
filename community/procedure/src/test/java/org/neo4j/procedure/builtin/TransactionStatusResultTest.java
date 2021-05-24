@@ -33,6 +33,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.schema.SchemaState;
@@ -286,7 +287,7 @@ class TransactionStatusResultTest
                     mockedTokenHolders(), mock( IndexingService.class ),
                     mock( IndexStatisticsStore.class ), dependencies,
                     new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                    TransactionExecutionMonitor.NO_OP, () -> KernelVersion.LATEST, CommunitySecurityLog.NULL_LOG )
+                    TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) )
             {
                 @Override
                 public Statistics getStatistics()
