@@ -1152,6 +1152,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> consistency_check_on_apply =
             newBuilder( "unsupported.dbms.storage.consistency_check_on_apply", BOOL, Boolean.FALSE ).build();
 
+    @Internal
+    @Description( "Whether or not to log contents of data that is inconsistent when deleting it." )
+    public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder( "dbms.log_inconsistent_data_deletion", BOOL, Boolean.FALSE )
+            .dynamic()
+            .build();
+
     /**
      * Default settings for server. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default server settings that you can pass to the builders.

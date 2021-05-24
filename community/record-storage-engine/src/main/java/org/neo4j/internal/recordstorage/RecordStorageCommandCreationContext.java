@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -27,6 +29,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandCreationContext;
 
 import static java.lang.Math.toIntExact;
@@ -46,14 +49,14 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     private final RelationshipStore relationshipStore;
     private final SchemaStore schemaStore;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold )
+    RecordStorageCommandCreationContext( NeoStores neoStores, TokenNameLookup tokenNameLookup, LogProvider logProvider, int denseNodeThreshold, Config config )
     {
         this.neoStores = neoStores;
         this.loaders = new Loaders( neoStores );
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
         this.relationshipCreator = new RelationshipCreator( relationshipGroupGetter, denseNodeThreshold );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
-        this.propertyDeleter = new PropertyDeleter( propertyTraverser );
+        this.propertyDeleter = new PropertyDeleter( propertyTraverser, neoStores, tokenNameLookup, logProvider, config );
         this.relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
         PropertyStore propertyStore = neoStores.getPropertyStore();
         this.propertyCreator = new PropertyCreator(

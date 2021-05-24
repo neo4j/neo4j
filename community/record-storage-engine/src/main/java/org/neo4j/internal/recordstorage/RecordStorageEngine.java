@@ -99,6 +99,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private final NeoStores neoStores;
     private final DatabaseLayout databaseLayout;
+    private final Config config;
+    private final LogProvider logProvider;
     private final TokenHolders tokenHolders;
     private final Health databaseHealth;
     private final SchemaCache schemaCache;
@@ -137,6 +139,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             boolean createStoreIfNotExists )
     {
         this.databaseLayout = databaseLayout;
+        this.config = config;
+        this.logProvider = logProvider;
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
@@ -212,7 +216,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext newCommandCreationContext()
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold );
+        return new RecordStorageCommandCreationContext( neoStores, tokenHolders, logProvider, denseNodeThreshold, config );
     }
 
     @Override
