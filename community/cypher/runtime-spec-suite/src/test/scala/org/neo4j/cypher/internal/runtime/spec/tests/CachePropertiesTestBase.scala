@@ -32,24 +32,24 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
                                                                    sizeHint: Int
                                                                  ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-//  test("should not explode on cached properties") {
-//    // given
-//    val nodes = given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i)}) }
-//
-//    // when
-//    val logicalQuery = new LogicalQueryBuilder(this)
-//      .produceResults("n")
-//      .filter("cache[n.p] < 20 == 0")
-//      .cacheProperties("cache[n.p]")
-//      .allNodeScan("n")
-//      .build()
-//
-//    val runtimeResult = execute(logicalQuery, runtime)
-//
-//    // then
-//    val expected = nodes.take(20).map(n => Array(n))
-//    runtimeResult should beColumns("n").withRows(expected)
-//  }
+  test("should not explode on cached properties") {
+    // given
+    val nodes = given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i)}) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .filter("cache[n.p] < 20 == 0")
+      .cacheProperties("cache[n.p]")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.take(20).map(n => Array(n))
+    runtimeResult should beColumns("n").withRows(expected)
+  }
 
   test("node index exact seek should cache properties") {
     given {
@@ -136,6 +136,162 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .|.filter("cache[a.prop] IN [1, 2]")
       .|.nodeIndexOperator("a:A(prop = 2 OR 3)", getValue = _ => GetValue)
       .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+  }
+
+  test("directed relationship index exact seek should cache properties") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint, "A")
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i % 3)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.filter("cacheR[r.prop] IN [1, 2]")
+      .|.relationshipIndexOperator("(a)-[r:R(prop=2)]->(b)", getValue = _ => GetValue)
+      .relationshipTypeScan("(a)-[r:R]->(b)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+  }
+
+  test("undirected relationship index exact seek should cache properties") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint, "A")
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i % 3)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.filter("cacheR[r.prop] IN [1, 2]")
+      .|.relationshipIndexOperator("(a)-[r:R(prop=2)]-(b)", getValue = _ => GetValue)
+      .relationshipTypeScan("(a)-[r:R]->(b)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+  }
+
+    test("directed relationship index range seek should cache properties") {
+      given {
+        relationshipIndex("R", "prop")
+        val (_, rels) = circleGraph(sizeHint, "A")
+        rels.zipWithIndex.foreach {
+          case (r, i) => r.setProperty("prop", i % 3)
+        }
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r")
+        .union()
+        .|.filter("cacheR[r.prop] IN [1, 2]")
+        .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]->(b)", getValue = _ => GetValue)
+        .relationshipTypeScan("(a)-[r:R]->(b)")
+        .build()
+
+      val runtimeResult = profile(logicalQuery, runtime)
+      consume(runtimeResult)
+
+      // then
+      val queryProfile = runtimeResult.runtimeResult.queryProfile()
+      queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+    }
+
+  test("undirected relationship index range seek should cache properties") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint, "A")
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i % 3)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.filter("cacheR[r.prop] IN [1, 2]")
+      .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]-(b)", getValue = _ => GetValue)
+      .relationshipTypeScan("(a)-[r:R]->(b)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+  }
+
+  test("directed relationship multi index range seek should cache properties") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint, "A")
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i % 3)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.filter("cacheR[r.prop] IN [1, 2]")
+      .|.relationshipIndexOperator("(a)-[r:R(prop = 2 OR 3)]->(b)", getValue = _ => GetValue)
+      .relationshipTypeScan("(a)-[r:R]->(b)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+  }
+
+  test("undirected relationship multi index range seek should cache properties") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint, "A")
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i % 3)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.filter("cacheR[r.prop] IN [1, 2]")
+      .|.relationshipIndexOperator("(a)-[r:R(prop = 2 OR 3)]-(b)", getValue = _ => GetValue)
+      .relationshipTypeScan("(a)-[r:R]->(b)")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
