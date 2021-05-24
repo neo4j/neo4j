@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 class NotImplementedPlanContext extends PlanContext {
-  override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
+  override def indexesGetForLabelNonTransactional(labelId: Int): Iterator[IndexDescriptor] = ???
 
-  override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
+  override def indexesGetForRelTypeNonTransactional(relTypeId: Int): Iterator[IndexDescriptor] = ???
 
   override def indexExistsForLabel(labelId: Int): Boolean = ???
 

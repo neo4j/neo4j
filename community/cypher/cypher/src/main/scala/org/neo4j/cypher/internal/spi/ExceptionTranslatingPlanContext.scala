@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
-  override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
-    translateException(tokenNameLookup, inner.indexesGetForLabel(labelId))
+  override def indexesGetForLabelNonTransactional(labelId: Int): Iterator[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.indexesGetForLabelNonTransactional(labelId))
 
-  override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] =
-    translateException(tokenNameLookup, inner.indexesGetForRelType(relTypeId))
+  override def indexesGetForRelTypeNonTransactional(relTypeId: Int): Iterator[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.indexesGetForRelTypeNonTransactional(relTypeId))
 
   override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.indexGetForLabelAndProperties(labelName, propertyKeys))

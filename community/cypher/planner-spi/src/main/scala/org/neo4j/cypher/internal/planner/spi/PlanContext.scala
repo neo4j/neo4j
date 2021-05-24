@@ -34,27 +34,27 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   /**
-   * Return all indexes (general and unique) for a given label
+   * Return all indexes (general and unique) for a given label, without taking any schema locks.
    */
-  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+  def indexesGetForLabelNonTransactional(labelId: Int): Iterator[IndexDescriptor]
 
   /**
-   * Return all indexes for a given relationship type
+   * Return all indexes for a given relationship type, without taking any schema locks.
    */
-  def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
+  def indexesGetForRelTypeNonTransactional(relTypeId: Int): Iterator[IndexDescriptor]
 
   /**
-   * Return all unique indexes for a given label
+   * Return all unique indexes for a given label, without taking any schema locks.
    */
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
 
   /**
-   * Checks if an index exists (general or unique) for a given label
+   * Checks if an index exists (general or unique) for a given label, without taking any schema locks.
    */
   def indexExistsForLabel(labelId: Int): Boolean
 
   /**
-   * Checks if an index exists for a given relationship type
+   * Checks if an index exists for a given relationship type, without taking any schema locks.
    */
   def indexExistsForRelType(relTypeId: Int): Boolean
 

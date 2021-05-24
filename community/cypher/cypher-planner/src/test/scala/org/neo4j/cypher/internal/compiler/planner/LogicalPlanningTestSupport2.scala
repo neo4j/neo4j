@@ -210,7 +210,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.graphStatistics,
         new MutableGraphStatisticsSnapshot())
 
-      override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+      override def indexesGetForLabelNonTransactional(labelId: Int): Iterator[IndexDescriptor] = {
         config.labelsById.get(labelId).toIterator.flatMap(label =>
           config.indexes.collect {
             case (indexDef@IndexDef(IndexDefinition.EntityType.Node(labelOrRelType), _), _) if labelOrRelType == label =>
@@ -218,7 +218,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           })
       }
 
-      override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+      override def indexesGetForRelTypeNonTransactional(relTypeId: Int): Iterator[IndexDescriptor] = {
         config.relTypesById.get(relTypeId).toIterator.flatMap(relType =>
           config.indexes.collect {
             case (indexDef@IndexDef(IndexDefinition.EntityType.Relationship(labelOrRelType), _), _) if labelOrRelType == relType =>
