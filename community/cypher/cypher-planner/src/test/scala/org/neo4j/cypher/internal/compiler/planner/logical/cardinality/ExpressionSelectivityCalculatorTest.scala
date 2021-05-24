@@ -69,8 +69,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   private val nIsPersonLabelInfo = Map("n" -> Set(labelName("Person")))
   private val nIsPersonAndAnimalLabelInfo = Map("n" -> Set(labelName("Person"), labelName("Animal")))
 
-  private val personPropSel = 0.2
+  private val personPropIsNotNullSel = 0.2
   private val indexPersonUniqueSel = 1.0 / 180.0
+  private val animalPropIsNotNullSel = 0.5
 
   // RELATIONSHIPS
 
@@ -80,7 +81,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   private val rFriendsRelTypeInfo = Map("r" -> relTypeName("Friends"))
 
-  private val friendsPropSel = 0.2
+  private val friendsPropIsNotNullSel = 0.2
   private val indexFriendsUniqueSel = 1.0 / 180.0
 
   // RANGE SEEK
@@ -151,7 +152,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     inequalityResult.factor should equal(
-      personPropSel
+      personPropIsNotNullSel
         * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         +- 0.00000001
@@ -168,7 +169,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val inequalityResult = calculator(inequality.expr)
 
     inequalityResult.factor should equal(
-      friendsPropSel
+      friendsPropIsNotNullSel
         * (1-indexFriendsUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         +- 0.00000001
@@ -187,10 +188,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     inequalityResult.factor should equal(
-      personPropSel
+      personPropIsNotNullSel
         * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
-        + personPropSel
+        + personPropIsNotNullSel
         * indexPersonUniqueSel
         +- 0.00000001
     )
@@ -209,7 +210,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     inequalityResult.factor should equal(
-      personPropSel
+      personPropIsNotNullSel
         * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
@@ -229,10 +230,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     inequalityResult.factor should equal(
-      personPropSel
+      personPropIsNotNullSel
         * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
-        + personPropSel
+        + personPropIsNotNullSel
         * indexPersonUniqueSel
         +- 0.00000001
     )
@@ -252,7 +253,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     inequalityResult.factor should equal(
-      personPropSel
+      personPropIsNotNullSel
         * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
@@ -303,7 +304,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.001)
     inequalityResult.factor should equal(
-      personPropSel
+      personPropIsNotNullSel
         * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         +- 0.00000001
@@ -326,7 +327,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult.factor should equal(0.1)
     labelResult2.factor should equal(0.001)
     inequalityResult.factor should equal(
-      personPropSel
+      personPropIsNotNullSel
         * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
@@ -351,12 +352,12 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel
+      personPropIsNotNullSel
         * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
       )
     val animalIndexSelectivity = (
-      0.5 // Selectivity for .prop
+      animalPropIsNotNullSel
         * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
       )
@@ -383,17 +384,17 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel
+      personPropIsNotNullSel
         * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
-        + personPropSel
+        + personPropIsNotNullSel
         * indexPersonUniqueSel
       )
     val animalIndexSelectivity = (
-      0.5 // Selectivity for .prop
+      animalPropIsNotNullSel
         * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
-        + 0.5 // Selectivity for .prop
+        + animalPropIsNotNullSel
         * (1.0 / 380.0) // Selectivity for == 3
       )
 
@@ -420,12 +421,12 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel
+      personPropIsNotNullSel
         * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
       )
     val animalIndexSelectivity = (
-      0.5 // Selectivity for .prop
+      animalPropIsNotNullSel
         * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
       )
@@ -453,17 +454,17 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel
+      personPropIsNotNullSel
         * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
-        + personPropSel
+        + personPropIsNotNullSel
         * indexPersonUniqueSel
       )
     val animalIndexSelectivity = (
-      0.5 // Selectivity for .prop
+      animalPropIsNotNullSel
         * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
-        + 0.5 // Selectivity for .prop
+        + animalPropIsNotNullSel
         * (1.0 / 380.0) // Selectivity for != x
       )
 
@@ -504,7 +505,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val distanceResult = calculator(rPropDistance.expr)
 
     val friendsIndexSelectivity = (
-      friendsPropSel
+      friendsPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR // point distance
       )
 
@@ -524,11 +525,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel
+      personPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR // point distance
       )
     val animalIndexSelectivity = (
-      0.5 // Selectivity for .prop
+      animalPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR // point distance
       )
 
@@ -595,7 +596,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_TYPE_SELECTIVITY.factor // is string
     )
   }
@@ -610,7 +611,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR // starts with
     )
   }
@@ -623,7 +624,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stringPredicateResult = calculator(stringPredicate.expr)
 
     stringPredicateResult.factor should equal(
-      personPropSel // IS NOT NULL
+      friendsPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR // starts with
     )
   }
@@ -638,7 +639,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
     )
   }
@@ -653,7 +654,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult.factor should equal(0.1)
     stringPredicateResult.factor should equal(
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
     )
   }
@@ -673,11 +674,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_TYPE_SELECTIVITY.factor // is string
       )
     val animalIndexSelectivity = (
-      0.5 // IS NOT NULL
+      animalPropIsNotNullSel
         * DEFAULT_TYPE_SELECTIVITY.factor // is string
       )
 
@@ -700,11 +701,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR // starts with
       )
     val animalIndexSelectivity = (
-      0.5 // IS NOT NULL
+      animalPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR // starts with
       )
 
@@ -727,11 +728,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
       )
     val animalIndexSelectivity = (
-      0.5 // IS NOT NULL
+      animalPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // starts with
       )
 
@@ -754,11 +755,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      personPropSel // IS NOT NULL
+      personPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
       )
     val animalIndexSelectivity = (
-      0.5 // IS NOT NULL
+      animalPropIsNotNullSel
         * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH // starts with
       )
 
@@ -790,7 +791,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val isNotNullResult = calculator(nIsNotNull.expr)
 
     labelResult.factor should equal(0.1)
-    isNotNullResult.factor should equal(personPropSel)
+    isNotNullResult.factor should equal(personPropIsNotNullSel)
   }
 
   test("isNotNull with one relType") {
@@ -798,7 +799,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val isNotNullResult = calculator(rIsNotNull.expr)
 
-    isNotNullResult.factor should equal(friendsPropSel)
+    isNotNullResult.factor should equal(friendsPropIsNotNullSel)
   }
 
   test("isNotNull with one label, no index") {
@@ -825,7 +826,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val isNotNullResult = calculator(rIsNotNull.expr)
 
-    isNotNullResult.factor should equal(friendsPropSel)
+    isNotNullResult.factor should equal(friendsPropIsNotNullSel)
   }
 
   test("isNotNull with two labels, one index") {
@@ -838,7 +839,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.001)
-    isNotNullResult.factor should equal(personPropSel)
+    isNotNullResult.factor should equal(personPropIsNotNullSel)
   }
 
   test("isNotNull with two labels, two indexes") {
@@ -852,7 +853,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
-    isNotNullResult.factor should equal(0.2 + 0.5 - 0.2 * 0.5
+    isNotNullResult.factor should equal(personPropIsNotNullSel + animalPropIsNotNullSel - personPropIsNotNullSel * animalPropIsNotNullSel
       +- 0.00000001)
   }
 
@@ -933,7 +934,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val eqResult = calculator(equals.expr)
 
-    eqResult.factor should equal(friendsPropSel * indexFriendsUniqueSel)
+    eqResult.factor should equal(friendsPropIsNotNullSel * indexFriendsUniqueSel)
   }
 
   test("equality with one label, size 2") {
