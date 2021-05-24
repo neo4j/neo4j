@@ -138,6 +138,16 @@ public class LoadCommand extends AbstractCommand
         {
             throw new CommandFailedException( "You do not have permission to load the database.", e );
         }
+
+        try ( StoreVersionLoader stl = new StoreVersionLoader( ctx.fs(), config ) )
+        {
+            StoreVersionLoader.Result result = stl.loadStoreVersion( databaseLayout );
+            if ( !result.isLatest )
+            {
+                ctx.err().printf( "The loaded database is not on the latest format (current:%s, latest:%s). Set %s=true to enable migration.%n",
+                        result.currentFormatName, result.latestFormatName, GraphDatabaseSettings.allow_upgrade.name() );
+            }
+        }
     }
 
     protected Config buildConfig()
