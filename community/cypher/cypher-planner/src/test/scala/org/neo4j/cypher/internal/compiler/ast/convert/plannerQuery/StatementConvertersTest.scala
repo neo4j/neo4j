@@ -541,7 +541,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // Then inner pattern query graph
     val relName = "anon_0"
-    val nodeName = "anon_0"
+    val nodeName = "anon_1"
     val exp = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -587,7 +587,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // Then inner pattern query graph
     val relName = "anon_0"
-    val nodeName = "anon_0"
+    val nodeName = "anon_1"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -607,7 +607,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // Then inner pattern query graph
     val relName = "anon_0"
-    val nodeName = "anon_0"
+    val nodeName = "anon_1"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -627,7 +627,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // Then inner pattern query graph
     val relName = "anon_0"
-    val nodeName = "anon_0"
+    val nodeName = "anon_1"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -929,7 +929,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("owner")), Seq.empty, None)(pos),
       RelationshipPattern(Some(varFor("anon_0")), Seq.empty, None, None, BOTH)(pos),
-      NodePattern(Some(varFor("anon_0")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("anon_0"), varFor("anon_0")), "", "")
+      NodePattern(Some(varFor("anon_1")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("anon_0"), varFor("anon_1")), "", "")
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("owner")),

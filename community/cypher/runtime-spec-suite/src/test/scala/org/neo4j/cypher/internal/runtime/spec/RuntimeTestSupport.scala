@@ -53,7 +53,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
@@ -341,7 +341,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  materializedEntitiesMode = queryOptions.materializedEntitiesMode,
                                  operatorEngine = queryOptions.queryOptions.operatorEngine,
                                  interpretedPipesFallback = queryOptions.queryOptions.interpretedPipesFallback,
-                                 allNameGenerators = new AllNameGenerators())
+                                 anonymousVariableNameGenerator = new AnonymousVariableNameGenerator())
   }
 
   private def newQueryContext(txContext: TransactionalContext, readOnly: Boolean, maybeExecutionResources: Option[(CursorFactory, ResourceManagerFactory)] = None): QueryContext = {

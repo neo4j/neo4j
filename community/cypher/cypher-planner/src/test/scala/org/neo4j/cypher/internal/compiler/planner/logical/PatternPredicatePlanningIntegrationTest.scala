@@ -95,8 +95,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
-import org.neo4j.cypher.internal.util.FreshIdNameGenerator
-import org.neo4j.cypher.internal.util.RollupCollectionNameGenerator
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
@@ -123,10 +122,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           case ListComprehension(ExtractScope(_, Some(NestedPlanExistsExpression(nestedPlan, _)), _), _) =>
             nestedPlan should equal(
               Selection(
-                ands(hasLabels("anon_0", "ComedyClub")),
+                ands(hasLabels("anon_4", "ComedyClub")),
                 Expand(
                   Argument(Set("f")),
-                  "f", OUTGOING, Seq(RelTypeName("WORKS_AT")_), "anon_0", "anon_1", ExpandAll
+                  "f", OUTGOING, Seq(RelTypeName("WORKS_AT")_), "anon_4", "anon_3", ExpandAll
                 )
               )
             )
@@ -161,10 +160,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
                     _
                   )
                 ),
-                MapKeys(FreshIdNameGenerator("0"))
+                MapKeys(AnonymousVariableNameGenerator("0"))
               ),
-              RollupCollectionNameGenerator("0"),
-              FreshIdNameGenerator("0")
+              AnonymousVariableNameGenerator("1"),
+              AnonymousVariableNameGenerator("0")
             ),
             MapKeys(`patternComprehensionExpressionKeyString`)
           ),
@@ -185,7 +184,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -198,7 +197,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -211,7 +210,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -224,7 +223,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -237,7 +236,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -250,7 +249,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -263,10 +262,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[anon_1:Y]->(anon_1)")
+        .|.expandAll("(a)-[anon_6:Y]->(anon_7)")
         .|.argument("a")
         .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_4:X]->(anon_5)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -279,7 +278,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .selectOrSemiApply("a.prop > 4")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -292,7 +291,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .selectOrSemiApply("a.prop > 4 OR a.prop2 = 9")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -305,7 +304,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .selectOrAntiSemiApply("a.prop = 9")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -317,11 +316,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("anon_2")
-        .|.expandAll("(a)-[anon_1:X]->(anon_1)")
+        .selectOrAntiSemiApply("anon_8")
+        .|.expandAll("(a)-[anon_6:X]->(anon_7)")
         .|.argument("a")
-        .letSelectOrSemiApply("anon_2", "a.prop = 9") // anon_2 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
-        .|.expandAll("(a)-[anon_0:Y]->(anon_0)")
+        .letSelectOrSemiApply("anon_8", "a.prop = 9") // anon_8 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.expandAll("(a)-[anon_4:Y]->(anon_5)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -333,11 +332,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("anon_2")
-        .|.expandAll("(a)-[anon_1:X]->(anon_1)")
+        .selectOrAntiSemiApply("anon_8")
+        .|.expandAll("(a)-[anon_6:X]->(anon_7)")
         .|.argument("a")
-        .letSemiApply("anon_2") // anon_2 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
-        .|.expandAll("(a)-[anon_0:Y]->(anon_0)")
+        .letSemiApply("anon_8") // anon_8 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.expandAll("(a)-[anon_4:Y]->(anon_5)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -349,11 +348,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("anon_2")
-        .|.expandAll("(a)-[anon_1:X]->(anon_1)")
+        .selectOrAntiSemiApply("anon_8")
+        .|.expandAll("(a)-[anon_6:X]->(anon_7)")
         .|.argument("a")
-        .letAntiSemiApply("anon_2") // anon_2 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
-        .|.expandAll("(a)-[anon_0:Y]->(anon_0)")
+        .letAntiSemiApply("anon_8") // anon_8 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.expandAll("(a)-[anon_4:Y]->(anon_5)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -366,8 +365,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filter("anon_0:Foo")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -380,8 +379,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.filter("anon_0:Foo")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -394,8 +393,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filter("anon_0:Foo")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -408,8 +407,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.filter("anon_0:Foo")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -422,8 +421,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filter("anon_0:Foo")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -436,8 +435,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.filter("anon_0:Foo")
-        .|.expandAll("(a)-[anon_0:X]->(anon_0)")
+        .|.filter("anon_3:Foo")
+        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .allNodeScan("a")
         .build()

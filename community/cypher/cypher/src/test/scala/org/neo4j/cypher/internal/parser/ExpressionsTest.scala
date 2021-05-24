@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module
@@ -130,6 +130,6 @@ class ExpressionsTest extends ParserTest[internal.expressions.Expression, comman
 
   }
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AllNameGenerators()))
+  private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AnonymousVariableNameGenerator()))
   def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

@@ -49,7 +49,7 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
@@ -112,7 +112,7 @@ case class FabricFrontEnd(
       val errorHandler: Seq[SemanticErrorDef] => Unit = (errors: Seq[SemanticErrorDef]) =>
         errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
 
-      val allNameGenerators = new AllNameGenerators()
+      val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     }
 
     private val compatibilityMode =

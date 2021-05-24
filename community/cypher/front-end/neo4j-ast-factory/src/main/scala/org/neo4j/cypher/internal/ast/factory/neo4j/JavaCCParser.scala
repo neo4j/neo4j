@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -49,9 +49,9 @@ case object JavaCCParser {
     FALLBACK_TRIGGERS.exists(upper.contains)
   }
 
-  def parse(queryText: String, cypherExceptionFactory: CypherExceptionFactory, allNameGenerators: AllNameGenerators): Statement = {
+  def parse(queryText: String, cypherExceptionFactory: CypherExceptionFactory, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Statement = {
     val charStream = new CypherCharStream(queryText)
-    val astFactory = new Neo4jASTFactory(queryText, allNameGenerators)
+    val astFactory = new Neo4jASTFactory(queryText, anonymousVariableNameGenerator)
     val astExceptionFactory = new Neo4jASTExceptionFactory(cypherExceptionFactory)
 
     val statements = new Cypher(astFactory, astExceptionFactory, charStream).Statements()

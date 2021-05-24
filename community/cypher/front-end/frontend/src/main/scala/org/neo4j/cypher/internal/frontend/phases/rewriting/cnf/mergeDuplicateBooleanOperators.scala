@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates.coerceInnerExpressionToBooleanIfNecessary
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -42,7 +42,7 @@ case object mergeDuplicateBooleanOperators extends ASTRewriterFactory with CnfPh
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           allNameGenerators: AllNameGenerators): Rewriter = mergeDuplicateBooleanOperators(semanticState)
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = mergeDuplicateBooleanOperators(semanticState)
 
   override def getRewriter(from: BaseState,
                            context: BaseContext): Rewriter = this (from.semantics())

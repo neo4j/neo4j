@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.Log
 
@@ -36,7 +36,7 @@ case class CommunityRuntimeContext(tokenContext: TokenContext,
                                    schemaRead: SchemaRead,
                                    log: Log,
                                    config: CypherRuntimeConfiguration,
-                                   allNameGenerators: AllNameGenerators,
+                                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
                                   ) extends RuntimeContext {
 
   override def compileExpressions: Boolean = false
@@ -51,9 +51,9 @@ case class CommunityRuntimeContextManager(log: Log, config: CypherRuntimeConfigu
                       ignore2: Boolean,
                       ignore3: CypherOperatorEngineOption,
                       ignore4: CypherInterpretedPipesFallbackOption,
-                      allNameGenerators: AllNameGenerators,
+                      anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
                      ): CommunityRuntimeContext =
-    CommunityRuntimeContext(tokenContext, schemaRead, log, config, allNameGenerators)
+    CommunityRuntimeContext(tokenContext, schemaRead, log, config, anonymousVariableNameGenerator)
 
   // As we rely completely on transaction bound resources in community,
   // there is no need for further assertions here.

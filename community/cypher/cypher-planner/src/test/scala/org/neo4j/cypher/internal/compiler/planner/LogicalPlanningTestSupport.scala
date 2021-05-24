@@ -87,7 +87,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
@@ -210,7 +210,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      allNameGenerators = new AllNameGenerators()
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     )
   }
 
@@ -236,7 +236,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       idGen = idGen,
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      allNameGenerators = new AllNameGenerators())
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator())
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]

@@ -86,7 +86,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -363,7 +363,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         idGen = idGen,
         executionModel = config.executionModel,
         debugOptions = CypherDebugOptions.default,
-        allNameGenerators = new AllNameGenerators(),
+        anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       )
       f(config, ctx)
     }
@@ -386,7 +386,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         idGen = idGen,
         executionModel = config.executionModel,
         debugOptions = CypherDebugOptions.default,
-        allNameGenerators = new AllNameGenerators(),
+        anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       )
       f(config, ctx)
     }

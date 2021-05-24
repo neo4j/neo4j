@@ -35,7 +35,7 @@ case class AstRewriting(parameterTypeMapping : Map[String, CypherType] = Map.emp
 
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    val rewrittenStatement = ASTRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory, context.allNameGenerators)
+    val rewrittenStatement = ASTRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory, context.anonymousVariableNameGenerator)
     in.withStatement(rewrittenStatement)
   }
 

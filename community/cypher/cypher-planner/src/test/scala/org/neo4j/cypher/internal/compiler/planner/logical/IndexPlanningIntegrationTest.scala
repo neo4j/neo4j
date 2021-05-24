@@ -282,7 +282,7 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
     plan shouldEqual cfg.subPlanBuilder()
       .semiApply()
-      .|.expandInto("(a)-[anon_0]-(b)")
+      .|.expandInto("(a)-[anon_2]-(b)")
       .|.filter("cacheN[a.prop] = $param", "a:Label")
       .|.argument("a", "b")
       .cartesianProduct()

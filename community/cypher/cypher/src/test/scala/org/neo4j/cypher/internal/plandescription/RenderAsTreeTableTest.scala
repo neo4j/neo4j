@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import java.util.Locale
-
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
@@ -52,6 +50,8 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.scalatest.BeforeAndAfterAll
+
+import java.util.Locale
 
 class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
@@ -362,10 +362,10 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |""".stripMargin)
   }
 
-  test("Anonymizes fresh ids in provided order") {
+  test("Anonymizes anonymous variables in provided order") {
     val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
     val providedOrders = new ProvidedOrders
-    providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  FRESHID42")))
+    providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  UNNAMED42")))
     val description = LogicalPlan2PlanDescription(readOnly = true, new EffectiveCardinalities, withRawCardinalities = false, providedOrders, StubExecutionPlan().operatorMetadata)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(

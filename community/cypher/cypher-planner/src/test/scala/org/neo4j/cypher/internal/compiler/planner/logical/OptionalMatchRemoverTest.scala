@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -50,7 +50,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private def rewriter: Rewriter = {
     val context = mock[PlannerContext]
-    when(context.allNameGenerators).thenReturn(new AllNameGenerators())
+    when(context.anonymousVariableNameGenerator).thenReturn(new AnonymousVariableNameGenerator())
     OptionalMatchRemover.instance(context)
   }
 
@@ -382,7 +382,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = SemanticChecker.check(ast)
     onError(result.errors)
     val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes.mapValues(_.scope))
-    StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table, new AllNameGenerators())
+    StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table, new AnonymousVariableNameGenerator())
   }
 
   private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None))

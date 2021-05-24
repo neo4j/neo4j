@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
-case class PropertyPredicateNormalizer(allNameGenerators: AllNameGenerators) extends MatchPredicateNormalizer {
+case class PropertyPredicateNormalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case NodePattern(Some(id), _, Some(props)) if !isParameter(props) =>
       propertyPredicates(id, props)
@@ -64,7 +64,7 @@ case class PropertyPredicateNormalizer(allNameGenerators: AllNameGenerators) ext
   }
 
   private def varLengthPropertyPredicates(id: LogicalVariable, props: Expression): Expression = {
-    val idName = allNameGenerators.freshIdNameGenerator.nextName
+    val idName = anonymousVariableNameGenerator.nextName
     val newId = Variable(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
     val conjunction = conjunct(expressions)

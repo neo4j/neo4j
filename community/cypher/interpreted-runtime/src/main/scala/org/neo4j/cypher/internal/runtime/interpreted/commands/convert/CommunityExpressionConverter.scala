@@ -129,7 +129,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.pipes
-import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -138,7 +138,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.ZERO_INT
 import org.neo4j.values.storable.Values.intValue
 
-case class CommunityExpressionConverter(tokenContext: TokenContext, allNameGenerators: AllNameGenerators) extends ExpressionConverter {
+case class CommunityExpressionConverter(tokenContext: TokenContext, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends ExpressionConverter {
 
   override def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection] = {
     val projected = for ((k,Some(v)) <- projections.mapValues(e => toCommandExpression(id, e, self))) yield (k,v)
@@ -193,7 +193,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext, allNameGener
       case ParameterFromSlot(offset, name, _) => commands.expressions.ParameterFromSlot(offset, name)
       case e: internal.expressions.CaseExpression => caseExpression(id, e, self)
       case e: internal.expressions.ShortestPathExpression => commands.expressions
-        .ShortestPathExpression(e.pattern.asLegacyPatterns(id, None, self, allNameGenerators).head, operatorId = id)
+        .ShortestPathExpression(e.pattern.asLegacyPatterns(id, None, self, anonymousVariableNameGenerator).head, operatorId = id)
       case e: internal.expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
       case e: internal.expressions.HasLabels => hasLabels(id, e, self)
       case e: internal.expressions.HasTypes => hasTypes(id, e, self)
