@@ -19,9 +19,6 @@
  */
 package org.neo4j.fabric.planning
 
-import java.time.Duration
-import java.util.Optional
-
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.CypherExecutionMode
 import org.neo4j.cypher.CypherExpressionEngineOption
@@ -64,8 +61,9 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import java.time.Duration
+import java.util.Optional
 import scala.collection.JavaConverters.setAsJavaSetConverter
-import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -1395,12 +1393,7 @@ class FabricPlannerTest
     }
   }
 
-  implicit class Caster[A](a: A) {
-    def as[T](implicit ct: ClassTag[T]): T = {
-      assert(ct.runtimeClass.isInstance(a), s"expected: ${ct.runtimeClass.getName}, was: ${a.getClass.getName}")
-      a.asInstanceOf[T]
-    }
-
+  implicit class CheckSyntax[A](a: A) {
     def check(f: A => Any): A = {
       f(a)
       a

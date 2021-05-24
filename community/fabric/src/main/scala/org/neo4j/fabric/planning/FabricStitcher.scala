@@ -116,7 +116,7 @@ case class FabricStitcher(
       if (lastInChain)
         Seq.empty
       else
-        Ast.aliasedReturn(leaf.clauses.last, leaf.outputColumns, pos).toSeq,
+        Ast.aliasedReturn(leaf.clauses.last, leaf.outputColumns, leaf.clauses.last.position.bumped()).toSeq,
     ).flatten
 
     asExec(

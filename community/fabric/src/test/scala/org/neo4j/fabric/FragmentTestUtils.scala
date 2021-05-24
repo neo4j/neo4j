@@ -52,6 +52,8 @@ import org.neo4j.fabric.util.Rewritten.RewritingOps
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
+import scala.reflect.ClassTag
+
 trait FragmentTestUtils {
 
   def init(use: Use, argumentColumns: Seq[String] = Seq(), importColumns: Seq[String] = Seq()): Init =
@@ -137,5 +139,12 @@ trait FragmentTestUtils {
         .topDown {
           case e: Fragment.Exec => e.copy(localQuery = dummyLocalQuery, remoteQuery = dummyRemoteQuery)
         }
+  }
+
+  implicit class Caster[A](a: A) {
+    def as[T](implicit ct: ClassTag[T]): T = {
+      assert(ct.runtimeClass.isInstance(a), s"expected: ${ct.runtimeClass.getName}, was: ${a.getClass.getName}")
+      a.asInstanceOf[T]
+    }
   }
 }
