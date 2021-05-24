@@ -454,6 +454,18 @@ public class AllStoreHolder extends Read
         return storageReader.indexGetForSchema( schema );
     }
 
+    @Override
+    public Iterator<IndexDescriptor> getLabelIndexesNonTransactional( int labelId )
+    {
+        return storageReader.indexesGetForLabel( labelId );
+    }
+
+    @Override
+    public Iterator<IndexDescriptor> getRelTypeIndexesNonTransactional( int relTypeId )
+    {
+        return storageReader.indexesGetForRelationshipType( relTypeId );
+    }
+
     /**
      * Lock the given index if it is valid and exists.
      *

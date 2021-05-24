@@ -39,10 +39,12 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -481,6 +483,43 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    void shouldListIndexesByLabelNonTransactional() throws Exception
+    {
+        IndexDescriptor inStore;
+        IndexDescriptor droppedInTx;
+        IndexDescriptor createdInTx;
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            inStore = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
+            droppedInTx = tx.schemaWrite().indexCreate( forLabel( label, prop2 ), "b" );
+
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            createdInTx = tx.schemaWrite().indexCreate( forLabel( label, prop3 ), "c" );
+            tx.schemaWrite().indexDrop( droppedInTx );
+
+            // Should not include the index changes happening in the transaction (non-transactional)
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonTransactional( label );
+            assertThat( indexes ).contains( inStore, droppedInTx );
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // Should not take any locks
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonTransactional( label );
+            assertThat( indexes ).contains( inStore, createdInTx );
+            assertEquals(((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
+
+            tx.commit();
+        }
+    }
+
+    @Test
     void shouldListIndexesByLabelInSnapshot() throws Exception
     {
         int wrongLabel;
@@ -510,6 +549,43 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().snapshot().indexesGetForLabel( label );
             assertThat( indexes ).contains( inStore, createdInTx );
             assertThat( before.indexesGetForLabel( label ) ).toIterable().contains( inStore, createdInTx );
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldListIndexesByRelationshipTypeNonTransactional() throws Exception
+    {
+        IndexDescriptor inStore;
+        IndexDescriptor droppedInTx;
+        IndexDescriptor createdInTx;
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            inStore = tx.schemaWrite().indexCreate( forRelType( type, prop1 ), "a" );
+            droppedInTx = tx.schemaWrite().indexCreate( forRelType( type, prop2 ), "b" );
+
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            createdInTx = tx.schemaWrite().indexCreate( forRelType( type, prop3 ), "c" );
+            tx.schemaWrite().indexDrop( droppedInTx );
+
+            // Should not include the index changes happening in the transaction (non-transactional)
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getRelTypeIndexesNonTransactional( type );
+            assertThat( indexes ).contains( inStore, droppedInTx );
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            // Should not take any locks
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getRelTypeIndexesNonTransactional( type );
+            assertThat( indexes ).contains( inStore, createdInTx );
+            assertEquals(((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
 
             tx.commit();
         }
