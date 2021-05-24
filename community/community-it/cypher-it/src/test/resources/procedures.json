@@ -1,0 +1,3765 @@
+[
+  {
+    "name": "db.awaitIndex",
+    "description": "Wait for an index to come online (for example: CALL db.awaitIndex(\"MyIndex\", 300)).",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.awaitIndex(indexName :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=300, type=INTEGER?}",
+        "name": "timeOutSeconds",
+        "description": "timeOutSeconds = 300 :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.awaitIndexes",
+    "description": "Wait for all indexes to come online (for example: CALL db.awaitIndexes(300)).",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.awaitIndexes(timeOutSeconds = 300 :: INTEGER?) :: VOID",
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=300, type=INTEGER?}",
+        "name": "timeOutSeconds",
+        "description": "timeOutSeconds = 300 :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.checkpoint",
+    "description": "Initiate and wait for a new check point, or wait any already on-going check point to complete. Note that this temporarily disables the `dbms.checkpoint.iops.limit` setting in order to make the check point complete faster. This might cause transaction throughput to degrade slightly, due to increased IO load.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "db.checkpoint() :: (success :: BOOLEAN?, message :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "success",
+        "description": "success :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "db.clearQueryCaches",
+    "description": "Clears all query caches.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "db.clearQueryCaches() :: (value :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "value",
+        "description": "value :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.constraints",
+    "description": "List all constraints in the database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.constraints() :: (name :: STRING?, description :: STRING?, details :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "details",
+        "description": "details :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.createIndex",
+    "description": "Create a named schema index with specified index provider and configuration (optional). Yield: name, labels, properties, providerName, status",
+    "mode": "SCHEMA",
+    "worksOnSystem": false,
+    "signature": "db.createIndex(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, config = {} :: MAP?) :: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labels",
+        "description": "labels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "providerName",
+        "description": "providerName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labels",
+        "description": "labels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "providerName",
+        "description": "providerName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.createLabel",
+    "description": "Create a label",
+    "mode": "WRITE",
+    "worksOnSystem": false,
+    "signature": "db.createLabel(newLabel :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "newLabel",
+        "description": "newLabel :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.createNodeKey",
+    "description": "Create a named node key constraint. Backing index will use specified index provider and configuration (optional). Yield: name, labels, properties, providerName, status",
+    "mode": "SCHEMA",
+    "worksOnSystem": false,
+    "signature": "db.createNodeKey(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, config = {} :: MAP?) :: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "constraintName",
+        "description": "constraintName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labels",
+        "description": "labels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "providerName",
+        "description": "providerName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labels",
+        "description": "labels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "providerName",
+        "description": "providerName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "db.createProperty",
+    "description": "Create a Property",
+    "mode": "WRITE",
+    "worksOnSystem": false,
+    "signature": "db.createProperty(newProperty :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "newProperty",
+        "description": "newProperty :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.createRelationshipType",
+    "description": "Create a RelationshipType",
+    "mode": "WRITE",
+    "worksOnSystem": false,
+    "signature": "db.createRelationshipType(newRelationshipType :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "newRelationshipType",
+        "description": "newRelationshipType :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.createUniquePropertyConstraint",
+    "description": "Create a named unique property constraint. Backing index will use specified index provider and configuration (optional). Yield: name, labels, properties, providerName, status",
+    "mode": "SCHEMA",
+    "worksOnSystem": false,
+    "signature": "db.createUniquePropertyConstraint(constraintName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, config = {} :: MAP?) :: (name :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, providerName :: STRING?, status :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "constraintName",
+        "description": "constraintName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labels",
+        "description": "labels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "providerName",
+        "description": "providerName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labels",
+        "description": "labels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "providerName",
+        "description": "providerName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.fulltext.awaitEventuallyConsistentIndexRefresh",
+    "description": "Wait for the updates from recently committed transactions to be applied to any eventually-consistent full-text indexes.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.index.fulltext.awaitEventuallyConsistentIndexRefresh() :: VOID",
+    "argumentDescription": [],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.fulltext.createNodeIndex",
+    "description": "Create a node full-text index for the given labels and properties. The optional 'config' map parameter can be used to supply settings to the index. Supported settings are 'analyzer', for specifying what analyzer to use when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. And 'eventually_consistent' which can be set to 'true' to make this index eventually consistent, such that updates from committing transactions are applied in a background thread.",
+    "mode": "SCHEMA",
+    "worksOnSystem": false,
+    "signature": "db.index.fulltext.createNodeIndex(indexName :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labels",
+        "description": "labels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.fulltext.createRelationshipIndex",
+    "description": "Create a relationship full-text index for the given relationship types and properties. The optional 'config' map parameter can be used to supply settings to the index. Supported settings are 'analyzer', for specifying what analyzer to use when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. And 'eventually_consistent' which can be set to 'true' to make this index eventually consistent, such that updates from committing transactions are applied in a background thread.",
+    "mode": "SCHEMA",
+    "worksOnSystem": false,
+    "signature": "db.index.fulltext.createRelationshipIndex(indexName :: STRING?, relationshipTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "relationshipTypes",
+        "description": "relationshipTypes :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.fulltext.drop",
+    "description": "Drop the specified index.",
+    "mode": "SCHEMA",
+    "worksOnSystem": false,
+    "signature": "db.index.fulltext.drop(indexName :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.fulltext.listAvailableAnalyzers",
+    "description": "List the available analyzers that the full-text indexes can be configured with.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.index.fulltext.listAvailableAnalyzers() :: (analyzer :: STRING?, description :: STRING?, stopwords :: LIST? OF STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "analyzer",
+        "description": "analyzer :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "stopwords",
+        "description": "stopwords :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.fulltext.queryNodes",
+    "description": "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.index.fulltext.queryNodes(indexName :: STRING?, queryString :: STRING?, options = {} :: MAP?) :: (node :: NODE?, score :: FLOAT?)",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "queryString",
+        "description": "queryString :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "options",
+        "description": "options = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "node",
+        "description": "node :: NODE?",
+        "type": "NODE?"
+      },
+      {
+        "name": "score",
+        "description": "score :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.index.fulltext.queryRelationships",
+    "description": "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score. Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.index.fulltext.queryRelationships(indexName :: STRING?, queryString :: STRING?, options = {} :: MAP?) :: (relationship :: RELATIONSHIP?, score :: FLOAT?)",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "queryString",
+        "description": "queryString :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "options",
+        "description": "options = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "relationship",
+        "description": "relationship :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      },
+      {
+        "name": "score",
+        "description": "score :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.indexDetails",
+    "description": "Detailed description of specific index.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.indexDetails(indexName :: STRING?) :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?, indexConfig :: MAP?, failureMessage :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "id",
+        "description": "id :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "state",
+        "description": "state :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "populationPercent",
+        "description": "populationPercent :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "uniqueness",
+        "description": "uniqueness :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "type",
+        "description": "type :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "entityType",
+        "description": "entityType :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labelsOrTypes",
+        "description": "labelsOrTypes :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "provider",
+        "description": "provider :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "indexConfig",
+        "description": "indexConfig :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "name": "failureMessage",
+        "description": "failureMessage :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.indexes",
+    "description": "List all indexes in the database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.indexes() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "id",
+        "description": "id :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "state",
+        "description": "state :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "populationPercent",
+        "description": "populationPercent :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "uniqueness",
+        "description": "uniqueness :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "type",
+        "description": "type :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "entityType",
+        "description": "entityType :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "labelsOrTypes",
+        "description": "labelsOrTypes :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "properties",
+        "description": "properties :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "provider",
+        "description": "provider :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.info",
+    "description": "Provides information regarding the database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.info() :: (id :: STRING?, name :: STRING?, creationDate :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "id",
+        "description": "id :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "creationDate",
+        "description": "creationDate :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.labels",
+    "description": "List all available labels in the database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.labels() :: (label :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "label",
+        "description": "label :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.listLocks",
+    "description": "List all locks at this database.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "db.listLocks() :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?, transactionId :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "mode",
+        "description": "mode :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "resourceType",
+        "description": "resourceType :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "resourceId",
+        "description": "resourceId :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "transactionId",
+        "description": "transactionId :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "db.ping",
+    "description": "This procedure can be used by client side tooling to test whether they are correctly connected to a database. The procedure is available in all databases and always returns true. A faulty connection can be detected by not being able to call this procedure.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.ping() :: (success :: BOOLEAN?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "success",
+        "description": "success :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.prepareForReplanning",
+    "description": "Triggers an index resample and waits for it to complete, and after that clears query caches. After this procedure has finished queries will be planned using the latest database statistics.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.prepareForReplanning(timeOutSeconds = 300 :: INTEGER?) :: VOID",
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=300, type=INTEGER?}",
+        "name": "timeOutSeconds",
+        "description": "timeOutSeconds = 300 :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.propertyKeys",
+    "description": "List all property keys in the database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.propertyKeys() :: (propertyKey :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "propertyKey",
+        "description": "propertyKey :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.relationshipTypes",
+    "description": "List all available relationship types in the database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.relationshipTypes() :: (relationshipType :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "relationshipType",
+        "description": "relationshipType :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.resampleIndex",
+    "description": "Schedule resampling of an index (for example: CALL db.resampleIndex(\"MyIndex\")).",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.resampleIndex(indexName :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "indexName",
+        "description": "indexName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.resampleOutdatedIndexes",
+    "description": "Schedule resampling of all outdated indexes.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.resampleOutdatedIndexes() :: VOID",
+    "argumentDescription": [],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.schema.nodeTypeProperties",
+    "description": "Show the derived property schema of the nodes in tabular form.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.schema.nodeTypeProperties() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "nodeType",
+        "description": "nodeType :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "nodeLabels",
+        "description": "nodeLabels :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "propertyName",
+        "description": "propertyName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "propertyTypes",
+        "description": "propertyTypes :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "mandatory",
+        "description": "mandatory :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.schema.relTypeProperties",
+    "description": "Show the derived property schema of the relationships in tabular form.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.schema.relTypeProperties() :: (relType :: STRING?, propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "relType",
+        "description": "relType :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "propertyName",
+        "description": "propertyName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "propertyTypes",
+        "description": "propertyTypes :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "mandatory",
+        "description": "mandatory :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.schema.visualization",
+    "description": "Visualize the schema of the data.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.schema.visualization() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "nodes",
+        "description": "nodes :: LIST? OF NODE?",
+        "type": "LIST? OF NODE?"
+      },
+      {
+        "name": "relationships",
+        "description": "relationships :: LIST? OF RELATIONSHIP?",
+        "type": "LIST? OF RELATIONSHIP?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.schemaStatements",
+    "description": "List all statements for creating and dropping existing indexes and constraints. Note that only index types introduced before Neo4j 4.3 are included.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.schemaStatements() :: (name :: STRING?, type :: STRING?, createStatement :: STRING?, dropStatement :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "type",
+        "description": "type :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "createStatement",
+        "description": "createStatement :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "dropStatement",
+        "description": "dropStatement :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.stats.clear",
+    "description": "Clear collected data of a given data section. Valid sections are 'QUERIES'",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.stats.clear(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "success",
+        "description": "success :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.stats.collect",
+    "description": "Start data collection of a given data section. Valid sections are 'QUERIES'",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.stats.collect(section :: STRING?, config = {} :: MAP?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "success",
+        "description": "success :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.stats.retrieve",
+    "description": "Retrieve statistical data about the current database. Valid sections are 'GRAPH COUNTS', 'TOKENS', 'QUERIES', 'META'",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.stats.retrieve(section :: STRING?, config = {} :: MAP?) :: (section :: STRING?, data :: MAP?)",
+    "argumentDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "data",
+        "description": "data :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.stats.retrieveAllAnonymized",
+    "description": "Retrieve all available statistical data about the current database, in an anonymized form.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.stats.retrieveAllAnonymized(graphToken :: STRING?, config = {} :: MAP?) :: (section :: STRING?, data :: MAP?)",
+    "argumentDescription": [
+      {
+        "name": "graphToken",
+        "description": "graphToken :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value={}, type=MAP?}",
+        "name": "config",
+        "description": "config = {} :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "data",
+        "description": "data :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.stats.status",
+    "description": "Retrieve the status of all available collector daemons, for this database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.stats.status() :: (section :: STRING?, status :: STRING?, data :: MAP?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "data",
+        "description": "data :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "db.stats.stop",
+    "description": "Stop data collection of a given data section. Valid sections are 'QUERIES'",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "db.stats.stop(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "section",
+        "description": "section :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "success",
+        "description": "success :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.cluster.overview",
+    "description": "Overview of all currently accessible cluster members, their databases and roles.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.cluster.overview() :: (id :: STRING?, addresses :: LIST? OF STRING?, databases :: MAP?, groups :: LIST? OF STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "id",
+        "description": "id :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "addresses",
+        "description": "addresses :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "databases",
+        "description": "databases :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "name": "groups",
+        "description": "groups :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.cluster.protocols",
+    "description": "Overview of installed protocols",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.cluster.protocols() :: (orientation :: STRING?, remoteAddress :: STRING?, applicationProtocol :: STRING?, applicationProtocolVersion :: INTEGER?, modifierProtocols :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "orientation",
+        "description": "orientation :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "remoteAddress",
+        "description": "remoteAddress :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "applicationProtocol",
+        "description": "applicationProtocol :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "applicationProtocolVersion",
+        "description": "applicationProtocolVersion :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "modifierProtocols",
+        "description": "modifierProtocols :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.cluster.role",
+    "description": "The role of this instance in the cluster for the specified database.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.cluster.role(database :: STRING?) :: (role :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "database",
+        "description": "database :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "role",
+        "description": "role :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.cluster.routing.getRoutingTable",
+    "description": "Returns endpoints of this instance.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.cluster.routing.getRoutingTable(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
+    "argumentDescription": [
+      {
+        "name": "context",
+        "description": "context :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=STRING?}",
+        "name": "database",
+        "description": "database = null :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "ttl",
+        "description": "ttl :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "servers",
+        "description": "servers :: LIST? OF MAP?",
+        "type": "LIST? OF MAP?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.components",
+    "description": "List DBMS components and their versions.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "versions",
+        "description": "versions :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "edition",
+        "description": "edition :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.database.state",
+    "description": "The actual status of the database with the provided name on this neo4j instance.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.database.state(databaseName :: STRING?) :: (role :: STRING?, address :: STRING?, status :: STRING?, error :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "role",
+        "description": "role :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "address",
+        "description": "address :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "error",
+        "description": "error :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.functions",
+    "description": "List all functions in the DBMS.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.functions() :: (name :: STRING?, signature :: STRING?, category :: STRING?, description :: STRING?, aggregating :: BOOLEAN?, defaultBuiltInRoles :: LIST? OF STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "signature",
+        "description": "signature :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "category",
+        "description": "category :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "aggregating",
+        "description": "aggregating :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "defaultBuiltInRoles",
+        "description": "defaultBuiltInRoles :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.info",
+    "description": "Provides information regarding the DBMS.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.info() :: (id :: STRING?, name :: STRING?, creationDate :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "id",
+        "description": "id :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "creationDate",
+        "description": "creationDate :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.killConnection",
+    "description": "Kill network connection with the given connection id.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.killConnection(id :: STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "id",
+        "description": "id :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "connectionId",
+        "description": "connectionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.killConnections",
+    "description": "Kill all network connections with the given connection ids.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.killConnections(ids :: LIST? OF STRING?) :: (connectionId :: STRING?, username :: STRING?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "ids",
+        "description": "ids :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "connectionId",
+        "description": "connectionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.killQueries",
+    "description": "Kill all transactions executing a query with any of the given query ids.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.killQueries(ids :: LIST? OF STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "ids",
+        "description": "ids :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "queryId",
+        "description": "queryId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.killQuery",
+    "description": "Kill all transactions executing the query with the given query id.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.killQuery(id :: STRING?) :: (queryId :: STRING?, username :: STRING?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "id",
+        "description": "id :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "queryId",
+        "description": "queryId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.killTransaction",
+    "description": "Kill transaction with provided id.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.killTransaction(id :: STRING?) :: (transactionId :: STRING?, username :: STRING?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "id",
+        "description": "id :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "transactionId",
+        "description": "transactionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.killTransactions",
+    "description": "Kill transactions with provided ids.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.killTransactions(ids :: LIST? OF STRING?) :: (transactionId :: STRING?, username :: STRING?, message :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "ids",
+        "description": "ids :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "transactionId",
+        "description": "transactionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "message",
+        "description": "message :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.listActiveLocks",
+    "description": "List the active lock requests granted for the transaction executing the query with the given query id.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.listActiveLocks(queryId :: STRING?) :: (mode :: STRING?, resourceType :: STRING?, resourceId :: INTEGER?)",
+    "argumentDescription": [
+      {
+        "name": "queryId",
+        "description": "queryId :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "mode",
+        "description": "mode :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "resourceType",
+        "description": "resourceType :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "resourceId",
+        "description": "resourceId :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.listCapabilities",
+    "description": "List capabilities",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.listCapabilities() :: (name :: STRING?, description :: STRING?, value :: ANY?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "value",
+        "description": "value :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.listConfig",
+    "description": "List the currently active config of Neo4j.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=, type=STRING?}",
+        "name": "searchString",
+        "description": "searchString =  :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "value",
+        "description": "value :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "dynamic",
+        "description": "dynamic :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.listConnections",
+    "description": "List all accepted network connections at this instance that are visible to the user.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.listConnections() :: (connectionId :: STRING?, connectTime :: STRING?, connector :: STRING?, username :: STRING?, userAgent :: STRING?, serverAddress :: STRING?, clientAddress :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "connectionId",
+        "description": "connectionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "connectTime",
+        "description": "connectTime :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "connector",
+        "description": "connector :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "userAgent",
+        "description": "userAgent :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "serverAddress",
+        "description": "serverAddress :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "clientAddress",
+        "description": "clientAddress :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.listPools",
+    "description": "List all memory pools, including sub pools, currently registered at this instance that are visible to the user.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.listPools() :: (pool :: STRING?, databaseName :: STRING?, heapMemoryUsed :: STRING?, heapMemoryUsedBytes :: STRING?, nativeMemoryUsed :: STRING?, nativeMemoryUsedBytes :: STRING?, freeMemory :: STRING?, freeMemoryBytes :: STRING?, totalPoolMemory :: STRING?, totalPoolMemoryBytes :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "pool",
+        "description": "pool :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "heapMemoryUsed",
+        "description": "heapMemoryUsed :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "heapMemoryUsedBytes",
+        "description": "heapMemoryUsedBytes :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "nativeMemoryUsed",
+        "description": "nativeMemoryUsed :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "nativeMemoryUsedBytes",
+        "description": "nativeMemoryUsedBytes :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "freeMemory",
+        "description": "freeMemory :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "freeMemoryBytes",
+        "description": "freeMemoryBytes :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "totalPoolMemory",
+        "description": "totalPoolMemory :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "totalPoolMemoryBytes",
+        "description": "totalPoolMemoryBytes :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.listQueries",
+    "description": "List all queries currently executing at this instance that are visible to the user.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.listQueries() :: (queryId :: STRING?, username :: STRING?, metaData :: MAP?, query :: STRING?, parameters :: MAP?, planner :: STRING?, runtime :: STRING?, indexes :: LIST? OF MAP?, startTime :: STRING?, protocol :: STRING?, clientAddress :: STRING?, requestUri :: STRING?, status :: STRING?, resourceInformation :: MAP?, activeLockCount :: INTEGER?, elapsedTimeMillis :: INTEGER?, cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, allocatedBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, database :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "queryId",
+        "description": "queryId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "metaData",
+        "description": "metaData :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "name": "query",
+        "description": "query :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "parameters",
+        "description": "parameters :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "name": "planner",
+        "description": "planner :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "runtime",
+        "description": "runtime :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "indexes",
+        "description": "indexes :: LIST? OF MAP?",
+        "type": "LIST? OF MAP?"
+      },
+      {
+        "name": "startTime",
+        "description": "startTime :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "protocol",
+        "description": "protocol :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "clientAddress",
+        "description": "clientAddress :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "requestUri",
+        "description": "requestUri :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "resourceInformation",
+        "description": "resourceInformation :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "name": "activeLockCount",
+        "description": "activeLockCount :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "elapsedTimeMillis",
+        "description": "elapsedTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "cpuTimeMillis",
+        "description": "cpuTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "waitTimeMillis",
+        "description": "waitTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "idleTimeMillis",
+        "description": "idleTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "allocatedBytes",
+        "description": "allocatedBytes :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "pageHits",
+        "description": "pageHits :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "pageFaults",
+        "description": "pageFaults :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "connectionId",
+        "description": "connectionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "database",
+        "description": "database :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.listTransactions",
+    "description": "List all transactions currently executing at this instance that are visible to the user.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.listTransactions() :: (transactionId :: STRING?, username :: STRING?, metaData :: MAP?, startTime :: STRING?, protocol :: STRING?, clientAddress :: STRING?, requestUri :: STRING?, currentQueryId :: STRING?, currentQuery :: STRING?, activeLockCount :: INTEGER?, status :: STRING?, resourceInformation :: MAP?, elapsedTimeMillis :: INTEGER?, cpuTimeMillis :: INTEGER?, waitTimeMillis :: INTEGER?, idleTimeMillis :: INTEGER?, allocatedBytes :: INTEGER?, allocatedDirectBytes :: INTEGER?, pageHits :: INTEGER?, pageFaults :: INTEGER?, connectionId :: STRING?, initializationStackTrace :: STRING?, database :: STRING?, estimatedUsedHeapMemory :: INTEGER?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "transactionId",
+        "description": "transactionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "metaData",
+        "description": "metaData :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "name": "startTime",
+        "description": "startTime :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "protocol",
+        "description": "protocol :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "clientAddress",
+        "description": "clientAddress :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "requestUri",
+        "description": "requestUri :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "currentQueryId",
+        "description": "currentQueryId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "currentQuery",
+        "description": "currentQuery :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "activeLockCount",
+        "description": "activeLockCount :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "resourceInformation",
+        "description": "resourceInformation :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "name": "elapsedTimeMillis",
+        "description": "elapsedTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "cpuTimeMillis",
+        "description": "cpuTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "waitTimeMillis",
+        "description": "waitTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "idleTimeMillis",
+        "description": "idleTimeMillis :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "allocatedBytes",
+        "description": "allocatedBytes :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "allocatedDirectBytes",
+        "description": "allocatedDirectBytes :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "pageHits",
+        "description": "pageHits :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "pageFaults",
+        "description": "pageFaults :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "connectionId",
+        "description": "connectionId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "initializationStackTrace",
+        "description": "initializationStackTrace :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "database",
+        "description": "database :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "estimatedUsedHeapMemory",
+        "description": "estimatedUsedHeapMemory :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.procedures",
+    "description": "List all procedures in the DBMS.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?, mode :: STRING?, defaultBuiltInRoles :: LIST? OF STRING?, worksOnSystem :: BOOLEAN?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "signature",
+        "description": "signature :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "mode",
+        "description": "mode :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "defaultBuiltInRoles",
+        "description": "defaultBuiltInRoles :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "worksOnSystem",
+        "description": "worksOnSystem :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.quarantineDatabase",
+    "description": "Place a database into quarantine or remove from it.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.quarantineDatabase(databaseName :: STRING?, setStatus :: BOOLEAN?, reason = No reason given :: STRING?) :: (databaseName :: STRING?, quarantined :: BOOLEAN?, result :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "setStatus",
+        "description": "setStatus :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "default": "DefaultParameterValue{value=No reason given, type=STRING?}",
+        "name": "reason",
+        "description": "reason = No reason given :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "quarantined",
+        "description": "quarantined :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      },
+      {
+        "name": "result",
+        "description": "result :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.queryJmx",
+    "description": "Query JMX management data by domain and name. For instance, \"*:*\"",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)",
+    "argumentDescription": [
+      {
+        "name": "query",
+        "description": "query :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "name",
+        "description": "name :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "attributes",
+        "description": "attributes :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.routing.getRoutingTable",
+    "description": "Returns endpoints of this instance.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.routing.getRoutingTable(context :: MAP?, database = null :: STRING?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
+    "argumentDescription": [
+      {
+        "name": "context",
+        "description": "context :: MAP?",
+        "type": "MAP?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=STRING?}",
+        "name": "database",
+        "description": "database = null :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "ttl",
+        "description": "ttl :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "servers",
+        "description": "servers :: LIST? OF MAP?",
+        "type": "LIST? OF MAP?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.scheduler.failedJobs",
+    "description": "List failed job runs. There is a limit for amount of historical data.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.scheduler.failedJobs() :: (jobId :: STRING?, group :: STRING?, database :: STRING?, submitter :: STRING?, description :: STRING?, type :: STRING?, submitted :: STRING?, executionStart :: STRING?, failureTime :: STRING?, failureDescription :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "jobId",
+        "description": "jobId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "group",
+        "description": "group :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "database",
+        "description": "database :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "submitter",
+        "description": "submitter :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "type",
+        "description": "type :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "submitted",
+        "description": "submitted :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "executionStart",
+        "description": "executionStart :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "failureTime",
+        "description": "failureTime :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "failureDescription",
+        "description": "failureDescription :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.scheduler.groups",
+    "description": "List the job groups that are active in the database internal job scheduler.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.scheduler.groups() :: (group :: STRING?, threads :: INTEGER?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "group",
+        "description": "group :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "threads",
+        "description": "threads :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.scheduler.jobs",
+    "description": "List all jobs that are active in the database internal job scheduler.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.scheduler.jobs() :: (jobId :: STRING?, group :: STRING?, submitted :: STRING?, database :: STRING?, submitter :: STRING?, description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, state :: STRING?, currentStateDescription :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "jobId",
+        "description": "jobId :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "group",
+        "description": "group :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "submitted",
+        "description": "submitted :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "database",
+        "description": "database :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "submitter",
+        "description": "submitter :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "type",
+        "description": "type :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "scheduledAt",
+        "description": "scheduledAt :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "period",
+        "description": "period :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "state",
+        "description": "state :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "currentStateDescription",
+        "description": "currentStateDescription :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.scheduler.profile",
+    "description": "Begin profiling all threads within the given job group, for the specified duration. Note that profiling incurs overhead to a system, and will slow it down.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.scheduler.profile(method :: STRING?, group :: STRING?, duration :: STRING?) :: (profile :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "method",
+        "description": "method :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "group",
+        "description": "group :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "duration",
+        "description": "duration :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "profile",
+        "description": "profile :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.activateUser",
+    "description": "Activate a suspended user.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.activateUser(username :: STRING?, requirePasswordChange = true :: BOOLEAN?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=true, type=BOOLEAN?}",
+        "name": "requirePasswordChange",
+        "description": "requirePasswordChange = true :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.addRoleToUser",
+    "description": "Assign a role to the user.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.addRoleToUser(roleName :: STRING?, username :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "roleName",
+        "description": "roleName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.changePassword",
+    "description": "Change the current user's password.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.changePassword(password :: STRING?, requirePasswordChange = false :: BOOLEAN?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "password",
+        "description": "password :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=false, type=BOOLEAN?}",
+        "name": "requirePasswordChange",
+        "description": "requirePasswordChange = false :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.security.changeUserPassword",
+    "description": "Change the given user's password.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.changeUserPassword(username :: STRING?, newPassword :: STRING?, requirePasswordChange = true :: BOOLEAN?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "newPassword",
+        "description": "newPassword :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=true, type=BOOLEAN?}",
+        "name": "requirePasswordChange",
+        "description": "requirePasswordChange = true :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.clearAuthCache",
+    "description": "Clears authentication and authorization cache.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.security.clearAuthCache() :: VOID",
+    "argumentDescription": [],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.createRole",
+    "description": "Create a new role.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.createRole(roleName :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "roleName",
+        "description": "roleName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.createUser",
+    "description": "Create a new user.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.createUser(username :: STRING?, password :: STRING?, requirePasswordChange = true :: BOOLEAN?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "password",
+        "description": "password :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=true, type=BOOLEAN?}",
+        "name": "requirePasswordChange",
+        "description": "requirePasswordChange = true :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.security.deleteRole",
+    "description": "Delete the specified role. Any role assignments will be removed.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.deleteRole(roleName :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "roleName",
+        "description": "roleName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.deleteUser",
+    "description": "Delete the specified user.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.deleteUser(username :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.security.listRoles",
+    "description": "List all available roles.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.security.listRoles() :: (role :: STRING?, users :: LIST? OF STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "role",
+        "description": "role :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "users",
+        "description": "users :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.listRolesForUser",
+    "description": "List all roles assigned to the specified user.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.security.listRolesForUser(username :: STRING?) :: (value :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "value",
+        "description": "value :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.listUsers",
+    "description": "List all native users.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.security.listUsers() :: (username :: STRING?, roles :: LIST? OF STRING?, flags :: LIST? OF STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "roles",
+        "description": "roles :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "flags",
+        "description": "flags :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.security.listUsersForRole",
+    "description": "List all users currently assigned the specified role.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.security.listUsersForRole(roleName :: STRING?) :: (value :: STRING?)",
+    "argumentDescription": [
+      {
+        "name": "roleName",
+        "description": "roleName :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [
+      {
+        "name": "value",
+        "description": "value :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.removeRoleFromUser",
+    "description": "Unassign a role from the user.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.removeRoleFromUser(roleName :: STRING?, username :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "roleName",
+        "description": "roleName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.security.suspendUser",
+    "description": "Suspend the specified user.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.security.suspendUser(username :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": true
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.setConfigValue",
+    "description": "Updates a given setting value. Passing an empty value will result in removing the configured value and falling back to the default value. Changes will not persist and will be lost if the server is restarted.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.setConfigValue(setting :: STRING?, value :: STRING?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "setting",
+        "description": "setting :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "value",
+        "description": "value :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "dbms.showCurrentUser",
+    "description": "Show the current user.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "dbms.showCurrentUser() :: (username :: STRING?, roles :: LIST? OF STRING?, flags :: LIST? OF STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "username",
+        "description": "username :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "roles",
+        "description": "roles :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      },
+      {
+        "name": "flags",
+        "description": "flags :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.upgrade",
+    "description": "Upgrade the system database schema if it is not the current schema.",
+    "mode": "WRITE",
+    "worksOnSystem": true,
+    "signature": "dbms.upgrade() :: (status :: STRING?, upgradeResult :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "upgradeResult",
+        "description": "upgradeResult :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "dbms.upgradeStatus",
+    "description": "Report the current status of the system database sub-graph schema.",
+    "mode": "READ",
+    "worksOnSystem": true,
+    "signature": "dbms.upgradeStatus() :: (status :: STRING?, description :: STRING?, resolution :: STRING?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "status",
+        "description": "status :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "description",
+        "description": "description :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "resolution",
+        "description": "resolution :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "tx.getMetaData",
+    "description": "Provides attached transaction metadata.",
+    "mode": "DBMS",
+    "worksOnSystem": true,
+    "signature": "tx.getMetaData() :: (metadata :: MAP?)",
+    "argumentDescription": [],
+    "returnDescription": [
+      {
+        "name": "metadata",
+        "description": "metadata :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  },
+  {
+    "name": "tx.setMetaData",
+    "description": "Attaches a map of data to the transaction. The data will be printed when listing queries, and inserted into the query log.",
+    "mode": "DBMS",
+    "worksOnSystem": false,
+    "signature": "tx.setMetaData(data :: MAP?) :: VOID",
+    "argumentDescription": [
+      {
+        "name": "data",
+        "description": "data :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": [],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": false
+  }
+]

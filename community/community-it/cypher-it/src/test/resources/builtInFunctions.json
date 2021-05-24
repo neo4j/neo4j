@@ -1,0 +1,3746 @@
+[
+  {
+    "name": "abs",
+    "category": "Numeric",
+    "description": "Returns the absolute value of an integer.",
+    "signature": "abs(input :: INTEGER?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "abs",
+    "category": "Numeric",
+    "description": "Returns the absolute value of a floating point number.",
+    "signature": "abs(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "acos",
+    "category": "Trigonometric",
+    "description": "Returns the arccosine of a number in radians.",
+    "signature": "acos(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "all",
+    "category": "Predicate",
+    "description": "Returns true if the predicate holds for all elements in the given list.",
+    "signature": "all(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "variable",
+        "description": "variable :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "list",
+        "description": "list :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "any",
+    "category": "Predicate",
+    "description": "Returns true if the predicate holds for at least one element in the given list.",
+    "signature": "any(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "variable",
+        "description": "variable :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "list",
+        "description": "list :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "asin",
+    "category": "Trigonometric",
+    "description": "Returns the arcsine of a number in radians.",
+    "signature": "asin(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "atan",
+    "category": "Trigonometric",
+    "description": "Returns the arctangent of a number in radians.",
+    "signature": "atan(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "atan2",
+    "category": "Trigonometric",
+    "description": "Returns the arctangent2 of a set of coordinates in radians.",
+    "signature": "atan2(y :: FLOAT?, x :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "y",
+        "description": "y :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "x",
+        "description": "x :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "avg",
+    "category": "Aggregating",
+    "description": "Returns the average of a set of integer values.",
+    "signature": "avg(input :: INTEGER?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "avg",
+    "category": "Aggregating",
+    "description": "Returns the average of a set of floating point values.",
+    "signature": "avg(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "avg",
+    "category": "Aggregating",
+    "description": "Returns the average of a set of duration values.",
+    "signature": "avg(input :: DURATION?) :: (DURATION?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: DURATION?",
+        "type": "DURATION?"
+      }
+    ],
+    "returnDescription": "DURATION?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "ceil",
+    "category": "Numeric",
+    "description": "Returns the smallest floating point number that is greater than or equal to a number and equal to a mathematical integer.",
+    "signature": "ceil(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "coalesce",
+    "category": "Scalar",
+    "description": "Returns the first non-null value in a list of expressions.",
+    "signature": "coalesce(input :: ANY?) :: (ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "ANY?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "collect",
+    "category": "Aggregating",
+    "description": "Returns a list containing the values returned by an expression.",
+    "signature": "collect(input :: ANY?) :: (LIST? OF ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LIST? OF ANY?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "cos",
+    "category": "Trigonometric",
+    "description": "Returns the cosine  of a number.",
+    "signature": "cos(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "cot",
+    "category": "Trigonometric",
+    "description": "Returns the cotangent of a number.",
+    "signature": "cot(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "count",
+    "category": "Aggregating",
+    "description": "Returns the number of values or rows.",
+    "signature": "count(input :: ANY?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "date",
+    "category": "Temporal",
+    "description": "Create a Date instant.",
+    "signature": "date(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "date.realtime",
+    "category": "Temporal",
+    "description": "Get the current Date instant using the realtime clock.",
+    "signature": "date.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "date.statement",
+    "category": "Temporal",
+    "description": "Get the current Date instant using the statement clock.",
+    "signature": "date.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "date.transaction",
+    "category": "Temporal",
+    "description": "Get the current Date instant using the transaction clock.",
+    "signature": "date.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "date.truncate",
+    "category": "Temporal",
+    "description": "Truncate the input temporal value to a Date instant using the specified unit.",
+    "signature": "date.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (DATE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "unit",
+        "description": "unit :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=MAP?}",
+        "name": "fields",
+        "description": "fields = null :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "DATE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "datetime",
+    "category": "Temporal",
+    "description": "Create a DateTime instant.",
+    "signature": "datetime(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "datetime.fromepoch",
+    "category": "Temporal",
+    "description": "Create a DateTime given the seconds and nanoseconds since the start of the epoch.",
+    "signature": "datetime.fromepoch(seconds :: NUMBER?, nanoseconds :: NUMBER?) :: (DATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "seconds",
+        "description": "seconds :: NUMBER?",
+        "type": "NUMBER?"
+      },
+      {
+        "name": "nanoseconds",
+        "description": "nanoseconds :: NUMBER?",
+        "type": "NUMBER?"
+      }
+    ],
+    "returnDescription": "DATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "datetime.fromepochmillis",
+    "category": "Temporal",
+    "description": "Create a DateTime given the milliseconds since the start of the epoch.",
+    "signature": "datetime.fromepochmillis(milliseconds :: NUMBER?) :: (DATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "milliseconds",
+        "description": "milliseconds :: NUMBER?",
+        "type": "NUMBER?"
+      }
+    ],
+    "returnDescription": "DATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "datetime.realtime",
+    "category": "Temporal",
+    "description": "Get the current DateTime instant using the realtime clock.",
+    "signature": "datetime.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "datetime.statement",
+    "category": "Temporal",
+    "description": "Get the current DateTime instant using the statement clock.",
+    "signature": "datetime.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "datetime.transaction",
+    "category": "Temporal",
+    "description": "Get the current DateTime instant using the transaction clock.",
+    "signature": "datetime.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (DATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "datetime.truncate",
+    "category": "Temporal",
+    "description": "Truncate the input temporal value to a DateTime instant using the specified unit.",
+    "signature": "datetime.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (DATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "unit",
+        "description": "unit :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=MAP?}",
+        "name": "fields",
+        "description": "fields = null :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "DATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "degrees",
+    "category": "Trigonometric",
+    "description": "Converts radians to degrees.",
+    "signature": "degrees(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "distance",
+    "category": "Spatial",
+    "description": "Returns a floating point number representing the geodesic distance between any two points in the same CRS.",
+    "signature": "distance(from :: POINT?, to :: POINT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "from",
+        "description": "from :: POINT?",
+        "type": "POINT?"
+      },
+      {
+        "name": "to",
+        "description": "to :: POINT?",
+        "type": "POINT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "duration",
+    "category": "Temporal",
+    "description": "Construct a Duration value.",
+    "signature": "duration(input :: ANY?) :: (DURATION?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DURATION?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "duration.between",
+    "category": "Temporal",
+    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in logical units.",
+    "signature": "duration.between(from :: ANY?, to :: ANY?) :: (DURATION?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "from",
+        "description": "from :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "to",
+        "description": "to :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DURATION?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "duration.inDays",
+    "category": "Temporal",
+    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in days.",
+    "signature": "duration.inDays(from :: ANY?, to :: ANY?) :: (DURATION?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "from",
+        "description": "from :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "to",
+        "description": "to :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DURATION?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "duration.inMonths",
+    "category": "Temporal",
+    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in months.",
+    "signature": "duration.inMonths(from :: ANY?, to :: ANY?) :: (DURATION?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "from",
+        "description": "from :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "to",
+        "description": "to :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DURATION?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "duration.inSeconds",
+    "category": "Temporal",
+    "description": "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in seconds.",
+    "signature": "duration.inSeconds(from :: ANY?, to :: ANY?) :: (DURATION?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "from",
+        "description": "from :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "to",
+        "description": "to :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "DURATION?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "e",
+    "category": "Logarithmic",
+    "description": "Returns the base of the natural logarithm, e.",
+    "signature": "e() :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "endNode",
+    "category": "Scalar",
+    "description": "Returns the end node of a relationship.",
+    "signature": "endNode(input :: RELATIONSHIP?) :: (NODE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      }
+    ],
+    "returnDescription": "NODE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "exists",
+    "category": "Predicate",
+    "description": "Returns true if a match for the pattern exists in the graph, or if the specified property exists in the node, relationship or map.",
+    "signature": "exists(input :: ANY?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "exp",
+    "category": "Logarithmic",
+    "description": "Returns e^n, where e is the base of the natural logarithm, and n is the value of the argument expression.",
+    "signature": "exp(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "file",
+    "category": "Scalar",
+    "description": "Returns the absolute path of the file that LOAD CSV is using.",
+    "signature": "file() :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "floor",
+    "category": "Numeric",
+    "description": "Returns the largest floating point number that is less than or equal to a number and equal to a mathematical integer.",
+    "signature": "floor(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "haversin",
+    "category": "Trigonometric",
+    "description": "Returns half the versine of a number.",
+    "signature": "haversin(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "head",
+    "category": "Scalar",
+    "description": "Returns the first element in a list.",
+    "signature": "head(list :: LIST? OF ANY?) :: (ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "list",
+        "description": "list :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "ANY?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "id",
+    "category": "Scalar",
+    "description": "Returns the id of a node.",
+    "signature": "id(input :: NODE?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: NODE?",
+        "type": "NODE?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "id",
+    "category": "Scalar",
+    "description": "Returns the id of a relationship.",
+    "signature": "id(input :: RELATIONSHIP?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "isEmpty",
+    "category": "Predicate",
+    "description": "Checks whether a list is empty.",
+    "signature": "isEmpty(input :: LIST? OF ANY?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "isEmpty",
+    "category": "Predicate",
+    "description": "Checks whether a map is empty.",
+    "signature": "isEmpty(input :: MAP?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "isEmpty",
+    "category": "Predicate",
+    "description": "Checks whether a string is empty.",
+    "signature": "isEmpty(input :: STRING?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "keys",
+    "category": "List",
+    "description": "Returns a list containing the string representations for all the property names of a node.",
+    "signature": "keys(input :: NODE?) :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: NODE?",
+        "type": "NODE?"
+      }
+    ],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "keys",
+    "category": "List",
+    "description": "Returns a list containing the string representations for all the property names of a relationship",
+    "signature": "keys(input :: RELATIONSHIP?) :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      }
+    ],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "keys",
+    "category": "List",
+    "description": "Returns a list containing the string representations for all the property names of a map.",
+    "signature": "keys(input :: MAP?) :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "labels",
+    "category": "List",
+    "description": "Returns a list containing the string representations for all the labels of a node.",
+    "signature": "labels(input :: NODE?) :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: NODE?",
+        "type": "NODE?"
+      }
+    ],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "last",
+    "category": "Scalar",
+    "description": "Returns the last element in a list.",
+    "signature": "last(list :: LIST? OF ANY?) :: (ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "list",
+        "description": "list :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "ANY?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "left",
+    "category": "String",
+    "description": "Returns a string containing the specified number of leftmost characters of the original string.",
+    "signature": "left(original :: STRING?, length :: INTEGER?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "original",
+        "description": "original :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "length",
+        "description": "length :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "length",
+    "category": "Scalar",
+    "description": "Returns the length of a path.",
+    "signature": "length(input :: PATH?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: PATH?",
+        "type": "PATH?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "linenumber",
+    "category": "Scalar",
+    "description": "Returns the line number that LOAD CSV is currently using.",
+    "signature": "linenumber() :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localdatetime",
+    "category": "Temporal",
+    "description": "Create a LocalDateTime instant.",
+    "signature": "localdatetime(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALDATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localdatetime.realtime",
+    "category": "Temporal",
+    "description": "Get the current LocalDateTime instant using the realtime clock.",
+    "signature": "localdatetime.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALDATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localdatetime.statement",
+    "category": "Temporal",
+    "description": "Get the current LocalDateTime instant using the statement clock.",
+    "signature": "localdatetime.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALDATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localdatetime.transaction",
+    "category": "Temporal",
+    "description": "Get the current LocalDateTime instant using the transaction clock.",
+    "signature": "localdatetime.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALDATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALDATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localdatetime.truncate",
+    "category": "Temporal",
+    "description": "Truncate the input temporal value to a LocalDateTime instant using the specified unit.",
+    "signature": "localdatetime.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (LOCALDATETIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "unit",
+        "description": "unit :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=MAP?}",
+        "name": "fields",
+        "description": "fields = null :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "LOCALDATETIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localtime",
+    "category": "Temporal",
+    "description": "Create a LocalTime instant.",
+    "signature": "localtime(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALTIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localtime.realtime",
+    "category": "Temporal",
+    "description": "Get the current LocalTime instant using the realtime clock.",
+    "signature": "localtime.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALTIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localtime.statement",
+    "category": "Temporal",
+    "description": "Get the current LocalTime instant using the statement clock.",
+    "signature": "localtime.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALTIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localtime.transaction",
+    "category": "Temporal",
+    "description": "Get the current LocalTime instant using the transaction clock.",
+    "signature": "localtime.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (LOCALTIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "LOCALTIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "localtime.truncate",
+    "category": "Temporal",
+    "description": "Truncate the input temporal value to a LocalTime instant using the specified unit.",
+    "signature": "localtime.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (LOCALTIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "unit",
+        "description": "unit :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=MAP?}",
+        "name": "fields",
+        "description": "fields = null :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "LOCALTIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "log",
+    "category": "Logarithmic",
+    "description": "Returns the natural logarithm of a number.",
+    "signature": "log(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "log10",
+    "category": "Logarithmic",
+    "description": "Returns the common logarithm (base 10) of a number.",
+    "signature": "log10(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "ltrim",
+    "category": "String",
+    "description": "Returns the original string with leading whitespace removed.",
+    "signature": "ltrim(input :: STRING?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "max",
+    "category": "Aggregating",
+    "description": "Returns the maximum value in a set of values.",
+    "signature": "max(input :: ANY?) :: (ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "ANY?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "min",
+    "category": "Aggregating",
+    "description": "Returns the minimum value in a set of values.",
+    "signature": "min(input :: ANY?) :: (ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "ANY?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "nodes",
+    "category": "List",
+    "description": "Returns a list containing all the nodes in a path.",
+    "signature": "nodes(input :: PATH?) :: (LIST? OF NODE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: PATH?",
+        "type": "PATH?"
+      }
+    ],
+    "returnDescription": "LIST? OF NODE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "none",
+    "category": "Predicate",
+    "description": "Returns true if the predicate holds for no element in the given list.",
+    "signature": "none(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "variable",
+        "description": "variable :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "list",
+        "description": "list :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "percentileCont",
+    "category": "Aggregating",
+    "description": "Returns the percentile of a value over a group using linear interpolation.",
+    "signature": "percentileCont(input :: FLOAT?, percentile :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "percentile",
+        "description": "percentile :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "percentileDisc",
+    "category": "Aggregating",
+    "description": "Returns the nearest integer value to the given percentile over a group using a rounding method.",
+    "signature": "percentileDisc(input :: INTEGER?, percentile :: FLOAT?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "percentile",
+        "description": "percentile :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "percentileDisc",
+    "category": "Aggregating",
+    "description": "Returns the nearest floating point value to the given percentile over a group using a rounding method.",
+    "signature": "percentileDisc(input :: FLOAT?, percentile :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "percentile",
+        "description": "percentile :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "pi",
+    "category": "Trigonometric",
+    "description": "Returns the mathematical constant pi.",
+    "signature": "pi() :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "point",
+    "category": "Spatial",
+    "description": "Returns a 2D or 3D point object, given two or respectively three coordinate values in the Cartesian coordinate system or WGS 84 geographic coordinate system.",
+    "signature": "point(input :: MAP?) :: (POINT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "POINT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "properties",
+    "category": "Scalar",
+    "description": "Returns a map containing all the properties of a node.",
+    "signature": "properties(input :: NODE?) :: (MAP?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: NODE?",
+        "type": "NODE?"
+      }
+    ],
+    "returnDescription": "MAP?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "properties",
+    "category": "Scalar",
+    "description": "Returns a map containing all the properties of a relationship.",
+    "signature": "properties(input :: RELATIONSHIP?) :: (MAP?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      }
+    ],
+    "returnDescription": "MAP?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "properties",
+    "category": "Scalar",
+    "description": "Returns a map containing all the properties of a map.",
+    "signature": "properties(input :: MAP?) :: (MAP?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "MAP?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "radians",
+    "category": "Trigonometric",
+    "description": "Converts degrees to radians.",
+    "signature": "radians(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "rand",
+    "category": "Numeric",
+    "description": "Returns a random floating point number in the range from 0 (inclusive) to 1 (exclusive); i.e. [0,1).",
+    "signature": "rand() :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "randomUUID",
+    "category": "Scalar",
+    "description": "Generates a random UUID.",
+    "signature": "randomUUID() :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "range",
+    "category": "List",
+    "description": "Returns a list comprising all integer values within a specified range.",
+    "signature": "range(start :: INTEGER?, end :: INTEGER?) :: (LIST? OF INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "start",
+        "description": "start :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "end",
+        "description": "end :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "LIST? OF INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "range",
+    "category": "List",
+    "description": "Returns a list comprising all integer values within a specified range created with step length.",
+    "signature": "range(start :: INTEGER?, end :: INTEGER?, step :: INTEGER?) :: (LIST? OF INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "start",
+        "description": "start :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "end",
+        "description": "end :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "step",
+        "description": "step :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "LIST? OF INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "reduce",
+    "category": "List",
+    "description": "Runs an expression against individual elements of a list, storing the result of the expression in an accumulator.",
+    "signature": "reduce(accumulator :: VARIABLE = initial :: ANY?, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "accumulator",
+        "description": "accumulator :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "variable",
+        "description": "variable :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "ANY?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "relationships",
+    "category": "List",
+    "description": "Returns a list containing all the relationships in a path.",
+    "signature": "relationships(input :: PATH?) :: (LIST? OF RELATIONSHIP?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: PATH?",
+        "type": "PATH?"
+      }
+    ],
+    "returnDescription": "LIST? OF RELATIONSHIP?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "replace",
+    "category": "String",
+    "description": "Returns a string in which all occurrences of a specified search string in the original string have been replaced by another (specified) replace string.",
+    "signature": "replace(original :: STRING?, search :: STRING?, replace :: STRING?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "original",
+        "description": "original :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "search",
+        "description": "search :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "replace",
+        "description": "replace :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "reverse",
+    "category": "String",
+    "description": "Returns a string in which the order of all characters in the original string have been reversed.",
+    "signature": "reverse(input :: STRING?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "reverse",
+    "category": "List",
+    "description": "Returns a list in which the order of all elements in the original list have been reversed.",
+    "signature": "reverse(input :: LIST? OF ANY?) :: (LIST? OF ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "LIST? OF ANY?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "right",
+    "category": "String",
+    "description": "Returns a string containing the specified number of rightmost characters of the original string.",
+    "signature": "right(original :: STRING?, length :: INTEGER?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "original",
+        "description": "original :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "length",
+        "description": "length :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "round",
+    "category": "Numeric",
+    "description": "Returns the value of a number rounded to the nearest integer.",
+    "signature": "round(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "round",
+    "category": "Numeric",
+    "description": "Returns the value of a number rounded to the specified precision using rounding mode HALF_UP.",
+    "signature": "round(value :: FLOAT?, precision :: NUMBER?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "value",
+        "description": "value :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "precision",
+        "description": "precision :: NUMBER?",
+        "type": "NUMBER?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "round",
+    "category": "Numeric",
+    "description": "Returns the value of a number rounded to the specified precision with the specified rounding mode.",
+    "signature": "round(value :: FLOAT?, precision :: NUMBER?, mode :: STRING?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "value",
+        "description": "value :: FLOAT?",
+        "type": "FLOAT?"
+      },
+      {
+        "name": "precision",
+        "description": "precision :: NUMBER?",
+        "type": "NUMBER?"
+      },
+      {
+        "name": "mode",
+        "description": "mode :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "rtrim",
+    "category": "String",
+    "description": "Returns the original string with trailing whitespace removed.",
+    "signature": "rtrim(input :: STRING?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "sign",
+    "category": "Numeric",
+    "description": "Returns the signum of an integer number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
+    "signature": "sign(input :: INTEGER?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "sign",
+    "category": "Numeric",
+    "description": "Returns the signum of a floating point number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.",
+    "signature": "sign(input :: FLOAT?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "sin",
+    "category": "Trigonometric",
+    "description": "Returns the sine of a number.",
+    "signature": "sin(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "single",
+    "category": "Predicate",
+    "description": "Returns true if the predicate holds for exactly one of the elements in the given list.",
+    "signature": "single(variable :: VARIABLE IN list :: LIST OF ANY? WHERE predicate :: ANY?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "variable",
+        "description": "variable :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "name": "list",
+        "description": "list :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "size",
+    "category": "Scalar",
+    "description": "Returns the number of items in a list.",
+    "signature": "size(input :: LIST? OF ANY?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "size",
+    "category": "Scalar",
+    "description": "Returns the number of Unicode characters in a string.",
+    "signature": "size(input :: STRING?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "split",
+    "category": "String",
+    "description": "Returns a list of strings resulting from the splitting of the original string around matches of the given delimiter.",
+    "signature": "split(original :: STRING?, splitDelimiter :: STRING?) :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "original",
+        "description": "original :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "splitDelimiter",
+        "description": "splitDelimiter :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "split",
+    "category": "String",
+    "description": "Returns a list of strings resulting from the splitting of the original string around matches of any of the given delimiters.",
+    "signature": "split(original :: STRING?, splitDelimiters :: LIST? OF STRING?) :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "original",
+        "description": "original :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "splitDelimiters",
+        "description": "splitDelimiters :: LIST? OF STRING?",
+        "type": "LIST? OF STRING?"
+      }
+    ],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "sqrt",
+    "category": "Logarithmic",
+    "description": "Returns the square root of a number.",
+    "signature": "sqrt(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "startNode",
+    "category": "Scalar",
+    "description": "Returns the start node of a relationship.",
+    "signature": "startNode(input :: RELATIONSHIP?) :: (NODE?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      }
+    ],
+    "returnDescription": "NODE?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "stdev",
+    "category": "Aggregating",
+    "description": "Returns the standard deviation for the given value over a group for a sample of a population.",
+    "signature": "stdev(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "stdevp",
+    "category": "Aggregating",
+    "description": "Returns the standard deviation for the given value over a group for an entire population.",
+    "signature": "stdevp(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "substring",
+    "category": "String",
+    "description": "Returns a substring of the original string, beginning with a 0-based index start.",
+    "signature": "substring(original :: STRING?, start :: INTEGER?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "original",
+        "description": "original :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "start",
+        "description": "start :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "substring",
+    "category": "String",
+    "description": "Returns a substring of length 'length' of the original string, beginning with a 0-based index start.",
+    "signature": "substring(original :: STRING?, start :: INTEGER?, length :: INTEGER?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "original",
+        "description": "original :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "start",
+        "description": "start :: INTEGER?",
+        "type": "INTEGER?"
+      },
+      {
+        "name": "length",
+        "description": "length :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "sum",
+    "category": "Aggregating",
+    "description": "Returns the sum of a set of integers",
+    "signature": "sum(input :: INTEGER?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "sum",
+    "category": "Aggregating",
+    "description": "Returns the sum of a set of floats",
+    "signature": "sum(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "sum",
+    "category": "Aggregating",
+    "description": "Returns the sum of a set of durations",
+    "signature": "sum(input :: DURATION?) :: (DURATION?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: DURATION?",
+        "type": "DURATION?"
+      }
+    ],
+    "returnDescription": "DURATION?",
+    "aggregating": true,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "tail",
+    "category": "List",
+    "description": "Returns all but the first element in a list.",
+    "signature": "tail(input :: LIST? OF ANY?) :: (LIST? OF ANY?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "LIST? OF ANY?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "tan",
+    "category": "Trigonometric",
+    "description": "Returns the tangent of a number.",
+    "signature": "tan(input :: FLOAT?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: FLOAT?",
+        "type": "FLOAT?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "time",
+    "category": "Temporal",
+    "description": "Create a Time instant.",
+    "signature": "time(input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "TIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "time.realtime",
+    "category": "Temporal",
+    "description": "Get the current Time instant using the realtime clock.",
+    "signature": "time.realtime(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "TIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "time.statement",
+    "category": "Temporal",
+    "description": "Get the current Time instant using the statement clock.",
+    "signature": "time.statement(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "TIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "time.transaction",
+    "category": "Temporal",
+    "description": "Get the current Time instant using the transaction clock.",
+    "signature": "time.transaction(timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?) :: (TIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "timezone",
+        "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "TIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "time.truncate",
+    "category": "Temporal",
+    "description": "Truncate the input temporal value to a Time instant using the specified unit.",
+    "signature": "time.truncate(unit :: STRING?, input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?, fields = null :: MAP?) :: (TIME?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "unit",
+        "description": "unit :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
+        "name": "input",
+        "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
+        "type": "ANY?"
+      },
+      {
+        "default": "DefaultParameterValue{value=null, type=MAP?}",
+        "name": "fields",
+        "description": "fields = null :: MAP?",
+        "type": "MAP?"
+      }
+    ],
+    "returnDescription": "TIME?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toBoolean",
+    "category": "Scalar",
+    "description": "Converts a string value to a boolean value.",
+    "signature": "toBoolean(input :: STRING?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toBoolean",
+    "category": "Scalar",
+    "description": "Converts a boolean value to a boolean value.",
+    "signature": "toBoolean(input :: BOOLEAN?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toBoolean",
+    "category": "Scalar",
+    "description": "Converts a integer value to a boolean value. 0 is defined to be FALSE and any other integer is defined to be TRUE.",
+    "signature": "toBoolean(input :: INTEGER?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: INTEGER?",
+        "type": "INTEGER?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toBooleanList",
+    "category": "List",
+    "description": "Converts a list of values to a list of boolean values. If any values are not convertible to boolean they will be null in the list returned.",
+    "signature": "toBooleanList(input :: LIST? OF ANY?) :: (LIST? OF BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "LIST? OF BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toBooleanOrNull",
+    "category": "Scalar",
+    "description": "Converts a value to a boolean value, or null if the value cannot be converted.",
+    "signature": "toBooleanOrNull(input :: ANY?) :: (BOOLEAN?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "BOOLEAN?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toFloat",
+    "category": "Scalar",
+    "description": "Converts a string value to a floating point value.",
+    "signature": "toFloat(input :: STRING?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toFloat",
+    "category": "Scalar",
+    "description": "Converts an integer value to a floating point value.",
+    "signature": "toFloat(input :: NUMBER?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: NUMBER?",
+        "type": "NUMBER?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toFloatList",
+    "category": "List",
+    "description": "Converts a list of values to a list of float values. If any values are not convertible to float they will be null in the list returned.",
+    "signature": "toFloatList(input :: LIST? OF ANY?) :: (LIST? OF FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "LIST? OF FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toFloatOrNull",
+    "category": "Scalar",
+    "description": "Converts a value to a floating point value, or null if the value cannot be converted.",
+    "signature": "toFloatOrNull(input :: ANY?) :: (FLOAT?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "FLOAT?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toInteger",
+    "category": "Scalar",
+    "description": "Converts a string value to an integer value.",
+    "signature": "toInteger(input :: STRING?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toInteger",
+    "category": "Scalar",
+    "description": "Converts a floating point value to an integer value.",
+    "signature": "toInteger(input :: NUMBER?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: NUMBER?",
+        "type": "NUMBER?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toInteger",
+    "category": "Scalar",
+    "description": "Converts a boolean to an integer value. TRUE is defined to be 1 and FALSE is defined to be 0.",
+    "signature": "toInteger(input :: BOOLEAN?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toIntegerList",
+    "category": "List",
+    "description": "Converts a list of values to a list of integer values. If any values are not convertible to integer they will be null in the list returned.",
+    "signature": "toIntegerList(input :: LIST? OF ANY?) :: (LIST? OF INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "LIST? OF INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toIntegerOrNull",
+    "category": "Scalar",
+    "description": "Converts a value to an integer value, or null if the value cannot be converted.",
+    "signature": "toIntegerOrNull(input :: ANY?) :: (INTEGER?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "INTEGER?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toLower",
+    "category": "String",
+    "description": "Returns the original string in lowercase.",
+    "signature": "toLower(input :: STRING?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toString",
+    "category": "String",
+    "description": "Converts an integer, float, boolean, point or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string.",
+    "signature": "toString(input :: ANY?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toStringList",
+    "category": "List",
+    "description": "Converts a list of values to a list of string values. If any values are not convertible to string they will be null in the list returned.",
+    "signature": "toStringList(input :: LIST? OF ANY?) :: (LIST? OF STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: LIST? OF ANY?",
+        "type": "LIST? OF ANY?"
+      }
+    ],
+    "returnDescription": "LIST? OF STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toStringOrNull",
+    "category": "String",
+    "description": "Converts an integer, float, boolean, point or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string, or null if the value cannot be converted.",
+    "signature": "toStringOrNull(input :: ANY?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: ANY?",
+        "type": "ANY?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "toUpper",
+    "category": "String",
+    "description": "Returns the original string in uppercase.",
+    "signature": "toUpper(input :: STRING?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "trim",
+    "category": "String",
+    "description": "Returns the original string with leading and trailing whitespace removed.",
+    "signature": "trim(input :: STRING?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "type",
+    "category": "Scalar",
+    "description": "Returns the string representation of the relationship type.",
+    "signature": "type(input :: RELATIONSHIP?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  }
+]
