@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
@@ -198,6 +197,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         val Property(v: Variable, _) = prop
         prop.copy(variableWithOriginalName(v))(prop.position)
       }
+
+      def resetUsagesCount(): Acc =
+        copy(properties = properties.mapValues(_.copy(usages = 0)))
     }
 
     def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.treeFold(acc) {
@@ -222,7 +224,11 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
       LogicalPlans.foldPlan(initialAcc)(
         logicalPlan,
         (acc, _, p) => {
-          val accWithProps = findPropertiesInPlan(acc, p)
+          val accWithProps = {
+            val initialAcc = if (!p.isLeaf) acc else acc.resetUsagesCount()
+            findPropertiesInPlan(initialAcc, p)
+          }
+
           p match {
             // Make sure to register any renaming of variables
             case plan: ProjectingPlan =>
@@ -246,10 +252,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         },
         (lhsAcc, rhsAcc, plan) =>
           plan match {
-            case _:ApplyPlan =>
-              // The rhsAcc was initialized with lhsAcc as argument
-              rhsAcc
-            case _:Union => {
+            case _:Union =>
               // Take on only consistent renaming across both unions and remember properties from both subtrees
               val mergedNames = lhsAcc.previousNames.filter(
                 entry =>
@@ -259,10 +262,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
                   }
               )
               Acc(lhsAcc.properties ++ rhsAcc.properties, mergedNames)
-            }
-            case _ =>
-              // Both accs are independent and need to be combined.
-              lhsAcc ++ rhsAcc
+
+            case plan =>
+              val combinedChildAcc = lhsAcc ++ rhsAcc
+              findPropertiesInPlan(combinedChildAcc, plan)
           }
       )
     }
