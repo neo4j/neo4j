@@ -23,6 +23,8 @@ import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.CallClause
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CommandClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -99,6 +101,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -112,6 +115,10 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
+
+  private val systemDbProcedureRules = "The system database supports a restricted set of Cypher clauses. " +
+    "The supported clause structure for procedure calls is: CALL, YIELD, RETURN. YIELD and RETURN clauses are optional. " +
+    "The order of the clauses is fix and each can only occur once."
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
@@ -425,7 +432,24 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(_.isInstanceOf[ClauseAllowedOnSystem]) =>
         Some(plans.AllowedNonAdministrationCommands(q))
 
-      case _ => None
+      case q =>
+        val unsupportedClauses = q.treeFold(List.empty[String]) {
+          case _: CallClause => acc => SkipChildren(acc)
+          case _: Return => acc => SkipChildren(acc)
+          case c: Clause => acc => SkipChildren(acc :+ c.name)
+        }
+        if (unsupportedClauses.nonEmpty) {
+          throw new RuntimeException(s"The following unsupported clauses were used: ${unsupportedClauses.sorted.mkString(", ")}. \n" + systemDbProcedureRules)
+        }
+
+        val callCount = q.treeCount {
+          case _: CallClause => true
+        }
+        if (callCount > 1) {
+          throw new RuntimeException(s"The given query uses $callCount CALL clauses (${callCount - 1} too many). \n" + systemDbProcedureRules)
+        }
+
+        None  // this means we will throw the general UnsupportedSystemCommand
     }
 
     val planState = LogicalPlanState(from)
