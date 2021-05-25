@@ -59,32 +59,32 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def indexExistsForRelType(relTypeId: Int): Boolean
 
   /**
-   * Gets an index if it exists (general or unique) for a given label and properties
+   * Gets an index if it exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
-   * Gets an index if it exists for a given relationship type and properties
+   * Gets an index if it exists for a given relationship type and properties, without taking any schema locks.
    */
   def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
-   * Checks if an index exists (general or unique) for a given label and properties
+   * Checks if an index exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean
 
   /**
-   * Checks if an index exists for a given relationship type and properties
+   * Checks if an index exists for a given relationship type and properties, without taking any schema locks.
    */
   def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean
 
   /**
-   * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index)
+   * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index). Does not take any schema locks.
    */
   def canLookupNodesByLabel: Boolean
 
   /**
-   * Checks if it is possible to lookup relationships by their types
+   * Checks if it is possible to lookup relationships by their types, without taking any schema locks.
    */
   def canLookupRelationshipsByType: Boolean
 
