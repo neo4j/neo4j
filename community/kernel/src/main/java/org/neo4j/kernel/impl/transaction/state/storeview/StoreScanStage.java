@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
@@ -29,7 +30,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.staging.Stage;
-import org.neo4j.internal.batchimport.staging.StageExecution;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
@@ -82,13 +82,14 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
 
     void reportTo( PhaseTracker phaseTracker )
     {
-        phaseTracker.registerTime( PhaseTracker.Phase.SCAN,
-                feedStep.stats().stat( total_processing_wall_clock_time ).asLong() +
-                generatorStep.stats().stat( total_processing_wall_clock_time ).asLong() );
+        var scanNanos = feedStep.stats().stat( total_processing_wall_clock_time ).asLong() +
+                     generatorStep.stats().stat( total_processing_wall_clock_time ).asLong();
+        phaseTracker.registerTime( PhaseTracker.Phase.SCAN, TimeUnit.NANOSECONDS.toMillis( scanNanos ) );
+
         if ( writeStep != null )
         {
-            phaseTracker.registerTime( PhaseTracker.Phase.WRITE,
-                    writeStep.stats().stat( total_processing_wall_clock_time ).asLong() );
+            var writeNanos = writeStep.stats().stat( total_processing_wall_clock_time ).asLong();
+            phaseTracker.registerTime( PhaseTracker.Phase.WRITE, TimeUnit.NANOSECONDS.toMillis( writeNanos ) );
         }
     }
 
