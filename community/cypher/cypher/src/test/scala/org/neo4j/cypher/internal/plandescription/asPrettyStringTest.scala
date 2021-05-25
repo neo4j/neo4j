@@ -50,4 +50,8 @@ class asPrettyStringTest extends CypherFunSuite with AstConstructionTestSupport 
   test("should handle CoerceToPredicate") {
     pretty"CoerceToPredicate([1, 2, 3])" shouldBe asPrettyString(CoerceToPredicate(listOfInt(1, 2, 3)))
   }
+
+  test("should remove line breaks") {
+    asPrettyString("\na \rb\n c\n") shouldBe asPrettyString("a b c")
+  }
 }
