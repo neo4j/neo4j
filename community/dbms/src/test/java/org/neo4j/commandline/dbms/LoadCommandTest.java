@@ -61,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -90,6 +91,7 @@ class LoadCommandTest
         configDir = testDirectory.directory( "config-dir" );
         archive = testDirectory.directory( "some-archive.dump" );
         loader = mock( Loader.class );
+        doReturn( mock( StoreVersionLoader.Result.class ) ).when( loader ).getStoreVersion( any(), any(), any() );
     }
 
     private void prepareFooDatabaseDirectory() throws IOException
