@@ -891,6 +891,56 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     )
   }
 
+  test("should cache on the RHS of a nested index join") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+      .projection("a.prop AS `a.prop`")
+      .apply()
+      .|.nodeIndexOperator("b:B(prop = ???)", argumentIds = Set("a"), paramExpr = Some(prop("a", "prop")))
+      .nodeIndexOperator("a:A(prop > 'foo')")
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder(wholePlan = false)
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .apply()
+      .|.nodeIndexOperator("b:B(prop = ???)", argumentIds = Set("a"), paramExpr = Some(cachedNodePropFromStore("a", "prop")))
+      .nodeIndexOperator("a:A(prop > 'foo')")
+      .build()
+  }
+
+  test("should find property usage in value hash join") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("a", "b")
+      .valueHashJoin("a.x = b.y")
+      .|.nodeIndexOperator("b:B(y < 200)", getValue = _ => CanGetValue)
+      .nodeIndexOperator("a:A(x > 100)", getValue = _ => CanGetValue)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("a", "b")
+      .valueHashJoin("cacheN[a.x] = cacheN[b.y]")
+      .|.nodeIndexOperator("b:B(y < 200)", getValue = _ => GetValue)
+      .nodeIndexOperator("a:A(x > 100)", getValue = _ => GetValue)
+      .build()
+  }
+
+  test("should not find extra property usages due to Apply and multiple Arguments") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .apply()
+      .|.nodeHashJoin("n")
+      .|.|.argument("n")
+      .|.argument("n")
+      .filter("n.prop = 2")
+      .allNodeScan("n")
+
+    val initialPlan = planBuilder.build()
+    val initialTable = planBuilder.getSemanticTable
+
+    val (newPlan, newTable) = replace(initialPlan, initialTable)
+    newPlan shouldBe initialPlan
+    newTable shouldBe initialTable
+  }
+
   private def replace(plan: LogicalPlan,
                       initialTable: SemanticTable,
                       effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities,
