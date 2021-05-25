@@ -21,8 +21,10 @@ package org.neo4j.graphdb;
 
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.Schema;
 
+import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,6 +45,68 @@ public class SchemaAcceptanceTestBase
         assertEquals( expectedCause, cause.getClass(),
                       "Expected cause to be of type " + expectedCause + " but was " + cause.getClass() );
         assertThat( exception.getMessage() ).contains( expectedMessageParts );
+    }
+
+    protected void dropIndexBackedConstraintAndCreateSimilarInSameTxMustThrow( GraphDatabaseService db, ConstraintCreateOperation initial,
+            ConstraintCreateOperation similar )
+    {
+        // Given
+        String nameA = "nameA";
+        String nameB = "nameB";
+        try ( Transaction tx = db.beginTx() )
+        {
+            initial.createConstraint( tx.schema(), label, propertyKey, nameA );
+            tx.commit();
+        }
+
+        // When
+        // Then
+        var e = assertThrows( UnsupportedOperationException.class, () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.schema().getConstraintByName( nameA ).drop();
+                similar.createConstraint( tx.schema(), label, propertyKey, nameB );
+                tx.commit();
+            }
+        } );
+        assertThat( e ).hasMessageContaining(
+                format( "Trying to create constraint '%s' in same transaction as dropping '%s'. " +
+                                "This is not supported because they are both backed by similar indexes. " +
+                                "Please drop constraint in a separate transaction before creating the new one.",
+                        nameB, nameA ) );
+    }
+
+    protected void dropIndexBackedConstraintAndCreateSlightlyDifferentInSameTxMustSucceed( GraphDatabaseService db, ConstraintCreateOperation initial,
+            ConstraintCreateOperation similar )
+    {
+        // Given
+        String nameA = "nameA";
+        String nameB = "nameB";
+        try ( Transaction tx = db.beginTx() )
+        {
+            initial.createConstraint( tx.schema(), label, propertyKey, nameA );
+            tx.commit();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().getConstraintByName( nameA ).drop();
+            similar.createConstraint( tx.schema(), label, secondPropertyKey, nameB );
+            tx.commit();
+        }
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            // First constraint should be dropped
+            assertThrows( IllegalArgumentException.class, () -> tx.schema().getConstraintByName( nameA ) );
+
+            // Second constraint should exist (doesn't throw)
+            tx.schema().getConstraintByName( nameB );
+            tx.commit();
+        }
     }
 
     protected enum Labels implements Label
@@ -90,5 +154,11 @@ public class SchemaAcceptanceTestBase
 
         public abstract <EXCEPTION extends Throwable> EXCEPTION execute(
                 GraphDatabaseService db, Consumer<Schema> firstSchemaRule, Consumer<Schema> secondSchemaRule, Class<EXCEPTION> expectedException );
+    }
+
+    @FunctionalInterface
+    protected interface ConstraintCreateOperation
+    {
+        ConstraintDefinition createConstraint( Schema schema, Label label, String prop, String name );
     }
 }

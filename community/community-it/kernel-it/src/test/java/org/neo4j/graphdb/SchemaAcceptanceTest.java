@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -95,7 +94,6 @@ import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
-import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
@@ -2144,212 +2142,24 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    /**
-     * This test illustrate a problematic behaviour.
-     * When dropping and re-creating the same constraint in the same transaction
-     * the backing index will never come online and subsequent index updates will
-     * fail with IllegalStateException. This is a bug!
-     *
-     * The issue can be resolved by dropping the constraint and re-creating it
-     * in two separate transactions.
-     *
-     * See also {@link #bugWhereDroppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingStateResolvedByRestart()}
-     */
     @Test
-    void bugWhereDroppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingStateResolvedByDroppingAndRecreating()
+    void dropUniquenessConstraintAndCreateSimilarUniquenessInSameTxMustThrow()
     {
-        // Given
-        IndexDefinition oldIndex;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( nameA ).create();
-            oldIndex = tx.schema().getIndexByName( nameA );
-            tx.commit();
-        }
-
-        // When
-        IndexDefinition newIndex = droppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingState( oldIndex );
-
-        // When
-        // Drop the constraint however
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().getConstraintByName( nameA ).drop();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
-            Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-            assertThat( count( constraints ) ).isEqualTo( 0 );
-            assertThat( count( indexes ) ).isEqualTo( 0 );
-            tx.commit();
-        }
-        // And recreate the constraint in separate transaction
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( nameA ).create();
-            newIndex = tx.schema().getIndexByName( nameA );
-            tx.commit();
-        }
-
-        // Then
-        assertConstraintAndBackingIndexExistsAndAreFunctional( oldIndex, newIndex );
+        ConstraintCreateOperation initial =
+                ( schema, label, prop, name ) -> schema.constraintFor( label ).assertPropertyIsUnique( prop ).withName( name ).create();
+        ConstraintCreateOperation similar =
+                ( schema, label, prop, name ) -> schema.constraintFor( label ).assertPropertyIsUnique( prop ).withName( name ).create();
+        dropIndexBackedConstraintAndCreateSimilarInSameTxMustThrow( db, initial, similar );
     }
 
-    /**
-     * This test illustrate a problematic behaviour.
-     * When dropping and re-creating the same constraint in the same transaction
-     * the backing index will never come online and subsequent index updates will
-     * fail with IllegalStateException. This is a bug!
-     *
-     * The issue can be resolved by restarting db.
-     *
-     * See also {@link #bugWhereDroppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingStateResolvedByDroppingAndRecreating()}
-     */
     @Test
-    void bugWhereDroppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingStateResolvedByRestart()
+    void dropUniquenessConstraintAndCreateDifferentUniquenessInSameTxMustSucceed()
     {
-        // Given
-        IndexDefinition oldIndex;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( nameA ).create();
-            oldIndex = tx.schema().getIndexByName( nameA );
-            tx.commit();
-        }
-
-        // When
-        IndexDefinition newIndex = droppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingState( oldIndex );
-
-        // When
-        // restarting db
-        fs.keepFiles();
-        controller.restartDatabase( db.databaseName() );
-
-        // Then
-        assertConstraintAndBackingIndexExistsAndAreFunctional( oldIndex, newIndex );
-    }
-
-    private IndexDefinition droppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingState( IndexDefinition oldIndex )
-    {
-        IndexDefinition newIndex;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().getConstraintByName( nameA ).drop();
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( nameA ).create();
-            newIndex = tx.schema().getIndexByName( nameA );
-            tx.commit();
-        }
-
-        // Then
-        // old index has been dropped (correctly), but new index ends up in POPULATING state which is a bug
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThrows( NotFoundException.class, () -> getIndexState( tx, oldIndex ) );
-
-            // This assertion describes the problematic behaviour, not how we would like it to be
-            assertThat( getIndexState( tx, newIndex ) ).isEqualTo( POPULATING );
-            tx.commit();
-        }
-        // And subsequent updates to the index fails
-        // (We ofc don't want this to throw, we are just describing current faulty behaviour.)
-        assertThrows( IllegalStateException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.createNode( label ).setProperty( propertyKey, "hej" );
-            }
-        } );
-        return newIndex;
-    }
-
-    private void assertConstraintAndBackingIndexExistsAndAreFunctional( IndexDefinition oldIndex, IndexDefinition newIndex )
-    {
-        // We should have a single constraint with an ONLINE index
-        try ( Transaction tx = db.beginTx() )
-        {
-            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
-            Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-            assertThat( count( constraints ) ).isEqualTo( 1 );
-            assertThat( count( indexes ) ).isEqualTo( 1 );
-            assertThrows( NotFoundException.class, () -> getIndexState( tx, oldIndex ) );
-            assertThat( getIndexState( tx, newIndex ) ).isEqualTo( ONLINE );
-            tx.commit();
-        }
-        // And we should be able to update index again
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode( label ).setProperty( propertyKey, "hej" );
-            tx.commit();
-        }
-        // And constraint should guard for duplicates
-        assertThrows( ConstraintViolationException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.createNode( label ).setProperty( propertyKey, "hej" );
-                tx.commit();
-            }
-        } );
-    }
-
-    /**
-     * This test describes how we would like
-     * {@link #bugWhereDroppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingStateResolvedByDroppingAndRecreating()}
-     * and {@link #bugWhereDroppingOldConstraintAndCreatingNewIdenticalLeavesIndexInPopulatingStateResolvedByRestart()} to work,
-     * but it doesn't so it's Disabled.
-     */
-    @Test
-    @Disabled
-    void dropOldConstraintAndCreateNewIdenticalCreatesNewConstraint()
-    {
-        // Given
-        IndexDefinition oldIndex;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( nameA ).create();
-            oldIndex = tx.schema().getIndexByName( nameA );
-            tx.commit();
-        }
-
-        // When
-        IndexDefinition newIndex;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().getConstraintByName( nameA ).drop();
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( nameA ).create();
-            newIndex = tx.schema().getIndexByName( nameA );
-            tx.commit();
-        }
-
-        // Then
-        // old index has been dropped (correctly), but new index ends up in ONLINE state
-        try ( Transaction tx = db.beginTx() )
-        {
-            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
-            Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
-            assertThat( count( constraints ) ).isEqualTo( 1 );
-            assertThat( count( indexes ) ).isEqualTo( 1 );
-            assertThrows( NotFoundException.class, () -> getIndexState( tx, oldIndex ) );
-            assertThat( getIndexState( tx, newIndex ) ).isEqualTo( ONLINE );
-            tx.commit();
-        }
-        // And we should be able to update index
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode( label ).setProperty( propertyKey, "hej" );
-            tx.commit();
-        }
-        // And constraint should guard for duplicates
-        assertThrows( ConstraintViolationException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.createNode( label ).setProperty( propertyKey, "hej" );
-                tx.commit();
-            }
-        } );
+        ConstraintCreateOperation initial =
+                ( schema, label, prop, name ) -> schema.constraintFor( label ).assertPropertyIsUnique( prop ).withName( name ).create();
+        ConstraintCreateOperation similar =
+                ( schema, label, prop, name ) -> schema.constraintFor( label ).assertPropertyIsUnique( prop ).withName( name ).create();
+        dropIndexBackedConstraintAndCreateSlightlyDifferentInSameTxMustSucceed( db, initial, similar );
     }
 
     /**
