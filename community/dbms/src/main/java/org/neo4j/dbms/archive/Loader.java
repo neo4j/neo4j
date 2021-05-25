@@ -35,7 +35,10 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
+import org.neo4j.commandline.dbms.StoreVersionLoader;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.util.VisibleForTesting;
@@ -80,6 +83,14 @@ public class Loader
                 Path destination = determineEntryDestination( entry, databaseDestination, transactionLogsDirectory );
                 loadEntry( destination, stream, entry );
             }
+        }
+    }
+
+    public StoreVersionLoader.Result getStoreVersion( FileSystemAbstraction fs, Config config, DatabaseLayout databaseLayout )
+    {
+        try ( StoreVersionLoader stl = new StoreVersionLoader( fs, config ) )
+        {
+            return stl.loadStoreVersion( databaseLayout );
         }
     }
 
