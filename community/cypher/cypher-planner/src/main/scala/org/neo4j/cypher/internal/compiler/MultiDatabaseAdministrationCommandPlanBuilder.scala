@@ -42,6 +42,10 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
   val prettifier = Prettifier(ExpressionStringifier())
 
+  private val systemDbProcedureRules = "The system database supports a restricted set of Cypher clauses. " +
+    "The supported clause structure for procedure calls is: CALL, YIELD, RETURN. YIELD and RETURN clauses are optional. " +
+    "The order of the clauses is fix and each can only occur once."
+
   override def phase: CompilationPhase = PIPE_BUILDING
 
   override def description = "take on administrative queries that require no planning such as multi-database administration commands"
@@ -441,14 +445,34 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
         Some(plans.SystemProcedureCall(signature.name.toString, from.queryText, context.params, checkCredentialsExpired))
 
-      case _ => None
+      case q =>
+        val unsupportedClauses = q.treeFold(List.empty[String]) {
+          case _: CallClause => acc => (acc, None)
+          case _: Return => acc => (acc, None)
+          case c: Clause => acc => (acc :+ c.getClass.getSimpleName, None)
+        }
+
+        if (unsupportedClauses.nonEmpty) {
+          throw new RuntimeException(s"The following unsupported clauses were used: ${unsupportedClauses.sorted.mkString(", ")}. \n" + systemDbProcedureRules)
+        }
+
+        val callCount = q.treeCount {
+          case _: CallClause => true
+        }
+        if (callCount > 1) {
+          throw new RuntimeException(s"The given query uses $callCount CALL clauses (${callCount - 1} too many). \n" + systemDbProcedureRules)
+        }
+
+        None  // this means we will throw the general UnsupportedSystemCommand
     }
 
     val planState = LogicalPlanState(from)
 
-    if (maybeLogicalPlan.isDefined)
+    if (maybeLogicalPlan.isDefined) {
       planState.copy(maybeLogicalPlan = maybeLogicalPlan, plannerName = AdministrationPlannerName)
-    else planState
+    } else {
+      planState
+    }
   }
 }
 
