@@ -93,14 +93,14 @@ object Deprecations {
     override val find: PartialFunction[Any, Deprecation] = {
 
       // old octal literal syntax
-      case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(1) != 'o' =>
+      case p@SignedOctalIntegerLiteral(stringVal) if stringVal.charAt(stringVal.indexOf('0') + 1) != 'o' =>
         Deprecation(
-          Some(p -> SignedOctalIntegerLiteral(stringVal.patch(1, "o", 0))(p.position)),
+          Some(p -> SignedOctalIntegerLiteral(stringVal.patch(stringVal.indexOf('0') + 1, "o", 0))(p.position)),
           Some(DeprecatedOctalLiteralSyntax(p.position))
         )
 
       // old hex literal syntax
-      case p@SignedHexIntegerLiteral(stringVal) if stringVal.charAt(1) == 'X' =>
+      case p@SignedHexIntegerLiteral(stringVal) if stringVal.charAt(stringVal.indexOf('0') + 1) == 'X' =>
         Deprecation(
           Some(p -> SignedHexIntegerLiteral(stringVal.toLowerCase)(p.position)),
           Some(DeprecatedHexLiteralSyntax(p.position))

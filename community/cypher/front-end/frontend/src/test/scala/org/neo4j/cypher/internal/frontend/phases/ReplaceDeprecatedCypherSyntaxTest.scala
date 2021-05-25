@@ -52,6 +52,13 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
     )
   }
 
+  test("should rewrite -0X9FFF to -0x9fff") {
+    assertRewritten(
+      "RETURN -0X9FFF AS t",
+      "RETURN -0x9fff AS t"
+    )
+  }
+
   test("should rewrite exists in where") {
     assertRewritten(
       "MATCH (n) WHERE exists(n.prop) RETURN n",
@@ -97,6 +104,13 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
     assertRewritten(
       "RETURN 01256 AS t",
       "RETURN 0o1256 AS t"
+    )
+  }
+
+  test("should rewrite -01256 to -0o1256") {
+    assertRewritten(
+      "RETURN -01256 AS t",
+      "RETURN -0o1256 AS t"
     )
   }
 }

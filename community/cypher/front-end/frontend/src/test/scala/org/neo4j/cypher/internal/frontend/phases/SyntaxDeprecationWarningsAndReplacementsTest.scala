@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.Deprecations.deprecatedFeaturesIn4_X
+import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -31,10 +32,44 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
 
-  test("should warn about deprecation octal syntax") {
+  test("should warn about deprecated octal syntax") {
     check(deprecatedFeaturesIn4_X, "RETURN 01277") should equal(Set(
       DeprecatedOctalLiteralSyntax(InputPosition(7, 1, 8))
     ))
+  }
+
+  test("should warn about deprecated octal syntax (negative literal)") {
+    check(deprecatedFeaturesIn4_X, "RETURN -01277") should equal(Set(
+      DeprecatedOctalLiteralSyntax(InputPosition(7, 1, 8))
+    ))
+  }
+
+  test("should not warn about correct octal syntax") {
+    check(deprecatedFeaturesIn4_X, "RETURN 0o1277") should equal(Set.empty)
+  }
+
+  test("should not warn about correct octal syntax  (negative literal)") {
+    check(deprecatedFeaturesIn4_X, "RETURN -0o1277") should equal(Set.empty)
+  }
+
+  test("should warn about deprecated hexadecimal syntax") {
+    check(deprecatedFeaturesIn4_X, "RETURN 0X1277") should equal(Set(
+      DeprecatedHexLiteralSyntax(InputPosition(7, 1, 8))
+    ))
+  }
+
+  test("should warn about deprecated hexadecimal syntax (negative literal)") {
+    check(deprecatedFeaturesIn4_X, "RETURN -0X1277") should equal(Set(
+      DeprecatedHexLiteralSyntax(InputPosition(7, 1, 8))
+    ))
+  }
+
+  test("should not warn about correct hexadecimal syntax") {
+    check(deprecatedFeaturesIn4_X, "RETURN 0x1277") should equal(Set.empty)
+  }
+
+  test("should not warn about correct hexadecimal syntax  (negative literal)") {
+    check(deprecatedFeaturesIn4_X, "RETURN -0x1277") should equal(Set.empty)
   }
 
   private def check(deprecations: Deprecations, query: String): Set[InternalNotification] = {
