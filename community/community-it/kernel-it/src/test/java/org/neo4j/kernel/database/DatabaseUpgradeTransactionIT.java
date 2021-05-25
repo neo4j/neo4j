@@ -229,7 +229,7 @@ class DatabaseUpgradeTransactionIT
                 }
             }
         } ) );
-        race.go( 1, TimeUnit.MINUTES );
+        race.go( 10, TimeUnit.MINUTES );
 
         //Then
         assertThat( getKernelVersion() ).isEqualTo( LATEST );

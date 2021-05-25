@@ -1250,6 +1250,7 @@ public class Operations implements Write, SchemaWrite
                 throw new AlreadyConstrainedException( constraintWithSameSchema, CONSTRAINT_CREATION, token );
             }
         }
+
         // Already indexed
         if ( constraint.type() != ConstraintType.EXISTS )
         {
@@ -1258,6 +1259,25 @@ public class Operations implements Write, SchemaWrite
             {
                 IndexDescriptor existingIndex = existingIndexes.next();
                 throw new AlreadyIndexedException( existingIndex.schema(), CONSTRAINT_CREATION, token );
+            }
+        }
+
+        // Constraint backed by similar index dropped in this transaction.
+        // We cannot allow this because if we crash while new backing index
+        // is being populated we will end up with two indexes on the same schema.
+        if ( constraint.isIndexBackedConstraint() && ktx.hasTxStateWithChanges() )
+        {
+            for ( ConstraintDescriptor droppedConstraint : ktx.txState().constraintsChanges().getRemoved() )
+            {
+                // If dropped and new constraint have similar backing index we cannot allow this constraint creation
+                if ( droppedConstraint.isIndexBackedConstraint() && constraint.schema().equals( droppedConstraint.schema() ) )
+                {
+                    throw new UnsupportedOperationException(
+                            format( "Trying to create constraint '%s' in same transaction as dropping '%s'. " +
+                                    "This is not supported because they are both backed by similar indexes. " +
+                                    "Please drop constraint in a separate transaction before creating the new one.",
+                            constraint.getName(), droppedConstraint.getName() ) );
+                }
             }
         }
     }
