@@ -29,29 +29,21 @@ public class SimpleUriBuilder
 
     public URI buildURI( AdvertisedSocketAddress address, boolean isSsl )
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append( "http" );
-
+        String scheme = "http";
         if ( isSsl )
         {
-            sb.append( "s" );
-
+            scheme += "s";
         }
-        sb.append( "://" );
-
-        sb.append( address.getHostname() );
-
-        int port = address.getPort();
-        if ( port != 80 && port != 443 )
-        {
-            sb.append( ":" );
-            sb.append( port );
-        }
-        sb.append( "/" );
 
         try
         {
-            return new URI( sb.toString() );
+            int port = address.getPort();
+            if ( (!isSsl && port == 80) || (isSsl && port == 443) )
+            {
+                return new URI( scheme, address.getHostname(), "/", null );
+            }
+
+            return new URI( scheme, null, address.getHostname(), port, "/", null, null );
         }
         catch ( URISyntaxException e )
         {
