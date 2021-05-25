@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
@@ -54,14 +55,14 @@ object Eagerness {
    * and the remaining parts of the PlannerQuery. This function assumes that the
    * argument PlannerQuery is the very head of the PlannerQuery chain.
    */
-  private def readWriteConflictInHead(plan: LogicalPlan, plannerQuery: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
+  private def readWriteConflictInHead(plan: LogicalPlan, plannerQuery: SinglePlannerQuery, context: LogicalPlanningContext): Seq[EagernessReason.Reason] = {
     val nodeOrRelLeaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
       case n: NodeLogicalLeafPlan => n
       case r: RelationshipLogicalLeafPlan => r
     }
 
     if (nodeOrRelLeaves.isEmpty)
-      false // the query did not start with a read, possibly CREATE () ...
+      Seq.empty // the query did not start with a read, possibly CREATE () ...
     else {
       // In the following we determine if there are any stably solved predicates that we can leave out of the eagerness analysis.
       // The reasoning is as follows:
@@ -104,102 +105,131 @@ object Eagerness {
   }
 
   @tailrec
-  private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithLeafInfo: QgWithLeafInfo): Boolean = {
+  private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithLeafInfo: QgWithLeafInfo): Seq[EagernessReason.Reason] = {
     val allHeadQgs = Set(headQgWithLeafInfo) ++ (headQgWithLeafInfo.queryGraph.allQueryGraphs.toSet - headQgWithLeafInfo.queryGraph).map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsHead(writeQg: QueryGraph): Boolean = allHeadQgs.exists(readQg => writeQg.overlaps(readQg))
+    def overlapsHead(writeQg: QueryGraph): Seq[EagernessReason.Reason] = allHeadQgs.flatMap(readQg => writeQg.overlaps(readQg)).toSeq
 
-    val conflictWithQqInHorizon = tail.horizon.allQueryGraphs.exists(qg => overlapsHead(qg))
+    val conflictWithQqInHorizon = tail.horizon.allQueryGraphs.flatMap(qg => overlapsHead(qg))
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
 
-    val conflict = {
-      if (conflictWithQqInHorizon)
-        true
+    val conflicts: Seq[EagernessReason.Reason] = {
+      if (conflictWithQqInHorizon.nonEmpty)
+        conflictWithQqInHorizon
       else if (tail.queryGraph.readOnly || mergeReadWrite)
-        false
+        Seq.empty
       else
-        tail.queryGraph.allQueryGraphs.exists(qg => overlapsHead(qg))
+        tail.queryGraph.allQueryGraphs.flatMap(qg => overlapsHead(qg))
     }
 
-    if (conflict)
-      true
+    if (conflicts.nonEmpty)
+     conflicts
     else if (tail.tail.isEmpty)
-      false
+      Seq.empty
     else
       headConflicts(head, tail.tail.get, headQgWithLeafInfo)
   }
 
   def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    if (alwaysEager || readWriteConflictInHead(inputPlan, query, context))
-      context.logicalPlanProducer.planEager(inputPlan, context)
-    else
-      inputPlan
+    if (alwaysEager)
+      context.logicalPlanProducer.planEager(inputPlan, context, Seq(EagernessReason.UpdateStrategyEager))
+    else {
+      val conflicts = readWriteConflictInHead(inputPlan, query, context)
+      if (conflicts.nonEmpty)
+        context.logicalPlanProducer.planEager(inputPlan, context, conflicts)
+      else
+        inputPlan
+    }
   }
 
   def tailReadWriteEagerizeNonRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    if (alwaysEager || readWriteConflict(query, query))
-      context.logicalPlanProducer.planEager(inputPlan, context)
-    else
-      inputPlan
+    if (alwaysEager)
+      context.logicalPlanProducer.planEager(inputPlan, context, Seq(EagernessReason.UpdateStrategyEager))
+    else {
+      val conflicts = readWriteConflict(query, query)
+      if (conflicts.nonEmpty)
+        context.logicalPlanProducer.planEager(inputPlan, context, conflicts)
+      else
+        inputPlan
+    }
   }
 
   // NOTE: This does not check conflict within the query itself (like tailReadWriteEagerizeNonRecursive)
   def tailReadWriteEagerizeRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    if (alwaysEager || (query.tail.isDefined && readWriteConflictInTail(query, query.tail.get)))
-      context.logicalPlanProducer.planEager(inputPlan, context)
-    else
-      inputPlan
+    if (alwaysEager)
+      context.logicalPlanProducer.planEager(inputPlan, context, Seq(EagernessReason.UpdateStrategyEager))
+    else {
+      val conflicts = if (query.tail.isDefined) readWriteConflictInTail(query, query.tail.get) else Seq.empty
+      if (conflicts.nonEmpty)
+        context.logicalPlanProducer.planEager(inputPlan, context, conflicts)
+      else
+        inputPlan
+    }
   }
 
   def headWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
-    if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInHead(query, query.tail.get, context))
-      context.logicalPlanProducer.planEager(inputPlan, context)
-    else
-      inputPlan
+    if (alwaysEager)
+      context.logicalPlanProducer.planEager(inputPlan, context, Seq(EagernessReason.UpdateStrategyEager))
+    else {
+      val conflictsInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
+      val conflictsInHead = if (query.tail.isDefined) writeReadConflictInHead(query, query.tail.get, context) else Seq.empty
+      val conflicts = conflictsInHorizon ++ conflictsInHead
+
+      if (conflicts.nonEmpty)
+        context.logicalPlanProducer.planEager(inputPlan, context, conflicts)
+      else
+        inputPlan
+    }
   }
 
   def tailWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
-    if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInTail(query, query.tail.get, context))
-      context.logicalPlanProducer.planEager(inputPlan, context)
-    else
-      inputPlan
+    if (alwaysEager)
+      context.logicalPlanProducer.planEager(inputPlan, context, Seq(EagernessReason.UpdateStrategyEager))
+    else {
+      val conflictsInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
+      val conflictsInTail = if (query.tail.isDefined) writeReadConflictInTail(query, query.tail.get, context) else Seq.empty
+      val conflicts = conflictsInHorizon ++ conflictsInTail
+
+      if (conflicts.nonEmpty)
+        context.logicalPlanProducer.planEager(inputPlan, context, conflicts)
+      else
+        inputPlan
+    }
   }
 
   def horizonEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     val pcWrappedPlan = inputPlan match {
       case ProcedureCall(left, call) if call.signature.eager =>
-        context.logicalPlanProducer.planProcedureCall(context.logicalPlanProducer.planEager(left, context), call, context)
+        context.logicalPlanProducer.planProcedureCall(context.logicalPlanProducer.planEager(left, context, Seq(EagernessReason.Unknown)), call, context)
       case _ =>
         inputPlan
     }
 
-    val conflict = alwaysEager ||
-      horizonReadWriteConflict(query, context) ||
-      horizonWriteReadConflict(query)
-
-    if (conflict) {
-      context.logicalPlanProducer.planEager(pcWrappedPlan, context)
-    } else {
-      pcWrappedPlan
+    if (alwaysEager)
+      context.logicalPlanProducer.planEager(inputPlan, context, Seq(EagernessReason.UpdateStrategyEager))
+    else {
+      val conflicts = horizonReadWriteConflict(query, context) ++ horizonWriteReadConflict(query)
+      if (conflicts.nonEmpty)
+        context.logicalPlanProducer.planEager(pcWrappedPlan, context, conflicts)
+      else
+        pcWrappedPlan
     }
   }
 
-  private def horizonReadWriteConflict(query: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
-    query.tail.toSeq.flatMap(_.allQueryGraphs).exists(_.overlapsHorizon(query.horizon, context.semanticTable))
+  private def horizonReadWriteConflict(query: SinglePlannerQuery, context: LogicalPlanningContext): Seq[EagernessReason.Reason] = {
+    query.tail.toSeq.flatMap(_.allQueryGraphs).flatMap(_.overlapsHorizon(query.horizon, context.semanticTable))
   }
 
-  private def horizonWriteReadConflict(query: SinglePlannerQuery): Boolean = {
+  private def horizonWriteReadConflict(query: SinglePlannerQuery): Seq[EagernessReason.Reason] = {
     val horizonQgs = query.horizon.allQueryGraphs
     val tailQgs = query.tail.toSeq.flatMap(_.allQueryGraphs)
 
-    tailQgs.map(qgWithNoStableIdentifierAndOnlyLeaves).exists(readQg => horizonQgs.exists(writeQg => writeQg.overlaps(readQg)))
+    tailQgs.map(qgWithNoStableIdentifierAndOnlyLeaves).flatMap(readQg => horizonQgs.flatMap(writeQg => writeQg.overlaps(readQg)))
   }
 
   /**
@@ -208,52 +238,55 @@ object Eagerness {
    * the head of the PlannerQuery chain.
    */
   @tailrec
-  def readWriteConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery): Boolean = {
-    val conflict = readWriteConflict(head, tail)
-    if (conflict)
-      true
+  def readWriteConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery): Seq[EagernessReason.Reason] = {
+    val conflicts = readWriteConflict(head, tail)
+    if (conflicts.nonEmpty)
+      conflicts
     else if (tail.tail.isEmpty)
-      false
+      Seq.empty
     else
       readWriteConflictInTail(head, tail.tail.get)
   }
 
-  def readWriteConflict(readQuery: SinglePlannerQuery, writeQuery: SinglePlannerQuery): Boolean = {
+  def readWriteConflict(readQuery: SinglePlannerQuery, writeQuery: SinglePlannerQuery): Seq[EagernessReason.Reason] = {
     val readQGs = readQuery.queryGraph.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsWithReadQg(writeQg: QueryGraph): Boolean = readQGs.exists(readQg => writeQg.overlaps(readQg))
+    def overlapsWithReadQg(writeQg: QueryGraph): Seq[EagernessReason.Reason] = readQGs.flatMap(readQg => writeQg.overlaps(readQg))
 
-    val conflictWithQgInHorizon = writeQuery.horizon.allQueryGraphs.exists(overlapsWithReadQg)
+    val conflictsWithQgInHorizon = writeQuery.horizon.allQueryGraphs.flatMap(overlapsWithReadQg)
     val mergeReadWrite = readQuery == writeQuery && readQuery.queryGraph.containsMergeRecursive
 
-    if (conflictWithQgInHorizon)
-      true
+    if (conflictsWithQgInHorizon.nonEmpty)
+      conflictsWithQgInHorizon
     else if (writeQuery.queryGraph.readOnly || mergeReadWrite)
-      false
+      Seq.empty
     else
-      writeQuery.queryGraph.allQueryGraphs.exists(overlapsWithReadQg)
+      writeQuery.queryGraph.allQueryGraphs.flatMap(overlapsWithReadQg)
   }
 
   @tailrec
-  def writeReadConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
+  def writeReadConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Seq[EagernessReason.Reason] = {
     val readQGs = tail.queryGraph.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves)
-    def overlapsWithReadQg(writeQg: QueryGraph): Boolean = readQGs.exists(readQg => writeQg.overlaps(readQg))
+    def overlapsWithReadQg(writeQg: QueryGraph): Seq[EagernessReason.Reason] = readQGs.flatMap(readQg => writeQg.overlaps(readQg))
 
-    val conflict =
-      if (tail.queryGraph.writeOnly) false
-      else (head.queryGraph.allQueryGraphs.exists(overlapsWithReadQg)) ||
-        head.queryGraph.allQueryGraphs.exists(_.overlapsHorizon(tail.horizon, context.semanticTable)) ||
-        head.queryGraph.allQueryGraphs.exists(deleteReadOverlap(_, tail.queryGraph, context))
-    if (conflict)
-      true
+    val conflicts =
+      if (tail.queryGraph.writeOnly) Seq.empty
+      else head.queryGraph.allQueryGraphs.flatMap(overlapsWithReadQg) ++
+        head.queryGraph.allQueryGraphs.flatMap(_.overlapsHorizon(tail.horizon, context.semanticTable)) ++
+        head.queryGraph.allQueryGraphs.flatMap(deleteReadOverlap(_, tail.queryGraph, context))
+    if (conflicts.nonEmpty)
+      conflicts
     else if (tail.tail.isEmpty)
-      false
+      Seq.empty
     else
       writeReadConflictInTail(head, tail.tail.get, context)
   }
 
-  private def deleteReadOverlap(from: QueryGraph, to: QueryGraph, context: LogicalPlanningContext): Boolean = {
+  private def deleteReadOverlap(from: QueryGraph, to: QueryGraph, context: LogicalPlanningContext): Seq[EagernessReason.Reason] = {
     val deleted = from.identifiersToDelete
-    deletedRelationshipsOverlap(deleted, to, context) || deletedNodesOverlap(deleted, to, context)
+    if (deletedRelationshipsOverlap(deleted, to, context) || deletedNodesOverlap(deleted, to, context))
+      Seq(EagernessReason.Unknown)
+    else
+      Seq.empty
   }
 
   private def deletedRelationshipsOverlap(deleted: Set[String], to: QueryGraph, context: LogicalPlanningContext): Boolean = {
@@ -268,29 +301,28 @@ object Eagerness {
     nodesToRead.nonEmpty && nodesDeleted.nonEmpty
   }
 
-  def writeReadConflictInHead(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
+  def writeReadConflictInHead(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Seq[EagernessReason.Reason] = {
     // If the first planner query is write only, we can use a different overlaps method (writeOnlyHeadOverlaps)
     // that makes us less eager
-    if (head.queryGraph.writeOnly)
-      writeReadConflictInHeadRecursive(head, tail)
-    else
+    if (head.queryGraph.writeOnly) {
+      val overlap = writeReadConflictInHeadRecursive(head, tail)
+      if (overlap.nonEmpty)
+        Seq(overlap.get)
+      else
+        Seq.empty
+    } else
       writeReadConflictInTail(head, tail, context)
   }
 
   @tailrec
-  def writeReadConflictInHeadRecursive(head: SinglePlannerQuery, tail: SinglePlannerQuery): Boolean = {
+  def writeReadConflictInHeadRecursive(head: SinglePlannerQuery, tail: SinglePlannerQuery): Option[EagernessReason.Reason] = {
     // TODO:H Refactor: This is same as writeReadConflictInTail, but with different overlaps method. Pass as a parameter
-    val conflict =
-      if (tail.queryGraph.writeOnly) false
-      else
+    if (!tail.queryGraph.writeOnly)
       // NOTE: Here we do not check writeOnlyHeadOverlapsHorizon, because we do not know of any case where a
       // write-only head could cause problems with reads in future horizons
-        head.queryGraph writeOnlyHeadOverlaps qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
-
-    if (conflict)
-      true
+      head.queryGraph writeOnlyHeadOverlaps qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
     else if (tail.tail.isEmpty)
-      false
+      None
     else
       writeReadConflictInHeadRecursive(head, tail.tail.get)
   }

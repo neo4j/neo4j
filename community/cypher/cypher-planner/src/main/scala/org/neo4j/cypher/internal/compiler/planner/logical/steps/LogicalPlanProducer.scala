@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.ForeachPattern
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.MergeNodePattern
@@ -1509,8 +1510,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
-  def planEager(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
-    annotate(Eager(inner), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
+  def planEager(inner: LogicalPlan, context: LogicalPlanningContext, reasons: Seq[EagernessReason.Reason]): LogicalPlan =
+    annotate(Eager(inner, reasons.distinct), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
 
   def planError(inner: LogicalPlan, exception: ExhaustiveShortestPathForbiddenException, context: LogicalPlanningContext): LogicalPlan =
     annotate(ErrorPlan(inner, exception), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)

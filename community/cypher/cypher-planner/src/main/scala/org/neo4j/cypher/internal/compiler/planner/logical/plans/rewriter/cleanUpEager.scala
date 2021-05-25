@@ -36,24 +36,24 @@ case class cleanUpEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) e
   private val instance: Rewriter = bottomUp(Rewriter.lift {
 
     // E E L => E L
-    case eager@Eager(Eager(source)) =>
-      eager.copy(source = source)(SameId(eager.id))
+    case eager@Eager(Eager(source, reasons), _) =>
+      eager.copy(source = source, reasons = reasons)(SameId(eager.id))
 
     // E U => U E
-    case eager@Eager(unwind@UnwindCollection(source, _, _)) =>
-      val res = unwind.copy(source = eager.copy(source = source)(SameId(eager.id)))(attributes.copy(unwind.id))
+    case eager@Eager(unwind@UnwindCollection(source, _, _), reasons) =>
+      val res = unwind.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(attributes.copy(unwind.id))
       solveds.copy(eager.id, res.id)
       res
 
     // E LCSV => LCSV E
-    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _,_)) =>
-      val res = loadCSV.copy(source = eager.copy(source = source)(SameId(eager.id)))(attributes.copy(loadCSV.id))
+    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _,_), reasons) =>
+      val res = loadCSV.copy(source = eager.copy(source = source, reasons = reasons)(SameId(eager.id)))(attributes.copy(loadCSV.id))
       solveds.copy(eager.id, res.id)
       res
 
     // LIMIT E => E LIMIT
-    case limit@Limit(eager@Eager(source), _)  =>
-      val res = eager.copy(source = planLimitOnTopOf(source, limit.count)(SameId(limit.id)))(attributes.copy(eager.id))
+    case limit@Limit(eager@Eager(source, reasons), _)  =>
+      val res = eager.copy(source = planLimitOnTopOf(source, limit.count)(SameId(limit.id)), reasons)(attributes.copy(eager.id))
       solveds.copy(limit.id, res.id)
       res
   })

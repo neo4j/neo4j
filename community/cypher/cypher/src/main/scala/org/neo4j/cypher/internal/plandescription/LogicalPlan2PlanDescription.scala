@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
@@ -543,8 +544,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case DetachDeletePath(_, expression) =>
         PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
-      case _: Eager =>
-        PlanDescriptionImpl(id, "Eager", children, Seq.empty, variables, withRawCardinalities)
+      case Eager(_, reasons) =>
+        val info = eagernessReasonInfo(reasons)
+        val details = if (info.nonEmpty) Seq(Details(info)) else Seq.empty
+        PlanDescriptionImpl(id, "Eager", children, details, variables, withRawCardinalities)
 
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables, withRawCardinalities)
@@ -1095,6 +1098,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case Ascending(id) => pretty"${asPrettyString(id)} ASC"
       case Descending(id) => pretty"${asPrettyString(id)} DESC"
     }.mkPrettyString(SEPARATOR)
+  }
+
+  private def eagernessReasonInfo(reasons: Seq[EagernessReason.Reason]): Seq[PrettyString] = {
+    reasons.collect {
+      case _@EagernessReason.UpdateStrategyEager => pretty"updateStrategy=eager"
+      case _@EagernessReason.OverlappingSetLabels(labels) => pretty"overlapping set labels: ${labels.map(asPrettyString(_)).mkPrettyString(", ")}"
+      case _@EagernessReason.OverlappingDeletedLabels(labels) => pretty"overlapping remove labels: ${labels.map(asPrettyString(_)).mkPrettyString(", ")}"
+      case _@EagernessReason.DeleteOverlap(identifiers) => pretty"delete overlap: ${identifiers.map(asPrettyString(_)).mkPrettyString(", ")}"
+    }
   }
 
   private def expandExpressionDescription(from: String,

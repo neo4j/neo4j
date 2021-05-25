@@ -759,7 +759,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case DetachDeleteExpression(_, expression) =>
         DeletePipe(source, buildExpression(expression), forced = true)(id = id)
 
-      case Eager(_) =>
+      case Eager(_, _) =>
         EagerPipe(source)(id = id)
 
       case ErrorPlan(_, ex) =>

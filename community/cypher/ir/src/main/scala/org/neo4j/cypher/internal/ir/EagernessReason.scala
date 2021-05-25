@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.plans
+package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.EagernessReason
-import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.expressions.LabelName
 
-/**
- * Consumes and buffers all source rows, marks the transaction as stable, and then produces all rows.
- */
-case class Eager(override val source: LogicalPlan, reasons: Seq[EagernessReason.Reason] = Seq(EagernessReason.Unknown))(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
+object EagernessReason {
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+  sealed trait Reason
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  case object Unknown extends Reason
+
+  case object UpdateStrategyEager extends Reason
+
+  case class OverlappingSetLabels(labels: Seq[LabelName]) extends Reason
+  case class OverlappingDeletedLabels(labels: Seq[LabelName]) extends Reason
+
+  case class DeleteOverlap(identifiers: Seq[String]) extends Reason
 }

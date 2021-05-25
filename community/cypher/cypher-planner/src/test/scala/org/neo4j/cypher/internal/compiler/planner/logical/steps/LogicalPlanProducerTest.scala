@@ -829,7 +829,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val leaf1 = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
       val leaf2 = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
       val p1 = lpp.planSort(leaf1, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
-      val p2 = lpp.planEager(p1, context)
+      val p2 = lpp.planEager(p1, context, Seq.empty)
       val p3 = lpp.planRightOuterHashJoin(Set("x"), leaf2, p2, Set.empty, context)
 
       // when
