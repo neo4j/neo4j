@@ -449,9 +449,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
         val unsupportedClauses = q.treeFold(List.empty[String]) {
           case _: CallClause => acc => (acc, None)
           case _: Return => acc => (acc, None)
-          case c: Clause => acc => (acc :+ c.getClass.getSimpleName, None)
+          case c: Clause => acc => (acc :+ c.name, None)
         }
-
         if (unsupportedClauses.nonEmpty) {
           throw new RuntimeException(s"The following unsupported clauses were used: ${unsupportedClauses.sorted.mkString(", ")}. \n" + systemDbProcedureRules)
         }
@@ -468,11 +467,9 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
 
     val planState = LogicalPlanState(from)
 
-    if (maybeLogicalPlan.isDefined) {
+    if (maybeLogicalPlan.isDefined)
       planState.copy(maybeLogicalPlan = maybeLogicalPlan, plannerName = AdministrationPlannerName)
-    } else {
-      planState
-    }
+    else planState
   }
 }
 
