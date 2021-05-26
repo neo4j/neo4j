@@ -154,7 +154,8 @@ public class ConsistencyCheckService
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ),
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ) );
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ),
+                        pageCacheConfig -> pageCacheConfig.faultLockStriping( 1 << 11 ) );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try

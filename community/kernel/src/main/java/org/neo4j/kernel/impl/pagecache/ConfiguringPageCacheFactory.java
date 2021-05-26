@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import java.util.function.Function;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.io.ByteUnit;
@@ -54,6 +56,13 @@ public class ConfiguringPageCacheFactory
     private final JobScheduler scheduler;
     private final SystemNanoClock clock;
     private final MemoryPools memoryPools;
+    private final Function<MuninnPageCache.Configuration,MuninnPageCache.Configuration> pageCacheConfigurator;
+
+    public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log, JobScheduler scheduler,
+            SystemNanoClock clock, MemoryPools memoryPools )
+    {
+        this( fs, config, pageCacheTracer, log, scheduler, clock, memoryPools, c -> c );
+    }
 
     /**
      * Construct configuring page cache factory
@@ -64,9 +73,10 @@ public class ConfiguringPageCacheFactory
      * @param scheduler job scheduler to execute page cache jobs
      * @param clock the clock source used by the page cache.
      * @param memoryPools database memory pools to register page cache specific instance
+     * @param pageCacheConfigurator additional configuration for the page cache
      */
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log, JobScheduler scheduler,
-            SystemNanoClock clock, MemoryPools memoryPools )
+            SystemNanoClock clock, MemoryPools memoryPools, Function<MuninnPageCache.Configuration,MuninnPageCache.Configuration> pageCacheConfigurator )
     {
         this.fs = fs;
         this.config = config;
@@ -75,6 +85,7 @@ public class ConfiguringPageCacheFactory
         this.scheduler = scheduler;
         this.clock = clock;
         this.memoryPools = memoryPools;
+        this.pageCacheConfigurator = pageCacheConfigurator;
     }
 
     public synchronized PageCache getOrCreatePageCache()
@@ -100,6 +111,7 @@ public class ConfiguringPageCacheFactory
                 .preallocateStoreFiles( config.get( preallocate_store_files ) )
                 .clock( clock )
                 .pageCacheTracer( pageCacheTracer );
+        configuration = pageCacheConfigurator.apply( configuration );
         return new MuninnPageCache( swapperFactory, scheduler, configuration );
     }
 
