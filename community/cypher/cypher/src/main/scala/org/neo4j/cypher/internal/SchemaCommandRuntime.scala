@@ -229,7 +229,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
         val result: List[Map[String, AnyValue]] = sortedRelevantConstraints.map {
           case (constraintDescriptor: ConstraintDescriptor, constraintInfo: ConstraintInfo) =>
-            val escapedName = escapeBackticks(constraintDescriptor.getName)
+            val name = constraintDescriptor.getName
             val labels = constraintInfo.labelsOrTypes
             val properties = constraintInfo.properties
             val isIndexBacked = constraintDescriptor.isIndexBackedConstraint
@@ -240,7 +240,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               // The id of the constraint
               "id" -> Values.longValue(constraintDescriptor.getId),
               // Name of the constraint, for example "myConstraint"
-              "name" -> Values.stringValue(escapedName),
+              "name" -> Values.stringValue(name),
               // The ConstraintType of this constraint, one of "UNIQUENESS", "NODE_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
               "type" -> Values.stringValue(constraintType.output),
               // Type of entities this constraint represents, either "NODE" or "RELATIONSHIP"
@@ -255,15 +255,15 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             if (verbose) {
               val (options, createString) = if (isIndexBacked) {
                 val index = constraintInfo.maybeIndex.getOrElse(
-                  throw new IllegalStateException(s"Expected to find an index for index backed constraint $escapedName")
+                  throw new IllegalStateException(s"Expected to find an index for index backed constraint $name")
                 )
                 val providerName = index.getIndexProvider.name
                 val indexConfig = index.getIndexConfig
                 val options: MapValue = extractOptionsMap(providerName, indexConfig)
-                val createWithOptions = createConstraintStatement(escapedName, constraintType, labels, properties, Some(providerName), Some(indexConfig))
+                val createWithOptions = createConstraintStatement(name, constraintType, labels, properties, Some(providerName), Some(indexConfig))
                 (options, createWithOptions)
               } else {
-                val createWithoutOptions = createConstraintStatement(escapedName, constraintType, labels, properties)
+                val createWithoutOptions = createConstraintStatement(name, constraintType, labels, properties)
                 (Values.NO_VALUE, createWithoutOptions)
               }
 
@@ -324,11 +324,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             /*
              * For btree the create command is the Cypher CREATE INDEX which needs the name to be escaped,
              * in case it contains special characters.
-             * For fulltext the create command is a procedure which doesn't require escaping.
+             * For fulltext the create command is a procedure which needs single quotes to be escaped.
             */
             val name = indexDescriptor.getName
-            val escapedName = escapeBackticks(name)
-            val createName = if(indexType.equals(IndexType.BTREE)) s"`$escapedName`" else name
 
             val entityType = indexDescriptor.schema.entityType
             val labels = indexInfo.labelsOrTypes
@@ -339,7 +337,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               // The id of the index
               "id" -> Values.longValue(indexDescriptor.getId),
               // Name of the index, for example "myIndex"
-              "name" -> Values.stringValue(escapedName),
+              "name" -> Values.stringValue(name),
               // Current state of the index, one of "ONLINE", "FAILED", "POPULATING"
               "state" -> Values.stringValue(indexStatus.state),
               // % of index population, for example 0.0, 100.0, or 75.1
@@ -363,7 +361,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
                 "options" -> extractOptionsMap(providerName, indexConfig),
                 "failureMessage" -> Values.stringValue(indexInfo.indexStatus.failureMessage),
                 "createStatement" -> Values.stringValue(
-                  createIndexStatement(createName, indexType, entityType, labels, properties, providerName, indexConfig, indexStatus.maybeConstraint))
+                  createIndexStatement(name, indexType, entityType, labels, properties, providerName, indexConfig, indexStatus.maybeConstraint))
               )
             } else {
               briefResult
@@ -489,7 +487,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  private def createIndexStatement(escapedName: String,
+  private def createIndexStatement(name: String,
                               indexType: IndexType,
                               entityType: EntityType,
                               labelsOrTypes: List[String],
@@ -500,6 +498,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     indexType match {
       case IndexType.BTREE =>
+        val escapedName = s"`${escapeBackticks(name)}`"
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
@@ -516,15 +515,16 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             s"CREATE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedProperties) OPTIONS $optionsString"
         }
       case IndexType.FULLTEXT =>
+        val escapedName = s"'${escapeSingleQuotes(name)}'"
         val labelsOrTypesArray = asString(labelsOrTypes, arrayStringJoiner)
         val propertiesArray = asString(properties, arrayStringJoiner)
         val fulltextConfig = configAsString(indexConfig, value => fullTextConfigValueAsString(value))
 
         entityType match {
           case EntityType.NODE =>
-            s"CALL db.index.fulltext.createNodeIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
+            s"CALL db.index.fulltext.createNodeIndex($escapedName, $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
           case EntityType.RELATIONSHIP =>
-            s"CALL db.index.fulltext.createRelationshipIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
+            s"CALL db.index.fulltext.createRelationshipIndex($escapedName, $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case _ => throw new IllegalArgumentException(s"Did not recognize index type $indexType")
@@ -538,21 +538,22 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
                                         providerName: Option[String] = None,
                                         indexConfig: Option[IndexConfig] = None): String = {
     val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+    val escapedName = escapeBackticks(name)
     constraintType match {
       case UniqueConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, UniqueConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $options"
+        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $options"
       case NodeKeyConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, NodeKeyConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
+        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
       case NodeExistsConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
-        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT exists($escapedProperties)"
+        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT exists($escapedProperties)"
       case RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
-        s"CREATE CONSTRAINT `$name` ON ()-[r$labelsOrTypesWithColons]-() ASSERT exists($escapedProperties)"
+        s"CREATE CONSTRAINT `$escapedName` ON ()-[r$labelsOrTypesWithColons]-() ASSERT exists($escapedProperties)"
       case _ => throw new IllegalArgumentException(s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command.")
     }
   }
@@ -580,7 +581,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   private def asString(list: List[String], stringJoiner: StringJoiner): String = {
     for (elem <- list) {
-      stringJoiner.add(s"'$elem'")
+      stringJoiner.add(s"'${escapeSingleQuotes(elem)}'")
     }
     stringJoiner.toString
   }
@@ -644,5 +645,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  private def escapeBackticks(str: String): String = str.replaceAll("`", "``")
+  private def escapeBackticks(str: String): String = str.replaceAllLiterally("`", "``")
+
+  private def escapeSingleQuotes(str: String): String = str.replaceAllLiterally("'", "\\'")
 }
