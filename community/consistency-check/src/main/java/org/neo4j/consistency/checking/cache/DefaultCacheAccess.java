@@ -75,7 +75,7 @@ public class DefaultCacheAccess implements CacheAccess
     @Override
     public void clearCache()
     {
-        cache.clear();
+        cache.clearParallel( Runtime.getRuntime().availableProcessors() );
     }
 
     @Override
@@ -88,7 +88,7 @@ public class DefaultCacheAccess implements CacheAccess
     public void setCacheSlotSizesAndClear( int... slotSizes )
     {
         cache.setSlotSizes( slotSizes );
-        cache.clear();
+        cache.clearParallel( Runtime.getRuntime().availableProcessors() );
     }
 
     @Override

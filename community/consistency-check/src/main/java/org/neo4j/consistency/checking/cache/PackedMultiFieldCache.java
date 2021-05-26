@@ -19,9 +19,17 @@
  */
 package org.neo4j.consistency.checking.cache;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.util.concurrent.Futures;
 
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
 
@@ -75,6 +83,45 @@ class PackedMultiFieldCache
         for ( long i = 0; i < length; i++ )
         {
             clear( i );
+        }
+    }
+
+    void clearParallel( int numThreads )
+    {
+        long length = array.length();
+        List<Callable<Void>> tasks = new ArrayList<>();
+        long numPerThread = length / numThreads;
+        long prevLowIndex = 0;
+        for ( int i = 0; i < numThreads; i++ )
+        {
+            long lowIndex = prevLowIndex;
+            long highIndex = i == numThreads - 1 ? length : lowIndex + numPerThread;
+            tasks.add( () ->
+            {
+                for ( long index = lowIndex; index < highIndex; index++ )
+                {
+                    clear( index );
+                }
+                return null;
+            } );
+            prevLowIndex = highIndex;
+        }
+        ExecutorService executor = Executors.newFixedThreadPool( numThreads );
+        try
+        {
+            Futures.getAllResults( executor.invokeAll( tasks ) );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new RuntimeException( e.getCause() );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+        }
+        finally
+        {
+            executor.shutdown();
         }
     }
 
