@@ -134,7 +134,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
   } yield indexMatch
 
   private def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
-    context.planContext.indexesGetForLabelNonTransactional(labelId)
+    context.planContext.indexesGetForLabelNonLocking(labelId)
 
   private def issueNotifications(result: Set[LogicalPlan], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
     if (result.isEmpty) {

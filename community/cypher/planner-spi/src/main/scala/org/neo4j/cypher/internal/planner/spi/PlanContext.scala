@@ -36,12 +36,12 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   /**
    * Return all indexes (general and unique) for a given label, without taking any schema locks.
    */
-  def indexesGetForLabelNonTransactional(labelId: Int): Iterator[IndexDescriptor]
+  def indexesGetForLabelNonLocking(labelId: Int): Iterator[IndexDescriptor]
 
   /**
    * Return all indexes for a given relationship type, without taking any schema locks.
    */
-  def indexesGetForRelTypeNonTransactional(relTypeId: Int): Iterator[IndexDescriptor]
+  def indexesGetForRelTypeNonLocking(relTypeId: Int): Iterator[IndexDescriptor]
 
   /**
    * Return all unique indexes for a given label, without taking any schema locks.

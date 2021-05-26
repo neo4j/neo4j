@@ -455,15 +455,15 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Iterator<IndexDescriptor> getLabelIndexesNonTransactional( int labelId )
+    public Iterator<IndexDescriptor> getLabelIndexesNonLocking( int labelId )
     {
-        return storageReader.indexesGetForLabel( labelId );
+        return indexesGetForLabel( storageReader, labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> getRelTypeIndexesNonTransactional( int relTypeId )
+    public Iterator<IndexDescriptor> getRelTypeIndexesNonLocking( int relTypeId )
     {
-        return storageReader.indexesGetForRelationshipType( relTypeId );
+        return indexesGetForRelationshipType( storageReader, relTypeId );
     }
 
     /**

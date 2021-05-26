@@ -110,7 +110,7 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
     val relTypeName = patternRelationship.types.head
     val indexMatches = for {
       relTypeId <- context.semanticTable.id(relTypeName).toSet[RelTypeId]
-      indexDescriptor <- context.planContext.indexesGetForRelTypeNonTransactional(relTypeId)
+      indexDescriptor <- context.planContext.indexesGetForRelTypeNonLocking(relTypeId)
       predicatesForIndex <- predicatesForIndex(indexDescriptor, propertyPredicates, interestingOrderConfig, context)
     } yield IndexMatch(variableName, patternRelationship, relTypeName, relTypeId,
       predicatesForIndex.predicatesInOrder,

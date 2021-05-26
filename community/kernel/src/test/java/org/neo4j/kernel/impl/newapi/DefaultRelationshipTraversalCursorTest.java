@@ -600,13 +600,13 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
-        public Iterator<IndexDescriptor> getLabelIndexesNonTransactional( int labelId )
+        public Iterator<IndexDescriptor> getLabelIndexesNonLocking( int labelId )
         {
             return null;
         }
 
         @Override
-        public Iterator<IndexDescriptor> getRelTypeIndexesNonTransactional( int labelId )
+        public Iterator<IndexDescriptor> getRelTypeIndexesNonLocking( int labelId )
         {
             return null;
         }

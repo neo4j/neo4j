@@ -502,16 +502,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             createdInTx = tx.schemaWrite().indexCreate( forLabel( label, prop3 ), "c" );
             tx.schemaWrite().indexDrop( droppedInTx );
 
-            // Should not include the index changes happening in the transaction (non-transactional)
-            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonTransactional( label );
-            assertThat( indexes ).contains( inStore, droppedInTx );
+            // Should include the index changes happening in the transaction
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonLocking( label );
+            assertThat( indexes ).contains( inStore, createdInTx );
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             // Should not take any locks
-            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonTransactional( label );
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonLocking( label );
             assertThat( indexes ).contains( inStore, createdInTx );
             assertEquals(((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
 
@@ -574,16 +574,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             createdInTx = tx.schemaWrite().indexCreate( forRelType( type, prop3 ), "c" );
             tx.schemaWrite().indexDrop( droppedInTx );
 
-            // Should not include the index changes happening in the transaction (non-transactional)
-            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getRelTypeIndexesNonTransactional( type );
-            assertThat( indexes ).contains( inStore, droppedInTx );
+            // Should not include the index changes happening in the transaction
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getRelTypeIndexesNonLocking( type );
+            assertThat( indexes ).contains( inStore, createdInTx );
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             // Should not take any locks
-            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getRelTypeIndexesNonTransactional( type );
+            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getRelTypeIndexesNonLocking( type );
             assertThat( indexes ).contains( inStore, createdInTx );
             assertEquals(((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
 

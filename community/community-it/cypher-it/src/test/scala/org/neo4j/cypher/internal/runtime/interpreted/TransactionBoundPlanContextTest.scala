@@ -170,7 +170,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
       val prop2id = planContext.getPropertyKeyId("prop2")
-      planContext.indexesGetForLabelNonTransactional(l1id).toSet should equal(Set(
+      planContext.indexesGetForLabelNonLocking(l1id).toSet should equal(Set(
         IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop1id))).withBehaviours(Set[IndexBehaviour](SlowContains)),
         IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop2id))).withBehaviours(Set[IndexBehaviour](SlowContains)).unique()
       ))
@@ -254,7 +254,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       val rel1Id = planContext.getRelTypeId("REL1")
       val propId = planContext.getPropertyKeyId("prop")
       val otherPropId = planContext.getPropertyKeyId("otherProp")
-      planContext.indexesGetForRelTypeNonTransactional(rel1Id).toSet should equal(Set(
+      planContext.indexesGetForRelTypeNonLocking(rel1Id).toSet should equal(Set(
         IndexDescriptor.forRelType(RelTypeId(rel1Id), Seq(PropertyKeyId(propId))).withBehaviours(Set(SlowContains)),
         IndexDescriptor.forRelType(RelTypeId(rel1Id), Seq(PropertyKeyId(otherPropId))).withBehaviours(Set(SlowContains))
       ))

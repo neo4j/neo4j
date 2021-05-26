@@ -42,20 +42,20 @@ public interface SchemaRead extends SchemaReadCore
     Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema );
 
     /**
-     * Acquire a reference to the index matching the given {@code labelId}, without requiring a transaction to be open and without taking any schema locks.
+     * Acquire a reference to the index matching the given {@code labelId}, without taking any schema locks.
      *
      * @param labelId label to list indexes for.
      * @return An index matching the {@code labelId}, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong
      */
-    Iterator<IndexDescriptor> getLabelIndexesNonTransactional( int labelId );
+    Iterator<IndexDescriptor> getLabelIndexesNonLocking( int labelId );
 
     /**
-     * Acquire a reference to the index matching the given {@code relTypeId}, without requiring a transaction to be open and without taking any schema locks.
+     * Acquire a reference to the index matching the given {@code relTypeId}, without taking any schema locks.
      *
      * @param relTypeId relationship type to list indexes for.
      * @return An index matching the {@code relTypeId}, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong
      */
-    Iterator<IndexDescriptor> getRelTypeIndexesNonTransactional( int relTypeId );
+    Iterator<IndexDescriptor> getRelTypeIndexesNonLocking( int relTypeId );
 
     /**
      * Computes the selectivity of the unique values.

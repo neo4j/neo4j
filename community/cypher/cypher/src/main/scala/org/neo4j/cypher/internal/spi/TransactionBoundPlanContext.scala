@@ -115,12 +115,12 @@ object TransactionBoundPlanContext {
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
   extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with IndexDescriptorCompatibility {
 
-  override def indexesGetForLabelNonTransactional(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.schemaRead.getLabelIndexesNonTransactional(labelId).asScala.flatMap(getOnlineIndex)
+  override def indexesGetForLabelNonLocking(labelId: Int): Iterator[IndexDescriptor] = {
+    tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala.flatMap(getOnlineIndex)
   }
 
-  override def indexesGetForRelTypeNonTransactional(relTypeId: Int): Iterator[IndexDescriptor] = {
-    tc.schemaRead.getRelTypeIndexesNonTransactional(relTypeId).asScala.flatMap(getOnlineIndex)
+  override def indexesGetForRelTypeNonLocking(relTypeId: Int): Iterator[IndexDescriptor] = {
+    tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala.flatMap(getOnlineIndex)
   }
 
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
@@ -130,11 +130,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def indexExistsForLabel(labelId: Int): Boolean = {
-    indexesGetForLabelNonTransactional(labelId).nonEmpty
+    indexesGetForLabelNonLocking(labelId).nonEmpty
   }
 
   override def indexExistsForRelType(relTypeId: Int): Boolean = {
-    indexesGetForRelTypeNonTransactional(relTypeId).nonEmpty
+    indexesGetForRelTypeNonLocking(relTypeId).nonEmpty
   }
 
   override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {

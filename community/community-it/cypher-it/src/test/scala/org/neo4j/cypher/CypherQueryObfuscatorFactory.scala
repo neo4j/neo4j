@@ -93,8 +93,8 @@ class CypherQueryObfuscatorFactory {
 
     // unused
 
-    override def indexesGetForLabelNonTransactional(labelId: Int): Nothing = fail()
-    override def indexesGetForRelTypeNonTransactional(relTypeId: Int): Nothing = fail()
+    override def indexesGetForLabelNonLocking(labelId: Int): Nothing = fail()
+    override def indexesGetForRelTypeNonLocking(relTypeId: Int): Nothing = fail()
     override def indexExistsForLabel(labelId: Int): Nothing = fail()
     override def indexExistsForRelType(relTypeId: Int): Nothing = fail()
     override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
