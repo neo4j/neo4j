@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
@@ -43,6 +44,8 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.topDown
+
+import scala.annotation.tailrec
 
 case class unnestApply(override val solveds: Solveds,
                        override val cardinalities: Cardinalities,
@@ -85,10 +88,13 @@ case class unnestApply(override val solveds: Solveds,
       unnestRightBinaryLeft(apply, lhs, foreach)
 
     // L Ax (σ R) => σ(L Ax R)
-    case apply@Apply(lhs, sel:Selection, _) =>
-      unnestRightUnary(apply, lhs, sel)
+    // L Ax (π R) => π(L Ax R)
+    // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
+    // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
+    case apply@Apply(lhs, UnnestableUnaryPlan(p), _) =>
+      unnestRightUnary(apply, lhs, p)
 
-    // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L
+    // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L2
     case original@Apply(lhs, Apply(sel@Selection(predicate, lhs2), rhs, isSubquery1), isSubquery2)
       if predicate.exprs.forall(lhs.satisfiesExpressionDependencies) =>
       val maybeSelectivity = cardinalities(sel.id) / cardinalities(lhs2.id)
@@ -103,18 +109,6 @@ case class unnestApply(override val solveds: Solveds,
       providedOrders.copy(lhs2.id, apply2.id)
 
       Apply(selectionLHS, apply2, isSubquery2)(SameId(original.id))
-
-    // L Ax (π R) => π(L Ax R)
-    case apply@Apply(lhs, p:Projection, _) =>
-      unnestRightUnary(apply, lhs, p)
-
-    // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
-    case apply@Apply(lhs, expand: Expand, _) =>
-      unnestRightUnary(apply, lhs, expand)
-
-    // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
-    case apply@Apply(lhs, expand: VarExpand, _) =>
-      unnestRightUnary(apply, lhs, expand)
 
     // L Ax (Arg LOJ R) => L LOJ R
     case apply@Apply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) =>
@@ -140,9 +134,48 @@ case class unnestApply(override val solveds: Solveds,
       cardinalities.copy(apply.id, res.id)
       providedOrders.copy(rhsLeaf.id, res.id)
       res
+
+    case apply@Apply(lhs1, innerApplyPlan@ApplyPlan(lhs2, _), _) if isUnnestableUnaryPlanTree(lhs2) =>
+      val res = innerApplyPlan.withLhs(putOnTopOf(lhs1, lhs2))(attributes.copy(apply.id))
+      solveds.copy(apply.id, res.id)
+      cardinalities.set(res.id, cardinalities(apply.id))
+      providedOrders.copy(apply.id, res.id)
+      res
   })
 
+  private def putOnTopOf(bottom: LogicalPlan, top: LogicalPlan): LogicalPlan = {
+    top match {
+      case _:Argument => bottom
+      case p:LogicalUnaryPlan =>
+        val inner = putOnTopOf(bottom, p.source)
+        val res = p.withLhs(inner)(attributes.copy(p.id))
+        solveds.copy(p.id, res.id)
+        cardinalities.set(res.id, cardinalities(p.id) * cardinalities(bottom.id))
+        providedOrders.copy(bottom.id, res.id)
+        res
+    }
+  }
+
+  @tailrec
+  private def isUnnestableUnaryPlanTree(plan: LogicalPlan): Boolean = {
+    plan match {
+      case UnnestableUnaryPlan(p) => isUnnestableUnaryPlanTree(p.source)
+      case _: Argument=> true
+      case _ => false
+    }
+  }
+
   override def apply(input: AnyRef): AnyRef = fixedPoint(instance).apply(input)
+}
+
+object UnnestableUnaryPlan {
+  def unapply(p: LogicalPlan): Option[LogicalUnaryPlan] = p match {
+    case p: Selection => Some(p)
+    case p: Projection => Some(p)
+    case p: Expand => Some(p)
+    case p: VarExpand => Some(p)
+    case _ => None
+  }
 }
 
 trait UnnestingRewriter {

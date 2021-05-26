@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.Eagerness.unnestEager
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -468,6 +470,106 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanRewritingTestSuppor
         .expand("(m)--(n)").withCardinality(50)
         .nodeByLabelScan("m", "M").withCardinality(10)
     )
+  }
+
+  test("should unnest nested Apply with Expand on LHS") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(1000).withProvidedOrder(po_n)
+      .apply().withCardinality(1000).withProvidedOrder(po_n)
+      .|.apply().withCardinality(10)
+      .|.|.limit(1).withCardinality(1)
+      .|.|.argument("n").withCardinality(1)
+      .|.expand("(m)--(n)").withCardinality(10)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+
+    inputBuilder shouldRewriteToPlanWithAttributes(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(1000).withProvidedOrder(po_n)
+        .apply().withCardinality(1000).withProvidedOrder(po_n)
+        .|.limit(1).withCardinality(1)
+        .|.argument("n").withCardinality(1)
+        .expand("(m)--(n)").withCardinality(1000).withProvidedOrder(po_n)
+        .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+      )
+  }
+
+  test("should unnest nested SemiApply with Expand on LHS") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(500).withProvidedOrder(po_n)
+      .apply().withCardinality(500).withProvidedOrder(po_n)
+      .|.semiApply().withCardinality(5)
+      .|.|.limit(1).withCardinality(1)
+      .|.|.argument("n").withCardinality(1)
+      .|.expand("(m)--(n)").withCardinality(10)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+
+    inputBuilder shouldRewriteToPlanWithAttributes(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(500).withProvidedOrder(po_n)
+        .semiApply().withCardinality(500).withProvidedOrder(po_n)
+        .|.limit(1).withCardinality(1)
+        .|.argument("n").withCardinality(1)
+        .expand("(m)--(n)").withCardinality(1000).withProvidedOrder(po_n)
+        .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+      )
+  }
+
+  test("should unnest nested Apply with deeply nested unary plan on LHS") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(1000).withProvidedOrder(po_n)
+      .apply().withCardinality(1000).withProvidedOrder(po_n)
+      .|.apply().withCardinality(10)
+      .|.|.limit(1).withCardinality(1)
+      .|.|.argument("n").withCardinality(1)
+      .|.filter("m.prop > 0").withCardinality(10)
+      .|.expand("(n)--(m)").withCardinality(15)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+
+    inputBuilder shouldRewriteToPlanWithAttributes(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(1000).withProvidedOrder(po_n)
+        .apply().withCardinality(1000).withProvidedOrder(po_n)
+        .|.limit(1).withCardinality(1)
+        .|.argument("n").withCardinality(1)
+        .filter("m.prop > 0").withCardinality(1000).withProvidedOrder(po_n)
+        .expand("(n)--(m)").withCardinality(1500).withProvidedOrder(po_n)
+        .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
+      )
+  }
+
+  test("should not unnest nested Apply with Distinct on LHS") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .apply()
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.argument("n")
+      .|.distinct("m AS m")
+      .|.expand("(m)--(n)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "N")
+      .build()
+
+    rewrite(input) should equal(input)
+  }
+
+  test("should not unnest nested Apply with Sort on LHS") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .apply()
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.argument("n")
+      .|.sort(Seq(Ascending("n")))
+      .|.expand("(m)--(n)")
+      .|.argument("n")
+      .nodeByLabelScan("n", "N")
+      .build()
+
+    rewrite(input) should equal(input)
   }
 
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {

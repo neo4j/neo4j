@@ -24,3 +24,7 @@ package org.neo4j.cypher.internal.logical.plans
  * once for every lhs row, and pass the lhs as the argument to the rhs.
  */
 trait ApplyPlan extends LogicalBinaryPlan
+
+object ApplyPlan {
+  def unapply(applyPlan: ApplyPlan): Option[(LogicalPlan, LogicalPlan)] = Some((applyPlan.left, applyPlan.right))
+}
