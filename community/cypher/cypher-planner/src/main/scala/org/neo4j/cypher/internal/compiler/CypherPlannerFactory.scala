@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.CachedMetricsFactory
@@ -28,15 +26,16 @@ import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 
+import java.time.Clock
+
 class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
 
   def costBasedCompiler(config: CypherPlannerConfiguration,
                         clock: Clock,
                         monitors: Monitors,
-                        updateStrategy: Option[UpdateStrategy],
-                        contextCreator: ContextCreator[C]): CypherPlanner[C] = {
+                        updateStrategy: Option[UpdateStrategy]): CypherPlanner[C] = {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
-    CypherPlanner(monitors, metricsFactory, config, actualUpdateStrategy, clock, contextCreator)
+    CypherPlanner(monitors, metricsFactory, config, actualUpdateStrategy, clock)
   }
 }
