@@ -238,8 +238,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanRewritingTestSuppor
 
   test("π (Arg) Ax R => π (R): keeps arguments if nested under another apply") {
     val inputBuilder = new LogicalPlanBuilder()
-      .produceResults("x", "n").withCardinality(10000)
-      .apply().withCardinality(10000)
+      .produceResults("x", "n").withCardinality(50)
+      .semiApply().withCardinality(50)
       .|.apply().withCardinality(100)
       .|.|.allNodeScan("n", "x", "m").withCardinality(100).withProvidedOrder(po_n)
       .|.projection("5 AS x").withCardinality(1)
@@ -247,9 +247,9 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanRewritingTestSuppor
       .allNodeScan("m").withCardinality(100)
 
     inputBuilder shouldRewriteToPlanWithAttributes(new LogicalPlanBuilder()
-      .produceResults("x", "n").withCardinality(10000)
-      .projection("5 as x").withCardinality(10000)
-      .apply().withCardinality(10000)
+      .produceResults("x", "n").withCardinality(50)
+      .semiApply().withCardinality(50)
+      .|.projection("5 as x").withCardinality(100).withProvidedOrder(po_n)
       .|.allNodeScan("n", "m").withCardinality(100).withProvidedOrder(po_n)
       .allNodeScan("m").withCardinality(100)
     )
