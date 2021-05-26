@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
+import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
@@ -36,7 +38,6 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
-import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.InputPosition
@@ -51,8 +52,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                                     metricsFactory: MetricsFactory,
                                                     config: CypherPlannerConfiguration,
                                                     updateStrategy: UpdateStrategy,
-                                                    clock: Clock,
-                                                    contextCreation: ContextCreator[Context]) {
+                                                    clock: Clock) {
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
@@ -71,7 +71,6 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  rawQueryText: String,
                  notificationLogger: InternalNotificationLogger,
                  plannerNameText: String = IDPPlannerName.name,
-                 debugOptions: CypherDebugOptions,
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer,
                  params: MapValue,
@@ -79,26 +78,14 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
 
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName)
-    //TODO: these nulls are a short cut
-    val context = contextCreation.create(tracer,
-                                         notificationLogger,
-                                         planContext = null,
-                                         rawQueryText,
-                                         debugOptions,
-                                         executionModel = null,
-                                         offset,
-                                         monitors,
-                                         metricsFactory,
-                                         null,
-                                         config,
-                                         updateStrategy,
-                                         clock,
-                                         logicalPlanIdGen = null,
-                                         evaluator = null,
-                                         params )
+    val context = BaseContextImpl(tracer,
+                                 notificationLogger,
+                                 rawQueryText,
+                                 offset,
+                                 monitors)
     CompilationPhases.parsing(ParsingConfig(
       compatibilityMode,
-      parameterTypeMapping = context.getParameterValueTypeMapping,
+      parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       useJavaCCParser = config.useJavaCCParser,
       obfuscateLiterals = config.obfuscateLiterals
     )).transform(startState, context)

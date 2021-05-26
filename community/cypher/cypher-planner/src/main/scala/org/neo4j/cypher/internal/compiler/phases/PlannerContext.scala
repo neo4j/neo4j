@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.compiler.ContextCreator
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
-import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
@@ -41,16 +39,36 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
 
-class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
-                     val tracer: CompilationPhaseTracer,
-                     val notificationLogger: InternalNotificationLogger,
+class BaseContextImpl(val cypherExceptionFactory: CypherExceptionFactory,
+                      val tracer: CompilationPhaseTracer,
+                      val notificationLogger: InternalNotificationLogger,
+                      val monitors: Monitors) extends BaseContext {
+
+  override val errorHandler: Seq[SemanticErrorDef] => Unit =
+    SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
+  override val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
+}
+
+object BaseContextImpl {
+  def apply(tracer: CompilationPhaseTracer,
+            notificationLogger: InternalNotificationLogger,
+            queryText: String,
+            offset: Option[InputPosition],
+            monitors: Monitors): BaseContextImpl = {
+    val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
+    new BaseContextImpl(exceptionFactory, tracer, notificationLogger, monitors)
+  }
+}
+
+class PlannerContext(cypherExceptionFactory: CypherExceptionFactory,
+                     tracer: CompilationPhaseTracer,
+                     notificationLogger: InternalNotificationLogger,
                      val planContext: PlanContext,
-                     val monitors: Monitors,
+                     monitors: Monitors,
                      val metrics: Metrics,
                      val config: CypherPlannerConfiguration,
                      val queryGraphSolver: QueryGraphSolver,
@@ -59,42 +77,28 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val clock: Clock,
                      val logicalPlanIdGen: IdGen,
                      val params: MapValue,
-                     val executionModel: ExecutionModel) extends BaseContext {
+                     val executionModel: ExecutionModel) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors)
 
-  override val errorHandler: Seq[SemanticErrorDef] => Unit =
-    SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
-
-  val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
-
-  def getParameterValueTypeMapping: Map[String, CypherType] = {
-    ParameterValueTypeHelper.asCypherTypeMap(params)
-  }
-}
-
-object PlannerContextCreator extends ContextCreator[PlannerContext] {
-  override def create(tracer: CompilationPhaseTracer,
-                      notificationLogger: InternalNotificationLogger,
-                      planContext: PlanContext,
-                      queryText: String,
-                      debugOptions: CypherDebugOptions,
-                      executionModel: ExecutionModel,
-                      offset: Option[InputPosition],
-                      monitors: Monitors,
-                      metricsFactory: MetricsFactory,
-                      queryGraphSolver: QueryGraphSolver,
-                      config: CypherPlannerConfiguration,
-                      updateStrategy: UpdateStrategy,
-                      clock: Clock,
-                      logicalPlanIdGen: IdGen,
-                      evaluator: ExpressionEvaluator,
-                      params: MapValue
-                     ): PlannerContext = {
+object PlannerContext {
+  def apply(tracer: CompilationPhaseTracer,
+            notificationLogger: InternalNotificationLogger,
+            planContext: PlanContext,
+            queryText: String,
+            debugOptions: CypherDebugOptions,
+            executionModel: ExecutionModel,
+            offset: Option[InputPosition],
+            monitors: Monitors,
+            metricsFactory: MetricsFactory,
+            queryGraphSolver: QueryGraphSolver,
+            config: CypherPlannerConfiguration,
+            updateStrategy: UpdateStrategy,
+            clock: Clock,
+            logicalPlanIdGen: IdGen,
+            evaluator: ExpressionEvaluator,
+            params: MapValue): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
-    val metrics: Metrics = if (planContext == null)
-      null
-    else
-      metricsFactory.newMetrics(planContext.statistics, evaluator, config, executionModel)
+    val metrics = metricsFactory.newMetrics(planContext.statistics, evaluator, config, executionModel)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
       monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel)

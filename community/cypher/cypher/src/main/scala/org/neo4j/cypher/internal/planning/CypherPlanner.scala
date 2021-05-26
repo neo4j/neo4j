@@ -53,7 +53,6 @@ import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.phases.PlannerContextCreator
 import org.neo4j.cypher.internal.compiler.planner.logical.CachedMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
@@ -187,15 +186,13 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
   monitors.addMonitorListener(planCache.logStalePlanRemovalMonitor(log), "cypher")
 
-  private val contextCreator: PlannerContextCreator.type = PlannerContextCreator
-
   private val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
     case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
     case _ => None
   }
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
-    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, maybeUpdateStrategy, contextCreator)
+    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, maybeUpdateStrategy)
 
   private val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
 
@@ -223,7 +220,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.options.queryOptions.planner.name,
-        preParsedQuery.options.queryOptions.debugOptions,
         Some(offset),
         tracer,
         params,
@@ -307,7 +303,8 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     }
 
     // Context used to create logical plans
-    val plannerContext = contextCreator.create(tracer,
+    val plannerContext = PlannerContext(
+      tracer,
       notificationLogger,
       planContext,
       rawQueryText,

@@ -24,13 +24,12 @@ import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExpressionsInViewInvocations
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
-import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
+import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
@@ -40,7 +39,6 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
-import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherVersion
@@ -49,9 +47,6 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
@@ -103,17 +98,13 @@ case class FabricFrontEnd(
     def traceStart(): CompilationTracer.QueryCompilationEvent =
       compilationTracer.compileQuery(query.description)
 
-    private val context: BaseContext = new BaseContext {
-      val monitors: Monitors = WrappedMonitors(kernelMonitors)
-      val tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
-      val notificationLogger: InternalNotificationLogger = new RecordingNotificationLogger(Some(query.options.offset))
-      val cypherExceptionFactory: CypherExceptionFactory = Neo4jCypherExceptionFactory(query.rawStatement, Some(query.options.offset))
-
-      val errorHandler: Seq[SemanticErrorDef] => Unit = (errors: Seq[SemanticErrorDef]) =>
-        errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
-
-      val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
-    }
+    private val context: BaseContext = BaseContextImpl(
+      CompilationPhaseTracer.NO_TRACING,
+      new RecordingNotificationLogger(Some(query.options.offset)),
+      query.rawStatement,
+      Some(query.options.offset),
+      WrappedMonitors(kernelMonitors)
+    )
 
     private val compatibilityMode =
       query.options.queryOptions.version match {
