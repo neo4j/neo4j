@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
-import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.smallestGraphIncluding
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -51,9 +51,9 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with TestName {
 
   private def rewriter(nameGenerator: AllNameGenerators): Rewriter = {
-    val context = mock[PlannerContext]
-    when(context.anonymousVariableNameGenerator).thenReturn(new AnonymousVariableNameGenerator())
-    OptionalMatchRemover.instance(context)
+    val state = mock[LogicalPlanState]
+    when(state.anonymousVariableNameGenerator).thenReturn(new AnonymousVariableNameGenerator())
+    OptionalMatchRemover.instance(state, null)
   }
 
   test(

@@ -69,15 +69,15 @@ case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
  */
 case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  override def instance(context: PlannerContext): Rewriter = topDown(Rewriter.lift {
+  override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = topDown(Rewriter.lift {
     case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, queryInput)
       if validAggregations(aggregations) =>
       val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, context.anonymousVariableNameGenerator)
+      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
 
     case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, queryInput) =>
       val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, context.anonymousVariableNameGenerator)
+      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
   })
 
   private def rewrite(projectionDeps: Iterable[LogicalVariable],
@@ -365,11 +365,11 @@ trait PlannerQueryRewriter extends Phase[PlannerContext, LogicalPlanState, Logic
 
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: PlannerContext): Rewriter
+  def instance(from: LogicalPlanState, context: PlannerContext): Rewriter
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val query = from.query
-    val rewritten = query.endoRewrite(instance(context))
+    val rewritten = query.endoRewrite(instance(from, context))
     from.copy(maybeQuery = Some(rewritten))
   }
 }

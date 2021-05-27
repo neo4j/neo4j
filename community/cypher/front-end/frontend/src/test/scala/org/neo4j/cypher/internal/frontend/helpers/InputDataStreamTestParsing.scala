@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.parser.Statement
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherException
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
@@ -59,6 +60,7 @@ case class InputDataStreamTestInitialState(idsQueryText: String,
                                            queryText: String,
                                            startPosition: Option[InputPosition],
                                            plannerName: PlannerName,
+                                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
                                            initialFields: Map[String, CypherType] = Map.empty,
                                            maybeStatement: Option[ast.Statement] = None,
                                            maybeSemantics: Option[SemanticState] = None,

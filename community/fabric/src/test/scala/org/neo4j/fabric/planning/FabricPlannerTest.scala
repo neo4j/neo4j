@@ -33,8 +33,11 @@ import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
@@ -50,6 +53,7 @@ import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.fabric.FabricTest
@@ -398,6 +402,36 @@ class FabricPlannerTest
           ))(pos)
       )
       local.state.queryText should endWith("RETURN true AS `true`")
+    }
+
+    "FabricFrontEnd.parseAndPrepare anonymous names should not clash with FabricFrontEnd.checkAndFinalize anonymous names" in {
+      // Parsing (which assign anonymous variables to PatternComprehension) is part of FabricFrontEnd.parseAndPrepare and
+      // AddUniquenessPredicates is part of FabricFrontEnd.checkAndFinalize
+      // These two phases both make use of the AnonymousVariableNameGenerator. This test is to show that they use the same AnonymousVariableNameGenerator
+      // and no clashing names are generated.
+
+      val inst = instance(
+        """
+          |MATCH (a)-[r]-(b)-[q*]-(c)
+          |RETURN [(d)-[s]-(t) | d] AS p
+          |""".stripMargin)
+      val exec = inst.plan.query.as[Fragment.Exec]
+      val statement = inst.asLocal(exec).query.state.statement()
+
+      val whereAnons = statement
+        .findByClass[Where]
+        .findByAllClass[Variable]
+        .map(_.name)
+        .map(NameDeduplicator.removeGeneratedNamesAndParams)
+
+      val pc = statement.findByClass[PatternComprehension]
+      val pAnons = Seq(pc.variableToCollectName, pc.collectionName)
+        .map(NameDeduplicator.removeGeneratedNamesAndParams)
+
+      pAnons should contain noElementsOf whereAnons
+      // To protect from future changes, lets make sure we find anonymous variables in both cases
+      whereAnons should not be empty
+      pAnons should not be empty
     }
   }
 

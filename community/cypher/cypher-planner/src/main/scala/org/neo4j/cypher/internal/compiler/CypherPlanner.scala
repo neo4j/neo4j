@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.graphdb.config.Setting
@@ -77,7 +78,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  compatibilityMode: CypherCompatibilityVersion): BaseState = {
 
     val plannerName = PlannerNameFor(plannerNameText)
-    val startState = InitialState(queryText, offset, plannerName)
+    val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
     val context = BaseContextImpl(tracer,
                                  notificationLogger,
                                  rawQueryText,

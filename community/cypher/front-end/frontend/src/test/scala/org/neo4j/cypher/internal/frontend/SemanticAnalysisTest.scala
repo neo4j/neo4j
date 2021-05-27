@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -203,5 +204,5 @@ class SemanticAnalysisTest extends CypherFunSuite {
   }
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
-    InitialState(query, None, NoPlannerName, initialFields)
+    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator, initialFields)
 }

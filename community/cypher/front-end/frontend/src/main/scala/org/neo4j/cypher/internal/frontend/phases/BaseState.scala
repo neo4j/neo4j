@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -36,6 +37,7 @@ trait BaseState {
   def maybeExtractedParams: Option[Map[String, Any]]
   def maybeSemanticTable: Option[SemanticTable]
   def maybeObfuscationMetadata: Option[ObfuscationMetadata]
+  def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
 
   def accumulatedConditions: Set[StepSequencer.Condition]
 
@@ -62,6 +64,7 @@ trait BaseState {
 case class InitialState(queryText: String,
   startPosition: Option[InputPosition],
   plannerName: PlannerName,
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   initialFields: Map[String, CypherType] = Map.empty,
   maybeStatement: Option[Statement] = None,
   maybeSemantics: Option[SemanticState] = None,

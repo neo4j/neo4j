@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -544,7 +545,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       debugOptions = options.debug,
       executionModel = options.executionModel
     )
-    val state = InitialState(queryString, None, IDPPlannerName)
+    val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
     LogicalPlanningTestSupport2.pipeLine().transform(state, context)
   }
 

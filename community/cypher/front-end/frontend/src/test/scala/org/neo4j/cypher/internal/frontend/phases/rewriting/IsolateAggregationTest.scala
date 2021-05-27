@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.frontend.helpers.TestState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.TestContext
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.devNullLogger
@@ -31,9 +31,7 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-  def rewriterUnderTest: Rewriter = isolateAggregation.instance(new TestContext(mock[Monitors]) {
-    override val anonymousVariableNameGenerator: AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator
-  })
+  def rewriterUnderTest: Rewriter = isolateAggregation.instance(TestState(None), new TestContext(mock[Monitors]))
 
   test("refers to renamed variable in where clause") {
     assertRewrite(

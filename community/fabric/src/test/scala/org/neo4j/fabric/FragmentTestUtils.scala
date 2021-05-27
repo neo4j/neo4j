@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -86,6 +87,7 @@ trait FragmentTestUtils {
     override val maybeSemanticTable: Option[SemanticTable] = Option.empty
     override val maybeObfuscationMetadata: Option[ObfuscationMetadata] = Option.empty
     override val accumulatedConditions: Set[StepSequencer.Condition] = Set.empty
+    override val anonymousVariableNameGenerator: AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
     override def withStatement(s: Statement): BaseState = this
     override def withReturnColumns(cols: Seq[String]): BaseState = this
     override def withSemanticTable(s: SemanticTable): BaseState = this

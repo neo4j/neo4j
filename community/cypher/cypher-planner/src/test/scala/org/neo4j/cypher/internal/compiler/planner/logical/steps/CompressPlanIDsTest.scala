@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -81,7 +82,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   private def logicalPlanStateWithAttrributes(plan: LogicalPlan): LogicalPlanState = {
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName))
+    val state = LogicalPlanState(InitialState("", None, IDPPlannerName, new AnonymousVariableNameGenerator))
       .withMaybeLogicalPlan(Some(plan))
     allPlans(plan).foreach { p =>
 

@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
@@ -106,6 +107,8 @@ case class FabricFrontEnd(
       WrappedMonitors(kernelMonitors)
     )
 
+    private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
+
     private val compatibilityMode =
       query.options.queryOptions.version match {
         case CypherVersion.v3_5 => Compatibility3_5
@@ -133,7 +136,7 @@ case class FabricFrontEnd(
         CompilationPhases.fabricParsing(parsingConfig, signatures)
 
       def process(): BaseState =
-        transformer.transform(InitialState(query.statement, Some(query.options.offset), null), context)
+        transformer.transform(InitialState(query.statement, Some(query.options.offset), null, anonymousVariableNameGenerator), context)
     }
 
     object checkAndFinalize {
@@ -143,7 +146,9 @@ case class FabricFrontEnd(
       def process(statement: Statement): BaseState = {
         val localQueryString = QueryRenderer.render(statement)
         val plannerName = PlannerNameFor(query.options.queryOptions.planner.name)
-        transformer.transform(InitialState(localQueryString, None, plannerName).withStatement(statement), context)
+        val state = InitialState(localQueryString, None, plannerName, anonymousVariableNameGenerator = anonymousVariableNameGenerator)
+          .withStatement(statement)
+        transformer.transform(state, context)
       }
     }
 

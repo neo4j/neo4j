@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
@@ -42,7 +43,7 @@ class CypherQueryObfuscatorFactory {
 
   def obfuscatorForQuery(query: String): QueryObfuscator = {
     val preParsedQuery = preParser.preParseQuery(query)
-    val state = InitialState(preParsedQuery.statement, Some(preParsedQuery.options.offset), null)
+    val state = InitialState(preParsedQuery.statement, Some(preParsedQuery.options.offset), null, new AnonymousVariableNameGenerator())
     val res = pipeline.transform(state, plannerContext(query))
     CypherQueryObfuscator(res.obfuscationMetadata())
   }

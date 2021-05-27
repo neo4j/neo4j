@@ -19,20 +19,48 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import org.neo4j.cypher.internal.InterpretedRuntime
+import org.neo4j.cypher.internal.PreParsedQuery
+import org.neo4j.cypher.internal.QueryOptions
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.JoinDisconnectedQueryGraphComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
+import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.NodesAllCardinality
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.logging.NullLog
+import org.neo4j.monitoring
+import org.neo4j.values.virtual.MapValue
 import org.scalatest.Assertion
 import org.scalatest.prop.TableDrivenPropertyChecks.Table
 import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 import org.scalatest.prop.TableFor5
+
+import java.time.Clock
+import scala.collection.mutable
 
 class CypherPlannerTest extends CypherFunSuite {
   /**
@@ -82,5 +110,73 @@ class CypherPlannerTest extends CypherFunSuite {
         qgSolver.singleComponentSolver.solverConfig.iterationDurationLimit should equal(expectedIterationDurationLimit)
         componentConnectorAssertion(expectedMaxTableSize, expectedIterationDurationLimit)(qgSolver.componentConnector)
     }
+  }
+
+  test("CompilationPhases.parsing anonymous names should not clash with CompilationPhases.planPipeLine anonymous names") {
+    // AddUniquenessPredicates is part of CompilationPhases.parsing and isolateAggregation is part of CompilationPhases.planPipeLine
+    // These two phases both make use of the AnonymousVariableNameGenerator. This test is to show that they use the same AnonymousVariableNameGenerator
+    // and no clashing names are generated.
+
+    val stats = new GraphStatistics {
+      override def nodesAllCardinality(): Cardinality = Cardinality.EMPTY
+      override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = Cardinality.EMPTY
+      override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = Cardinality.EMPTY
+      override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = Some(Selectivity.ZERO)
+      override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = Some(Selectivity.ZERO)
+    }
+
+    val getTx = () => 1L
+    val planContext = new NotImplementedPlanContext {
+      override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
+        stats, new MutableGraphStatisticsSnapshot(mutable.Map(NodesAllCardinality -> 1.0))
+      )
+      override def getPropertiesWithExistenceConstraint: Set[String] = Set.empty
+      override def canLookupNodesByLabel: Boolean = true
+      override def txIdProvider: () => Long = getTx
+    }
+
+    CypherPlanner.customPlanContextCreator = Some((_, _, _) => planContext)
+
+    val planner = CypherPlanner(CypherPlannerConfiguration.defaults(),
+      Clock.systemUTC(),
+      new monitoring.Monitors(),
+      NullLog.getInstance(),
+      TestExecutorCaffeineCacheFactory,
+      CypherPlannerOption.default,
+      CypherUpdateStrategy.default,
+      getTx,
+      compatibilityMode = Compatibility4_3)
+
+    val query =
+      """MATCH (n)
+        |WITH 1 + count(*) AS result
+        |MATCH (a)-[r]-(b)-[q*]-(c)
+        |RETURN result
+        |""".stripMargin
+    val preParserQuery = PreParsedQuery(query, query, QueryOptions.default)
+
+    val tc = mock[TransactionalContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)
+
+    val statement = planner
+      .parseAndPlan(preParserQuery, NO_TRACING, tc, MapValue.EMPTY, InterpretedRuntime)
+      .logicalPlanState
+      .statement()
+
+    val withAnons = statement
+      .findByClass[With]
+      .findByAllClass[Variable]
+      .map(_.name)
+      .map(NameDeduplicator.removeGeneratedNamesAndParams)
+
+    val whereAnons = statement
+      .findByClass[Where]
+      .findByAllClass[Variable]
+      .map(_.name)
+      .map(NameDeduplicator.removeGeneratedNamesAndParams)
+
+    withAnons should contain noElementsOf whereAnons
+    // To protect from future changes, lets make sure we find anonymous variables in both cases
+    withAnons should not be empty
+    whereAnons should not be empty
   }
 }

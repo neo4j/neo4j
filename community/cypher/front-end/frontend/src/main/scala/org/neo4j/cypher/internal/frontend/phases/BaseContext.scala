@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
@@ -27,5 +26,4 @@ trait BaseContext {
   def cypherExceptionFactory: CypherExceptionFactory
   def monitors: Monitors
   def errorHandler: Seq[SemanticErrorDef] => Unit
-  def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
 }

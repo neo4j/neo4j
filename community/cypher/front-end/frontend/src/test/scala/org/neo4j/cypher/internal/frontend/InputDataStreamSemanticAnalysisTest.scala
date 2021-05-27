@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestInitialStat
 import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestParsing
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -92,5 +93,5 @@ class InputDataStreamSemanticAnalysisTest extends CypherFunSuite {
   }
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
-    InputDataStreamTestInitialState(query, "RETURN 1", None, NoPlannerName, initialFields)
+    InputDataStreamTestInitialState(query, "RETURN 1", None, NoPlannerName, new AnonymousVariableNameGenerator(), initialFields)
 }

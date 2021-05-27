@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.bottomUp
  */
 case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  override def instance(ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
+  override def instance(from: BaseState, ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == functions.Id =>
