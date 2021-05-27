@@ -40,7 +40,7 @@ case object InPredicatesCollapsed extends StepSequencer.Condition
 case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
   case class InValue(lhs: Expression, expr: Expression)
 
-  override def instance(ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
+  override def instance(from: BaseState, ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
     case predicate@Ors(booleanExpressions) =>
       val (expressionsToRewrite: Seq[Expression], nonRewritable: Seq[Expression]) = booleanExpressions.partition {
         case In(_, _: ListLiteral) => true

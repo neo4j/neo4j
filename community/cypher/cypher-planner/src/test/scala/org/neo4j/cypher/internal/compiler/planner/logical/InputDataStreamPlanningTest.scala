@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.util.Random
@@ -100,6 +101,6 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
 
   // Both the test parser that understands INPUT DATA STREAM and the standard parser are part of the pipeline,
   // the standard parser will be fed with 'RETURN 1' just to make it happy
-  override def createInitState(queryString: String): BaseState = InputDataStreamTestInitialState(queryString, "RETURN 1", None, IDPPlannerName)
+  override def createInitState(queryString: String): BaseState = InputDataStreamTestInitialState(queryString, "RETURN 1", None, IDPPlannerName, new AnonymousVariableNameGenerator())
 
 }

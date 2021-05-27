@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -45,6 +46,7 @@ case class LogicalPlanState(queryText: String,
                             startPosition: Option[InputPosition],
                             plannerName: PlannerName,
                             planningAttributes: PlanningAttributes,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
                             maybeStatement: Option[Statement] = None,
                             maybeSemantics: Option[SemanticState] = None,
                             maybeExtractedParams: Option[Map[String, Any]] = None,
@@ -88,7 +90,8 @@ object LogicalPlanState {
                      maybeSemanticTable = state.maybeSemanticTable,
                      accumulatedConditions = state.accumulatedConditions,
                      maybeReturnColumns =  state.maybeReturnColumns,
-                     maybeObfuscationMetadata = state.maybeObfuscationMetadata)
+                     maybeObfuscationMetadata = state.maybeObfuscationMetadata,
+                     anonymousVariableNameGenerator = state.anonymousVariableNameGenerator)
 }
 
 

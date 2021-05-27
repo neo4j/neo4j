@@ -46,7 +46,7 @@ case object TransitiveClosureAppliedToWhereClauses extends StepSequencer.Conditi
  */
 case object transitiveClosure extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  override def instance(ignored: BaseContext): Rewriter = transitiveClosureRewriter
+  override def instance(from: BaseState, ignored: BaseContext): Rewriter = transitiveClosureRewriter
 
   private case object transitiveClosureRewriter extends Rewriter {
 

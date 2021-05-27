@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
@@ -1128,5 +1129,5 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
   }
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
-    InitialState(query, None, NoPlannerName, initialFields)
+    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator, initialFields)
 }

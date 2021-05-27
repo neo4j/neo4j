@@ -97,7 +97,7 @@ case object QueryPlanner
       idGen = context.logicalPlanIdGen,
       executionModel = context.executionModel,
       debugOptions = context.debugOptions,
-      anonymousVariableNameGenerator = context.anonymousVariableNameGenerator,
+      anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
     )
   }
 

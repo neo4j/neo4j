@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -47,7 +48,7 @@ class ChainerTest extends CypherFunSuite {
 
   test("legal chain") {
     val init = InitialState(
-      "Q", None, IDPPlannerName
+      "Q", None, IDPPlannerName, new AnonymousVariableNameGenerator
     )
     val r = Chainer
       .chainTransformers(Seq(BB, BL, LL))
@@ -58,7 +59,7 @@ class ChainerTest extends CypherFunSuite {
 
   test("illegal chain") {
     val init = InitialState(
-      "Q", None, IDPPlannerName
+      "Q", None, IDPPlannerName, new AnonymousVariableNameGenerator
     )
     a[ClassCastException] should be thrownBy {
       Chainer

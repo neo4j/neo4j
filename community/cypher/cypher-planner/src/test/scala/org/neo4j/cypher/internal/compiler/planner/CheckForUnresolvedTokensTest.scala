@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LabelId
@@ -259,6 +260,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
       startPosition = None,
       plannerName = IDPPlannerName,
       newStubbedPlanningAttributes,
+      new AnonymousVariableNameGenerator(),
       maybeStatement = Some(ast),
       maybeSemanticTable = Some(semanticTable),
       maybeQuery = Some(plannerQuery))

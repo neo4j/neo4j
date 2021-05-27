@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -896,7 +897,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
                       effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities,
                       idGen: IdGen = new SequentialIdGen(),
                       pushdownPropertyReads: Boolean = false): (LogicalPlan, SemanticTable) = {
-    val state = LogicalPlanState(InitialState("", None, IDPPlannerName))
+    val state = LogicalPlanState(InitialState("", None, IDPPlannerName, new AnonymousVariableNameGenerator))
       .withSemanticTable(initialTable)
       .withMaybeLogicalPlan(Some(plan))
       .withNewPlanningAttributes(PlanningAttributes.newAttributes.copy(effectiveCardinalities = effectiveCardinalities))

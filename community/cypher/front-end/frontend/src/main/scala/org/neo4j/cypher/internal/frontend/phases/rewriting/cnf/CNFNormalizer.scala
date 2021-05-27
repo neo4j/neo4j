@@ -54,7 +54,7 @@ case object CNFNormalizer extends StatementRewriter {
   /* These implementations are here to make org.neo4j.cypher.internal.frontend.phases.CompilationPhases compile and for tests to pass.
    * Note, that this current implementation is missing the simplifyPredicates step.
    */
-  override def instance(context: BaseContext): Rewriter = {
+  override def instance(from: BaseState, context: BaseContext): Rewriter = {
     implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
     inSequence(
       deMorganRewriter(),

@@ -24,10 +24,10 @@ trait StatementRewriter extends Phase[BaseContext, BaseState, BaseState] {
   self: Product =>
   override def phase: CompilationPhase = AST_REWRITE
 
-  def instance(context: BaseContext): Rewriter
+  def instance(from: BaseState, context: BaseContext): Rewriter
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val rewritten = from.statement().endoRewrite(instance(context))
+    val rewritten = from.statement().endoRewrite(instance(from, context))
     from.withStatement(rewritten)
   }
 }

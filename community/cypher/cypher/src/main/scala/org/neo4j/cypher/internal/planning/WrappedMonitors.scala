@@ -25,7 +25,7 @@ import org.neo4j.monitoring
 import scala.reflect.ClassTag
 
 case class WrappedMonitors(kernelMonitors: monitoring.Monitors) extends Monitors {
-  def addMonitorListener[T](monitor: T, tags: String*) {
+  def addMonitorListener[T](monitor: T, tags: String*): Unit = {
     kernelMonitors.addMonitorListener(monitor, tags: _*)
   }
 
