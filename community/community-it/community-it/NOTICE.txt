@@ -46,7 +46,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
-  fastinfoset
   Jackson module: JAXB Annotations
   Jackson-annotations
   Jackson-core
@@ -63,7 +62,6 @@ Apache Software License, Version 2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  jersey-media-jaxb
   Jettison
   Jetty :: Http Utility
   Jetty :: IO Utility
@@ -114,18 +112,13 @@ Creative Commons 0
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-  Extended StAX API
-  fastinfoset
   istack common utility code runtime
-  Jakarta Activation
-  Jakarta XML Binding API
   JavaBeans Activation Framework API jar
   JAXB Runtime
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
-  jersey-media-jaxb
   TXW2 Runtime
 
 Eclipse Public License - v 1.0
@@ -145,7 +138,6 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  jersey-media-jaxb
   ServiceLocator Default Implementation
 
 GNU General Public License, version 2 with the Classpath Exception
@@ -159,7 +151,6 @@ MIT License
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
-  jersey-media-jaxb
   SLF4J API Module
 
 Unlicense
@@ -168,7 +159,6 @@ Unlicense
   jersey-core-client
   jersey-core-common
   jersey-inject-hk2
-  jersey-media-jaxb
 
 Dependencies with multiple licenses
 -----------------------------------
@@ -184,10 +174,6 @@ Eclipse Collections Main Library
 Java Servlet API
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
-
-fastinfoset
-  Apache Software License, Version 2.0
-  Eclipse Distribution License - v 1.0
 
 jersey-container-servlet
   Apache Software License, Version 2.0
@@ -220,13 +206,6 @@ jersey-core-server
   Eclipse Public License v2.0
 
 jersey-inject-hk2
-  Apache Software License, Version 2.0
-  Eclipse Distribution License - v 1.0
-  Eclipse Public License v2.0
-  MIT License
-  Unlicense
-
-jersey-media-jaxb
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
   Eclipse Public License v2.0

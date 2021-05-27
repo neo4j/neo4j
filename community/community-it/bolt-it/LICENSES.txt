@@ -24,7 +24,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
-  fastinfoset
   Jackson module: JAXB Annotations
   Jackson-annotations
   Jackson-core
@@ -41,7 +40,6 @@ Apache Software License, Version 2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  jersey-media-jaxb
   Jettison
   Jetty :: Security
   Jetty :: Servlet Handling
@@ -897,18 +895,13 @@ express Statement of Purpose.
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
-  Extended StAX API
-  fastinfoset
   istack common utility code runtime
-  Jakarta Activation
-  Jakarta XML Binding API
   JavaBeans Activation Framework API jar
   JAXB Runtime
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
-  jersey-media-jaxb
   TXW2 Runtime
 ------------------------------------------------------------------------------
 
@@ -1021,7 +1014,6 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  jersey-media-jaxb
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
 
@@ -1820,7 +1812,6 @@ MIT License
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
-  jersey-media-jaxb
   SLF4J API Module
 ------------------------------------------------------------------------------
 
@@ -1855,7 +1846,6 @@ Unlicense
   jersey-core-client
   jersey-core-common
   jersey-inject-hk2
-  jersey-media-jaxb
 ------------------------------------------------------------------------------
 
 This is free and unencumbered software released into the public domain.
@@ -1896,10 +1886,6 @@ Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
 
-fastinfoset
-  Apache Software License, Version 2.0
-  Eclipse Distribution License - v 1.0
-
 jersey-container-servlet
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
@@ -1931,13 +1917,6 @@ jersey-core-server
   Eclipse Public License v2.0
 
 jersey-inject-hk2
-  Apache Software License, Version 2.0
-  Eclipse Distribution License - v 1.0
-  Eclipse Public License v2.0
-  MIT License
-  Unlicense
-
-jersey-media-jaxb
   Apache Software License, Version 2.0
   Eclipse Distribution License - v 1.0
   Eclipse Public License v2.0
