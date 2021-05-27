@@ -31,6 +31,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 
 @ImpermanentDbmsExtension
 class IndexDefinitionToStringTest
@@ -59,6 +60,11 @@ class IndexDefinitionToStringTest
             var labelProperties = tx.schema().indexFor( Label.label( "someLabel" ) )
                                     .on( "someProperty" ).on( "someOtherProperty" )
                                     .withName( "labelIndexNames" ).create();
+            var fulltextLabelProperty = tx.schema().indexFor( Label.label( "Label" ) ).on( "prop" ).withIndexType( FULLTEXT )
+                    .withName( "fulltextLabelPropertyIndex" ).create();
+            var fulltextLabelsProperties =
+                    tx.schema().indexFor( Label.label( "Label" ), Label.label( "otherLabel" ) ).on( "prop" ).on( "otherProp" ).withIndexType( FULLTEXT )
+                    .withName( "fulltextLabelPropertiesIndex" ).create();
 
             var relTypeTokenIndex = tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "relTypeTokenIndex" ).create();
             var relTypeProperty = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
@@ -66,6 +72,11 @@ class IndexDefinitionToStringTest
             var relTypeProperties = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
                                       .on( "someProperty" ).on( "someOtherProperty" )
                                       .withName( "relTypeIndexNames" ).create();
+            var fulltextRelTypeProperty = tx.schema().indexFor( RelationshipType.withName( "TYPE" ) ).on( "prop" ).withIndexType( FULLTEXT )
+                    .withName( "fulltextRelTypePropertyIndex" ).create();
+            var fulltextRelTypesProperties =
+                    tx.schema().indexFor( RelationshipType.withName( "TYPE" ), RelationshipType.withName( "OTHER_TYPE" ) ).on( "prop" ).on( "otherProp" )
+                            .withIndexType( FULLTEXT ).withName( "fulltextRelTypesPropertiesIndex" ).create();
 
             assertIndexString( labelTokenIndex,
                                "IndexDefinition[label:<any-labels>] " +
@@ -79,6 +90,12 @@ class IndexDefinitionToStringTest
                                "IndexDefinition[label:someLabel on:someProperty,someOtherProperty] " +
                                "(Index( id=%d, name='labelIndexNames', type='GENERAL BTREE', " +
                                "schema=(:someLabel {someProperty, someOtherProperty}), indexProvider='native-btree-1.0' ))" );
+            assertIndexString( fulltextLabelProperty, "IndexDefinition[label:Label on:prop] " +
+                               "(Index( id=%d, name='fulltextLabelPropertyIndex', type='GENERAL FULLTEXT', " +
+                               "schema=(:Label {prop}), indexProvider='fulltext-1.0' ))" );
+            assertIndexString( fulltextLabelsProperties, "IndexDefinition[labels:Label,otherLabel on:prop,otherProp] " +
+                               "(Index( id=%d, name='fulltextLabelPropertiesIndex', type='GENERAL FULLTEXT', " +
+                               "schema=(:Label:otherLabel {prop, otherProp}), indexProvider='fulltext-1.0' ))" );
 
             assertIndexString( relTypeTokenIndex,
                                "IndexDefinition[relationship type:<any-types>] " +
@@ -92,6 +109,12 @@ class IndexDefinitionToStringTest
                                "IndexDefinition[relationship type:someRelationship on:someProperty,someOtherProperty] " +
                                "(Index( id=%d, name='relTypeIndexNames', type='GENERAL BTREE', " +
                                "schema=-[:someRelationship {someProperty, someOtherProperty}]-, indexProvider='native-btree-1.0' ))" );
+            assertIndexString( fulltextRelTypeProperty, "IndexDefinition[relationship type:TYPE on:prop] " +
+                               "(Index( id=%d, name='fulltextRelTypePropertyIndex', type='GENERAL FULLTEXT', " +
+                               "schema=-[:TYPE {prop}]-, indexProvider='fulltext-1.0' ))" );
+            assertIndexString( fulltextRelTypesProperties, "IndexDefinition[relationship types:TYPE,OTHER_TYPE on:prop,otherProp] " +
+                               "(Index( id=%d, name='fulltextRelTypesPropertiesIndex', type='GENERAL FULLTEXT', " +
+                               "schema=-[:TYPE:OTHER_TYPE {prop, otherProp}]-, indexProvider='fulltext-1.0' ))" );
         }
     }
 
