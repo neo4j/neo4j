@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
@@ -158,6 +159,10 @@ public class StoreCopyCommand extends AbstractCommand
     {
         Config config = buildConfig();
         DatabaseLayout fromDatabaseLayout = getFromDatabaseLayout( config );
+        if ( SYSTEM_DATABASE_NAME.equals( fromDatabaseLayout.getDatabaseName() ) && !force )
+        {
+            throw new CommandFailedException( "Copy of " + SYSTEM_DATABASE_NAME + " database is not supported." );
+        }
 
         validateSource( fromDatabaseLayout );
 
