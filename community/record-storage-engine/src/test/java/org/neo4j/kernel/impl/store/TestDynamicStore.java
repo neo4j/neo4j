@@ -39,6 +39,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -96,6 +97,7 @@ class TestDynamicStore
     void testClose() throws IOException
     {
         DynamicArrayStore store = createDynamicArrayStore();
+
         Collection<DynamicRecord> records = new ArrayList<>();
         store.allocateRecordsFromBytes( records, new byte[10], NULL, INSTANCE );
         long blockId = Iterables.first( records ).getId();
@@ -106,11 +108,8 @@ class TestDynamicStore
         neoStores.close();
         neoStores = null;
 
-        try ( var storeCursor = store.openPageCursorForReading( 0, NULL ) )
-        {
-            assertThrows( RuntimeException.class, () -> store.getArrayFor( store.getRecords( blockId, NORMAL, false, storeCursor ), NULL ) );
-            assertThrows( RuntimeException.class, () -> store.getRecords( 0, NORMAL, false, storeCursor ) );
-        }
+        assertThrows( Exception.class, () -> store.getArrayFor( store.getRecords( blockId, NORMAL, false, null ), NULL ) );
+        assertThrows( Exception.class, () -> store.getRecords( 0, NORMAL, false, null ) );
     }
 
     @Test
