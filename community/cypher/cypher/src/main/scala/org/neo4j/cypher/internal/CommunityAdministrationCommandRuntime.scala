@@ -80,6 +80,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.kernel.database.DefaultDatabaseResolver
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.ByteArray
@@ -102,6 +103,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   override def name: String = "community administration-commands"
 
   private lazy val securityAuthorizationHandler = new SecurityAuthorizationHandler(resolver.resolveDependency(classOf[AbstractSecurityLog]))
+
+  private lazy val defaultDatabaseResolver = resolver.resolveDependency(classOf[DefaultDatabaseResolver])
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
     throw new CantCompileQueryException(
@@ -533,10 +536,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     val allDatabaseAccess = if (allDatabaseNode != null) accessForDatabase(allDatabaseNode, roles) else None
     val defaultDatabaseNode = transaction.findNode(Label.label("DatabaseDefault"), "name", "DEFAULT")
     val defaultDatabaseAccess = if (defaultDatabaseNode != null) accessForDatabase(defaultDatabaseNode, roles) else None
+    val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().username())
 
     val accessibleDatabases = transaction.findNodes(Label.label("Database")).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
       val dbName = dbNode.getProperty("name").toString
-      val isDefault = Boolean.unbox(dbNode.getProperty("default"))
+      val isDefault = dbName.equals(defaultDatabaseName)
       if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
         acc :+ dbName
       } else if (allowsDatabaseManagement) {
