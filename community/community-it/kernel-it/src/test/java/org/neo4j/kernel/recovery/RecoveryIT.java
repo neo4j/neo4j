@@ -36,6 +36,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -49,6 +50,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
@@ -102,6 +104,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
@@ -356,18 +359,19 @@ class RecoveryIT
     }
 
     @Test
-    void recoverDatabaseWithRelationshipIndex() throws Throwable
+    void recoverDatabaseWithRelationshipIndexes() throws Throwable
     {
         GraphDatabaseService database = createDatabase();
-
         int numberOfRelationships = 10;
         RelationshipType type = RelationshipType.withName( "TYPE" );
         String property = "prop";
-        String indexName = "my index";
+        String propertyIndex = "property index";
+        String fullTextIndex = "full text index";
 
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( indexName ).create();
+            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.BTREE ).withName( propertyIndex ).create();
+            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( fullTextIndex ).create();
             transaction.commit();
         }
         awaitIndexesOnline( database );
@@ -390,26 +394,34 @@ class RecoveryIT
 
         GraphDatabaseAPI recoveredDatabase = createDatabase();
         awaitIndexesOnline( recoveredDatabase );
-        try ( Transaction transaction = recoveredDatabase.beginTx() )
+        try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
         {
-            KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
-            IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
-            IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
-            int relationshipsInIndex = 0;
-            try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
-            {
-                ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), fulltextSearch( "*" ) );
-                while ( cursor.next() )
-                {
-                    relationshipsInIndex++;
-                }
-            }
-            assertEquals( numberOfRelationships, relationshipsInIndex );
+            var propertyId = transaction.kernelTransaction().tokenRead().propertyKey( property );
+            verifyIndexEntries( numberOfRelationships, propertyIndex, transaction, exists( propertyId ));
+            verifyIndexEntries( numberOfRelationships, fullTextIndex, transaction, fulltextSearch( "*" ) );
         }
         finally
         {
             managementService.shutdown();
         }
+    }
+
+    private void verifyIndexEntries(
+            int numberOfRelationships, String indexName, InternalTransaction transaction, PropertyIndexQuery query ) throws KernelException
+    {
+        KernelTransaction ktx = transaction.kernelTransaction();
+        IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
+        IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
+        int relationshipsInIndex = 0;
+        try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() ) )
+        {
+            ktx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), query );
+            while ( cursor.next() )
+            {
+                relationshipsInIndex++;
+            }
+        }
+        assertEquals( numberOfRelationships, relationshipsInIndex );
     }
 
     @Test
