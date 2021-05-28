@@ -136,7 +136,15 @@ case class unnestApply(override val solveds: Solveds,
       res
 
     // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree
-    case apply@Apply(lhs1, innerApplyPlan@ApplyPlan(lhs2, _), _) if isUnnestableUnaryPlanTree(lhs2) =>
+    case apply@Apply(lhs1, Apply(lhs2, rhs2, fromSubquery2), fromSubquery1) if isUnnestableUnaryPlanTree(lhs2) =>
+      val res = Apply(putOnTopOf(lhs1, lhs2), rhs2, fromSubquery1 || fromSubquery2)(attributes.copy(apply.id))
+      solveds.copy(apply.id, res.id)
+      cardinalities.set(res.id, cardinalities(apply.id))
+      providedOrders.copy(apply.id, res.id)
+      res
+
+    // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree && Ax.fromSubquery = false
+    case apply@Apply(lhs1, innerApplyPlan@ApplyPlan(lhs2, _), false) if isUnnestableUnaryPlanTree(lhs2) =>
       val res = innerApplyPlan.withLhs(putOnTopOf(lhs1, lhs2))(attributes.copy(apply.id))
       solveds.copy(apply.id, res.id)
       cardinalities.set(res.id, cardinalities(apply.id))
