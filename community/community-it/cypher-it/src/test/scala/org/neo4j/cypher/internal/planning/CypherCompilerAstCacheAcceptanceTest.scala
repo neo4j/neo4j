@@ -214,7 +214,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("WITH $p as x RETURN x")    // not enough parameters -> not even miss
     runQuery("WITH $k as x RETURN x")    // not enough parameters -> not even miss
     runQuery("WITH [1,2] as x RETURN x")  // miss
-    runQuery("WITH [3] as x RETURN x")    // hit
+    runQuery("WITH [1,2,3] as x RETURN x")    // hit
 
     counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }
@@ -231,6 +231,31 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("return 43 as result")
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
+  test("should cache auto-parameterized lists") {
+    runQuery("return [1, 2, 3] as result")
+    runQuery("return [2, 3, 4] as result")
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
+  test("should recompile for auto-parameterized lists with different bucket size") {
+    val listBucketSize1 = Seq(1).mkString("[", ",", "]")
+    val listBucketSize10 = (1 to 5).mkString("[", ",", "]")
+    val listBucketSize100 = (1 to 100).mkString("[", ",", "]")
+    val listBucketSize1000 = (1 to 1000).mkString("[", ",", "]")
+
+    runQuery(s"return $listBucketSize1 as result")
+    runQuery(s"return $listBucketSize10 as result")
+    runQuery(s"return $listBucketSize100 as result")
+    runQuery(s"return $listBucketSize1000 as result")
+    runQuery(s"return $listBucketSize1000 as result")
+    runQuery(s"return $listBucketSize100 as result")
+    runQuery(s"return $listBucketSize10 as result")
+    runQuery(s"return $listBucketSize1 as result")
+
+    counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }
 
   test("should monitor cache flushes") {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
@@ -48,6 +49,7 @@ case class SingleSeekableArg(expr: Expression) extends SeekableArgs {
 case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
   val sizeHint: Option[Int] = expr match {
     case coll: ListLiteral => Some(coll.expressions.size)
+    case param: AutoExtractedParameter => param.sizeHint
     case _ => None
   }
 

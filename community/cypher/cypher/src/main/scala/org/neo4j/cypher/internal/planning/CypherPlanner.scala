@@ -429,7 +429,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val mapBuilder = new MapValueBuilder()
     val extractor = new ParameterLiteralExtractor
     statement.findByAllClass[Parameter].foreach {
-      case AutoExtractedParameter(name, _, writer) =>
+      case AutoExtractedParameter(name, _, writer, _) =>
         names += name
         writer.writeTo(extractor)
         mapBuilder.add(name, extractor.value)

@@ -35,9 +35,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.functions.Distance
 import org.neo4j.cypher.internal.ir.Predicate
@@ -47,11 +49,14 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL_CARDINALITY
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.ListSizeBucket
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -950,6 +955,39 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equal1Sel = 1.0 / 180.0
     val inSel = isNotNullSel * (equal1Sel + equal1Sel - equal1Sel * equal1Sel)
     eqResult.factor should equal(inSel)
+  }
+
+  test("equality with one label, auto-extracted parameter of size 2") {
+    val param = AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(Seq(literalString("a"), literalString("b"))), Some(2))(pos)
+    val equals = nPredicate(in(nProp, param))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val labelResult = calculator(nIsPerson.expr)
+    val eqResult = calculator(equals.expr)
+
+    labelResult.factor should equal(0.1)
+    val existsSel = 200.0 / 1000.0
+    val equal1Sel = 1.0 / 180.0
+    val inSel = existsSel * (equal1Sel + equal1Sel - equal1Sel * equal1Sel)
+    eqResult.factor should equal(inSel)
+  }
+
+  test("equality with one label, auto-extracted parameter of size 42") {
+    val bucketSize = ListSizeBucket.computeBucket(42)
+    val param = AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(Seq(literalString("a"), literalString("b"))), Some(bucketSize))(pos)
+    val equals = nPredicate(in(nProp, param))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val labelResult = calculator(nIsPerson.expr)
+    val eqResult = calculator(equals.expr)
+
+    labelResult.factor should equal(0.1)
+    val existsSel = Selectivity(200.0 / 1000.0)
+    val equal1Sel = Selectivity(1.0 / 180.0)
+    val inSel = IndependenceCombiner.orTogetherSelectivities(Seq.fill(bucketSize)(equal1Sel)).get
+    eqResult should equal(existsSel * inSel)
   }
 
   test("equality with one label, size unknown") {

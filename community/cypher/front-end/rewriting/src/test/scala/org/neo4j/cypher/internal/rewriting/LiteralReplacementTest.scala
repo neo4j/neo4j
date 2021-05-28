@@ -147,6 +147,6 @@ class LiteralReplacementTest extends CypherFunSuite  {
   }
 
   private def removeAutoExtracted() = bottomUp(Rewriter.lift {
-    case p@AutoExtractedParameter(name, _, _)  => ExplicitParameter(name, CTAny)(p.position)
+    case p@AutoExtractedParameter(name, _, _, _)  => ExplicitParameter(name, CTAny)(p.position)
   })
 }

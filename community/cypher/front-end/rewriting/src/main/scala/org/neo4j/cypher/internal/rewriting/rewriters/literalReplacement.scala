@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.IdentityMap
+import org.neo4j.cypher.internal.util.ListSizeBucket
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -107,7 +108,8 @@ object literalReplacement {
       acc =>
         if (acc.contains(l)) SkipChildren(acc) else {
           val literals = l.expressions.map(_.asInstanceOf[Literal])
-          val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(CTAny), ListOfLiteralWriter(literals))(l.position)
+          val bucket = ListSizeBucket.computeBucket(l.expressions.size)
+          val parameter = AutoExtractedParameter(s"  AUTOLIST${acc.size}", CTList(CTAny), ListOfLiteralWriter(literals), Some(bucket))(l.position)
           SkipChildren(acc + (l -> LiteralReplacement(parameter, literals.map(_.value))))
         }
   }

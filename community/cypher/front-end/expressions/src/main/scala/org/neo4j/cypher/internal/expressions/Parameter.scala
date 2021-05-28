@@ -64,7 +64,10 @@ case class AutoExtractedParameter(name: String,
                                  )(val position: InputPosition) extends Parameter {
   override def hashCode(): Int = MurmurHash3.arrayHash(Array(name, parameterType, sizeHint))
   override def canEqual(that: Any): Boolean = that.isInstanceOf[AutoExtractedParameter]
-  override def equals(obj: Any): Boolean = super.equals(obj)
+  override def equals(obj: Any): Boolean = obj match {
+    case that: AutoExtractedParameter => that.canEqual(this) && this.sizeHint == that.sizeHint && super.equals(that)
+    case _ => false
+  }
 
   def writeTo(literalExtractor: LiteralExtractor): Unit = writer.writeTo(literalExtractor)
 }
