@@ -112,7 +112,6 @@ case class FabricFrontEnd(
       val errorHandler: Seq[SemanticErrorDef] => Unit = (errors: Seq[SemanticErrorDef]) =>
         errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
 
-      // TODO get Tobias' review
       val allNameGenerators = new AllNameGenerators()
     }
 
