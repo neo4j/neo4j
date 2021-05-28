@@ -135,6 +135,7 @@ case class unnestApply(override val solveds: Solveds,
       providedOrders.copy(rhsLeaf.id, res.id)
       res
 
+    // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree
     case apply@Apply(lhs1, innerApplyPlan@ApplyPlan(lhs2, _), _) if isUnnestableUnaryPlanTree(lhs2) =>
       val res = innerApplyPlan.withLhs(putOnTopOf(lhs1, lhs2))(attributes.copy(apply.id))
       solveds.copy(apply.id, res.id)
@@ -160,7 +161,7 @@ case class unnestApply(override val solveds: Solveds,
   private def isUnnestableUnaryPlanTree(plan: LogicalPlan): Boolean = {
     plan match {
       case UnnestableUnaryPlan(p) => isUnnestableUnaryPlanTree(p.source)
-      case _: Argument=> true
+      case _: Argument => true
       case _ => false
     }
   }
@@ -169,6 +170,10 @@ case class unnestApply(override val solveds: Solveds,
 }
 
 object UnnestableUnaryPlan {
+  /**
+   * Plans whose behavior (result) would not change, if they were moved from RHS of Apply to LHS of same Apply.
+   * E.g., Distinct is NOT unnestable because on RHS of Apply it returns distinct rows PER ARGUMENT, where on LHS they are globally distinct.
+   */
   def unapply(p: LogicalPlan): Option[LogicalUnaryPlan] = p match {
     case p: Selection => Some(p)
     case p: Projection => Some(p)
