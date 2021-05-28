@@ -23,14 +23,33 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CantCompileQueryException
 
 class ExecutionModelTest extends CypherFunSuite {
-  Seq(1, 2, 3, 4, 1000, 1024, 2047, 2048, 2049, 2051, 2551, 9973, 10000, 1046527, 9999999, 13466917, 20482047, 20482048, 9999999999L, Long.MaxValue).foreach {
+  Seq(1, 2, 3, 4, 1000, 1024, 2047, 2048, 2049, 2051, 10000, 35274, 98666, 9999999, 20482047, 20482048).foreach {
     explicitBatchSize =>
       test(s"explicit batch size: $explicitBatchSize") {
         val executionModel = ExecutionModel.Batched.default
         val batchSize = executionModel.selectBatchSize(null, null, Some(explicitBatchSize))
-        val diff = explicitBatchSize % batchSize
-        val offBy = if (diff != 0) s" off by $diff" else ""
-        println(s"$explicitBatchSize => $batchSize$offBy")
+        val drift = explicitBatchSize % batchSize
+        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(drift shouldEqual 0L)
+      }
+  }
+
+  Seq(2551, 9973, 35273, 1046527, 13466917).foreach {
+    explicitBatchSize =>
+      test(s"explicit batch size (small drift): $explicitBatchSize") {
+        val executionModel = ExecutionModel.Batched.default
+        val batchSize = executionModel.selectBatchSize(null, null, Some(explicitBatchSize))
+        val drift = explicitBatchSize % batchSize
+        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(drift should be < 8)
+      }
+  }
+
+  Seq(9999999999L, Long.MaxValue).foreach {
+    explicitBatchSize =>
+      test(s"explicit batch size (big drift): $explicitBatchSize") {
+        val executionModel = ExecutionModel.Batched.default
+        val batchSize = executionModel.selectBatchSize(null, null, Some(explicitBatchSize))
+        val drift = explicitBatchSize % batchSize
+        withClue(s"Explicit batch size $explicitBatchSize => Batch size $batchSize would drift by $drift:")(drift should be < executionModel.bigBatchSize.toLong)
       }
   }
 
