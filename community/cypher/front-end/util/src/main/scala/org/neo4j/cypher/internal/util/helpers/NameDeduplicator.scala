@@ -39,17 +39,7 @@ object NameDeduplicator {
     case s: String => removeGeneratedNamesAndParams(s)
   })
 
-  private val deduplicateVariableNames: String => String = fixedPoint { (in: String) =>
-    val sb = new StringBuilder
-    var i = 0
-    for (m <- DEDUP_PATTERN.findAllMatchIn(in)) {
-      sb ++= in.substring(i, m.start)
-      sb ++= m.group(1)
-      i = m.end
-    }
-    sb ++= in.substring(i)
-    sb.toString()
-  }
+  private val deduplicateVariableNames: String => String = fixedPoint { DEDUP_PATTERN.replaceAllIn(_, "$1") }
 
   /**
    * Removes planner-generated uniquely identifying elements from Strings.
@@ -60,8 +50,7 @@ object NameDeduplicator {
     val paramNamed = UNNAMED_PARAMS_PATTERN.replaceAllIn(s, m => s"${(m group 1).toLowerCase()}_${m group 2}")
     val named = UNNAMED_PATTERN.replaceAllIn(paramNamed, m => s"anon_${m group 2}")
 
-    val str = deduplicateVariableNames(named)
-    str
+    deduplicateVariableNames(named)
   }
 
   /**

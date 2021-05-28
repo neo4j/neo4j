@@ -37,10 +37,10 @@ object RollupCollectionNameGenerator extends PrefixNameGeneratorCompanion("ROLLU
 class RollupCollectionNameGenerator() extends PrefixNameGenerator(RollupCollectionNameGenerator.prefix)
 
 object UnNamedNameGenerator extends PrefixNameGeneratorCompanion("UNNAMED"){
-    implicit class NameString(name: String) {
-      def isNamed: Boolean = UnNamedNameGenerator.isNamed(name)
-      def unnamed: Boolean = UnNamedNameGenerator.notNamed(name)
-    }
+  implicit class NameString(name: String) {
+    def isNamed: Boolean = UnNamedNameGenerator.isNamed(name)
+    def unnamed: Boolean = UnNamedNameGenerator.notNamed(name)
+  }
 }
 class UnNamedNameGenerator() extends PrefixNameGenerator(UnNamedNameGenerator.prefix)
 
@@ -61,7 +61,7 @@ object AllNameGenerators {
 }
 
 case class PrefixNameGeneratorCompanion(generatorName: String) {
-  val prefix =  s"  $generatorName"
+  val prefix = s"  $generatorName"
 
   def isNamed(x: String): Boolean = !notNamed(x)
   def notNamed(x: String): Boolean = x.startsWith(prefix)
@@ -72,10 +72,6 @@ case class PrefixNameGeneratorCompanion(generatorName: String) {
       regex.findPrefixMatchOf(str).map(_ group 2)
     case _ => None
   }
-}
-
-object PrefixNameGenerator {
-  def namePrefix(prefix: String) = s"  $prefix"
 }
 
 class PrefixNameGenerator(prefix: String) {
