@@ -23,31 +23,24 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.PhysicalFlushableChannel;
-import org.neo4j.io.fs.ReadAheadChannel;
+import org.neo4j.io.fs.InputStreamReadableChannel;
+import org.neo4j.io.fs.OutputStreamWritableChannel;
 import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.marshal.ChannelMarshal;
 import org.neo4j.io.marshal.EndOfStreamException;
-import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 
 public class SimpleFileStorage<T> implements SimpleStorage<T>
 {
     private final FileSystemAbstraction fileSystem;
     private final ChannelMarshal<T> marshal;
-    private final MemoryTracker memoryTracker;
     private final Path path;
 
-    public SimpleFileStorage( FileSystemAbstraction fileSystem, Path path, ChannelMarshal<T> marshal, MemoryTracker memoryTracker )
+    public SimpleFileStorage( FileSystemAbstraction fileSystem, Path path, ChannelMarshal<T> marshal )
     {
         this.fileSystem = fileSystem;
         this.path = path;
         this.marshal = marshal;
-        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -59,8 +52,7 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     @Override
     public T readState() throws IOException
     {
-        try ( ReadableChannel channel = new ReadAheadChannel<>( fileSystem.read( path ),
-                new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ) ) )
+        try ( ReadableChannel channel =  new InputStreamReadableChannel( fileSystem.openAsInputStream( path ) ) )
         {
             return marshal.unmarshal( channel );
         }
@@ -81,9 +73,7 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
         {
             fileSystem.deleteFile( path );
         }
-
-        try ( FlushableChannel channel = new PhysicalFlushableChannel( fileSystem.write( path ),
-                new NativeScopedBuffer( kibiBytes( 512 ), memoryTracker ) ) )
+        try ( WritableChannel channel = new OutputStreamWritableChannel( fileSystem.openAsOutputStream( path, false ) ) )
         {
             marshal.marshal( state, channel );
         }

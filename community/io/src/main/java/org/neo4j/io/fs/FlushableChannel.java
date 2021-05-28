@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.Closeable;
 import java.io.Flushable;
 import java.io.IOException;
 
@@ -28,7 +27,7 @@ import java.io.IOException;
  * buffer over a {@link WritableChannel}, allowing for batching of writes, controlled via the {@link #prepareForFlush}
  * call.
  */
-public interface FlushableChannel extends WritableChannel, Closeable
+public interface FlushableChannel extends WritableChannel
 {
     /**
      * Ensures that all written content will be present in the file channel. This method does not flush, it prepares for

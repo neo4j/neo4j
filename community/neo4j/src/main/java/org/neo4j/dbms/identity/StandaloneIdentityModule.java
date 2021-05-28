@@ -42,7 +42,7 @@ public class StandaloneIdentityModule extends AbstractIdentityModule
     StandaloneIdentityModule( LogProvider logProvider, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
     {
         var log = logProvider.getLog( StandaloneIdentityModule.class );
-        var storage = createServerIdStorage( fs, layout.serverIdFile(), memoryTracker );
+        var storage = createServerIdStorage( fs, layout.serverIdFile() );
         this.serverId = readOrGenerate( storage, log, ServerId.class, ServerId::new, UUID::randomUUID );
     }
 

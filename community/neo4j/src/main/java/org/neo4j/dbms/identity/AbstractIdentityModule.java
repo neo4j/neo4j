@@ -32,7 +32,6 @@ import org.neo4j.io.state.SimpleFileStorage;
 import org.neo4j.io.state.SimpleStorage;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Id;
 
 public abstract class AbstractIdentityModule extends LifecycleAdapter implements DiagnosticsProvider, ServerIdentity
@@ -72,9 +71,9 @@ public abstract class AbstractIdentityModule extends LifecycleAdapter implements
         return myself;
     }
 
-    protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, Path serverIdFile, MemoryTracker memoryTracker )
+    protected static SimpleStorage<ServerId> createServerIdStorage( FileSystemAbstraction fs, Path serverIdFile )
     {
-        return new SimpleFileStorage<>( fs, serverIdFile, ServerId.Marshal.INSTANCE, memoryTracker );
+        return new SimpleFileStorage<>( fs, serverIdFile, ServerId.Marshal.INSTANCE );
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.BufferedOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
@@ -39,19 +40,14 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.PhysicalFlushableChannel;
-import org.neo4j.io.fs.ReadAheadChannel;
-import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.fs.InputStreamReadableChannel;
+import org.neo4j.io.fs.OutputStreamWritableChannel;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.lang.String.format;
 import static java.util.Comparator.comparing;
-import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * A {@link TokenIndex.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
@@ -119,9 +115,9 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
         return baseFile.resolveSibling( baseFile.getFileName() + ".writelog" );
     }
 
-    private PhysicalFlushableChannel instantiateChannel() throws IOException
+    private FlushableChannel instantiateChannel() throws IOException
     {
-        return new PhysicalFlushableChannel( fs.write( file ), INSTANCE );
+        return new OutputStreamWritableChannel( fs.openAsOutputStream( file, false ) );
     }
 
     @Override
@@ -442,7 +438,7 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
 
     private static long dumpFile( FileSystemAbstraction fs, Path file, Dumper dumper, TxFilter txFilter, long session ) throws IOException
     {
-        try ( ReadableChannel channel = new ReadAheadChannel<>( fs.read( file ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
+        try ( ReadableChannel channel = new InputStreamReadableChannel( fs.openAsInputStream( file ) ) )
         {
             long range = -1;
             int tokenId = -1;
@@ -477,12 +473,12 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
                     flush = 0;
                     break;
                 default:
-                    System.out.println( "Unknown type " + type + " at " + ((ReadAheadChannel) channel).position() );
+                    System.out.println( "Unknown type " + type );
                     break;
                 }
             }
         }
-        catch ( ReadPastEndException e )
+        catch ( EOFException e )
         {
             // This is OK. we're done with this file
         }
@@ -604,14 +600,14 @@ public class TokenScanWriteMonitor implements TokenIndex.WriteMonitor
         @Override
         public void prepare( boolean add, long session, long flush, long txId, long entityId, int tokenId )
         {
-            out.println( format( "[%d,%d]%stx:%d,entity:%d,token:%d", session, flush, add ? '+' : '-', txId, entityId, tokenId ) );
+            out.printf( "[%d,%d]%stx:%d,entity:%d,token:%d%n", session, flush, add ? '+' : '-', txId, entityId, tokenId );
         }
 
         @Override
         public void merge( boolean add, long session, long flush, long range, int tokenId, long existingBits, long newBits )
         {
-            out.println( format( "[%d,%d]%srange:%d,tokenId:%d%n [%s]%n [%s]", session, flush, add ? '+' : '-', range, tokenId,
-                    bits( existingBits, bitsAsChars ), bits( newBits, bitsAsChars ) ) );
+            out.printf( "[%d,%d]%srange:%d,tokenId:%d%n [%s]%n [%s]%n", session, flush, add ? '+' : '-', range, tokenId,
+                    bits( existingBits, bitsAsChars ), bits( newBits, bitsAsChars ) );
         }
 
         private static String bits( long bits, char[] bitsAsChars )

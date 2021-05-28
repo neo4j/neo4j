@@ -21,6 +21,7 @@ package org.neo4j.internal.id.indexed;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
@@ -39,18 +40,14 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.PhysicalFlushableChannel;
-import org.neo4j.io.fs.ReadAheadChannel;
-import org.neo4j.io.fs.ReadPastEndException;
-import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.io.fs.InputStreamReadableChannel;
+import org.neo4j.io.fs.OutputStreamWritableChannel;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.util.Comparator.comparing;
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
-import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
  * Logs all monitor calls into a {@link FlushableChannel}.
@@ -319,9 +316,9 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         fs.renameFile( path, to );
     }
 
-    private PhysicalFlushableChannel instantiateChannel() throws IOException
+    private FlushableChannel instantiateChannel() throws IOException
     {
-        return new PhysicalFlushableChannel( fs.write( path ), INSTANCE );
+        return new OutputStreamWritableChannel( fs.openAsOutputStream( path, false ) );
     }
 
     private Path timestampedFile()
@@ -385,14 +382,14 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     private static void dumpFile( FileSystemAbstraction fs, Path path, Dumper dumper ) throws IOException
     {
         dumper.path( path );
-        try ( var channel = new ReadAheadChannel<>( fs.read( path ), new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, INSTANCE ) ) )
+        try ( var channel = new InputStreamReadableChannel( fs.openAsInputStream( path ) ) )
         {
             while ( true )
             {
                 byte typeByte = channel.get();
                 if ( typeByte < 0 || typeByte >= TYPES.length )
                 {
-                    System.out.println( "Unknown type " + typeByte + " at " + channel.position() );
+                    System.out.println( "Unknown type " + typeByte );
                     continue;
                 }
 
@@ -423,12 +420,12 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                     dumper.typeAndTwoIds( type, time, channel.getLong(), channel.getLong() );
                     break;
                 default:
-                    System.out.println( "Unknown type " + type + " at " + channel.position() );
+                    System.out.println( "Unknown type " + type );
                     break;
                 }
             }
         }
-        catch ( ReadPastEndException e )
+        catch ( EOFException e )
         {
             // This is OK. we're done with this file
         }

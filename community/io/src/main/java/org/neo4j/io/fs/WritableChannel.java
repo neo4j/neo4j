@@ -19,12 +19,13 @@
  */
 package org.neo4j.io.fs;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * Represents an infinite channel to write primitive data to.
  */
-public interface WritableChannel
+public interface WritableChannel extends Closeable
 {
     /**
      * Writes a {@code byte} to this channel.
