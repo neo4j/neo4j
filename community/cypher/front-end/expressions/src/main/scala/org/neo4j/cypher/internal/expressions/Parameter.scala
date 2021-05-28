@@ -30,7 +30,7 @@ sealed trait Parameter extends Expression {
   //we auto parameterize for efficent cache utilization
   override def hashCode(): Int = MurmurHash3.arrayHash(Array(name, parameterType))
   override def equals(obj: Any): Boolean = obj match {
-    case p: Parameter => name == p.name && parameterType == p.parameterType
+    case that: Parameter => that.canEqual(this) && this.name == that.name && this.parameterType == that.parameterType
     case _ => false
   }
 }
@@ -43,7 +43,8 @@ object Parameter {
 
 case class ExplicitParameter(name: String,
                              parameterType: CypherType)(val position: InputPosition) extends Parameter {
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[Parameter]
+  override def hashCode(): Int = super.hashCode()
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[ExplicitParameter]
   override def equals(obj: Any): Boolean = super.equals(obj)
 }
 
@@ -58,9 +59,20 @@ case class ListOfLiteralWriter(literals: Seq[Literal]) extends LiteralWriter {
 
 case class AutoExtractedParameter(name: String,
                                   parameterType: CypherType,
-                                  writer: LiteralWriter)(val position: InputPosition) extends Parameter {
+                                  writer: LiteralWriter,
+                                  sizeHint: Option[Int] = None
+                                 )(val position: InputPosition) extends Parameter {
+  override def hashCode(): Int = MurmurHash3.arrayHash(Array(name, parameterType, sizeHint))
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[AutoExtractedParameter]
+  override def equals(obj: Any): Boolean = super.equals(obj)
+
   def writeTo(literalExtractor: LiteralExtractor): Unit = writer.writeTo(literalExtractor)
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[Parameter]
+}
+
+case class ParameterWithOldSyntax(name: String,
+                                  parameterType: CypherType)(val position: InputPosition) extends Parameter {
+  override def hashCode(): Int = super.hashCode()
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[ExplicitParameter] || that.isInstanceOf[ParameterWithOldSyntax]
   override def equals(obj: Any): Boolean = super.equals(obj)
 }
 
@@ -71,6 +83,3 @@ trait SensitiveParameter {
 
 trait SensitiveAutoParameter extends SensitiveParameter
 
-case class ParameterWithOldSyntax(name: String,
-                                  parameterType: CypherType)(val position: InputPosition)
-  extends Parameter
