@@ -1271,7 +1271,7 @@
   },
   {
     "name": "db.schemaStatements",
-    "description": "List all statements for creating and dropping existing indexes and constraints.",
+    "description": "List all statements for creating and dropping existing indexes and constraints. Note that only index types introduced before Neo4j 4.3 are included.",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.schemaStatements() :: (name :: STRING?, type :: STRING?, createStatement :: STRING?, dropStatement :: STRING?)",
