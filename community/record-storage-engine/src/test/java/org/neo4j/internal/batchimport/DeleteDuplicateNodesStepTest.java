@@ -126,7 +126,9 @@ class DeleteDuplicateNodesStepTest
         // then
         int expectedNodes = 0;
         int expectedProperties = 0;
-        try ( var nodeCursor = nodeStore.openPageCursorForReading( 0, NULL ) )
+        try ( var nodeCursor = nodeStore.openPageCursorForReading( 0, NULL );
+              var labelCursor = nodeStore.getDynamicLabelStore().openPageCursorForReading( 0, NULL );
+              var propertyCursor = neoStores.getPropertyStore().openPageCursorForReading( 0, NULL ) )
         {
             for ( Ids entity : ids )
             {
@@ -140,13 +142,13 @@ class DeleteDuplicateNodesStepTest
                 // Verify label records
                 for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
                 {
-                    assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(), nodeCursor ) );
+                    assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(), labelCursor ) );
                 }
 
                 // Verify property records
                 for ( PropertyRecord propertyRecord : entity.properties )
                 {
-                    assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), nodeCursor ) );
+                    assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), propertyCursor ) );
                     for ( PropertyBlock property : propertyRecord )
                     {
                         // Verify property dynamic value records
@@ -163,7 +165,10 @@ class DeleteDuplicateNodesStepTest
                                 break;
                             default: throw new IllegalArgumentException( propertyRecord + " " + property );
                             }
-                            assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), nodeCursor ) );
+                            try ( var valueCursor = valueStore.openPageCursorForReading( 0, NULL ) )
+                            {
+                                assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), valueCursor ) );
+                            }
                         }
                         expectedProperties += stride;
                     }
