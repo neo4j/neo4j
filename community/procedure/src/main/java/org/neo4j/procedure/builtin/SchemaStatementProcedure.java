@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -61,8 +62,6 @@ public final class SchemaStatementProcedure
     private static final String CREATE_BTREE_INDEX = "CALL db.createIndex('%s', %s, %s, '%s', %s)";
     private static final String CREATE_NODE_FULLTEXT_INDEX = "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)";
     private static final String CREATE_RELATIONSHIP_FULLTEXT_INDEX = "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)";
-    private static final String CREATE_NODE_LABEL_INDEX = "CREATE LOOKUP INDEX `%s` FOR (n) ON EACH labels(n)";
-    private static final String CREATE_RELATIONSHIP_TYPE_INDEX = "CREATE LOOKUP INDEX `%s` FOR ()-[r]-() ON EACH type(r)";
     private static final String DROP_CONSTRAINT = "DROP CONSTRAINT `%s`";
     private static final String DROP_INDEX = "DROP INDEX `%s`";
     private static final String SINGLE_CONFIG = "`%s`: %s";
@@ -148,7 +147,8 @@ public final class SchemaStatementProcedure
         try
         {
             InternalIndexState indexState = schemaRead.indexGetState( index );
-            return indexState == InternalIndexState.ONLINE && !index.isUnique();
+            boolean relationshipPropertyIndex = index.getIndexType().equals( IndexType.BTREE ) && index.schema().entityType().equals( EntityType.RELATIONSHIP );
+            return indexState == InternalIndexState.ONLINE && !index.isUnique() && !index.isTokenIndex() && !relationshipPropertyIndex;
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -240,11 +240,6 @@ public final class SchemaStatementProcedure
                 default:
                     throw new IllegalArgumentException( "Did not recognize entity type " + indexDescriptor.schema().entityType() );
                 }
-            case LOOKUP:
-                String createStatement = indexDescriptor.schema().entityType() == EntityType.NODE
-                                         ? CREATE_NODE_LABEL_INDEX
-                                         : CREATE_RELATIONSHIP_TYPE_INDEX;
-                return format( createStatement, name );
             default:
                 throw new IllegalArgumentException( "Did not recognize index type " + indexDescriptor.getIndexType() );
             }
