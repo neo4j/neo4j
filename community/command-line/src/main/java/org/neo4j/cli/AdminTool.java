@@ -28,6 +28,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 import org.neo4j.internal.unsafe.IllegalAccessLoggerSuppressor;
@@ -44,6 +45,7 @@ import static picocli.CommandLine.IVersionProvider;
         description = "Neo4j database administration tool.",
         mixinStandardHelpOptions = true,
         versionProvider = VersionProvider.class,
+        sortOptions = false,
         footerHeading = "\nEnvironment variables:\n",
         footer = {
                 "  NEO4J_CONF    Path to directory which contains neo4j.conf.",
@@ -92,7 +94,8 @@ public final class AdminTool
     private static void registerCommands( CommandLine cmd, ExecutionContext ctx, Collection<CommandProvider> commandProviders )
     {
         cmd.addSubcommand( HelpCommand.class );
-        filterCommandProviders( commandProviders )
+        filterCommandProviders( commandProviders ).stream()
+                .sorted( Comparator.comparing( CommandProvider::commandType ) )
                 .forEach( commandProvider -> cmd.addSubcommand( commandProvider.createCommand( ctx ) ) );
     }
 

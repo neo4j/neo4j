@@ -36,6 +36,6 @@ public class CheckConsistencyCommandProvider implements CommandProvider<CheckCon
     @Override
     public CommandType commandType()
     {
-        return null;
+        return CommandType.CHECK_CONSISTENCY;
     }
 }
