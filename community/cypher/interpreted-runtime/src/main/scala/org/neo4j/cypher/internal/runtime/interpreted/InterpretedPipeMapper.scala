@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.CompilationError
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -471,6 +472,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         EmptyResultPipe(source)(id = id)
 
       case NonFuseable(_) =>
+        TestPipe(source)(id = id)
+
+      case CompilationError(_) =>
         TestPipe(source)(id = id)
 
       case NonPipelined(_) =>

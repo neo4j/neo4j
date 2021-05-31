@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
+import org.neo4j.cypher.internal.logical.plans.CompilationError
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -1010,6 +1011,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       throw new IllegalArgumentException("Input must create unique variables")
     }
     appendAtCurrentIndent(LeafOperator(Input(newNodes(nodes), newRelationships(relationships), newVariables(variables), nullable)(_)))
+  }
+
+  def injectCompilationError(): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      CompilationError(lp)(_)
+    }))
   }
 
   def filter(predicateStrings: String*): IMPL = {
