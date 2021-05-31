@@ -106,7 +106,7 @@ class QueryFailureTransactionIT
         }
     }
 
-    private void checkFailToCommit( Transaction transaction )
+    private static void checkFailToCommit( Transaction transaction )
     {
         var e = assertThrows( TransactionFailureException.class, transaction::commit );
         assertThat( getRootCause( e ) ).isInstanceOf( NotInTransactionException.class );

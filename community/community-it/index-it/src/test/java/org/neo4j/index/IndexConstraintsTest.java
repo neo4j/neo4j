@@ -182,7 +182,7 @@ class IndexConstraintsTest
         }
     }
 
-    private IndexDefinition recreate( Transaction tx, IndexDefinition index, int times )
+    private static IndexDefinition recreate( Transaction tx, IndexDefinition index, int times )
     {
         for ( int i = 0; i < times; i++ )
         {
@@ -195,7 +195,7 @@ class IndexConstraintsTest
         return index;
     }
 
-    private IndexDefinition getIndex( Transaction tx, Label label, String propertyKey )
+    private static IndexDefinition getIndex( Transaction tx, Label label, String propertyKey )
     {
         IndexDefinition found = null;
         for ( IndexDefinition index : tx.schema().getIndexes( label ) )
@@ -285,7 +285,7 @@ class IndexConstraintsTest
         }
     }
 
-    private ConstraintDefinition recreate( Transaction tx, ConstraintDefinition constraint, int times )
+    private static ConstraintDefinition recreate( Transaction tx, ConstraintDefinition constraint, int times )
     {
         for ( int i = 0; i < times; i++ )
         {
@@ -298,7 +298,7 @@ class IndexConstraintsTest
         return constraint;
     }
 
-    private ConstraintDefinition getConstraint( Transaction tx, Label label, String propertyKey )
+    private static ConstraintDefinition getConstraint( Transaction tx, Label label, String propertyKey )
     {
         ConstraintDefinition found = null;
         for ( ConstraintDefinition constraint : tx.schema().getConstraints( label ) )

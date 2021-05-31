@@ -55,7 +55,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class TransactionHandle implements TransactionTerminationHandle
 {
-    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionHandle.class );
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionHandle.class );
 
     private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine engine;

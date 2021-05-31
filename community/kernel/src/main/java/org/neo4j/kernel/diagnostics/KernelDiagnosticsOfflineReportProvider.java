@@ -85,7 +85,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         return sources;
     }
 
-    private void getVersion( List<DiagnosticsReportSource> sources )
+    private static void getVersion( List<DiagnosticsReportSource> sources )
     {
         Supplier<String> neo4jVersion = () -> "neo4j " + Version.getNeo4jVersion() + System.lineSeparator();
         sources.add( DiagnosticsReportSources.newDiagnosticsString( "version.txt", neo4jVersion ) );

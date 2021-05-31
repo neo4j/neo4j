@@ -103,7 +103,7 @@ class NodeManagerTest
         }
     }
 
-    private void createRelationshipAssumingTxWith( Transaction transaction, String key, Object value )
+    private static void createRelationshipAssumingTxWith( Transaction transaction, String key, Object value )
     {
         Node a = transaction.createNode();
         Node b = transaction.createNode();

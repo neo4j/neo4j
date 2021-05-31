@@ -547,7 +547,7 @@ public class RandomPageCacheTestHarness implements Closeable
         return weights;
     }
 
-    private int sum( int[] xs )
+    private static int sum( int[] xs )
     {
         int sum = 0;
         for ( int x : xs )
@@ -557,7 +557,7 @@ public class RandomPageCacheTestHarness implements Closeable
         return sum;
     }
 
-    private Command pickCommand( int randomPick, int[] commandWeights )
+    private static Command pickCommand( int randomPick, int[] commandWeights )
     {
         for ( int i = 0; i < commandWeights.length; i++ )
         {

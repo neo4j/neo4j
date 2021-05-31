@@ -88,7 +88,7 @@ class CancelIndexPopulationIT
         }
     }
 
-    private Schema.IndexState awaitAndGetIndexState( GraphDatabaseService db )
+    private static Schema.IndexState awaitAndGetIndexState( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -100,7 +100,7 @@ class CancelIndexPopulationIT
         }
     }
 
-    private void createIndex( GraphDatabaseService db )
+    private static void createIndex( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -109,7 +109,7 @@ class CancelIndexPopulationIT
         }
     }
 
-    private void createRelevantNode( GraphDatabaseService db )
+    private static void createRelevantNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -118,7 +118,7 @@ class CancelIndexPopulationIT
         }
     }
 
-    private IndexingService.MonitorAdapter populationCompletionBlocker( Barrier.Control barrier )
+    private static IndexingService.MonitorAdapter populationCompletionBlocker( Barrier.Control barrier )
     {
         return new IndexingService.MonitorAdapter()
         {

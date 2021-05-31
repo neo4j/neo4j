@@ -165,7 +165,7 @@ public class TestFabricTransaction implements InternalTransaction
         }
     }
 
-    private RuntimeException unwrapFabricException( FabricException e )
+    private static RuntimeException unwrapFabricException( FabricException e )
     {
         if ( e.getCause() instanceof RuntimeException )
         {

@@ -51,7 +51,7 @@ public class HelloMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.Hel
     }
 
     @SuppressWarnings( "unchecked" )
-    private RoutingContext parseRoutingContext( Map<String,Object> meta ) throws BoltIOException
+    private static RoutingContext parseRoutingContext( Map<String,Object> meta ) throws BoltIOException
     {
         Map<String,Object> routingObjectMap = (Map<String,Object>) meta.getOrDefault( ROUTING, null );
 
@@ -78,7 +78,7 @@ public class HelloMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.Hel
         }
     }
 
-    private Map<String, Object> extractAuthToken( Map<String, Object> meta )
+    private static Map<String, Object> extractAuthToken( Map<String,Object> meta )
     {
         // The authToken is currently nothing more than the Hello metadata minus the routing context.
         Map<String, Object> authToken = new HashMap<>();

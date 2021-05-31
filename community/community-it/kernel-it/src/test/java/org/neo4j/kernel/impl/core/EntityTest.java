@@ -98,7 +98,7 @@ public abstract class EntityTest
         }
     }
 
-    InternalTransaction mockedTransactionWithDepletedTokens() throws KernelException
+    static InternalTransaction mockedTransactionWithDepletedTokens() throws KernelException
     {
         var internalTransaction = mock( InternalTransaction.class );
         var ktx = mock( KernelTransaction.class );

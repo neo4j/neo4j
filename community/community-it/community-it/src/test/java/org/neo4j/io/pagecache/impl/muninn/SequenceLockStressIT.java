@@ -233,7 +233,7 @@ class SequenceLockStressIT
         }
     }
 
-    private void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
+    private static void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
     {
         int threads = Runtime.getRuntime().availableProcessors() - 1;
         CountDownLatch start = new CountDownLatch( threads );

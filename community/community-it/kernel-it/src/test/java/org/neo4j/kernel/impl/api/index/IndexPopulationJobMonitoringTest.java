@@ -115,7 +115,7 @@ class IndexPopulationJobMonitoringTest
         verifyCurrentState( monitoringParams, "Population of indexes 'index 1','index 2','index 3'; Total progress: 100.0%" );
     }
 
-    private void addIndex( IndexPopulationJob job, String indexName )
+    private static void addIndex( IndexPopulationJob job, String indexName )
     {
         var idxPrototype = IndexPrototype.forSchema( mock( SchemaDescriptor.class ) ).withName( indexName );
         var indexDescriptor = idxPrototype.materialise( 99 );
@@ -123,7 +123,7 @@ class IndexPopulationJobMonitoringTest
         job.addPopulator( null, indexProxyInfo, null, null );
     }
 
-    private void verifyCurrentState( JobMonitoringParams monitoringParams, String expectedCurrentStateDescription )
+    private static void verifyCurrentState( JobMonitoringParams monitoringParams, String expectedCurrentStateDescription )
     {
         assertThat( monitoringParams.getCurrentStateDescription() ).isEqualTo( expectedCurrentStateDescription );
     }

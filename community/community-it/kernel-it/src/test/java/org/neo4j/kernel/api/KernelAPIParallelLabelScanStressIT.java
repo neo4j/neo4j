@@ -96,7 +96,7 @@ class KernelAPIParallelLabelScanStressIT
         return label;
     }
 
-    private Runnable labelScan( Read read, NodeLabelIndexCursor cursor, IndexDescriptor index, int label )
+    private static Runnable labelScan( Read read, NodeLabelIndexCursor cursor, IndexDescriptor index, int label )
     {
         return throwing( () ->
         {

@@ -64,10 +64,10 @@ class LargePageListIT
     private static void verifyPageMetaDataIsAccessible( PageList pageList, int id )
     {
         long ref = pageList.deref( id );
-        pageList.incrementUsage( ref );
-        pageList.incrementUsage( ref );
-        assertFalse( pageList.decrementUsage( ref ) );
-        assertTrue( pageList.decrementUsage( ref ) );
+        PageList.incrementUsage( ref );
+        PageList.incrementUsage( ref );
+        assertFalse( PageList.decrementUsage( ref ) );
+        assertTrue( PageList.decrementUsage( ref ) );
         assertEquals( id, pageList.toId( ref ) );
     }
 }

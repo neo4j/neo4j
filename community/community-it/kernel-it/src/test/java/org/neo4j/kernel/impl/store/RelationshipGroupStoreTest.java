@@ -331,7 +331,7 @@ class RelationshipGroupStoreTest
     void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
     {
         AtomicBoolean nextReadIsInconsistent = new AtomicBoolean( false );
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, config().withInconsistentReads( nextReadIsInconsistent ) ) )
+        try ( PageCache pageCache = PageCacheSupportExtension.getPageCache( fs, config().withInconsistentReads( nextReadIsInconsistent ) ) )
         {
             StoreFactory factory = factory( null, pageCache );
 

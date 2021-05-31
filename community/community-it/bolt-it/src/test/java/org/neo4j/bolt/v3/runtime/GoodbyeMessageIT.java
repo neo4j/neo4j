@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
@@ -56,7 +57,7 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
 
         // Given
         connection.connect( address )
-                .send( util.acceptedVersions( 3, 2, 1, 0 ) );
+                .send( TransportTestUtil.acceptedVersions( 3, 2, 1, 0 ) );
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
 
         // When

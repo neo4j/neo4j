@@ -190,7 +190,7 @@ public class IndexCleanupIT
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private void createIndex( GraphDatabaseService db, boolean awaitOnline )
+    private static void createIndex( GraphDatabaseService db, boolean awaitOnline )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -207,7 +207,7 @@ public class IndexCleanupIT
         }
     }
 
-    private Path[] providerDirectories( FileSystemAbstraction fs, GraphDatabaseAPI db ) throws IOException
+    private static Path[] providerDirectories( FileSystemAbstraction fs, GraphDatabaseAPI db ) throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         Path dbDir = databaseLayout.databaseDirectory();

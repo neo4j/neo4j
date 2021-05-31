@@ -367,7 +367,7 @@ class DumpCommandIT
         }
     }
 
-    private void putStoreInDirectory( Config config, Path databaseDirectory )
+    private static void putStoreInDirectory( Config config, Path databaseDirectory )
     {
         String databaseName = databaseDirectory.getFileName().toString();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParent().getParent().getParent() )

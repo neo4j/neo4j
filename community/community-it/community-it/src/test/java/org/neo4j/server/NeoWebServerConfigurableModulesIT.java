@@ -110,7 +110,7 @@ public class NeoWebServerConfigurableModulesIT extends CommunityWebContainerTest
         }
     }
 
-    private String moduleSettingsToProperty( EnumSet<ConfigurableServerModules> enabledModules )
+    private static String moduleSettingsToProperty( EnumSet<ConfigurableServerModules> enabledModules )
     {
         return enabledModules.stream().map( ConfigurableServerModules::name ).collect( joining( "," ) );
     }

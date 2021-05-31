@@ -29,6 +29,7 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.bolt.runtime.SessionExtension;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachine;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -143,13 +144,13 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         machine.process( pullAll(), new BoltResponseHandler()
         {
             @Override
-            public boolean onPullRecords( BoltResult result, long size ) throws Throwable
+            public boolean onPullRecords( BoltResult result, long size )
             {
                 throw new RuntimeException( "Ooopsies!" );
             }
 
             @Override
-            public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
+            public boolean onDiscardRecords( BoltResult result, long size )
             {
                 throw new RuntimeException( "Not this one!" );
             }
@@ -386,7 +387,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         assertFalse( hasTransaction( machine ) );
     }
 
-    private void resetReceived( BoltStateMachineV4 machine, BoltResponseRecorder recorder ) throws BoltConnectionFatality
+    private static void resetReceived( BoltStateMachineV4 machine, BoltResponseRecorder recorder ) throws BoltConnectionFatality
     {
         // Reset is two steps now: When parsing reset message we immediately interrupt, and then ignores all other messages until reset is reached.
         machine.interrupt();
@@ -398,7 +399,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         return ((AbstractBoltStateMachine) machine).statementProcessor().hasTransaction();
     }
 
-    private String createLocalIrisData( BoltStateMachine machine ) throws Exception
+    private static String createLocalIrisData( BoltStateMachine machine ) throws Exception
     {
         for ( String className : IRIS_CLASS_NAMES )
         {
@@ -406,15 +407,15 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
             runAndPull( machine, "CREATE (c:Class {name: $className}) RETURN c", params );
         }
 
-        return env.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
+        return SessionExtension.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
     }
 
-    private void runAndPull( BoltStateMachine machine ) throws Exception
+    private static void runAndPull( BoltStateMachine machine ) throws Exception
     {
         runAndPull( machine, "RETURN 1", EMPTY_PARAMS );
     }
 
-    private void runAndPull( BoltStateMachine machine, String statement, MapValue params ) throws Exception
+    private static void runAndPull( BoltStateMachine machine, String statement, MapValue params ) throws Exception
     {
         var recorder = new BoltResponseRecorder();
         machine.process( run( statement, params ), recorder );
@@ -423,19 +424,19 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         assertThat( recorder.nextResponse() ).satisfies( succeeded() );
     }
 
-    private MapValue map( Object... keyValues )
+    private static MapValue map( Object... keyValues )
     {
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
-    private static String[] IRIS_CLASS_NAMES =
+    private static final String[] IRIS_CLASS_NAMES =
             new String[] {
                     "Iris-setosa",
                     "Iris-versicolor",
                     "Iris-virginica"
             };
 
-    private static String IRIS_DATA =
+    private static final String IRIS_DATA =
             "sepal_length,sepal_width,petal_length,petal_width,class_name\n" +
                     "5.1,3.5,1.4,0.2,Iris-setosa\n" +
                     "4.9,3.0,1.4,0.2,Iris-setosa\n" +

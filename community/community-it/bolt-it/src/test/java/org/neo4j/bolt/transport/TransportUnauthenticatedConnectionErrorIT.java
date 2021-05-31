@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackedOutputArray;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -97,7 +98,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
                 .send( util.defaultAuth() );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         connection.disconnect();
@@ -169,7 +170,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
                 .send( halfMessage );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
@@ -191,7 +192,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
                 .send( util.defaultAuth( authMeta ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
@@ -205,10 +206,10 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
         // When
         connection.connect( address )
                   .send( util.defaultAcceptedVersions() )
-                  .send( util.chunk( 64, createHelloWithOversizeDeclaredMap( neo4jPack ) ) );
+                  .send( TransportTestUtil.chunk( 64, createHelloWithOversizeDeclaredMap( neo4jPack ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid,
                                                                                  "Collection size exceeds message capacity" ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
@@ -224,16 +225,16 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
         // When
         connection.connect( address )
                   .send( util.defaultAcceptedVersions() )
-                  .send( util.chunk( 64, createHelloWithOversizeDeclaredList( neo4jPack ) ) );
+                  .send( TransportTestUtil.chunk( 64, createHelloWithOversizeDeclaredList( neo4jPack ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid,
                                                                                  "Collection size exceeds message capacity" ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
-    private byte[] createHelloWithOversizeDeclaredMap( Neo4jPack neo4jPack ) throws IOException
+    private static byte[] createHelloWithOversizeDeclaredMap( Neo4jPack neo4jPack ) throws IOException
     {
         PackedOutputArray out = new PackedOutputArray();
         Neo4jPack.Packer packer = neo4jPack.newPacker( out );
@@ -246,7 +247,7 @@ public class TransportUnauthenticatedConnectionErrorIT extends AbstractBoltTrans
         return out.bytes();
     }
 
-    byte[] createHelloWithOversizeDeclaredList( Neo4jPack neo4jPack ) throws IOException
+    static byte[] createHelloWithOversizeDeclaredList( Neo4jPack neo4jPack ) throws IOException
     {
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = neo4jPack.newPacker( output );

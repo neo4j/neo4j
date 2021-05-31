@@ -2251,7 +2251,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         return allKeysOnNode;
     }
 
-    private boolean goToRightSibling( PageCursor cursor ) throws IOException
+    private static boolean goToRightSibling( PageCursor cursor ) throws IOException
     {
         long rightSibling = pointer( TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) );
         boolean hasRightSibling = rightSibling != TreeNode.NO_NODE_FLAG;
@@ -2335,7 +2335,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         }
     }
 
-    private void checkpoint()
+    private static void checkpoint()
     {
         stableGeneration = unstableGeneration;
         unstableGeneration++;

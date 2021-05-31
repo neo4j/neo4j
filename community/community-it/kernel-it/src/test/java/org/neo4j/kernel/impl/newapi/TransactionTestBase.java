@@ -229,17 +229,17 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
 
     // HELPERS
 
-    private void assertAllowedLocks( KernelTransaction tx, SchemaDescriptor schema )
+    private static void assertAllowedLocks( KernelTransaction tx, SchemaDescriptor schema )
     {
         tx.schemaRead().index( schema ).forEachRemaining( index -> {} ); // acquires shared schema lock, but that's fine again
     }
 
-    private void assertFrozenLocks( KernelTransaction tx, SchemaDescriptor schema )
+    private static void assertFrozenLocks( KernelTransaction tx, SchemaDescriptor schema )
     {
         assertThrows( FrozenLocksException.class, () -> tx.schemaRead().index( schema ).forEachRemaining( index -> { } ) );
     }
 
-    private void assertNoNode( long nodeId ) throws TransactionFailureException
+    private static void assertNoNode( long nodeId ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = beginTransaction();
                 NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )
@@ -249,7 +249,7 @@ abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends 
         }
     }
 
-    private void assertNodeExists( long nodeId ) throws TransactionFailureException
+    private static void assertNodeExists( long nodeId ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = beginTransaction();
                 NodeCursor cursor = tx.cursors().allocateNodeCursor( NULL ) )

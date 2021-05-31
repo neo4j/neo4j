@@ -33,9 +33,8 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,8 +44,8 @@ class CachingOffHeapBlockAllocatorTest
     private static final int CACHE_SIZE = 4;
     private static final int MAX_CACHEABLE_BLOCK_SIZE = 128;
 
-    private final MemoryTracker memoryTracker = new LocalMemoryTracker();
-    private final CachingOffHeapBlockAllocator allocator = spy( new CachingOffHeapBlockAllocator( MAX_CACHEABLE_BLOCK_SIZE, CACHE_SIZE ) );
+    private final MemoryTracker memoryTracker = spy( new LocalMemoryTracker() );
+    private final CachingOffHeapBlockAllocator allocator = new CachingOffHeapBlockAllocator( MAX_CACHEABLE_BLOCK_SIZE, CACHE_SIZE );
 
     @AfterEach
     void afterEach()
@@ -68,7 +67,8 @@ class CachingOffHeapBlockAllocatorTest
         final MemoryBlock block = allocator.allocate( 128, memoryTracker );
         allocator.release();
         allocator.free( block, memoryTracker );
-        verify( allocator ).doFree( eq( block ), any() );
+        verify( memoryTracker ).allocateNative( eq( 128L ) );
+        verify( memoryTracker ).releaseNative( eq( 128L ) );
     }
 
     @Test
@@ -99,9 +99,7 @@ class CachingOffHeapBlockAllocatorTest
         final MemoryBlock block2 = allocator.allocate( bytes, memoryTracker );
         allocator.free( block2, memoryTracker );
 
-        verify( allocator, times( 2 ) ).allocateNew( eq( bytes ), any() );
-        verify( allocator ).doFree( eq( block1 ), any() );
-        verify( allocator ).doFree( eq( block2 ), any() );
+        verify( memoryTracker, times( 2 ) ).allocateNative( eq( bytes ) );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 
@@ -115,8 +113,8 @@ class CachingOffHeapBlockAllocatorTest
         final MemoryBlock block2 = allocator.allocate( bytes, memoryTracker );
         allocator.free( block2, memoryTracker );
 
-        verify( allocator ).allocateNew( eq( bytes ), any() );
-        verify( allocator, never() ).doFree( any(), any() );
+        verify( memoryTracker, times( 2 ) ).allocateNative( eq( bytes ) );
+        assertEquals( 1, allocator.numberOfCachedBlocks() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
 
@@ -132,8 +130,8 @@ class CachingOffHeapBlockAllocatorTest
             blocks128.add( allocator.allocate( 128, memoryTracker ) );
         }
 
-        verify( allocator, times( CACHE_SIZE + EXTRA ) ).allocateNew( eq( 64L ), any() );
-        verify( allocator, times( CACHE_SIZE + EXTRA ) ).allocateNew( eq( 128L ), any() );
+        verify( memoryTracker, times( CACHE_SIZE + EXTRA ) ).allocateNative( eq( 64L ) );
+        verify( memoryTracker, times( CACHE_SIZE + EXTRA ) ).allocateNative( eq( 128L ) );
         assertEquals( (CACHE_SIZE + EXTRA) * (64 + 128), memoryTracker.usedNativeMemory() );
 
         blocks64.forEach( it -> allocator.free( it, memoryTracker ) );
@@ -142,6 +140,7 @@ class CachingOffHeapBlockAllocatorTest
         blocks128.forEach( it -> allocator.free( it, memoryTracker ) );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
 
-        verify( allocator, times( EXTRA * 2 ) ).doFree( any(), any() );
+        assertEquals( CACHE_SIZE * 2, allocator.numberOfCachedBlocks() );
+        verify( memoryTracker, times( (CACHE_SIZE + EXTRA) * 2  ) ).releaseNative( anyLong() );
     }
 }

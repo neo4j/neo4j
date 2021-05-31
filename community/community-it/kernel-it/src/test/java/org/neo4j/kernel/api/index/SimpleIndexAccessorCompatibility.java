@@ -413,7 +413,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         }
     }
 
-    private List<Long> ids( int fromIndex, boolean fromInclusive, int toIndex, boolean toInclusive )
+    private static List<Long> ids( int fromIndex, boolean fromInclusive, int toIndex, boolean toInclusive )
     {
         List<Long> ids = new ArrayList<>();
         int from = fromInclusive ? fromIndex : fromIndex + 1;
@@ -1229,7 +1229,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, testSuite.uniqueIndexPrototype() );
+            super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
         }
 
         @Test

@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.PageCacheConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -102,7 +103,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
         // given
         accessor.close();
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
+        try ( PageCache pageCache = PageCacheSupportExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
         {
             accessor = createAccessor( pageCache );
             long baseline = tracer.flushes();

@@ -73,7 +73,7 @@ public abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexP
         return IndexPrototype.forSchema( forLabel( 1000, 100 ) );
     }
 
-    protected IndexPrototype uniqueIndexPrototype()
+    protected static IndexPrototype uniqueIndexPrototype()
     {
         return IndexPrototype.uniqueForSchema( forLabel( 1000, 100 ) );
     }

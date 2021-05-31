@@ -300,7 +300,7 @@ public class BTreeIndexKeySizeValidationIT
         return Stream.of( PAGE_SIZE_8K, PAGE_SIZE_16K );
     }
 
-    private void setProperties( String[] propKeys, Object[] propValues, Node node )
+    private static void setProperties( String[] propKeys, Object[] propValues, Node node )
     {
         for ( int propKey = 0; propKey < propKeys.length; propKey++ )
         {
@@ -308,7 +308,7 @@ public class BTreeIndexKeySizeValidationIT
         }
     }
 
-    private String[] generatePropertyKeys( int numberOfSlots )
+    private static String[] generatePropertyKeys( int numberOfSlots )
     {
         String[] propKeys = new String[numberOfSlots];
         for ( int i = 0; i < numberOfSlots; i++ )
@@ -472,12 +472,12 @@ public class BTreeIndexKeySizeValidationIT
             return dynamicValue( random, random.intBetween( lowLimit, highLimit ) );
         }
 
-        private int lowLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
+        private static int lowLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
         {
             return (keySizeLimit - wiggleRoom) / singleEntrySize;
         }
 
-        private int highLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
+        private static int highLimit( int keySizeLimit, int wiggleRoom, int singleEntrySize )
         {
             return (keySizeLimit + wiggleRoom) / singleEntrySize;
         }

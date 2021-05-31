@@ -337,7 +337,7 @@ public abstract class StringLengthIndexValidationIT
         return indexId;
     }
 
-    private long getIndexIdFrom( IndexDefinition index )
+    private static long getIndexIdFrom( IndexDefinition index )
     {
         return ((IndexDefinitionImpl) index).getIndexReference().getId();
     }

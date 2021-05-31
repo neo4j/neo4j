@@ -829,17 +829,17 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertEquals( "\"PT1M13S\"", row.toString() );
     }
 
-    private HTTP.RawPayload queryAsJsonGraph( String query )
+    private static HTTP.RawPayload queryAsJsonGraph( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'graph' ] } ] }" );
     }
 
-    private HTTP.RawPayload queryAsJsonRest( String query )
+    private static HTTP.RawPayload queryAsJsonRest( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'rest' ] } ] }" );
     }
 
-    private HTTP.RawPayload queryAsJsonRow( String query )
+    private static HTTP.RawPayload queryAsJsonRow( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'row' ] } ] }" );
     }
@@ -856,7 +856,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         }
     }
 
-    private GraphDatabaseAPI getDefaultDatabase()
+    private static GraphDatabaseAPI getDefaultDatabase()
     {
         return container().getDefaultDatabase();
     }

@@ -264,7 +264,7 @@ class MultipleIndexPopulationStressIT
         expectingRTI = false;
     }
 
-    private boolean indexesAreOnline( GraphDatabaseService db )
+    private static boolean indexesAreOnline( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

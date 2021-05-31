@@ -449,7 +449,7 @@ public class Neo4jPackV1 implements Neo4jPack
             pack( value );
         }
 
-        void throwUnsupportedTypeError( String type ) throws BoltIOException
+        static void throwUnsupportedTypeError( String type ) throws BoltIOException
         {
             throw new BoltIOException( Status.Request.Invalid, type + " is not supported as a return type in Bolt protocol version 1. " +
                     "Please make sure driver supports at least protocol version 2. " +

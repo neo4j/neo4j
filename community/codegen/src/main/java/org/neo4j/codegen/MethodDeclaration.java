@@ -239,7 +239,7 @@ public abstract class MethodDeclaration
                 modifiers, typeParameters );
     }
 
-    private TypeReference erase( TypeReference reference, Map<String,TypeReference> table )
+    private static TypeReference erase( TypeReference reference, Map<String,TypeReference> table )
     {
         TypeReference erasedReference = table.get( reference.fullName() );
 

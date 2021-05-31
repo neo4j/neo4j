@@ -628,12 +628,12 @@ public class BoltStateHandlerTest
         assertFalse( boltStateHandler.isTransactionOpen() );
     }
 
-    private Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String version )
+    private static Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String version )
     {
         return stubResultSummaryInAnOpenSession( resultMock, sessionMock, version, DEFAULT_DEFAULT_DB_NAME );
     }
 
-    private Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String version, String databaseName )
+    private static Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String version, String databaseName )
     {
         Driver driverMock = mock( Driver.class );
         ResultSummary resultSummary = mock( ResultSummary.class );

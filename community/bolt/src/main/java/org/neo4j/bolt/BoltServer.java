@@ -409,7 +409,7 @@ public class BoltServer extends LifecycleAdapter
         }
     }
 
-    private Authentication createAuthentication( AuthManager authManager )
+    private static Authentication createAuthentication( AuthManager authManager )
     {
         return new BasicAuthentication( authManager );
     }

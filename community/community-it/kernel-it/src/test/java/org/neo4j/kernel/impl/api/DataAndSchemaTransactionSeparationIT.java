@@ -43,8 +43,8 @@ class DataAndSchemaTransactionSeparationIT
     @Inject
     private GraphDatabaseAPI db;
 
-    private Function<Transaction, Void> expectFailureAfterSchemaOperation(
-            final Function<Transaction, ?> function )
+    private static Function<Transaction, Void> expectFailureAfterSchemaOperation(
+            final Function<Transaction,?> function )
     {
         return transaction ->
         {
@@ -58,8 +58,8 @@ class DataAndSchemaTransactionSeparationIT
         };
     }
 
-    private Function<Transaction, Void> succeedAfterSchemaOperation(
-            final Function<Transaction, ?> function )
+    private static Function<Transaction, Void> succeedAfterSchemaOperation(
+            final Function<Transaction,?> function )
     {
         return transaction ->
         {

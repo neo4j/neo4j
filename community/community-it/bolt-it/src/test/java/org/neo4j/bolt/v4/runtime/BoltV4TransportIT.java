@@ -306,7 +306,7 @@ public class BoltV4TransportIT
 
     private void negotiateBoltV4() throws Exception
     {
-        connection.connect( address ).send( util.acceptedVersions( 4, 0, 0, 0 ) );
+        connection.connect( address ).send( TransportTestUtil.acceptedVersions( 4, 0, 0, 0 ) );
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
 
         connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );

@@ -218,7 +218,7 @@ class VersionAwareLogEntryReaderIT
         }
     }
 
-    private void createNode( GraphDatabaseService database )
+    private static void createNode( GraphDatabaseService database )
     {
         try ( Transaction transaction = database.beginTx() )
         {

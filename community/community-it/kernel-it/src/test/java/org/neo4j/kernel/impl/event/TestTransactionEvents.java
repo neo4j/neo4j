@@ -1432,7 +1432,7 @@ class TestTransactionEvents
         }
     }
 
-    private void createTree( Transaction tx, Node parent, int maxDepth, int width, int currentDepth )
+    private static void createTree( Transaction tx, Node parent, int maxDepth, int width, int currentDepth )
     {
         if ( currentDepth > maxDepth )
         {

@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryTracker;
 
-class VictimPageReference
+final class VictimPageReference
 {
     private static int victimPageSize = -1;
     private static long victimPagePointer;

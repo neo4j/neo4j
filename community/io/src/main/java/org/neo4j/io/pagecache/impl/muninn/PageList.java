@@ -407,7 +407,7 @@ class PageList implements PageReferenceTranslator
         return expectedBinding == actualBinding;
     }
 
-    void fault( long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event )
+    static void fault( long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event )
             throws IOException
     {
         if ( swapper == null )

@@ -281,7 +281,7 @@ class TestProperties extends AbstractNeo4jTestCase
         }
     }
 
-    private void setPropertyAndAssertIt( Node node, Object value )
+    private static void setPropertyAndAssertIt( Node node, Object value )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {

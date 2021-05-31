@@ -145,12 +145,12 @@ class DefaultDatabaseManagerUpgradeIT
                 .build();
     }
 
-    private PageCache getPageCache( GraphDatabaseAPI db )
+    private static PageCache getPageCache( GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( PageCache.class );
     }
 
-    private DefaultDatabaseManager getDatabaseManager( GraphDatabaseAPI db )
+    private static DefaultDatabaseManager getDatabaseManager( GraphDatabaseAPI db )
     {
         return (DefaultDatabaseManager) db.getDependencyResolver().resolveDependency( DatabaseManager.class );
     }

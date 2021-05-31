@@ -171,7 +171,7 @@ public class ResetFuzzIT
         var connection = new SocketConnection();
 
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
 
         connection.send( util.defaultAuth() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );

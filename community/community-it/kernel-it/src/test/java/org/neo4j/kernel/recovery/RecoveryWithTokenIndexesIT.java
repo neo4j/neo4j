@@ -260,12 +260,12 @@ class RecoveryWithTokenIndexesIT
         }
     }
 
-    private void verifyInjectedNLIExistAndOnline( GraphDatabaseService db )
+    private static void verifyInjectedNLIExistAndOnline( GraphDatabaseService db )
     {
         verifyIndexExistAndOnline( db, IndexDescriptor.INJECTED_NLI );
     }
 
-    private void verifyIndexExistAndOnline( GraphDatabaseService db, IndexDescriptor index )
+    private static void verifyIndexExistAndOnline( GraphDatabaseService db, IndexDescriptor index )
     {
         awaitIndexesOnline( db );
         try ( Transaction tx = db.beginTx() )
@@ -316,7 +316,7 @@ class RecoveryWithTokenIndexesIT
         assertFalse( Recovery.isRecoveryRequired( fs, layout, config, INSTANCE ) );
     }
 
-    private void createEntities( GraphDatabaseService service )
+    private static void createEntities( GraphDatabaseService service )
     {
         try ( Transaction transaction = service.beginTx() )
         {

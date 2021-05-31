@@ -168,7 +168,7 @@ public final class BookmarksParserV4 implements BookmarksParser
         return new ParsedBookmark( databaseId, txId );
     }
 
-    private String toBookmarkString( AnyValue bookmark ) throws BookmarkParsingException
+    private static String toBookmarkString( AnyValue bookmark ) throws BookmarkParsingException
     {
         if ( !(bookmark instanceof TextValue) )
         {

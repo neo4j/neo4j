@@ -115,7 +115,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         assertThat( meta.get( "type" ).asText() ).isEqualTo( "node" );
     }
 
-    private void assertTemporalEquals( JsonNode data, String value, String type )
+    private static void assertTemporalEquals( JsonNode data, String value, String type )
     {
         JsonNode row = getSingle( data, "row" );
         assertThat( row.asText() ).isEqualTo( value );

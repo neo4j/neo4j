@@ -84,7 +84,7 @@ public class ConsistencyCheckOptions
         return checkIndexStructure;
     }
 
-    public void warnOnUsageOfDeprecatedOptions( CommandSpec spec, ExecutionContext ctx )
+    public static void warnOnUsageOfDeprecatedOptions( CommandSpec spec, ExecutionContext ctx )
     {
         CommandLine.ParseResult parseResult = spec.commandLine().getParseResult();
         PrintStream out = ctx.out();
@@ -93,7 +93,7 @@ public class ConsistencyCheckOptions
         checkUsageOfDeprecatedOption( parseResult, out, "--check-property-owners" );
     }
 
-    private void checkUsageOfDeprecatedOption( CommandLine.ParseResult parseResult, PrintStream out, String deprecatedOption )
+    private static void checkUsageOfDeprecatedOption( CommandLine.ParseResult parseResult, PrintStream out, String deprecatedOption )
     {
         if ( parseResult.hasMatchedOption( deprecatedOption ) )
         {

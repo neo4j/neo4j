@@ -43,7 +43,7 @@ class CompositePageCursorTest
     private StubPageCursor second;
     private byte[] bytes = new byte[4];
 
-    private StubPageCursor generatePage( int initialPageId, int pageSize, int initialValue )
+    private static StubPageCursor generatePage( int initialPageId, int pageSize, int initialValue )
     {
         StubPageCursor cursor = new StubPageCursor( initialPageId, pageSize );
         for ( int i = 0; i < pageSize; i++ )

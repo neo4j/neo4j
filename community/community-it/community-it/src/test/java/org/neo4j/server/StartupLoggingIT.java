@@ -80,7 +80,7 @@ public class StartupLoggingIT extends ExclusiveWebContainerTestBase
         ) );
     }
 
-    private DependencyResolver getDependencyResolver( DatabaseManagementService managementService )
+    private static DependencyResolver getDependencyResolver( DatabaseManagementService managementService )
     {
         return ((GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME )).getDependencyResolver();
     }

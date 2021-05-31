@@ -103,7 +103,7 @@ public abstract class BoltV3TransportBase
     protected void negotiateBoltV3() throws Exception
     {
         connection.connect( address )
-                .send( util.acceptedVersions( 3, 0, 0, 0 ) )
+                .send( TransportTestUtil.acceptedVersions( 3, 0, 0, 0 ) )
                 .send( util.chunk( new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) ) ) );
 
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );

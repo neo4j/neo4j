@@ -573,8 +573,8 @@ public class ParallelBatchImporterTest
             }, 0 );
     }
 
-    private InputIterable nodes( final long randomSeed, final long count, int batchSize,
-        final InputIdGenerator inputIdGenerator, final IdGroupDistribution groups, LongAdder propertyCount )
+    private static InputIterable nodes( final long randomSeed, final long count, int batchSize,
+            final InputIdGenerator inputIdGenerator, final IdGroupDistribution groups, LongAdder propertyCount )
     {
         return () -> new GeneratingInputIterator<>( count, batchSize, new RandomsStates( randomSeed ),
             ( randoms, visitor, id ) ->
@@ -589,7 +589,7 @@ public class ParallelBatchImporterTest
 
     private static final String[] TOKENS = {"token1", "token2", "token3", "token4", "token5", "token6", "token7"};
 
-    private int randomProperties( RandomValues randoms, Object id, InputEntityVisitor visitor )
+    private static int randomProperties( RandomValues randoms, Object id, InputEntityVisitor visitor )
     {
         String[] keys = randoms.selection( TOKENS, 0, TOKENS.length, false );
         for ( String key : keys )

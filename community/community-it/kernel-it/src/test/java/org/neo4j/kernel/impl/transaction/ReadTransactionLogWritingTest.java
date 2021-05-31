@@ -111,7 +111,7 @@ class ReadTransactionLogWritingTest
         }
     }
 
-    private String longString( int length )
+    private static String longString( int length )
     {
         char[] characters = new char[length];
         for ( int i = 0; i < length; i++ )

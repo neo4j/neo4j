@@ -223,7 +223,7 @@ public class SchemaIndexAcceptanceTest
         db = newDb( fs );
     }
 
-    private Node createNode( Transaction tx, Label label, Object... properties )
+    private static Node createNode( Transaction tx, Label label, Object... properties )
     {
         Node node = tx.createNode( label );
         for ( Map.Entry<String, Object> property : map( properties ).entrySet() )
@@ -263,17 +263,17 @@ public class SchemaIndexAcceptanceTest
         }
     }
 
-    private List<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value, Transaction transaction )
+    private static List<Node> findNodesByLabelAndProperty( Label label, String propertyName, Object value, Transaction transaction )
     {
         return Iterators.asList( transaction.findNodes( label, propertyName, value ) );
     }
 
-    private Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
+    private static Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
     {
         return transaction.schema().getIndexes( label );
     }
 
-    private IndexDefinition createIndex( GraphDatabaseService db, Label label, String property )
+    private static IndexDefinition createIndex( GraphDatabaseService db, Label label, String property )
     {
         IndexDefinition indexDefinition;
         try ( Transaction tx = db.beginTx() )

@@ -87,7 +87,7 @@ public class TransactionBookmarkManagerImpl implements TransactionBookmarkManage
         } ).collect( Collectors.toList() );
     }
 
-    private FabricBookmark convertNonFabricBookmark( Bookmark bookmark )
+    private static FabricBookmark convertNonFabricBookmark( Bookmark bookmark )
     {
         var databaseUuid = bookmark.databaseId().databaseId().uuid();
         var internalGraphState = new FabricBookmark.InternalGraphState( databaseUuid, bookmark.txId() );

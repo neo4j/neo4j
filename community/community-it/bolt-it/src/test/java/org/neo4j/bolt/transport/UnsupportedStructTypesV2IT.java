@@ -174,11 +174,11 @@ public class UnsupportedStructTypesV2IT
     private void testFailureWithUnpackableValue( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createRunWith( valuePacker ) ) );
+        connection.send( TransportTestUtil.chunk( 64, createRunWith( valuePacker ) ) );
 
         assertThat( connection ).satisfies(
                 util.eventuallyReceives( msgFailure( Status.Statement.TypeError, expectedMessage ) ) );
@@ -188,16 +188,16 @@ public class UnsupportedStructTypesV2IT
     private void testDisconnectWithUnpackableValue( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker, String expectedMessage ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createRunWith( valuePacker ) ) );
+        connection.send( TransportTestUtil.chunk( 64, createRunWith( valuePacker ) ) );
 
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
-    private byte[] createRunWith( ThrowingConsumer<Neo4jPack.Packer, IOException> valuePacker ) throws IOException
+    private static byte[] createRunWith( ThrowingConsumer<Neo4jPack.Packer,IOException> valuePacker ) throws IOException
     {
         PackedOutputArray out = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPackV2().newPacker( out );

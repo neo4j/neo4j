@@ -226,7 +226,7 @@ class DynamicIndexStoreViewTest
                 cursors, indexingService, new FullScanStoreView( NO_LOCK_SERVICE, storageReaderSupplier, Config.defaults(), jobScheduler ) );
     }
 
-    private DynamicIndexStoreView dynamicIndexStoreView( StorageReader cursors, IndexProxyProvider indexingService, FullScanStoreView fullScanStoreView )
+    private static DynamicIndexStoreView dynamicIndexStoreView( StorageReader cursors, IndexProxyProvider indexingService, FullScanStoreView fullScanStoreView )
     {
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
         return new DynamicIndexStoreView(

@@ -212,7 +212,7 @@ class KernelIT extends KernelIntegrationTest
         return schemaWrite.indexCreate( schema, null );
     }
 
-    private void getOrCreateSchemaState( Transaction tx, String key, final String maybeSetThisState )
+    private static void getOrCreateSchemaState( Transaction tx, String key, final String maybeSetThisState )
     {
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         ktx.schemaRead().schemaStateGetOrCreate( key, s -> maybeSetThisState );

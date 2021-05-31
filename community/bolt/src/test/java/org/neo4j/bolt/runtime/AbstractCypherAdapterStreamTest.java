@@ -329,7 +329,7 @@ class AbstractCypherAdapterStreamTest
         assertMapEqualsWithDelta( (MapValue) meta.get( "profile" ),  expectedProfile, 0.0001 );
     }
 
-    private MapValue mapValues( Object... values )
+    private static MapValue mapValues( Object... values )
     {
         int i = 0;
         MapValueBuilder builder = new MapValueBuilder();
@@ -384,7 +384,7 @@ class AbstractCypherAdapterStreamTest
         assertThat( meta.get( "notifications" ) ).isEqualTo( list( msg1, msg2 ) );
     }
 
-    private MapValue metadataOf( AbstractCypherAdapterStream stream ) throws Throwable
+    private static MapValue metadataOf( AbstractCypherAdapterStream stream ) throws Throwable
     {
         final MapValueBuilder meta = new MapValueBuilder();
         stream.handleRecords( new BoltResult.DiscardingRecordConsumer()

@@ -96,7 +96,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
 
     private PageCache createPageCache()
     {
-        return pageCacheExtension.getPageCache( fs, config().withPageSize( PAGE_SIZE ) );
+        return PageCacheSupportExtension.getPageCache( fs, config().withPageSize( PAGE_SIZE ) );
     }
 
     @Test

@@ -32,6 +32,7 @@ import java.util.Set;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackedOutputArray;
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.DiscardAllMessage;
@@ -75,7 +76,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
     {
         init( connectionClass );
 
-        connection.connect( address ).send( util.acceptedVersions( 3, 0, 0, 0 ) ).send(
+        connection.connect( address ).send( TransportTestUtil.acceptedVersions( 3, 0, 0, 0 ) ).send(
                 util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
@@ -90,7 +91,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         init( connectionClass );
 
         connection.connect( address )
-                .send( util.acceptedVersions( 3, 2, 1, 0 ) )
+                .send( TransportTestUtil.acceptedVersions( 3, 2, 1, 0 ) )
                 .send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
 
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 3} ) );
@@ -351,7 +352,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                                                 .containsEntry( "type", "r" ) ) ) );
     }
 
-    private byte[] bytes( int... ints )
+    private static byte[] bytes( int... ints )
     {
         byte[] bytes = new byte[ints.length];
         for ( int i = 0; i < ints.length; i++ )
@@ -460,7 +461,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         String bookmarkString = "Not a good bookmark for BEGIN";
         Map<String,Object> metadata = map( "bookmarks", singletonList( bookmarkString ) );
 
-        connection.send( util.chunk( 32, beginMessage( metadata ) ) );
+        connection.send( TransportTestUtil.chunk( 32, beginMessage( metadata ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( InvalidBookmark, bookmarkString ) ) );
     }
@@ -475,7 +476,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         String txTimeout = "Tx timeout can't be a string for BEGIN";
         Map<String,Object> metadata = map( "tx_timeout", txTimeout );
 
-        connection.send( util.chunk( 32, beginMessage( metadata ) ) );
+        connection.send( TransportTestUtil.chunk( 32, beginMessage( metadata ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
     }
@@ -490,7 +491,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         String txMetadata = "Tx metadata can't be a string for BEGIN";
         Map<String,Object> metadata = map( "tx_metadata", txMetadata );
 
-        connection.send( util.chunk( 32, beginMessage( metadata ) ) );
+        connection.send( TransportTestUtil.chunk( 32, beginMessage( metadata ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
     }
@@ -505,7 +506,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         String bookmarkString = "Not a good bookmark for RUN";
         Map<String,Object> metadata = map( "bookmarks", singletonList( bookmarkString ) );
 
-        connection.send( util.chunk( 32, runMessage( metadata ) ) );
+        connection.send( TransportTestUtil.chunk( 32, runMessage( metadata ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( InvalidBookmark, bookmarkString ) ) );
     }
@@ -520,7 +521,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         String txTimeout = "Tx timeout can't be a string for RUN";
         Map<String,Object> metadata = map( "tx_timeout", txTimeout );
 
-        connection.send( util.chunk( 32, runMessage( metadata ) ) );
+        connection.send( TransportTestUtil.chunk( 32, runMessage( metadata ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txTimeout ) ) );
     }
@@ -535,7 +536,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         String txMetadata = "Tx metadata can't be a string for RUN";
         Map<String,Object> metadata = map( "tx_metadata", txMetadata );
 
-        connection.send( util.chunk( 32, runMessage( metadata ) ) );
+        connection.send( TransportTestUtil.chunk( 32, runMessage( metadata ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, txMetadata ) ) );
     }
@@ -561,7 +562,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
                 msgSuccess( message -> assertThat( message ).containsEntry("bookmark", expectedBookmark ) ) ) );
     }
 
-    private Condition<AnyValue> longEquals( long expected )
+    private static Condition<AnyValue> longEquals( long expected )
     {
         return new Condition<>( value -> value.equals( longValue( expected ) ), "long equals" );
     }

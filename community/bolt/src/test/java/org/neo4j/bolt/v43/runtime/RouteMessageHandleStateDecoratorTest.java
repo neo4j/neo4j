@@ -212,7 +212,8 @@ class RouteMessageHandleStateDecoratorTest
         verify( context ).handleFailure( runtimeException, false );
     }
 
-    private RuntimeException mockRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, StatementProcessor statementProcessor )
+    private static RuntimeException mockRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter,
+            StatementProcessor statementProcessor )
     {
         var runtimeException = new RuntimeException( "Something happened" );
         doThrow( runtimeException )
@@ -221,8 +222,8 @@ class RouteMessageHandleStateDecoratorTest
         return runtimeException;
     }
 
-    private RuntimeException mockCompletedRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter,
-                                                            StatementProcessor statementProcessor )
+    private static RuntimeException mockCompletedRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter,
+            StatementProcessor statementProcessor )
     {
         var runtimeException = new RuntimeException( "Something happened" );
         doReturn( CompletableFuture.failedFuture( runtimeException ) )
@@ -231,14 +232,14 @@ class RouteMessageHandleStateDecoratorTest
         return runtimeException;
     }
 
-    private MutableConnectionState mockMutableConnectionState( StateMachineContext context )
+    private static MutableConnectionState mockMutableConnectionState( StateMachineContext context )
     {
         var connectionState = mock( MutableConnectionState.class );
         doReturn( connectionState ).when( context ).connectionState();
         return connectionState;
     }
 
-    private MapValue mockRoutingTable( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, StatementProcessor statementProcessor )
+    private static MapValue mockRoutingTable( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, StatementProcessor statementProcessor )
     {
         var routingTable = routingTable();
         doReturn( CompletableFuture.completedFuture( routingTable ) )
@@ -257,14 +258,14 @@ class RouteMessageHandleStateDecoratorTest
         return statementProcessor;
     }
 
-    private BoltStateMachineState mockStateWithName()
+    private static BoltStateMachineState mockStateWithName()
     {
         var state = mock( BoltStateMachineState.class );
         doReturn( MOCKED_STATE_NAME ).when( state ).name();
         return state;
     }
 
-    private MapValue routingTable()
+    private static MapValue routingTable()
     {
         var builder = new MapValueBuilder();
         builder.add( "TTL", Values.intValue( 300 ) );

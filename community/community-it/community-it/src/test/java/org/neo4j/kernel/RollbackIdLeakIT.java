@@ -66,7 +66,7 @@ class RollbackIdLeakIT
         shouldNotLeakHighIdsOnRollback( this::nonClean );
     }
 
-    private void shouldNotLeakHighIdsOnRollback( Supplier<DbRestarter> restarterSupplier ) throws IOException
+    private static void shouldNotLeakHighIdsOnRollback( Supplier<DbRestarter> restarterSupplier ) throws IOException
     {
         // given some (lower) node/relationship ids rolled back and some (higher) node/relationship ids committed
         MutableLongSet rolledBackNodeIds = new LongHashSet();
@@ -138,7 +138,7 @@ class RollbackIdLeakIT
         shouldNotLeakHighIdsOnCreateDeleteInSameTx( this::nonClean );
     }
 
-    private void shouldNotLeakHighIdsOnCreateDeleteInSameTx( Supplier<DbRestarter> restarterSupplier ) throws IOException
+    private static void shouldNotLeakHighIdsOnCreateDeleteInSameTx( Supplier<DbRestarter> restarterSupplier ) throws IOException
     {
         // given
         MutableLongSet nodeIds = new LongHashSet();
@@ -178,7 +178,7 @@ class RollbackIdLeakIT
         }
     }
 
-    private void assertAllocateIds( GraphDatabaseService db, MutableLongSet nodeIds, MutableLongSet relationshipIds )
+    private static void assertAllocateIds( GraphDatabaseService db, MutableLongSet nodeIds, MutableLongSet relationshipIds )
     {
         try ( Transaction tx = db.beginTx() )
         {

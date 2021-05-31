@@ -193,7 +193,7 @@ class BatchInserterImplTest
         }
     }
 
-    private Iterable loadExtensions()
+    private static Iterable loadExtensions()
     {
         return Services.loadAll( ExtensionFactory.class );
     }

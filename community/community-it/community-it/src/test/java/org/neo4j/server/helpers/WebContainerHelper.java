@@ -103,7 +103,7 @@ public final class WebContainerHelper
             deleteAllNodesAndRelationships( transaction );
         }
 
-        private void deleteAllNodesAndRelationships( Transaction tx )
+        private static void deleteAllNodesAndRelationships( Transaction tx )
         {
             Iterable<Node> allNodes = tx.getAllNodes();
             for ( Node n : allNodes )
@@ -127,7 +127,7 @@ public final class WebContainerHelper
             deleteAllConstraints( transaction );
         }
 
-        private void deleteAllIndexRules( Transaction transaction )
+        private static void deleteAllIndexRules( Transaction transaction )
         {
             for ( IndexDefinition index : transaction.schema().getIndexes() )
             {
@@ -138,7 +138,7 @@ public final class WebContainerHelper
             }
         }
 
-        private void deleteAllConstraints( Transaction transaction )
+        private static void deleteAllConstraints( Transaction transaction )
         {
             for ( ConstraintDefinition constraint : transaction.schema().getConstraints() )
             {

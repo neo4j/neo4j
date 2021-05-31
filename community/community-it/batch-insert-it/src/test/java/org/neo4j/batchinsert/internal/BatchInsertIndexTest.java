@@ -253,7 +253,7 @@ class BatchInsertIndexTest
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private void awaitIndexesOnline( GraphDatabaseService db )
+    private static void awaitIndexesOnline( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

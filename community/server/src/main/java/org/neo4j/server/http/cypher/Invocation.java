@@ -62,7 +62,7 @@ import org.neo4j.server.rest.Neo4jError;
  */
 class Invocation
 {
-    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Invocation.class );
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Invocation.class );
 
     private final Log log;
     private final TransactionHandle transactionHandle;

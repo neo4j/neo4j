@@ -35,18 +35,18 @@ public final class ExecutionSharedContext
     {
     }
 
-    public void clear()
+    public static void clear()
     {
         map.clear();
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T getValue( String key )
+    public static <T> T getValue( String key )
     {
         return (T) map.get( key );
     }
 
-    public void setValue( String key, Object value )
+    public static void setValue( String key, Object value )
     {
         map.put( key, value );
     }

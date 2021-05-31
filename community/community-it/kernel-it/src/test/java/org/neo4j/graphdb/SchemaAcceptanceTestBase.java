@@ -36,7 +36,7 @@ public class SchemaAcceptanceTestBase
     protected final Label labelWithBackticks = Label.label( "``BACKTICK`LABEL`" );
     protected final RelationshipType relType = RelationshipType.withName( "relType" );
 
-    protected <EXCEPTION extends Throwable, CAUSE extends Throwable> void assertExpectedException( EXCEPTION exception, Class<CAUSE> expectedCause,
+    protected static <EXCEPTION extends Throwable, CAUSE extends Throwable> void assertExpectedException( EXCEPTION exception, Class<CAUSE> expectedCause,
             String... expectedMessageParts )
     {
         final Throwable cause = exception.getCause();

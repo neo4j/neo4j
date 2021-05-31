@@ -132,7 +132,7 @@ public class BatchInsertTokenIndexesTest
         }
     }
 
-    private void assertTokenIndexContains( TokenIndexReader reader, int tokenId, Long... intityIds )
+    private static void assertTokenIndexContains( TokenIndexReader reader, int tokenId, Long... intityIds )
     {
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
         reader.query( tokenClient, unconstrained(), new TokenPredicate( tokenId ), CursorContext.NULL );

@@ -2317,7 +2317,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
     }
 
-    private Map<Character,String> getFoldingOfChars( char[] nonAsciiCharacterArray )
+    private static Map<Character,String> getFoldingOfChars( char[] nonAsciiCharacterArray )
     {
         Map<Character,String> nonAsciiCharToAsciiFolding = new HashMap<>();
         for ( char nonASCIIChar : nonAsciiCharacterArray )
@@ -2356,7 +2356,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         return new String( result );
     }
 
-    private void assertAtLeastSingleHitOnSearch( String indexName, long expectedNodeId, Transaction tx, String searchString )
+    private static void assertAtLeastSingleHitOnSearch( String indexName, long expectedNodeId, Transaction tx, String searchString )
     {
         Set<Long> nodeIds = new TreeSet<>();
         try ( var iterator = tx.execute( format( QUERY_NODES, indexName, searchString ) ).columnAs( "node" ) )

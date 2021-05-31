@@ -155,7 +155,7 @@ class PackStreamTest
         }
     }
 
-    private PackStream.Unpacker newUnpacker( byte[] bytes )
+    private static PackStream.Unpacker newUnpacker( byte[] bytes )
     {
         ByteArrayInputStream input = new ByteArrayInputStream( bytes );
         return new PackStream.Unpacker( new BufferedChannelInput( 16 ).reset( Channels.newChannel( input ) ) );
@@ -875,7 +875,7 @@ class PackStreamTest
         assertThrows( PackStream.Overflow.class, () -> unpackHeaderSizeGreaterThanIntMaxValue( BYTES ) );
     }
 
-    private void unpackHeaderSizeGreaterThanIntMaxValue( PackType type ) throws Throwable
+    private static void unpackHeaderSizeGreaterThanIntMaxValue( PackType type ) throws Throwable
     {
         byte marker32;
         switch ( type )
@@ -921,7 +921,7 @@ class PackStreamTest
         }
     }
 
-    private void shouldPackUnpackHeaderWithCorrectBufferSize( PackType type ) throws Throwable
+    private static void shouldPackUnpackHeaderWithCorrectBufferSize( PackType type ) throws Throwable
     {
         Machine machine = new Machine();
         PackStream.Packer packer = machine.packer();
@@ -973,7 +973,7 @@ class PackStreamTest
         }
     }
 
-    private int computeOutputBufferSize( int size, boolean withMarker8 )
+    private static int computeOutputBufferSize( int size, boolean withMarker8 )
     {
         int bufferSize;
         if ( withMarker8 && size < 16 )
@@ -995,7 +995,7 @@ class PackStreamTest
         return bufferSize;
     }
 
-    private void assertPeekType( PackType type, Object value ) throws IOException
+    private static void assertPeekType( PackType type, Object value ) throws IOException
     {
         // Given
         Machine machine = new Machine();
@@ -1009,7 +1009,7 @@ class PackStreamTest
         assertEquals( type, unpacker.peekNextType() );
     }
 
-    private void doTheThing( PackStream.Packer packer, Object value ) throws IOException
+    private static void doTheThing( PackStream.Packer packer, Object value ) throws IOException
     {
         if ( value instanceof String )
         {

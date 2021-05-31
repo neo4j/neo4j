@@ -77,7 +77,7 @@ public class PageCacheSupportExtension extends StatefulFieldExtension<PageCache>
     /**
      * @return Return a new page cache using the provided filesystem and config. This page cache must be closed after use.
      */
-    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig config )
+    public static PageCache getPageCache( FileSystemAbstraction fs, PageCacheConfig config )
     {
         return new PageCacheRule().getPageCache( fs, config );
     }

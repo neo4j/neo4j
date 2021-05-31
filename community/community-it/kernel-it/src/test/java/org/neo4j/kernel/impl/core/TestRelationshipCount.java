@@ -108,7 +108,7 @@ public class TestRelationshipCount
         tx.commit();
     }
 
-    private GraphDatabaseService getGraphDb()
+    private static GraphDatabaseService getGraphDb()
     {
         return db;
     }
@@ -148,7 +148,7 @@ public class TestRelationshipCount
                 Iterables.asSet( node.getRelationships( MyRelTypes.TEST_TRAVERSAL, MyRelTypes.TEST2 ) ) );
     }
 
-    private <T> Set<T> join( Set<T> set, Set<T> set2 )
+    private static <T> Set<T> join( Set<T> set, Set<T> set2 )
     {
         Set<T> result = new HashSet<>( set );
         result.addAll( set2 );
@@ -225,7 +225,7 @@ public class TestRelationshipCount
         assertEquals( expectedTypes, Iterables.asSet( asStrings( tx.getNodeById( node.getId() ).getRelationshipTypes() ) ) );
     }
 
-    private Iterable<String> asStrings( Iterable<RelationshipType> relationshipTypes )
+    private static Iterable<String> asStrings( Iterable<RelationshipType> relationshipTypes )
     {
         return new IterableWrapper<>( relationshipTypes )
         {
@@ -512,7 +512,7 @@ public class TestRelationshipCount
         me.delete();
     }
 
-    private void assertCounts( Node me, Map<RelType, int[]> expectedCounts )
+    private static void assertCounts( Node me, Map<RelType,int[]> expectedCounts )
     {
         assertEquals( totalCount( expectedCounts, Direction.BOTH ), me.getDegree() );
         assertEquals( totalCount( expectedCounts, Direction.BOTH ), me.getDegree( Direction.BOTH ) );
@@ -528,7 +528,7 @@ public class TestRelationshipCount
         }
     }
 
-    private int totalCount( Map<RelType, int[]> expectedCounts, Direction direction )
+    private static int totalCount( Map<RelType,int[]> expectedCounts, Direction direction )
     {
         int result = 0;
         for ( Map.Entry<RelType, int[]> entry : expectedCounts.entrySet() )
@@ -538,7 +538,7 @@ public class TestRelationshipCount
         return result;
     }
 
-    private int totalCount( int[] expectedCounts, Direction direction )
+    private static int totalCount( int[] expectedCounts, Direction direction )
     {
         int result = 0;
         if ( direction == Direction.OUTGOING || direction == Direction.BOTH )
@@ -553,7 +553,7 @@ public class TestRelationshipCount
         return result;
     }
 
-    private void deleteOneRelationship( Node node, RelType type, Direction direction, int which )
+    private static void deleteOneRelationship( Node node, RelType type, Direction direction, int which )
     {
         Relationship last = null;
         int counter = 0;
@@ -584,7 +584,7 @@ public class TestRelationshipCount
                 type.name() + " " + direction + " to delete" );
     }
 
-    private boolean isLoop( Relationship r )
+    private static boolean isLoop( Relationship r )
     {
         return r.getStartNode().equals( r.getEndNode() );
     }

@@ -88,12 +88,12 @@ public class TestWebContainer
         return neoWebServer.getTransactionRegistry();
     }
 
-    private NeoWebServer getNeoWebServer( DatabaseManagementService managementService )
+    private static NeoWebServer getNeoWebServer( DatabaseManagementService managementService )
     {
         return getDependencyResolver( managementService ).resolveDependency( NeoWebServer.class );
     }
 
-    private DependencyResolver getDependencyResolver( DatabaseManagementService managementService )
+    private static DependencyResolver getDependencyResolver( DatabaseManagementService managementService )
     {
         return ((GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME )).getDependencyResolver();
     }

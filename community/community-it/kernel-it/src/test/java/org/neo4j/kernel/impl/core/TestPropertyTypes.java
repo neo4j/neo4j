@@ -1491,12 +1491,12 @@ class TestPropertyTypes extends AbstractNeo4jTestCase
         shouldNotBeAbleToPoisonArrayProperty( new String[] {"zero", "zero", "zero"}, "one" );
     }
 
-    private Object veryLongArray( Class<?> type )
+    private static Object veryLongArray( Class<?> type )
     {
         return Array.newInstance( type, 1000 );
     }
 
-    private String[] veryLongStringArray()
+    private static String[] veryLongStringArray()
     {
         String[] array = new String[100];
         Arrays.fill( array, "zero" );

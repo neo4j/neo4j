@@ -74,7 +74,7 @@ class TestReferenceDangling
         }
     }
 
-    private long ensurePropertyIsCachedLazyProperty( GraphDatabaseService slave, String key )
+    private static long ensurePropertyIsCachedLazyProperty( GraphDatabaseService slave, String key )
     {
         long nId;
         try ( Transaction tx = slave.beginTx() )

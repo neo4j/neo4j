@@ -293,7 +293,7 @@ public class IndexingServiceIntegrationTest
         race.go();
     }
 
-    private void waitIndexOnline( IndexProxy indexProxy ) throws InterruptedException
+    private static void waitIndexOnline( IndexProxy indexProxy ) throws InterruptedException
     {
         while ( InternalIndexState.ONLINE != indexProxy.getState() )
         {
@@ -301,22 +301,22 @@ public class IndexingServiceIntegrationTest
         }
     }
 
-    private IndexingService getIndexingService( GraphDatabaseService database )
+    private static IndexingService getIndexingService( GraphDatabaseService database )
     {
         return getDependencyResolver(database).resolveDependency( IndexingService.class );
     }
 
-    private CheckPointer getCheckPointer( GraphDatabaseService database )
+    private static CheckPointer getCheckPointer( GraphDatabaseService database )
     {
         return getDependencyResolver( database ).resolveDependency( CheckPointer.class );
     }
 
-    private DependencyResolver getDependencyResolver( GraphDatabaseService database )
+    private static DependencyResolver getDependencyResolver( GraphDatabaseService database )
     {
         return ((GraphDatabaseAPI)database).getDependencyResolver();
     }
 
-    private void createData( GraphDatabaseService database )
+    private static void createData( GraphDatabaseService database )
     {
         for ( int i = 0; i < NUMBER_OF_NODES; i++ )
         {

@@ -204,7 +204,8 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         return write.relationshipCreate( sourceNode, type, targetNode );
     }
 
-    private void relationshipTypeScan( KernelTransaction tx, int label, RelationshipTypeIndexCursor cursor, IndexOrder indexOrder ) throws KernelException
+    private static void relationshipTypeScan( KernelTransaction tx, int label, RelationshipTypeIndexCursor cursor, IndexOrder indexOrder )
+            throws KernelException
     {
         IndexDescriptor index = tx.schemaRead().indexGetForName( "rti" );
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );

@@ -401,13 +401,13 @@ public class RelationshipSelectionsIT
         }
     }
 
-    private void setNodeCursor( long nodeId, KernelTransaction kernelTransaction, NodeCursor nodeCursor )
+    private static void setNodeCursor( long nodeId, KernelTransaction kernelTransaction, NodeCursor nodeCursor )
     {
         kernelTransaction.dataRead().singleNode( nodeId, nodeCursor );
         assertTrue( nodeCursor.next() );
     }
 
-    private void consumeCursor( RelationshipTraversalCursor cursor )
+    private static void consumeCursor( RelationshipTraversalCursor cursor )
     {
         while ( cursor.next() )
         {
@@ -415,7 +415,7 @@ public class RelationshipSelectionsIT
         }
     }
 
-    private void assertTwoCursor( CursorContext cursorContext )
+    private static void assertTwoCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isEqualTo( 2 );
@@ -423,7 +423,7 @@ public class RelationshipSelectionsIT
         assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
     }
 
-    private void assertOneCursor( CursorContext cursorContext )
+    private static void assertOneCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isOne();
@@ -431,7 +431,7 @@ public class RelationshipSelectionsIT
         assertThat( cursorTracer.unpins() ).isOne();
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isZero();

@@ -65,7 +65,7 @@ public class SingleAddressRoutingTableProvider implements ClientSideRoutingTable
         return createSingleAddressRoutingResult( findBoltAddressToUse( routingContext ), routingTableTTLProvider.nextTTL().toMillis(), routingOption );
     }
 
-    private RoutingResult createSingleAddressRoutingResult( SocketAddress address, long routingTableTtl, RoutingOption option )
+    private static RoutingResult createSingleAddressRoutingResult( SocketAddress address, long routingTableTtl, RoutingOption option )
     {
         var addresses = List.of( address );
         List<SocketAddress> routeEndpoints = option.route ? addresses : Collections.emptyList();

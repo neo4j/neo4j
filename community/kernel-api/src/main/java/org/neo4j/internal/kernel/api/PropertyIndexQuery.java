@@ -503,7 +503,7 @@ public abstract class PropertyIndexQuery
             return ValueGroup.TEXT;
         }
 
-        protected TextValue asUTF8StringValue( TextValue in )
+        protected static TextValue asUTF8StringValue( TextValue in )
         {
             if ( in instanceof UTF8StringValue )
             {

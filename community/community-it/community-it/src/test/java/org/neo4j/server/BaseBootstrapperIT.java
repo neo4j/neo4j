@@ -271,7 +271,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase
         verifyConnector( db(), BoltConnector.NAME, boltEnabled );
     }
 
-    protected String configOption( Setting<?> setting, String value )
+    protected static String configOption( Setting<?> setting, String value )
     {
         return setting.name() + "=" + value;
     }

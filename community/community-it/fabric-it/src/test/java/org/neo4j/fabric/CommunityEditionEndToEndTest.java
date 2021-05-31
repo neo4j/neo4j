@@ -177,7 +177,7 @@ class CommunityEditionEndToEndTest
         assertTrue( transactionManager.getOpenTransactions().isEmpty() );
     }
 
-    private void doTestUse( String database )
+    private static void doTestUse( String database )
     {
         List<String> result = execute( database, session -> session.run( "USE " + DEFAULT_DATABASE_NAME + " MATCH (n) RETURN n.name AS name" ).list() )
                 .stream()
@@ -186,7 +186,7 @@ class CommunityEditionEndToEndTest
         assertThat( result ).contains( "Anna", "Bob" );
     }
 
-    private void doTestSchemaCommands( String database )
+    private static void doTestSchemaCommands( String database )
     {
         execute( database, session -> session.run( "USE " + DEFAULT_DATABASE_NAME + " CREATE INDEX myIndex FOR (n:Person) ON (n.name)" ).consume() );
 
@@ -198,7 +198,7 @@ class CommunityEditionEndToEndTest
         execute( database, session -> session.run( "USE " + DEFAULT_DATABASE_NAME + " DROP INDEX myIndex" ).consume() );
     }
 
-    private <T> T execute( String database, Function<Session,T> workload )
+    private static <T> T execute( String database, Function<Session,T> workload )
     {
         try ( var session = driver.session( SessionConfig.forDatabase( database ) ) )
         {

@@ -265,12 +265,12 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         }
     }
 
-    private boolean hasKey( PropertyCursor propertyCursor, int key )
+    private static boolean hasKey( PropertyCursor propertyCursor, int key )
     {
        return propertyCursor.seekProperty( key );
     }
 
-    private void addConstraints( String... labelProps )
+    private static void addConstraints( String... labelProps )
     {
         assert labelProps.length % 2 == 0;
 

@@ -474,7 +474,7 @@ class CachingExpandIntoTest
         }
     }
 
-    private LongSet toSet( RelationshipTraversalCursor connections )
+    private static LongSet toSet( RelationshipTraversalCursor connections )
     {
         MutableLongSet rels = LongSets.mutable.empty();
         while ( connections.next() )
@@ -484,18 +484,18 @@ class CachingExpandIntoTest
         return rels;
     }
 
-    private long denseNode( KernelTransaction tx ) throws KernelException
+    private static long denseNode( KernelTransaction tx ) throws KernelException
     {
         return nodeWithDegree( tx, DENSE_THRESHOLD + 1 );
     }
 
-    private long relate( KernelTransaction tx, long start, String rel, long end ) throws KernelException
+    private static long relate( KernelTransaction tx, long start, String rel, long end ) throws KernelException
     {
         return tx.dataWrite().relationshipCreate( start,
                 tx.tokenWrite().relationshipTypeGetOrCreateForName( rel ), end );
     }
 
-    private long nodeWithDegree( KernelTransaction tx, int degree ) throws KernelException
+    private static long nodeWithDegree( KernelTransaction tx, int degree ) throws KernelException
     {
         Write write = tx.dataWrite();
         long node = write.nodeCreate();

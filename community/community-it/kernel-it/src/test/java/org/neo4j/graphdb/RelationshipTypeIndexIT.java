@@ -242,12 +242,12 @@ class RelationshipTypeIndexIT
         return getIndexProxy().snapshotFiles();
     }
 
-    private Relationship createRelationship( Transaction tx )
+    private static Relationship createRelationship( Transaction tx )
     {
         return createRelationship( tx, REL_TYPE );
     }
 
-    private Relationship createRelationship( Transaction tx, RelationshipType type )
+    private static Relationship createRelationship( Transaction tx, RelationshipType type )
     {
         Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), type );
         relationship.setProperty( PROPERTY, PROPERTY_VALUE );

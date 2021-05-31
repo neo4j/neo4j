@@ -31,10 +31,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -106,24 +106,24 @@ public class LuceneFulltextTestSupport
         return (FulltextIndexProvider) indexProviderMap.lookup( FulltextIndexProviderFactory.DESCRIPTOR );
     }
 
-    long createNodeIndexableByPropertyValue( Transaction tx, Label label, Object propertyValue )
+    static long createNodeIndexableByPropertyValue( Transaction tx, Label label, Object propertyValue )
     {
         return createNodeWithProperty( tx, label, PROP, propertyValue );
     }
 
-    long createNodeWithProperty( Transaction tx, Label label, String propertyKey, Object propertyValue )
+    static long createNodeWithProperty( Transaction tx, Label label, String propertyKey, Object propertyValue )
     {
         Node node = tx.createNode( label );
         node.setProperty( propertyKey, propertyValue );
         return node.getId();
     }
 
-    long createRelationshipIndexableByPropertyValue( Transaction transaction, long firstNodeId, long secondNodeId, Object propertyValue )
+    static long createRelationshipIndexableByPropertyValue( Transaction transaction, long firstNodeId, long secondNodeId, Object propertyValue )
     {
         return createRelationshipWithProperty( transaction, firstNodeId, secondNodeId, PROP, propertyValue );
     }
 
-    long createRelationshipWithProperty( Transaction transaction, long firstNodeId, long secondNodeId, String propertyKey, Object propertyValue )
+    static long createRelationshipWithProperty( Transaction transaction, long firstNodeId, long secondNodeId, String propertyKey, Object propertyValue )
     {
         Node first = transaction.getNodeById( firstNodeId );
         Node second = transaction.getNodeById( secondNodeId );
@@ -138,12 +138,12 @@ public class LuceneFulltextTestSupport
         return ((InternalTransaction)tx).kernelTransaction();
     }
 
-    void assertQueryFindsNothing( KernelTransaction ktx, boolean nodes, String indexName, String query ) throws Exception
+    static void assertQueryFindsNothing( KernelTransaction ktx, boolean nodes, String indexName, String query ) throws Exception
     {
         assertQueryFindsIds( ktx, nodes, indexName, query );
     }
 
-    void assertQueryFindsIds( KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids ) throws Exception
+    static void assertQueryFindsIds( KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids ) throws Exception
     {
         IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
@@ -180,7 +180,7 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    void assertQueryFindsNodeIdsInOrder( KernelTransaction ktx, String indexName, String query, long... ids )
+    static void assertQueryFindsNodeIdsInOrder( KernelTransaction ktx, String indexName, String query, long... ids )
             throws Exception
     {
 
@@ -204,12 +204,12 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    void setNodeProp( Transaction transaction, long nodeId, String value )
+    static void setNodeProp( Transaction transaction, long nodeId, String value )
     {
         setNodeProp( transaction, nodeId, PROP, value );
     }
 
-    void setNodeProp( Transaction transaction, long nodeId, String propertyKey, String value )
+    static void setNodeProp( Transaction transaction, long nodeId, String propertyKey, String value )
     {
         Node node = transaction.getNodeById( nodeId );
         node.setProperty( propertyKey, value );

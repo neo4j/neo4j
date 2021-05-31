@@ -80,7 +80,7 @@ public abstract class DatabaseStateProcedure extends CallableProcedure.BasicProc
                         "for database with name %s because no database with this name exists!", name ) ) );
     }
 
-    protected AnyValue[] resultRowFactory( OperatorState status, Optional<String> error, String role, String address )
+    protected static AnyValue[] resultRowFactory( OperatorState status, Optional<String> error, String role, String address )
     {
         var formattedStatus = stringValue( status.description() );
         var formattedError = error.map( Values::stringValue ).orElse( EMPTY_STRING );

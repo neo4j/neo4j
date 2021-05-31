@@ -112,7 +112,7 @@ public class PageCacheStresser
         assertTrue( executorService.awaitTermination( 10, TimeUnit.SECONDS ) );
     }
 
-    private void verifyResults( RecordFormat format, PagedFile pagedFile, List<RecordStresser> recordStressers, PageCacheTracer cacheTracer )
+    private static void verifyResults( RecordFormat format, PagedFile pagedFile, List<RecordStresser> recordStressers, PageCacheTracer cacheTracer )
             throws IOException
     {
         for ( RecordStresser stresser : recordStressers )

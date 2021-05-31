@@ -38,6 +38,7 @@ import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.runtime.DefaultBoltConnection;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -115,7 +116,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( message -> assertThat( message )
                             .containsEntry( "credentials_expired", true )
@@ -144,7 +145,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
@@ -179,7 +180,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         // change password
@@ -197,7 +198,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         // When login again with the wrong password
@@ -208,7 +209,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                                 map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
@@ -228,7 +229,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", singletonList( "neo4j" ), "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, the value associated with the key `principal` " +
                 "must be a String but was: ArrayList" ) ) );
@@ -249,7 +250,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `credentials`" ) ) );
 
@@ -269,7 +270,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `scheme`" ) ) );
 
@@ -289,7 +290,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "unknown" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, scheme 'unknown' is not supported." ) ) );
 
@@ -370,7 +371,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                 .containsKeys( "server", "connection_id" ) ) ) );
@@ -387,7 +388,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
@@ -396,7 +397,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
@@ -412,7 +413,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                                 .containsKeys( "server", "connection_id" ) ) ) );
@@ -444,7 +445,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                                 .containsKeys( "server", "connection_id" ) ) ) );
@@ -477,7 +478,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( message -> assertThat( message ).containsEntry( "credentials_expired", true )
                                 .containsKeys( "server", "connection_id" ) ) ) );
@@ -517,7 +518,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         }
     }
 
-    private MapValue singletonMap( String key, Object value )
+    private static MapValue singletonMap( String key, Object value )
     {
         return VirtualValues.map( new String[]{key}, new AnyValue[]{ValueUtils.of( value )}  );
     }
@@ -534,7 +535,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
             connection.connect( address ).send( util.defaultAcceptedVersions() )
                     .send( util.defaultAuth( map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN", "scheme", "basic" ) ) );
 
-            assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+            assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
             assertThat( connection ).satisfies( util.eventuallyReceives( failureRecorder ) );
             assertThat( connection ).satisfies( eventuallyDisconnects() );
         }

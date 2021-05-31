@@ -805,7 +805,7 @@ class ImportCommandTest
         return builder.toString();
     }
 
-    private boolean nodeHasLabels( Node node, String[] labels )
+    private static boolean nodeHasLabels( Node node, String[] labels )
     {
         for ( String name : labels )
         {
@@ -2043,7 +2043,7 @@ class ImportCommandTest
         return data;
     }
 
-    private String joinStringArray( String[] values )
+    private static String joinStringArray( String[] values )
     {
         return Arrays.stream( values ).map( String::trim ).collect( joining( ", ", "[", "]" ) );
     }
@@ -2061,7 +2061,7 @@ class ImportCommandTest
         return file;
     }
 
-    private Predicate<Node> nodeFilter( final String id )
+    private static Predicate<Node> nodeFilter( final String id )
     {
         return node -> node.getProperty( "id", "" ).equals( id );
     }
@@ -2126,7 +2126,7 @@ class ImportCommandTest
         }
     }
 
-    private Relationship findRelationship( Node startNode, final Node endNode, final RelationshipDataLine relationship )
+    private static Relationship findRelationship( Node startNode, final Node endNode, final RelationshipDataLine relationship )
     {
         return Iterators.singleOrNull( Iterators.filter(
                 item -> item.getEndNode().equals( endNode ) &&
@@ -2134,7 +2134,7 @@ class ImportCommandTest
                 startNode.getRelationships( withName( relationship.type ) ).iterator() ) );
     }
 
-    private Map<String,Node> allNodesById( GraphDatabaseService db )
+    private static Map<String,Node> allNodesById( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -2148,17 +2148,17 @@ class ImportCommandTest
         }
     }
 
-    private String idOf( Node node )
+    private static String idOf( Node node )
     {
         return (String) node.getProperty( "id" );
     }
 
-    private List<String> nodeIds()
+    private static List<String> nodeIds()
     {
         return nodeIds( NODE_COUNT );
     }
 
-    private List<String> nodeIds( int count )
+    private static List<String> nodeIds( int count )
     {
         List<String> ids = new ArrayList<>();
         for ( int i = 0; i < count; i++ )
@@ -2168,7 +2168,7 @@ class ImportCommandTest
         return ids;
     }
 
-    private String randomNodeId()
+    private static String randomNodeId()
     {
         return UUID.randomUUID().toString();
     }
@@ -2208,7 +2208,7 @@ class ImportCommandTest
         return file;
     }
 
-    private PrintStream writer( Path file, Charset encoding ) throws Exception
+    private static PrintStream writer( Path file, Charset encoding ) throws Exception
     {
         return new PrintStream( Files.newOutputStream( file ), false, encoding.name() );
     }
@@ -2228,13 +2228,13 @@ class ImportCommandTest
         return createAndWriteFile( "nodes-header.csv", encoding, writer -> writeNodeHeader( writer, config, idGroup ) );
     }
 
-    private void writeNodeHeader( PrintStream writer, Configuration config, String idGroup )
+    private static void writeNodeHeader( PrintStream writer, Configuration config, String idGroup )
     {
         char delimiter = config.delimiter();
         writer.println( idEntry( "id", Type.ID, idGroup ) + delimiter + "name" + delimiter + "labels:LABEL" );
     }
 
-    private String idEntry( String name, Type type, String idGroup )
+    private static String idEntry( String name, Type type, String idGroup )
     {
         return (name != null ? name : "") + ":" + type.name() + (idGroup != null ? "(" + idGroup + ")" : "");
     }
@@ -2281,7 +2281,7 @@ class ImportCommandTest
         return builder.toString();
     }
 
-    private String labelName( int number )
+    private static String labelName( int number )
     {
         return "LABEL_" + number;
     }
@@ -2369,7 +2369,7 @@ class ImportCommandTest
         return databaseLayout.file( CsvImporter.DEFAULT_REPORT_FILE_NAME );
     }
 
-    private void writeRelationshipHeader( PrintStream writer, Configuration config,
+    private static void writeRelationshipHeader( PrintStream writer, Configuration config,
             String startIdGroup, String endIdGroup, boolean specifyType )
     {
         char delimiter = config.delimiter();
@@ -2414,7 +2414,7 @@ class ImportCommandTest
         return new RelationshipDataLine( startNodeId, endNodeId, type, name );
     }
 
-    private void writeRelationshipData( PrintStream writer, Configuration config,
+    private static void writeRelationshipData( PrintStream writer, Configuration config,
             Iterator<RelationshipDataLine> data, IntPredicate linePredicate, boolean specifyType )
     {
         char delimiter = config.delimiter();
@@ -2473,7 +2473,7 @@ class ImportCommandTest
         return "TYPE_" + random.nextInt( 4 );
     }
 
-    private IntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
+    private static IntPredicate lines( final int startingAt, final int endingAt /*excluded*/ )
     {
         return line -> line >= startingAt && line < endingAt;
     }

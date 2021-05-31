@@ -118,7 +118,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertEquals( exception.getMessage(), "Could not find index with name \"MyIndex\"" );
     }
 
-    private void assertMapsEqual( Map<String,Value> expected, MapValue actual )
+    private static void assertMapsEqual( Map<String,Value> expected, MapValue actual )
     {
         assertEquals( expected.size(), actual.size() );
         expected.forEach( ( k, v ) ->

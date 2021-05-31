@@ -170,7 +170,7 @@ class SchemaRecoveryIT
         }
     }
 
-    private List<ConstraintDefinition> constraints( GraphDatabaseService database )
+    private static List<ConstraintDefinition> constraints( GraphDatabaseService database )
     {
         try ( Transaction tx = database.beginTx() )
         {
@@ -178,7 +178,7 @@ class SchemaRecoveryIT
         }
     }
 
-    private List<IndexDefinition> indexes( GraphDatabaseService database )
+    private static List<IndexDefinition> indexes( GraphDatabaseService database )
     {
         try ( Transaction tx = database.beginTx() )
         {

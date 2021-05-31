@@ -75,13 +75,13 @@ public class TablePlanFormatter
         result.append( OutputFormatter.repeat( chr, width ) );
     }
 
-    private int width( @Nonnull String header, @Nonnull Map<String, Integer> columns )
+    private static int width( @Nonnull String header, @Nonnull Map<String,Integer> columns )
     {
         return 2 + Math.max( header.length(), columns.get( header ) );
     }
 
-    private void divider( @Nonnull List<String> headers, @Nullable TableRow tableRow /*= null*/, @Nonnull StringBuilder result,
-                          @Nonnull Map<String, Integer> columns )
+    private static void divider( @Nonnull List<String> headers, @Nullable TableRow tableRow /*= null*/, @Nonnull StringBuilder result,
+            @Nonnull Map<String,Integer> columns )
     {
         for ( String header : headers )
         {
@@ -148,7 +148,7 @@ public class TablePlanFormatter
     }
 
     @Nonnull
-    private String serialize( @Nonnull String key, @Nonnull Value v )
+    private static String serialize( @Nonnull String key, @Nonnull Value v )
     {
         switch ( key )
         {
@@ -238,7 +238,7 @@ public class TablePlanFormatter
     }
 
     @Nonnull
-    private Map<String, Cell> details( @Nonnull Plan plan, @Nonnull Map<String, Integer> columns )
+    private static Map<String, Cell> details( @Nonnull Plan plan, @Nonnull Map<String,Integer> columns )
     {
         Map<String, Value> args = plan.arguments();
 
@@ -293,14 +293,14 @@ public class TablePlanFormatter
     }
 
     @Nonnull
-    private Optional<Pair<String, Cell>> mapping( @Nonnull String key, @Nonnull Cell value, @Nonnull Map<String, Integer> columns )
+    private static Optional<Pair<String, Cell>> mapping( @Nonnull String key, @Nonnull Cell value, @Nonnull Map<String,Integer> columns )
     {
         update( columns, key, value.length );
         return Optional.of( Pair.of( key, value ) );
     }
 
     @Nonnull
-    private String replaceAllIn( @Nonnull Pattern pattern, @Nonnull String s, @Nonnull Function<Matcher, String> mapper )
+    private static String replaceAllIn( @Nonnull Pattern pattern, @Nonnull String s, @Nonnull Function<Matcher,String> mapper )
     {
         StringBuffer sb = new StringBuffer();
         Matcher matcher = pattern.matcher( s );
@@ -313,21 +313,21 @@ public class TablePlanFormatter
     }
 
     @Nonnull
-    private String removeGeneratedNames( @Nonnull String s )
+    private static String removeGeneratedNames( @Nonnull String s )
     {
         String named = replaceAllIn( UNNAMED_PATTERN, s, m -> "anon[" + m.group( 2 ) + "]" );
         return replaceAllIn( DEDUP_PATTERN, named, m -> m.group( 1 ) );
     }
 
-    private void update( @Nonnull Map<String, Integer> columns, @Nonnull String key, int length )
+    private static void update( @Nonnull Map<String,Integer> columns, @Nonnull String key, int length )
     {
         columns.put( key, Math.max( columns.getOrDefault( key, 0 ), length ) );
     }
 
     @Nonnull
-    private String identifiers( @Nonnull Plan description, @Nonnull Map<String, Integer> columns )
+    private static String identifiers( @Nonnull Plan description, @Nonnull Map<String,Integer> columns )
     {
-        String result = description.identifiers().stream().map( this::removeGeneratedNames ).collect( joining( ", " ) );
+        String result = description.identifiers().stream().map( TablePlanFormatter::removeGeneratedNames ).collect( joining( ", " ) );
         if ( !result.isEmpty() )
         {
             update( columns, IDENTIFIERS, result.length() );
@@ -336,7 +336,7 @@ public class TablePlanFormatter
     }
 
     @Nonnull
-    private String other( @Nonnull Plan description, @Nonnull Map<String, Integer> columns )
+    private static String other( @Nonnull Plan description, @Nonnull Map<String,Integer> columns )
     {
         String result = description.arguments().entrySet().stream().map( e ->
                                                                          {
@@ -356,7 +356,7 @@ public class TablePlanFormatter
     }
 
     @Nonnull
-    private String format( @Nonnull Double v )
+    private static String format( @Nonnull Double v )
     {
         if ( v.isNaN() )
         {
@@ -365,7 +365,7 @@ public class TablePlanFormatter
         return String.valueOf( Math.round( v ) );
     }
 
-    private String[] splitDetails( String original )
+    private static String[] splitDetails( String original )
     {
         List<String> detailsList = new ArrayList<>();
 
@@ -421,7 +421,7 @@ public class TablePlanFormatter
 
         abstract void writePaddedLine( int lineIndex, String orElseValue, int columnWidth, StringBuilder result );
 
-        protected int paddingWidth( int columnWidth, String line )
+        protected static int paddingWidth( int columnWidth, String line )
         {
             return columnWidth - line.length() - 2;
         }

@@ -33,7 +33,7 @@ import org.neo4j.util.FeatureToggles;
  */
 public class PhysicalFlushableChecksumChannel extends PhysicalFlushableChannel implements FlushableChecksumChannel
 {
-    static boolean DISABLE_WAL_CHECKSUM = FeatureToggles.flag( ChecksumWriter.class, "disableChecksum", false );
+    static final boolean DISABLE_WAL_CHECKSUM = FeatureToggles.flag( ChecksumWriter.class, "disableChecksum", false );
 
     private final ByteBuffer checksumView;
     private final Checksum checksum;

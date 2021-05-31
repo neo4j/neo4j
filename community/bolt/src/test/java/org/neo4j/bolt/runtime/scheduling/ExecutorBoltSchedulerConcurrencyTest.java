@@ -161,7 +161,7 @@ class ExecutorBoltSchedulerConcurrencyTest
         beforeExecuteBarrier.await();
     }
 
-    private <T> Answer<T> newCountingAnswer( AtomicInteger counter )
+    private static <T> Answer<T> newCountingAnswer( AtomicInteger counter )
     {
         return invocationOnMock ->
         {
@@ -170,7 +170,7 @@ class ExecutorBoltSchedulerConcurrencyTest
         };
     }
 
-    private <T> Answer<T> newBlockingAnswer( AtomicInteger counter, AtomicBoolean exitCondition )
+    private static <T> Answer<T> newBlockingAnswer( AtomicInteger counter, AtomicBoolean exitCondition )
     {
         return invocationOnMock ->
         {
@@ -180,7 +180,7 @@ class ExecutorBoltSchedulerConcurrencyTest
         };
     }
 
-    private BoltConnection newConnection( String id )
+    private static BoltConnection newConnection( String id )
     {
         BoltConnection result = mock( BoltConnection.class );
         when( result.id() ).thenReturn( id );

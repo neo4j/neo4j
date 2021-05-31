@@ -428,7 +428,7 @@ class GBPTreeTest
     {
         // GIVEN
         var tracer = new DefaultPageCacheTracer();
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withTracer( tracer ) ) )
+        try ( PageCache pageCache = PageCacheSupportExtension.getPageCache( fileSystem, config().withTracer( tracer ) ) )
         {
             // WHEN
             // Closing tree we should see flush happen
@@ -1653,7 +1653,7 @@ class GBPTreeTest
         var tracer = new DefaultPageCacheTracer();
         PageCacheConfig config = config().withTracer( tracer );
         long initialPins = tracer.pins();
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config );
+        try ( PageCache pageCache = PageCacheSupportExtension.getPageCache( fileSystem, config );
               GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() )
                       .with( tracer )
                       .build() )
@@ -2160,7 +2160,7 @@ class GBPTreeTest
 
     private PageCache createPageCache( int pageSize )
     {
-        return pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ) );
+        return PageCacheSupportExtension.getPageCache( fileSystem, config().withPageSize( pageSize ) );
     }
 
     private static class CleanJobControlledMonitor extends Monitor.Adaptor

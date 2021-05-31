@@ -34,9 +34,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -793,7 +793,7 @@ class MultipleOpenCursorsTest
             assertSameContent( actual, expected );
         }
 
-        void assertSameContent( List<Long> actual, List<Long> expected )
+        static void assertSameContent( List<Long> actual, List<Long> expected )
         {
             assertThat( actual ).containsAll( expected );
         }
@@ -802,7 +802,8 @@ class MultipleOpenCursorsTest
 
         abstract IndexDefinition doCreateIndex( Transaction tx );
 
-        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, PropertyIndexQuery... indexQueries ) throws KernelException
+        static NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, PropertyIndexQuery... indexQueries )
+                throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.cursorContext(), ktx.memoryTracker() );
             IndexReadSession index = ktx.dataRead().indexReadSession( indexDescriptor );

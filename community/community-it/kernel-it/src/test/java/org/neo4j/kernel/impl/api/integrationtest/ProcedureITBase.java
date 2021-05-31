@@ -295,19 +295,19 @@ public interface ProcedureITBase
         return result;
     }
 
-    private AnyValue[] proc( String procName, String procSignature, String description, TextArray roles, String mode )
+    private static AnyValue[] proc( String procName, String procSignature, String description, TextArray roles, String mode )
     {
         return proc( procName, procSignature, description, roles, mode, true );
     }
 
-    private AnyValue[] proc( String procName, String procSignature, String description, TextArray roles, String mode, boolean worksOnSystem )
+    private static AnyValue[] proc( String procName, String procSignature, String description, TextArray roles, String mode, boolean worksOnSystem )
     {
         return new AnyValue[]{stringValue( procName ), stringValue( procName + procSignature ), stringValue( description ), stringValue( mode ), roles,
                 booleanValue( worksOnSystem )};
     }
 
     @SuppressWarnings( {"SameParameterValue"} )
-    private Object[] proc( String procName, String procSignature, Matcher<String> description, TextArray roles, String mode, boolean worksOnSystem )
+    private static Object[] proc( String procName, String procSignature, Matcher<String> description, TextArray roles, String mode, boolean worksOnSystem )
     {
         Matcher<AnyValue> desc = new TypeSafeMatcher<>()
         {

@@ -40,7 +40,6 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.procedure.Mode;
-import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -164,7 +163,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         return databaseId;
     }
 
-    private void assertRoutingResultNotEmpty( RoutingResult result, NamedDatabaseId namedDatabaseId ) throws ProcedureException
+    private static void assertRoutingResultNotEmpty( RoutingResult result, NamedDatabaseId namedDatabaseId ) throws ProcedureException
     {
         if ( result.containsNoEndpoints() )
         {
@@ -189,7 +188,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         }
     }
 
-    private ProcedureSignature buildSignature( List<String> namespace, String description )
+    private static ProcedureSignature buildSignature( List<String> namespace, String description )
     {
         return procedureSignature( new QualifiedName( namespace, NAME ) )
                 .in( CONTEXT.parameterName(), Neo4jTypes.NTMap )

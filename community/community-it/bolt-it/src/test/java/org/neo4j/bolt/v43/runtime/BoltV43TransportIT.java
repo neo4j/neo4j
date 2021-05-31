@@ -202,7 +202,7 @@ public class BoltV43TransportIT
                             } ) ) );
     }
 
-    private void assertRoutingTableHasCorrectShape( Map<?,?> routingTable )
+    private static void assertRoutingTableHasCorrectShape( Map<?,?> routingTable )
     {
         assertAll(
                 () ->
@@ -451,7 +451,7 @@ public class BoltV43TransportIT
 
     private void negotiateBoltV43() throws Exception
     {
-        connection.connect( address ).send( util.acceptedVersions( BoltProtocolV43.VERSION.toInt(), 0, 0, 0 ) );
+        connection.connect( address ).send( TransportTestUtil.acceptedVersions( BoltProtocolV43.VERSION.toInt(), 0, 0, 0 ) );
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 3, 4} ) );
 
         connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );

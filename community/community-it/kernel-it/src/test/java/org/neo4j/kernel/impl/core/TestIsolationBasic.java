@@ -173,12 +173,12 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
         }
     }
 
-    private void assertPropertyEqual( Entity primitive, String key, String value )
+    private static void assertPropertyEqual( Entity primitive, String key, String value )
     {
         assertEquals( value, primitive.getProperty( key ) );
     }
 
-    private void assertRelationshipCount( Node node, int count )
+    private static void assertRelationshipCount( Node node, int count )
     {
         int actualCount = 0;
         for ( Relationship rel : node.getRelationships() )

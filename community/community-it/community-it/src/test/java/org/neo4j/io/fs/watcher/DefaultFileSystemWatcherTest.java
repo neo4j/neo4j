@@ -219,7 +219,7 @@ class DefaultFileSystemWatcherTest
                 .thenThrow( InterruptedException.class );
     }
 
-    private void watch( TestFileSystemWatcher watcher )
+    private static void watch( TestFileSystemWatcher watcher )
     {
         try
         {

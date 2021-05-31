@@ -47,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -119,7 +118,7 @@ class TransactionStateMachineSPIProviderV4Test
         verifyNoMoreInteractions( scopedMemoryTracker );
     }
 
-    private DatabaseManagementService managementService( String databaseName )
+    private static DatabaseManagementService managementService( String databaseName )
     {
         DatabaseManagementService managementService = mock( DatabaseManagementService.class );
         GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );

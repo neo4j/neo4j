@@ -287,7 +287,7 @@ class ConcurrentCreateDropIndexIT
         };
     }
 
-    private IndexDefinition indexCreate( Transaction tx, int labelIndex )
+    private static IndexDefinition indexCreate( Transaction tx, int labelIndex )
     {
         return tx.schema().indexFor( label( labelIndex ) ).on( KEY ).create();
     }

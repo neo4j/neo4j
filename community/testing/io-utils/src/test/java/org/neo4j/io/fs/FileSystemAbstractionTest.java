@@ -813,7 +813,7 @@ public abstract class FileSystemAbstractionTest
         }
     }
 
-    private void assertRecord( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
+    private static void assertRecord( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
     {
         byte[] actualBytes = actualPageContents.array();
         byte[] expectedBytes = expectedPageContents.array();
@@ -822,7 +822,7 @@ public abstract class FileSystemAbstractionTest
                 Math.abs( pageId - estimatedPageId ) + ")" ).containsExactly( expectedBytes );
     }
 
-    private int estimateId( byte[] record )
+    private static int estimateId( byte[] record )
     {
         return ByteBuffer.wrap( record ).getInt() - 1;
     }

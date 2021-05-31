@@ -522,7 +522,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             return false;
         }
 
-        private LocalDate getDateOf( org.neo4j.values.AnyValue temporal )
+        private static LocalDate getDateOf( org.neo4j.values.AnyValue temporal )
         {
             if ( temporal instanceof TemporalValue )
             {
@@ -558,7 +558,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             return date( result );
         }
 
-        DateValue selectDate( org.neo4j.values.AnyValue date )
+        static DateValue selectDate( org.neo4j.values.AnyValue date )
         {
             if ( date instanceof DateValue )
             {

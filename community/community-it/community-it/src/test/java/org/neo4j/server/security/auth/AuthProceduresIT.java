@@ -412,7 +412,7 @@ public class AuthProceduresIT
         }
     }
 
-    protected String[] with( String[] strs, String... moreStr )
+    protected static String[] with( String[] strs, String... moreStr )
     {
         return Stream.concat( Arrays.stream( strs ), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
@@ -449,7 +449,7 @@ public class AuthProceduresIT
         }
     }
 
-    private Notification deprecatedProcedureNotification( String oldName, String newName )
+    private static Notification deprecatedProcedureNotification( String oldName, String newName )
     {
         return DEPRECATED_PROCEDURE.notification( new InputPosition( 8, 1, 9 ), deprecatedName( oldName, newName ) );
     }

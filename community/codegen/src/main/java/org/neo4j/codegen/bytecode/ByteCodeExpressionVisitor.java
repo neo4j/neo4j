@@ -955,7 +955,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
-    private void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat,
+    private static void numberOperation( TypeReference type, Runnable onInt, Runnable onLong, Runnable onFloat,
             Runnable onDouble )
     {
         if ( !type.isPrimitive() )
@@ -986,7 +986,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
-    private void assertSameType( Expression lhs, Expression rhs, String operation )
+    private static void assertSameType( Expression lhs, Expression rhs, String operation )
     {
         if ( !lhs.type().equals( rhs.type() ) )
         {

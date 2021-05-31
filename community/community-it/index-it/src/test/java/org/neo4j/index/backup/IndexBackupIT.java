@@ -153,7 +153,7 @@ public class IndexBackupIT
         assertFalse( thirdSnapshotFileNames.stream().map( Path::of ).anyMatch( file -> fileSystem.fileExists( file ) ) );
     }
 
-    private void compareSnapshotFiles( Set<String> firstSnapshotFileNames, Set<String> secondSnapshotFileNames,
+    private static void compareSnapshotFiles( Set<String> firstSnapshotFileNames, Set<String> secondSnapshotFileNames,
             FileSystemAbstraction fileSystem )
     {
         assertThat( firstSnapshotFileNames ).as(
@@ -195,21 +195,21 @@ public class IndexBackupIT
         }
     }
 
-    private String describeFileSets( Set<String> firstFileSet, Set<String> secondFileSet )
+    private static String describeFileSets( Set<String> firstFileSet, Set<String> secondFileSet )
     {
         return "First snapshot files are: " + firstFileSet + System.lineSeparator() +
                 "second snapshot files are: " + secondFileSet;
     }
 
-    private Set<String> getFileNames( ResourceIterator<Path> files )
+    private static Set<String> getFileNames( ResourceIterator<Path> files )
     {
         return files.stream().map( Path::toAbsolutePath)
                 .map( Path::toString )
-                .filter( this::segmentsFilePredicate )
+                .filter( IndexBackupIT::segmentsFilePredicate )
                 .collect( Collectors.toSet() );
     }
 
-    private void forceCheckpoint( CheckPointer checkPointer ) throws IOException
+    private static void forceCheckpoint( CheckPointer checkPointer ) throws IOException
     {
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "testForcedCheckpoint" ) );
     }
@@ -265,7 +265,7 @@ public class IndexBackupIT
         return database.getDependencyResolver();
     }
 
-    private boolean segmentsFilePredicate( String fileName )
+    private static boolean segmentsFilePredicate( String fileName )
     {
         return FilenameUtils.getName( fileName ).startsWith( IndexFileNames.SEGMENTS );
     }

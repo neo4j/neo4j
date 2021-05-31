@@ -42,12 +42,12 @@ public class UTF8EncoderTest
         assertEncodes( new String( new byte[(int) Math.pow( 2, 18 )] ) ); // bigger than default buffer size
     }
 
-    private void assertEncodes( String val )
+    private static void assertEncodes( String val )
     {
         assertEquals( val,  encodeDecode( val ) );
     }
 
-    private String encodeDecode( String original )
+    private static String encodeDecode( String original )
     {
         ByteBuffer encoded = UTF8Encoder.EncoderLoader.ENCODER_LOADER.fastestAvailableEncoder().encode( original );
         byte[] b = new byte[encoded.remaining()];

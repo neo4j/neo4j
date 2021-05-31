@@ -29,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelGraphDatabaseServiceProvider;
-import org.neo4j.bolt.txtracking.DefaultReconciledTransactionTracker;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.bolt.txtracking.TransactionIdTrackerException;
 import org.neo4j.bolt.v3.runtime.bookmarking.BookmarkWithPrefix;
@@ -45,7 +44,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -129,7 +127,7 @@ class DatabaseServiceBookmarkTest
         assertNull( resultFuture.get( 20, SECONDS ) );
     }
 
-    private BoltGraphDatabaseServiceSPI createDbSpi( TransactionIdStore txIdStore, Duration txAwaitDuration, SystemNanoClock clock )
+    private static BoltGraphDatabaseServiceSPI createDbSpi( TransactionIdStore txIdStore, Duration txAwaitDuration, SystemNanoClock clock )
             throws Exception
     {
         var compositeGuard = mock( CompositeDatabaseAvailabilityGuard.class );
@@ -139,7 +137,7 @@ class DatabaseServiceBookmarkTest
         return createDbSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
     }
 
-    private BoltGraphDatabaseServiceSPI createDbSpi( TransactionIdStore txIdStore, Duration txAwaitDuration,
+    private static BoltGraphDatabaseServiceSPI createDbSpi( TransactionIdStore txIdStore, Duration txAwaitDuration,
             DatabaseAvailabilityGuard availabilityGuard, SystemNanoClock clock )
     {
         var queryExecutionEngine = mock( QueryExecutionEngine.class );
@@ -173,7 +171,7 @@ class DatabaseServiceBookmarkTest
         return new BoltKernelGraphDatabaseServiceProvider( facade, transactionIdTracker, txAwaitDuration, mock( MemoryTracker.class, RETURNS_MOCKS ) );
     }
 
-    private void begin( BoltGraphDatabaseServiceSPI dbSpi, List<Bookmark> bookmarks )
+    private static void begin( BoltGraphDatabaseServiceSPI dbSpi, List<Bookmark> bookmarks )
     {
         dbSpi.beginTransaction( null, null, null, bookmarks, null, null, null, null );
     }

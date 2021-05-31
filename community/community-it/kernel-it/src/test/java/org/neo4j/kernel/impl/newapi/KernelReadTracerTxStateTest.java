@@ -151,13 +151,13 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         }
     }
 
-    private void assertIndexSeekTracing( TestKernelReadTracer tracer,
-                                         KernelTransaction tx,
-                                         NodeValueIndexCursor cursor,
-                                         IndexReadSession session,
-                                         IndexOrder order,
-                                         boolean needsValues,
-                                         int user ) throws KernelException
+    private static void assertIndexSeekTracing( TestKernelReadTracer tracer,
+            KernelTransaction tx,
+            NodeValueIndexCursor cursor,
+            IndexReadSession session,
+            IndexOrder order,
+            boolean needsValues,
+            int user ) throws KernelException
     {
         cursor.setTracer( tracer );
 
@@ -346,13 +346,13 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         return tx.dataRead().tokenReadSession( index );
     }
 
-    private int[] array( int... elements )
+    private static int[] array( int... elements )
     {
         return elements;
     }
 
     @SuppressWarnings( "SameParameterValue" )
-    private String createIndex( String label, String propertyKey )
+    private static String createIndex( String label, String propertyKey )
     {
         String indexName;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )

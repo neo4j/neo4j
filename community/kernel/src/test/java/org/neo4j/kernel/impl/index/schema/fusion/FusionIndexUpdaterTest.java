@@ -87,16 +87,13 @@ abstract class FusionIndexUpdaterTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexUpdater = new FusionIndexUpdater( fusionVersion.slotSelector(), new LazyInstanceSelector<>( updaters, throwingFactory() ) );
+        fusionIndexUpdater = new FusionIndexUpdater( fusionVersion.slotSelector(), new LazyInstanceSelector<>( updaters, THROWING_FACTORY ) );
     }
 
-    private Function<IndexSlot,IndexUpdater> throwingFactory()
+    private static final Function<IndexSlot,IndexUpdater> THROWING_FACTORY = i ->
     {
-        return i ->
-        {
-            throw new IllegalStateException( "All updaters should exist already" );
-        };
-    }
+        throw new IllegalStateException( "All updaters should exist already" );
+    };
 
     private void resetMocks()
     {

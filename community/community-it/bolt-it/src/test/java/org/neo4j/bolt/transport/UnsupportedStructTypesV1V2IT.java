@@ -29,6 +29,7 @@ import java.io.IOException;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackedOutputArray;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -71,11 +72,11 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         initParameters( connectionClass, neo4jPack, name );
 
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createMsgWithNullKey() ) );
+        connection.send( TransportTestUtil.chunk( 64, createMsgWithNullKey() ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
@@ -89,11 +90,11 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         initParameters( connectionClass, neo4jPack, name );
 
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createMsgWithDuplicateKey() ) );
+        connection.send( TransportTestUtil.chunk( 64, createMsgWithDuplicateKey() ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Request.Invalid, "Duplicate map key `key1`." ) ) );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
@@ -146,11 +147,11 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
         initParameters( connectionClass, neo4jPack, name );
 
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createUnknownMsg() ) );
+        connection.send( TransportTestUtil.chunk( 64, createUnknownMsg() ) );
 
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
@@ -158,11 +159,11 @@ public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
     private void testFailureWithV1Value( AnyValue value, String description ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         connection.send( util.defaultAuth() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( 64, createRunWithUnknownValue( value ) ) );
+        connection.send( TransportTestUtil.chunk( 64, createRunWithUnknownValue( value ) ) );
 
         assertThat( connection ).satisfies(
                 util.eventuallyReceives( msgFailure( TypeError, description + " values cannot be unpacked with this version of bolt." ) ) );

@@ -204,7 +204,7 @@ class CsvInputBatchImportIT
         return nodes;
     }
 
-    private String[] randomLabels( Random random )
+    private static String[] randomLabels( Random random )
     {
         String[] labels = new String[random.nextInt( 3 )];
         for ( int i = 0; i < labels.length; i++ )
@@ -214,7 +214,7 @@ class CsvInputBatchImportIT
         return labels;
     }
 
-    private org.neo4j.internal.batchimport.Configuration smallBatchSizeConfig()
+    private static org.neo4j.internal.batchimport.Configuration smallBatchSizeConfig()
     {
         return org.neo4j.internal.batchimport.Configuration.withBatchSize( org.neo4j.internal.batchimport.Configuration.DEFAULT, 100 );
     }
@@ -264,7 +264,7 @@ class CsvInputBatchImportIT
         return file;
     }
 
-    private String csvLabels( String[] labels )
+    private static String csvLabels( String[] labels )
     {
         if ( labels == null || labels.length == 0 )
         {
@@ -278,7 +278,7 @@ class CsvInputBatchImportIT
         return builder.toString();
     }
 
-    private void println( Writer writer, String string ) throws IOException
+    private static void println( Writer writer, String string ) throws IOException
     {
         writer.write( string + "\n" );
     }
@@ -415,10 +415,10 @@ class CsvInputBatchImportIT
         }
     }
 
-    private Iterable<Pair<RelationshipCountKey,Long>> allRelationshipCounts(
-            Function<String, Integer> labelTranslationTable,
-            Function<String, Integer> relationshipTypeTranslationTable,
-            Map<String, Map<String, Map<String, AtomicLong>>> counts )
+    private static Iterable<Pair<RelationshipCountKey,Long>> allRelationshipCounts(
+            Function<String,Integer> labelTranslationTable,
+            Function<String,Integer> relationshipTypeTranslationTable,
+            Map<String,Map<String,Map<String,AtomicLong>>> counts )
     {
         Collection<Pair<RelationshipCountKey,Long>> result = new ArrayList<>();
         for ( Map.Entry<String, Map<String, Map<String, AtomicLong>>> startLabel : counts.entrySet() )
@@ -438,8 +438,8 @@ class CsvInputBatchImportIT
         return result;
     }
 
-    private Iterable<Pair<Integer,Long>> allNodeCounts( Function<String, Integer> labelTranslationTable,
-            Map<String, AtomicLong> counts )
+    private static Iterable<Pair<Integer,Long>> allNodeCounts( Function<String,Integer> labelTranslationTable,
+            Map<String,AtomicLong> counts )
     {
         Collection<Pair<Integer,Long>> result = new ArrayList<>();
         for ( Map.Entry<String, AtomicLong> count : counts.entrySet() )
@@ -450,7 +450,7 @@ class CsvInputBatchImportIT
         return result;
     }
 
-    private Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
+    private static Function<String, Integer> translationTable( TokenStore<?> tokenStore, final int anyValue )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
         for ( NamedToken token : tokenStore.getTokens( NULL ) )

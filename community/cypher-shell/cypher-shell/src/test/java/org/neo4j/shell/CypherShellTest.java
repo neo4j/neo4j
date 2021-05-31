@@ -44,9 +44,9 @@ import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.state.ListBoltResult;
 
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.any;
@@ -271,7 +271,7 @@ public class CypherShellTest
 
         Optional<CommandExecutable> exe = offlineTestShell.getCommandExecutable( "   :help   arg1 arg2 " );
 
-        offlineTestShell.executeCmd( exe.get() );
+        CypherShell.executeCmd( exe.get() );
     }
 
     @Test

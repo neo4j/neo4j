@@ -76,7 +76,7 @@ public class AbstractRestFunctionalTestBase extends SharedWebContainerTestBase i
         return String.format( "http://localhost:%s/db/%s/", port, databaseName );
     }
 
-    protected String dbUri()
+    protected static String dbUri()
     {
         return "http://localhost:" + getLocalHttpPort() + "/db/";
     }

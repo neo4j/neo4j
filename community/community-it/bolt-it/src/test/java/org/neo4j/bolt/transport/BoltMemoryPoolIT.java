@@ -81,7 +81,7 @@ class BoltMemoryPoolIT
         assertEquals( 0, memoryTracker.totalUsed() );
     }
 
-    private PooledByteBufAllocator createTestAllocator( boolean preferDirect )
+    private static PooledByteBufAllocator createTestAllocator( boolean preferDirect )
     {
         return new PooledByteBufAllocator( preferDirect, 1, 1, (int) ByteUnit.kibiBytes( 4 ), 1, 0, 0, 0, true );
     }

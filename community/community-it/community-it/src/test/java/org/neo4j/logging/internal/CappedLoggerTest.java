@@ -162,7 +162,7 @@ public class CappedLoggerTest
         assertThat( logProvider ).containsMessages( "### CCC ###" );
     }
 
-    private FakeClock getDefaultFakeClock()
+    private static FakeClock getDefaultFakeClock()
     {
         return Clocks.fakeClock( 1000, TimeUnit.MILLISECONDS );
     }

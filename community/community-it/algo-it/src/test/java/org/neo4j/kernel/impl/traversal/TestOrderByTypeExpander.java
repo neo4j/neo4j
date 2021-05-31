@@ -106,7 +106,7 @@ class TestOrderByTypeExpander extends TraversalTestBase
         }
     }
 
-    private void assertOrder( Transaction transaction, Iterator<Node> itr, String... names )
+    private static void assertOrder( Transaction transaction, Iterator<Node> itr, String... names )
     {
         for ( String name : names )
         {

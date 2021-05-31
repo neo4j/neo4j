@@ -130,7 +130,7 @@ class JoltResultFormatIT extends AbstractRestFunctionalTestBase
                                                        "\u001E{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );
     }
 
-    private HTTP.RawPayload queryAsJsonRow( String query )
+    private static HTTP.RawPayload queryAsJsonRow( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" );
     }

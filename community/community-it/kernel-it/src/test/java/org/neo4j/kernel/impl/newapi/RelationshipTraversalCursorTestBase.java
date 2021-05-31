@@ -52,12 +52,12 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     private static long bare, start, end;
     private static RelationshipTestSupport.StartNode sparse, dense;
 
-    private boolean supportsDirectTraversal()
+    private static boolean supportsDirectTraversal()
     {
         return true;
     }
 
-    private boolean supportsSparseNodes()
+    private static boolean supportsSparseNodes()
     {
         return true;
     }

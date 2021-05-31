@@ -55,7 +55,7 @@ public class FabricStatementLifecycles
                 config );
     }
 
-    private AtomicReference<CpuClock> setupCpuClockAtomicReference( Config config )
+    private static AtomicReference<CpuClock> setupCpuClockAtomicReference( Config config )
     {
         AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
         SettingChangeListener<Boolean> cpuClockUpdater = ( before, after ) ->

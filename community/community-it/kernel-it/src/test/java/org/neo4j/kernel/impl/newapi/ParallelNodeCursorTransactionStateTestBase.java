@@ -378,7 +378,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         }
     }
 
-    private MutableLongSet createNodes( int size )
+    private static MutableLongSet createNodes( int size )
             throws TransactionFailureException, InvalidTransactionTypeKernelException
     {
         MutableLongSet nodes = LongSets.mutable.empty();

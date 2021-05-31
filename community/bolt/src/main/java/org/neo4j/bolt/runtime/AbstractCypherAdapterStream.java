@@ -164,7 +164,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         }
     }
 
-    private void addQueryStatistics( QueryStatistics statistics, RecordConsumer recordConsumer )
+    private static void addQueryStatistics( QueryStatistics statistics, RecordConsumer recordConsumer )
     {
         if ( statistics.containsUpdates() )
         {
@@ -185,7 +185,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
                '}';
     }
 
-    private MapValue queryStats( QueryStatistics queryStatistics )
+    private static MapValue queryStats( QueryStatistics queryStatistics )
     {
         MapValueBuilder builder = new MapValueBuilder();
         addIfNonZero( builder, "nodes-created", queryStatistics.getNodesCreated() );
@@ -202,14 +202,14 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         return builder.build();
     }
 
-    private MapValue systemQueryStats( QueryStatistics queryStatistics )
+    private static MapValue systemQueryStats( QueryStatistics queryStatistics )
     {
         MapValueBuilder builder = new MapValueBuilder();
         addIfNonZero( builder, "system-updates", queryStatistics.getSystemUpdates() );
         return builder.build();
     }
 
-    private void addIfNonZero( MapValueBuilder builder, String name, int count )
+    private static void addIfNonZero( MapValueBuilder builder, String name, int count )
     {
         if ( count > 0 )
         {
@@ -217,7 +217,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         }
     }
 
-    private TextValue queryTypeCode( QueryExecutionType.QueryType queryType )
+    private static TextValue queryTypeCode( QueryExecutionType.QueryType queryType )
     {
         switch ( queryType )
         {

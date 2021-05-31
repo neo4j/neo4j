@@ -32,7 +32,7 @@ import org.neo4j.memory.HeapEstimator;
 
 public class MessageAccumulator extends ByteToMessageDecoder
 {
-    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( MessageAccumulator.class );
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( MessageAccumulator.class );
 
     private boolean readMessageBoundary;
 

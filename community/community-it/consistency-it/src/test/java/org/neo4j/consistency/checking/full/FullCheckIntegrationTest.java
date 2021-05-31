@@ -497,7 +497,7 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private long[] asArray( List<? extends Number> in )
+    private static long[] asArray( List<? extends Number> in )
     {
         long[] longs = new long[in.size()];
         for ( int i = 0; i < in.size(); i++ )
@@ -608,7 +608,7 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private Value[] values( IndexDescriptor indexRule )
+    private static Value[] values( IndexDescriptor indexRule )
     {
         switch ( indexRule.schema().getPropertyIds().length )
         {
@@ -702,7 +702,7 @@ public class FullCheckIntegrationTest
                 .andThatsAllFolks();
     }
 
-    private long inlinedLabelsLongRepresentation( long... labelIds )
+    private static long inlinedLabelsLongRepresentation( long... labelIds )
     {
         long header = (long) labelIds.length << 36;
         byte bitsPerLabel = (byte) (36 / labelIds.length);
@@ -1580,14 +1580,14 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private RelationshipRecord withNext( RelationshipRecord relationship, long next )
+    private static RelationshipRecord withNext( RelationshipRecord relationship, long next )
     {
         relationship.setFirstNextRel( next );
         relationship.setSecondNextRel( next );
         return relationship;
     }
 
-    private RelationshipRecord withPrev( RelationshipRecord relationship, long prev )
+    private static RelationshipRecord withPrev( RelationshipRecord relationship, long prev )
     {
         relationship.setFirstInFirstChain( false );
         relationship.setFirstInSecondChain( false );
@@ -2895,7 +2895,7 @@ public class FullCheckIntegrationTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T extends AbstractBaseRecord> T cloneRecord( T record )
+    private static <T extends AbstractBaseRecord> T cloneRecord( T record )
     {
         return (T) record.copy();
     }
@@ -2907,7 +2907,7 @@ public class FullCheckIntegrationTest
         return record;
     }
 
-    private void linkAndWritePropertyRecord( PropertyRecord record, long prevPropId, long nextProp, TransactionDataBuilder tx )
+    private static void linkAndWritePropertyRecord( PropertyRecord record, long prevPropId, long nextProp, TransactionDataBuilder tx )
     {
         record.setInUse( true );
         record.setPrevProp( prevPropId );

@@ -101,7 +101,7 @@ public class DbmsSupportController
         startDatabase( databaseToStart );
     }
 
-    protected String getDatabaseName( DatabaseManagementService dbms )
+    protected static String getDatabaseName( DatabaseManagementService dbms )
     {
         var databases = new ArrayList<>( dbms.listDatabases() );
         databases.remove( SYSTEM_DATABASE_NAME );

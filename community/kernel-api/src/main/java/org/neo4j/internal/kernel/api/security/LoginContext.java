@@ -82,7 +82,7 @@ public abstract class LoginContext
     /**
      * A login context with full privileges, should only be used for transactions without external connection.
      */
-    public static LoginContext AUTH_DISABLED = fullAccess( EMBEDDED_CONNECTION );
+    public static final LoginContext AUTH_DISABLED = fullAccess( EMBEDDED_CONNECTION );
 
     public interface IdLookup
     {

@@ -241,7 +241,7 @@ public class BoltResponseMessageTest
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T extends ResponseMessage> T unpack( BoltResponseMessageReader reader, RecordingByteChannel channel )
+    private static <T extends ResponseMessage> T unpack( BoltResponseMessageReader reader, RecordingByteChannel channel )
     {
         // Unpack
         String serialized = HexPrinter.hex( channel.getBytes() );

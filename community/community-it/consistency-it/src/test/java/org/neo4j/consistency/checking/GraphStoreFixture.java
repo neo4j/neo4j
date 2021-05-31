@@ -470,7 +470,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
             tokenHolders.relationshipTypeTokens().getAllTokens().forEach( token -> relTypeDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
         }
 
-        private int[] dynIds( int externalBase, AtomicInteger idGenerator, String name )
+        private static int[] dynIds( int externalBase, AtomicInteger idGenerator, String name )
         {
             if ( idGenerator.get() <= externalBase )
             {

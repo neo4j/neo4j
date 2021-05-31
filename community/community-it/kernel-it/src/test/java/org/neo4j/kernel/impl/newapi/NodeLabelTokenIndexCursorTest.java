@@ -111,7 +111,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
         }
     }
 
-    private TokenReadSession getTokenReadSession( KernelTransaction tx ) throws IndexNotFoundKernelException
+    private static TokenReadSession getTokenReadSession( KernelTransaction tx ) throws IndexNotFoundKernelException
     {
         var descriptor = SchemaDescriptor.forAnyEntityTokens( EntityType.NODE );
         var indexes = tx.schemaRead().index( descriptor );
@@ -158,7 +158,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
         }
     }
 
-    private long createNode( Write write, int... labels ) throws KernelException
+    private static long createNode( Write write, int... labels ) throws KernelException
     {
         long nodeId = write.nodeCreate();
         for ( int label : labels )

@@ -132,7 +132,7 @@ public class CommitProcessTracingIT
         }
     }
 
-    private void assertCursor( CursorContext cursorContext, int expected )
+    private static void assertCursor( CursorContext cursorContext, int expected )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( expected );
@@ -140,7 +140,7 @@ public class CommitProcessTracingIT
         assertThat( cursorTracer.hits() ).isEqualTo( expected );
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();

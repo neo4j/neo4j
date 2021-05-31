@@ -104,7 +104,7 @@ public class CheckpointLogPruningIT
                 .areAtLeastOne( fineNameCondition( "checkpoint.2" ) );
     }
 
-    private Condition<Path> fineNameCondition( String name )
+    private static Condition<Path> fineNameCondition( String name )
     {
         return new Condition<>()
         {

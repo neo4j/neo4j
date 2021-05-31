@@ -78,7 +78,7 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
         }
     }
 
-    private boolean isNativeIndexFile( Path fileOrDir, PageCache pageCache )
+    private static boolean isNativeIndexFile( Path fileOrDir, PageCache pageCache )
     {
         try
         {

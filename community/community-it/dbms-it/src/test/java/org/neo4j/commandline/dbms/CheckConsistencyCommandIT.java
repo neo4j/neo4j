@@ -440,7 +440,7 @@ class CheckConsistencyCommandIT
         prepareDatabase( backupLayout );
     }
 
-    private void prepareDatabase( DatabaseLayout databaseLayout )
+    private static void prepareDatabase( DatabaseLayout databaseLayout )
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         managementService.shutdown();

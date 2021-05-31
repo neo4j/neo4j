@@ -40,7 +40,7 @@ public class TestFabricTransactionalContext implements TransactionalContext
         this.transaction = transaction;
     }
 
-    private UnsupportedOperationException failure()
+    private static UnsupportedOperationException failure()
     {
         return new UnsupportedOperationException( "Not implemented" );
     }

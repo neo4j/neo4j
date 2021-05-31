@@ -133,7 +133,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return factory.build( augmentConfig( config ), GraphDatabaseDependencies.newDependencies( dependencies ) );
     }
 
-    private boolean fabricInEmbeddedTestTransactionsEnabled()
+    private static boolean fabricInEmbeddedTestTransactionsEnabled()
     {
         return FeatureToggles.flag( TestDatabaseManagementServiceBuilder.class,
                                     FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME,

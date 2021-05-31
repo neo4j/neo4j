@@ -96,12 +96,12 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         }
     }
 
-    private void txCreateRel( Transaction transaction, Node node )
+    private static void txCreateRel( Transaction transaction, Node node )
     {
         node.createRelationshipTo( transaction.createNode(), TEST );
     }
 
-    private void txCreateLoop( Node node )
+    private static void txCreateLoop( Node node )
     {
         node.createRelationshipTo( node, TEST );
     }
@@ -144,7 +144,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         testAddManyLoopRelationships( 5 );
     }
 
-    private void testAddManyLoopRelationships( int count )
+    private static void testAddManyLoopRelationships( int count )
     {
         for ( boolean[] loop : permutations( count ) )
         {
@@ -179,7 +179,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         testAddLoopRelationshipAndOtherRelationships( 5 );
     }
 
-    private void testAddLoopRelationshipAndOtherRelationships( int size )
+    private static void testAddLoopRelationshipAndOtherRelationships( int size )
     {
         for ( int i = 0; i < size; i++ )
         {
@@ -306,7 +306,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         }
     }
 
-    private void testAddAndRemoveLoopRelationshipAndOtherRelationships( int size )
+    private static void testAddAndRemoveLoopRelationshipAndOtherRelationships( int size )
     {
         for ( boolean[] delete : permutations( size ) )
         {
@@ -357,7 +357,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         };
     }
 
-    private Relationship[] createRelationships( int count, int loop, Node root )
+    private static Relationship[] createRelationships( int count, int loop, Node root )
     {
         Node[] nodes = new Node[count];
         for ( int i = 0; i < count; i++ )
@@ -385,8 +385,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         return relationships;
     }
 
-    private void verifyRelationships( String message, Node root, int loop,
-        Relationship... relationships )
+    private static void verifyRelationships( String message, Node root, int loop,
+            Relationship... relationships )
     {
         boolean[] loops = new boolean[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
@@ -396,8 +396,8 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         verifyRelationships( message, root, loops, relationships );
     }
 
-    private void verifyRelationships( String message, Node node,
-        boolean[] loop, Relationship... relationships )
+    private static void verifyRelationships( String message, Node node,
+            boolean[] loop, Relationship... relationships )
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {

@@ -115,7 +115,7 @@ public class BoltIT extends ExclusiveWebContainerTestBase
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
     }
 
-    private void assertEventuallyServerResponds( String host, int port ) throws Exception
+    private static void assertEventuallyServerResponds( String host, int port ) throws Exception
     {
         SocketConnection conn = new SocketConnection();
         conn.connect( new HostnamePort( host, port ) );

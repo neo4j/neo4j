@@ -238,7 +238,7 @@ public class RelationshipTest extends EntityTest
         assertThrows( ConstraintViolationException.class, () -> relationshipEntity.setProperty( "key", "value" ) );
     }
 
-    private void verifyIds( InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
+    private static void verifyIds( InternalTransaction transaction, long relationshipId, long nodeId1, int typeId, long nodeId2 )
     {
         RelationshipEntity proxy = new RelationshipEntity( transaction, relationshipId, nodeId1, typeId, nodeId2 );
         assertEquals( relationshipId, proxy.getId() );
@@ -253,7 +253,7 @@ public class RelationshipTest extends EntityTest
         assertEquals( nodeId1, proxy.getOtherNodeId( nodeId2 ) );
     }
 
-    private Node nodeWithId( long id )
+    private static Node nodeWithId( long id )
     {
         NodeEntity node = mock( NodeEntity.class );
         when( node.getId() ).thenReturn( id );

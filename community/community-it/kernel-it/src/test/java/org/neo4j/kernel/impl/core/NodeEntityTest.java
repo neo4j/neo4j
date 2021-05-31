@@ -512,7 +512,7 @@ public class NodeEntityTest extends EntityTest
         }
     }
 
-    private void assertZeroTracer( CursorContext cursorContext )
+    private static void assertZeroTracer( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.hits() ).isZero();
@@ -520,7 +520,7 @@ public class NodeEntityTest extends EntityTest
         assertThat( cursorTracer.pins() ).isZero();
     }
 
-    private void createDenseNodeWithShortIncomingChain( Transaction tx, Node source, RelationshipType relationshipType )
+    private static void createDenseNodeWithShortIncomingChain( Transaction tx, Node source, RelationshipType relationshipType )
     {
         // This test measures page cache access very specifically when accessing degree for dense node.
         // For dense nodes chain degrees gets "upgraded" to live in a separate degrees store on a certain chain length threshold

@@ -256,7 +256,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         }
     }
 
-    private void allGetRelationshipMethods( Node node, Direction dir )
+    private static void allGetRelationshipMethods( Node node, Direction dir )
     {
         countRelationships( 9, node.getRelationships() );
         countRelationships( 9, node.getRelationships( dir ) );
@@ -272,7 +272,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 3, node.getRelationships( dir, TEST_TRAVERSAL ) );
     }
 
-    private void allGetRelationshipMethods2( Node node, Direction dir )
+    private static void allGetRelationshipMethods2( Node node, Direction dir )
     {
         countRelationships( 3, node.getRelationships() );
         countRelationships( 3, node.getRelationships( dir ) );
@@ -288,7 +288,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 1, node.getRelationships( dir, TEST_TRAVERSAL ) );
     }
 
-    private void allGetRelationshipMethods3( Node node, Direction dir )
+    private static void allGetRelationshipMethods3( Node node, Direction dir )
     {
         countRelationships( 6, node.getRelationships() );
         countRelationships( 6, node.getRelationships( dir ) );
@@ -304,7 +304,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 2, node.getRelationships( dir, TEST_TRAVERSAL ) );
     }
 
-    private void countRelationships( int expectedCount, Iterable<Relationship> rels )
+    private static void countRelationships( int expectedCount, Iterable<Relationship> rels )
     {
         int count = 0;
         for ( Relationship ignored : rels )
@@ -314,7 +314,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( expectedCount, count );
     }
 
-    private void deleteFirst( ResourceIterable<Relationship> iterable )
+    private static void deleteFirst( ResourceIterable<Relationship> iterable )
     {
         try ( ResourceIterator<Relationship> iterator = iterable.iterator() )
         {
@@ -360,7 +360,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         }
     }
 
-    private Relationship[] getRelationshipArray( Iterable<Relationship> relsIterable )
+    private static Relationship[] getRelationshipArray( Iterable<Relationship> relsIterable )
     {
         List<Relationship> relList = new ArrayList<>();
         for ( Relationship rel : relsIterable )
@@ -1170,7 +1170,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         }
     }
 
-    private void assertHasNext( ResourceIterable<Relationship> relationships )
+    private static void assertHasNext( ResourceIterable<Relationship> relationships )
     {
         try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
         {

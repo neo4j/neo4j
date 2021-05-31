@@ -45,7 +45,6 @@ import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
-import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -267,9 +266,9 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         throwIfNonEmpty( allFailures, this::rollbackFailedError );
     }
 
-    private List<Throwable> doOnChildren( Iterable<ReadingTransaction> readingTransactions,
-                                          SingleDbTransaction writingTransaction,
-                                          Function<SingleDbTransaction,Mono<Void>> operation )
+    private static List<Throwable> doOnChildren( Iterable<ReadingTransaction> readingTransactions,
+            SingleDbTransaction writingTransaction,
+            Function<SingleDbTransaction,Mono<Void>> operation )
     {
         var failures = Flux
                 .fromIterable( readingTransactions )
@@ -282,7 +281,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         return failures == null ? List.of() : failures;
     }
 
-    private Mono<Throwable> catchErrors( Mono<Void> action )
+    private static Mono<Throwable> catchErrors( Mono<Void> action )
     {
         return action
                 .flatMap( v -> Mono.<Throwable>empty() )

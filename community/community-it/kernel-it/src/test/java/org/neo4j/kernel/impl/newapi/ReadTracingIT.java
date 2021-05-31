@@ -235,7 +235,7 @@ class ReadTracingIT
         }
     }
 
-    private void consumeCursor( Cursor cursor )
+    private static void consumeCursor( Cursor cursor )
     {
         while ( cursor.next() )
         {
@@ -274,7 +274,7 @@ class ReadTracingIT
         }
     }
 
-    private void assertOneCursor( CursorContext cursorContext )
+    private static void assertOneCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isOne();
@@ -282,7 +282,7 @@ class ReadTracingIT
         assertThat( cursorTracer.hits() ).isOne();
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();

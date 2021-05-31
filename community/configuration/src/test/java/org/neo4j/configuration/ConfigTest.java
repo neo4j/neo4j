@@ -973,7 +973,7 @@ class ConfigTest
         assertThat( msg ).contains( expectedErrorMessage );
     }
 
-    private void setPosixFilePermissions( Path confFile, Set<PosixFilePermission> filePermissions ) throws IOException
+    private static void setPosixFilePermissions( Path confFile, Set<PosixFilePermission> filePermissions ) throws IOException
     {
         Files.setPosixFilePermissions( confFile, filePermissions );
 

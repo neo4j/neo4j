@@ -190,7 +190,7 @@ public class UniqueIndexApplicationIT
         }
     }
 
-    private Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup( Transaction tx,
+    private static Function<GraphDatabaseService, List<Long>> listNodeIdsFromIndexLookup( Transaction tx,
             final Label label, final String propertyKey, final Object value )
     {
         return graphDb ->

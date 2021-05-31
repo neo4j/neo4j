@@ -997,7 +997,7 @@ public class DetectRandomSabotageIT
                     }
                 };
 
-        protected <T extends AbstractBaseRecord> Sabotage setRandomRecordNotInUse( RandomRule random, RecordStore<T> store )
+        protected static <T extends AbstractBaseRecord> Sabotage setRandomRecordNotInUse( RandomRule random, RecordStore<T> store )
         {
             T before = randomRecord( random, store, usedRecord() );
             T record = store.newRecord();
@@ -1015,14 +1015,14 @@ public class DetectRandomSabotageIT
             return AbstractBaseRecord::inUse;
         }
 
-        protected <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
+        protected static <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
                 ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter )
         {
             return loadChangeUpdate( random, store, filter, idGetter, idSetter,
                     () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ) );
         }
 
-        protected <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
+        protected static <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
                 ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, LongSupplier rng )
         {
             T before = randomRecord( random, store, filter );
@@ -1041,7 +1041,7 @@ public class DetectRandomSabotageIT
             return new Sabotage( String.format( "%s --> %s", before, after ), after.toString() );
         }
 
-        protected void guaranteedChangedId( LongSupplier getter, LongConsumer setter, LongSupplier rng )
+        protected static void guaranteedChangedId( LongSupplier getter, LongConsumer setter, LongSupplier rng )
         {
             long nextProp = getter.getAsLong();
             while ( getter.getAsLong() == nextProp )
@@ -1085,17 +1085,17 @@ public class DetectRandomSabotageIT
             }
         }
 
-        protected long randomIdOrSometimesDefault( RandomRule random, long defaultValue, LongPredicate filter )
+        protected static long randomIdOrSometimesDefault( RandomRule random, long defaultValue, LongPredicate filter )
         {
             return random.nextFloat() < 0.1 ? defaultValue : randomLargeSometimesNegative( random, filter );
         }
 
-        protected long randomLargeSometimesNegative( RandomRule random )
+        protected static long randomLargeSometimesNegative( RandomRule random )
         {
             return randomLargeSometimesNegative( random, id -> true );
         }
 
-        protected long randomLargeSometimesNegative( RandomRule random, LongPredicate filter )
+        protected static long randomLargeSometimesNegative( RandomRule random, LongPredicate filter )
         {
             long value;
             do
@@ -1107,7 +1107,7 @@ public class DetectRandomSabotageIT
             return value;
         }
 
-        protected <T extends AbstractBaseRecord> T randomRecord( RandomRule random, RecordStore<T> store, Predicate<T> filter )
+        protected static <T extends AbstractBaseRecord> T randomRecord( RandomRule random, RecordStore<T> store, Predicate<T> filter )
         {
             long highId = store.getHighId();
             T record = store.newRecord();

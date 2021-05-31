@@ -418,12 +418,12 @@ class CountsComputerTest
         }
     }
 
-    private Label[] createLabels( int n )
+    private static Label[] createLabels( int n )
     {
         return IntStream.range( 0, n ).mapToObj( i -> "Label" + i ).map( Label::label ).toArray( Label[]::new );
     }
 
-    private int[] getLabelIdsFrom( Transaction tx, Label... labels ) throws KernelException
+    private static int[] getLabelIdsFrom( Transaction tx, Label... labels ) throws KernelException
     {
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         TokenWrite tokenWrite = ktx.tokenWrite();
@@ -433,12 +433,12 @@ class CountsComputerTest
         return ids;
     }
 
-    private RelationshipType[] createRelationShipTypes( int n )
+    private static RelationshipType[] createRelationShipTypes( int n )
     {
         return IntStream.range( 0, n ).mapToObj( i -> "TYPE" + i ).map( RelationshipType::withName ).toArray( RelationshipType[]::new );
     }
 
-    private int[] getRelTypeIdsFrom( Transaction tx, RelationshipType... types ) throws KernelException
+    private static int[] getRelTypeIdsFrom( Transaction tx, RelationshipType... types ) throws KernelException
     {
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         TokenWrite tokenWrite = ktx.tokenWrite();

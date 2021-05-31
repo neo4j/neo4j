@@ -196,12 +196,12 @@ class IndexRestartIT
         }
     }
 
-    private Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
+    private static Iterable<IndexDefinition> getIndexes( Transaction transaction, Label label )
     {
         return transaction.schema().getIndexes( label );
     }
 
-    private Schema.IndexState indexState( Transaction transaction, IndexDefinition index )
+    private static Schema.IndexState indexState( Transaction transaction, IndexDefinition index )
     {
         return transaction.schema().getIndexState( index );
     }

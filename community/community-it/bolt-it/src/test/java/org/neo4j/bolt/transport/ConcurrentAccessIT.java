@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -115,7 +116,7 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest
                 // Connect
                 TransportConnection client = newConnection();
                 client.connect( server.lookupDefaultConnector() ).send( util.defaultAcceptedVersions() );
-                assertThat( client ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+                assertThat( client ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
 
                 init( client );
 

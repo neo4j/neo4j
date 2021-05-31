@@ -28,14 +28,14 @@ import static org.neo4j.capabilities.Type.STRING;
 public class DBMSCapabilities implements CapabilityDeclaration
 {
     @Description( "Neo4j version this instance is running" )
-    public static Capability<String> dbms_instance_version = new Capability<>( Name.of( "dbms.instance.version" ), STRING );
+    public static final Capability<String> dbms_instance_version = new Capability<>( Name.of( "dbms.instance.version" ), STRING );
 
     @Description( "Kernel version this instance is running" )
-    public static Capability<String> dbms_instance_kernel_version = new Capability<>( Name.of( "dbms.instance.kernel.version" ), STRING );
+    public static final Capability<String> dbms_instance_kernel_version = new Capability<>( Name.of( "dbms.instance.kernel.version" ), STRING );
 
     @Description( "DBMS Edition this instance is running" )
-    public static Capability<String> dbms_instance_edition = new Capability<>( Name.of( "dbms.instance.edition" ), STRING );
+    public static final Capability<String> dbms_instance_edition = new Capability<>( Name.of( "dbms.instance.edition" ), STRING );
 
     @Description( "DBMS Operational Mode this instance is running" )
-    public static Capability<String> dbms_instance_operational_mode = new Capability<>( Name.of( "dbms.instance.operational_mode" ), STRING );
+    public static final Capability<String> dbms_instance_operational_mode = new Capability<>( Name.of( "dbms.instance.operational_mode" ), STRING );
 }

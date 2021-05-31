@@ -387,7 +387,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
         }
     }
 
-    private MutableLongSet createRelationships( int size ) throws KernelException
+    private static MutableLongSet createRelationships( int size ) throws KernelException
     {
         MutableLongSet rels = LongSets.mutable.empty();
         try ( KernelTransaction tx = beginTransaction() )

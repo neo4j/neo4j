@@ -199,7 +199,7 @@ class NodeCountsTest
         }
     }
 
-    private long countsForNode( Transaction tx )
+    private static long countsForNode( Transaction tx )
     {
         return ((InternalTransaction) tx).kernelTransaction().dataRead().countsForNode( ANY_LABEL );
     }

@@ -108,7 +108,7 @@ public abstract class IndexAccessorCompatibility extends PropertyIndexProviderCo
         return types;
     }
 
-    private ValueType[] removeSpatialTypes( ValueType[] types )
+    private static ValueType[] removeSpatialTypes( ValueType[] types )
     {
         return Arrays.stream( types )
                 .filter( t -> !t.name().contains( "POINT" ) )
@@ -160,7 +160,7 @@ public abstract class IndexAccessorCompatibility extends PropertyIndexProviderCo
         return actualIds;
     }
 
-    List<Long> assertClientReturnValuesInOrder( SimpleEntityValueClient client, IndexOrder order )
+    static List<Long> assertClientReturnValuesInOrder( SimpleEntityValueClient client, IndexOrder order )
     {
         List<Long> seenIds = new ArrayList<>();
         Value[] prevValues = null;
@@ -198,7 +198,7 @@ public abstract class IndexAccessorCompatibility extends PropertyIndexProviderCo
         return descriptor.getCapability().orderCapability( categories );
     }
 
-    private void assertLessThanOrEqualTo( Value[] o1, Value[] o2 )
+    private static void assertLessThanOrEqualTo( Value[] o1, Value[] o2 )
     {
         if ( o1 == null || o2 == null )
         {

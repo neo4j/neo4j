@@ -114,7 +114,7 @@ class PathRepresentationTest
      * }
      *
      */
-    private PathRepresentation<Path> pathrep()
+    private static PathRepresentation<Path> pathrep()
     {
         Node a = node( 0, properties() );
         Node b = node( 1, properties() );

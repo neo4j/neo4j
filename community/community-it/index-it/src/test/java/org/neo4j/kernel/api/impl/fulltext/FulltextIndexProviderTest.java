@@ -1166,7 +1166,7 @@ class FulltextIndexProviderTest
         }
     }
 
-    private void assertQueryResult( KernelTransaction ktx, PropertyIndexQuery query, Long... expectedResultArray ) throws KernelException
+    private static void assertQueryResult( KernelTransaction ktx, PropertyIndexQuery query, Long... expectedResultArray ) throws KernelException
     {
         List<Long> expectedResult = Arrays.asList( expectedResultArray );
         IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( NAME ) );
@@ -1184,39 +1184,39 @@ class FulltextIndexProviderTest
         }
     }
 
-    private PropertyIndexQuery.StringContainsPredicate containsQuery( int containsPropertyId, String string )
+    private static PropertyIndexQuery.StringContainsPredicate containsQuery( int containsPropertyId, String string )
     {
         return PropertyIndexQuery.stringContains( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private PropertyIndexQuery.StringSuffixPredicate endsWithQuery( int containsPropertyId, String string )
+    private static PropertyIndexQuery.StringSuffixPredicate endsWithQuery( int containsPropertyId, String string )
     {
         return PropertyIndexQuery.stringSuffix( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private PropertyIndexQuery.StringPrefixPredicate startsWithQuery( int containsPropertyId, String string )
+    private static PropertyIndexQuery.StringPrefixPredicate startsWithQuery( int containsPropertyId, String string )
     {
         return PropertyIndexQuery.stringPrefix( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private PropertyIndexQuery.ExactPredicate exactQuery( int containsPropertyId, Object object )
+    private static PropertyIndexQuery.ExactPredicate exactQuery( int containsPropertyId, Object object )
     {
         return PropertyIndexQuery.exact( containsPropertyId, Values.of( object ) );
     }
 
-    private PropertyIndexQuery.RangePredicate<?> rangeQuery( int containsPropertyId, Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    private static PropertyIndexQuery.RangePredicate<?> rangeQuery( int containsPropertyId, Object from, boolean fromInclusive, Object to, boolean toInclusive )
     {
         return PropertyIndexQuery.range( containsPropertyId, Values.of( from ), fromInclusive, Values.of( to ), toInclusive );
     }
 
-    private long createNode( Transaction tx, Label containsLabel, String containsProp, String propertyValue )
+    private static long createNode( Transaction tx, Label containsLabel, String containsProp, String propertyValue )
     {
         Node node = tx.createNode( containsLabel );
         node.setProperty( containsProp, propertyValue );
         return node.getId();
     }
 
-    private TokenRead tokenRead( Transaction tx )
+    private static TokenRead tokenRead( Transaction tx )
     {
         return ((InternalTransaction) tx).kernelTransaction().tokenRead();
     }

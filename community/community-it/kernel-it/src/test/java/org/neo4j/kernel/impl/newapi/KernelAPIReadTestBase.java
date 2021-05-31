@@ -127,13 +127,13 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         cursors = new ManagedTestCursors( tx.cursors() );
     }
 
-    protected KernelTransaction beginTransaction() throws TransactionFailureException
+    protected static KernelTransaction beginTransaction() throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
         return beginTransaction( kernel, LoginContext.AUTH_DISABLED );
     }
 
-    protected KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
+    protected static KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
         return beginTransaction( kernel, loginContext );

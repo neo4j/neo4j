@@ -38,7 +38,7 @@ import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MA
 
 public class BasicLoginContext extends LoginContext
 {
-    private AccessMode accessMode;
+    private final AccessMode accessMode;
 
     public BasicLoginContext( User user, AuthenticationResult authenticationResult, ClientConnectionInfo connectionInfo )
     {
@@ -59,8 +59,8 @@ public class BasicLoginContext extends LoginContext
 
     private static class BasicAuthSubject implements AuthSubject
     {
-        private User user;
-        private AuthenticationResult authenticationResult;
+        private final User user;
+        private final AuthenticationResult authenticationResult;
 
         BasicAuthSubject( User user, AuthenticationResult authenticationResult )
         {

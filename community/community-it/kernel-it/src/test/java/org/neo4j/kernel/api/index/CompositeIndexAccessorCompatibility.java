@@ -359,7 +359,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         }
     }
 
-    private CoordinateReferenceSystem getCrs( Value value )
+    private static CoordinateReferenceSystem getCrs( Value value )
     {
         if ( Values.isGeometryValue( value ) )
         {

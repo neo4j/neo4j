@@ -1098,7 +1098,7 @@ public abstract class PageSwapperTest
         return address + Integer.BYTES;
     }
 
-    protected void clear( long address )
+    protected static void clear( long address )
     {
         byte b = (byte) 0;
         for ( int i = 0; i < cachePageSize(); i++ )
@@ -1144,47 +1144,47 @@ public abstract class PageSwapperTest
         return swapper;
     }
 
-    protected int sizeOfAsInt( long page )
+    protected static int sizeOfAsInt( long page )
     {
         return UnsafeUtil.getInt( page - Integer.BYTES );
     }
 
-    protected void putInt( long address, int offset, int value )
+    protected static void putInt( long address, int offset, int value )
     {
         UnsafeUtil.putInt( address + offset, value );
     }
 
-    protected int getInt( long address, int offset )
+    protected static int getInt( long address, int offset )
     {
         return UnsafeUtil.getInt( address + offset );
     }
 
-    protected void putLong( long address, int offset, long value )
+    protected static void putLong( long address, int offset, long value )
     {
         UnsafeUtil.putLong( address + offset, value );
     }
 
-    protected long getLong( long address, int offset )
+    protected static long getLong( long address, int offset )
     {
         return UnsafeUtil.getLong( address + offset );
     }
 
-    protected byte getByte( long address, int offset )
+    protected static byte getByte( long address, int offset )
     {
         return UnsafeUtil.getByte( address + offset );
     }
 
-    private long write( PageSwapper swapper, int filePageId, long address ) throws IOException
+    private static long write( PageSwapper swapper, int filePageId, long address ) throws IOException
     {
         return swapper.write( filePageId, address );
     }
 
-    private long read( PageSwapper swapper, int filePageId, long address ) throws IOException
+    private static long read( PageSwapper swapper, int filePageId, long address ) throws IOException
     {
         return swapper.read( filePageId, address );
     }
 
-    private long read( PageSwapper swapper, long startFilePageId, long[] pages, int[] pageSizes, int length )
+    private static long read( PageSwapper swapper, long startFilePageId, long[] pages, int[] pageSizes, int length )
             throws IOException
     {
         if ( length == 0 )
@@ -1194,7 +1194,7 @@ public abstract class PageSwapperTest
         return swapper.read( startFilePageId, pages, pageSizes, length );
     }
 
-    private long write( PageSwapper swapper, long startFilePageId, long[] pages, int[] pageSizes, int length, int affectedPages )
+    private static long write( PageSwapper swapper, long startFilePageId, long[] pages, int[] pageSizes, int length, int affectedPages )
             throws IOException
     {
         if ( length == 0 )
@@ -1204,7 +1204,7 @@ public abstract class PageSwapperTest
         return swapper.write( startFilePageId, pages, pageSizes, length, affectedPages );
     }
 
-    private int cachePageSize()
+    private static int cachePageSize()
     {
         return cachePageSize;
     }
@@ -1242,7 +1242,7 @@ public abstract class PageSwapperTest
         return file;
     }
 
-    private long sizeOfAsLong( long page )
+    private static long sizeOfAsLong( long page )
     {
         return sizeOfAsInt( page );
     }

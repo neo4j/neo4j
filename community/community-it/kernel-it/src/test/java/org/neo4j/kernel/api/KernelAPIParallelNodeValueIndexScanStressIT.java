@@ -26,9 +26,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -107,7 +107,7 @@ class KernelAPIParallelNodeValueIndexScanStressIT
 
     }
 
-    private IndexDescriptor unwrap( IndexDefinition indexDefinition )
+    private static IndexDescriptor unwrap( IndexDefinition indexDefinition )
     {
         return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
     }
@@ -117,7 +117,7 @@ class KernelAPIParallelNodeValueIndexScanStressIT
         return tx.dataRead().indexReadSession( index );
     }
 
-    private void createLabeledNodes( org.neo4j.graphdb.Transaction tx, int nNodes, String labelName, String propKey )
+    private static void createLabeledNodes( org.neo4j.graphdb.Transaction tx, int nNodes, String labelName, String propKey )
     {
         for ( int i = 0; i < nNodes; i++ )
         {

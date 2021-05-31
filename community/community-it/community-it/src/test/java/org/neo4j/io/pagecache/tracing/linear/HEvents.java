@@ -491,13 +491,13 @@ class HEvents
 
         abstract void printBody( PrintStream out, String exceptionLinePrefix );
 
-        protected final void print( PrintStream out, Path file )
+        protected static void print( PrintStream out, Path file )
         {
             out.print( ", file:" );
             out.print( file == null ? "<null>" : file );
         }
 
-        protected final void print( PrintStream out, Throwable exception, String linePrefix )
+        protected static void print( PrintStream out, Throwable exception, String linePrefix )
         {
             if ( exception != null )
             {

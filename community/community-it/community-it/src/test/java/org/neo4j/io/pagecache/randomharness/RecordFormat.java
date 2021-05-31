@@ -94,7 +94,7 @@ public abstract class RecordFormat
         }
     }
 
-    protected String dumpPageContent( PageCursor cursor )
+    protected static String dumpPageContent( PageCursor cursor )
     {
         int initialOffset = cursor.getOffset();
         byte[] bytes = new byte[cursor.getCurrentPageSize()];

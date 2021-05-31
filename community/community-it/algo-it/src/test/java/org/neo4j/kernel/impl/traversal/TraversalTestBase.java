@@ -109,7 +109,7 @@ abstract class TraversalTestBase
         return graph.create( getGraphDb() );
     }
 
-    protected Node getNodeWithName( Transaction transaction, String name )
+    protected static Node getNodeWithName( Transaction transaction, String name )
     {
         ResourceIterable<Node> allNodes = transaction.getAllNodes();
         try ( ResourceIterator<Node> nodeIterator = allNodes.iterator() )
@@ -228,13 +228,13 @@ abstract class TraversalTestBase
         }
     }
 
-    protected <T> void expect( Iterable<? extends T> items,
+    protected static <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, String... expected )
     {
         expect( items, representation, new HashSet<>( Arrays.asList( expected ) ) );
     }
 
-    protected <T> void expect( Iterable<? extends T> items,
+    protected static <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, Set<String> expected )
     {
         Collection<String> encounteredItems = new ArrayList<>();
@@ -251,24 +251,24 @@ abstract class TraversalTestBase
         }
     }
 
-    void expectNodes( Traverser traverser, String... nodes )
+    static void expectNodes( Traverser traverser, String... nodes )
     {
         expect( traverser.nodes(), NAME_PROPERTY_REPRESENTATION, nodes );
     }
 
-    void expectRelationships( Traverser traverser,
-        String... relationships )
+    static void expectRelationships( Traverser traverser,
+            String... relationships )
     {
         expect( traverser.relationships(), new RelationshipRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), relationships );
     }
 
-    void expectPaths( Traverser traverser, String... paths )
+    static void expectPaths( Traverser traverser, String... paths )
     {
         expectPaths( traverser, new HashSet<>( Arrays.asList( paths ) ) );
     }
 
-    void expectPaths( Traverser traverser, Set<String> expected )
+    static void expectPaths( Traverser traverser, Set<String> expected )
     {
         expect( traverser, new NodePathRepresentation(
                 NAME_PROPERTY_REPRESENTATION ), expected );

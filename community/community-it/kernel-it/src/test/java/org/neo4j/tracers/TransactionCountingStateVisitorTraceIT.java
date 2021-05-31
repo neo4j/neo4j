@@ -109,7 +109,7 @@ public class TransactionCountingStateVisitorTraceIT
         }
     }
 
-    private void assertTwoCursor( CursorContext cursorContext )
+    private static void assertTwoCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isEqualTo( 2 );
@@ -117,7 +117,7 @@ public class TransactionCountingStateVisitorTraceIT
         assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
     }
 
-    private void assertZeroCursor( CursorContext cursorContext )
+    private static void assertZeroCursor( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();

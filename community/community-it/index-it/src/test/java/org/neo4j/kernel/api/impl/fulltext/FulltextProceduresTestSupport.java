@@ -114,7 +114,7 @@ class FulltextProceduresTestSupport
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, Level.DEBUG );
     }
 
-    void assertNoIndexSeeks( Result result )
+    static void assertNoIndexSeeks( Result result )
     {
         assertThat( result.stream().count() ).isEqualTo( 1L );
         String planDescription = result.getExecutionPlanDescription().toString();
@@ -229,20 +229,20 @@ class FulltextProceduresTestSupport
         fail( message.toString() );
     }
 
-    List<Value> generateRandomNonStringValues()
+    static List<Value> generateRandomNonStringValues()
     {
         Predicate<Value> nonString = v -> v.valueGroup() != ValueGroup.TEXT;
         return generateRandomValues( nonString );
     }
 
-    List<Value> generateRandomSimpleValues()
+    static List<Value> generateRandomSimpleValues()
     {
         EnumSet<ValueGroup> simpleTypes = EnumSet.of(
                 ValueGroup.BOOLEAN, ValueGroup.BOOLEAN_ARRAY, ValueGroup.NUMBER, ValueGroup.NUMBER_ARRAY );
         return generateRandomValues( v -> simpleTypes.contains( v.valueGroup() ) );
     }
 
-    List<Value> generateRandomValues( Predicate<Value> predicate )
+    static List<Value> generateRandomValues( Predicate<Value> predicate )
     {
         int valuesToGenerate = 1000;
         RandomValues generator = RandomValues.create();
@@ -260,7 +260,7 @@ class FulltextProceduresTestSupport
         return values;
     }
 
-    String quoteValueForQuery( Value value )
+    static String quoteValueForQuery( Value value )
     {
         return QueryParserUtil.escape( value.prettyPrint() ).replace( "\\", "\\\\" ).replace( "\"", "\\\"" );
     }

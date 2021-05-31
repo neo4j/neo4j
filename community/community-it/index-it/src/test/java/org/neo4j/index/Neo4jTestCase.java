@@ -72,7 +72,7 @@ public abstract class Neo4jTestCase
         }
     }
 
-    protected boolean manageMyOwnTxFinish()
+    protected static boolean manageMyOwnTxFinish()
     {
         return false;
     }

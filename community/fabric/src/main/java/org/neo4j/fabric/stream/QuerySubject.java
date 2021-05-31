@@ -375,7 +375,7 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record>
             return SourceTagging.tagId( id, sourceTag );
         }
 
-        private FabricException unableToTagError( AnyValue value )
+        private static FabricException unableToTagError( AnyValue value )
         {
             return new FabricException( Status.General.UnknownError, "Unable to add source tag to entity of type " + value.getTypeName() );
         }

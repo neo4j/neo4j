@@ -424,7 +424,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return list.toArray( new IndexDescriptor[0] );
     }
 
-    private Map<String, Integer> getLabelIdsByName( Transaction tx, String... names )
+    private static Map<String, Integer> getLabelIdsByName( Transaction tx, String... names )
     {
         Map<String,Integer> labelNameIdMap = new HashMap<>();
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -436,7 +436,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return labelNameIdMap;
     }
 
-    private int getPropertyIdByName( Transaction tx, String name )
+    private static int getPropertyIdByName( Transaction tx, String name )
     {
         KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
         return ktx.tokenRead().propertyKey( name );
@@ -468,7 +468,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private Node createNamedLabeledNode( Transaction tx, Label label, String name )
+    private static Node createNamedLabeledNode( Transaction tx, Label label, String name )
     {
         Node node = tx.createNode( label );
         node.setProperty( NAME_PROPERTY, name );

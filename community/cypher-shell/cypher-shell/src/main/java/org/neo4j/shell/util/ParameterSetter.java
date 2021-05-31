@@ -95,12 +95,12 @@ public abstract class ParameterSetter<E extends Exception>
         }
     }
 
-    private BiPredicate<String, Matcher> assignIfValidParameter()
+    private static BiPredicate<String, Matcher> assignIfValidParameter()
     {
         return ( argString, matcher ) -> matcher.matches();
     }
 
-    private BiPredicate<String, Matcher> backTickMatchPattern()
+    private static BiPredicate<String, Matcher> backTickMatchPattern()
     {
         return ( argString, backtickLambdaMatcher ) ->
         {

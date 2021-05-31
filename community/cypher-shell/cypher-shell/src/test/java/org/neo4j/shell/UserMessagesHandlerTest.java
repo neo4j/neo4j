@@ -49,6 +49,6 @@ public class UserMessagesHandlerTest
         when( connectionConfig.driverUrl() ).thenReturn( "bolt://some.place.com:99" );
 
         UserMessagesHandler userMessagesHandler = new UserMessagesHandler( connectionConfig, "3.1.0-Beta99" );
-        assertEquals( "\nBye!", userMessagesHandler.getExitMessage() );
+        assertEquals( "\nBye!", UserMessagesHandler.getExitMessage() );
     }
 }

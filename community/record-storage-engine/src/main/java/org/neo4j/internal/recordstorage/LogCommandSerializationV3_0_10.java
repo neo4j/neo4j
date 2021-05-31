@@ -70,7 +70,7 @@ import static org.neo4j.util.Bits.bitFlag;
 
 class LogCommandSerializationV3_0_10 extends LogCommandSerialization
 {
-    static LogCommandSerializationV3_0_10 INSTANCE = new LogCommandSerializationV3_0_10();
+    static final LogCommandSerializationV3_0_10 INSTANCE = new LogCommandSerializationV3_0_10();
 
     @Override
     KernelVersion version()
@@ -293,7 +293,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return new Command.PropertyKeyTokenCommand( this, before, after );
     }
 
-    private PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableChannel channel ) throws IOException
+    private static PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+count(int)+key_blockId(int)
         byte inUseFlag = channel.get();
@@ -354,7 +354,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return record;
     }
 
-    private NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
+    private static NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
     {
         byte flags = channel.get();
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
@@ -487,7 +487,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         return numberOfRecords;
     }
 
-    private PropertyRecord readPropertyRecord( long id, ReadableChannel channel ) throws IOException
+    private static PropertyRecord readPropertyRecord( long id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
         // prev_prop_id(long)+next_prop_id(long)

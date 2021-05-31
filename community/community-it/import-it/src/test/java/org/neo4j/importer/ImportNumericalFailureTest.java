@@ -104,12 +104,12 @@ class ImportNumericalFailureTest
         assertExceptionContains( exception, expectedError, InputException.class );
     }
 
-    private String fileName( String name )
+    private static String fileName( String name )
     {
         return name;
     }
 
-    private Path file( DatabaseLayout databaseLayout, String localname )
+    private static Path file( DatabaseLayout databaseLayout, String localname )
     {
         return databaseLayout.file( localname );
     }

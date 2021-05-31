@@ -2144,7 +2144,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE>
         goTo( cursor, newestGeneration );
     }
 
-    private void goToSuccessor( PageCursor cursor, long targetNode ) throws IOException
+    private static void goToSuccessor( PageCursor cursor, long targetNode ) throws IOException
     {
         goTo( cursor, targetNode );
         goToSuccessor( cursor );

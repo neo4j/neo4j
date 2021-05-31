@@ -498,7 +498,7 @@ class DenseNodeConcurrencyIT
         }
     }
 
-    private <T> Set<T> diff( Set<T> s1, Set<T> s2 )
+    private static <T> Set<T> diff( Set<T> s1, Set<T> s2 )
     {
         Set<T> s = new HashSet<>( s1 );
         s.removeAll( s2 );
@@ -707,7 +707,7 @@ class DenseNodeConcurrencyIT
         return nodeId;
     }
 
-    private void deleteRelationship( Relationship relationship, Set<Relationship> relationships )
+    private static void deleteRelationship( Relationship relationship, Set<Relationship> relationships )
     {
         relationship.delete();
         relationships.remove( relationship );

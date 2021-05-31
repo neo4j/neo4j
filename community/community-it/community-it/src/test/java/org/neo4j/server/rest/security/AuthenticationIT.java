@@ -274,7 +274,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase
         assertEquals( 200, post.status() );
     }
 
-    private JsonNode getResultRow( HTTP.Response response ) throws JsonParseException
+    private static JsonNode getResultRow( HTTP.Response response ) throws JsonParseException
     {
         return response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" );
     }

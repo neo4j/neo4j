@@ -45,7 +45,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
-import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.CREATED_TEST_FILE_PAIRS_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
@@ -103,14 +102,14 @@ abstract class DirectoryExtensionLifecycleVerificationTest
     {
         Path file = directory.createFile( "a" );
         assertTrue( fs.fileExists( file ) );
-        CONTEXT.setValue( SUCCESSFUL_TEST_FILE_KEY, file );
+        ExecutionSharedContext.setValue( SUCCESSFUL_TEST_FILE_KEY, file );
     }
 
     @Test
     void failAndKeepDirectory()
     {
         Path file = directory.createFile( "b" );
-        CONTEXT.setValue( CREATED_TEST_FILE_PAIRS_KEY, file );
+        ExecutionSharedContext.setValue( CREATED_TEST_FILE_PAIRS_KEY, file );
         throw new RuntimeException( "simulate test failure" );
     }
 
@@ -118,7 +117,7 @@ abstract class DirectoryExtensionLifecycleVerificationTest
     void lockFileAndFailToDeleteDirectory()
     {
         Path nonDeletableDirectory = directory.directory( "c" );
-        CONTEXT.setValue( LOCKED_TEST_FILE_KEY, nonDeletableDirectory );
+        ExecutionSharedContext.setValue( LOCKED_TEST_FILE_KEY, nonDeletableDirectory );
         assertTrue( nonDeletableDirectory.toFile().setReadable( false, false ) );
     }
 
@@ -151,10 +150,10 @@ abstract class DirectoryExtensionLifecycleVerificationTest
         {
             var filename = UUID.randomUUID().toString();
             var file = testDirectory.createFile( filename );
-            List<Pair<Path,Boolean>> pairs = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+            List<Pair<Path,Boolean>> pairs = ExecutionSharedContext.getValue( CREATED_TEST_FILE_PAIRS_KEY );
             pairs = pairs == null ? new LinkedList<>() : pairs;
             pairs.add( Pair.of( file, fail ) );
-            CONTEXT.setValue( CREATED_TEST_FILE_PAIRS_KEY, pairs );
+            ExecutionSharedContext.setValue( CREATED_TEST_FILE_PAIRS_KEY, pairs );
             if ( fail )
             {
                 fail();

@@ -872,7 +872,7 @@ class RecoveryIT
         }
     }
 
-    private void createSingleNode( GraphDatabaseService service )
+    private static void createSingleNode( GraphDatabaseService service )
     {
         try ( Transaction transaction = service.beginTx() )
         {
@@ -1010,7 +1010,7 @@ class RecoveryIT
         return additionalConfiguration( serviceBuilder ).build();
     }
 
-    private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )
+    private static PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )
     {
         return databaseAPI.getDependencyResolver().resolveDependency( PageCache.class );
     }

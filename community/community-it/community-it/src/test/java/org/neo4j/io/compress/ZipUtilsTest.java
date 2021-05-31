@@ -117,7 +117,7 @@ class ZipUtilsTest
         ZipUtils.zip( fileSystem, aFile, archiveFile );
     }
 
-    private int countArchiveEntries( Path archiveFile ) throws IOException
+    private static int countArchiveEntries( Path archiveFile ) throws IOException
     {
         try ( ZipInputStream zipInputStream = new ZipInputStream( new BufferedInputStream( Files.newInputStream( archiveFile ) ) ) )
         {

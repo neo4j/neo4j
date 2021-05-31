@@ -60,7 +60,7 @@ class NoChangeWriteTransactionTest
                 "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)" );
     }
 
-    private Node createEmptyNode( GraphDatabaseService db )
+    private static Node createEmptyNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

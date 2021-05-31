@@ -1133,12 +1133,12 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private void assertRelationships( Direction direction, NodeCursor node, int type, RelationshipTraversalCursor traversal, long... relationships )
+    private static void assertRelationships( Direction direction, NodeCursor node, int type, RelationshipTraversalCursor traversal, long... relationships )
     {
         assertRelationships( node, traversal, selection( type, direction ), relationships );
     }
 
-    private void assertRelationships( NodeCursor node, RelationshipTraversalCursor traversal, RelationshipSelection selection, long... relationships )
+    private static void assertRelationships( NodeCursor node, RelationshipTraversalCursor traversal, RelationshipSelection selection, long... relationships )
     {
         node.relationships( traversal, selection );
         MutableLongSet set = LongHashSet.newSetWith( relationships );
@@ -1152,13 +1152,13 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         assertFalse( traversal.next() );
     }
 
-    private void assertNoRelationships( Direction direction, NodeCursor node, int type, RelationshipTraversalCursor traversal )
+    private static void assertNoRelationships( Direction direction, NodeCursor node, int type, RelationshipTraversalCursor traversal )
     {
         node.relationships( traversal, selection( type, direction ) );
         assertFalse( traversal.next() );
     }
 
-    private void traverse( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
+    private static void traverse( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -1191,7 +1191,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private Map<String,Integer> modifyStartNodeRelationships( RelationshipTestSupport.StartNode start, KernelTransaction tx )
+    private static Map<String,Integer> modifyStartNodeRelationships( RelationshipTestSupport.StartNode start, KernelTransaction tx )
             throws KernelException
     {
         Map<String,Integer> expectedCounts = new HashMap<>();
@@ -1357,7 +1357,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private boolean hasProperties( RelationshipScanCursor cursor, KernelTransaction tx )
+    private static boolean hasProperties( RelationshipScanCursor cursor, KernelTransaction tx )
     {
         try ( PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor( NULL, INSTANCE ) )
         {
@@ -1366,7 +1366,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private void relateNTimes( int nRelationshipsInStore, int type, long n1, long n2, KernelTransaction tx )
+    private static void relateNTimes( int nRelationshipsInStore, int type, long n1, long n2, KernelTransaction tx )
             throws KernelException
     {
         for ( int i = 0; i < nRelationshipsInStore; i++ )
@@ -1375,7 +1375,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private void assertCountRelationships(
+    private static void assertCountRelationships(
             RelationshipScanCursor relationship, int expectedCount, long sourceNode, int type, long targetNode )
     {
         int count = 0;
@@ -1389,7 +1389,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         assertEquals( expectedCount, count );
     }
 
-    private void assertCount( int count, RelationshipDirection direction, Consumer<Degrees> asserter )
+    private static void assertCount( int count, RelationshipDirection direction, Consumer<Degrees> asserter )
             throws Exception
     {
         long start;
@@ -1421,7 +1421,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private void createRelationship( RelationshipDirection direction, long start, int type, Write write )
+    private static void createRelationship( RelationshipDirection direction, long start, int type, Write write )
             throws EntityNotFoundException
     {
         switch ( direction )

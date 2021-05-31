@@ -121,7 +121,7 @@ class ConcurrentChangesOnEntitiesTest
         assertDatabaseConsistent();
     }
 
-    private long initWithNode( GraphDatabaseService db )
+    private static long initWithNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -133,7 +133,7 @@ class ConcurrentChangesOnEntitiesTest
 
     }
 
-    private long initWithRel( GraphDatabaseService db )
+    private static long initWithRel( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

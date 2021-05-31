@@ -87,7 +87,7 @@ public class PrettyPrinter
         return sb.toString();
     }
 
-    private void printIfNotEmpty( String s, LinePrinter linePrinter )
+    private static void printIfNotEmpty( String s, LinePrinter linePrinter )
     {
         if ( !s.isEmpty() )
         {
@@ -95,7 +95,7 @@ public class PrettyPrinter
         }
     }
 
-    private OutputFormatter selectFormatter( PrettyConfig prettyConfig )
+    private static OutputFormatter selectFormatter( PrettyConfig prettyConfig )
     {
         if ( prettyConfig.format == Format.VERBOSE )
         {

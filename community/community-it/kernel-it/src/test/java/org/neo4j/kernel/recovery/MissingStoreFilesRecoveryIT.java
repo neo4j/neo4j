@@ -134,7 +134,7 @@ class MissingStoreFilesRecoveryIT
         return defaultDatabase( managementService ).getDependencyResolver().resolveDependency( DatabaseStateService.class );
     }
 
-    private GraphDatabaseAPI defaultDatabase( DatabaseManagementService managementService )
+    private static GraphDatabaseAPI defaultDatabase( DatabaseManagementService managementService )
     {
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

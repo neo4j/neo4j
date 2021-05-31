@@ -429,7 +429,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
     // HELPERS
 
-    private long createNode()
+    private static long createNode()
     {
         long node;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
@@ -440,7 +440,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         return node;
     }
 
-    private void deleteNode( long node )
+    private static void deleteNode( long node )
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
@@ -449,7 +449,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
     }
 
-    private long createNodeWithLabel( String labelName )
+    private static long createNodeWithLabel( String labelName )
     {
         long node;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
@@ -460,7 +460,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         return node;
     }
 
-    private long createNodeWithProperty( String propertyKey, Object value )
+    private static long createNodeWithProperty( String propertyKey, Object value )
     {
         Node node;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
@@ -472,7 +472,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         return node.getId();
     }
 
-    private void assertNoLabels( long nodeId )
+    private static void assertNoLabels( long nodeId )
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
@@ -480,7 +480,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
     }
 
-    private void assertLabels( long nodeId, String label )
+    private static void assertLabels( long nodeId, String label )
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
@@ -488,7 +488,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
     }
 
-    private void assertNoProperty( long node, String propertyKey )
+    private static void assertNoProperty( long node, String propertyKey )
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
@@ -496,7 +496,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
     }
 
-    private void assertProperty( long node, String propertyKey, Object value )
+    private static void assertProperty( long node, String propertyKey, Object value )
     {
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {

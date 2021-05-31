@@ -45,7 +45,7 @@ public class NodeIndexingAcceptanceTest extends IndexingAcceptanceTestBase<Label
         return createNode( db, properties, label );
     }
 
-    private Node createNode( GraphDatabaseService db, Map<String,Object> properties, Label... labels )
+    private static Node createNode( GraphDatabaseService db, Map<String,Object> properties, Label... labels )
     {
         try ( Transaction tx = db.beginTx() )
         {

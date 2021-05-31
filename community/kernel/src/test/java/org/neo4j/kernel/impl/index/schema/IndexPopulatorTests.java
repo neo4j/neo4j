@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.PageCacheConfig;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
@@ -313,7 +314,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     {
         // given
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
+        try ( PageCache pageCache = PageCacheSupportExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
         {
             populator = createPopulator( pageCache );
             populator.create();

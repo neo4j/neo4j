@@ -102,12 +102,12 @@ public class SequentialEventSourceJoltSerializerTest extends AbstractEventSource
                       "\u001E{\"summary\":{}}\n", result );
     }
 
-    protected SequentialEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
+    protected static SequentialEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
     {
         return new SequentialEventSourceJoltSerializer( transactionHandle, Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
     }
 
-    protected SequentialEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
+    protected static SequentialEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
     {
         return getSerializerWith( transactionHandle, output, null );
     }

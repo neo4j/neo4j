@@ -119,7 +119,7 @@ public class BoltThrottleMaxDurationIT
         return factory;
     }
 
-    protected Consumer<Map<Setting<?>, Object>> getSettingsFunction()
+    protected static Consumer<Map<Setting<?>, Object>> getSettingsFunction()
     {
         return settings ->
         {
@@ -142,7 +142,7 @@ public class BoltThrottleMaxDurationIT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( client ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( client ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( client ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         Future<?> sender = otherThread.execute( () ->

@@ -32,6 +32,7 @@ import org.neo4j.bolt.messaging.RecordingByteChannel;
 import org.neo4j.bolt.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.PackStream;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.test.extension.Inject;
@@ -70,10 +71,10 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
         // When
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
-                .send( util.chunk( 32, truncated ) );
+                .send( TransportTestUtil.chunk( 32, truncated ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
@@ -98,10 +99,10 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
         // When
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
-                .send( util.chunk( 32, invalidMessage ) );
+                .send( TransportTestUtil.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
@@ -124,10 +125,10 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
         // When
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
-                .send( util.chunk( 32, invalidMessage ) );
+                .send( TransportTestUtil.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 
@@ -151,10 +152,10 @@ public class TransportErrorIT extends AbstractBoltTransportsTest
         // When
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
-                .send( util.chunk( 32, invalidMessage ) );
+                .send( TransportTestUtil.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( eventuallyDisconnects() );
     }
 }

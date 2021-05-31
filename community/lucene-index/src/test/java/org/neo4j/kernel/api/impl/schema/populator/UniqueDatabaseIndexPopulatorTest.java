@@ -479,7 +479,7 @@ class UniqueDatabaseIndexPopulatorTest
         populator.add( singletonList( update ), NULL );
     }
 
-    private List<Long> getAllNodes( Directory directory, Object value ) throws IOException
+    private static List<Long> getAllNodes( Directory directory, Object value ) throws IOException
     {
         return AllNodesCollector.getAllNodes( directory, Values.of( value ) );
     }

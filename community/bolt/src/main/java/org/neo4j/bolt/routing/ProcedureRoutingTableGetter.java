@@ -67,7 +67,7 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
         return future;
     }
 
-    private MapValue getParams( MapValue routingContext, String databaseName )
+    private static MapValue getParams( MapValue routingContext, String databaseName )
     {
         var paramsBuilder = new MapValueBuilder();
         paramsBuilder.add( ROUTING_CONTEXT_PARAM, routingContext );

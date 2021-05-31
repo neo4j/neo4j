@@ -555,7 +555,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return Optional.of( new StatementBoltResult( statementResult ) );
     }
 
-    private String getActualDbName( @Nonnull ResultSummary resultSummary )
+    private static String getActualDbName( @Nonnull ResultSummary resultSummary )
     {
         DatabaseInfo dbInfo = resultSummary.database();
         return dbInfo.name() == null ? ABSENT_DB_NAME : dbInfo.name();
@@ -649,7 +649,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return activeDatabaseNameAsSetByUser.compareToIgnoreCase( SYSTEM_DB_NAME ) == 0;
     }
 
-    private boolean procedureNotFound( ClientException e )
+    private static boolean procedureNotFound( ClientException e )
     {
         return e.code().compareToIgnoreCase( "Neo.ClientError.Procedure.ProcedureNotFound" ) == 0;
     }

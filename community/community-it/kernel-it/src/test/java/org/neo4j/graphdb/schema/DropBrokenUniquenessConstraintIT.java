@@ -182,7 +182,7 @@ class DropBrokenUniquenessConstraintIT
         // AfterEach
     }
 
-    private void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules ) throws KernelException
+    private static void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules ) throws KernelException
     {
         for ( IndexDescriptor rule : loop( schemaRules.indexesGetAll( NULL ) ) )
         {

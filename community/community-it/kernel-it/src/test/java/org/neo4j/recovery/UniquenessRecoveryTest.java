@@ -390,7 +390,7 @@ public class UniquenessRecoveryTest
         }
     }
 
-    private Integer awaitMessage( Process process, String message ) throws IOException, InterruptedException
+    private static Integer awaitMessage( Process process, String message ) throws IOException, InterruptedException
     {
         BufferedReader out = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
         for ( String line; (line = out.readLine()) != null; )

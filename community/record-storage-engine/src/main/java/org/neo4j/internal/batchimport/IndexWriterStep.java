@@ -64,7 +64,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
         return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), cursorContext );
     }
 
-    private IndexDescriptor createIndex(
+    private static IndexDescriptor createIndex(
             EntityType entityType, IndexConfig config, SchemaRuleAccess schemaRule, SchemaStore schemaStore,
             MemoryTracker memoryTracker, CursorContext cursorContext )
     {
@@ -83,7 +83,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
         }
     }
 
-    private Optional<IndexDescriptor> findIndex( EntityType entityType, SchemaRuleAccess schemaRule )
+    private static Optional<IndexDescriptor> findIndex( EntityType entityType, SchemaRuleAccess schemaRule )
     {
         Iterator<IndexDescriptor> descriptors = schemaRule.indexesGetAll( CursorContext.NULL );
         return stream( descriptors ).filter( index -> index.schema().entityType() == entityType && index.isTokenIndex() ).findFirst();

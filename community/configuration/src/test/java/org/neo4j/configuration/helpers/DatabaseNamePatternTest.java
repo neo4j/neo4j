@@ -109,7 +109,7 @@ class DatabaseNamePatternTest
         assertEquals( "The provided database name must have a length between 1 and 63 characters.", e3.getMessage() );
     }
 
-    private void assertValid( String name )
+    private static void assertValid( String name )
     {
         new DatabaseNamePattern( name );
     }

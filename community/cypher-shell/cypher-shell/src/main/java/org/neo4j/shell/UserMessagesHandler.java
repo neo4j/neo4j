@@ -70,7 +70,7 @@ public class UserMessagesHandler
     }
 
     @Nonnull
-    public String getExitMessage()
+    public static String getExitMessage()
     {
         return AnsiFormattedText.s().append( "\nBye!" ).formattedString();
     }

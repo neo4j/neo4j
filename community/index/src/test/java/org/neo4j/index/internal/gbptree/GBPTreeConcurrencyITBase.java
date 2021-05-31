@@ -103,7 +103,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     {
         int pageSize = 512;
         layout = getLayout( random, pageSize );
-        pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
+        pageCache = PageCacheSupportExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
         return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 

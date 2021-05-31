@@ -348,7 +348,7 @@ class RequireTransactionIT
         checkTransactionRequirement( transaction, executable );
     }
 
-    private void checkTransactionRequirement( Transaction transaction, Executable executable )
+    private static void checkTransactionRequirement( Transaction transaction, Executable executable )
     {
         try ( transaction )
         {
@@ -357,12 +357,12 @@ class RequireTransactionIT
         checkThrowNotInTransaction( executable );
     }
 
-    void checkDoesNotThrow( Executable executable )
+    static void checkDoesNotThrow( Executable executable )
     {
         assertDoesNotThrow( executable );
     }
 
-    void checkThrowNotInTransaction( Executable executable )
+    static void checkThrowNotInTransaction( Executable executable )
     {
         var e = assertThrows( Exception.class, executable );
         assertThat( getRootCause( e ) ).isInstanceOf( NotInTransactionException.class );

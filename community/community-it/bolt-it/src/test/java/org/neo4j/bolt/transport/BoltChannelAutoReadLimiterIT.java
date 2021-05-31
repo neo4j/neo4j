@@ -95,7 +95,7 @@ class BoltChannelAutoReadLimiterIT
 
     }
 
-    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
+    protected static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings ->
         {
@@ -115,7 +115,7 @@ class BoltChannelAutoReadLimiterIT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
         // when

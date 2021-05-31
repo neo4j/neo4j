@@ -642,7 +642,7 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private StoreId getStoreId( GraphDatabaseAPI database )
+    private static StoreId getStoreId( GraphDatabaseAPI database )
     {
         return database.getDependencyResolver().resolveDependency( StoreIdProvider.class ).getStoreId();
     }
@@ -800,7 +800,7 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private long getLastClosedTransactionOffset( GraphDatabaseAPI database )
+    private static long getLastClosedTransactionOffset( GraphDatabaseAPI database )
     {
         MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
         return metaDataStore.getLastClosedTransaction()[2];

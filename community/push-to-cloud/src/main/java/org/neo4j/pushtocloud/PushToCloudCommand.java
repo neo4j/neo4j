@@ -22,7 +22,6 @@ import picocli.CommandLine.Option;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -91,7 +90,7 @@ public class PushToCloudCommand extends AbstractCommand
     @Option( names = "--overwrite", description = "Optional: Overwrite the data in the target database." )
     private boolean overwrite;
 
-    private static double ACCEPTABLE_DUMP_CHANGE = 0.1;    // Allow 10% deviation between measured database size, and actually stored dump
+    private static final double ACCEPTABLE_DUMP_CHANGE = 0.1;    // Allow 10% deviation between measured database size, and actually stored dump
 
     public PushToCloudCommand( ExecutionContext ctx, Copier copier, DumpCreator dumpCreator, PushToCloudConsole cons )
     {

@@ -71,22 +71,22 @@ public abstract class AbstractNeo4jTestCase
         managementService.shutdown();
     }
 
-    public GraphDatabaseService getGraphDb()
+    public static GraphDatabaseService getGraphDb()
     {
         return graphDb;
     }
 
-    public DatabaseManagementService getManagementService()
+    public static DatabaseManagementService getManagementService()
     {
         return managementService;
     }
 
-    protected GraphDatabaseAPI getGraphDbAPI()
+    protected static GraphDatabaseAPI getGraphDbAPI()
     {
         return graphDb;
     }
 
-    protected Node createNode()
+    protected static Node createNode()
     {
         Node node;
         try ( Transaction transaction = graphDb.beginTx() )
@@ -97,12 +97,12 @@ public abstract class AbstractNeo4jTestCase
         return node;
     }
 
-    protected IdGenerator getIdGenerator( IdType idType )
+    protected static IdGenerator getIdGenerator( IdType idType )
     {
         return graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( idType );
     }
 
-    protected long propertyRecordsInUse()
+    protected static long propertyRecordsInUse()
     {
         return numberOfRecordsInUse( propertyStore() );
     }
@@ -140,17 +140,17 @@ public abstract class AbstractNeo4jTestCase
         return 0;
     }
 
-    protected long dynamicStringRecordsInUse()
+    protected static long dynamicStringRecordsInUse()
     {
         return numberOfRecordsInUse( propertyStore().getStringStore() );
     }
 
-    protected long dynamicArrayRecordsInUse()
+    protected static long dynamicArrayRecordsInUse()
     {
         return numberOfRecordsInUse( propertyStore().getArrayStore() );
     }
 
-    protected PropertyStore propertyStore()
+    protected static PropertyStore propertyStore()
     {
         return graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                 .testAccessNeoStores().getPropertyStore();

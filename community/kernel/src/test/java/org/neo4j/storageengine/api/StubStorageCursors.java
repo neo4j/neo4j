@@ -71,7 +71,7 @@ public class StubStorageCursors implements StorageReader
     private final Map<Long,RelationshipData> relationshipData = new HashMap<>();
     private final Map<SchemaDescriptor, IndexDescriptor> indexDescriptorMap = new HashMap<>();
 
-    private IndexDescriptor indexDescriptor( EntityType entityType, long id )
+    private static IndexDescriptor indexDescriptor( EntityType entityType, long id )
     {
         IndexPrototype indexPrototype = IndexPrototype
                 .forSchema( forAnyEntityTokens( entityType ) )

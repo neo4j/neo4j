@@ -223,7 +223,7 @@ class KernelSchemaStateFlushingTest
         }
     }
 
-    private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
+    private static String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
         return tx.schemaRead().schemaStateGetOrCreate( key, from -> value );
     }

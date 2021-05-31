@@ -190,12 +190,12 @@ class RecordLoading
         return loadRecord( neoStores.getRelationshipGroupStore(), id, cursorContext );
     }
 
-    <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, long id, CursorContext cursorContext )
+    static <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, long id, CursorContext cursorContext )
     {
         return loadRecord( store, store.newRecord(), id, cursorContext );
     }
 
-    <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, RECORD record, long id, CursorContext cursorContext )
+    static <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, RECORD record, long id, CursorContext cursorContext )
     {
         try ( var cursor = store.openPageCursorForReading( id, cursorContext ) )
         {

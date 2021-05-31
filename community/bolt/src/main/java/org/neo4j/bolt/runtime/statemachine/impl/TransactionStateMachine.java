@@ -388,7 +388,7 @@ public class TransactionStateMachine implements StatementProcessor
 
         abstract State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
 
-        void terminateQueryAndRollbackTransaction( TransactionStateMachineSPI spi, MutableTransactionState ctx ) throws TransactionFailureException
+        static void terminateQueryAndRollbackTransaction( TransactionStateMachineSPI spi, MutableTransactionState ctx ) throws TransactionFailureException
         {
             terminateActiveStatements( ctx );
             closeTransaction( ctx, spi, false );
@@ -398,7 +398,7 @@ public class TransactionStateMachine implements StatementProcessor
          * This is overly careful about always closing and nulling the transaction since
          * reset can cause ctx.currentTransaction to be null we store in local variable.
          */
-        void closeTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, boolean success ) throws TransactionFailureException
+        static void closeTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, boolean success ) throws TransactionFailureException
         {
             closeActiveStatements( ctx, success );
 
@@ -506,7 +506,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        void consumeResult( MutableTransactionState ctx, int statementId, StatementOutcome outcome, ResultConsumer resultConsumer ) throws Throwable
+        static void consumeResult( MutableTransactionState ctx, int statementId, StatementOutcome outcome, ResultConsumer resultConsumer ) throws Throwable
         {
             boolean success = false;
             try
@@ -530,7 +530,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        BoltResult startExecution( BoltResultHandle resultHandle ) throws KernelException
+        static BoltResult startExecution( BoltResultHandle resultHandle ) throws KernelException
         {
             try
             {

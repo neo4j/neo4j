@@ -156,7 +156,7 @@ public class NestedIndexReadersIT
         }
     }
 
-    private void createRoundOfEntities( Transaction tx, EntityControl<?> entityControl )
+    private static void createRoundOfEntities( Transaction tx, EntityControl<?> entityControl )
     {
         for ( int id = 0; id < IDS; id++ )
         {
@@ -164,7 +164,7 @@ public class NestedIndexReadersIT
         }
     }
 
-    private void assertRoundOfEntities( List<ResourceIterator<?>> iterators, EntityControl<?> entityControl )
+    private static void assertRoundOfEntities( List<ResourceIterator<?>> iterators, EntityControl<?> entityControl )
     {
         for ( int id = 0; id < IDS; id++ )
         {

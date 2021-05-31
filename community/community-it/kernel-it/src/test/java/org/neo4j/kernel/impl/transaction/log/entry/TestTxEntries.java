@@ -66,7 +66,7 @@ class TestTxEntries
         managementService.shutdown();
     }
 
-    private void createSomeTransactions( GraphDatabaseService db )
+    private static void createSomeTransactions( GraphDatabaseService db )
     {
         Node node1;
         try ( Transaction tx = db.beginTx() )

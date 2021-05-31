@@ -220,7 +220,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
     protected abstract IndexParams getIndexParams();
 
-    protected void assertSameDerivedValue( PointValue p1, PointValue p2 )
+    protected static void assertSameDerivedValue( PointValue p1, PointValue p2 )
     {
         ConfiguredSpaceFillingCurveSettingsCache settingsFactory = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
         SpaceFillingCurveSettings spaceFillingCurveSettings = settingsFactory.forCRS( CoordinateReferenceSystem.WGS84 );

@@ -93,12 +93,12 @@ class TokenCreationIT
         consumeFutures( futures );
     }
 
-    private void consumeFutures( List<Future<?>> futures ) throws ExecutionException
+    private static void consumeFutures( List<Future<?>> futures ) throws ExecutionException
     {
         Futures.getAll( futures );
     }
 
-    private Label[] getLabels()
+    private static Label[] getLabels()
     {
         int randomLabelValue = ThreadLocalRandom.current().nextInt( 2 ) + 1;
         Label[] labels = new Label[randomLabelValue];

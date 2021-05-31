@@ -142,13 +142,13 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     }
 
     @VisibleForTesting
-    void doFree( MemoryBlock block, MemoryTracker tracker )
+    static void doFree( MemoryBlock block, MemoryTracker tracker )
     {
         UnsafeUtil.free( block.addr, block.size, tracker );
     }
 
     @VisibleForTesting
-    MemoryBlock allocateNew( long size, MemoryTracker tracker )
+    static MemoryBlock allocateNew( long size, MemoryTracker tracker )
     {
         final long addr = UnsafeUtil.allocateMemory( size, tracker );
         return new MemoryBlock( addr, size );
@@ -157,5 +157,16 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
     private boolean notCacheable( long size )
     {
         return !isPowerOfTwo( size ) || size > maxCacheableBlockSize;
+    }
+
+    @VisibleForTesting
+    long numberOfCachedBlocks()
+    {
+        long num = 0;
+        for ( Queue<MemoryBlock> cache : caches )
+        {
+            num += cache.size();
+        }
+        return num;
     }
 }

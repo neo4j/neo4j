@@ -98,7 +98,7 @@ public class CertificatesIT
         }
     }
 
-    private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
+    private static X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
     {
         Certificate[] certificates = PkiUtils.loadCertificates( certFile );
         assertThat( certificates.length ).isEqualTo( 1 );

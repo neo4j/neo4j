@@ -573,12 +573,12 @@ class TestShortestPath extends Neo4jAlgoTestCase
         }
     }
 
-    private void testShortestPathFinder( EvaluationContext context, PathFinderTester tester, PathExpander expander, int maxDepth )
+    private static void testShortestPathFinder( EvaluationContext context, PathFinderTester tester, PathExpander expander, int maxDepth )
     {
         testShortestPathFinder( context, tester, expander, maxDepth, null );
     }
 
-    private void testShortestPathFinder( EvaluationContext context, PathFinderTester tester, PathExpander expander, int maxDepth,
+    private static void testShortestPathFinder( EvaluationContext context, PathFinderTester tester, PathExpander expander, int maxDepth,
             Integer maxResultCount )
     {
         final LengthCheckingExpanderWrapper lengthChecker = new LengthCheckingExpanderWrapper( expander );

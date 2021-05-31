@@ -290,12 +290,12 @@ class TxStateTransactionDataSnapshotIT
         }
     }
 
-    private KernelTransactionImplementation getKernelTransaction( Transaction transaction )
+    private static KernelTransactionImplementation getKernelTransaction( Transaction transaction )
     {
         return (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
     }
 
-    private void assertZeroTracer( CursorContext cursorContext )
+    private static void assertZeroTracer( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();

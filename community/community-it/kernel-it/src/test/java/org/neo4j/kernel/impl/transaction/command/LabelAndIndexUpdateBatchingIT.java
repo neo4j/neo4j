@@ -186,7 +186,7 @@ class LabelAndIndexUpdateBatchingIT
         return transactions;
     }
 
-    private long getLastClosedTransactionId( GraphDatabaseAPI database )
+    private static long getLastClosedTransactionId( GraphDatabaseAPI database )
     {
         MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
         return metaDataStore.getLastClosedTransaction()[0];

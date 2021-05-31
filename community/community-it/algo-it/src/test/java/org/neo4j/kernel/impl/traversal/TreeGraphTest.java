@@ -199,7 +199,7 @@ class TreeGraphTest extends TraversalTestBase
         }
     }
 
-    private int expectedDepth( int i )
+    private static int expectedDepth( int i )
     {
         assertTrue( i < 13 );
         if ( i == 0 )

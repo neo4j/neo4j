@@ -91,7 +91,7 @@ public abstract class AbstractEditionModule
 
     public abstract EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId );
 
-    protected DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
+    protected static DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
             Predicate<String> fileNameFilter )
     {
         DefaultFileDeletionListenerFactory listenerFactory =
@@ -135,7 +135,7 @@ public abstract class AbstractEditionModule
 
     public abstract void createSecurityModule( GlobalModule globalModule );
 
-    protected NetworkConnectionTracker createConnectionTracker()
+    protected static NetworkConnectionTracker createConnectionTracker()
     {
         return new DefaultNetworkConnectionTracker();
     }

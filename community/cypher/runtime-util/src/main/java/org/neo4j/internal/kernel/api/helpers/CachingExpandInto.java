@@ -649,7 +649,7 @@ public class CachingExpandInto extends DefaultCloseListenable
 
         static class Key
         {
-            static long KEY_SHALLOW_SIZE = shallowSizeOfInstance(Key.class);
+            static final long KEY_SHALLOW_SIZE = shallowSizeOfInstance(Key.class);
 
             private final long a, b;
 

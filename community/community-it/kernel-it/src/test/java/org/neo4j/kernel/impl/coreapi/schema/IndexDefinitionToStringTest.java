@@ -95,7 +95,7 @@ class IndexDefinitionToStringTest
         }
     }
 
-    private void assertIndexString( IndexDefinition index, String expectedStringFormat )
+    private static void assertIndexString( IndexDefinition index, String expectedStringFormat )
     {
         assertThat( index.toString() ).isEqualTo( expectedStringFormat, ((IndexDefinitionImpl) index).getIndexReference().getId() );
     }

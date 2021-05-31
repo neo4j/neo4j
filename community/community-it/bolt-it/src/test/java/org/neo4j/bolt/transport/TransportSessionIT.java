@@ -32,6 +32,7 @@ import java.util.Map;
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.testing.TestNotification;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
@@ -80,7 +81,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAcceptedVersions() );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
     }
 
     @ParameterizedTest( name = "{displayName} {2}" )
@@ -91,7 +92,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1337, 0, 0, 0 ) );
+                .send( TransportTestUtil.acceptedVersions( 1337, 0, 0, 0 ) );
 
         // Then
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 0} ) );
@@ -110,7 +111,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( message -> assertThat( message )
@@ -135,7 +136,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTxWithoutResult( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( message -> assertThat( message )
@@ -156,7 +157,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth() )
                 .send( util.defaultRunAutoCommitTx( "QINVALID" ) );
 
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
@@ -185,7 +186,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAuth() )
                 .send( util.defaultRunAutoCommitTx( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ) );
 
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( message -> assertThat( message )
@@ -218,7 +219,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "CREATE (n:Test) DELETE n RETURN n" ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( message -> assertThat( message )
@@ -251,7 +252,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( message -> assertThat( message )
@@ -283,7 +284,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() )
                 .send( util.defaultRunAutoCommitTx( "CREATE (n)" ) );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
@@ -313,7 +314,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
@@ -328,7 +329,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
     }
 
-    private byte[] bytes( int... ints )
+    private static byte[] bytes( int... ints )
     {
         byte[] bytes = new byte[ints.length];
         for ( int i = 0; i < ints.length; i++ )
@@ -358,7 +359,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "RETURN {p}", ValueUtils.asMapValue( params ) ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Request.Invalid,
@@ -390,7 +391,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 .send( util.defaultRunAutoCommitTx( "DROP INDEX on :Movie12345(id)" ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed,
@@ -398,7 +399,7 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 msgIgnored() ) );
     }
 
-    private Condition<AnyValue> longEquals( long expected )
+    private static Condition<AnyValue> longEquals( long expected )
     {
         return new Condition<>( value -> value.equals( longValue( expected ) ), "long equals" );
     }

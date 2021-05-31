@@ -112,12 +112,12 @@ class ConfigPatternBuilderTest
     }
 
     // some strings that have special meaning in java regex
-    private static String[] unsupportedWildcards = new String[]{
+    private static final String[] unsupportedWildcards = new String[]{
             "[a-z]", ".", ".+", "+", "\\", "^", "&", "(a|b)", "[^1-9]", "\\d", "\\D", "\\s", "\\S", "\\w", "\\W"
     };
 
     // check that java regex special characters are escaped correctly
-    private void assertNotMessedUpByUnsupportedWildcards( String pattern, int flags, String match, boolean expectedMatch )
+    private static void assertNotMessedUpByUnsupportedWildcards( String pattern, int flags, String match, boolean expectedMatch )
     {
         for ( String wildcard : unsupportedWildcards )
         {
@@ -134,7 +134,7 @@ class ConfigPatternBuilderTest
         }
     }
 
-    private void checkMatchesAndEscapingWorks( String pattern, String... expectedMatches )
+    private static void checkMatchesAndEscapingWorks( String pattern, String... expectedMatches )
     {
         assertMatches( pattern, 0, expectedMatches );
 
@@ -144,7 +144,7 @@ class ConfigPatternBuilderTest
         }
     }
 
-    private void assertMatches( String pattern, int flags, String... expectedMatches )
+    private static void assertMatches( String pattern, int flags, String... expectedMatches )
     {
         var p = ConfigPatternBuilder.patternFromConfigString( pattern, flags );
         assertThat( expectedMatches ).allSatisfy(
@@ -154,7 +154,7 @@ class ConfigPatternBuilderTest
         );
     }
 
-    private void checkDoesNotMatchAndEscapingWorks( String pattern, String... expectedMatches )
+    private static void checkDoesNotMatchAndEscapingWorks( String pattern, String... expectedMatches )
     {
         assertDoesNotMatch( pattern, 0, expectedMatches );
         for ( String match : expectedMatches )
@@ -163,7 +163,7 @@ class ConfigPatternBuilderTest
         }
     }
 
-    private void assertDoesNotMatch( String pattern, int flags, String... expectedMatches )
+    private static void assertDoesNotMatch( String pattern, int flags, String... expectedMatches )
     {
         var p = ConfigPatternBuilder.patternFromConfigString( pattern, flags );
         assertThat( expectedMatches ).allSatisfy(

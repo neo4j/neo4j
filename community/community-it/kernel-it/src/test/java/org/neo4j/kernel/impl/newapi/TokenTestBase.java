@@ -96,7 +96,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
         assertEquals( ids[1], mapToken( token -> token.relationshipType( "b" ) ) );
     }
 
-    private void assertIllegalToken( ThrowingConsumer<Token, KernelException> f )
+    private static void assertIllegalToken( ThrowingConsumer<Token,KernelException> f )
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -113,7 +113,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
         }
     }
 
-    private int mapToken( ThrowingFunction<Token, Integer, KernelException> f )
+    private static int mapToken( ThrowingFunction<Token,Integer,KernelException> f )
     {
         try ( KernelTransaction tx = beginTransaction() )
         {
@@ -126,7 +126,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
         }
     }
 
-    private void forToken( ThrowingConsumer<Token, KernelException> f )
+    private static void forToken( ThrowingConsumer<Token,KernelException> f )
     {
         try ( KernelTransaction tx = beginTransaction() )
         {

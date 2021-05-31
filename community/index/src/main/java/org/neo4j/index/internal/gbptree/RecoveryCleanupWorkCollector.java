@@ -49,7 +49,7 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
      */
     abstract void add( CleanupJob job );
 
-    void executeWithExecutor( CleanupJobGroupAction action )
+    static void executeWithExecutor( CleanupJobGroupAction action )
     {
         ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
         try
@@ -61,7 +61,7 @@ public abstract class RecoveryCleanupWorkCollector extends LifecycleAdapter
             shutdownExecutorAndVerifyNoLeaks( executor );
         }
     }
-    private void shutdownExecutorAndVerifyNoLeaks( ExecutorService executor )
+    private static void shutdownExecutorAndVerifyNoLeaks( ExecutorService executor )
     {
         List<Runnable> leakedTasks = executor.shutdownNow();
         if ( !leakedTasks.isEmpty() )

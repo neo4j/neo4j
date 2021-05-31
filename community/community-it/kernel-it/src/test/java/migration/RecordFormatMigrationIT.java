@@ -184,7 +184,7 @@ class RecordFormatMigrationIT
         }
     }
 
-    private Throwable assertDefaultDatabaseFailed( GraphDatabaseAPI database )
+    private static Throwable assertDefaultDatabaseFailed( GraphDatabaseAPI database )
     {
         assertThrows( Throwable.class, database::beginTx );
         DatabaseStateService dbStateService = getDatabaseStateService( database );

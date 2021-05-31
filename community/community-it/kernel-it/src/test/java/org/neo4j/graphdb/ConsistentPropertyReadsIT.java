@@ -122,7 +122,7 @@ class ConsistentPropertyReadsIT
         race.go();
     }
 
-    private String longString( char c )
+    private static String longString( char c )
     {
         char[] chars = new char[ThreadLocalRandom.current().nextInt( 800, 1000 )];
         Arrays.fill( chars, c );

@@ -85,12 +85,12 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     {
     }
 
-    protected KernelTransaction beginTransaction() throws TransactionFailureException
+    protected static KernelTransaction beginTransaction() throws TransactionFailureException
     {
         return beginTransaction( LoginContext.AUTH_DISABLED );
     }
 
-    protected KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
+    protected static KernelTransaction beginTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
         return kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );

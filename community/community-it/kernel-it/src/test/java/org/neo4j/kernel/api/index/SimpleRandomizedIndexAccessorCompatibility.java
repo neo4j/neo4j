@@ -174,7 +174,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         }
     }
 
-    private List<Long> expectedIds( TreeSet<ValueAndId> sortedValues, Value from, Value to, boolean fromInclusive, boolean toInclusive )
+    private static List<Long> expectedIds( TreeSet<ValueAndId> sortedValues, Value from, Value to, boolean fromInclusive, boolean toInclusive )
     {
         return sortedValues.subSet( new ValueAndId( from, 0L ), fromInclusive, new ValueAndId( to, 0L ), toInclusive )
                 .stream()

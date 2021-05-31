@@ -83,7 +83,7 @@ class ConcurrentCreateAndGetRelationshipsIT
         }
     }
 
-    private void awaitWorkersToEnd( Collection<Worker> workers ) throws InterruptedException
+    private static void awaitWorkersToEnd( Collection<Worker> workers ) throws InterruptedException
     {
         for ( Worker worker : workers )
         {
@@ -91,7 +91,7 @@ class ConcurrentCreateAndGetRelationshipsIT
         }
     }
 
-    private Collection<Worker> createWorkers( GraphDatabaseService db, CountDownLatch startSignal,
+    private static Collection<Worker> createWorkers( GraphDatabaseService db, CountDownLatch startSignal,
             AtomicBoolean stopSignal, AtomicReference<Exception> failure, Node parentNode )
     {
         Collection<Worker> workers = new ArrayList<>();
@@ -102,7 +102,7 @@ class ConcurrentCreateAndGetRelationshipsIT
         return workers;
     }
 
-    private Worker newWorker( GraphDatabaseService db, CountDownLatch startSignal, AtomicBoolean stopSignal,
+    private static Worker newWorker( GraphDatabaseService db, CountDownLatch startSignal, AtomicBoolean stopSignal,
             AtomicReference<Exception> failure, Node parentNode )
     {
         Worker worker = new Worker( db, startSignal, stopSignal, failure, parentNode );
@@ -110,7 +110,7 @@ class ConcurrentCreateAndGetRelationshipsIT
         return worker;
     }
 
-    private Node createNode( GraphDatabaseService db )
+    private static Node createNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

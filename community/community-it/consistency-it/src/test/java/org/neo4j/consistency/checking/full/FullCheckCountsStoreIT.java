@@ -71,7 +71,7 @@ public class FullCheckCountsStoreIT
     @Test
     void shouldReportBrokenCountsStore() throws Exception
     {
-        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::countStore, RecordType.COUNTS );
+        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, DatabaseLayout::countStore, RecordType.COUNTS );
     }
 
     @Test
@@ -87,7 +87,7 @@ public class FullCheckCountsStoreIT
     @Test
     void shouldReportBrokenGroupDegreesStore() throws Exception
     {
-        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
+        shouldReportBadCountsStore( FullCheckCountsStoreIT::corruptFileIfExists, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
     }
 
     private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction, Function<DatabaseLayout,Path> store,
@@ -107,7 +107,7 @@ public class FullCheckCountsStoreIT
         assertThat( result.summary().getInconsistencyCountForRecordType( recordType ) ).isEqualTo( 1 );
     }
 
-    private boolean corruptFileIfExists( Path file ) throws IOException
+    private static boolean corruptFileIfExists( Path file ) throws IOException
     {
         if ( Files.exists( file ) )
         {

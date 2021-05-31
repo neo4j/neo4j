@@ -55,7 +55,7 @@ public class Neo4jWithSocketSupportExtension extends StatefulFieldExtension<Neo4
         return new Neo4jWithSocket( new TestDatabaseManagementServiceBuilder(), () -> testDirectory, settings -> {} );
     }
 
-    public TestDirectory getTestDirectory( ExtensionContext context )
+    public static TestDirectory getTestDirectory( ExtensionContext context )
     {
         var testDir = context.getStore( TEST_DIRECTORY_NAMESPACE ).get( TEST_DIRECTORY, TestDirectory.class );
         if ( testDir == null )

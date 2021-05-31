@@ -26,7 +26,7 @@ import org.neo4j.memory.HeapEstimator;
 
 public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> extends IndexEntryUpdate<INDEX_KEY>
 {
-    static long NO_TX_ID = -1;
+    static final long NO_TX_ID = -1;
 
     private final long[] before;
     private final long[] values;

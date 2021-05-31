@@ -129,7 +129,7 @@ public class RoutingConnectorCertificatesIT
         }
     }
 
-    private X509Certificate loadCertificateFromDisk( Path certFile ) throws CertificateException, IOException
+    private static X509Certificate loadCertificateFromDisk( Path certFile ) throws CertificateException, IOException
     {
         Certificate[] certificates = PkiUtils.loadCertificates( certFile );
         assertThat( certificates.length ).isEqualTo( 1 );

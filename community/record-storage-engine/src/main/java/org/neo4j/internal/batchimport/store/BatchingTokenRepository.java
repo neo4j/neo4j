@@ -216,7 +216,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord> implem
         nameRecords.forEach( nameRecord -> store.getNameStore().updateRecord( nameRecord, cursorContext ) );
     }
 
-    private Iterable<Map.Entry<TokenId,String>> sortCreatedTokensById( Map<String,TokenId> tokens )
+    private static Iterable<Map.Entry<TokenId,String>> sortCreatedTokensById( Map<String,TokenId> tokens )
     {
         Map<TokenId,String> sorted = new TreeMap<>();
         for ( Map.Entry<String,TokenId> entry : tokens.entrySet() )

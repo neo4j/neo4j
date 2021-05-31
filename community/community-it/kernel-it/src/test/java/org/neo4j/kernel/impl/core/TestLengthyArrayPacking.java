@@ -106,7 +106,7 @@ class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         makeSureRightAmountOfDynamicRecordsUsed( stringArray, 2, ARRAY_RECORD_COUNTER );
     }
 
-    private void makeSureRightAmountOfDynamicRecordsUsed( Object value, int expectedAddedDynamicRecords,
+    private static void makeSureRightAmountOfDynamicRecordsUsed( Object value, int expectedAddedDynamicRecords,
             DynamicRecordCounter recordCounter )
     {
         long stringRecordsBefore = recordCounter.count();

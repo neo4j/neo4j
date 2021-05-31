@@ -391,7 +391,7 @@ class CompositeCountsTest
      * @param type  the type of the relationships to get the number of, or {@code null} for "any".
      * @param end   the label of the end node of relationships to get the number of, or {@code null} for "any".
      */
-    private long countsForRelationship( Transaction tx, Label start, RelationshipType type, Label end )
+    private static long countsForRelationship( Transaction tx, Label start, RelationshipType type, Label end )
     {
         KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();

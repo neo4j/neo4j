@@ -102,7 +102,7 @@ public class SimpleGraphBuilder
         return makeNode( tx, id, toMap( keyValuePairs ) );
     }
 
-    private Map<String, Object> toMap( Object[] keyValuePairs )
+    private static Map<String, Object> toMap( Object[] keyValuePairs )
     {
         Map<String, Object> map = new HashMap<>();
         for ( int i = 0; i < keyValuePairs.length; i++ )

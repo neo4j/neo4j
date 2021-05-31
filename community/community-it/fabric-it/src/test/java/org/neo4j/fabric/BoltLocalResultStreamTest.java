@@ -111,7 +111,7 @@ class BoltLocalResultStreamTest
         assertThat( result ).isEqualTo( List.of( "r0", "r1" ) );
     }
 
-    private <T> T inTx( Function<Transaction,T> workload )
+    private static <T> T inTx( Function<Transaction,T> workload )
     {
         try ( var session = driver.session() )
         {
@@ -119,7 +119,7 @@ class BoltLocalResultStreamTest
         }
     }
 
-    private <T> T inRxTx( Function<RxTransaction,T> workload )
+    private static <T> T inRxTx( Function<RxTransaction,T> workload )
     {
         var session = driver.rxSession();
         try

@@ -126,7 +126,7 @@ class BoltProtocolV3Test
         verifyNoMoreInteractions( memoryTracker );
     }
 
-    private BoltProtocolV3 createProtocolV3()
+    private static BoltProtocolV3 createProtocolV3()
     {
         return new BoltProtocolV3( newTestBoltChannel(), ( ch, st, mw ) -> mock( BoltConnection.class ),
                                    mock( BoltStateMachineFactory.class ), Config.defaults(),

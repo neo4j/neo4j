@@ -251,7 +251,7 @@ class DenseNodeIT
         return config.get( GraphDatabaseSettings.dense_node_threshold );
     }
 
-    private void deleteRelationshipsFromNode( Node root, int numberOfRelationships )
+    private static void deleteRelationshipsFromNode( Node root, int numberOfRelationships )
     {
         int deleted = 0;
         try ( ResourceIterator<Relationship> iterator = asResourceIterator( root.getRelationships().iterator() ) )
@@ -269,7 +269,7 @@ class DenseNodeIT
         }
     }
 
-    private void createRelationshipsOnNode( Transaction tx, Node root, int numberOfRelationships )
+    private static void createRelationshipsOnNode( Transaction tx, Node root, int numberOfRelationships )
     {
         for ( int i = 0; i < numberOfRelationships; i++ )
         {
@@ -279,8 +279,8 @@ class DenseNodeIT
         }
     }
 
-    private void createRelationshipsBetweenNodes( Node source, Node sink,
-                                                  int numberOfRelationships )
+    private static void createRelationshipsBetweenNodes( Node source, Node sink,
+            int numberOfRelationships )
     {
         for ( int i = 0; i < numberOfRelationships; i++ )
         {

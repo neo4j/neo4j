@@ -820,7 +820,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    private boolean hasProperties( NodeCursor cursor, PropertyCursor props )
+    private static boolean hasProperties( NodeCursor cursor, PropertyCursor props )
     {
         cursor.properties( props );
         return props.next();
@@ -913,7 +913,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    private void assertLabels( TokenSet labels, int... expected )
+    private static void assertLabels( TokenSet labels, int... expected )
     {
         assertEquals( expected.length, labels.numberOfTokens() );
         Arrays.sort( expected );
@@ -926,7 +926,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         assertArrayEquals( expected, labelArray, "labels match expected" );
     }
 
-    public Node createNode( String... labels ) throws Exception
+    public static Node createNode( String... labels ) throws Exception
     {
         long node;
         int[] labelIds = new int[labels.length];

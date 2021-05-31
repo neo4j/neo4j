@@ -319,7 +319,7 @@ class FullScanStoreViewTest
         }
     }
 
-    private TestPropertyScanConsumer.Record record( long nodeId, int propertyKeyId, Object value, long[] labels )
+    private static TestPropertyScanConsumer.Record record( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
         return new TestPropertyScanConsumer.Record( nodeId, labels, Map.of( propertyKeyId, Values.of( value ) ) );
     }

@@ -125,7 +125,7 @@ class PropertyIndexPopulationIT
         }
     }
 
-    private void verifyData( Transaction tx )
+    private static void verifyData( Transaction tx )
     {
         assertThat( tx.findNodes( PERSON ).stream().count() ).isEqualTo( 1 );
         assertThat( tx.findRelationships( FRIEND ).stream().count() ).isEqualTo( 1 );

@@ -49,7 +49,7 @@ public class StatisticsCollector
         }
     }
 
-    private String collectStatistics( @Nonnull ResultSummary summary )
+    private static String collectStatistics( @Nonnull ResultSummary summary )
     {
         List<String> statistics = new ArrayList<>();
         SummaryCounters counters = summary.counters();

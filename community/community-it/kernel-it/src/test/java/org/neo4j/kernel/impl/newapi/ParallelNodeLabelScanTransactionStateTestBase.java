@@ -24,7 +24,6 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -321,7 +320,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         }
     }
 
-    private LongList createNodesWithLabel( int label, int size )
+    private static LongList createNodesWithLabel( int label, int size )
             throws KernelException
     {
         LongList ids;
@@ -334,7 +333,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         return ids;
     }
 
-    private LongList createNodesWithLabel( Write write, int label, int size )
+    private static LongList createNodesWithLabel( Write write, int label, int size )
             throws KernelException
     {
         MutableLongList ids = LongLists.mutable.empty();
@@ -347,7 +346,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         return ids;
     }
 
-    private int label( String name ) throws KernelException
+    private static int label( String name ) throws KernelException
     {
         int label;
         try ( KernelTransaction tx = beginTransaction() )

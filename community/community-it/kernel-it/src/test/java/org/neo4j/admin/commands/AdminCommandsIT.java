@@ -110,12 +110,12 @@ class AdminCommandsIT
         assertExpansionError( new DumpCommand( context, new Dumper( context.err() ) ), "--to", "test" );
     }
 
-    private void assertSuccess( AbstractCommand command, String... args ) throws Exception
+    private static void assertSuccess( AbstractCommand command, String... args ) throws Exception
     {
         CommandLine.populateCommand( command, args ).call();
     }
 
-    private void assertExpansionError( AbstractCommand command, String... args )
+    private static void assertExpansionError( AbstractCommand command, String... args )
     {
         var exception = new MutableObject<Exception>();
         new CommandLine( command ).setExecutionExceptionHandler( ( ex, commandLine, parseResult ) ->

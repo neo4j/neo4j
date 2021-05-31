@@ -114,7 +114,7 @@ public class TestExceptionTypeOnInvalidIds
         getNonExistingRelationshipById( readOnlyDb, id );
     }
 
-    private void getNonExistingNodeById( GraphDatabaseService db, long index )
+    private static void getNonExistingNodeById( GraphDatabaseService db, long index )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -122,7 +122,7 @@ public class TestExceptionTypeOnInvalidIds
         }
     }
 
-    private void getNonExistingRelationshipById( GraphDatabaseService db, long index )
+    private static void getNonExistingRelationshipById( GraphDatabaseService db, long index )
     {
         try ( Transaction tx = db.beginTx() )
         {

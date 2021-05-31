@@ -26,7 +26,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 
 public class RawBytes
 {
-    static RawBytes EMPTY_BYTES = new RawBytes( EMPTY_BYTE_ARRAY );
+    static final RawBytes EMPTY_BYTES = new RawBytes( EMPTY_BYTE_ARRAY );
 
     byte[] bytes;
 

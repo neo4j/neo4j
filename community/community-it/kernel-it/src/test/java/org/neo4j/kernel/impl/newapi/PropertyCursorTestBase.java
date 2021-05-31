@@ -113,11 +113,11 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             shortStringPropRelId, longStringPropRelId, utf8PropRelId, smallArrayRelId, bigArrayRelId, pointPropRelId,
             datePropRelId, allPropsRelId;
 
-    private static String chinese = "造Unicode之";
-    private static Value pointValue = Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 20 );
-    private static Value dateValue = Values.temporalValue( LocalDate.of( 2018, 7, 26 ) );
+    private static final String CHINESE = "造Unicode之";
+    private static final Value POINT_VALUE = Values.pointValue( CoordinateReferenceSystem.Cartesian, 10, 20 );
+    private static final Value DATE_VALUE = Values.temporalValue( LocalDate.of( 2018, 7, 26 ) );
 
-    private boolean supportsBigProperties()
+    private static boolean supportsBigProperties()
     {
         return true;
     }
@@ -146,13 +146,13 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             emptyStringPropNodeId = createNodeWithProperty( tx, EMPTY_STRING_PROP, "" );
             shortStringPropNodeId = createNodeWithProperty( tx, SHORT_STRING_PROP, "hello" );
             longStringPropNodeId = createNodeWithProperty( tx, LONG_STRING_PROP, LONG_STRING );
-            utf8PropNodeId = createNodeWithProperty( tx, UTF_8_PROP, chinese );
+            utf8PropNodeId = createNodeWithProperty( tx, UTF_8_PROP, CHINESE );
 
             smallArrayNodeId = createNodeWithProperty( tx, SMALL_ARRAY_PROP, new int[]{1, 2, 3, 4} );
             bigArrayNodeId = createNodeWithProperty( tx, BIG_ARRAY_PROP, new String[]{LONG_STRING} );
 
-            pointPropNodeId = createNodeWithProperty( tx, POINT_PROP, pointValue );
-            datePropNodeId = createNodeWithProperty( tx, DATE_PROP, dateValue );
+            pointPropNodeId = createNodeWithProperty( tx, POINT_PROP, POINT_VALUE );
+            datePropNodeId = createNodeWithProperty( tx, DATE_PROP, DATE_VALUE );
 
             Node allPropsNode = tx.createNode();
             // first property record
@@ -172,9 +172,9 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             allPropsNode.setProperty( CHAR_PROP, 'x' );
             allPropsNode.setProperty( EMPTY_STRING_PROP, "" );
             allPropsNode.setProperty( SHORT_STRING_PROP, "hello" );
-            allPropsNode.setProperty( UTF_8_PROP, chinese );
-            allPropsNode.setProperty( POINT_PROP, pointValue );
-            allPropsNode.setProperty( DATE_PROP, dateValue );
+            allPropsNode.setProperty( UTF_8_PROP, CHINESE );
+            allPropsNode.setProperty( POINT_PROP, POINT_VALUE );
+            allPropsNode.setProperty( DATE_PROP, DATE_VALUE );
             if ( supportsBigProperties() )
             {
                 allPropsNode.setProperty( LONG_STRING_PROP, LONG_STRING );
@@ -201,11 +201,11 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             emptyStringPropRelId = createRelWithProperty( tx, type, EMPTY_STRING_PROP, "" );
             shortStringPropRelId = createRelWithProperty( tx, type, SHORT_STRING_PROP, "hello" );
             longStringPropRelId = createRelWithProperty( tx, type, LONG_STRING_PROP, LONG_STRING );
-            utf8PropRelId = createRelWithProperty( tx, type, UTF_8_PROP, chinese );
+            utf8PropRelId = createRelWithProperty( tx, type, UTF_8_PROP, CHINESE );
             smallArrayRelId = createRelWithProperty( tx, type, SMALL_ARRAY_PROP, new int[]{1, 2, 3, 4} );
             bigArrayRelId = createRelWithProperty( tx, type, BIG_ARRAY_PROP, new String[]{LONG_STRING} );
-            pointPropRelId = createRelWithProperty( tx, type, POINT_PROP, pointValue );
-            datePropRelId = createRelWithProperty( tx, type, DATE_PROP, dateValue );
+            pointPropRelId = createRelWithProperty( tx, type, POINT_PROP, POINT_VALUE );
+            datePropRelId = createRelWithProperty( tx, type, DATE_PROP, DATE_VALUE );
 
             Relationship allPropsRel = allPropsNode.createRelationshipTo( tx.createNode(), type);
             allPropsRelId = allPropsRel.getId();
@@ -222,9 +222,9 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             allPropsRel.setProperty( CHAR_PROP, 'x' );
             allPropsRel.setProperty( EMPTY_STRING_PROP, "" );
             allPropsRel.setProperty( SHORT_STRING_PROP, "hello" );
-            allPropsRel.setProperty( UTF_8_PROP, chinese );
-            allPropsRel.setProperty( POINT_PROP, pointValue );
-            allPropsRel.setProperty( DATE_PROP, dateValue );
+            allPropsRel.setProperty( UTF_8_PROP, CHINESE );
+            allPropsRel.setProperty( POINT_PROP, POINT_VALUE );
+            allPropsRel.setProperty( DATE_PROP, DATE_VALUE );
             if ( supportsBigProperties() )
             {
                 allPropsRel.setProperty( LONG_STRING_PROP, LONG_STRING );
@@ -235,14 +235,14 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         }
     }
 
-    private long createNodeWithProperty( Transaction tx, String propertyKey, Object value )
+    private static long createNodeWithProperty( Transaction tx, String propertyKey, Object value )
     {
         Node p = tx.createNode();
         p.setProperty( propertyKey, value );
         return p.getId();
     }
 
-    private long createRelWithProperty( Transaction tx, RelationshipType type, String propertyKey, Object value )
+    private static long createRelWithProperty( Transaction tx, RelationshipType type, String propertyKey, Object value )
     {
         Relationship r = tx.createNode().createRelationshipTo(tx.createNode(), type);
         r.setProperty( propertyKey, value );
@@ -311,15 +311,15 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         {
             assertAccessSingleNodeProperty( longStringPropNodeId, Values.of( LONG_STRING ), ValueGroup.TEXT );
         }
-        assertAccessSingleNodeProperty( utf8PropNodeId, Values.of( chinese ), ValueGroup.TEXT );
+        assertAccessSingleNodeProperty( utf8PropNodeId, Values.of( CHINESE ), ValueGroup.TEXT );
         if ( supportsBigProperties() )
 
         {
             assertAccessSingleNodeProperty( smallArrayNodeId, Values.of( new int[]{1, 2, 3, 4} ), ValueGroup.NUMBER_ARRAY );
             assertAccessSingleNodeProperty( bigArrayNodeId, Values.of( new String[]{LONG_STRING} ), ValueGroup.TEXT_ARRAY );
         }
-        assertAccessSingleNodeProperty( pointPropNodeId, Values.of( pointValue ), ValueGroup.GEOMETRY );
-        assertAccessSingleNodeProperty( datePropNodeId, Values.of( dateValue ), ValueGroup.DATE );
+        assertAccessSingleNodeProperty( pointPropNodeId, Values.of( POINT_VALUE ), ValueGroup.GEOMETRY );
+        assertAccessSingleNodeProperty( datePropNodeId, Values.of( DATE_VALUE ), ValueGroup.DATE );
     }
 
     @Test
@@ -341,14 +341,14 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         {
             assertAccessSingleRelationshipProperty( longStringPropRelId, Values.of( LONG_STRING ), ValueGroup.TEXT );
         }
-        assertAccessSingleRelationshipProperty( utf8PropRelId, Values.of( chinese ), ValueGroup.TEXT );
+        assertAccessSingleRelationshipProperty( utf8PropRelId, Values.of( CHINESE ), ValueGroup.TEXT );
         if ( supportsBigProperties() )
         {
             assertAccessSingleRelationshipProperty( smallArrayRelId, Values.of( new int[]{1, 2, 3, 4} ), ValueGroup.NUMBER_ARRAY );
             assertAccessSingleRelationshipProperty( bigArrayRelId, Values.of( new String[]{LONG_STRING} ), ValueGroup.TEXT_ARRAY );
         }
-        assertAccessSingleRelationshipProperty( pointPropRelId, Values.of( pointValue ), ValueGroup.GEOMETRY );
-        assertAccessSingleRelationshipProperty( datePropRelId, Values.of( dateValue ), ValueGroup.DATE );
+        assertAccessSingleRelationshipProperty( pointPropRelId, Values.of( POINT_VALUE ), ValueGroup.GEOMETRY );
+        assertAccessSingleRelationshipProperty( datePropRelId, Values.of( DATE_VALUE ), ValueGroup.DATE );
     }
 
     @Test
@@ -382,15 +382,15 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertTrue( values.contains( 'x' ), CHAR_PROP );
             assertTrue( values.contains( "" ), EMPTY_STRING_PROP );
             assertTrue( values.contains( "hello" ), SHORT_STRING_PROP );
-            assertTrue( values.contains( chinese ), UTF_8_PROP );
+            assertTrue( values.contains( CHINESE ), UTF_8_PROP );
             if ( supportsBigProperties() )
             {
                 assertTrue( values.contains( LONG_STRING ), LONG_STRING_PROP );
                 assertThat( values ).as( SMALL_ARRAY_PROP ).contains( new int[]{1, 2, 3, 4} );
                 assertThat( values ).as( BIG_ARRAY_PROP ).contains( LONG_STRING );
             }
-            assertTrue( values.contains( pointValue ), POINT_PROP );
-            assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
+            assertTrue( values.contains( POINT_VALUE ), POINT_PROP );
+            assertTrue( values.contains( DATE_VALUE.asObject() ), DATE_PROP );
 
             int expected = supportsBigProperties() ? 18 : 15;
             assertEquals( expected, values.size(), "number of values" );
@@ -428,15 +428,15 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
             assertTrue( values.contains( 'x' ), CHAR_PROP );
             assertTrue( values.contains( "" ), EMPTY_STRING_PROP );
             assertTrue( values.contains( "hello" ), SHORT_STRING_PROP );
-            assertTrue( values.contains( chinese ), UTF_8_PROP);
+            assertTrue( values.contains( CHINESE ), UTF_8_PROP);
             if ( supportsBigProperties() )
             {
                 assertTrue( values.contains( LONG_STRING ), LONG_STRING_PROP );
                 assertThat( values ).as( SMALL_ARRAY_PROP ).contains( new int[]{1, 2, 3, 4} );
                 assertThat( values ).as( BIG_ARRAY_PROP ).contains( LONG_STRING );
             }
-            assertTrue( values.contains( pointValue ), POINT_PROP);
-            assertTrue( values.contains( dateValue.asObject() ), DATE_PROP );
+            assertTrue( values.contains( POINT_VALUE ), POINT_PROP);
+            assertTrue( values.contains( DATE_VALUE.asObject() ), DATE_PROP );
 
             int expected = supportsBigProperties() ? 18 : 15;
             assertEquals( expected, values.size(), "number of values" );
@@ -492,13 +492,13 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         }
     }
 
-    private boolean hasProperties( NodeCursor node, PropertyCursor props )
+    private static boolean hasProperties( NodeCursor node, PropertyCursor props )
     {
         node.properties( props );
         return props.next();
     }
 
-    private boolean hasProperties( RelationshipDataAccessor relationship, PropertyCursor props )
+    private static boolean hasProperties( RelationshipDataAccessor relationship, PropertyCursor props )
     {
         relationship.properties( props );
         return props.next();

@@ -196,7 +196,7 @@ public class IndexTxStateLookupTest
         this.lookup = realValue( lookup );
     }
 
-    private Object realValue( Object object )
+    private static Object realValue( Object object )
     {
         return object instanceof NamedObject ? ((NamedObject)object).object : object;
     }

@@ -426,7 +426,7 @@ public abstract class MuninnPageCursor extends PageCursor
                 // the file channel.
                 assertPagedFileStillMappedAndGetIdOfLastPage();
                 pagedFile.initBuffer( pageRef );
-                pagedFile.fault( pageRef, swapper, pagedFile.swapperId, filePageId, faultEvent );
+                PageList.fault( pageRef, swapper, pagedFile.swapperId, filePageId, faultEvent );
             }
             catch ( Throwable throwable )
             {

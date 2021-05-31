@@ -184,7 +184,7 @@ public class IndexingStringQueryAcceptanceTest
         }
     }
 
-    private MutableLongSet createEntities( EntityControl entityControl, GraphDatabaseService db, String token, String... propertyValues )
+    private static MutableLongSet createEntities( EntityControl entityControl, GraphDatabaseService db, String token, String... propertyValues )
     {
         MutableLongSet expected = new LongHashSet();
         try ( Transaction tx = db.beginTx() )

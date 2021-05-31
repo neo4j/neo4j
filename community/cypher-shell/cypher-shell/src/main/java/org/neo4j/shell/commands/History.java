@@ -98,7 +98,7 @@ public class History implements Command
      *
      * @param lineCount number of entries to print
      */
-    private String printHistory( @Nonnull final List<String> history, final int lineCount )
+    private static String printHistory( @Nonnull final List<String> history, final int lineCount )
     {
         // for alignment, check the string length of history size
         int colWidth = Integer.toString( history.size() ).length();

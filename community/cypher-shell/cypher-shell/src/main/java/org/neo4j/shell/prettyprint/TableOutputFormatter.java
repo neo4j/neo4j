@@ -64,7 +64,7 @@ public class TableOutputFormatter implements OutputFormatter
         return formatResultAndCountRows( columns, records, output );
     }
 
-    private List<Record> take( Iterator<Record> records, int count )
+    private static List<Record> take( Iterator<Record> records, int count )
     {
         List<Record> topRecords = new ArrayList<>( count );
         while ( records.hasNext() && topRecords.size() < count )

@@ -130,12 +130,12 @@ class BoltResponseMessageWriterV41Test extends BoltResponseMessageWriterV3Test
                 timer );
     }
 
-    protected BoltResponseMessageWriter newWriter( BoltResponseMessageWriterV3 writer, MessageWriterTimer timer )
+    protected static BoltResponseMessageWriter newWriter( BoltResponseMessageWriterV3 writer, MessageWriterTimer timer )
     {
         return new BoltResponseMessageWriterV41( writer, timer );
     }
 
-    private MessageWriterTimer timedOutTimer()
+    private static MessageWriterTimer timedOutTimer()
     {
         var timer = mock( MessageWriterTimer.class );
         when( timer.isTimedOut() ).thenReturn( true );

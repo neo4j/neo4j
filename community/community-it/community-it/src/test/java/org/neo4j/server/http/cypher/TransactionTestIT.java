@@ -353,12 +353,12 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         assertThat( stats.get( "system_updates" ) ).isEqualTo( 0 );
     }
 
-    private void assertNoErrors( Map<String, Object> response )
+    private static void assertNoErrors( Map<String,Object> response )
     {
         assertErrors( response );
     }
 
-    private void assertErrors( Map<String, Object> response, Status... expectedErrors )
+    private static void assertErrors( Map<String,Object> response, Status... expectedErrors )
     {
         @SuppressWarnings( "unchecked" )
         Iterator<Map<String, Object>> errors = ((List<Map<String, Object>>) response.get( "errors" )).iterator();
@@ -376,13 +376,13 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         }
     }
 
-    private <T> T resultCell( HTTP.Response response, int row, int column )
+    private static <T> T resultCell( HTTP.Response response, int row, int column )
     {
         return resultCell( response.<Map<String, Object>>content(), row, column );
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T> T resultCell( Map<String, Object> response, int row, int column )
+    private static <T> T resultCell( Map<String,Object> response, int row, int column )
     {
         Map<String, Object> result = ((List<Map<String, Object>>) response.get( "results" )).get( 0 );
         List<Map<String,List>> data = (List<Map<String,List>>) result.get( "data" );
@@ -390,19 +390,19 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
     }
 
     @SuppressWarnings( "unchecked" )
-    private Map<String, List<Object>> graphRow( Map<String, Object> response, int row )
+    private static Map<String, List<Object>> graphRow( Map<String,Object> response, int row )
     {
         Map<String, Object> result = ((List<Map<String, Object>>) response.get( "results" )).get( 0 );
         List<Map<String,List>> data = (List<Map<String,List>>) result.get( "data" );
         return (Map<String,List<Object>>) data.get( row ).get( "graph" );
     }
 
-    private String quotedJson( String singleQuoted )
+    private static String quotedJson( String singleQuoted )
     {
         return singleQuoted.replaceAll( "'", "\"" );
     }
 
-    private long expirationTime( Map<String, Object> entity )
+    private static long expirationTime( Map<String,Object> entity )
     {
         String timestampString = (String) ( (Map<?, ?>) entity.get( "transaction" ) ).get( "expires" );
         return ZonedDateTime.parse( timestampString, DateTimeFormatter.RFC_1123_DATE_TIME ).toEpochSecond();

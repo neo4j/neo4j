@@ -34,7 +34,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
-import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 
 @TestDirectoryExtension
 @ExtendWith( ProfilerExtension.class )
@@ -53,22 +52,22 @@ class ProfilerExtensionVerificationTest
     @Test
     void testThatPasses() throws Exception
     {
-        CONTEXT.clear();
-        CONTEXT.setValue( TEST_DIR, testDirectory.absolutePath() );
+        ExecutionSharedContext.clear();
+        ExecutionSharedContext.setValue( TEST_DIR, testDirectory.absolutePath() );
         profiler.profile();
         someVeryExpensiveComputation();
     }
     @Test
     void testThatFails() throws Exception
     {
-        CONTEXT.clear();
-        CONTEXT.setValue( TEST_DIR, testDirectory.absolutePath() );
+        ExecutionSharedContext.clear();
+        ExecutionSharedContext.setValue( TEST_DIR, testDirectory.absolutePath() );
         profiler.profile();
         someVeryExpensiveComputation();
         fail( "This is exactly like that 'worst movie death scene ever' from the Turkish film Kareteci Kiz." );
     }
 
-    private void someVeryExpensiveComputation() throws InterruptedException
+    private static void someVeryExpensiveComputation() throws InterruptedException
     {
         Thread.sleep( 1000 );
     }

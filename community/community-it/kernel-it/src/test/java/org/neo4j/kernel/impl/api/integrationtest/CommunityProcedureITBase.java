@@ -90,7 +90,7 @@ abstract class CommunityProcedureITBase extends KernelIntegrationTest implements
         commit();
     }
 
-    private String printElementsOfArray( AnyValue[] array )
+    private static String printElementsOfArray( AnyValue[] array )
     {
         return Arrays.stream( array ).map( AnyValue::toString ).collect( joining( "\n" ) );
     }

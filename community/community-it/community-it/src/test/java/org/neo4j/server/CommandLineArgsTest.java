@@ -145,7 +145,7 @@ public class CommandLineArgsTest
         assertFalse( parsed.expandCommands() );
     }
 
-    private CommandLineArgs parse( String... args )
+    private static CommandLineArgs parse( String... args )
     {
         return CommandLineArgs.parse( args );
     }

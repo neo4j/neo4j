@@ -545,7 +545,7 @@ public class IndexStatisticsTest
         }
     }
 
-    private double getSelectivity( Transaction tx, IndexDescriptor reference ) throws IndexNotFoundKernelException
+    private static double getSelectivity( Transaction tx, IndexDescriptor reference ) throws IndexNotFoundKernelException
     {
         return ((InternalTransaction) tx).kernelTransaction().schemaRead().indexUniqueValuesSelectivity( reference );
     }
@@ -568,7 +568,7 @@ public class IndexStatisticsTest
         }
     }
 
-    private long createPersonNode( KernelTransaction ktx, Object value )
+    private static long createPersonNode( KernelTransaction ktx, Object value )
             throws KernelException
     {
         int labelId = ktx.tokenWrite().labelGetOrCreateForName( PERSON_LABEL );

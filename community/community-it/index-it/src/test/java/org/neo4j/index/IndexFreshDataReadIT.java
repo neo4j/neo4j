@@ -76,7 +76,7 @@ class IndexFreshDataReadIT
         executor.submit( new CreateNamedNodeTask( name ) ).get();
     }
 
-    private Number countStaff( Transaction tx )
+    private static Number countStaff( Transaction tx )
     {
         try ( Result countResult = tx.execute( "MATCH (n:staff) return count(n.name) as count" ) )
         {

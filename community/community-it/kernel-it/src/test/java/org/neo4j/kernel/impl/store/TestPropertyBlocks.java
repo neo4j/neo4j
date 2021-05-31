@@ -174,7 +174,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
     }
 
-    private List<Pair<String, Object>> getPropertiesFromRecord( long recordId )
+    private static List<Pair<String, Object>> getPropertiesFromRecord( long recordId )
     {
         final List<Pair<String, Object>> props = new ArrayList<>();
         PropertyStore propertyStore = propertyStore();
@@ -783,7 +783,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         testArrayBase( true );
     }
 
-    private void testArrayBase( boolean withNewTx )
+    private static void testArrayBase( boolean withNewTx )
     {
         Relationship rel;
         try ( Transaction transaction = getGraphDb().beginTx() )
@@ -921,7 +921,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
     }
 
-    private void testStringBase( boolean withNewTx )
+    private static void testStringBase( boolean withNewTx )
     {
         Node node = createNode();
 

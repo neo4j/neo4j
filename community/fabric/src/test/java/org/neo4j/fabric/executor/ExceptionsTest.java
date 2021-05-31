@@ -73,7 +73,7 @@ class ExceptionsTest
         assertThat( unpackExceptionMessages( transformedException ) ).contains( "msg-1", "msg-6" );
     }
 
-    private List<String> unpackExceptionMessages( Exception exception )
+    private static List<String> unpackExceptionMessages( Exception exception )
     {
         List<String> messages = new ArrayList<>();
         messages.add( exception.getMessage() );

@@ -83,7 +83,7 @@ public class FailedIndexRestartIT
         }
     }
 
-    private void createNodeWithProperty( GraphDatabaseService db, Label label, String propertyValue )
+    private static void createNodeWithProperty( GraphDatabaseService db, Label label, String propertyValue )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -93,7 +93,7 @@ public class FailedIndexRestartIT
         }
     }
 
-    private void awaitIndexesOnline( GraphDatabaseService db )
+    private static void awaitIndexesOnline( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

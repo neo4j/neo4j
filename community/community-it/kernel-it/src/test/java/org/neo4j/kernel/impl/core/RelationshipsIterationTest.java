@@ -50,11 +50,11 @@ class RelationshipsIterationTest
     private static DatabaseManagementService DATABASE;
 
     private GraphDatabaseService db;
-    private RelationshipType typeA = withName( "A" );
-    private RelationshipType typeB = withName( "B" );
-    private RelationshipType typeC = withName( "C" );
-    private RelationshipType typeD = withName( "D" );
-    private RelationshipType typeX = withName( "X" );
+    private final RelationshipType typeA = withName( "A" );
+    private final RelationshipType typeB = withName( "B" );
+    private final RelationshipType typeC = withName( "C" );
+    private final RelationshipType typeD = withName( "D" );
+    private final RelationshipType typeX = withName( "X" );
 
     @BeforeAll
     static void setUp()

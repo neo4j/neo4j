@@ -132,7 +132,7 @@ class IndexConsistencyIT
                 "WARN  Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
     }
 
-    private String readReport( ConsistencyCheckService.Result result ) throws IOException
+    private static String readReport( ConsistencyCheckService.Result result ) throws IOException
     {
         return Files.readString( result.reportFile() );
     }

@@ -204,8 +204,8 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         }
     }
 
-    private Relationship[] getRelationshipArray(
-        Iterable<Relationship> relsIterable )
+    private static Relationship[] getRelationshipArray(
+            Iterable<Relationship> relsIterable )
     {
         List<Relationship> relList = new ArrayList<>();
         for ( Relationship rel : relsIterable )
@@ -484,7 +484,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         testLowGrabSize( true );
     }
 
-    private void testLowGrabSize( boolean includeLoops )
+    private static void testLowGrabSize( boolean includeLoops )
     {
         Collection<Relationship> outgoingOriginal = new HashSet<>();
         Collection<Relationship> incomingOriginal = new HashSet<>();

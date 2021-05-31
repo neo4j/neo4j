@@ -741,7 +741,7 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
     }
 
-    private void assertZeroTracer( CursorContext cursorContext )
+    private static void assertZeroTracer( CursorContext cursorContext )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertThat( cursorTracer.pins() ).isZero();

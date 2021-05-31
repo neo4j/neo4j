@@ -231,7 +231,7 @@ public class ShellStatementParser implements StatementParser
      * @return the matching right delimiter or something empty if not the start of a quote/comment
      */
     @Nonnull
-    private Optional<String> getRightDelimiter( char first, char last )
+    private static Optional<String> getRightDelimiter( char first, char last )
     {
         // double characters
         final String lastTwoChars = String.valueOf( first ) + last;

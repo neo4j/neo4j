@@ -467,7 +467,7 @@ class DatabaseUpgradeTransactionIT
         }
     }
 
-    private Direction directionOf( Node node, Relationship relationship )
+    private static Direction directionOf( Node node, Relationship relationship )
     {
         return relationship.getStartNode().equals( node ) ? relationship.getEndNode().equals( node ) ? Direction.BOTH : Direction.OUTGOING : Direction.INCOMING;
     }

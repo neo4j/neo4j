@@ -229,14 +229,14 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             }
         }
 
-        ValueCategory[] getValueCategories( PropertyIndexQuery[] predicates )
+        static ValueCategory[] getValueCategories( PropertyIndexQuery[] predicates )
         {
             return Arrays.stream( predicates )
                                 .map( iq -> iq.valueGroup().category() )
                                 .toArray( ValueCategory[]::new );
         }
 
-        List<Long> expectedIds( TreeSet<ValueAndId> sortedValues, Value booleanValue, Value from, Value to, boolean fromInclusive, boolean toInclusive )
+        static List<Long> expectedIds( TreeSet<ValueAndId> sortedValues, Value booleanValue, Value from, Value to, boolean fromInclusive, boolean toInclusive )
         {
             return sortedValues.subSet(
                                 new ValueAndId( ValueTuple.of( booleanValue, from ), 0 ), fromInclusive,

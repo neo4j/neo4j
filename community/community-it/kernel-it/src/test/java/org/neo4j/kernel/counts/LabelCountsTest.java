@@ -197,7 +197,7 @@ class LabelCountsTest
     }
 
     /** @param label the label to get the number of nodes of, or {@code null} to get the total number of nodes. */
-    private long countsForNode( Transaction tx, Label label )
+    private static long countsForNode( Transaction tx, Label label )
     {
         KernelTransaction transaction = ((InternalTransaction) tx).kernelTransaction();
         Read read = transaction.dataRead();

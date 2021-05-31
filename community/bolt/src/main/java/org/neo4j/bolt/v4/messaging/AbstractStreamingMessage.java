@@ -70,7 +70,7 @@ public abstract class AbstractStreamingMessage implements RequestMessage
         }
     }
 
-    private int parseStatementId( MapValue meta )
+    private static int parseStatementId( MapValue meta )
     {
         AnyValue anyValue = meta.get( QUERY_ID_KEY );
         if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )

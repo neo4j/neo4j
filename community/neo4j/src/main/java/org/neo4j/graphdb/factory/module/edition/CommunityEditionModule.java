@@ -314,7 +314,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider( kernelDatabaseManagementService, managementService, monitors, clock );
     }
 
-    protected BoltGraphDatabaseManagementServiceSPI createBoltKernelDatabaseManagementServiceProvider( Dependencies dependencies,
+    protected static BoltGraphDatabaseManagementServiceSPI createBoltKernelDatabaseManagementServiceProvider( Dependencies dependencies,
             DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock, LogService logService )
     {
         var config = dependencies.resolveDependency( Config.class );

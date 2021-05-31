@@ -251,7 +251,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         pageCache.flushAndForce();
     }
 
-    private void verifyUpdateResults( int filePages, PagedFile pagedFile, List<Future<UpdateResult>> futures )
+    private static void verifyUpdateResults( int filePages, PagedFile pagedFile, List<Future<UpdateResult>> futures )
             throws InterruptedException, ExecutionException, IOException
     {
         UpdateResult[] results = new UpdateResult[futures.size()];
@@ -591,7 +591,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         } );
     }
 
-    private void performConsistentAdversarialRead( PageCursor cursor, long maxPageId, long startingPage, int pageSize ) throws IOException
+    private static void performConsistentAdversarialRead( PageCursor cursor, long maxPageId, long startingPage, int pageSize ) throws IOException
     {
         long pagesToLookAt = Math.min( maxPageId, startingPage + 3 ) - startingPage + 1;
         for ( int j = 0; j < pagesToLookAt; j++ )
@@ -601,7 +601,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    private void readAndVerifyAdversarialPage( PageCursor cursor, int pageSize ) throws IOException
+    private static void readAndVerifyAdversarialPage( PageCursor cursor, int pageSize ) throws IOException
     {
         byte[] actualPage = new byte[pageSize];
         byte[] expectedPage = new byte[pageSize];
@@ -615,7 +615,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         assertThat( actualPage ).as( msg ).containsExactly( expectedPage );
     }
 
-    private void performConsistentAdversarialWrite( PageCursor cursor, ThreadLocalRandom rng, int pageSize ) throws IOException
+    private static void performConsistentAdversarialWrite( PageCursor cursor, ThreadLocalRandom rng, int pageSize ) throws IOException
     {
         for ( int j = 0; j < 3; j++ )
         {
@@ -631,7 +631,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    private void verifyAdversarialPagedContent( PagedFile pagedFile ) throws IOException
+    private static void verifyAdversarialPagedContent( PagedFile pagedFile ) throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL ) )
         {

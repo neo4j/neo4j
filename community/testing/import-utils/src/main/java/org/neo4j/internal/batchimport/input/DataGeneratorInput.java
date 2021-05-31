@@ -135,7 +135,7 @@ public class DataGeneratorInput implements Input
                 (long) (nodes * labelsPerNodeEstimate) );
     }
 
-    private InputEntity[] sample( InputIterable source, int size )
+    private static InputEntity[] sample( InputIterable source, int size )
     {
         try ( InputIterator iterator = source.iterator();
               InputChunk chunk = iterator.newChunk() )

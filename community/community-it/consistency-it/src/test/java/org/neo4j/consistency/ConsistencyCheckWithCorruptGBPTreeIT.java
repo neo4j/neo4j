@@ -706,7 +706,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         assertResultContainsMessage( fs, result, expectedMessage );
     }
 
-    private void assertResultContainsMessage( FileSystemAbstraction fs, ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
+    private static void assertResultContainsMessage( FileSystemAbstraction fs, ConsistencyCheckService.Result result, String expectedMessage )
+            throws IOException
     {
         try ( var reader = fs.openAsReader( result.reportFile(), UTF_8 ) )
         {
@@ -756,13 +757,13 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
+    private static ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
             LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags, config -> {} );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
+    private static ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
             LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
             throws ConsistencyCheckIncompleteException
     {
@@ -775,7 +776,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     /**
      * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
      */
-    private void dbmsAction( Path neo4jHome, FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex,
+    private static void dbmsAction( Path neo4jHome, FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex,
             Consumer<GraphDatabaseService> dbSetup, Consumer<DatabaseManagementServiceBuilder> dbConfiguration )
     {
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jHome )
@@ -826,7 +827,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return schemaIndexFiles( fs, databaseDir, NATIVE_BTREE10 );
     }
 
-    private Path[] schemaIndexFiles( FileSystemAbstraction fs, Path databaseDir, GraphDatabaseSettings.SchemaIndex schemaIndex ) throws IOException
+    private static Path[] schemaIndexFiles( FileSystemAbstraction fs, Path databaseDir, GraphDatabaseSettings.SchemaIndex schemaIndex ) throws IOException
     {
         final String fileNameFriendlyProviderName = IndexDirectoryStructure.fileNameFriendly( schemaIndex.providerName() );
         Path indexDir = databaseDir.resolve( "schema/index/" );
@@ -841,13 +842,13 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return corruptIndexes( fs, readOnlyChecker, corruptionInject, targetFiles );
     }
 
-    private List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
+    private static List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
             Path... targetFiles ) throws Exception
     {
         return corruptIndexes( fs, readOnlyChecker, corruptionInject, new SchemaLayouts(), targetFiles );
     }
 
-    private List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
+    private static List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
             LayoutBootstrapper layoutBootstrapper, Path... targetFiles ) throws Exception
     {
         List<Path> treeFiles = new ArrayList<>();
@@ -871,7 +872,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return treeFiles;
     }
 
-    private void indexWithNumberData( GraphDatabaseService db, Label label )
+    private static void indexWithNumberData( GraphDatabaseService db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -885,7 +886,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         createIndexOn( db, label );
     }
 
-    private void indexWithStringData( GraphDatabaseService db, Label label )
+    private static void indexWithStringData( GraphDatabaseService db, Label label )
     {
         String longString = longString();
 
@@ -903,7 +904,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         createIndexOn( db, label );
     }
 
-    private void createIndexOn( GraphDatabaseService db, Label label )
+    private static void createIndexOn( GraphDatabaseService db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -917,7 +918,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         }
     }
 
-    private String longString()
+    private static String longString()
     {
         char[] chars = new char[1000];
         Arrays.fill( chars, 'a' );

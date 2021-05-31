@@ -195,7 +195,7 @@ class DbmsRuntimeSystemGraphComponentTest
         }
     }
 
-    private void createVersionNode( GraphDatabaseService database )
+    private static void createVersionNode( GraphDatabaseService database )
     {
         try ( var tx = database.beginTx() )
         {
@@ -204,7 +204,7 @@ class DbmsRuntimeSystemGraphComponentTest
         }
     }
 
-    private void createVersionNode( GraphDatabaseService database, DbmsRuntimeVersion version )
+    private static void createVersionNode( GraphDatabaseService database, DbmsRuntimeVersion version )
     {
         try ( var tx = database.beginTx() )
         {
@@ -213,7 +213,7 @@ class DbmsRuntimeSystemGraphComponentTest
         }
     }
 
-    private void createRuntimeComponentNode( GraphDatabaseService database, DbmsRuntimeVersion version )
+    private static void createRuntimeComponentNode( GraphDatabaseService database, DbmsRuntimeVersion version )
     {
         try ( var tx = database.beginTx() )
         {

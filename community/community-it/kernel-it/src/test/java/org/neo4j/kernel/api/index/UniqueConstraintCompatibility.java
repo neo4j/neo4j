@@ -67,7 +67,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
 
     public UniqueConstraintCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, testSuite.uniqueIndexPrototype() );
+        super( testSuite, PropertyIndexProviderCompatibilityTestSuite.uniqueIndexPrototype() );
     }
 
     /*
@@ -902,7 +902,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         };
     }
 
-    private Action fail( final String message )
+    private static Action fail( final String message )
     {
         return new Action( "fail( \"" + message + "\" );" )
         {
@@ -926,7 +926,7 @@ public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatib
         };
     }
 
-    private String reprValue( Object value )
+    private static String reprValue( Object value )
     {
         return value instanceof String ? "\"" + value + "\"" : String.valueOf( value );
     }

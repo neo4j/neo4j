@@ -305,12 +305,12 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         c2.close();
     }
 
-    private int[] array( int... elements )
+    private static int[] array( int... elements )
     {
         return elements;
     }
 
-    private long createNodeWithProperty( Transaction tx, String propertyKey, Object value )
+    private static long createNodeWithProperty( Transaction tx, String propertyKey, Object value )
     {
         Node p = tx.createNode();
         p.setProperty( propertyKey, value );

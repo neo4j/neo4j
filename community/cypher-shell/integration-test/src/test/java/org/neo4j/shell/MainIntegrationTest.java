@@ -675,7 +675,7 @@ public class MainIntegrationTest
         }
     }
 
-    private void expectDatabaseUnavailable( Throwable e, String dbName )
+    private static void expectDatabaseUnavailable( Throwable e, String dbName )
     {
         String msg = new AnsiLogger( false ).getFormattedMessage( e );
         assertThat( msg, anyOf(
@@ -728,13 +728,13 @@ public class MainIntegrationTest
         return shell;
     }
 
-    private ShellAndConnection getShell( CliArgs cliArgs )
+    private static ShellAndConnection getShell( CliArgs cliArgs )
     {
         Logger logger = new AnsiLogger( cliArgs.getDebugMode() );
         return getShell( cliArgs, logger );
     }
 
-    private ShellAndConnection getShell( CliArgs cliArgs, LinePrinter linePrinter )
+    private static ShellAndConnection getShell( CliArgs cliArgs, LinePrinter linePrinter )
     {
         PrettyConfig prettyConfig = new PrettyConfig( cliArgs );
         ConnectionConfig connectionConfig = getConnectionConfig( cliArgs );
@@ -742,7 +742,7 @@ public class MainIntegrationTest
         return new ShellAndConnection( new CypherShell( linePrinter, prettyConfig, true, new ShellParameterMap() ), connectionConfig );
     }
 
-    private ConnectionConfig getConnectionConfig( CliArgs cliArgs )
+    private static ConnectionConfig getConnectionConfig( CliArgs cliArgs )
     {
         return new ConnectionConfig(
                 cliArgs.getScheme(),
@@ -754,7 +754,7 @@ public class MainIntegrationTest
                 cliArgs.getDatabase() );
     }
 
-    private void exit( CypherShell shell ) throws CommandException
+    private static void exit( CypherShell shell ) throws CommandException
     {
         try
         {
@@ -767,7 +767,7 @@ public class MainIntegrationTest
         }
     }
 
-    private CliArgs args( String db, String user, String pass, String cypher )
+    private static CliArgs args( String db, String user, String pass, String cypher )
     {
         CliArgs cliArgs = new CliArgs();
         cliArgs.setUsername( user, "" );

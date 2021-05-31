@@ -195,7 +195,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    private Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
+    private static Phase filesAreCorrectlyWrittenVerification( final RecordFormat recordFormat, final int filePageCount )
     {
         return ( cache, fs1, filesTouched ) ->
         {

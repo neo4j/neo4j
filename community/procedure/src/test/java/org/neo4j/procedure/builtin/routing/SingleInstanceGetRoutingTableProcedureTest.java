@@ -538,12 +538,12 @@ public class SingleInstanceGetRoutingTableProcedureTest
         return databaseManager;
     }
 
-    private RoutingResult invoke( GetRoutingTableProcedure proc, NamedDatabaseId databaseName, MapValue context ) throws ProcedureException
+    private static RoutingResult invoke( GetRoutingTableProcedure proc, NamedDatabaseId databaseName, MapValue context ) throws ProcedureException
     {
         return invoke( proc, databaseName.name(), context );
     }
 
-    private RoutingResult invoke( GetRoutingTableProcedure proc, String databaseName, MapValue context ) throws ProcedureException
+    private static RoutingResult invoke( GetRoutingTableProcedure proc, String databaseName, MapValue context ) throws ProcedureException
     {
         var input = new AnyValue[]{context, stringValue( databaseName )};
         var result = proc.apply( null, input, null );

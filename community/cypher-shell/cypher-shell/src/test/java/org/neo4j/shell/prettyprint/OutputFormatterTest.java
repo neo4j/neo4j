@@ -72,7 +72,7 @@ public class OutputFormatterTest
         assertThat( info.get( "DbHits" ).asLong(), equalTo( 2404L ) );
     }
 
-    private Value buildOperator( String operator, long dbHits, long rows, Value child )
+    private static Value buildOperator( String operator, long dbHits, long rows, Value child )
     {
         Map<String, Value> operatorMap = new HashMap<>();
         operatorMap.put( "operatorType", Values.value( operator ) );

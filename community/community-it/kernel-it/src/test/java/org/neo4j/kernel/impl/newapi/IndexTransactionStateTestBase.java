@@ -350,7 +350,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
         return new WriteTestSupport();
     }
 
-    private void terminate( KernelTransaction transaction )
+    private static void terminate( KernelTransaction transaction )
     {
         transaction.markForTermination( Status.Transaction.Terminated );
     }

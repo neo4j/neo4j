@@ -327,12 +327,12 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
     }
 
-    private Provider[] providersUpToAndIncluding( Provider provider )
+    private static Provider[] providersUpToAndIncluding( Provider provider )
     {
         return Stream.of( Provider.values() ).filter( p -> p.ordinal() <= provider.ordinal() ).toArray( Provider[]::new );
     }
 
-    private DatabaseManagementService setupDb( Path storeDir, IndexRecoveryTracker indexRecoveryTracker )
+    private static DatabaseManagementService setupDb( Path storeDir, IndexRecoveryTracker indexRecoveryTracker )
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( indexRecoveryTracker );
@@ -347,7 +347,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private void verifyInitialState( IndexRecoveryTracker indexRecoveryTracker, int expectedNumberOfIndexes, InternalIndexState expectedInitialState )
+    private static void verifyInitialState( IndexRecoveryTracker indexRecoveryTracker, int expectedNumberOfIndexes, InternalIndexState expectedInitialState )
     {
         assertEquals( expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size(), "exactly " + expectedNumberOfIndexes + " indexes " );
         for ( Map.Entry<IndexDescriptor,InternalIndexState> indexStateEntry : indexRecoveryTracker.initialStateMap.entrySet() )

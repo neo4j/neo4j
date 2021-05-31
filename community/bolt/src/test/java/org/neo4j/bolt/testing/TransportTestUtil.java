@@ -60,7 +60,6 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.DB_NAME_KEY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.fromList;
 
 public class TransportTestUtil
 {
@@ -124,7 +123,7 @@ public class TransportTestUtil
         return chunk( chunkSize, serializedMessages );
     }
 
-    public byte[] chunk( int chunkSize, byte[]... messages )
+    public static byte[] chunk( int chunkSize, byte[]... messages )
     {
         ByteBuffer output = ByteBuffers.allocate( 10000, INSTANCE );
 
@@ -151,7 +150,7 @@ public class TransportTestUtil
         return arrayOutput;
     }
 
-    public byte[] defaultAcceptedVersions()
+    public static byte[] defaultAcceptedVersions()
     {
         return acceptedVersions( DEFAULT_BOLT_VERSION.toInt(), 0, 0, 0 );
     }
@@ -210,7 +209,7 @@ public class TransportTestUtil
         return chunk( BoltV4Messages.reset() );
     }
 
-    public byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
+    public static byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
     {
         ByteBuffer bb = ByteBuffers.allocate( 5 * Integer.BYTES, INSTANCE );
         bb.putInt( 0x6060B017 );
@@ -405,7 +404,7 @@ public class TransportTestUtil
         OPTIONAL
     }
 
-    public Condition<TransportConnection> eventuallyReceivesSelectedProtocolVersion()
+    public static Condition<TransportConnection> eventuallyReceivesSelectedProtocolVersion()
     {
         return eventuallyReceives( new byte[]{0, 0, (byte) DEFAULT_BOLT_VERSION.getMinorVersion(), (byte) DEFAULT_BOLT_VERSION.getMajorVersion()} );
     }
@@ -462,7 +461,7 @@ public class TransportTestUtil
         }
     }
 
-    public int receiveChunkHeader( TransportConnection conn ) throws IOException, InterruptedException
+    public static int receiveChunkHeader( TransportConnection conn ) throws IOException, InterruptedException
     {
         byte[] raw = conn.recv( 2 );
         return ((raw[0] & 0xff) << 8 | (raw[1] & 0xff)) & 0xffff;

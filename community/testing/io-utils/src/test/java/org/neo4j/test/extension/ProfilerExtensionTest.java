@@ -41,7 +41,6 @@ import static org.junit.platform.engine.TestExecutionResult.Status.ABORTED;
 import static org.junit.platform.engine.TestExecutionResult.Status.SUCCESSFUL;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 import static org.neo4j.test.extension.DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.TEST_TOGGLE;
-import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ProfilerExtensionVerificationTest.TEST_DIR;
 
 @ResourceLock( ExecutionSharedContext.SHARED_RESOURCE )
@@ -50,18 +49,18 @@ class ProfilerExtensionTest
     @Test
     void passingTestsMustNotProduceProfilerOutput()
     {
-        CONTEXT.clear();
+        ExecutionSharedContext.clear();
         execute( ProfilerExtensionVerificationTest.class, "testThatPasses" );
-        Path testDir = CONTEXT.getValue( TEST_DIR );
+        Path testDir = ExecutionSharedContext.getValue( TEST_DIR );
         assertFalse( Files.exists( testDir ) ); // The TestDirectory extension deletes the test directory when the test passes.
     }
 
     @Test
     void failingTestsMustProduceProfilerOutput() throws IOException
     {
-        CONTEXT.clear();
+        ExecutionSharedContext.clear();
         execute( ProfilerExtensionVerificationTest.class, "testThatFails" );
-        Path testDir = CONTEXT.getValue( TEST_DIR );
+        Path testDir = ExecutionSharedContext.getValue( TEST_DIR );
         assertTrue( Files.exists( testDir ) );
         assertTrue( Files.isDirectory( testDir ) );
         Path profileData = testDir.resolve( "profiler-output.txt" );
@@ -82,7 +81,7 @@ class ProfilerExtensionTest
         // with that. Furthermore, these particular tests are arranged such that the TestDirectoryExtension has its
         // lifecycle nested within the ProfilerExtension, which means that the test directory will do its cleanup
         // before the profiler extension gets to write its results.
-        CONTEXT.clear();
+        ExecutionSharedContext.clear();
         execute( ProfiledTemplateVerification.class, "testThatFailsBeforeInitialisingTestDirectory", new TestExecutionListener()
         {
             @Override

@@ -39,7 +39,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 public class EmptyIdGeneratorFactory implements IdGeneratorFactory
 {
-    public static IdGeneratorFactory EMPTY_ID_GENERATOR_FACTORY = new EmptyIdGeneratorFactory();
+    public static final IdGeneratorFactory EMPTY_ID_GENERATOR_FACTORY = new EmptyIdGeneratorFactory();
 
     private EmptyIdGeneratorFactory()
     {

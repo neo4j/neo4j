@@ -176,7 +176,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         return Optional.of( () -> cmd.execute( stripTrailingSemicolons( args ) ) );
     }
 
-    protected void executeCmd( @Nonnull final CommandExecutable cmdExe ) throws ExitException, CommandException
+    protected static void executeCmd( @Nonnull final CommandExecutable cmdExe ) throws ExitException, CommandException
     {
         cmdExe.execute();
     }

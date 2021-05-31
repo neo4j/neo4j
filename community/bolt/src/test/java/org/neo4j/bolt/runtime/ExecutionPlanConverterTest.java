@@ -91,17 +91,17 @@ class ExecutionPlanConverterTest
         assertEquals( convertedMap.size(), 4 );
     }
 
-    private Map<String,Object> getArguments()
+    private static Map<String,Object> getArguments()
     {
         return MapUtil.map( "argKey", "argValue" );
     }
 
-    private Set<String> getIdentifiers()
+    private static Set<String> getIdentifiers()
     {
         return Iterators.asSet( "identifier1", "identifier2" );
     }
 
-    private TestProfilerStatistics getFullProfilerStatistics()
+    private static TestProfilerStatistics getFullProfilerStatistics()
     {
         EnumMap<ProfilerArguments,Long> arguments = new EnumMap<>( ProfilerArguments.class );
         arguments.put( ProfilerArguments.ROWS, 1L );
@@ -112,7 +112,7 @@ class ExecutionPlanConverterTest
         return new TestProfilerStatistics( arguments );
     }
 
-    private TestProfilerStatistics getPartialProfilerStatistics()
+    private static TestProfilerStatistics getPartialProfilerStatistics()
     {
         EnumMap<ProfilerArguments,Long> arguments = new EnumMap<>( ProfilerArguments.class );
         arguments.put( ProfilerArguments.ROWS, 1L );

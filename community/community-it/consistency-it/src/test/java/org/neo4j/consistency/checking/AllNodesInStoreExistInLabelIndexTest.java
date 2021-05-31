@@ -257,7 +257,7 @@ class AllNodesInStoreExistInLabelIndexTest
         assertTrue( result.isSuccessful(), "Expected consistency check to succeed" );
     }
 
-    private String readReport( ConsistencyCheckService.Result result ) throws IOException
+    private static String readReport( ConsistencyCheckService.Result result ) throws IOException
     {
         return Files.readString( result.reportFile() );
     }

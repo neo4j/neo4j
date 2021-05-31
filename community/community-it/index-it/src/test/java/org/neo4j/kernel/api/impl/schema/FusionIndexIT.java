@@ -61,10 +61,10 @@ public class FusionIndexIT
     @Inject
     private FileSystemAbstraction fs;
 
-    private int numberValue = 1;
-    private String stringValue = "string";
-    private PointValue spatialValue = pointValue( CoordinateReferenceSystem.WGS84, 0.5, 0.5 );
-    private DateValue temporalValue = DateValue.date( 2018, 3, 19 );
+    private final int numberValue = 1;
+    private final String stringValue = "string";
+    private final PointValue spatialValue = pointValue( CoordinateReferenceSystem.WGS84, 0.5, 0.5 );
+    private final DateValue temporalValue = DateValue.date( 2018, 3, 19 );
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )

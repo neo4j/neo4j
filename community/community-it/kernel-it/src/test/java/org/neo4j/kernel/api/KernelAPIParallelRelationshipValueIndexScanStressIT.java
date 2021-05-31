@@ -107,7 +107,7 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
 
     }
 
-    private IndexDescriptor unwrap( IndexDefinition indexDefinition )
+    private static IndexDescriptor unwrap( IndexDefinition indexDefinition )
     {
         return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
     }
@@ -117,7 +117,7 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
         return tx.dataRead().indexReadSession( index );
     }
 
-    private void createRelationships( org.neo4j.graphdb.Transaction tx, int count, String labelName, String propKey )
+    private static void createRelationships( org.neo4j.graphdb.Transaction tx, int count, String labelName, String propKey )
     {
         RelationshipType type = RelationshipType.withName( labelName );
         for ( int i = 0; i < count; i++ )

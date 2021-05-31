@@ -111,8 +111,8 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
         Signal.handle( new Signal( INTERRUPT_SIGNAL ), this );
     }
 
-    private ConsoleReader setupConsoleReader( @Nonnull Logger logger,
-                                              @Nonnull InputStream inputStream ) throws IOException
+    private static ConsoleReader setupConsoleReader( @Nonnull Logger logger,
+            @Nonnull InputStream inputStream ) throws IOException
     {
         ConsoleReader reader = new ConsoleReader( inputStream, logger.getOutputStream() );
         // Disable expansion of bangs: !
@@ -160,7 +160,7 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
                 currentlyExecuting.set( false );
             }
         }
-        logger.printIfVerbose( userMessagesHandler.getExitMessage() );
+        logger.printIfVerbose( UserMessagesHandler.getExitMessage() );
         return exitCode;
     }
 
@@ -258,7 +258,7 @@ public class InteractiveShellRunner implements ShellRunner, SignalHandler
         }
     }
 
-    private String getErrorPrompt( String errorCode )
+    private static String getErrorPrompt( String errorCode )
     {
         // NOTE: errorCode can be null
         String errorPromptSuffix;

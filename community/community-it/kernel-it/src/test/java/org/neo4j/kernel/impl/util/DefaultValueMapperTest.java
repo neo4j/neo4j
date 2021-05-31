@@ -177,12 +177,12 @@ class DefaultValueMapperTest
         }
     }
 
-    private NodeValue[] asNodeValues( Node... nodes )
+    private static NodeValue[] asNodeValues( Node... nodes )
     {
         return Arrays.stream( nodes ).map( ValueUtils::fromNodeEntity ).toArray( NodeValue[]::new );
     }
 
-    private RelationshipValue[] asRelationshipsValues( Relationship... relationships )
+    private static RelationshipValue[] asRelationshipsValues( Relationship... relationships )
     {
         return Arrays.stream( relationships ).map( ValueUtils::fromRelationshipEntity )
                 .toArray( RelationshipValue[]::new );

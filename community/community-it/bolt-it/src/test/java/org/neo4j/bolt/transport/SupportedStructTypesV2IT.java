@@ -112,7 +112,7 @@ public class SupportedStructTypesV2IT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
     }
 
     @ParameterizedTest( name = "{displayName} {0}" )
@@ -122,7 +122,7 @@ public class SupportedStructTypesV2IT
         initConnection( connectionClass );
 
         connection.connect( address )
-                .send( util.acceptedVersions( 4, 3, 0, 0 ) )
+                .send( TransportTestUtil.acceptedVersions( 4, 3, 0, 0 ) )
                 .send( util.defaultAuth() );
 
         assertThat( connection ).satisfies( eventuallyReceives( new byte[]{0, 0, 0, 4} ) );
@@ -388,7 +388,7 @@ public class SupportedStructTypesV2IT
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() );
 
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 }

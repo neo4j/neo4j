@@ -159,7 +159,7 @@ public class FabricExecutor
         }
     }
 
-    private void rollbackOnFailure( FabricTransaction fabricTransaction, Throwable failure )
+    private static void rollbackOnFailure( FabricTransaction fabricTransaction, Throwable failure )
     {
         try
         {

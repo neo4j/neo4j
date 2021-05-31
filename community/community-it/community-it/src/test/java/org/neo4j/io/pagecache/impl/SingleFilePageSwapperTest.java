@@ -136,7 +136,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return fileSystem;
     }
 
-    private void putBytes( long page, byte[] data, int srcOffset, int tgtOffset, int length )
+    private static void putBytes( long page, byte[] data, int srcOffset, int tgtOffset, int length )
     {
         for ( int i = 0; i < length; i++ )
         {
@@ -627,7 +627,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         assertThat( openFilesCounter.get() ).isEqualTo( 0 );
     }
 
-    private byte[] array( long page )
+    private static byte[] array( long page )
     {
         int size = sizeOfAsInt( page );
         byte[] array = new byte[size];
@@ -638,7 +638,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return array;
     }
 
-    private ByteBuffer wrap( byte[] bytes )
+    private static ByteBuffer wrap( byte[] bytes )
     {
         ByteBuffer buffer = ByteBuffers.allocate( bytes.length, INSTANCE );
         for ( byte b : bytes )

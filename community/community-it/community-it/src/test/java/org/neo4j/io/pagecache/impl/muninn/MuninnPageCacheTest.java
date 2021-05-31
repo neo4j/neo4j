@@ -315,7 +315,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             {
                 assertTrue( cursor.next() );
                 MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
-                assertEquals( 7, pageCursor.pagedFile.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
+                assertEquals( 7, PageList.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
                 assertEquals( 1, cursor.getLong() );
             }
         }
@@ -939,7 +939,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             {
                 assertTrue( cursor.next() );
                 MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
-                assertEquals( 7, pageCursor.pagedFile.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
+                assertEquals( 7, PageList.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
                 assertEquals( 1, cursor.getLong() );
             }
         }
@@ -976,7 +976,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             {
                 assertTrue( cursor.next() );
                 MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
-                assertEquals( 12, pageCursor.pagedFile.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
+                assertEquals( 12, PageList.getLastModifiedTxId( pageCursor.pinnedPageRef ) );
                 assertEquals( 3, cursor.getLong() );
             }
         }
@@ -997,7 +997,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 assertFalse( versionContext.isDirty() );
 
                 MuninnPageCursor pageCursor = (MuninnPageCursor) cursor;
-                pageCursor.pagedFile.setLastModifiedTxId( ((MuninnPageCursor) cursor).pinnedPageRef, 17 );
+                PageList.setLastModifiedTxId( ((MuninnPageCursor) cursor).pinnedPageRef, 17 );
 
                 assertTrue( cursor.next( 0 ) );
                 assertTrue( versionContext.isDirty() );

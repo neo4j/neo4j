@@ -54,7 +54,6 @@ import static org.junit.platform.engine.TestExecutionResult.Status.FAILED;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 import static org.neo4j.test.extension.DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.TEST_TOGGLE;
-import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.CREATED_TEST_FILE_PAIRS_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
@@ -93,10 +92,10 @@ abstract class TestDirectoryExtensionTestSupport
         @DisabledForRoot
         void exceptionOnDirectoryDeletionIncludeTestDisplayName() throws IOException
         {
-            CONTEXT.clear();
+            ExecutionSharedContext.clear();
             FailedTestExecutionListener failedTestListener = new FailedTestExecutionListener();
             execute( "lockFileAndFailToDeleteDirectory", failedTestListener );
-            Path lockedFile = CONTEXT.getValue( LOCKED_TEST_FILE_KEY );
+            Path lockedFile = ExecutionSharedContext.getValue( LOCKED_TEST_FILE_KEY );
 
             assertNotNull( lockedFile );
             assertTrue( lockedFile.toFile().setReadable( true, true ) );
@@ -160,9 +159,9 @@ abstract class TestDirectoryExtensionTestSupport
     @Test
     void failedTestShouldKeepDirectory()
     {
-        CONTEXT.clear();
+        ExecutionSharedContext.clear();
         execute( "failAndKeepDirectory" );
-        Path failedFile = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+        Path failedFile = ExecutionSharedContext.getValue( CREATED_TEST_FILE_PAIRS_KEY );
         assertNotNull( failedFile );
         assertTrue( Files.exists( failedFile ) );
     }
@@ -170,9 +169,9 @@ abstract class TestDirectoryExtensionTestSupport
     @Test
     void successfulTestShouldCleanupDirectory()
     {
-        CONTEXT.clear();
+        ExecutionSharedContext.clear();
         execute( "executeAndCleanupDirectory" );
-        Path greenTestFail = CONTEXT.getValue( SUCCESSFUL_TEST_FILE_KEY );
+        Path greenTestFail = ExecutionSharedContext.getValue( SUCCESSFUL_TEST_FILE_KEY );
         assertNotNull( greenTestFail );
         assertFalse( Files.exists( greenTestFail ) );
     }
@@ -206,9 +205,9 @@ abstract class TestDirectoryExtensionTestSupport
 
     private static List<Pair<Path,Boolean>> executeAndReturnCreatedFiles( Class<?> testClass, int count )
     {
-        CONTEXT.clear();
+        ExecutionSharedContext.clear();
         executeClass( testClass );
-        List<Pair<Path,Boolean>> pairs = CONTEXT.getValue( CREATED_TEST_FILE_PAIRS_KEY );
+        List<Pair<Path,Boolean>> pairs = ExecutionSharedContext.getValue( CREATED_TEST_FILE_PAIRS_KEY );
         assertNotNull( pairs );
         assertThat( pairs.size() ).isEqualTo( count );
         return pairs;

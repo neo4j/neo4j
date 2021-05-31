@@ -489,14 +489,14 @@ public class TableOutputFormatterTest
                 "| (:Person {name: \"Mark\"})-[:TEST {since: 2016}]->(:Person {name: \"Mark\"}) |" ) );
     }
 
-    private String formatResult( Result result )
+    private static String formatResult( Result result )
     {
         ToStringLinePrinter printer = new ToStringLinePrinter();
         new TableOutputFormatter( true, 1000 ).formatAndCount( new ListBoltResult( result.list(), result.consume() ), printer );
         return printer.result();
     }
 
-    private Result mockResult( List<String> cols, Object... data )
+    private static Result mockResult( List<String> cols, Object... data )
     {
         Result result = mock( Result.class );
         Query query = mock( Query.class );
@@ -516,7 +516,7 @@ public class TableOutputFormatterTest
         return result;
     }
 
-    private Record record( List<String> cols, List<Object> data )
+    private static Record record( List<String> cols, List<Object> data )
     {
         assert cols.size() == data.size();
         Value[] values = data.stream()

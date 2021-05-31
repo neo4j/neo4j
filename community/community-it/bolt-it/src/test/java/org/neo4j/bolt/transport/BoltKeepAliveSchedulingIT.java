@@ -66,7 +66,7 @@ public class BoltKeepAliveSchedulingIT
     private TransportConnection connection;
     private TransportTestUtil util;
 
-    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
+    protected static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings -> {
             settings.put( GraphDatabaseSettings.auth_enabled, false );
@@ -95,7 +95,7 @@ public class BoltKeepAliveSchedulingIT
                 .send( util.defaultAuth() );
         AtomicInteger noOpCounter = new AtomicInteger( 0 );
 
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives( true, noOpCounter::incrementAndGet,
                 msgSuccess() ) );
 

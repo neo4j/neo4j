@@ -111,7 +111,6 @@ public class InteractiveShellRunnerTest
         userMessagesHandler = mock( UserMessagesHandler.class );
         when( databaseManager.getActualDatabaseAsReportedByServer() ).thenReturn( "mydb" );
         when( userMessagesHandler.getWelcomeMessage() ).thenReturn( "Welcome to cypher-shell!" );
-        when( userMessagesHandler.getExitMessage() ).thenReturn( "Exit message" );
         when( connectionConfig.username() ).thenReturn( "myusername" );
 
         doThrow( badLineError ).when( cmdExecuter ).execute( contains( "bad" ) );
@@ -510,7 +509,7 @@ public class InteractiveShellRunnerTest
 
         // then
         verify( logger ).printIfVerbose( "Welcome to cypher-shell!" );
-        verify( logger ).printIfVerbose( "Exit message" );
+        verify( logger ).printIfVerbose( "\nBye!" );
     }
 
     @Test

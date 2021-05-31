@@ -177,8 +177,8 @@ class ProcedureRoutingTableGetterTest
         }
     }
 
-    private void mockStreamResult( StatementProcessor statementProcessor, int queryId, BoltResult boltResult, UnsafeConsumer<BoltResult.RecordConsumer> answer )
-            throws Throwable
+    private static void mockStreamResult( StatementProcessor statementProcessor, int queryId, BoltResult boltResult,
+            UnsafeConsumer<BoltResult.RecordConsumer> answer ) throws Throwable
     {
         doAnswer( invocationOnMock ->
                   {
@@ -199,7 +199,7 @@ class ProcedureRoutingTableGetterTest
                 .streamResult( eq( queryId ), any() );
     }
 
-    private MapValue routingTable()
+    private static MapValue routingTable()
     {
         var builder = new MapValueBuilder();
         builder.add( "ttl", Values.intValue( 300 ) );
@@ -208,12 +208,12 @@ class ProcedureRoutingTableGetterTest
         return builder.build();
     }
 
-    private String[] getFieldNames()
+    private static String[] getFieldNames()
     {
         return new String[]{"ttl", "servers"};
     }
 
-    private MapValue getExpectedParams( MapValue routingContext, String databaseName )
+    private static MapValue getExpectedParams( MapValue routingContext, String databaseName )
     {
         var builder = new MapValueBuilder();
         builder.add( "routingContext", routingContext );
@@ -221,7 +221,7 @@ class ProcedureRoutingTableGetterTest
         return builder.build();
     }
 
-    private MapValue getRoutingTableContext()
+    private static MapValue getRoutingTableContext()
     {
         var builder = new MapValueBuilder();
         builder.add( "context", Values.stringOrNoValue( "give me some context" ) );

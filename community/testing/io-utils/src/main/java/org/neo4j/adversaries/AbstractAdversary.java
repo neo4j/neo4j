@@ -67,7 +67,7 @@ public abstract class AbstractAdversary implements Adversary
         rethrow( adversaryException );
     }
 
-    private AssertionError failToInjectError( Exception e )
+    private static AssertionError failToInjectError( Exception e )
     {
         return new AssertionError( new Exception( "Failed to instantiate failure", e ) );
     }

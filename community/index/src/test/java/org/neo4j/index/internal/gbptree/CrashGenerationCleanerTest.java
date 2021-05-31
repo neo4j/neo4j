@@ -123,7 +123,7 @@ class CrashGenerationCleanerTest
     @BeforeEach
     void setupPagedFile() throws IOException
     {
-        pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
+        pageCache = PageCacheSupportExtension.getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
         pagedFile = pageCache.map( testDirectory.file( FILE_NAME ), PAGE_SIZE, DATABASE_NAME, immutable.of( CREATE, DELETE_ON_CLOSE ) );
     }
 

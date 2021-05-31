@@ -70,7 +70,7 @@ class TestSorting extends TraversalTestBase
         }
     }
 
-    private List<Node> asNodes( Transaction tx, String abraham, String george, String dan, String zack, String andreas, String nicholas )
+    private static List<Node> asNodes( Transaction tx, String abraham, String george, String dan, String zack, String andreas, String nicholas )
     {
         List<String> allNames = new ArrayList<>( asList( abraham, george, dan, zack, andreas, nicholas ) );
         Collections.sort( allNames );

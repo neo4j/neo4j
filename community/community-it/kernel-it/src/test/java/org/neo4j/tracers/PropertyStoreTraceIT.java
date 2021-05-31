@@ -101,7 +101,7 @@ class PropertyStoreTraceIT
         }
     }
 
-    private void prepareIdGenerator( IdGenerator idGenerator )
+    private static void prepareIdGenerator( IdGenerator idGenerator )
     {
         try ( var marker = idGenerator.marker( NULL ) )
         {

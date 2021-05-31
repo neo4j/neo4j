@@ -160,7 +160,7 @@ public class TablePlanFormatterTest
                 "" ) ) );
     }
 
-    private String stringOfLength( int length )
+    private static String stringOfLength( int length )
     {
         StringBuilder strBuilder = new StringBuilder();
 

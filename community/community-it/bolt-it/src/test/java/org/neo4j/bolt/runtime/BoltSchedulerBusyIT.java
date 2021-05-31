@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.testing.TransportTestUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
@@ -223,7 +224,7 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
     private TransportConnection connectAndPerformBoltHandshake( TransportConnection connection ) throws Exception
     {
         connection.connect( address ).send( util.defaultAcceptedVersions() );
-        assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         return connection;
     }
 
@@ -234,7 +235,7 @@ class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
     }
 
-    private void close( TransportConnection connection )
+    private static void close( TransportConnection connection )
     {
         if ( connection != null )
         {

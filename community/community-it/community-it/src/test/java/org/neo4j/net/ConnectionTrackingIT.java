@@ -555,7 +555,7 @@ class ConnectionTrackingIT
                     .send( auth( "neo4j", NEO4J_USER_PWD ) )
                     .send( util.defaultRunAutoCommitTx( "CALL dbms.killConnection('" + id + "')" ) );
 
-            assertThat( connection ).satisfies( util.eventuallyReceivesSelectedProtocolVersion() );
+            assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
             assertThat( connection ).satisfies( util.eventuallyReceives(
                     msgSuccess(),
                     msgSuccess(),

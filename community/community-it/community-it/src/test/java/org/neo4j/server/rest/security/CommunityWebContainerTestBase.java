@@ -85,18 +85,18 @@ public class CommunityWebContainerTestBase extends ExclusiveWebContainerTestBase
         return testWebContainer.getBaseUri().resolve( txCommitEndpoint( database ) ).toString();
     }
 
-    protected void assertPermissionErrorAtDataAccess( HTTP.Response response ) throws JsonParseException
+    protected static void assertPermissionErrorAtDataAccess( HTTP.Response response ) throws JsonParseException
     {
         assertPermissionError( response, Collections.singletonList( CredentialsExpired.code().serialize() ), "ACCESS on database 'neo4j' is not allowed." );
     }
 
-    void assertPermissionErrorAtSystemAccess( HTTP.Response response ) throws JsonParseException
+    static void assertPermissionErrorAtSystemAccess( HTTP.Response response ) throws JsonParseException
     {
         List<String> possibleErrors = Arrays.asList( CredentialsExpired.code().serialize(), Forbidden.code().serialize() );
         assertPermissionError( response, possibleErrors, PERMISSION_DENIED );
     }
 
-    private void assertPermissionError( HTTP.Response response, List<String> errors, String message ) throws JsonParseException
+    private static void assertPermissionError( HTTP.Response response, List<String> errors, String message ) throws JsonParseException
     {
         assertThat( response.status() ).isEqualTo( 200 );
         assertThat( response.get( "errors" ).size() ).isEqualTo( 1 );

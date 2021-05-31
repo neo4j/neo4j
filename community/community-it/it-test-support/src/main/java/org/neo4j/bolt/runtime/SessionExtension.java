@@ -172,7 +172,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         return gdb.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
     }
 
-    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
+    public static URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
     {
         Path tempFile = Files.createTempFile( prefix, suffix );
         tempFile.toFile().deleteOnExit();

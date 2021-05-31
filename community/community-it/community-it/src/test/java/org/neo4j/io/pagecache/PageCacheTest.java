@@ -2912,7 +2912,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( cursor.getOffset() ).isEqualTo( 24 );
     }
 
-    private void verifyReadOffsets( PageCursor cursor )
+    private static void verifyReadOffsets( PageCursor cursor )
     {
         assertThat( cursor.getOffset() ).isEqualTo( 0 );
         cursor.getLong();
@@ -3116,7 +3116,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         } );
     }
 
-    private void closeThisPagedFile( PagedFile pagedFile )
+    private static void closeThisPagedFile( PagedFile pagedFile )
     {
         pagedFile.close();
     }
@@ -4327,7 +4327,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         } );
     }
 
-    private void accessPagesWhileInterrupted( PagedFile pagedFile, int pf_flags, int iterations ) throws IOException
+    private static void accessPagesWhileInterrupted( PagedFile pagedFile, int pf_flags, int iterations ) throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( 0, pf_flags, NULL ) )
         {

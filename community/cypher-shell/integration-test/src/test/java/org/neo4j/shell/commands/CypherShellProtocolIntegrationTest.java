@@ -78,7 +78,7 @@ public class CypherShellProtocolIntegrationTest
 
     // Here should be tests for "neo4j+s" and "bolt+s", but we don't have the infrastructure for those.
 
-    private void onlyIn3_2to3_6( CypherShell shell ) throws Exception
+    private static void onlyIn3_2to3_6( CypherShell shell ) throws Exception
     {
         // Default connection settings
         shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );

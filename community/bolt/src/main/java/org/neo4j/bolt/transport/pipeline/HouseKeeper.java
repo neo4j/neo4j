@@ -30,7 +30,7 @@ import org.neo4j.memory.HeapEstimator;
 
 public class HouseKeeper extends ChannelInboundHandlerAdapter
 {
-    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( HouseKeeper.class );
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( HouseKeeper.class );
 
     private final BoltConnection connection;
     private final Log log;

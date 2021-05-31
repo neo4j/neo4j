@@ -157,7 +157,7 @@ public class FragmentedMessageDeliveryTest
         }
     }
 
-    private String describeFragments( ByteBuf[] fragments )
+    private static String describeFragments( ByteBuf[] fragments )
     {
         StringBuilder sb = new StringBuilder();
         for ( int i = 0; i < fragments.length; i++ )
@@ -171,7 +171,7 @@ public class FragmentedMessageDeliveryTest
         return sb.toString();
     }
 
-    private byte[] serialize( int chunkSize, RequestMessage... msgs ) throws IOException
+    private static byte[] serialize( int chunkSize, RequestMessage... msgs ) throws IOException
     {
         byte[][] serialized = new byte[msgs.length][];
         for ( int i = 0; i < msgs.length; i++ )

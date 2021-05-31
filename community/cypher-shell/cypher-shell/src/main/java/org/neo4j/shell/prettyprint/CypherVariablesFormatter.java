@@ -23,10 +23,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 
-public class CypherVariablesFormatter
+public final class CypherVariablesFormatter
 {
     private static final String BACKTICK = "`";
     private static final Pattern ALPHA_NUMERIC = Pattern.compile( "^[\\p{L}_][\\p{L}0-9_]*" );
+
+    private CypherVariablesFormatter()
+    {
+    }
 
     @Nonnull
     public static String escape( @Nonnull String string )

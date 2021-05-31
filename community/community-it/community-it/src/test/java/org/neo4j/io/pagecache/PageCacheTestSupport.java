@@ -225,21 +225,21 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         assertRecords( pageId, actual, expected );
     }
 
-    protected void assertRecords( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
+    protected static void assertRecords( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
     {
         byte[] actualBytes = actualPageContents.array();
         byte[] expectedBytes = expectedPageContents.array();
         assertRecords( pageId, actualBytes, expectedBytes );
     }
 
-    protected void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
+    protected static void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
     {
         int estimatedPageId = estimateId( actualBytes );
         assertThat( actualBytes ).as( "Page id: " + pageId + " " + "(based on record data, it should have been " + estimatedPageId +
                 ", a difference of " + Math.abs( pageId - estimatedPageId ) + ")" ).containsExactly( expectedBytes );
     }
 
-    protected int estimateId( byte[] record )
+    protected static int estimateId( byte[] record )
     {
         return ByteBuffer.wrap( record ).getInt() - 1;
     }
@@ -270,7 +270,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize )
+    protected static void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize )
             throws IOException
     {
         ByteBuffer buf = ByteBuffers.allocate( recordSize, INSTANCE );
@@ -320,7 +320,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected Runnable closePageFile( final PagedFile file )
+    protected static Runnable closePageFile( final PagedFile file )
     {
         return file::close;
     }

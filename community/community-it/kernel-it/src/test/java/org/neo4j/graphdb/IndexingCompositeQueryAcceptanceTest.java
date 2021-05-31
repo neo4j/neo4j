@@ -243,8 +243,8 @@ public class IndexingCompositeQueryAcceptanceTest
         assertThat( found ).isEqualTo( expected );
     }
 
-    private MutableLongSet createEntities( GraphDatabaseService db, EntityControl entityControl,
-                                           String label, String[] keys, Object[]... propertyValueTuples )
+    private static MutableLongSet createEntities( GraphDatabaseService db, EntityControl entityControl,
+            String label, String[] keys, Object[]... propertyValueTuples )
     {
         MutableLongSet expected = new LongHashSet();
         try ( Transaction tx = db.beginTx() )

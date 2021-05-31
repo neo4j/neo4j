@@ -262,7 +262,7 @@ class IndexPopulationIT
         assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages( "TIME/PHASE Final:" );
     }
 
-    private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
+    private static void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
     {
         final RandomValues randomValues = RandomValues.create();
 
@@ -278,7 +278,7 @@ class IndexPopulationIT
         }
     }
 
-    private Runnable createNodeWithLabel( Label label )
+    private static Runnable createNodeWithLabel( Label label )
     {
         return () ->
         {
@@ -290,7 +290,7 @@ class IndexPopulationIT
         };
     }
 
-    private long countIndexes()
+    private static long countIndexes()
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -298,7 +298,7 @@ class IndexPopulationIT
         }
     }
 
-    private Runnable createIndexForLabelAndProperty( Label label, String propertyKey )
+    private static Runnable createIndexForLabelAndProperty( Label label, String propertyKey )
     {
         return () ->
         {
@@ -312,7 +312,7 @@ class IndexPopulationIT
         };
     }
 
-    private void waitForOnlineIndexes()
+    private static void waitForOnlineIndexes()
     {
         try ( Transaction transaction = database.beginTx() )
         {
@@ -321,7 +321,7 @@ class IndexPopulationIT
         }
     }
 
-    private Callable<Number> countNodes()
+    private static Callable<Number> countNodes()
     {
         return () ->
         {

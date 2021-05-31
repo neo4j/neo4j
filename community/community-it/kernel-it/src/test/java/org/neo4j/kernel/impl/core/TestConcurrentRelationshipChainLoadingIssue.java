@@ -78,13 +78,13 @@ class TestConcurrentRelationshipChainLoadingIssue
         managementService.shutdown();
     }
 
-    private void checkStateToHelpDiagnoseFlakyTest( GraphDatabaseAPI db, Node node )
+    private static void checkStateToHelpDiagnoseFlakyTest( GraphDatabaseAPI db, Node node )
     {
         loadNode( db, node );
         loadNode( db, node );
     }
 
-    private void loadNode( GraphDatabaseAPI db, Node node )
+    private static void loadNode( GraphDatabaseAPI db, Node node )
     {
         try ( Transaction tx = db.beginTx() )
         {

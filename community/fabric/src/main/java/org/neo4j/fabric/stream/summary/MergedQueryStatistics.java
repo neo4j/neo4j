@@ -183,7 +183,7 @@ public class MergedQueryStatistics implements QueryStatistics
         }
     }
 
-    private void includeIfNonZero( StringBuilder builder, String message, long count )
+    private static void includeIfNonZero( StringBuilder builder, String message, long count )
     {
         if ( count > 0 )
         {
