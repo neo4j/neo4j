@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
@@ -55,6 +56,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     val table = from.semanticTable()
 
     val ambiguousNames = shadowedNames(from.semantics().scopeTree)
+    thrownOnAmbiguousAnonymousNames(ambiguousNames)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
     val renamings = variableRenamings(withProjectedUnions, variableDefinitions, ambiguousNames)
 
@@ -65,6 +67,12 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
       val newStatement = withProjectedUnions.endoRewrite(rewriter)
       val newSemanticTable = table.replaceExpressions(rewriter)
       from.withStatement(newStatement).withSemanticTable(newSemanticTable)
+    }
+  }
+
+  private def thrownOnAmbiguousAnonymousNames(ambiguousNames: Set[String]): Unit = {
+    ambiguousNames.filter(AnonymousVariableNameGenerator.notNamed).foreach { n =>
+      throw new IllegalStateException(s"Anonymous variable `$n` is ambiguous. This is a bug.")
     }
   }
 
