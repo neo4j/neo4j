@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -188,6 +189,20 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     }
 
     outerScope.map(_.name) should be(Set("  n@7"))
+  }
+
+  //noinspection ZeroIndexToHead
+  test("should refuse to disambiguate anonymous names") {
+    // Anonymous names should always be generated such that they are unique.
+    // Having ambiguous anonymous names is a sign of a bug and it is better to fail
+    // early than to continue and have potentially more subtle bugs later on.
+    val namer = new AnonymousVariableNameGenerator()
+    val names = Seq(namer.nextName, namer.nextName, namer.nextName).map(s => s"`$s`")
+
+    val query = s"UNWIND [1,2,3] AS ${names(0)} WITH ${names(0)} + 1 AS x RETURN (${names(0)})-[${names(1)}]-(${names(2)})"
+    the[IllegalStateException] thrownBy {
+      assertNotRewritten(query)
+    } should have message(s"Anonymous variable ${names(0)} is ambiguous. This is a bug.")
   }
 
   override def rewriterPhaseUnderTest: Phase[BaseContext, BaseState, BaseState] = Namespacer
