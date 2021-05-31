@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
@@ -334,6 +335,64 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       planContext.indexExistsForRelTypeAndProperties("REL1", Seq("otherProp", "yetAnotherProp")) shouldBe true
       planContext.indexExistsForRelTypeAndProperties("REL2", Seq("prop")) shouldBe true
       planContext.indexExistsForRelTypeAndProperties("REL2", Seq("otherProp")) shouldBe false
+    })
+  }
+
+  test("list indexes for label should not take locks") {
+    val label = "Label"
+    val prop = "prop"
+    inTx((_, tx) => {
+      tx.schema().indexFor(Label.label(label)).on(prop).create()
+      tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique("otherProp").create()
+    })
+    inTx((_, tx) => tx.schema().awaitIndexesOnline(30, SECONDS))
+
+    inTx((planContext, tx) => {
+      val labelId = planContext.getLabelId(label)
+      planContext.indexesGetForLabelNonLocking(labelId).hasNext shouldBe true
+      planContext.uniqueIndexesGetForLabel(labelId).hasNext shouldBe true
+      planContext.indexGetForLabelAndProperties(label, Seq(prop)).nonEmpty shouldBe true
+      val lockClient = tx.kernelTransaction().asInstanceOf[KernelTransactionImplementation].lockClient()
+      lockClient.activeLockCount() shouldBe 0
+    })
+  }
+
+  test("indexesGetForRelTypeNonLocking should not take locks") {
+    val rel = "REL"
+    val prop = "prop"
+    inTx((_, tx) => tx.schema().indexFor(RelationshipType.withName(rel)).on(prop).create())
+    inTx((_, tx) => tx.schema().awaitIndexesOnline(30, SECONDS))
+
+    inTx((planContext, tx) => {
+      val relId = planContext.getRelTypeId(rel)
+      planContext.indexesGetForRelTypeNonLocking(relId).hasNext shouldBe true
+      planContext.indexGetForRelTypeAndProperties(rel, Seq(prop)).nonEmpty shouldBe true
+      val lockClient = tx.kernelTransaction().asInstanceOf[KernelTransactionImplementation].lockClient()
+      lockClient.activeLockCount() shouldBe 0
+    })
+  }
+
+  test("check index existence should not take locks") {
+    val label = "Label"
+    val rel = "REL"
+    val prop = "prop"
+    inTx((_, tx) => {
+      tx.schema().indexFor(Label.label(label)).on(prop).create()
+      tx.schema().indexFor(RelationshipType.withName(rel)).on(prop).create()
+      //tx.schema().constraintFor(Label.label(label)).assertPropertyExists("prop").create()
+    }) // todo: Create existence test
+    inTx((_, tx) => tx.schema().awaitIndexesOnline(30, SECONDS))
+
+    inTx((planContext, tx) => {
+      val relId = planContext.getRelTypeId(rel)
+      val labelId = planContext.getLabelId(label)
+      planContext.indexExistsForLabel(labelId) shouldBe true
+      planContext.indexExistsForLabelAndProperties(label, Seq(prop)) shouldBe true
+      planContext.indexExistsForRelTypeAndProperties(rel, Seq(prop)) shouldBe true
+      //planContext.hasNodePropertyExistenceConstraint(rel, prop) shouldBe true
+      planContext.indexExistsForRelType(relId) shouldBe true
+      val lockClient = tx.kernelTransaction().asInstanceOf[KernelTransactionImplementation].lockClient()
+      lockClient.activeLockCount() shouldBe 0
     })
   }
 
