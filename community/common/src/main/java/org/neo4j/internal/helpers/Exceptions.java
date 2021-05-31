@@ -226,30 +226,9 @@ public final class Exceptions
         return false;
     }
 
-    private static final Field THROWABLE_MESSAGE_FIELD;
-    static
-    {
-        try
-        {
-            THROWABLE_MESSAGE_FIELD = Throwable.class.getDeclaredField( "detailMessage" );
-            THROWABLE_MESSAGE_FIELD.setAccessible( true );
-        }
-        catch ( Exception e )
-        {
-            throw new LinkageError( "Could not get Throwable message field", e );
-        }
-    }
-
     public static <T extends Throwable> T withMessage( T cause, String message )
     {
-        try
-        {
-            THROWABLE_MESSAGE_FIELD.set( cause, message );
-        }
-        catch ( IllegalArgumentException | IllegalAccessException e )
-        {
-            throw new RuntimeException( e );
-        }
+        cause.addSuppressed(new AdditionalInfo(message));
         return cause;
     }
 
@@ -296,4 +275,10 @@ public final class Exceptions
         }
         return exception;
     }
+
+	public static class AdditionalInfo extends RuntimeException {
+		public AdditionalInfo(String info) {
+			super(info, null, true, false);
+		}
+	}
 }
