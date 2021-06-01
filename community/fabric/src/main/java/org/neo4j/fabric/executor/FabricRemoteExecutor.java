@@ -38,6 +38,8 @@ public interface FabricRemoteExecutor
     {
         Mono<StatementResult> run( Location.Remote location, ExecutionOptions options, String query, TransactionMode transactionMode, MapValue params );
 
+        boolean isEmptyContext();
+
         void close();
     }
 }

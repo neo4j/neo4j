@@ -77,7 +77,14 @@ public class TransactionManager extends LifecycleAdapter
     @Override
     public void stop()
     {
-        openTransactions.forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
+        openTransactions.forEach( tx -> {
+            // we canceling only transactions that are running over fabric shards here since they have cross instances timeouts and settings that we do
+            // not handle, all local transaction will be terminated with proper timeouts by databases themself
+            if ( !tx.isLocal() )
+            {
+                tx.markForTermination( Status.Transaction.Terminated );
+            }
+        } );
     }
 
     void removeTransaction( FabricTransactionImpl transaction )
