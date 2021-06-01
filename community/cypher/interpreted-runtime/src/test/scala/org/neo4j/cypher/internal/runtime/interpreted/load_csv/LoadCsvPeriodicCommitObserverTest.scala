@@ -56,9 +56,9 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     val iterator = resourceUnderTest.getCsvIterator(url, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
 
     // Then
-    iterator.next() should equal(Array("Row1"))
+    iterator.next() should equal(Array[Value](Values.stringValue("Row1")))
     verify(transactionalContext, never()).commitAndRestartTx()
-    iterator.next() should equal(Array("Row2"))
+    iterator.next() should equal(Array[Value](Values.stringValue("Row2")))
     verify(transactionalContext).commitAndRestartTx()
   }
 
@@ -75,16 +75,16 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
       DEFAULT_BUFFER_SIZE, headers = true)
     verify(transactionalContext, never()).commitAndRestartTx()
 
-    iterator.next() should equal(Array("header"))
+    iterator.next() should equal(Array[Value](Values.stringValue("header")))
     verify(transactionalContext, never()).commitAndRestartTx()
 
-    iterator.next() should equal(Array("Row1"))
+    iterator.next() should equal(Array[Value](Values.stringValue("Row1")))
     verify(transactionalContext, never()).commitAndRestartTx()
 
-    iterator.next() should equal(Array("Row2"))
+    iterator.next() should equal(Array[Value](Values.stringValue("Row2")))
     verify(transactionalContext).commitAndRestartTx()
 
-    iterator.next() should equal(Array("Row3"))
+    iterator.next() should equal(Array[Value](Values.stringValue("Row3")))
     verify(transactionalContext, times(2)).commitAndRestartTx()
   }
 

@@ -53,7 +53,7 @@ case class LoadCSVPipe(source: Pipe,
 
   override final def writeRow(filename: String, linenumber: Long, last: Boolean, argumentRow: CypherRow, value: AnyValue): CypherRow = {
     val newRow = rowFactory.copyWith(argumentRow, variable, value)
-    newRow.setLinenumber(Some(ResourceLinenumber(filename, linenumber, last)))
+    newRow.setLinenumber(Some(ResourceLinenumber(filename, linenumber, last))) // Always overwrite linenumber if we have nested LoadCsvs
     newRow
   }
 }

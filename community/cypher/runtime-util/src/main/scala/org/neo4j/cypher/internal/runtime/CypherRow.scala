@@ -51,7 +51,7 @@ object CypherRow {
 }
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false) extends AnyValue {
-  override protected def equalTo(other: Any): Boolean = this == other
+  override protected def equalTo(other: Any): Boolean = ScalaRunTime.equals(other)
   override protected def computeHash(): Int = ScalaRunTime._hashCode(ResourceLinenumber.this)
   override def writeTo[E <: Exception](writer: AnyValueWriter[E]): Unit = throw new UnsupportedOperationException()
   override def ternaryEquals(other: AnyValue): Equality = throw new UnsupportedOperationException()
@@ -93,8 +93,12 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   private var linenumber: Option[ResourceLinenumber] = None
 
-  def setLinenumber(line: Option[ResourceLinenumber]): Unit = linenumber match {
-    // used to copy the linenumber when copying the ExecutionContext, don't want to overwrite it
+  def setLinenumber(line: Option[ResourceLinenumber]): Unit = {
+    linenumber = line
+  }
+
+  // Used to copy the linenumber when copying or merging a row where we don't want to overwrite it
+  def setLinenumberIfEmpty(line: Option[ResourceLinenumber]): Unit = linenumber match {
     case None => linenumber = line
     case _ =>
   }
@@ -135,7 +139,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
       } else {
         //otherMapCtx.cachedProperties is null so do nothing
       }
-      setLinenumber(otherMapCtx.getLinenumber)
+      setLinenumberIfEmpty(otherMapCtx.getLinenumber)
     case _ => fail()
   }
 
@@ -255,7 +259,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
   private def cloneFromMap(newMap: mutable.Map[String, AnyValue]): CypherRow = {
     val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
     val map = new MapCypherRow(newMap, newCachedProperties)
-    map.setLinenumber(getLinenumber)
+    map.setLinenumberIfEmpty(getLinenumber)
     map
   }
 
