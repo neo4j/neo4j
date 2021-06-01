@@ -167,20 +167,6 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         long lastCommittedTxId();
     }
 
-    public static final DegreesRebuilder EMPTY_REBUILD = new DegreesRebuilder()
-    {
-        @Override
-        public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
-        }
-
-        @Override
-        public long lastCommittedTxId()
-        {
-            return TransactionIdStore.BASE_TX_ID;
-        }
-    };
-
     private static class RebuilderWrapper implements Rebuilder
     {
         private final DegreesRebuilder rebuilder;

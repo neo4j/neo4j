@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -48,7 +49,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
-import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.degreeKey;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.keyToString;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -257,4 +257,18 @@ class GBPTreeRelationshipGroupDegreesStoreTest
             return rebuiltAtTransactionId;
         }
     }
+
+    private static final DegreesRebuilder EMPTY_REBUILD = new DegreesRebuilder()
+    {
+        @Override
+        public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
+        {
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            return TransactionIdStore.BASE_TX_ID;
+        }
+    };
 }

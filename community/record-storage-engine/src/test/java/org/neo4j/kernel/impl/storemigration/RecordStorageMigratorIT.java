@@ -132,6 +132,7 @@ class RecordStorageMigratorIT
     private static final int MAX_PROPERTY_KEY_ID = 500;
     private static final int MAX_RELATIONSHIP_TYPE_ID = 100;
     private static final int MAX_LABEL_ID = 100;
+    private static final long TX_ID = 42;
 
     @Inject
     private TestDirectory testDirectory;
@@ -154,7 +155,7 @@ class RecordStorageMigratorIT
             Arguments.of(
                 StandardV3_4.STORE_VERSION,
                 new LogPosition( 3, 385 ),
-                txInfoAcceptanceOnIdAndTimestamp( 42, 1548441268467L ) ) );
+                txInfoAcceptanceOnIdAndTimestamp( TX_ID, 1548441268467L ) ) );
     }
 
     @BeforeEach
@@ -250,6 +251,11 @@ class RecordStorageMigratorIT
         {
             // The rebuild would happen here in start and will throw exception (above) if invoked
             groupDegreesStore.start( NULL, INSTANCE );
+
+            // The store keeps track of committed transactions.
+            // It is essential that it starts with the transaction
+            // that is the last committed one at the upgrade time.
+            assertEquals( TX_ID, groupDegreesStore.txId() );
         }
 
         StoreFactory storeFactory = new StoreFactory(
