@@ -950,7 +950,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
-    val plan = annotate(Aggregation(left, grouping, aggregation), solved, ProvidedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
+    val plan = annotate(Aggregation(left, grouping, aggregation), solved, context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
 
     def hasCollectOrUDF = aggregation.values.exists {
       case fi:FunctionInvocation => fi.function == Collect || fi.function == UnresolvedFunction
@@ -978,7 +978,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
-    val plan = annotate(OrderedAggregation(left, grouping, aggregation, orderToLeverage), solved, ProvidedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
+    val plan = annotate(OrderedAggregation(left, grouping, aggregation, orderToLeverage), solved, context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left), context)
     markOrderAsLeveragedBackwardsUntilOrigin(plan)
     plan
   }
@@ -1148,7 +1148,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                interestingOrder: InterestingOrder,
                context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
-    annotate(Sort(inner, sortColumns), solved, ProvidedOrder(orderColumns, ProvidedOrder.Self), context)
+    annotate(Sort(inner, sortColumns), solved, context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self), context)
   }
 
   def planTop(inner: LogicalPlan,
@@ -1159,7 +1159,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
               context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder)
       .updateQueryProjection(_.updatePagination(_.withLimitExpression(limit))))
-    val top = annotate(Top(inner, sortColumns, limit), solved, ProvidedOrder(orderColumns, ProvidedOrder.Self), context)
+    val top = annotate(Top(inner, sortColumns, limit), solved, context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self), context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       markOrderAsLeveragedBackwardsUntilOrigin(top)
     }
@@ -1173,7 +1173,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                        context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder)
       .updateQueryProjection(_.updatePagination(_.withLimitExpression(SignedDecimalIntegerLiteral("1")(InputPosition.NONE)))))
-    val top = annotate(Top1WithTies(inner, sortColumns), solved, ProvidedOrder(orderColumns, ProvidedOrder.Self), context)
+    val top = annotate(Top1WithTies(inner, sortColumns), solved, context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self), context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       markOrderAsLeveragedBackwardsUntilOrigin(top)
     }
@@ -1187,7 +1187,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                       interestingOrder: InterestingOrder,
                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
-    val plan = annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix, None), solved, ProvidedOrder(orderColumns, ProvidedOrder.Left), context)
+    val plan = annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix, None), solved, context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Left), context)
     markOrderAsLeveragedBackwardsUntilOrigin(plan)
     plan
   }
@@ -1283,7 +1283,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: SinglePlannerQuery = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
-    val providedOrder =  ProvidedOrder(columnsWithRenames, ProvidedOrder.Left)
+    val providedOrder =  context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     annotate(Distinct(left, expressions), solved, providedOrder, context)
   }
 
@@ -1299,7 +1299,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                           context: LogicalPlanningContext): LogicalPlan = {
     val solved: SinglePlannerQuery = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
-    val providedOrder =  ProvidedOrder(columnsWithRenames, ProvidedOrder.Left)
+    val providedOrder =  context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     val plan = annotate(OrderedDistinct(left, expressions, orderToLeverage), solved, providedOrder, context)
     markOrderAsLeveragedBackwardsUntilOrigin(plan)
     plan
@@ -1628,7 +1628,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   private def planRegularProjectionHelper(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext, solved: SinglePlannerQuery) = {
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
-    val providedOrder = ProvidedOrder(columnsWithRenames, ProvidedOrder.Left)
+    val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     annotate(Projection(inner, expressions), solved, providedOrder, context)
   }
 

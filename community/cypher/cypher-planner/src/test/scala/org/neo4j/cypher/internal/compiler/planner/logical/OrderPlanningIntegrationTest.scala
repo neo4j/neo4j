@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -348,6 +349,20 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan should equal(expectedPlan)
   }
 
+  test("should not use ordered aggregation if the execution model does not preserve order (one grouping column, ordered)") {
+    val plan = new given { executionModel = BatchedParallel(1,2) }
+      .getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._2
+
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"))
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cacheFromStore[a.foo] AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
   test("should use ordered aggregation if there is one aliased grouping column, ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, count(a.foo)")._2
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
@@ -432,6 +447,18 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan should equal(expectedPlan)
   }
 
+  test("should not use ordered distinct if the execution model does not preserve order (one grouping column, ordered)") {
+    val plan = new given { executionModel = BatchedParallel(1,2) }.getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("`a.foo` AS `a.foo`")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("a.foo AS `a.foo`")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
   test("should use ordered distinct if there is one aliased grouping column, ordered") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
@@ -452,6 +479,23 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x")
+      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
+      .build()
+
+    plan should equal(expectedPlan)
+  }
+
+  test("should not use ordered distinct if the execution model does not preserve order (one aliased grouping column, index-backed ordered)") {
+    val plan = new given{
+      indexOn("A", "foo")
+        .providesOrder(IndexOrderCapability.BOTH)
+        .providesValues()
+      executionModel = BatchedParallel(1,2)
+    }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("cache[a.foo] AS x")
+      .sort(Seq(Ascending("a.foo")))
+      .projection("cacheN[a.foo] AS `a.foo`")
       .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
       .build()
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -49,7 +50,7 @@ import scala.collection.mutable
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost]
+  def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Map[IndexDef, IndexType]
   def nodeConstraints: Set[(String, Set[String])]
@@ -61,6 +62,7 @@ trait LogicalPlanningConfiguration {
   def labelsById: Map[Int, String]
   def relTypesById: Map[Int, String]
   def qg: QueryGraph
+  def executionModel: ExecutionModel
 
   protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double]): PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply)
   protected def selectivitiesCardinality(selectivities: Map[Expression, Double],
@@ -79,7 +81,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
     parent.cardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
-  override def costModel() = parent.costModel()
+  override def costModel(executionModel: ExecutionModel = executionModel) = parent.costModel(executionModel)
   override def graphStatistics = parent.graphStatistics
   override def indexes = parent.indexes
   override def nodeConstraints: Set[(String, Set[String])] = parent.nodeConstraints
@@ -91,6 +93,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def relTypesById = parent.relTypesById
   override def qg = parent.qg
   override def procedureSignatures: Set[ProcedureSignature] = parent.procedureSignatures
+  override def executionModel: ExecutionModel = parent.executionModel
 }
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {

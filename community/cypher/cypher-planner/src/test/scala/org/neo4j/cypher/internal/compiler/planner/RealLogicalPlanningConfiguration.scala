@@ -46,9 +46,9 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   }
 
   //noinspection ScalaUnnecessaryParentheses
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
+  override def costModel(executionModel: ExecutionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
     case (plan, input, semanticTable, cardinalities, providedOrders, monitor) =>
-      CardinalityCostModel(ExecutionModel.default).costFor(plan, input, semanticTable, cardinalities, providedOrders, monitor)
+      CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities, providedOrders, monitor)
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics
@@ -61,6 +61,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   override def knownRelationships: Set[String] = Set.empty
   override def labelsById: Map[Int, String] = Map.empty
   override def relTypesById: Map[Int, String] = Map.empty
+  override def executionModel: ExecutionModel = ExecutionModel.default
 
   override def qg: QueryGraph = ???
 }

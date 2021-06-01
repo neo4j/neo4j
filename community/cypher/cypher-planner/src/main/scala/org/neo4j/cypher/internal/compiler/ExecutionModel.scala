@@ -45,6 +45,12 @@ sealed trait ExecutionModel {
 
   def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize
 
+  /**
+   * In single-threaded runtimes with a deterministic execution order, the order of rows will be preserved, whereas
+   * in parallel runtime, batches of rows may arrive to downstream operators out-of-order.
+   *
+   * @return true if the execution model supports maintaining a provided order through downstream operators
+   */
   def providedOrderPreserving: Boolean
 }
 

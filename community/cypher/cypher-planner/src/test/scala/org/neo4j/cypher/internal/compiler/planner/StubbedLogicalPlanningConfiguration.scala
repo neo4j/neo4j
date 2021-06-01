@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -132,6 +133,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
     override def hasParameters(expr: Expression): Boolean = ???
   }
+  var executionModel: ExecutionModel = parent.executionModel
 
   lazy val labelsById: Map[Int, String] = {
     val indexed = indexes.keys.collect {
@@ -151,10 +153,10 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     indexedThenKnown.zipWithIndex.map(_.swap).toMap
   }
 
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
+  override def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
     case (lp, input, semanticTable, cardinalities, providedOrders, monitor) =>
       // Calling this in any case has the benefit of having the monitor passed down to the real cost model
-      val realCost = parent.costModel()((lp, input, semanticTable, cardinalities, providedOrders, monitor))
+      val realCost = parent.costModel(executionModel)((lp, input, semanticTable, cardinalities, providedOrders, monitor))
       if (cost.isDefinedAt((lp, input, cardinalities, providedOrders))) {
         cost((lp, input, cardinalities, providedOrders))
       } else {
