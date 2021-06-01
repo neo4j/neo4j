@@ -35,9 +35,4 @@ public interface OperatorState
      * a state with lower number considered to have precedence over a state with a higher number
      */
     int ordinal();
-
-    /**
-     * @return denotes if a state is final, meaning there is no transition which could change it something else
-     */
-    boolean terminal();
 }
