@@ -346,6 +346,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
   case object rawCardinalities extends CypherDebugOption("rawcardinalities")
   case object disallowSplittingTop extends CypherDebugOption("disallowsplittingtop")
+  case object warnOnCompilationErrors extends CypherDebugOption("warnoncompilationerrors")
 
   def values: Set[CypherDebugOption] = Set(
     tostring,
@@ -364,6 +365,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     logicalPlanBuilder,
     rawCardinalities,
     disallowSplittingTop,
+    warnOnCompilationErrors
   )
 
   implicit val hasDefault: OptionDefault[CypherDebugOption] = OptionDefault.create(default)
@@ -409,4 +411,5 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
   val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
   val disallowSplittingTopEnabled: Boolean = isEnabled(CypherDebugOption.disallowSplittingTop)
+  val warnOnCompilationErrors: Boolean = isEnabled(CypherDebugOption.warnOnCompilationErrors)
 }
