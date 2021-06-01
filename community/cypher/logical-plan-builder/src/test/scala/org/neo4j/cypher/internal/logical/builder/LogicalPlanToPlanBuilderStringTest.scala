@@ -697,6 +697,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan("injectCompilationError",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .injectCompilationError()
+      .argument()
+      .build())
+
   testPlan("nonPipelined",
     new TestPlanBuilder()
       .produceResults("x", "y")
