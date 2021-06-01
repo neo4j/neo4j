@@ -48,8 +48,8 @@
     </license>
   </licenses>
 
-  <dependencies>
 
+    <dependencies>
     <!-- shared versions are defined in the parent pom -->
 
     <!-- scala -->
@@ -104,8 +104,6 @@
       <version>${project.version}</version>
       <type>test-jar</type>
     </dependency>
-
-    <!-- neo4j-cypher test -->
 
   </dependencies>
 </project>
