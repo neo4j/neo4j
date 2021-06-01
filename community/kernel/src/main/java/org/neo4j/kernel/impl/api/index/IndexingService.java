@@ -653,7 +653,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * In other words, adding identity to an injected index is the only and very special case when
      * {@link #createIndexes} is called with a descriptor for an already existing index
      * and such operation needs to cause the index being linked to the new descriptor instead of
-     * a new index being created.
+     * a new index being created and because we effectively "remove" the old injected index and replace
+     * with the new we also need to clear the schema state.
      * Of course it would be much simpler to close the injected index and create a new one with the new identity.
      * The reason why the elaborate migration was introduced is not to interrupt any ongoing operations
      * against the index by keeping the file/accessor of the injected label index open.
@@ -679,6 +680,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     indexMap.removeIndexProxy( IndexDescriptor.INJECTED_NLI_ID );
                     return indexMap;
                 } );
+                schemaState.clear();
             }
             else
             {
