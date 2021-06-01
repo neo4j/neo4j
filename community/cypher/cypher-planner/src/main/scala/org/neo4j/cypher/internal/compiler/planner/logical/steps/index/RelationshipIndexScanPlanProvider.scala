@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.Solution
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.mergeSolutions
@@ -33,8 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case class RelationshipIndexScanPlanProvider(seekPlannerPeek: RelationshipIndexPlanProviderPeek = RelationshipIndexPlanProviderPeek.default)
-  extends RelationshipIndexPlanProvider {
+object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
 
 
   /**
@@ -55,21 +53,9 @@ case class RelationshipIndexScanPlanProvider(seekPlannerPeek: RelationshipIndexP
                            restrictions: LeafPlanRestrictions,
                            context: LogicalPlanningContext): Set[LogicalPlan] = {
 
-    def shouldAttemptPlanning(indexMatch: IndexMatch): Boolean = {
-      if (indexMatch.propertyPredicates.size == 1) {
-        indexMatch.propertyPredicates.head.predicate match {
-          case AsPropertyScannable(_) => true
-          case _                      => false
-        }
-      } else {
-        !seekPlannerPeek.wouldCreatePlan(indexMatch)
-      }
-    }
-
     val solutions = for {
       indexMatch <- indexMatches
       if isAllowedByRestrictions(indexMatch.variableName, restrictions)
-      if shouldAttemptPlanning(indexMatch)
     } yield createSolution(indexMatch, hints, argumentIds, context)
 
     val distinctSolutions = mergeSolutions(solutions)

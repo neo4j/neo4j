@@ -63,7 +63,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private def nodeIndexLeafPlanner(restrictions: LeafPlanRestrictions) =
-    NodeIndexLeafPlanner(Seq(nodeIndexSeekPlanProvider, nodeIndexStringSearchScanPlanProvider, nodeIndexScanPlanProvider()), restrictions)
+    NodeIndexLeafPlanner(Seq(nodeIndexSeekPlanProvider, nodeIndexStringSearchScanPlanProvider, nodeIndexScanPlanProvider), restrictions)
 
   test("finds all types of index plans") {
 

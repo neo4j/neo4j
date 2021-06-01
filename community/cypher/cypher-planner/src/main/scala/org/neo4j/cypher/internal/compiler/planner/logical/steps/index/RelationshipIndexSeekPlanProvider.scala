@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 
-object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider with RelationshipIndexPlanProviderPeek {
+object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
 
   override def createPlans(indexMatches: Set[RelationshipIndexLeafPlanner.IndexMatch],
                            hints: Set[Hint],
@@ -79,7 +79,4 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider w
       context = context,
     )
   }
-
-  override def wouldCreatePlan(indexMatch: IndexMatch): Boolean =
-    predicateSetToSolve(indexMatch).nonEmpty
 }

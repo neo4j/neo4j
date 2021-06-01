@@ -26,24 +26,15 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.IndexMatch
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider with NodeIndexPlanProviderPeek {
+object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
 
   override def createPlans(indexMatches: Set[IndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[LogicalPlan] = for {
     solution <- createSolutions(indexMatches, hints, argumentIds, restrictions, context)
   } yield constructPlan(solution, context)
 
-  def wouldCreatePlan(indexMatch: IndexMatch, hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Boolean = {
-    createSolutions(Set(indexMatch), hints, argumentIds, restrictions, context).nonEmpty
-  }
-
-  // This is a temporary hack to get rid of some plans that we did not produce in the old implementation
-  private def hasNoImplicitPredicates(indexMatch: IndexMatch): Boolean =
-    !indexMatch.propertyPredicates.exists(_.isImplicit)
-
   private def createSolutions(indexMatches: Set[IndexMatch], hints: Set[Hint], argumentIds: Set[String], restrictions: LeafPlanRestrictions, context: LogicalPlanningContext): Set[Solution] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions)
-    if hasNoImplicitPredicates(indexMatch)
     solution <- createSolution(indexMatch, hints, argumentIds, context)
   } yield solution
 

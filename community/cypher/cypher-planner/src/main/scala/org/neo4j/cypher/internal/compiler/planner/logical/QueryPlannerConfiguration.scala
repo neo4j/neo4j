@@ -61,11 +61,11 @@ object QueryPlannerConfiguration {
       // MATCH (n:Person) WHERE n.prop ENDS WITH ...
       nodeIndexStringSearchScanPlanProvider,
       // MATCH (n) WHERE has(n.prop) RETURN n
-      nodeIndexScanPlanProvider(nodeIndexSeekPlanProvider),
+      nodeIndexScanPlanProvider,
     ), restrictions),
 
     RelationshipIndexLeafPlanner(Seq(
-      RelationshipIndexScanPlanProvider(RelationshipIndexSeekPlanProvider),
+      RelationshipIndexScanPlanProvider,
       RelationshipIndexSeekPlanProvider,
       RelationshipIndexStringSearchScanPlanProvider,
     ), restrictions),

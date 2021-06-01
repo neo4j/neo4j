@@ -37,19 +37,3 @@ trait NodeIndexPlanProvider {
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext): Set[LogicalPlan]
 }
-
-/**
- * This is a temporary hack to allow the Scan provider to check if the Seek provider has created a plan
- */
-trait NodeIndexPlanProviderPeek {
-  def wouldCreatePlan(
-    indexMatch: IndexMatch,
-    hints: Set[Hint],
-    argumentIds: Set[String],
-    restrictions: LeafPlanRestrictions,
-    context: LogicalPlanningContext): Boolean
-}
-
-object NodeIndexPlanProviderPeek {
-  val default: NodeIndexPlanProviderPeek = (_: IndexMatch, _: Set[Hint], _: Set[String], _: LeafPlanRestrictions, _: LogicalPlanningContext) => false
-}
