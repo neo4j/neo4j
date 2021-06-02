@@ -823,7 +823,8 @@ public class AllStoreHolder extends Read
         return getConstraintsForSchema( schema );
     }
 
-    private  Iterator<ConstraintDescriptor> getConstraintsForSchema( SchemaDescriptor schema ) {
+    private Iterator<ConstraintDescriptor> getConstraintsForSchema( SchemaDescriptor schema )
+    {
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForSchema( schema );
         if ( ktx.hasTxStateWithChanges() )
