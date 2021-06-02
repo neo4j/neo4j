@@ -124,7 +124,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.schemaRead.indexesGetForLabel(labelId).asScala
+    tc.schemaRead.getLabelIndexesNonLocking(labelId).asScala
       .filter(_.isUnique)
       .flatMap(getOnlineIndex)
   }
@@ -152,7 +152,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   private def indexGetForSchemaDescriptor(descriptor: SchemaDescriptor): Option[IndexDescriptor] = {
-    val itr = tc.schemaRead.index(descriptor).asScala.flatMap(getOnlineIndex)
+    val itr = tc.schemaRead.indexForSchemaNonLocking(descriptor).asScala.flatMap(getOnlineIndex)
     if (itr.hasNext) Some(itr.next) else None
   }
 
@@ -172,7 +172,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
 
   private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] =
-    tc.schemaRead.indexGetState(reference) match {
+    tc.schemaRead.indexGetStateNonLocking(reference) match {
       case InternalIndexState.ONLINE =>
         val entityType = {
           val tokenId = reference.schema().getEntityTokenIds()(0)
@@ -252,7 +252,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptor.forLabel(labelId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }
@@ -262,7 +262,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     try {
       val labelId = getLabelId(labelName)
 
-      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabel(labelId).asScala
+      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabelNonLocking(labelId).asScala
 
       getPropertiesFromExistenceConstraints(constraints)
     } catch {
@@ -285,7 +285,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val relTypeId = getRelTypeId(relTypeName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.schemaRead.constraintsGetForSchema(SchemaDescriptor.forRelType(relTypeId, propertyKeyId)).hasNext
+      tc.schemaRead.constraintsGetForSchemaNonLocking(SchemaDescriptor.forRelType(relTypeId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }
@@ -295,7 +295,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     try {
       val relTypeId = getRelTypeId(relTypeName)
 
-      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForRelationshipType(relTypeId).asScala
+      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForRelationshipTypeNonLocking(relTypeId).asScala
 
       getPropertiesFromExistenceConstraints(constraints)
     } catch {
@@ -305,7 +305,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def getPropertiesWithExistenceConstraint: Set[String] = {
     try {
-      val constraints = tc.schemaRead.constraintsGetAll().asScala
+      val constraints = tc.schemaRead.constraintsGetAllNonLocking().asScala
 
       getPropertiesFromExistenceConstraints(constraints)
     } catch {
