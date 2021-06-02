@@ -42,6 +42,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.test.Race;
@@ -99,7 +100,8 @@ public class ParallelPartitionedNodeLabelScanTest extends KernelAPIReadTestBase<
     }
 
     @Test
-    void shouldScanSubsetOfEntriesWithSinglePartition() throws IndexNotFoundKernelException
+    void shouldScanSubsetOfEntriesWithSinglePartition()
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         try ( var nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
@@ -125,20 +127,23 @@ public class ParallelPartitionedNodeLabelScanTest extends KernelAPIReadTestBase<
     }
 
     @Test
-    void shouldCreateNoMorePartitionsThanPossible() throws IndexNotFoundKernelException
+    void shouldCreateNoMorePartitionsThanPossible()
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         singleThreadedCheck( 1 + MAX_NUMBER_OF_PARTITIONS );
     }
 
     @Test
-    void shouldHandlePartitionsGreaterThanNumberOfNodes() throws IndexNotFoundKernelException
+    void shouldHandlePartitionsGreaterThanNumberOfNodes()
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         singleThreadedCheck( 2 * NUMBER_OF_NODES );
     }
 
     @ParameterizedTest( name = "numberOfPartitions={0}" )
     @MethodSource( "rangeFromOneToMaxPartitions" )
-    void shouldScanAllEntriesWithGivenNumberOfPartitionsSingleThreaded( int desiredNumberOfPartitions ) throws IndexNotFoundKernelException
+    void shouldScanAllEntriesWithGivenNumberOfPartitionsSingleThreaded( int desiredNumberOfPartitions )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         singleThreadedCheck( desiredNumberOfPartitions );
     }
@@ -159,14 +164,16 @@ public class ParallelPartitionedNodeLabelScanTest extends KernelAPIReadTestBase<
 
     @ParameterizedTest( name = "numberOfPartitions={0}" )
     @MethodSource( "rangeFromOneToMaxPartitions" )
-    void shouldScanMultiplePartitionsInParallelWithSameNumberOfThreads( int desiredNumberOfPartitions ) throws IndexNotFoundKernelException
+    void shouldScanMultiplePartitionsInParallelWithSameNumberOfThreads( int desiredNumberOfPartitions )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         multiThreadedCheck( desiredNumberOfPartitions, desiredNumberOfPartitions );
     }
 
     @ParameterizedTest( name = "numberOfThreads={0}" )
     @MethodSource( "rangeFromOneToMaxPartitions" )
-    void shouldScanMultiplePartitionsInParallelWithFewerThreads( int numberOfThreads ) throws IndexNotFoundKernelException
+    void shouldScanMultiplePartitionsInParallelWithFewerThreads( int numberOfThreads )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         multiThreadedCheck( MAX_NUMBER_OF_PARTITIONS, numberOfThreads );
     }
@@ -180,7 +187,8 @@ public class ParallelPartitionedNodeLabelScanTest extends KernelAPIReadTestBase<
         return read.tokenReadSession( nli );
     }
 
-    private void singleThreadedCheck( int desiredNumberOfPartitions ) throws IndexNotFoundKernelException
+    private void singleThreadedCheck( int desiredNumberOfPartitions )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         try ( var nodes = cursors.allocateNodeLabelIndexCursor( NULL ) )
         {
@@ -207,7 +215,8 @@ public class ParallelPartitionedNodeLabelScanTest extends KernelAPIReadTestBase<
         }
     }
 
-    void multiThreadedCheck( int desiredNumberOfPartitions, int numberOfThreads ) throws IndexNotFoundKernelException
+    void multiThreadedCheck( int desiredNumberOfPartitions, int numberOfThreads )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         var session = nodeLabelIndexSession();
         for ( var label : Label.values() )

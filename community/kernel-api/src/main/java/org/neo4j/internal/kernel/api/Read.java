@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -124,7 +125,8 @@ public interface Read
      * @param desiredNumberOfPartitions the desired number of partitions for this scan
      * @return {@link PartitionedScan} over the query
      */
-    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions );
+    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+            throws IndexNotApplicableKernelException;
 
     /**
      * Scan all nodes in a token index.
@@ -316,6 +318,18 @@ public interface Read
     void allRelationshipsScan( RelationshipScanCursor cursor );
 
     Scan<RelationshipScanCursor> allRelationshipsScan();
+
+    /**
+     * Scan relationship type index in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param session {@link TokenReadSession} token read session to query.
+     * @param query the query to run against index
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @return {@link PartitionedScan} over the query
+     */
+    PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+            throws IndexNotApplicableKernelException;
 
     /**
      * Scan all relationships in a token index of the specified type.

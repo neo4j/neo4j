@@ -189,6 +189,12 @@ public class StubRead implements Read
     }
 
     @Override
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
     {
         throw new UnsupportedOperationException();

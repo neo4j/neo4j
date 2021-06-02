@@ -25,13 +25,13 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 
-public class PartitionedNodeLabelIndexCursorScan<Cursor extends org.neo4j.internal.kernel.api.Cursor> implements PartitionedScan<Cursor>
+public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.kernel.api.Cursor> implements PartitionedScan<Cursor>
 {
     private final Read read;
     private final TokenPredicate query;
     private final PartitionedTokenScan tokenScan;
 
-    PartitionedNodeLabelIndexCursorScan( Read read, TokenPredicate query, PartitionedTokenScan tokenScan )
+    PartitionedTokenIndexCursorScan( Read read, TokenPredicate query, PartitionedTokenScan tokenScan )
     {
         this.read = read;
         this.query = query;
@@ -49,7 +49,7 @@ public class PartitionedNodeLabelIndexCursorScan<Cursor extends org.neo4j.intern
     public boolean reservePartition( Cursor cursor )
     {
         throwIfTxState();
-        var indexCursor = (DefaultNodeLabelIndexCursor) cursor;
+        var indexCursor = (DefaultEntityTokenIndexCursor<? extends DefaultEntityTokenIndexCursor<?>>) cursor;
         indexCursor.setRead( read );
         var indexProgressor = tokenScan.reservePartition( indexCursor );
         if ( indexProgressor == IndexProgressor.EMPTY )

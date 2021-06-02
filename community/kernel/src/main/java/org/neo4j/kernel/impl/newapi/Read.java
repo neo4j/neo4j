@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -235,11 +236,15 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+            throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
-        DefaultTokenReadSession defaultSession = (DefaultTokenReadSession) session;
-        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( query, desiredNumberOfPartitions );
-        return new PartitionedNodeLabelIndexCursorScan<>( this, query, tokenScan );
+        if ( session.reference().schema().entityType() != EntityType.NODE )
+        {
+            throw new IndexNotApplicableKernelException( "Node label index scan can not be performed on index " +
+                                                         session.reference().userDescription( ktx.tokenRead() ) );
+        }
+        return tokenIndexScan( session, query, desiredNumberOfPartitions );
     }
 
     @Override
@@ -304,6 +309,21 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public final PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan( TokenReadSession session,
+                                                                                    TokenPredicate query,
+                                                                                    int desiredNumberOfPartitions )
+            throws IndexNotApplicableKernelException
+    {
+        ktx.assertOpen();
+        if ( session.reference().schema().entityType() != EntityType.RELATIONSHIP )
+        {
+            throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index " +
+                                                         session.reference().userDescription( ktx.tokenRead() ) );
+        }
+        return tokenIndexScan(session, query, desiredNumberOfPartitions);
+    }
+
+    @Override
     public final void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints,
                                             TokenPredicate query )
             throws KernelException
@@ -339,6 +359,14 @@ abstract class Read implements TxStateHolder,
     public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
     {
         ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
+    }
+
+    private <C extends Cursor> PartitionedScan<C> tokenIndexScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    {
+        ktx.assertOpen();
+        DefaultTokenReadSession defaultSession = (DefaultTokenReadSession) session;
+        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( query, desiredNumberOfPartitions );
+        return new PartitionedTokenIndexCursorScan<>( this, query, tokenScan );
     }
 
     public abstract ValueIndexReader newValueIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;

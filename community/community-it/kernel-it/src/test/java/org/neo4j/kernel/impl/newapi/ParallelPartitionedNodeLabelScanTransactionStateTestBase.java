@@ -73,7 +73,7 @@ public abstract class ParallelPartitionedNodeLabelScanTransactionStateTestBase<G
     }
 
     @Test
-    void shouldThrowOnConstructionWithTransactionState( ) throws KernelException
+    void shouldThrowOnConstructionWithTransactionState() throws KernelException
     {
         try ( var tx = beginTransaction() )
         {
