@@ -29,7 +29,7 @@ import java.util.stream.LongStream;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -117,7 +117,7 @@ public class PropertyDeleter
 
     private void logInconsistentPropertyChain( PrimitiveRecord primitive, String causeMessage, Throwable cause )
     {
-        if ( !config.get( GraphDatabaseSettings.log_inconsistent_data_deletion ) )
+        if ( !config.get( GraphDatabaseInternalSettings.log_inconsistent_data_deletion ) )
         {
             return;
         }

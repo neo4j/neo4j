@@ -31,7 +31,7 @@ import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -87,7 +87,7 @@ class PropertyDeleterTest
 
     private void startStore( boolean log )
     {
-        Config config = Config.defaults( GraphDatabaseSettings.log_inconsistent_data_deletion, log );
+        Config config = Config.defaults( GraphDatabaseInternalSettings.log_inconsistent_data_deletion, log );
         idGeneratorFactory = new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate() );
         neoStores = new StoreFactory( DatabaseLayout.ofFlat( directory.homeDir() ), config, idGeneratorFactory, pageCache, directory.getFileSystem(),
                 NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores( true );

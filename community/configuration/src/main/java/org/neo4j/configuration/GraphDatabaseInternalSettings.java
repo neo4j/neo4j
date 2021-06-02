@@ -488,4 +488,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Enables logging of leaked driver session" )
     public static final Setting<Boolean> routing_driver_log_leaked_sessions =
             newBuilder( "dbms.routing.driver.logging.leaked_sessions", BOOL, false ).build();
+
+    @Internal
+    @Description( "Whether or not to log contents of data that is inconsistent when deleting it." )
+    public static final Setting<Boolean> log_inconsistent_data_deletion = newBuilder( "dbms.log_inconsistent_data_deletion", BOOL, Boolean.FALSE )
+            .dynamic()
+            .build();
 }
