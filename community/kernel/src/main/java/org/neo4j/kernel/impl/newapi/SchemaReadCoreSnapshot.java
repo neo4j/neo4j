@@ -93,6 +93,12 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     }
 
     @Override
+    public InternalIndexState indexGetStateNonLocking( IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        return indexGetState( index );
+    }
+
+    @Override
     public PopulationProgress indexGetPopulationProgress( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         AllStoreHolder.assertValidIndex( index );
@@ -115,6 +121,12 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     }
 
     @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking( int labelId )
+    {
+        return constraintsGetForLabel( labelId );
+    }
+
+    @Override
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         ktx.assertOpen();
@@ -122,9 +134,21 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     }
 
     @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking( int typeId )
+    {
+        return constraintsGetForRelationshipType( typeId );
+    }
+
+    @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll()
     {
         ktx.assertOpen();
         return stores.constraintsGetAll( snapshot );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking()
+    {
+        return constraintsGetAll();
     }
 }

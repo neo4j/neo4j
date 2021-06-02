@@ -42,6 +42,14 @@ public interface SchemaRead extends SchemaReadCore
     Iterator<IndexDescriptor> indexForSchemaNonTransactional( SchemaDescriptor schema );
 
     /**
+     * Acquire a reference to the index mapping the given {@code schema}, without taking any schema locks.
+     *
+     * @param schema The schema for which to look up an index.
+     * @return An index matching the schema, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
+     */
+    Iterator<IndexDescriptor> indexForSchemaNonLocking( SchemaDescriptor schema );
+
+    /**
      * Acquire a reference to the index matching the given {@code labelId}, without taking any schema locks.
      *
      * @param labelId label to list indexes for.
@@ -91,6 +99,14 @@ public interface SchemaRead extends SchemaReadCore
      * @return All constraints for the given schema
      */
     Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
+
+    /**
+     * Finds all constraints for the given schema, without taking any schema locks.
+     *
+     * @param descriptor The descriptor of the schema
+     * @return All constraints for the given schema
+     */
+    Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking( SchemaDescriptor descriptor );
 
     /**
      * Checks if a constraint exists

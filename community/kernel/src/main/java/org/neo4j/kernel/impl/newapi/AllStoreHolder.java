@@ -455,6 +455,12 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public Iterator<IndexDescriptor> indexForSchemaNonLocking( SchemaDescriptor schema )
+    {
+        return indexGetForSchema( storageReader, schema );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> getLabelIndexesNonLocking( int labelId )
     {
         return indexesGetForLabel( storageReader, labelId );
@@ -686,6 +692,14 @@ public class AllStoreHolder extends Read
         return indexGetStateLocked( index );
     }
 
+    @Override
+    public InternalIndexState indexGetStateNonLocking( IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        assertValidIndex( index );
+        ktx.assertOpen();
+        return indexGetStateLocked( index ); // TODO: Can we call this method without locking(since we assert valid index)?
+    }
+
     InternalIndexState indexGetStateLocked( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         SchemaDescriptor schema = index.schema();
@@ -796,9 +810,20 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor schema )
+    public Iterator<ConstraintDescriptor>
+    constraintsGetForSchema( SchemaDescriptor schema )
     {
         acquireSharedSchemaLock( schema );
+        return getConstraintsForSchema( schema );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking( SchemaDescriptor schema )
+    {
+        return getConstraintsForSchema( schema );
+    }
+
+    private  Iterator<ConstraintDescriptor> getConstraintsForSchema( SchemaDescriptor schema ) {
         ktx.assertOpen();
         Iterator<ConstraintDescriptor> constraints = storageReader.constraintsGetForSchema( schema );
         if ( ktx.hasTxStateWithChanges() )
@@ -812,6 +837,13 @@ public class AllStoreHolder extends Read
     public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
+        ktx.assertOpen();
+        return constraintsGetForLabel( storageReader, labelId );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking( int labelId )
+    {
         ktx.assertOpen();
         return constraintsGetForLabel( storageReader, labelId );
     }
@@ -834,6 +866,13 @@ public class AllStoreHolder extends Read
         return lockConstraints( constraints );
     }
 
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking()
+    {
+        ktx.assertOpen();
+        return constraintsGetAll( storageReader );
+    }
+
     Iterator<ConstraintDescriptor> constraintsGetAll( StorageSchemaReader reader )
     {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetAll();
@@ -848,6 +887,13 @@ public class AllStoreHolder extends Read
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, typeId );
+        ktx.assertOpen();
+        return constraintsGetForRelationshipType( storageReader, typeId );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking( int typeId )
+    {
         ktx.assertOpen();
         return constraintsGetForRelationshipType( storageReader, typeId );
     }

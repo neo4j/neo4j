@@ -600,6 +600,12 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public Iterator<IndexDescriptor> indexForSchemaNonLocking( SchemaDescriptor schema )
+        {
+            return null;
+        }
+
+        @Override
         public Iterator<IndexDescriptor> getLabelIndexesNonLocking( int labelId )
         {
             return null;
@@ -631,6 +637,12 @@ class DefaultRelationshipTraversalCursorTest
 
         @Override
         public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor )
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<ConstraintDescriptor> constraintsGetForSchemaNonLocking( SchemaDescriptor descriptor )
         {
             return null;
         }
@@ -708,6 +720,12 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public InternalIndexState indexGetStateNonLocking( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
         public PopulationProgress indexGetPopulationProgress( IndexDescriptor index )
         {
             return null;
@@ -726,13 +744,31 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
+        public Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking( int labelId )
+        {
+            return null;
+        }
+
+        @Override
         public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
         {
             return null;
         }
 
         @Override
+        public Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking( int typeId )
+        {
+            return null;
+        }
+
+        @Override
         public Iterator<ConstraintDescriptor> constraintsGetAll()
+        {
+            return null;
+        }
+
+        @Override
+        public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking()
         {
             return null;
         }

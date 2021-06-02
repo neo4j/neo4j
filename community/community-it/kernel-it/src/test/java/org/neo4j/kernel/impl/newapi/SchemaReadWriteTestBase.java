@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -128,6 +129,32 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( tx.schemaRead().indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
             assertThat( tx.schemaRead().snapshot().indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
             assertThat( before.indexGetState( index ) ).isEqualTo( InternalIndexState.POPULATING );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldGetIndexStateNonLocking() throws Exception
+    {
+        IndexDescriptor index;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            SchemaReadCore before = tx.schemaRead().snapshot();
+            index = tx.schemaWrite().indexCreate( forLabel( label, prop1 ), "my index" );
+            assertThat( tx.schemaRead().indexGetStateNonLocking( index ) ).isEqualTo( InternalIndexState.POPULATING );
+            assertThat( tx.schemaRead().snapshot().indexGetStateNonLocking( index ) ).isEqualTo( InternalIndexState.POPULATING );
+            assertThat( before.indexGetStateNonLocking( index ) ).isEqualTo( InternalIndexState.POPULATING );
+            Assertions.assertNotEquals( ((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            SchemaReadCore before = tx.schemaRead().snapshot();
+            assertThat( tx.schemaRead().indexGetStateNonLocking( index ) ).isNotEqualTo( InternalIndexState.FAILED );
+            assertThat( tx.schemaRead().snapshot().indexGetStateNonLocking( index ) ).isNotEqualTo( InternalIndexState.FAILED );
+            assertThat( before.indexGetStateNonLocking( index ) ).isNotEqualTo( InternalIndexState.FAILED );
+            assertEquals(((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
             tx.commit();
         }
     }
@@ -483,7 +510,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    void shouldListIndexesByLabelNonTransactional() throws Exception
+    void shouldListIndexesByLabelNonLocking() throws Exception
     {
         IndexDescriptor inStore;
         IndexDescriptor droppedInTx;
@@ -503,16 +530,20 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexDrop( droppedInTx );
 
             // Should include the index changes happening in the transaction
-            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonLocking( label );
-            assertThat( indexes ).contains( inStore, createdInTx );
+            Iterable<IndexDescriptor> labelIndexes = () -> tx.schemaRead().getLabelIndexesNonLocking( label );
+            Iterable<IndexDescriptor> indexesBySchema = () -> tx.schemaRead().indexForSchemaNonLocking( createdInTx.schema() );
+            assertThat( labelIndexes ).contains( inStore, createdInTx );
+            assertThat( indexesBySchema ).contains( createdInTx );
             tx.commit();
         }
 
         try ( KernelTransaction tx = beginTransaction() )
         {
             // Should not take any locks
-            Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().getLabelIndexesNonLocking( label );
-            assertThat( indexes ).contains( inStore, createdInTx );
+            Iterable<IndexDescriptor> labelIndexes = () -> tx.schemaRead().getLabelIndexesNonLocking( label );
+            Iterable<IndexDescriptor> indexesBySchema = () -> tx.schemaRead().indexForSchemaNonLocking( createdInTx.schema() );
+            assertThat( labelIndexes ).contains( inStore, createdInTx );
+            assertThat( indexesBySchema ).contains( createdInTx );
             assertEquals(((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
 
             tx.commit();
@@ -555,7 +586,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    void shouldListIndexesByRelationshipTypeNonTransactional() throws Exception
+    void shouldListIndexesByRelationshipTypeNonLocking() throws Exception
     {
         IndexDescriptor inStore;
         IndexDescriptor droppedInTx;
@@ -1267,6 +1298,142 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetForLabel( label );
             assertThat( allConstraints ).contains( inStore, createdInTx );
             assertThat( before.constraintsGetForLabel( label ) ).toIterable().contains( inStore, createdInTx );
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldListConstraintsByLabelNonLocking() throws Exception
+    {
+        int wrongLabel;
+
+        ConstraintDescriptor inStore;
+        ConstraintDescriptor droppedInTx;
+        ConstraintDescriptor createdInTx;
+
+        // Init
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            wrongLabel = tx.tokenWrite().labelGetOrCreateForName( "wrongLabel" );
+            tx.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( wrongLabel, prop1 ) ).withName( "first constraint" ) );
+
+            inStore = tx.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( label, prop1 ) ).withName( "second constraint" ) );
+            droppedInTx = tx.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( label, prop2 ) ).withName( "third constraint" ) );
+
+            tx.commit();
+        }
+
+        // Verify constraints created in transaction
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            SchemaReadCore before = tx.schemaRead().snapshot();
+            createdInTx = tx.schemaWrite().nodePropertyExistenceConstraintCreate( forLabel( label, prop1 ), "fourth constraint" );
+            tx.schemaWrite().nodePropertyExistenceConstraintCreate( forLabel( wrongLabel, prop1 ), "fifth constraint" );
+            tx.schemaWrite().constraintDrop( droppedInTx );
+
+            Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetForLabelNonLocking( label );
+            Iterable<ConstraintDescriptor> constraintBySchema = () -> tx.schemaRead().constraintsGetForSchemaNonLocking( createdInTx.schema() );
+            assertThat( allConstraints ).contains( inStore, createdInTx );
+            assertThat( constraintBySchema ).contains( createdInTx );
+            assertThat( before.constraintsGetForLabelNonLocking( label ) ).toIterable().contains( inStore, createdInTx );
+
+            tx.commit();
+        }
+
+        // Verify no locks are taken
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetForLabelNonLocking( label );
+            Iterable<ConstraintDescriptor> constraintBySchema = () -> tx.schemaRead().constraintsGetForSchemaNonLocking( createdInTx.schema() );
+            assertThat( allConstraints ).contains( inStore, createdInTx );
+            assertThat( constraintBySchema ).contains( createdInTx );
+            // should not take any locks
+            assertEquals( ((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldListConstraintsByRelTypeNonLocking() throws Exception
+    {
+
+        ConstraintDescriptor inStore;
+        ConstraintDescriptor droppedInTx;
+        ConstraintDescriptor createdInTx;
+
+        // Init
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            inStore = tx.schemaWrite().relationshipPropertyExistenceConstraintCreate( forRelType( type, prop1 ), "second constraint" );
+            droppedInTx = tx.schemaWrite().relationshipPropertyExistenceConstraintCreate( forRelType( type, prop2 ), "third constraint" );
+
+            tx.commit();
+        }
+
+        // Verify constraints created in transaction
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            SchemaReadCore before = tx.schemaRead().snapshot();
+            createdInTx = tx.schemaWrite().relationshipPropertyExistenceConstraintCreate( forRelType( type, prop3 ), "fourth constraint" );
+            tx.schemaWrite().constraintDrop( droppedInTx );
+
+            Iterable<ConstraintDescriptor> constraintsForRelType = () -> tx.schemaRead().constraintsGetForRelationshipTypeNonLocking( type );
+            assertThat( constraintsForRelType ).contains( inStore, createdInTx );
+            assertThat( before.constraintsGetForRelationshipTypeNonLocking( type ) ).toIterable().contains( inStore, createdInTx );
+
+            tx.commit();
+        }
+
+        // Verify no locks are taken
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Iterable<ConstraintDescriptor> constraintsForRelType = () -> tx.schemaRead().constraintsGetForRelationshipTypeNonLocking( type );
+            assertThat( constraintsForRelType ).contains( inStore, createdInTx );
+            assertEquals( ((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
+
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldListAllConstraintsNonLocking() throws Exception
+    {
+
+        ConstraintDescriptor inStore;
+        ConstraintDescriptor droppedInTx;
+        ConstraintDescriptor createdInTx;
+
+        // Init
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            inStore = tx.schemaWrite().nodePropertyExistenceConstraintCreate( forLabel( label, prop1 ), "second constraint" );
+            droppedInTx = tx.schemaWrite().relationshipPropertyExistenceConstraintCreate( forRelType( type, prop2 ), "third constraint" );
+
+            tx.commit();
+        }
+
+        // Verify constraints created in transaction
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            SchemaReadCore before = tx.schemaRead().snapshot();
+            createdInTx = tx.schemaWrite().relationshipPropertyExistenceConstraintCreate( forRelType( type, prop3 ), "fourth constraint" );
+            tx.schemaWrite().constraintDrop( droppedInTx );
+
+            Iterable<ConstraintDescriptor> constraintsForRelType = () -> tx.schemaRead().constraintsGetAllNonLocking( );
+            assertThat( constraintsForRelType ).contains( inStore, createdInTx );
+            assertThat( before.constraintsGetAllNonLocking( ) ).toIterable().contains( inStore, createdInTx );
+
+            tx.commit();
+        }
+
+        // Verify no locks are taken
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            Iterable<ConstraintDescriptor> constraintsForRelType = () -> tx.schemaRead().constraintsGetAllNonLocking( );
+            assertThat( constraintsForRelType ).contains( inStore, createdInTx );
+            assertEquals( ((KernelTransactionImplementation) tx).lockClient().activeLockCount(), 0 );
 
             tx.commit();
         }

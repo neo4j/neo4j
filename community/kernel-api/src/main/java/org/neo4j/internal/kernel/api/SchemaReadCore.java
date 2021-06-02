@@ -88,6 +88,15 @@ public interface SchemaReadCore
     InternalIndexState indexGetState( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
+     * Retrieves the state of an index, without taking any schema locks.
+     *
+     * @param index the index which state to retrieve
+     * @return The state of the provided index
+     * @throws IndexNotFoundKernelException if the index was not found in the database
+     */
+    InternalIndexState indexGetStateNonLocking( IndexDescriptor index ) throws IndexNotFoundKernelException;
+
+    /**
      * Retrives the population progress of the index
      *
      * @param index The index whose progress to retrieve
@@ -114,6 +123,14 @@ public interface SchemaReadCore
     Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
 
     /**
+     * Finds all constraints for the given label, without taking any schema locks.
+     *
+     * @param labelId The id of the label
+     * @return All constraints for the given label
+     */
+    Iterator<ConstraintDescriptor> constraintsGetForLabelNonLocking( int labelId );
+
+    /**
      * Get all constraints applicable to relationship type.
      *
      * @param typeId the id of the relationship type
@@ -122,9 +139,24 @@ public interface SchemaReadCore
     Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
 
     /**
+     * Get all constraints applicable to relationship type, without taking any schema locks.
+     *
+     * @param typeId the id of the relationship type
+     * @return An iterator of constraints associated with the given type.
+     */
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipTypeNonLocking( int typeId );
+
+    /**
      * Find all constraints in the database
      *
      * @return An iterator of all the constraints in the database.
      */
     Iterator<ConstraintDescriptor> constraintsGetAll();
+
+    /**
+     * Find all constraints in the database, without taking any schema locks.
+     *
+     * @return An iterator of all the constraints in the database.
+     */
+    Iterator<ConstraintDescriptor> constraintsGetAllNonLocking();
 }
