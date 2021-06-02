@@ -348,31 +348,31 @@ trait AdministrationCommand extends Parser
   // Dbms specific
 
   private def DbmsAction: Rule1[ast.DbmsAction] = rule("dbms action") {
-    keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
-    keyword("RENAME ROLE") ~~~> (_ => ast.RenameRoleAction) |
-    keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
+    group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction) |
+    keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
+    keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
     keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
-    keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
-    keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction) |
-    keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
+    keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
+    keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
     keyword("CREATE USER") ~~~> (_ => ast.CreateUserAction) |
-    keyword("RENAME USER") ~~~> (_ => ast.RenameUserAction) |
+    keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions) |
+    keyword("DROP DATABASE") ~~~> (_ => ast.DropDatabaseAction) |
+    keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
     keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
-    keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
+    group(keyword("EXECUTE") ~~ AdminKeyword ~~ keyword("PROCEDURES")) ~> (_ => ast.ExecuteAdminProcedureAction) |
+    keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
+    keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
+    keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |
+    keyword("RENAME ROLE") ~~~> (_ => ast.RenameRoleAction) |
+    keyword("RENAME USER") ~~~> (_ => ast.RenameUserAction) |
+    keyword("ROLE MANAGEMENT") ~~~> (_ => ast.AllRoleActions) |
+    keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
     keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
     keyword("SET USER HOME DATABASE") ~~~> (_ => ast.SetUserHomeDatabaseAction) |
-    keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
-    keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
-    keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
-    keyword("CREATE DATABASE") ~~~> (_ => ast.CreateDatabaseAction) |
-    keyword("DROP DATABASE") ~~~> (_ => ast.DropDatabaseAction) |
-    keyword("DATABASE MANAGEMENT") ~~~> (_ => ast.AllDatabaseManagementActions) |
     keyword("SHOW PRIVILEGE") ~~~> (_ => ast.ShowPrivilegeAction) |
-    keyword("ASSIGN PRIVILEGE") ~~~> (_ => ast.AssignPrivilegeAction) |
-    keyword("REMOVE PRIVILEGE") ~~~> (_ => ast.RemovePrivilegeAction) |
-    keyword("PRIVILEGE MANAGEMENT") ~~~> (_ => ast.AllPrivilegeActions) |
-    group(keyword("ALL") ~~ optional(optional(keyword("DBMS")) ~~ keyword("PRIVILEGES")))~~~> (_ => ast.AllDbmsAction) |
-    group(keyword("EXECUTE") ~~ AdminKeyword ~~ keyword("PROCEDURES")) ~> (_ => ast.ExecuteAdminProcedureAction)
+    keyword("SHOW ROLE") ~~~> (_ => ast.ShowRoleAction) |
+    keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
+    keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions)
   }
 
   private def QualifiedDbmsAction: Rule2[List[ast.PrivilegeQualifier], ast.DbmsAction] = rule("qualified dbms action") {

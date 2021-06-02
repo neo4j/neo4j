@@ -63,6 +63,11 @@ public interface ASTFactory<STATEMENT,
         YIELD extends CLAUSE,
         DATABASE_SCOPE,
         WAIT_CLAUSE,
+        ADMINISTRATION_ACTION,
+        GRAPH_SCOPE,
+        PRIVILEGE_TYPE,
+        PRIVILEGE_RESOURCE,
+        PRIVILEGE_QUALIFIER,
         POS>
         extends ASTExpressionFactory<EXPRESSION,PARAMETER,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
 {
@@ -273,6 +278,64 @@ public interface ASTFactory<STATEMENT,
     ADMINISTRATION_COMMAND showUsers( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
 
     ADMINISTRATION_COMMAND showCurrentUser( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+
+    //Privilege Commands
+
+    ADMINISTRATION_COMMAND grantPrivilege( POS p, List<Either<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
+
+    ADMINISTRATION_COMMAND denyPrivilege( POS p, List<Either<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege );
+
+    ADMINISTRATION_COMMAND revokePrivilege( POS p, List<Either<String,PARAMETER>> roles, PRIVILEGE_TYPE privilege, boolean revokeGrant, boolean revokeDeny );
+
+    PRIVILEGE_TYPE databasePrivilege( POS p, ADMINISTRATION_ACTION action, List<DATABASE_SCOPE> scope, List<PRIVILEGE_QUALIFIER> qualifier );
+
+    PRIVILEGE_TYPE dbmsPrivilege( POS p, ADMINISTRATION_ACTION action, List<PRIVILEGE_QUALIFIER> qualifier );
+
+    PRIVILEGE_TYPE graphPrivilege( POS p,
+                                   ADMINISTRATION_ACTION action,
+                                   List<GRAPH_SCOPE> scope,
+                                   PRIVILEGE_RESOURCE resource,
+                                   List<PRIVILEGE_QUALIFIER> qualifier );
+
+    ADMINISTRATION_ACTION privilegeAction( ActionType action );
+
+    // Resources
+
+    PRIVILEGE_RESOURCE propertiesResource( POS p, List<String> property );
+
+    PRIVILEGE_RESOURCE allPropertiesResource( POS p );
+
+    PRIVILEGE_RESOURCE labelsResource( POS p, List<String> label );
+
+    PRIVILEGE_RESOURCE allLabelsResource( POS p );
+
+    PRIVILEGE_RESOURCE databaseResource( POS p );
+
+    PRIVILEGE_RESOURCE noResource( POS p );
+
+    PRIVILEGE_QUALIFIER labelQualifier( POS p, String label );
+
+    PRIVILEGE_QUALIFIER relationshipQualifier( POS p, String relationshipType );
+
+    PRIVILEGE_QUALIFIER elementQualifier( POS p, String name );
+
+    PRIVILEGE_QUALIFIER allElementsQualifier( POS p );
+
+    PRIVILEGE_QUALIFIER allLabelsQualifier( POS p );
+
+    PRIVILEGE_QUALIFIER allRelationshipsQualifier( POS p );
+
+    List<PRIVILEGE_QUALIFIER> allQualifier();
+
+    List<PRIVILEGE_QUALIFIER> allDatabasesQualifier();
+
+    List<PRIVILEGE_QUALIFIER> userQualifier( List<Either<String,PARAMETER>> users );
+
+    List<PRIVILEGE_QUALIFIER> allUsersQualifier();
+
+    List<GRAPH_SCOPE> graphScopes( POS p, List<Either<String,PARAMETER>> graphNames, ScopeType scopeType );
+
+    List<DATABASE_SCOPE> databaseScopes( POS p, List<Either<String,PARAMETER>> databaseNames, ScopeType scopeType );
 
     //Database Administration Commands
 

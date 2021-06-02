@@ -55,7 +55,9 @@ import java.util.Optional;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
+import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
+import org.neo4j.cypher.internal.ast.factory.ScopeType;
 
 /** Simple brace matcher. */
 public class Cypher<STATEMENT,
@@ -83,6 +85,11 @@ public class Cypher<STATEMENT,
                     ADMINISTRATION_COMMAND extends STATEMENT,
                     DATABASE_SCOPE,
                     WAIT_CLAUSE,
+                    ADMINISTRATION_ACTION,
+                    GRAPH_SCOPE,
+                    PRIVILEGE_TYPE,
+                    PRIVILEGE_RESOURCE,
+                    PRIVILEGE_QUALIFIER,
                     POS> {
 
     ASTExceptionFactory exceptionFactory;
@@ -111,6 +118,11 @@ public class Cypher<STATEMENT,
                YIELD,
                DATABASE_SCOPE,
                WAIT_CLAUSE,
+               ADMINISTRATION_ACTION,
+               GRAPH_SCOPE,
+               PRIVILEGE_TYPE,
+               PRIVILEGE_RESOURCE,
+               PRIVILEGE_QUALIFIER,
                POS> astFactory;
 
     public Cypher(ASTFactory<STATEMENT,
@@ -138,6 +150,11 @@ public class Cypher<STATEMENT,
                              YIELD,
                              DATABASE_SCOPE,
                              WAIT_CLAUSE,
+                             ADMINISTRATION_ACTION,
+                             GRAPH_SCOPE,
+                             PRIVILEGE_TYPE,
+                             PRIVILEGE_RESOURCE,
+                             PRIVILEGE_QUALIFIER,
                              POS> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
@@ -151,15 +168,12 @@ public class Cypher<STATEMENT,
         return astFactory.inputPosition( t.beginOffset, t.beginLine, t.beginColumn );
     }
 
-    private <T> Optional<T> setOrThrowIfAlreadySet( Token start, Optional<T> optional, T value, String errorMessage ) throws Exception
+    private void assertValidType( Token t, String expected, String actual ) throws Exception
     {
-        if ( optional.isEmpty() )
+        if ( expected != null && !expected.equals(actual) )
         {
-            return Optional.of( value );
-        }
-        else
-        {
-            throw exceptionFactory.syntaxException( new ParseException( errorMessage ), start.beginOffset, start.beginLine, start.beginColumn );
+            throw exceptionFactory.syntaxException( new ParseException(
+                String.format("Invalid input '%s': expected \"%s\"", t.image, expected ) ), t.beginOffset, t.beginLine, t.beginColumn );
         }
     }
 
@@ -286,7 +300,8 @@ MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
 */
 TOKEN [IGNORE_CASE] :
 {
-    < ACTIVE: "ACTIVE" >
+    < ACCESS: "ACCESS" >
+    | < ACTIVE: "ACTIVE" >
     | < ALL_SHORTEST_PATH: "allShortestPaths" >
     | < ALL: "ALL" >
     | < ALTER: "ALTER" >
@@ -295,6 +310,7 @@ TOKEN [IGNORE_CASE] :
     | < AS: "AS" >
     | < ASC: "ASC" ("ENDING")? >
     | < ASSERT: "ASSERT" >
+    | < ASSIGN: "ASSIGN" >
     | < BAR: "|" >
     | < BRIEF: "BRIEF" >
     | < BTREE: "BTREE" >
@@ -320,6 +336,7 @@ TOKEN [IGNORE_CASE] :
     | < DEFAULT_TOKEN: "DEFAULT">
     | < DEFINED: "DEFINED">
     | < DELETE: "DELETE" >
+    | < DENY: "DENY" >
     | < DESC: "DESC" ("ENDING")? >
     | < DESTROY: "DESTROY">
     | < DETACH: "DETACH" >
@@ -329,6 +346,8 @@ TOKEN [IGNORE_CASE] :
     | < DOTDOT: ".." >
     | < DROP: "DROP" >
     | < DUMP: "DUMP">
+    | < ELEMENT: "ELEMENT">
+    | < ELEMENTS: "ELEMENTS">
     | < ELSE: "ELSE" >
     | < ENCRYPTED: "ENCRYPTED" >
     | < END: "END" >
@@ -350,6 +369,7 @@ TOKEN [IGNORE_CASE] :
     | < GE: ">=" >
     | < GRANT: "GRANT">
     | < GRAPH: "GRAPH" >
+    | < GRAPHS: "GRAPHS" >
     | < GT: ">" >
     | < HEADERS: "HEADERS" >
     | < HOME: "HOME">
@@ -360,6 +380,8 @@ TOKEN [IGNORE_CASE] :
     | < IS: "IS" >
     | < JOIN: "JOIN" >
     | < KEY: "KEY" >
+    | < LABEL: "LABEL" >
+    | < LABELS: "LABELS" >
     | < LBRACKET: "[" >
     | < LCURLY: "{" >
     | < LE: "<=" >
@@ -368,13 +390,18 @@ TOKEN [IGNORE_CASE] :
     | < LOOKUP: "LOOKUP" >
     | < LPAREN: "(" >
     | < LT: "<" >
+    | < MANAGEMENT: "MANAGEMENT" >
     | < MATCH: "MATCH" >
     | < MERGE: "MERGE" >
     | < MINUS: "-" >
     | < MODULO: "%" >
     | < NEQ: "!=" >
     | < NEQ2: "<>" >
+    | < NAME: "NAME" >
+    | < NAMES: "NAMES" >
+    | < NEW: "NEW" >
     | < NODE: "NODE" >
+    | < NODES: "NODES" >
     | < NONE: "NONE" >
     | < NOT: "NOT" >
     | < NOWAIT: "NOWAIT">
@@ -387,21 +414,26 @@ TOKEN [IGNORE_CASE] :
     | < ORDER: "ORDER" >
     | < OUTPUT: "OUTPUT" >
     | < PASSWORD: "PASSWORD" >
+    | < PASSWORDS: "PASSWORDS" >
     | < PERIODIC: "PERIODIC" >
     | < PLAINTEXT: "PLAINTEXT" >
     | < PLUS: "+" >
     | < POPULATED: "POPULATED">
     | < POW: "^" >
+    | < PRIVILEGE: "PRIVILEGE" >
+    | < PRIVILEGES: "PRIVILEGES" >
     | < PROCEDURE: "PROCEDURE" >
     | < PROCEDURES: "PROCEDURES" >
     | < PROPERTY: "PROPERTY" >
     | < RBRACKET: "]" >
     | < RCURLY: "}" >
+    | < READ: "READ" >
     | < REDUCE: "REDUCE" >
     | < RENAME: "RENAME" >
     | < REGEQ: "=~" >
     | < REL: "REL" >
     | < RELATIONSHIP: "RELATIONSHIP" >
+    | < RELATIONSHIPS: "RELATIONSHIPS" >
     | < REMOVE: "REMOVE" >
     | < REPLACE: "REPLACE" >
     | < REQUIRED: "REQUIRED" >
@@ -425,10 +457,16 @@ TOKEN [IGNORE_CASE] :
     | < STATUS: "STATUS" >
     | < STOP: "STOP">
     | < SUSPENDED: "SUSPENDED">
+    | < TERMINATE: "TERMINATE">
     | < THEN: "THEN" >
     | < TIMES: "*" >
     | < TO: "TO" >
+    | < TRANSACTION: "TRANSACTION" >
+    | < TRANSACTIONS: "TRANSACTIONS" >
+    | < TRAVERSE: "TRAVERSE" >
     | < TRUE: "true">
+    | < TYPE: "TYPE">
+    | < TYPES: "TYPES">
     | < UNION: "UNION" >
     | < UNIQUE: "UNIQUE" >
     | < UNWIND: "UNWIND" >
@@ -441,6 +479,7 @@ TOKEN [IGNORE_CASE] :
     | < WHEN: "WHEN" >
     | < WHERE: "WHERE" >
     | < WITH: "WITH" >
+    | < WRITE: "WRITE" >
     | < XOR: "XOR" >
     | < YIELD: "YIELD" >
 }
@@ -3120,8 +3159,9 @@ ADMINISTRATION_COMMAND AdministrationCommand( USE_CLAUSE useClause, boolean hasC
         s=DropCommand()
         | s=AlterUserCommand()
         | s=RenameCommand()
-        | s=GrantRole()
-        | s=RevokeRole()
+        | s=DenyPrivilege()
+        | s=RevokeCommand()
+        | s=GrantCommand()
         | s=StartDatabase()
         | s=StopDatabase()
     )
@@ -3160,6 +3200,48 @@ ADMINISTRATION_COMMAND RenameCommand():
     )
     {
         return command;
+    }
+}
+
+ADMINISTRATION_COMMAND GrantCommand() throws Exception:
+{
+    Token start;
+    ADMINISTRATION_COMMAND c;
+}
+{
+    start=<GRANT>
+    (
+      c=grantPrivilege(start)
+      | <ROLE> (
+            LOOKAHEAD(<MANAGEMENT> <ON>) c=grantRoleManagement(start)
+            | c=GrantRole(start)
+        )
+      | <ROLES> c=GrantRole(start)
+    )
+    {
+        return c;
+    }
+}
+
+ADMINISTRATION_COMMAND RevokeCommand() throws Exception:
+{
+    Token start;
+    ADMINISTRATION_COMMAND c;
+}
+{
+    start=<REVOKE>
+    (
+      <DENY> ( c=RevokePrivilege(start, false, true) | <ROLE> c=revokeRoleManagement(start, false, true) )
+      | <GRANT> ( c=RevokePrivilege(start, true, false) | <ROLE> c=revokeRoleManagement(start, true, false) )
+      | c=RevokePrivilege(start, true, true)
+      | <ROLE> (
+            LOOKAHEAD(<MANAGEMENT> <ON>) c=revokeRoleManagement(start, true, true)
+            | c=RevokeRole(start)
+      )
+      | <ROLES> c=RevokeRole(start)
+    )
+    {
+        return c;
     }
 }
 
@@ -3231,27 +3313,25 @@ ADMINISTRATION_COMMAND ShowRoles( Token start, USE_CLAUSE useClause, boolean sho
     }
 }
 
-ADMINISTRATION_COMMAND GrantRole():
+ADMINISTRATION_COMMAND GrantRole( Token start ):
 {
-    Token start;
     List<Either<String, PARAMETER>> roles;
     List<Either<String, PARAMETER>> users;
 }
 {
-    start = <GRANT> ( <ROLE> | <ROLES> ) roles=SymbolicNamerOrStringParameterList() <TO> users=SymbolicNamerOrStringParameterList()
+    roles=SymbolicNameOrStringParameterList() <TO> users=SymbolicNameOrStringParameterList()
     {
         return astFactory.grantRoles( pos( start ), roles, users );
     }
 }
 
-ADMINISTRATION_COMMAND RevokeRole():
+ADMINISTRATION_COMMAND RevokeRole(Token start):
 {
-    Token start;
     List<Either<String, PARAMETER>> roles;
     List<Either<String, PARAMETER>> users;
 }
 {
-    start = <REVOKE> ( <ROLE> | <ROLES> ) roles=SymbolicNamerOrStringParameterList() <FROM> users=SymbolicNamerOrStringParameterList()
+    roles=SymbolicNameOrStringParameterList() <FROM> users=SymbolicNameOrStringParameterList()
     {
         return astFactory.revokeRoles( pos( start ), roles, users );
     }
@@ -3436,7 +3516,8 @@ Optional<Boolean> PasswordChangeRequired( Token start, Optional<Boolean> changeR
 {
     <CHANGE> ( <NOT> { required = false; } )? <REQUIRED>
     {
-        return setOrThrowIfAlreadySet( start, changeRequired, required, errorMessage );
+        assertNotAlreadySet( changeRequired.orElse(null), start, errorMessage );
+        return Optional.of( required );
     }
 }
 
@@ -3451,7 +3532,8 @@ Optional<Boolean> UserStatus( Token start, Optional<Boolean> suspended ) throws 
         | <ACTIVE> { suspend = false; }
     )
     {
-        return setOrThrowIfAlreadySet( start, suspended, suspend, errorMessage );
+        assertNotAlreadySet( suspended.orElse(null), start, errorMessage );
+        return Optional.of( suspend );
     }
 }
 
@@ -3463,7 +3545,8 @@ Optional<Either<String, PARAMETER>> HomeDatabase( Token start, Optional<Either<S
 {
     <HOME> <DATABASE> home=SymbolicDatabaseNameStringOrParameter()
     {
-        return setOrThrowIfAlreadySet( start, homeDatabase, home, errorMessage );
+        assertNotAlreadySet( homeDatabase.orElse(null), start, errorMessage );
+        return Optional.of( home );
     }
 }
 
@@ -3495,6 +3578,437 @@ ADMINISTRATION_COMMAND ShowCurrentUser( Token start, USE_CLAUSE useClause ):
         | where = Where() )?
     {
         return astFactory.useGraph( astFactory.showCurrentUser( pos( start ), yield, returnClause, where ), useClause );
+    }
+}
+
+// Privilege commands
+
+ADMINISTRATION_COMMAND grantRoleManagement(Token start):
+{
+    PRIVILEGE_TYPE privilege = null;
+    List<Either<String, PARAMETER>> roles = null;
+}
+{
+    privilege=roleManagementPrivilege(start) <TO> roles=SymbolicNameOrStringParameterList()
+    {
+        return astFactory.grantPrivilege( pos(start), roles, privilege );
+    }
+}
+
+ADMINISTRATION_COMMAND revokeRoleManagement(Token start, boolean revokeGrant, boolean revokeDeny):
+{
+    PRIVILEGE_TYPE privilege = null;
+    List<Either<String, PARAMETER>> roles = null;
+}
+{
+    privilege=roleManagementPrivilege(start) <FROM> roles=SymbolicNameOrStringParameterList()
+    {
+        return astFactory.revokePrivilege( pos(start), roles, privilege, revokeGrant, revokeDeny );
+    }
+}
+
+PRIVILEGE_TYPE roleManagementPrivilege(Token start):
+{
+    List<Either<String, PARAMETER>> roles = null;
+}
+{
+    <MANAGEMENT> <ON> <DBMS>
+    {
+        return astFactory.dbmsPrivilege( pos(start), astFactory.privilegeAction( ActionType.ROLE_ALL ), astFactory.allQualifier() );
+    }
+}
+
+ADMINISTRATION_COMMAND grantPrivilege(Token start) throws Exception:
+{
+    List<Either<String, PARAMETER>> roles = null;
+    PRIVILEGE_TYPE privilege = null;
+}
+{
+    privilege=privilege(start) <TO> roles=SymbolicNameOrStringParameterList()
+    {
+        return astFactory.grantPrivilege( pos(start), roles, privilege );
+    }
+}
+
+ADMINISTRATION_COMMAND DenyPrivilege() throws Exception:
+{
+    Token start;
+    List<Either<String, PARAMETER>> roles = null;
+    PRIVILEGE_TYPE privilege = null;
+}
+{
+    start=<DENY>
+    (
+       privilege=privilege(start)
+       // DENY doesn't have a choice conflict for ROLE MANAGEMENT
+       | <ROLE> privilege=roleManagementPrivilege(start)
+    )
+    <TO> roles=SymbolicNameOrStringParameterList()
+    {
+        return astFactory.denyPrivilege( pos(start), roles, privilege );
+    }
+}
+
+ADMINISTRATION_COMMAND RevokePrivilege(Token start, boolean revokeGrant, boolean revokeDeny) throws Exception:
+{
+    List<Either<String, PARAMETER>> roles = null;
+    PRIVILEGE_TYPE privilege = null;
+}
+{
+    privilege=privilege(start) <FROM> roles=SymbolicNameOrStringParameterList()
+    {
+        return astFactory.revokePrivilege( pos(start), roles, privilege, revokeGrant, revokeDeny );
+    }
+}
+
+PRIVILEGE_TYPE privilege(Token start) throws Exception:
+{
+    PRIVILEGE_TYPE privilege = null;
+}
+{
+    (
+        privilege=allPrivilege(start)
+        | privilege=createPrivilege(start)
+        | privilege=dropPrivilege(start)
+        | privilege=showPrivilege(start)
+        | privilege=setPrivilege(start)
+        | privilege=removePrivilege(start)
+        | privilege=databasePrivilege(start)
+        | privilege=dbmsPrivilege(start)
+        | privilege=writePrivilege(start)
+        | privilege=qualifiedGraphPrivileges(start)
+        | privilege=qualifiedGraphPrivilegesWithProperty(start)
+    )
+    {
+        return privilege;
+    }
+}
+
+PRIVILEGE_TYPE allPrivilege(Token start) throws Exception:
+{
+    ADMINISTRATION_ACTION action = null;
+    List<Either<String, PARAMETER>> names = null;
+    boolean isAll = false;
+    String type = null;
+    Token t = null;
+    ScopeType scopeType = ScopeType.NAMED;
+}
+{
+    <ALL> ((<DBMS> { type = "DBMS"; } | <GRAPH> { type = "GRAPH"; } | <DATABASE> { type = "DATABASE"; } )? <PRIVILEGES>)? <ON> (
+        t=<DEFAULT_TOKEN> (
+             <GRAPH> {
+                 assertValidType( t, type, "GRAPH" );
+                 return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScopes( pos( t ), null, ScopeType.DEFAULT ), null, astFactory.allQualifier() );
+             }
+             | <DATABASE> {
+                assertValidType( t, type, "DATABASE" );
+                return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScopes( pos( t ), null, ScopeType.DEFAULT ), astFactory.allDatabasesQualifier() );
+             }
+        )
+        | t=<HOME> (
+            <GRAPH> {
+                assertValidType( t, type, "GRAPH" );
+                return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScopes( pos( t ), null, ScopeType.HOME ), null, astFactory.allQualifier() );
+            }
+            | <DATABASE> {
+                assertValidType( t, type, "DATABASE" );
+                return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScopes( pos( t ), null, ScopeType.HOME ), astFactory.allDatabasesQualifier() );
+            }
+        )
+        | t=<DBMS> {
+            assertValidType( t, type, "DBMS" );
+            return astFactory.dbmsPrivilege( pos(start), astFactory.privilegeAction( ActionType.DBMS_ALL ), astFactory.allQualifier() );
+        }
+        | (t=<GRAPH> | t=<GRAPHS>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList()) {
+            assertValidType( t, type, "GRAPH" );
+            return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_ALL ), astFactory.graphScopes( pos( t ), names, scopeType ), null, astFactory.allQualifier() );
+        }
+        | (t=<DATABASE> | t=<DATABASES>) (<TIMES> { scopeType = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList()) {
+            assertValidType( t, type, "DATABASE" );
+            return astFactory.databasePrivilege( pos(start), astFactory.privilegeAction( ActionType.DATABASE_ALL ), astFactory.databaseScopes( pos( t ), names, scopeType ), astFactory.allDatabasesQualifier() );
+        }
+    )
+}
+
+PRIVILEGE_TYPE createPrivilege(Token start):
+{
+    PRIVILEGE_TYPE privilege = null;
+    ADMINISTRATION_ACTION action = null;
+    List<DATABASE_SCOPE> databases = null;
+    List<GRAPH_SCOPE> graphs = null;
+    List<PRIVILEGE_QUALIFIER> qualifier = new ArrayList<>();
+}
+{
+    <CREATE>
+    (
+       (
+           (
+               (<INDEX> | <INDEXES>) { action = astFactory.privilegeAction( ActionType.INDEX_CREATE ); }
+               | (<CONSTRAINT> | <CONSTRAINTS>) { action = astFactory.privilegeAction( ActionType.CONSTRAINT_CREATE ); }
+               | <NEW> (
+                   (<NODE>)? (<LABEL> | <LABELS>) { action = astFactory.privilegeAction( ActionType.CREATE_LABEL ); }
+                   | (<RELATIONSHIP>)? (<TYPE> | <TYPES>) { action = astFactory.privilegeAction( ActionType.CREATE_RELTYPE ); }
+                   | (<PROPERTY>)? (<NAME> | <NAMES>) { action = astFactory.privilegeAction( ActionType.CREATE_PROPERTYKEY ); }
+               )
+           ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, astFactory.allDatabasesQualifier() ); }
+       ) | (
+           (
+               <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_CREATE ); }
+               | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_CREATE ); }
+               | <USER> { action = astFactory.privilegeAction( ActionType.USER_CREATE ); }
+           ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action,  astFactory.allQualifier() ); }
+       ) | ( <ON> graphs=graphScopeList() qualifier=graphQualifier() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_CREATE ), graphs, null, qualifier ); } )
+    ) { return privilege; }
+}
+
+PRIVILEGE_TYPE dropPrivilege(Token start):
+{
+    PRIVILEGE_TYPE privilege = null;
+    ADMINISTRATION_ACTION action = null;
+    List<DATABASE_SCOPE> databases = null;
+}
+{
+    <DROP>
+    (
+       (
+           (
+               (<INDEX> | <INDEXES>) { action = astFactory.privilegeAction( ActionType.INDEX_DROP ); }
+               | (<CONSTRAINT> | <CONSTRAINTS>) { action = astFactory.privilegeAction( ActionType.CONSTRAINT_DROP ); }
+           ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, astFactory.allDatabasesQualifier() ); }
+       ) | (
+           (
+               <DATABASE> { action = astFactory.privilegeAction( ActionType.DATABASE_DROP ); }
+               | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_DROP ); }
+               | <USER> { action = astFactory.privilegeAction( ActionType.USER_DROP ); }
+           ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
+       )
+    ) { return privilege; }
+}
+
+PRIVILEGE_TYPE showPrivilege(Token start):
+{
+    PRIVILEGE_TYPE privilege = null;
+    ADMINISTRATION_ACTION action = null;
+    List<DATABASE_SCOPE> databases = null;
+    List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
+    List<Either<String, PARAMETER>>qualifiers = null;
+}
+{
+    <SHOW>
+    (
+        (
+            (
+                (<INDEX> | <INDEXES>) { action = astFactory.privilegeAction( ActionType.INDEX_SHOW ); }
+                | (<CONSTRAINT> | <CONSTRAINTS>) { action = astFactory.privilegeAction( ActionType.CONSTRAINT_SHOW ); }
+                | (<TRANSACTION> | <TRANSACTIONS>) { action = astFactory.privilegeAction( ActionType.TRANSACTION_SHOW ); qualifier = astFactory.allUsersQualifier(); }
+                    ( <LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN> )?
+            ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, qualifier ); }
+        ) | (
+            (
+                <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_SHOW ); }
+                | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_SHOW ); }
+                | <USER> { action = astFactory.privilegeAction( ActionType.USER_SHOW ); }
+            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
+        )
+    ) { return privilege; }
+}
+
+PRIVILEGE_TYPE setPrivilege(Token start):
+{
+    PRIVILEGE_TYPE privilege = null;
+    ADMINISTRATION_ACTION action = null;
+    List<GRAPH_SCOPE> graphs = null;
+    PRIVILEGE_RESOURCE resource = null;
+    List<PRIVILEGE_QUALIFIER> qualifier = null;
+}
+{
+    <SET>
+    (
+        (
+            (
+                ( <PASSWORD> | <PASSWORDS> ) { action = astFactory.privilegeAction( ActionType.USER_PASSWORD ); }
+                | <USER> (
+                    <STATUS> { action = astFactory.privilegeAction( ActionType.USER_STATUS ); }
+                    | <HOME> <DATABASE> { action = astFactory.privilegeAction( ActionType.USER_HOME ); }
+                )
+            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
+        ) | (
+            ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_LABEL_SET ), graphs, resource, List.of( astFactory.allLabelsQualifier( pos(start) ) ) ); } )
+            | ( <PROPERTY> resource=propertyResource() <ON> graphs=graphScopeList() qualifier=graphQualifier() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_PROPERTY_SET ), graphs, resource, qualifier ); } )
+        )
+    ) { return privilege; }
+}
+
+PRIVILEGE_TYPE removePrivilege(Token start):
+{
+    PRIVILEGE_TYPE privilege = null;
+    List<GRAPH_SCOPE> graphs = null;
+    PRIVILEGE_RESOURCE resource = null;
+    ADMINISTRATION_ACTION action = null;
+}
+{
+    <REMOVE>
+    (
+        (
+            (
+                <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_REMOVE ); }
+                | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_REMOVE ); }
+            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() ); }
+        ) | ( <LABEL> resource=labelResource() <ON> graphs=graphScopeList() { privilege = astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_LABEL_REMOVE ), graphs, resource, List.of( astFactory.allLabelsQualifier( pos(start) ) ) ); } )
+    ) { return privilege; }
+}
+
+PRIVILEGE_TYPE writePrivilege(Token start):
+{
+    List<GRAPH_SCOPE> graphs = null;
+    List<Either<String, PARAMETER>> qualifiers = null;
+}
+{
+    <WRITE> <ON> graphs=graphScopeList()
+    {
+        return astFactory.graphPrivilege( pos(start), astFactory.privilegeAction( ActionType.GRAPH_WRITE ), graphs, null, List.of( astFactory.allElementsQualifier( pos(start) ) ) );
+    }
+}
+
+PRIVILEGE_TYPE databasePrivilege(Token start):
+{
+    ADMINISTRATION_ACTION action = null;
+    List<DATABASE_SCOPE> databases = null;
+    List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
+    List<Either<String, PARAMETER>>qualifiers = null;
+}
+{
+    (
+        <ACCESS> { action = astFactory.privilegeAction( ActionType.ACCESS ); }
+        | <START> { action = astFactory.privilegeAction( ActionType.DATABASE_START ); }
+        | <STOP> { action = astFactory.privilegeAction( ActionType.DATABASE_STOP ); }
+        | (<INDEX> | <INDEXES>) (<MANAGEMENT>)? { action = astFactory.privilegeAction( ActionType.INDEX_ALL ); }
+        | (<CONSTRAINT> | <CONSTRAINTS>) (<MANAGEMENT>)? { action = astFactory.privilegeAction( ActionType.CONSTRAINT_ALL ); }
+        | <TRANSACTION> (<MANAGEMENT>)? { qualifier = astFactory.allUsersQualifier(); } (<LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN>)? { action = astFactory.privilegeAction( ActionType.TRANSACTION_ALL ); }
+        | <TERMINATE> (<TRANSACTION> | <TRANSACTIONS>) { qualifier = astFactory.allUsersQualifier(); } (<LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN>)? { action = astFactory.privilegeAction( ActionType.TRANSACTION_TERMINATE ); }
+        | <NAME> (<MANAGEMENT>)? { action = astFactory.privilegeAction( ActionType.CREATE_TOKEN ); }
+    )
+    <ON> databases=DatabaseScopeList()
+    {
+        return astFactory.databasePrivilege( pos(start), action, databases, qualifier );
+    }
+}
+
+// all dbms privileges apart from EXECUTE PROCEDURE/FUNCTION since we have to solve globbing for that first
+PRIVILEGE_TYPE dbmsPrivilege(Token start):
+{
+    ADMINISTRATION_ACTION action = null;
+}
+{
+    (
+        <ALTER> <USER> { action = astFactory.privilegeAction( ActionType.USER_ALTER ); }
+        | <ASSIGN> (
+            <PRIVILEGE> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_ASSIGN ); }
+            | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_ASSIGN ); }
+        )
+        | <DATABASE> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.DATABASE_MANAGEMENT ); }
+        | <PRIVILEGE> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.PRIVILEGE_ALL ); }
+        | <RENAME> (
+            <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_RENAME ); }
+            | <USER> { action = astFactory.privilegeAction( ActionType.USER_RENAME ); }
+        )
+        | <USER> <MANAGEMENT> { action = astFactory.privilegeAction( ActionType.USER_ALL ); }
+    )
+    <ON> <DBMS>
+    {
+        return astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier() );
+    }
+}
+
+PRIVILEGE_TYPE qualifiedGraphPrivilegesWithProperty(Token start):
+{
+    ADMINISTRATION_ACTION action = null;
+    List<GRAPH_SCOPE> graphs = null;
+    List<PRIVILEGE_QUALIFIER> qualifier = null;
+    PRIVILEGE_RESOURCE resource = null;
+}
+{
+    (
+        <TRAVERSE> { action = astFactory.privilegeAction( ActionType.GRAPH_TRAVERSE ); }
+        | ( <READ> { action = astFactory.privilegeAction( ActionType.GRAPH_READ ); } resource=propertyResource() )
+        | ( <MATCH> { action = astFactory.privilegeAction( ActionType.GRAPH_MATCH ); } resource=propertyResource() )
+    )
+    <ON> graphs=graphScopeList() qualifier=graphQualifier() (<LPAREN> <TIMES> <RPAREN>)?
+    {
+        return astFactory.graphPrivilege( pos(start), action, graphs, resource, qualifier );
+    }
+}
+
+PRIVILEGE_TYPE qualifiedGraphPrivileges(Token start):
+{
+    ADMINISTRATION_ACTION action = null;
+    List<GRAPH_SCOPE> graphs = null;
+    List<PRIVILEGE_QUALIFIER> qualifier = null;
+    PRIVILEGE_RESOURCE resource = null;
+}
+{
+    (
+        <DELETE> { action = astFactory.privilegeAction( ActionType.GRAPH_DELETE ); }
+        | <MERGE> resource=propertyResource() { action = astFactory.privilegeAction( ActionType.GRAPH_MERGE ); }
+    )
+    <ON> graphs=graphScopeList() qualifier=graphQualifier()
+    {
+        return astFactory.graphPrivilege( pos(start), action, graphs, resource, qualifier );
+    }
+}
+
+PRIVILEGE_RESOURCE labelResource():
+{
+    List<String> names = null;
+    Token t;
+}
+{
+    <TIMES> { return astFactory.allLabelsResource( pos(token) ); }
+    | names=SymbolicNameList1() { return astFactory.labelsResource( pos(token), names ); }
+}
+
+PRIVILEGE_RESOURCE propertyResource():
+{
+    List<String> names = null;
+    PRIVILEGE_RESOURCE resource = null;
+    Token t;
+}
+{
+    <LCURLY> (
+        <TIMES> { resource = astFactory.allPropertiesResource( pos(token) ); }
+        | names=SymbolicNameList1() { resource = astFactory.propertiesResource( pos(token), names ); }
+    ) <RCURLY>
+    {
+        return resource;
+    }
+}
+
+List<PRIVILEGE_QUALIFIER> graphQualifier():
+{
+    List<PRIVILEGE_QUALIFIER> qualifier = new ArrayList<>();
+    List<String> names = null;
+    Token n = null;
+}
+{
+    (
+        (<RELATIONSHIP> | <RELATIONSHIPS>) (
+            <TIMES> { qualifier.add( astFactory.allRelationshipsQualifier( pos(token) ) ); }
+            | ( n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } ( "," n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } )* )
+        )
+        | (<NODE> | <NODES>) (
+            <TIMES> { qualifier.add( astFactory.allLabelsQualifier( pos(token) ) ); }
+            | ( n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } ( "," n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } )* )
+        )
+        | (<ELEMENT> | <ELEMENTS>) (
+            <TIMES> { qualifier.add( astFactory.allElementsQualifier( pos(token) ) ); }
+            | ( n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } ( "," n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } )* )
+        )
+    )?
+    {
+        if ( qualifier.isEmpty() ) {
+            qualifier.add( astFactory.allElementsQualifier( pos(token) ) );
+        }
+        return qualifier;
     }
 }
 
@@ -3618,6 +4132,53 @@ DATABASE_SCOPE DatabaseScope():
   }
 }
 
+List<DATABASE_SCOPE> DatabaseScopeList():
+{
+    Token start = null;
+    List<Either<String, PARAMETER>> names = null;
+    ScopeType type = ScopeType.NAMED;
+}
+{
+    (
+        (start=<DATABASE> | start=<DATABASES>) (<TIMES> { type = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList())
+        | start=<DEFAULT_TOKEN> <DATABASE> { type = ScopeType.DEFAULT; }
+        | start=<HOME> <DATABASE> { type = ScopeType.HOME; }
+    )
+  {
+    return astFactory.databaseScopes( pos( start ), names, type );
+  }
+}
+
+List<GRAPH_SCOPE> graphScopeList():
+{
+    Token start = null;
+    List<Either<String, PARAMETER>> names = null;
+    ScopeType type = ScopeType.NAMED;
+}
+{
+    (
+        (start=<GRAPH> | start=<GRAPHS>) (<TIMES> { type = ScopeType.ALL; } | names=SymbolicDatabaseNameStringOrParameterList())
+        | start=<DEFAULT_TOKEN> <GRAPH> { type = ScopeType.DEFAULT; }
+        | start=<HOME> <GRAPH> { type = ScopeType.HOME; }
+    )
+    {
+        return astFactory.graphScopes( pos( start ), names, type );
+    }
+}
+
+List<Either<String, PARAMETER>> SymbolicDatabaseNameStringOrParameterList():
+{
+    Either<String, PARAMETER> dbSymbol = null;
+    List<Either<String, PARAMETER>> databases = new ArrayList<>();
+}
+{
+    dbSymbol=SymbolicDatabaseNameStringOrParameter() { databases.add(dbSymbol); }
+    ("," dbSymbol=SymbolicDatabaseNameStringOrParameter() { databases.add(dbSymbol); } )*
+    {
+        return databases;
+    }
+}
+
 Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
 {
     Token nameToken;
@@ -3633,7 +4194,7 @@ Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
     | parameter=Parameter(ParameterType.STRING) { return new Right<String, PARAMETER>( parameter ); }
 }
 
-List<Either<String, PARAMETER>> SymbolicNamerOrStringParameterList() :
+List<Either<String, PARAMETER>> SymbolicNameOrStringParameterList() :
 {
     Either<String, PARAMETER> entry;
     List<Either<String, PARAMETER>> list = new ArrayList<>();
@@ -3687,6 +4248,7 @@ Token SymbolicNameString() :
         | t=<ESCAPED_SYMBOLIC_NAME>
 
         //list of allowed keywords
+        | t=<ACCESS>
         | t=<ACTIVE>
         | t=<ALL_SHORTEST_PATH>
         | t=<ALL>
@@ -3696,6 +4258,7 @@ Token SymbolicNameString() :
         | t=<AS>
         | t=<ASC>
         | t=<ASSERT>
+        | t=<ASSIGN>
         | t=<BRIEF>
         | t=<BTREE>
         | t=<BUILT>
@@ -3706,7 +4269,7 @@ Token SymbolicNameString() :
         | t=<CHANGE>
         | t=<COMMIT>
         | t=<CONSTRAINT>
-         | t=<CONSTRAINTS>
+        | t=<CONSTRAINTS>
         | t=<CONTAINS>
         | t=<COPY>
         | t=<COUNT>
@@ -3720,12 +4283,15 @@ Token SymbolicNameString() :
         | t=<DEFAULT_TOKEN>
         | t=<DEFINED>
         | t=<DELETE>
+        | t=<DENY>
         | t=<DESC>
         | t=<DESTROY>
         | t=<DETACH>
         | t=<DISTINCT>
         | t=<DROP>
         | t=<DUMP>
+        | t=<ELEMENT>
+        | t=<ELEMENTS>
         | t=<ELSE>
         | t=<ENCRYPTED>
         | t=<END>
@@ -3745,6 +4311,7 @@ Token SymbolicNameString() :
         | t=<FUNCTIONS>
         | t=<GRANT>
         | t=<GRAPH>
+        | t=<GRAPHS>
         | t=<HEADERS>
         | t=<HOME>
         | t=<IF>
@@ -3754,12 +4321,19 @@ Token SymbolicNameString() :
         | t=<IS>
         | t=<JOIN>
         | t=<KEY>
+        | t=<LABEL>
+        | t=<LABELS>
         | t=<LIMITROWS>
         | t=<LOAD>
         | t=<LOOKUP>
         | t=<MATCH>
+        | t=<MANAGEMENT>
         | t=<MERGE>
+        | t=<NAME>
+        | t=<NAMES>
+        | t=<NEW>
         | t=<NODE>
+        | t=<NODES>
         | t=<NONE>
         | t=<NOT>
         | t=<NOWAIT>
@@ -3772,15 +4346,20 @@ Token SymbolicNameString() :
         | t=<ORDER>
         | t=<OUTPUT>
         | t=<PASSWORD>
+        | t=<PASSWORDS>
         | t=<PERIODIC>
         | t=<PLAINTEXT>
         | t=<POPULATED>
+        | t=<PRIVILEGE>
+        | t=<PRIVILEGES>
         | t=<PROCEDURE>
         | t=<PROCEDURES>
         | t=<PROPERTY>
+        | t=<READ>
         | t=<REDUCE>
         | t=<REL>
         | t=<RELATIONSHIP>
+        | t=<RELATIONSHIPS>
         | t=<REMOVE>
         | t=<RENAME>
         | t=<REPLACE>
@@ -3804,9 +4383,15 @@ Token SymbolicNameString() :
         | t=<STATUS>
         | t=<STOP>
         | t=<SUSPENDED>
+        | t=<TERMINATE>
         | t=<THEN>
         | t=<TO>
+        | t=<TRANSACTION>
+        | t=<TRANSACTIONS>
+        | t=<TRAVERSE>
         | t=<TRUE>
+        | t=<TYPE>
+        | t=<TYPES>
         | t=<UNION>
         | t=<UNIQUE>
         | t=<UNWIND>
@@ -3819,6 +4404,7 @@ Token SymbolicNameString() :
         | t=<WHEN>
         | t=<WHERE>
         | t=<WITH>
+        | t=<WRITE>
         | t=<XOR>
         | t=<YIELD>
     )

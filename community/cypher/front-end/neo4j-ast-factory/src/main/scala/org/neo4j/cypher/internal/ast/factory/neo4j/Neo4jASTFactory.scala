@@ -20,53 +20,111 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AccessDatabaseAction
+import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.AllDatabaseAction
+import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
+import org.neo4j.cypher.internal.ast.AllDatabasesQualifier
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllFunctions
+import org.neo4j.cypher.internal.ast.AllGraphAction
+import org.neo4j.cypher.internal.ast.AllGraphsScope
+import org.neo4j.cypher.internal.ast.AllIndexActions
 import org.neo4j.cypher.internal.ast.AllIndexes
+import org.neo4j.cypher.internal.ast.AllLabelResource
+import org.neo4j.cypher.internal.ast.AllPrivilegeActions
+import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.AllQualifier
+import org.neo4j.cypher.internal.ast.AllRoleActions
+import org.neo4j.cypher.internal.ast.AllTokenActions
+import org.neo4j.cypher.internal.ast.AllTransactionActions
+import org.neo4j.cypher.internal.ast.AllUserActions
 import org.neo4j.cypher.internal.ast.AlterUser
+import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
+import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.CreateDatabaseAction
+import org.neo4j.cypher.internal.ast.CreateElementAction
+import org.neo4j.cypher.internal.ast.CreateIndexAction
+import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
+import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRole
+import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.CurrentUser
+import org.neo4j.cypher.internal.ast.DatabaseAction
+import org.neo4j.cypher.internal.ast.DatabasePrivilege
+import org.neo4j.cypher.internal.ast.DatabaseResource
 import org.neo4j.cypher.internal.ast.DatabaseScope
+import org.neo4j.cypher.internal.ast.DbmsAction
+import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.Delete
+import org.neo4j.cypher.internal.ast.DeleteElementAction
+import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
+import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropDatabase
+import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropRole
+import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropUser
+import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.ElementQualifier
+import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.GraphPrivilege
+import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
+import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.LabelAllQualifier
+import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
+import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
@@ -77,20 +135,35 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.ast.PrivilegeQualifier
+import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
+import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
+import org.neo4j.cypher.internal.ast.RemoveLabelAction
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
+import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
+import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUser
+import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.RevokeBothType
+import org.neo4j.cypher.internal.ast.RevokeDenyType
+import org.neo4j.cypher.internal.ast.RevokeGrantType
+import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SeekOrScan
@@ -99,26 +172,41 @@ import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetItem
+import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.SetPasswordsAction
+import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
+import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
+import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowTransactionAction
+import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.StartDatabase
+import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabase
+import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.TerminateTransactionAction
 import org.neo4j.cypher.internal.ast.TimeoutAfter
+import org.neo4j.cypher.internal.ast.TraverseAction
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
@@ -127,19 +215,24 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.User
+import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
+import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
+import org.neo4j.cypher.internal.ast.factory.ActionType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
+import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -245,6 +338,8 @@ import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.JavaConverters.mapAsScalaMap
 import scala.util.Either
 
+final case class Privilege(privilegeType: PrivilegeType, resource: ActionResource, qualifier: util.List[PrivilegeQualifier])
+
 class Neo4jASTFactory(query: String, allNameGenerators: AllNameGenerators)
   extends ASTFactory[Statement,
     Query,
@@ -271,6 +366,11 @@ class Neo4jASTFactory(query: String, allNameGenerators: AllNameGenerators)
     Yield,
     DatabaseScope,
     WaitUntilComplete,
+    AdministrationAction,
+    GraphScope,
+    Privilege,
+    ActionResource,
+    PrivilegeQualifier,
     InputPosition] {
 
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
@@ -1033,6 +1133,166 @@ class Neo4jASTFactory(query: String, allNameGenerators: AllNameGenerators)
 
   override def showCurrentUser(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Expression): ShowCurrentUser = {
     ShowCurrentUser(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+  }
+
+  // Privilege commands
+
+  override def grantPrivilege(p: InputPosition,
+                              roles: util.List[Either[String, Parameter]],
+                              privilege: Privilege): AdministrationCommand =
+    GrantPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala)(p)
+
+  override def denyPrivilege(p: InputPosition, roles: util.List[Either[String, Parameter]], privilege: Privilege): AdministrationCommand =
+    DenyPrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala)(p)
+
+  override def revokePrivilege(p: InputPosition,
+                               roles: util.List[Either[String, Parameter]],
+                               privilege: Privilege,
+                               revokeGrant: Boolean,
+                               revokeDeny: Boolean): AdministrationCommand = (revokeGrant, revokeDeny) match {
+    case (true, false) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala, RevokeGrantType()(p))(p)
+    case (false, true) => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala, RevokeDenyType()(p))(p)
+    case _             => RevokePrivilege(privilege.privilegeType, Option(privilege.resource), privilege.qualifier.asScala.toList, roles.asScala, RevokeBothType()(p))(p)
+  }
+
+  override def databasePrivilege(p: InputPosition, action: AdministrationAction, scope: util.List[DatabaseScope], qualifier: util.List[PrivilegeQualifier]): Privilege =
+    Privilege(DatabasePrivilege(action.asInstanceOf[DatabaseAction], scope.asScala.toList)(p), null, qualifier)
+
+  override def dbmsPrivilege(p: InputPosition, action: AdministrationAction, qualifier: util.List[PrivilegeQualifier]): Privilege =
+    Privilege(DbmsPrivilege(action.asInstanceOf[DbmsAction])(p), null, qualifier)
+
+  override def graphPrivilege(p: InputPosition, action: AdministrationAction, scope: util.List[GraphScope], resource: ActionResource, qualifier: util.List[PrivilegeQualifier]): Privilege =
+    Privilege(GraphPrivilege(action.asInstanceOf[GraphAction], scope.asScala.toList)(p), resource, qualifier)
+
+  override def privilegeAction(action: ActionType): AdministrationAction = action match {
+    case ActionType.DATABASE_ALL => AllDatabaseAction
+    case ActionType.ACCESS => AccessDatabaseAction
+    case ActionType.DATABASE_START => StartDatabaseAction
+    case ActionType.DATABASE_STOP => StopDatabaseAction
+    case ActionType.INDEX_ALL => AllIndexActions
+    case ActionType.INDEX_CREATE => CreateIndexAction
+    case ActionType.INDEX_DROP => DropIndexAction
+    case ActionType.INDEX_SHOW => ShowIndexAction
+    case ActionType.CONSTRAINT_ALL => AllConstraintActions
+    case ActionType.CONSTRAINT_CREATE => CreateConstraintAction
+    case ActionType.CONSTRAINT_DROP => DropConstraintAction
+    case ActionType.CONSTRAINT_SHOW => ShowConstraintAction
+    case ActionType.CREATE_TOKEN =>AllTokenActions
+    case ActionType.CREATE_PROPERTYKEY => CreatePropertyKeyAction
+    case ActionType.CREATE_LABEL => CreateNodeLabelAction
+    case ActionType.CREATE_RELTYPE => CreateRelationshipTypeAction
+    case ActionType.TRANSACTION_ALL => AllTransactionActions
+    case ActionType.TRANSACTION_SHOW => ShowTransactionAction
+    case ActionType.TRANSACTION_TERMINATE => TerminateTransactionAction
+
+    case ActionType.DBMS_ALL => AllDbmsAction
+    case ActionType.USER_ALL => AllUserActions
+    case ActionType.USER_SHOW => ShowUserAction
+    case ActionType.USER_ALTER => AlterUserAction
+    case ActionType.USER_CREATE => CreateUserAction
+    case ActionType.USER_DROP => DropUserAction
+    case ActionType.USER_RENAME => RenameUserAction
+    case ActionType.USER_PASSWORD => SetPasswordsAction
+    case ActionType.USER_STATUS => SetUserStatusAction
+    case ActionType.USER_HOME   => SetUserHomeDatabaseAction
+    case ActionType.ROLE_ALL    => AllRoleActions
+    case ActionType.ROLE_SHOW => ShowRoleAction
+    case ActionType.ROLE_CREATE => CreateRoleAction
+    case ActionType.ROLE_DROP => DropRoleAction
+    case ActionType.ROLE_RENAME => RenameRoleAction
+    case ActionType.ROLE_ASSIGN => AssignRoleAction
+    case ActionType.ROLE_REMOVE => RemoveRoleAction
+    case ActionType.DATABASE_MANAGEMENT => AllDatabaseManagementActions
+    case ActionType.DATABASE_CREATE => CreateDatabaseAction
+    case ActionType.DATABASE_DROP => DropDatabaseAction
+    case ActionType.PRIVILEGE_ALL => AllPrivilegeActions
+    case ActionType.PRIVILEGE_ASSIGN => AssignPrivilegeAction
+    case ActionType.PRIVILEGE_REMOVE => RemovePrivilegeAction
+    case ActionType.PRIVILEGE_SHOW => ShowPrivilegeAction
+
+    case ActionType.GRAPH_ALL => AllGraphAction
+    case ActionType.GRAPH_WRITE => WriteAction
+    case ActionType.GRAPH_CREATE => CreateElementAction
+    case ActionType.GRAPH_MERGE => MergeAdminAction
+    case ActionType.GRAPH_DELETE => DeleteElementAction
+    case ActionType.GRAPH_LABEL_SET => SetLabelAction
+    case ActionType.GRAPH_LABEL_REMOVE => RemoveLabelAction
+    case ActionType.GRAPH_PROPERTY_SET => SetPropertyAction
+    case ActionType.GRAPH_MATCH => MatchAction
+    case ActionType.GRAPH_READ => ReadAction
+    case ActionType.GRAPH_TRAVERSE => TraverseAction
+  }
+
+  // Resources
+
+  override def propertiesResource(p: InputPosition, properties: util.List[String]): ActionResource = PropertiesResource(properties.asScala)(p)
+
+  override def allPropertiesResource(p: InputPosition): ActionResource = AllPropertyResource()(p)
+
+  override def labelsResource(p: InputPosition, labels: util.List[String]): ActionResource = LabelsResource(labels.asScala)(p)
+
+  override def allLabelsResource(p: InputPosition): ActionResource = AllLabelResource()(p)
+
+  override def databaseResource(p: InputPosition): ActionResource = DatabaseResource()(p)
+
+  override def noResource(p: InputPosition): ActionResource = NoResource()(p)
+
+  override def labelQualifier(p: InputPosition, label: String): PrivilegeQualifier = LabelQualifier(label)(p)
+
+  override def relationshipQualifier(p: InputPosition, relationshipType: String): PrivilegeQualifier = RelationshipQualifier(relationshipType)(p)
+
+  override def elementQualifier(p: InputPosition, name: String): PrivilegeQualifier = ElementQualifier(name)(p)
+
+  override def allElementsQualifier(p: InputPosition): PrivilegeQualifier = ElementsAllQualifier()(p)
+
+  override def allLabelsQualifier(p: InputPosition): PrivilegeQualifier = LabelAllQualifier()(p)
+
+  override def allRelationshipsQualifier(p: InputPosition): PrivilegeQualifier = RelationshipAllQualifier()(p)
+
+  override def allQualifier(): util.List[PrivilegeQualifier] = {
+    val list = new util.ArrayList[PrivilegeQualifier]()
+    list.add(AllQualifier()(InputPosition.NONE))
+    list
+  }
+
+  override def allDatabasesQualifier(): util.List[PrivilegeQualifier] = {
+    val list = new util.ArrayList[PrivilegeQualifier]()
+    list.add(AllDatabasesQualifier()(InputPosition.NONE))
+    list
+  }
+
+  override def userQualifier(users: util.List[Either[String, Parameter]]): util.List[PrivilegeQualifier] = {
+    val list = new util.ArrayList[PrivilegeQualifier]()
+    users.forEach(u => list.add(UserQualifier(u)(InputPosition.NONE)))
+    list
+  }
+
+  override def allUsersQualifier(): util.List[PrivilegeQualifier] = {
+    val list = new util.ArrayList[PrivilegeQualifier]()
+    list.add(UserAllQualifier()(InputPosition.NONE))
+    list
+  }
+
+  override def graphScopes(p: InputPosition, graphNames: util.List[Either[String, Parameter]], scopeType: ScopeType): util.List[GraphScope] = {
+    val list = new util.ArrayList[GraphScope]()
+    scopeType match {
+      case ScopeType.ALL     => list.add(AllGraphsScope()(p))
+      case ScopeType.HOME    => list.add(HomeGraphScope()(p))
+      case ScopeType.DEFAULT => list.add(DefaultGraphScope()(p))
+      case ScopeType.NAMED   => graphNames.asScala.foreach(db => list.add(NamedGraphScope(db)(p)))
+    }
+    list
+  }
+
+  override def databaseScopes(p: InputPosition, databaseNames: util.List[Either[String, Parameter]], scopeType: ScopeType): util.List[DatabaseScope] = {
+    val list = new util.ArrayList[DatabaseScope]()
+    scopeType match {
+      case ScopeType.ALL     => list.add(AllDatabasesScope()(p))
+      case ScopeType.HOME    => list.add(HomeDatabaseScope()(p))
+      case ScopeType.DEFAULT => list.add(DefaultDatabaseScope()(p))
+      case ScopeType.NAMED   => databaseNames.asScala.foreach(db => list.add(NamedDatabaseScope(db)(p)))
+    }
+    list
   }
 
   // Database commands

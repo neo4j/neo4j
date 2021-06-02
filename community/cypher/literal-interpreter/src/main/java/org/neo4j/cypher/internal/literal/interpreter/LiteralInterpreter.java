@@ -34,7 +34,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
+import org.neo4j.cypher.internal.ast.factory.ActionType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
+import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
@@ -69,6 +71,11 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         Object,
         Object,
         Object,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         NULL,
         NULL,
         NULL,
@@ -314,6 +321,38 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
+    {
+        throw new UnsupportedOperationException( "yieldClause is not a literal" );
+    }
+
+    @Override
+    public NULL showIndexClause( NULL p, String indexType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showIndexClause is not a literal" );
+    }
+
+    @Override
+    public NULL showConstraintClause( NULL p, String constraintType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showConstraintClause is not a literal" );
+    }
+
+    @Override
+    public NULL showProcedureClause( NULL p, boolean currentUser, String user, Object where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showProcedureClause is not a literal" );
+    }
+
+    @Override
+    public NULL showFunctionClause( NULL p, String functionType, boolean currentUser, String user, Object where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showFunctionClause is not a literal" );
+    }
+
+    // Administration Commands
+
+    @Override
     public NULL useGraph( NULL aNull, NULL aNull2 )
     {
         throw new UnsupportedOperationException( "useGraph is not a literal" );
@@ -324,6 +363,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     {
         throw new UnsupportedOperationException( "hasCatalog is not a literal" );
     }
+
+    // Role commands
 
     @Override
     public NULL createRole( NULL p, boolean replace, Either<String,Object> roleName, Either<String,Object> from, boolean ifNotExists )
@@ -348,6 +389,20 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     {
         throw new UnsupportedOperationException( "showRoles is not a literal" );
     }
+
+    @Override
+    public NULL grantRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
+    {
+        throw new UnsupportedOperationException( "grantRoles is not a literal" );
+    }
+
+    @Override
+    public NULL revokeRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
+    {
+        throw new UnsupportedOperationException( "revokeRoles is not a literal" );
+    }
+
+    // User commands
 
     @Override
     public NULL createUser( NULL p, boolean replace, boolean ifNotExists, Either<String,Object> username, Object password, boolean encrypted,
@@ -382,18 +437,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL showUsers( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
-    {
-        throw new UnsupportedOperationException( "showUsers is not a literal" );
-    }
-
-    @Override
-    public NULL showCurrentUser( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
-    {
-        throw new UnsupportedOperationException( "showCurrentUser is not a literal" );
-    }
-
-    @Override
     public Object passwordExpression( Object password )
     {
         throw new UnsupportedOperationException( "passwordExpression is not a literal" );
@@ -406,52 +449,170 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
+    public NULL showUsers( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
     {
-        throw new UnsupportedOperationException( "yieldClause is not a literal" );
+        throw new UnsupportedOperationException( "showUsers is not a literal" );
     }
 
     @Override
-    public NULL showIndexClause( NULL p, String indexType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    public NULL showCurrentUser( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
     {
-        throw new UnsupportedOperationException( "showIndexClause is not a literal" );
+        throw new UnsupportedOperationException( "showCurrentUser is not a literal" );
+    }
+
+    // Privilege commands
+
+    @Override
+    public NULL grantPrivilege( NULL p, List<Either<String,Object>> roles, NULL privilege )
+    {
+        throw new UnsupportedOperationException( "grantPrivilege is not a literal" );
     }
 
     @Override
-    public NULL showConstraintClause( NULL p, String constraintType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    public NULL denyPrivilege( NULL p, List<Either<String,Object>> roles, NULL privilege )
     {
-        throw new UnsupportedOperationException( "showConstraintClause is not a literal" );
+        throw new UnsupportedOperationException( "denyPrivilege is not a literal" );
     }
 
     @Override
-    public NULL showProcedureClause( NULL p, boolean currentUser, String user, Object where, boolean hasYield )
+    public NULL revokePrivilege( NULL p, List<Either<String,Object>> roles, NULL privilege, boolean revokeGrant, boolean revokeDeny )
     {
-        throw new UnsupportedOperationException( "showProcedureClause is not a literal" );
+        throw new UnsupportedOperationException( "revokePrivilege is not a literal" );
     }
 
     @Override
-    public NULL showFunctionClause( NULL p, String functionType, boolean currentUser, String user, Object where, boolean hasYield )
+    public NULL databasePrivilege( NULL p, NULL action, List<NULL> scope, List<NULL> qualifier )
     {
-        throw new UnsupportedOperationException( "showFunctionClause is not a literal" );
+        throw new UnsupportedOperationException( "databasePrivilege is not a literal" );
     }
 
     @Override
-    public NULL grantRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
+    public NULL dbmsPrivilege( NULL p, NULL action, List<NULL> qualifier )
     {
-        throw new UnsupportedOperationException( "grantRoles is not a literal" );
+        throw new UnsupportedOperationException( "dbmsPrivilege is not a literal" );
     }
 
     @Override
-    public NULL revokeRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
+    public NULL graphPrivilege( NULL p, NULL action, List<NULL> scope, NULL resource, List<NULL> qualifier )
     {
-        throw new UnsupportedOperationException( "revokeRoles is not a literal" );
+        throw new UnsupportedOperationException( "graphPrivilege is not a literal" );
     }
 
     @Override
-    public NULL showDatabase( NULL p, NULL aNull, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    public NULL privilegeAction( ActionType action )
     {
-        throw new UnsupportedOperationException( "showDatabase is not a literal" );
+        throw new UnsupportedOperationException( "privilegeAction is not a literal" );
     }
+
+    @Override
+    public NULL propertiesResource( NULL p, List<String> property )
+    {
+        throw new UnsupportedOperationException( "propertiesResource is not a literal" );
+    }
+
+    @Override
+    public NULL allPropertiesResource( NULL p )
+    {
+        throw new UnsupportedOperationException( "allPropertiesResource is not a literal" );
+    }
+
+    @Override
+    public NULL labelsResource( NULL p, List<String> label )
+    {
+        throw new UnsupportedOperationException( "labelsResource is not a literal" );
+    }
+
+    @Override
+    public NULL allLabelsResource( NULL p )
+    {
+        throw new UnsupportedOperationException( "allLabelsResource is not a literal" );
+    }
+
+    @Override
+    public NULL databaseResource( NULL p )
+    {
+        throw new UnsupportedOperationException( "databaseResource is not a literal" );
+    }
+
+    @Override
+    public NULL noResource( NULL p )
+    {
+        throw new UnsupportedOperationException( "noResource is not a literal" );
+    }
+
+    @Override
+    public NULL labelQualifier( NULL p, String label )
+    {
+        throw new UnsupportedOperationException( "labelQualifier is not a literal" );
+    }
+
+    @Override
+    public NULL relationshipQualifier( NULL p, String relationshipType )
+    {
+        throw new UnsupportedOperationException( "relationshipQualifier is not a literal" );
+    }
+
+    @Override
+    public NULL elementQualifier( NULL p, String name )
+    {
+        throw new UnsupportedOperationException( "elementQualifier is not a literal" );
+    }
+
+    @Override
+    public NULL allElementsQualifier( NULL p )
+    {
+        throw new UnsupportedOperationException( "allElementsQualifier is not a literal" );
+    }
+
+    @Override
+    public NULL allLabelsQualifier( NULL p )
+    {
+        throw new UnsupportedOperationException( "allLabelsQualifier is not a literal" );
+    }
+
+    @Override
+    public NULL allRelationshipsQualifier( NULL p )
+    {
+        throw new UnsupportedOperationException( "allRelationshipsQualifier is not a literal" );
+    }
+
+    @Override
+    public List<NULL> allQualifier()
+    {
+        throw new UnsupportedOperationException( "allQualifier is not a literal" );
+    }
+
+    @Override
+    public List<NULL> allDatabasesQualifier()
+    {
+        throw new UnsupportedOperationException( "allDatabasesQualifier is not a literal" );
+    }
+
+    @Override
+    public List<NULL> userQualifier( List<Either<String,Object>> users )
+    {
+        throw new UnsupportedOperationException( "userQualifier is not a literal" );
+    }
+
+    @Override
+    public List<NULL> allUsersQualifier()
+    {
+        throw new UnsupportedOperationException( "allUsersQualifier is not a literal" );
+    }
+
+    @Override
+    public List<NULL> graphScopes( NULL p, List<Either<String,Object>> graphNames, ScopeType scopeType )
+    {
+        throw new UnsupportedOperationException( "graphScopes is not a literal" );
+    }
+
+    @Override
+    public List<NULL> databaseScopes( NULL p, List<Either<String,Object>> databaseNames, ScopeType scopeType )
+    {
+        throw new UnsupportedOperationException( "databaseScopes is not a literal" );
+    }
+
+    // Database commands
 
     @Override
     public NULL createDatabase( NULL p, boolean replace, Either<String,Object> databaseName, boolean ifNotExists, NULL aNull,
@@ -467,6 +628,18 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL showDatabase( NULL p, NULL aNull, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    {
+        throw new UnsupportedOperationException( "showDatabase is not a literal" );
+    }
+
+    @Override
+    public NULL databaseScope( NULL p, Either<String,Object> name, boolean isDefault, boolean isHome )
+    {
+        throw new UnsupportedOperationException( "databaseScope is not a literal" );
+    }
+
+    @Override
     public NULL startDatabase( NULL p, Either<String,Object> databaseName, NULL wait )
     {
         throw new UnsupportedOperationException( "startDatabase is not a literal" );
@@ -476,12 +649,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL stopDatabase( NULL p, Either<String,Object> databaseName, NULL wait )
     {
         throw new UnsupportedOperationException( "stopDatabase is not a literal" );
-    }
-
-    @Override
-    public NULL databaseScope( NULL p, Either<String,Object> name, boolean isDefault, boolean isHome )
-    {
-        throw new UnsupportedOperationException( "databaseScope is not a literal" );
     }
 
     @Override

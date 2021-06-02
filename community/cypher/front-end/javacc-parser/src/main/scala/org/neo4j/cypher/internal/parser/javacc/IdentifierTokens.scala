@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.javacc
 
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACCESS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACTIVE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL_SHORTEST_PATH
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ANY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.AS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BUILT
@@ -52,12 +54,15 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DBMS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFAULT_TOKEN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFINED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DELETE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DENY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESTROY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DETACH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DISTINCT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DROP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DUMP
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENT
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENTS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELSE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENCRYPTED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.END
@@ -78,6 +83,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FUNCTION
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FUNCTIONS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRANT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPH
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPHS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.HOME
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.IF
@@ -87,12 +93,19 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEXES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.IS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.JOIN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.KEY
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABEL
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABELS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LIMITROWS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOAD
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOOKUP
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.MANAGEMENT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.MATCH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.MERGE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAME
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAMES
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NEW
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NONE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOWAIT
@@ -105,15 +118,20 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ORDER
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OUTPUT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORD
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORDS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PLAINTEXT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PRIVILEGES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROCEDURES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTY
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.READ
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSHIP
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSHIPS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REMOVE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RENAME
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE
@@ -137,9 +155,15 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STARTS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STATUS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STOP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.SUSPENDED
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TERMINATE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.THEN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TO
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTION
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTIONS
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRAVERSE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRUE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNION
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNIQUE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNWIND
@@ -152,6 +176,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WAIT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHEN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHERE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WITH
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WRITE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.XOR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.YIELD
 
@@ -160,6 +185,7 @@ object IdentifierTokens {
   val tokens = Set(
     ESCAPED_SYMBOLIC_NAME,
     //keywords
+    ACCESS,
     ACTIVE,
     ALL_SHORTEST_PATH,
     ALL,
@@ -169,6 +195,7 @@ object IdentifierTokens {
     AS,
     ASC,
     ASSERT,
+    ASSIGN,
     BRIEF,
     BTREE,
     BUILT,
@@ -193,12 +220,15 @@ object IdentifierTokens {
     DEFAULT_TOKEN,
     DEFINED,
     DELETE,
+    DENY,
     DESC,
     DESTROY,
     DETACH,
     DISTINCT,
     DROP,
     DUMP,
+    ELEMENT,
+    ELEMENTS,
     ELSE,
     ENCRYPTED,
     END,
@@ -218,6 +248,7 @@ object IdentifierTokens {
     FUNCTIONS,
     GRANT,
     GRAPH,
+    GRAPHS,
     HEADERS,
     HOME,
     IF,
@@ -227,12 +258,19 @@ object IdentifierTokens {
     IS,
     JOIN,
     KEY,
+    LABEL,
+    LABELS,
     LIMITROWS,
     LOAD,
     LOOKUP,
+    MANAGEMENT,
     MATCH,
     MERGE,
+    NAME,
+    NAMES,
+    NEW,
     NODE,
+    NODES,
     NONE,
     NOT,
     NOWAIT,
@@ -245,15 +283,20 @@ object IdentifierTokens {
     ORDER,
     OUTPUT,
     PASSWORD,
+    PASSWORDS,
     PERIODIC,
     PLAINTEXT,
     POPULATED,
+    PRIVILEGE,
+    PRIVILEGES,
     PROCEDURE,
     PROCEDURES,
     PROPERTY,
+    READ,
     REDUCE,
     REL,
     RELATIONSHIP,
+    RELATIONSHIPS,
     REMOVE,
     RENAME,
     REPLACE,
@@ -277,9 +320,15 @@ object IdentifierTokens {
     STATUS,
     STOP,
     SUSPENDED,
+    TERMINATE,
     THEN,
     TO,
+    TRANSACTION,
+    TRANSACTIONS,
+    TRAVERSE,
     TRUE,
+    TYPE,
+    TYPES,
     UNION,
     UNIQUE,
     UNWIND,
@@ -292,6 +341,7 @@ object IdentifierTokens {
     WHEN,
     WHERE,
     WITH,
+    WRITE,
     XOR,
     YIELD
   )

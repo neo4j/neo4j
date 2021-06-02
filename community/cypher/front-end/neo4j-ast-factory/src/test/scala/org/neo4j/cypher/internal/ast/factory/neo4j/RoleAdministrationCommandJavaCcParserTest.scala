@@ -88,6 +88,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     val exceptionMessage =
       s"""Invalid input 'CATALOG': expected
          |  "ALTER"
+         |  "DENY"
          |  "DROP"
          |  "GRANT"
          |  "RENAME"
@@ -580,7 +581,11 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
           // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
 
           test(s"$verb $roleKeyword") {
-            assertJavaCCExceptionStart(testName, "Invalid input '': expected a parameter or an identifier")
+            val expected = roleKeyword match {
+              case "ROLE" => """Invalid input '': expected "MANAGEMENT", a parameter or an identifier"""
+              case _      => """Invalid input '': expected a parameter or an identifier"""
+            }
+            assertJavaCCExceptionStart(testName, expected)
           }
 
           test(s"$verb $roleKeyword foo") {
@@ -615,13 +620,6 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       test(s"REVOKE $roleKeyword foo TO abc") {
         assertSameAST(testName)
       }
-
-      // ROLES TO USER only have GRANT and REVOKE and not DENY
-
-      test(s"DENY $roleKeyword foo TO abc") {
-        // temporary error message until remaining administration commands are ported
-        assertJavaCCExceptionStart(testName, "Invalid input 'DENY'")
-      }
   }
 
   test("GRANT ROLE $a TO $x") {
@@ -638,5 +636,23 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
 
   test("REVOKE ROLES a, $b, $c FROM $x, y, z") {
     assertSameAST(testName)
+  }
+
+  test(s"DENY ROLE foo TO abc") {
+    assertJavaCCExceptionStart(testName, """Invalid input 'foo': expected "MANAGEMENT"""")
+  }
+
+  // ROLES TO USER only have GRANT and REVOKE and not DENY
+
+  test("DENY ROLES foo TO abc") {
+    assertJavaCCExceptionStart(testName,
+      """Invalid input 'ROLES': expected
+        |  "ACCESS"
+        |  "ALL"
+        |  "ALTER"
+        |  "ASSIGN"
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "CREATE"""".stripMargin)
   }
 }
