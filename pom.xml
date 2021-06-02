@@ -646,11 +646,11 @@
                   <file>enterprise</file>
                 </files>
               </requireFilesDontExist>
-              <requireMavenVersion>
-                <version>${required.maven.version}</version>
-              </requireMavenVersion>
+                <requireMavenVersion>
+                    <version>${required.maven.version}</version>
+                </requireMavenVersion>
             </rules>
-            <fail>true</fail>
+              <fail>true</fail>
           </configuration>
         </plugin>
 
