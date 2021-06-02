@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
@@ -63,16 +66,24 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
      */
     public abstract WriteSupport newTestSupport();
 
-    @BeforeEach
+    @BeforeAll
     public void setupGraph()
     {
-        if ( testSupport == null )
-        {
-            testSupport = newTestSupport();
-            testSupport.setup( testDirectory.homePath(), this::createSystemGraph );
-            graphDb = testSupport.graphBackdoor();
-        }
+        testSupport = newTestSupport();
+        testSupport.setup( testDirectory.homePath(), this::createSystemGraph );
+        graphDb = testSupport.graphBackdoor();
+    }
+
+    @BeforeEach
+    public void clearGraph()
+    {
         testSupport.clearGraph();
+    }
+
+    @AfterAll
+    public static void tearDown()
+    {
+        testSupport.tearDown();
     }
 
     /**
@@ -94,15 +105,5 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     {
         Kernel kernel = testSupport.kernelToTest();
         return kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
-    }
-
-    @AfterAll
-    public static void tearDown()
-    {
-        if ( testSupport != null )
-        {
-            testSupport.tearDown();
-            testSupport = null;
-        }
     }
 }
