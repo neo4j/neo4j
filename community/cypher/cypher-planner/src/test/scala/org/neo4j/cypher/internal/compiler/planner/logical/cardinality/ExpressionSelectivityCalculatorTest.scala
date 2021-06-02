@@ -963,10 +963,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
-    val labelResult = calculator(nIsPerson.expr)
     val eqResult = calculator(equals.expr)
 
-    labelResult.factor should equal(0.1)
     val existsSel = 200.0 / 1000.0
     val equal1Sel = 1.0 / 180.0
     val inSel = existsSel * (equal1Sel + equal1Sel - equal1Sel * equal1Sel)
@@ -975,15 +973,14 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("equality with one label, auto-extracted parameter of size 42") {
     val bucketSize = ListSizeBucket.computeBucket(42)
-    val param = AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(Seq(literalString("a"), literalString("b"))), Some(bucketSize))(pos)
+    val literalWriters = (1 to bucketSize).map(literalInt(_))
+    val param = AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(literalWriters), Some(bucketSize))(pos)
     val equals = nPredicate(in(nProp, param))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
-    val labelResult = calculator(nIsPerson.expr)
     val eqResult = calculator(equals.expr)
 
-    labelResult.factor should equal(0.1)
     val existsSel = Selectivity(200.0 / 1000.0)
     val equal1Sel = Selectivity(1.0 / 180.0)
     val inSel = IndependenceCombiner.orTogetherSelectivities(Seq.fill(bucketSize)(equal1Sel)).get

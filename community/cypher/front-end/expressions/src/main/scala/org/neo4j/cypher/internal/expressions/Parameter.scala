@@ -27,7 +27,7 @@ sealed trait Parameter extends Expression {
   override def asCanonicalStringVal: String = "$" + name
 
   //NOTE: hashCode and equals must be same for different parameter types, since we
-  //we auto parameterize for efficent cache utilization
+  // auto parameterize for efficient cache utilization
   override def hashCode(): Int = MurmurHash3.arrayHash(Array(name, parameterType))
   override def equals(obj: Any): Boolean = obj match {
     case that: Parameter => that.canEqual(this) && this.name == that.name && this.parameterType == that.parameterType

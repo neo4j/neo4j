@@ -214,7 +214,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("WITH $p as x RETURN x")    // not enough parameters -> not even miss
     runQuery("WITH $k as x RETURN x")    // not enough parameters -> not even miss
     runQuery("WITH [1,2] as x RETURN x")  // miss
-    runQuery("WITH [1,2,3] as x RETURN x")    // hit
+    runQuery("WITH [1,2,3] as x RETURN x")    // hit (list of size 2 and list of size 3 both fall into the same bucket of size 10)
 
     counter.counts should equal(CacheCounts(hits = 4, misses = 4, flushes = 1, compilations = 4))
   }

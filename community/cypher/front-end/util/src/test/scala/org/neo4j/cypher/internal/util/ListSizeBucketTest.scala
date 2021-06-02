@@ -22,6 +22,7 @@ class ListSizeBucketTest extends CypherFunSuite {
   test("test computeBucket") {
     ListSizeBucket.computeBucket(1) shouldEqual 1
     ListSizeBucket.computeBucket(7) shouldEqual 10
+    ListSizeBucket.computeBucket(10) shouldEqual 10
     ListSizeBucket.computeBucket(17) shouldEqual 100
     ListSizeBucket.computeBucket(42) shouldEqual 100
     ListSizeBucket.computeBucket(1001) shouldEqual 10000
