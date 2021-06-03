@@ -34,6 +34,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -214,7 +215,7 @@ class CheckerTestBase
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, 100 );
         context = new CheckerContext( neoStores, indexAccessors, labelIndex, execution, reporter, cacheAccess, tokenHolders, new RecordLoading( neoStores ),
-                countsState, limiter, progress, pageCache, false, ConsistencyFlags.DEFAULT );
+                countsState, limiter, progress, pageCache, DebugContext.NO_DEBUG, ConsistencyFlags.DEFAULT );
         context.initialize();
         return context;
     }

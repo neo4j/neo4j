@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -61,8 +62,8 @@ class CheckerContext
     final TokenNameLookup tokenNameLookup;
     final PageCache pageCache;
     final long highNodeId;
-    private final boolean debug;
     private final AtomicBoolean cancelled;
+    private final DebugContext debugContext;
 
     CheckerContext(
             NeoStores neoStores,
@@ -77,7 +78,7 @@ class CheckerContext
             NodeBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
-            boolean debug,
+            DebugContext debug,
             ConsistencyFlags consistencyFlags )
     {
         this( neoStores, indexAccessors, labelScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader, observedCounts, limiter, progress,
@@ -97,14 +98,14 @@ class CheckerContext
             NodeBasedMemoryLimiter limiter,
             ProgressMonitorFactory.MultiPartBuilder progress,
             PageCache pageCache,
-            boolean debug,
+            DebugContext debug,
             AtomicBoolean cancelled,
             ConsistencyFlags consistencyFlags )
     {
         this.neoStores = neoStores;
         this.highNodeId = neoStores.getNodeStore().getHighId();
         this.indexAccessors = indexAccessors;
-        this.debug = debug;
+        this.debugContext = debug;
         this.consistencyFlags = consistencyFlags;
         this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId() );
         this.labelScanStore = labelScanStore;
@@ -124,14 +125,14 @@ class CheckerContext
     CheckerContext withoutReporting()
     {
         return new CheckerContext( neoStores, indexAccessors, labelScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess, tokenHolders,
-                recordLoader, observedCounts, limiter, progress, pageCache, debug, cancelled, consistencyFlags );
+                recordLoader, observedCounts, limiter, progress, pageCache, debugContext, cancelled, consistencyFlags );
     }
 
     void initialize() throws Exception
     {
         debug( limiter.toString() );
         timeOperation( "Initialize index sizes", indexSizes::initialize, false );
-        if ( debug )
+        if ( debugContext.debugEnabled() )
         {
             debugPrintIndexes( indexSizes.largeIndexes( EntityType.NODE ), "considered large node indexes" );
             debugPrintIndexes( indexSizes.smallIndexes( EntityType.NODE ), "considered small node indexes" );
@@ -199,9 +200,9 @@ class CheckerContext
 
     private void debug( boolean linePadded, String format, Object... params )
     {
-        if ( debug )
+        if ( debugContext.debugEnabled() )
         {
-            System.out.println( String.format( (linePadded ? "%n" : "") + format, params ) );
+            debugContext.debug( String.format( (linePadded ? "%n" : "") + format, params ) );
         }
     }
 
