@@ -199,7 +199,7 @@ trait UpdateGraph {
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
   def overlapsHorizon(horizon: QueryHorizon, semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
-    if(!containsUpdates)
+    if(!containsUpdates || !horizon.couldContainRead)
       Seq.empty
     else {
       val dependingExpressions = horizon.dependingExpressions

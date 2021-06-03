@@ -45,21 +45,32 @@ trait QueryHorizon {
   def readOnly = true
 
   /**
-   * @return all recursively included query graphs.
-   *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
-   *         is not safe to use for planning pattern expressions and pattern comprehensions.
+   * If dependingExpressions is empty, or only contains variables, we can assume that it doesn't contain any reads
+   * @return 'true' if the this horizon might do database reads. 'false' otherwise.
    */
-  def allQueryGraphs: Seq[QueryGraph] = {
-    val patternComprehensions = dependingExpressions.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
-    val patternExpressions = dependingExpressions.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
+  def couldContainRead: Boolean = dependingExpressions.exists(!_.isInstanceOf[Variable])
+
+    /**
+     * @return all recursively included query graphs.
+     *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
+     *         is not safe to use for planning pattern expressions and pattern comprehensions.
+     */
+  protected def getAllQueryGraphs: Seq[QueryGraph] = {
+    val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
+    val patternComprehensions = filtered.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
+    val patternExpressions = filtered.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AllNameGenerators))
     patternComprehensions ++ patternExpressions
   }
+
+  lazy val allQueryGraphs: Seq[QueryGraph] = getAllQueryGraphs
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
+
+  override lazy val allQueryGraphs: Seq[QueryGraph] = Seq.empty
 }
 
 case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
@@ -81,7 +92,12 @@ case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boole
 
   override def readOnly: Boolean = callSubquery.readOnly
 
-  override def allQueryGraphs: Seq[QueryGraph] = super.allQueryGraphs ++ callSubquery.allQueryGraphs
+  /**
+   * We don't analyze the subquery but just assume that it's doing reads.
+   */
+  override def couldContainRead: Boolean = true
+
+  override lazy val allQueryGraphs: Seq[QueryGraph] = super.getAllQueryGraphs ++ callSubquery.allQueryGraphs
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {
