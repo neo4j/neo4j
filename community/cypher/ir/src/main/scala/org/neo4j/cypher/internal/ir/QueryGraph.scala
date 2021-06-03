@@ -101,7 +101,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     )
   }
 
-  def allQueryGraphs: Seq[QueryGraph] = {
+  lazy val allQueryGraphs: Seq[QueryGraph] = {
     val patternComprehensions = this.findByAllClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
     val patternExpressions = this.findByAllClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
     Seq(this) ++
