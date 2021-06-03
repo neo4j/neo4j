@@ -461,7 +461,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // SUPPORT PROCEDURES (need to be cleared before here)
     case SystemProcedureCall(_, call, returns, _, checkCredentialsExpired) => context =>
       val queryString = returns match {
-        case Return(_, ReturnItems(_, items), _, _, _, _) if items.nonEmpty => QueryRenderer.render(Seq(call, returns))
+        case Return(_, ReturnItems(_, items, _), _, _, _, _) if items.nonEmpty => QueryRenderer.render(Seq(call, returns))
         case _ => QueryRenderer.render(Seq(call))
       }
 

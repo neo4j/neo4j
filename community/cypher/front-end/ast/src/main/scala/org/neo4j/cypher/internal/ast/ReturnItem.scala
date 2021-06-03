@@ -33,17 +33,24 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 /**
  *
- * @param includeExisting Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
- *                        Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
- *                        This field is true if the dash (-) was used by a user.
+ * @param includeExisting       Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
+ *                              Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
+ *                              This field is true if the dash (-) was used by a user.
+ *
+ * @param defaultOrderOnColumns For some clauses the default order of alphabetical columns is inconvenient, primarily show command clauses.
+ *                              If this field is set, the given order will be used instead of the alphabetical order.
  */
 final case class ReturnItems(
                               includeExisting: Boolean,
-                              items: Seq[ReturnItem]
+                              items: Seq[ReturnItem],
+                              defaultOrderOnColumns: Option[List[String]] = None
                             )(val position: InputPosition) extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
   def withExisting(includeExisting: Boolean): ReturnItems =
     copy(includeExisting = includeExisting)(position)
+
+  def withDefaultOrderOnColumns(defaultOrderOnColumns: List[String]): ReturnItems =
+    copy(defaultOrderOnColumns = Some(defaultOrderOnColumns))(position)
 
   def semanticCheck: SemanticCheck = items.semanticCheck chain ensureProjectedToUniqueIds
 

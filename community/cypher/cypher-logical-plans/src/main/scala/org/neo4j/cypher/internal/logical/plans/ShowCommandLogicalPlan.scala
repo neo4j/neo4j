@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
-case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
+case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: List[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
-case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
+case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, defaultColumns: List[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
-case class ShowProcedures(executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
+case class ShowProcedures(executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: List[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
-case class ShowFunctions(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: Set[ShowColumn])
+case class ShowFunctions(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: List[ShowColumn])
                         (implicit idGen: IdGen) extends CommandLogicalPlan(idGen)

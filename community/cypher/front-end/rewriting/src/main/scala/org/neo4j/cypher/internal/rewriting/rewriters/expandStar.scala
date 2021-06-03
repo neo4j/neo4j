@@ -43,15 +43,15 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private val rewriter = Rewriter.lift {
     case clause@With(_, values, _, _, _, _) if values.includeExisting =>
-      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
+      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, values.defaultOrderOnColumns) else values
       clause.copy(returnItems = newReturnItems)(clause.position)
 
     case clause@Return(_, values, _, _, _, excludedNames) if values.includeExisting =>
-      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, excludedNames) else values
+      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, values.defaultOrderOnColumns, excludedNames) else values
       clause.copy(returnItems = newReturnItems, excludedNames = Set.empty)(clause.position)
 
     case clause@Yield(values, _, _, _, _) if values.includeExisting =>
-      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
+      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, values.defaultOrderOnColumns) else values
       clause.copy(returnItems = newReturnItems)(clause.position)
 
     case expandedAstNode =>
@@ -60,14 +60,19 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-  private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty): ReturnItems = {
+  private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], defaultOrderOnColumns: Option[List[String]], excludedNames: Set[String] = Set.empty): ReturnItems = {
     val scope = state.scope(clause).getOrElse {
       throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
     }
 
     val clausePos = clause.position
     val symbolNames = scope.symbolNames -- excludedNames -- listedItems.map(returnItem => returnItem.name)
-    val expandedItems = symbolNames.toIndexedSeq.sorted.map { id =>
+    val orderedSymbolNames = defaultOrderOnColumns.map(columns => {
+      val newColumns = symbolNames -- columns
+      val ordered = columns.filter(symbolNames.contains) ++ newColumns
+      ordered.toIndexedSeq
+    }).getOrElse(symbolNames.toIndexedSeq.sorted)
+    val expandedItems = orderedSymbolNames.map { id =>
       // We use the position of the clause for variables in new return items.
       // If the position was one of previous declaration, that could destroy scoping.
       val expr = Variable(id)(clausePos)

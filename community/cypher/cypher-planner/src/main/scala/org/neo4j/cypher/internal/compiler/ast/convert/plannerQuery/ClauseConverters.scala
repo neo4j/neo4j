@@ -193,7 +193,7 @@ object ClauseConverters {
 
   private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
                                           clause: Return): PlannerQueryBuilder = clause match {
-    case Return(distinct, ReturnItems(star, items), optOrderBy, skip, limit, _) if !star =>
+    case Return(distinct, ReturnItems(star, items, _), optOrderBy, skip, limit, _) if !star =>
 
       val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
 
@@ -428,9 +428,9 @@ object ClauseConverters {
   }
 
   private def asReturnItems(current: QueryGraph, returnItems: ReturnItems): Seq[ReturnItem] = returnItems match {
-    case ReturnItems(star, items) if star =>
+    case ReturnItems(star, items, _) if star =>
       QueryProjection.forIds(current.allCoveredIds) ++ items
-    case ReturnItems(_, items) =>
+    case ReturnItems(_, items, _) =>
       items
     case _ =>
       Seq.empty

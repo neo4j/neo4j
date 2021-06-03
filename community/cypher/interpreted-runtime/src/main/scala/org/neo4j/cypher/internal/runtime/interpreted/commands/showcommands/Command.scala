@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-abstract class Command(columns: Set[ShowColumn]) {
+abstract class Command(columns: List[ShowColumn]) {
 
   def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]]
 

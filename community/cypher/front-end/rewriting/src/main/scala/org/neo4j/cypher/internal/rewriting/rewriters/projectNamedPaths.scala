@@ -153,7 +153,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
         val newAcc = subquery.part.treeFold(acc) {
           case query:SingleQuery => innerAcc =>
             val allReturnItems: Seq[ReturnItem] = query.importWith.collect {
-              case With(_, ReturnItems(_, items), _, _, _, _) => items
+              case With(_, ReturnItems(_, items, _), _, _, _, _) => items
             }.getOrElse(Seq[ReturnItem]())
 
             val (pathReturnItems, nonPathReturnItems) = allReturnItems.partition {
