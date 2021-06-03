@@ -773,16 +773,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowIndexes") {
-    assertGood(attach(ShowIndexes(AllIndexes, verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowIndexes(AllIndexes, verbose = true, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("allIndexes, allColumns")), Set.empty))
 
-    assertGood(attach(ShowIndexes(BtreeIndexes, verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowIndexes(BtreeIndexes, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("btreeIndexes, defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowIndexes(FulltextIndexes, verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowIndexes(FulltextIndexes, verbose = true, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("fulltextIndexes, allColumns")), Set.empty))
 
-    assertGood(attach(ShowIndexes(LookupIndexes, verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowIndexes(LookupIndexes, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("lookupIndexes, defaultColumns")), Set.empty))
   }
 
@@ -886,44 +886,44 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowConstraints") {
-    assertGood(attach(ShowConstraints(constraintType = AllConstraints, verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = AllConstraints, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("allConstraints, defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowConstraints(constraintType = UniqueConstraints, verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = UniqueConstraints, verbose = true, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("uniquenessConstraints, allColumns")), Set.empty))
 
-    assertGood(attach(ShowConstraints(constraintType = NodeKeyConstraints, verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = NodeKeyConstraints, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeKeyConstraints, defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowConstraints(constraintType = ExistsConstraints(NewSyntax), verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = ExistsConstraints(NewSyntax), verbose = true, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("existenceConstraints, allColumns")), Set.empty))
 
-    assertGood(attach(ShowConstraints(constraintType = NodeExistsConstraints(), verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = NodeExistsConstraints(), verbose = false, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeExistenceConstraints, defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowConstraints(constraintType = RelExistsConstraints(), verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = RelExistsConstraints(), verbose = true, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("relationshipExistenceConstraints, allColumns")), Set.empty))
   }
 
   test("ShowProcedures") {
-    assertGood(attach(ShowProcedures(None, verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowProcedures(None, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowProcedures", NoChildren, Seq(details("proceduresForUser(all), defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowProcedures(Some(CurrentUser), verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowProcedures(Some(CurrentUser), verbose = true, List.empty), 1.0),
       planDescription(id, "ShowProcedures", NoChildren, Seq(details("proceduresForUser(current), allColumns")), Set.empty))
 
-    assertGood(attach(ShowProcedures(Some(User("foo")), verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowProcedures(Some(User("foo")), verbose = false, List.empty), 1.0),
       planDescription(id, "ShowProcedures", NoChildren, Seq(details("proceduresForUser(foo), defaultColumns")), Set.empty))
   }
 
   test("ShowFunctions") {
-    assertGood(attach(ShowFunctions(AllFunctions, None, verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowFunctions(AllFunctions, None, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowFunctions", NoChildren, Seq(details("allFunctions, functionsForUser(all), defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowFunctions(BuiltInFunctions, Some(CurrentUser), verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowFunctions(BuiltInFunctions, Some(CurrentUser), verbose = true, List.empty), 1.0),
       planDescription(id, "ShowFunctions", NoChildren, Seq(details("builtInFunctions, functionsForUser(current), allColumns")), Set.empty))
 
-    assertGood(attach(ShowFunctions(UserDefinedFunctions, Some(User("foo")), verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowFunctions(UserDefinedFunctions, Some(User("foo")), verbose = false, List.empty), 1.0),
       planDescription(id, "ShowFunctions", NoChildren, Seq(details("userDefinedFunctions, functionsForUser(foo), defaultColumns")), Set.empty))
   }
 

@@ -44,7 +44,7 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
 // SHOW [ALL | BUILT IN | USER DEFINED] FUNCTION[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
-case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, columns: Set[ShowColumn]) extends Command(columns) {
+case class ShowFunctionsCommand(functionType: ShowFunctionType, executableBy: Option[ExecutableBy], verbose: Boolean, columns: List[ShowColumn]) extends Command(columns) {
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val isCommunity = state.rowFactory.isInstanceOf[CommunityCypherRowFactory]
     val (privileges, systemGraph) =

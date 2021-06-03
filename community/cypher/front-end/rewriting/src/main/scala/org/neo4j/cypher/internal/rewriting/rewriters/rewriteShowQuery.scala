@@ -71,22 +71,35 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     // Just a single command clause (with or without WHERE)
     case (commandClause: CommandClause) :: Nil => rewrittenClause ++ rewriteWithYieldAndReturn(commandClause, commandClause.where)
     // Command clause with only a YIELD
-    case (c: CommandClause) :: (yieldClause: Yield) :: Nil => {
-      rewrittenClause :+ c :+ yieldClause :+ returnClause(lastPosition(yieldClause))
-    }
+    case (commandClause: CommandClause) :: (yieldClause: Yield) :: Nil =>
+      rewrittenClause :+ commandClause :+ yieldClause :+ returnClause(lastPosition(yieldClause), getDefaultOrderFromYieldOrCommand(yieldClause, commandClause))
+    // Command clause with YIELD and RETURN (to fix column order)
+    case (commandClause: CommandClause) :: (yieldClause: Yield) :: (returnClause: Return) :: Nil =>
+      rewrittenClause :+ commandClause :+ yieldClause :+ updateDefaultOrderOnReturn(returnClause, yieldClause, commandClause)
     case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
     case Nil => rewrittenClause
+  }
+
+  private def getDefaultOrderFromYieldOrCommand(yieldClause: Yield, commandClause: CommandClause) =
+    if (yieldClause.returnItems.includeExisting) yieldClause.returnItems.defaultOrderOnColumns.getOrElse(commandClause.unfilteredColumns.columns.map(_.name))
+    else yieldClause.returnItems.items.map(_.name).toList
+
+  private def updateDefaultOrderOnReturn(returnClause: Return, yieldClause: Yield, commandClause: CommandClause) = {
+    val defaultOrderOnColumns =
+      if (returnClause.returnItems.includeExisting) returnClause.returnItems.defaultOrderOnColumns.getOrElse(getDefaultOrderFromYieldOrCommand(yieldClause, commandClause))
+      else returnClause.returnItems.items.map(_.name).toList
+    returnClause.withReturnItems(returnClause.returnItems.withDefaultOrderOnColumns(defaultOrderOnColumns))
   }
 
   private def rewriteWithYieldAndReturn(commandClause: CommandClause, where: Option[Where]): List[Clause] = {
     List(
       commandClause.moveWhereToYield,
       Yield(ReturnItems(includeExisting = true, Seq())(commandClause.position), None, None, None, where)(commandClause.position.newUniquePos()),
-      returnClause(commandClause.position)
+      returnClause(commandClause.position, commandClause.unfilteredColumns.columns.map(_.name))
     )
   }
 
-  private def returnClause(position: InputPosition): Return = Return(ReturnItems(includeExisting = true, Seq())(position))(position.newUniquePos())
+  private def returnClause(position: InputPosition, defaultOrderOnColumns: List[String]): Return = Return(ReturnItems(includeExisting = true, Seq(), Some(defaultOrderOnColumns))(position))(position.newUniquePos())
 
   private def lastPosition(y: Yield): InputPosition = {
     y.treeFold(InputPosition.NONE) {

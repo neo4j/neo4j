@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 
 abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = idGen) {
 
-  def defaultColumns: Set[ShowColumn]
+  def defaultColumns: List[ShowColumn]
 
   override def usedVariables: Set[String] = Set.empty
 
@@ -33,5 +33,5 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
   // Always the first leaf plan, so arguments is always empty
   override def argumentIds: Set[String] = Set.empty
 
-  override def availableSymbols: Set[String] = defaultColumns.map(_.variable.name)
+  override def availableSymbols: Set[String] = defaultColumns.map(_.variable.name).toSet
 }

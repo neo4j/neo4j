@@ -458,11 +458,11 @@ sealed trait CommandClause extends Clause with SemanticAnalysisTooling {
 }
 
 object CommandClause {
-  def unapply(cc: CommandClause): Option[(Set[ShowColumn], Option[Where])] = Some((cc.unfilteredColumns.columns, cc.where))
+  def unapply(cc: CommandClause): Option[(List[ShowColumn], Option[Where])] = Some((cc.unfilteredColumns.columns, cc.where))
 }
 
-case class DefaultOrAllShowColumns(useAllColumns: Boolean, brief: Set[ShowColumn], verbose: Set[ShowColumn]) {
-  def columns: Set[ShowColumn] = if (useAllColumns) brief ++ verbose else brief
+case class DefaultOrAllShowColumns(useAllColumns: Boolean, private val brief: List[ShowColumn], private val verbose: List[ShowColumn]) {
+  def columns: List[ShowColumn] = if (useAllColumns) brief ++ verbose else brief
 }
 
 // For a query to be allowed to run on system it needs to consist of:
@@ -480,7 +480,7 @@ case class ShowIndexesClause(unfilteredColumns: DefaultOrAllShowColumns, indexTy
 
 object ShowIndexesClause {
   def apply(indexType: ShowIndexType, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowIndexesClause = {
-    val briefCols = Set(
+    val briefCols = List(
       ShowColumn("id", CTInteger)(position),
       ShowColumn("name")(position),
       ShowColumn("state")(position),
@@ -492,7 +492,7 @@ object ShowIndexesClause {
       ShowColumn("properties", CTList(CTString))(position),
       ShowColumn("indexProvider")(position)
     )
-    val verboseCols = Set(
+    val verboseCols = List(
       ShowColumn("options", CTMap)(position),
       ShowColumn("failureMessage")(position),
       ShowColumn("createStatement")(position)
@@ -511,7 +511,7 @@ case class ShowConstraintsClause(unfilteredColumns: DefaultOrAllShowColumns, con
 
 object ShowConstraintsClause {
   def apply(constraintType: ShowConstraintType, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowConstraintsClause = {
-    val briefCols = Set(
+    val briefCols = List(
       ShowColumn("id", CTInteger)(position),
       ShowColumn("name")(position),
       ShowColumn("type")(position),
@@ -520,7 +520,7 @@ object ShowConstraintsClause {
       ShowColumn("properties", CTList(CTString))(position),
       ShowColumn("ownedIndexId", CTInteger)(position)
     )
-    val verboseCols = Set(
+    val verboseCols = List(
       ShowColumn("options", CTMap)(position),
       ShowColumn("createStatement")(position)
     )
@@ -538,13 +538,13 @@ case class ShowProceduresClause(unfilteredColumns: DefaultOrAllShowColumns, exec
 
 object ShowProceduresClause {
   def apply(executable: Option[ExecutableBy], where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowProceduresClause = {
-    val briefCols = Set(
+    val briefCols = List(
       ShowColumn("name")(position),
       ShowColumn("description")(position),
       ShowColumn("mode")(position),
       ShowColumn("worksOnSystem", CTBoolean)(position),
     )
-    val verboseCols = Set(
+    val verboseCols = List(
       ShowColumn("signature")(position),
       ShowColumn("argumentDescription", CTList(CTMap))(position),
       ShowColumn("returnDescription", CTList(CTMap))(position),
@@ -567,12 +567,12 @@ case class ShowFunctionsClause(unfilteredColumns: DefaultOrAllShowColumns, funct
 
 object ShowFunctionsClause {
   def apply(functionType: ShowFunctionType, executable: Option[ExecutableBy], where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowFunctionsClause = {
-    val briefCols = Set(
+    val briefCols = List(
       ShowColumn("name")(position),
       ShowColumn("category")(position),
       ShowColumn("description")(position),
     )
-    val verboseCols = Set(
+    val verboseCols = List(
       ShowColumn("signature")(position),
       ShowColumn("isBuiltIn", CTBoolean)(position),
       ShowColumn("argumentDescription", CTList(CTMap))(position),
@@ -940,7 +940,7 @@ case class Return(distinct: Boolean,
 
   private def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
     returnItems match {
-      case ReturnItems(star, _) if star && s.currentScope.isEmpty =>
+      case ReturnItems(star, _, _) if star && s.currentScope.isEmpty =>
         Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
       case _ =>
         Seq.empty
