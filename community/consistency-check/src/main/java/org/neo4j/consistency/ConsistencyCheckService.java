@@ -27,6 +27,7 @@ import java.util.Date;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
@@ -202,6 +203,29 @@ public class ConsistencyCheckService
             final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
+        DebugContext debugContext = new DebugContext()
+        {
+            @Override
+            public boolean debugEnabled()
+            {
+                return verbose;
+            }
+
+            @Override
+            public void debug( String message )
+            {
+                System.out.println( message );
+            }
+        };
+        return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, debugContext, reportDir,
+                consistencyFlags, pageCacheTracer, memoryTracker );
+    }
+
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
+            ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
+            DebugContext debugContext, File reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            throws ConsistencyCheckIncompleteException
+    {
         assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
         Log log = logProvider.getLog( getClass() );
         config.set( GraphDatabaseSettings.read_only, true );
@@ -258,7 +282,7 @@ public class ConsistencyCheckService
             Statistics statistics;
             StoreAccess storeAccess;
             AccessStatistics stats = new AccessStatistics();
-            if ( verbose )
+            if ( debugContext.debugEnabled() )
             {
                 statistics = new VerboseStatistics( stats, new DefaultCounts( numberOfThreads ), log );
                 storeAccess = new AccessStatsKeepingStoreAccess( neoStores, stats );
@@ -272,7 +296,8 @@ public class ConsistencyCheckService
             DirectStoreAccess stores =
                     new DirectStoreAccess( storeAccess, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
                             idGeneratorFactory );
-            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
+            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, debugContext,
+                    NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsManager, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );
         }
         finally

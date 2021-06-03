@@ -29,6 +29,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.Statistics;
@@ -142,8 +143,8 @@ public class DetectAllRelationshipInconsistenciesIT
 
             int threads = random.intBetween( 2, 10 );
             FullCheck checker =
-                    new FullCheck( ProgressMonitorFactory.NONE, Statistics.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(), false,
-                            NodeBasedMemoryLimiter.DEFAULT );
+                    new FullCheck( ProgressMonitorFactory.NONE, Statistics.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(),
+                            DebugContext.NO_DEBUG, NodeBasedMemoryLimiter.DEFAULT );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
             ConsistencySummaryStatistics summary = checker.execute( resolver.resolveDependency( PageCache.class ), directStoreAccess, () -> counts,
                     PageCacheTracer.NULL, INSTANCE, logProvider.getLog( FullCheck.class ) );

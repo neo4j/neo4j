@@ -87,13 +87,15 @@ public class IndexAccessors implements Closeable
                         // - populating indexes will be rebuilt on next startup
                         // - failed indexes have to be dropped by the user anyways
                         IndexDescriptor indexDescriptor = indexes.next();
+                        IndexProvider indexProvider = provider( providers, indexDescriptor );
+                        indexDescriptor = indexProvider.completeConfiguration( indexDescriptor );
                         if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
                         {
                             notOnlineIndexRules.add( indexDescriptor );
                         }
                         else
                         {
-                            if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorTracer ) )
+                            if ( InternalIndexState.ONLINE == indexProvider.getInitialState( indexDescriptor, cursorTracer ) )
                             {
                                 onlineIndexRules.add( indexDescriptor );
                             }

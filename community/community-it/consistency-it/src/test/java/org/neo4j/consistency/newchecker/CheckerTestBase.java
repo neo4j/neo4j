@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -234,7 +235,8 @@ class CheckerTestBase
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
         context = new CheckerContext( neoStores, indexAccessors, labelIndex, relationshipTypeIndex, execution, reporter, cacheAccess, tokenHolders,
-                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, false, consistencyFlags );
+                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, DebugContext.NO_DEBUG,
+                consistencyFlags );
         context.initialize();
         return context;
     }
