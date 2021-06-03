@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -227,7 +228,7 @@ public class FullCheckTokenIndexIT
         IndexAccessors.IndexAccessorLookup indexAccessorLookup = new LookupAccessorsFromRunningDb( indexingService );
 
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), ConsistencyFlags.DEFAULT,
-                config, false, NodeBasedMemoryLimiter.DEFAULT );
+                config, DebugContext.NO_DEBUG, NodeBasedMemoryLimiter.DEFAULT );
         return checker.execute( pageCache, directStoreAccess, () -> (CountsStore) countsStore, () -> groupDegreesStore, indexAccessorLookup,
                 PageCacheTracer.NULL, INSTANCE, logProvider.getLog( "test" ) );
     }

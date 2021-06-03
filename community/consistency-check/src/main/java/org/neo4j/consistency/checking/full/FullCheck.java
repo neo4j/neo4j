@@ -26,6 +26,7 @@ import java.util.List;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.checker.RecordStorageConsistencyChecker;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -56,7 +57,7 @@ public class FullCheck
 {
     private static final String INDEX_STRUCTURE_CHECKER_TAG = "indexStructureChecker";
     private final Config config;
-    private final boolean verbose;
+    private final DebugContext debugContext;
     private final NodeBasedMemoryLimiter.Factory memoryLimit;
     private final ProgressMonitorFactory progressFactory;
     private final IndexSamplingConfig samplingConfig;
@@ -64,14 +65,14 @@ public class FullCheck
     private final ConsistencyFlags flags;
 
     public FullCheck( ProgressMonitorFactory progressFactory, int threads,
-                      ConsistencyFlags consistencyFlags, Config config, boolean verbose, NodeBasedMemoryLimiter.Factory memoryLimit )
+                      ConsistencyFlags consistencyFlags, Config config, DebugContext debugContext, NodeBasedMemoryLimiter.Factory memoryLimit )
     {
         this.threads = threads;
         this.progressFactory = progressFactory;
         this.flags = consistencyFlags;
         this.samplingConfig = new IndexSamplingConfig( config );
         this.config = config;
-        this.verbose = verbose;
+        this.debugContext = debugContext;
         this.memoryLimit = memoryLimit;
     }
 
@@ -153,7 +154,7 @@ public class FullCheck
 
             try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
                     directStoreAccess.nativeStores(), countsStore,
-                    indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
+                    indexes, report, progressFactory, config, threads, debugContext, flags, memoryLimit,
                     pageCacheTracer, memoryTracker ) )
             {
                 checker.check();

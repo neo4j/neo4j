@@ -27,6 +27,7 @@ import java.util.Date;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -194,7 +195,30 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
-            final boolean verbose, Path reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            boolean verbose, Path reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            throws ConsistencyCheckIncompleteException
+    {
+        DebugContext debugContext = new DebugContext()
+        {
+            @Override
+            public boolean debugEnabled()
+            {
+                return verbose;
+            }
+
+            @Override
+            public void debug( String message )
+            {
+                System.out.println( message );
+            }
+        };
+        return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, debugContext, reportDir,
+                consistencyFlags, pageCacheTracer, memoryTracker );
+    }
+
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
+            ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
+            DebugContext debugContext, Path reportDir, ConsistencyFlags consistencyFlags, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
         assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
@@ -248,7 +272,7 @@ public class ConsistencyCheckService
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
             DirectStoreAccess stores = new DirectStoreAccess( neoStores, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
-            FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
+            FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, debugContext, NodeBasedMemoryLimiter.DEFAULT );
             summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker,
                     new DuplicatingLog( log, reportLog ) );
         }

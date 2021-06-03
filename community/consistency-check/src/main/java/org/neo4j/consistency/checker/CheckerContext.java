@@ -65,8 +65,8 @@ class CheckerContext
     final long highNodeId;
     final TokenIndexAccessor nodeLabelIndex;
     final TokenIndexAccessor relationshipTypeIndex;
-    private final boolean debug;
     private final AtomicBoolean cancelled;
+    private final DebugContext debugContext;
 
     CheckerContext(
             NeoStores neoStores,
@@ -82,7 +82,7 @@ class CheckerContext
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
-            boolean debug,
+            DebugContext debug,
             ConsistencyFlags consistencyFlags )
     {
         this( neoStores, indexAccessors, execution, reporter, cacheAccess, tokenHolders, recordLoader,
@@ -103,7 +103,7 @@ class CheckerContext
             PageCache pageCache,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
-            boolean debug,
+            DebugContext debug,
             AtomicBoolean cancelled,
             ConsistencyFlags consistencyFlags )
     {
@@ -112,7 +112,7 @@ class CheckerContext
         this.indexAccessors = indexAccessors;
         this.nodeLabelIndex = indexAccessors.nodeLabelIndex();
         this.relationshipTypeIndex = indexAccessors.relationshipTypeIndex();
-        this.debug = debug;
+        this.debugContext = debug;
         this.consistencyFlags = consistencyFlags;
         this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId(), pageCacheTracer );
         this.execution = execution;
@@ -133,14 +133,15 @@ class CheckerContext
     CheckerContext withoutReporting()
     {
         return new CheckerContext( neoStores, indexAccessors, execution, ConsistencyReport.NO_REPORT, cacheAccess,
-                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, cancelled, consistencyFlags );
+                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debugContext,
+                cancelled, consistencyFlags );
     }
 
     void initialize() throws Exception
     {
         debug( limiter.toString() );
         timeOperation( "Initialize index sizes", indexSizes::initialize, false );
-        if ( debug )
+        if ( debugContext.debugEnabled() )
         {
             debugPrintIndexes( indexSizes.largeIndexes( EntityType.NODE ), "considered large node indexes" );
             debugPrintIndexes( indexSizes.smallIndexes( EntityType.NODE ), "considered small node indexes" );
@@ -208,9 +209,9 @@ class CheckerContext
 
     private void debug( boolean linePadded, String format, Object... params )
     {
-        if ( debug )
+        if ( debugContext.debugEnabled() )
         {
-            System.out.println( String.format( (linePadded ? "%n" : "") + format, params ) );
+            debugContext.debug( String.format( (linePadded ? "%n" : "") + format, params ) );
         }
     }
 

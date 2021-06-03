@@ -81,7 +81,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     public RecordStorageConsistencyChecker( PageCache pageCache, NeoStores neoStores, CountsStore counts,
             IndexAccessors indexAccessors, InconsistencyReport report,
-            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, boolean debug, ConsistencyFlags consistencyFlags,
+            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, DebugContext debug, ConsistencyFlags consistencyFlags,
             NodeBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         this.pageCache = pageCache;

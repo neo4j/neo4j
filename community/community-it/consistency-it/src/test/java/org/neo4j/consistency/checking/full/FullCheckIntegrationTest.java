@@ -26,6 +26,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,6 +49,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.RecordType;
+import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
@@ -403,9 +406,12 @@ public class FullCheckIntegrationTest
         }
     }
 
-    @Test
-    void shouldReportIndexInconsistencies() throws Exception
+    @ParameterizedTest
+    @EnumSource( IndexSize.class )
+    void shouldReportIndexInconsistencies( IndexSize indexSize ) throws Exception
     {
+        indexSize.createAdditionalData( fixture );
+
         // given
         for ( Long indexedNodeId : indexedNodes )
         {
@@ -535,9 +541,12 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportNodesThatAreNotIndexed() throws Exception
+    @ParameterizedTest
+    @EnumSource( IndexSize.class )
+    void shouldReportNodesThatAreNotIndexed( IndexSize indexSize ) throws Exception
     {
+        indexSize.createAdditionalData( fixture );
+
         // given
         Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
         while ( indexDescriptorIterator.hasNext() )
@@ -565,26 +574,17 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportNodesWithDuplicatePropertyValueInUniqueIndex() throws Exception
+    @ParameterizedTest
+    @EnumSource( IndexSize.class )
+    void shouldReportNodesWithDuplicatePropertyValueInUniqueIndex( IndexSize indexSize ) throws Exception
     {
         // given
-        fixture.apply( new GraphStoreFixture.Transaction()
-        {
-            @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                    GraphStoreFixture.IdGenerator next )
-            {
-                for ( int i = 0; i < 50; i++ )
-                {
-                    NodeRecord node = new NodeRecord( next.node() ).initialize( false, -1, false, -1, 0 );
-                    node.setInUse( true );
-                    tx.create( node );
-                }
-            }
-        } );
+        indexSize.createAdditionalData( fixture );
 
         Iterator<IndexDescriptor> indexRuleIterator = getValueIndexDescriptors();
+        // Create a node so the duplicate in the index refers to a valid node
+        // (IndexChecker only reports the duplicate if it refers to a node id lower than highId)
+        long nodeId = createOneNode();
         while ( indexRuleIterator.hasNext() )
         {
             IndexDescriptor indexRule = indexRuleIterator.next();
@@ -594,7 +594,7 @@ public class FullCheckIntegrationTest
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 // There is already another node (created in generateInitialData()) that has this value
-                updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
+                updater.process( IndexEntryUpdate.add( nodeId, indexRule.schema(), values( indexRule ) ) );
             }
             accessor.force( NULL );
         }
@@ -604,8 +604,18 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
-                   .verify( RecordType.INDEX, 3 ) // the index entries pointing to non-existent node 42
+                   .verify( RecordType.INDEX, 3 ) // the index entries pointing to node that should not be in index
                    .andThatsAllFolks();
+    }
+
+    private long createOneNode()
+    {
+        final AtomicLong id = new AtomicLong();
+        fixture.apply( tx ->
+        {
+            id.set( tx.createNode().getId() );
+        } );
+        return id.get();
     }
 
     private static Value[] values( IndexDescriptor indexRule )
@@ -2568,7 +2578,8 @@ public class FullCheckIntegrationTest
     {
         final var consistencyFlags = new ConsistencyFlags( true, true, true );
         FullCheck checker =
-                new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), consistencyFlags, config, false, memoryLimit() );
+                new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), consistencyFlags, config, DebugContext.NO_DEBUG,
+                        memoryLimit() );
         return checker.execute( pageCache, stores, counts, groupDegrees, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
                 logProvider.getLog( "test" ) );
     }
@@ -2932,5 +2943,38 @@ public class FullCheckIntegrationTest
     {
         record.setInUse( false );
         return record;
+    }
+
+    /**
+     * Indexes are consistency checked in different ways depending on their size.
+     * This can be used to make the indexes created in the setup appear large or small.
+     */
+    private enum IndexSize
+    {
+        SMALL_INDEX
+                {
+                    @Override
+                    public void createAdditionalData( GraphStoreFixture fixture )
+                    {
+                        fixture.apply( tx ->
+                        {
+                            // Create more nodes so our indexes will be considered to be small indexes (less than 5% of nodes in index).
+                            // 60 to be sure to still be considered a small index for tests that add one more node to the index.
+                            for ( int i = 0; i < 60; i++ )
+                            {
+                                tx.createNode();
+                            }
+                        } );
+                    }
+                },
+        LARGE_INDEX
+                {
+                    @Override
+                    public void createAdditionalData( GraphStoreFixture fixture )
+                    {
+                    }
+                };
+
+        public abstract void createAdditionalData( GraphStoreFixture fixture );
     }
 }
