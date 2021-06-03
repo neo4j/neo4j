@@ -191,7 +191,7 @@ case class False()(val position: InputPosition) extends BooleanLiteral {
   val value: java.lang.Boolean = false
   override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeBoolean(false)
   override def asCanonicalStringVal = "false"
-  override def asSensitiveLiteral: Literal with SensitiveLiteral = new True()(position) with SensitiveLiteral {
+  override def asSensitiveLiteral: Literal with SensitiveLiteral = new False()(position) with SensitiveLiteral {
     override def literalLength: Option[Int] = Some(5)
   }
 }
