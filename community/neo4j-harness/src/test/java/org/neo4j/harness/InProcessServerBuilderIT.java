@@ -296,9 +296,7 @@ class InProcessServerBuilderIT
 
         RuntimeException exception =
                 assertThrows( RuntimeException.class, () -> getTestBuilder( directory.homeDir() ).copyFrom( notADirectory ).build() );
-        Throwable cause = exception.getCause();
-        assertTrue( cause instanceof IOException );
-        assertTrue( cause.getMessage().contains( "exists but is not a directory" ) );
+        assertThat( exception ).hasMessageContaining( " is not a directory" );
     }
 
     @Test
