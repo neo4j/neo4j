@@ -79,6 +79,7 @@
     <module>fabric</module>
     <module>buffers</module>
     <module>capabilities</module>
+    <module>storage-engine-util</module>
   </modules>
 
   <licenses>
