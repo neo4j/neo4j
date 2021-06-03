@@ -28,6 +28,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckDecorator;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -79,7 +80,7 @@ public class FullCheck
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
     private final boolean useExperimentalChecker;
     private final Config config;
-    private final boolean verbose;
+    private final DebugContext debugContext;
     private final NodeBasedMemoryLimiter.Factory memoryLimit;
     private final ProgressMonitorFactory progressFactory;
     private final IndexSamplingConfig samplingConfig;
@@ -88,7 +89,7 @@ public class FullCheck
     private ConsistencyFlags flags;
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
-                      ConsistencyFlags consistencyFlags, Config config, boolean verbose, NodeBasedMemoryLimiter.Factory memoryLimit )
+                      ConsistencyFlags consistencyFlags, Config config, DebugContext debugContext, NodeBasedMemoryLimiter.Factory memoryLimit )
     {
         this.statistics = statistics;
         this.threads = threads;
@@ -97,7 +98,7 @@ public class FullCheck
         this.samplingConfig = new IndexSamplingConfig( config );
         this.config = config;
         this.useExperimentalChecker = config.get( experimental_consistency_checker );
-        this.verbose = verbose;
+        this.debugContext = debugContext;
         this.memoryLimit = memoryLimit;
     }
 
@@ -201,7 +202,7 @@ public class FullCheck
             {
                 try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
                         directStoreAccess.nativeStores().getRawNeoStores(), countsStore, directStoreAccess.labelScanStore(),
-                        directStoreAccess.relationshipTypeScanStore(), indexes, report, progressFactory, config, threads, verbose, flags, memoryLimit,
+                        directStoreAccess.relationshipTypeScanStore(), indexes, report, progressFactory, config, threads, debugContext, flags, memoryLimit,
                         pageCacheTracer, memoryTracker ) )
                 {
                     checker.check();

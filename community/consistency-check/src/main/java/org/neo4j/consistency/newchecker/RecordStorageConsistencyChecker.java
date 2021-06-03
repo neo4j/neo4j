@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -84,7 +85,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
 
     public RecordStorageConsistencyChecker( PageCache pageCache, NeoStores neoStores, CountsStore counts, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, IndexAccessors indexAccessors, InconsistencyReport report,
-            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, boolean debug, ConsistencyFlags consistencyFlags,
+            ProgressMonitorFactory progressFactory, Config config, int numberOfThreads, DebugContext debug, ConsistencyFlags consistencyFlags,
             NodeBasedMemoryLimiter.Factory memoryLimit, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         this.pageCache = pageCache;

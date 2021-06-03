@@ -326,6 +326,12 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
+        public IndexEntriesReader[] newAllIndexEntriesReader( int partitions, PageCursorTracer cursorTracer )
+        {
+            return delegate.newAllIndexEntriesReader( partitions, cursorTracer );
+        }
+
+        @Override
         public ResourceIterator<Path> snapshotFiles()
         {
             return delegate.snapshotFiles();

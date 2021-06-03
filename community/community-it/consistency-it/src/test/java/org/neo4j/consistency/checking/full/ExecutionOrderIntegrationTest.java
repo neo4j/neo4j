@@ -32,6 +32,7 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.consistency.checking.DebugContext;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.newchecker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -106,7 +107,7 @@ public class ExecutionOrderIntegrationTest
         int threads = defaultConsistencyCheckThreadsNumber();
 
         FullCheck singlePass =
-                new FullCheck( ProgressMonitorFactory.NONE, Statistics.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(), false,
+                new FullCheck( ProgressMonitorFactory.NONE, Statistics.NONE, threads, ConsistencyFlags.DEFAULT, getTuningConfiguration(), DebugContext.NO_DEBUG,
                         NodeBasedMemoryLimiter.DEFAULT );
 
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
