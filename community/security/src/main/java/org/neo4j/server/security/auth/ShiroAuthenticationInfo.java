@@ -63,6 +63,11 @@ public class ShiroAuthenticationInfo extends SimpleAuthenticationInfo
         return authenticationResult;
     }
 
+    public void setAuthenticationResult( AuthenticationResult result )
+    {
+        authenticationResult = result;
+    }
+
     public void addThrowable( Throwable t )
     {
         throwables.add( t );
