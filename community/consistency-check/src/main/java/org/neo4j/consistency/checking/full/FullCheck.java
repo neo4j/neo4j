@@ -172,10 +172,7 @@ public class FullCheck
         {
             if ( flags.isCheckIndexStructure() )
             {
-                ConsistencyCheckable labelScanStore = getLabelScanStructure( indexes );
-                ConsistencyCheckable relationshipTypeIndex = getRelationshipTypeIndex( indexes );
-
-                consistencyCheckIndexStructure( labelScanStore, relationshipTypeIndex,
+                consistencyCheckIndexStructure(
                         directStoreAccess.indexStatisticsStore(), countsStore, groupDegreesStore, indexes, allIdGenerators( directStoreAccess ), report,
                         progressFactory, pageCacheTracer );
             }
@@ -194,26 +191,6 @@ public class FullCheck
         }
     }
 
-    private ConsistencyCheckable getRelationshipTypeIndex( IndexAccessors indexes )
-    {
-        ConsistencyCheckable relationshipTypeIndex = indexes.relationshipTypeIndex();
-        if ( relationshipTypeIndex == null )
-        {
-            relationshipTypeIndex = ( reporterFactory, cursorContext ) -> true;
-        }
-        return relationshipTypeIndex;
-    }
-
-    private ConsistencyCheckable getLabelScanStructure( IndexAccessors indexes )
-    {
-        ConsistencyCheckable labelScanStore = indexes.nodeLabelIndex();
-        if ( labelScanStore == null )
-        {
-            labelScanStore = ( reporterFactory, cursorContext ) -> true;
-        }
-        return labelScanStore;
-    }
-
     private static List<IdGenerator> allIdGenerators( DirectStoreAccess directStoreAccess )
     {
         List<IdGenerator> idGenerators = new ArrayList<>();
@@ -221,8 +198,7 @@ public class FullCheck
         return idGenerators;
     }
 
-    private static void consistencyCheckIndexStructure( ConsistencyCheckable labelScanStore,
-            ConsistencyCheckable relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
+    private static void consistencyCheckIndexStructure( IndexStatisticsStore indexStatisticsStore,
             CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, IndexAccessors indexes,
             List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory, PageCacheTracer pageCacheTracer )
     {
@@ -230,11 +206,11 @@ public class FullCheck
         {
             final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
             long additionalCount = 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
-            if ( indexes.nodeLabelIndex() != null )
+            if ( hasNodeLabelIndex( indexes ) )
             {
                 additionalCount += 1;
             }
-            if ( indexes.relationshipTypeIndex() != null )
+            if ( hasRelationshipTypeIndex( indexes ) )
             {
                 additionalCount += 1;
             }
@@ -247,7 +223,7 @@ public class FullCheck
             var listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
             listener.started();
 
-            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, relationshipTypeScanStore, indexStatisticsStore, countsStore, groupDegreesStore,
+            consistencyCheckNonSchemaIndexes( report, listener, indexStatisticsStore, countsStore, groupDegreesStore,
                     idGenerators, cursorContext );
             consistencyCheckSchemaIndexes( indexes, report, listener, cursorContext );
             listener.done();
@@ -255,12 +231,9 @@ public class FullCheck
     }
 
     private static void consistencyCheckNonSchemaIndexes( InconsistencyReport report, ProgressListener listener,
-            ConsistencyCheckable labelScanStore, ConsistencyCheckable relationshipTypeScanStore,
             IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, List<IdGenerator> idGenerators,
             CursorContext cursorContext )
     {
-        consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT, cursorContext );
-        consistencyCheckSingleCheckable( report, listener, relationshipTypeScanStore, RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorContext );
         consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS, cursorContext );
         consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS, cursorContext );
         if ( hasGroupDegreesStore( groupDegreesStore ) )
@@ -290,6 +263,15 @@ public class FullCheck
     private static void consistencyCheckSchemaIndexes( IndexAccessors indexes, InconsistencyReport report, ProgressListener listener,
             CursorContext cursorContext )
     {
+        if ( hasNodeLabelIndex( indexes ) )
+        {
+            consistencyCheckSingleCheckable( report, listener, indexes.nodeLabelIndex(), RecordType.LABEL_SCAN_DOCUMENT, cursorContext );
+        }
+        if ( hasRelationshipTypeIndex( indexes ) )
+        {
+            consistencyCheckSingleCheckable( report, listener, indexes.relationshipTypeIndex(), RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorContext );
+        }
+
         List<IndexDescriptor> rulesToRemove = new ArrayList<>();
         for ( IndexDescriptor onlineRule : indexes.onlineRules() )
         {
@@ -312,5 +294,15 @@ public class FullCheck
     private static boolean hasGroupDegreesStore( RelationshipGroupDegreesStore groupDegreesStore )
     {
         return groupDegreesStore != null;
+    }
+
+    private static boolean hasNodeLabelIndex( IndexAccessors indexes )
+    {
+        return indexes.nodeLabelIndex() != null;
+    }
+
+    private static boolean hasRelationshipTypeIndex( IndexAccessors indexes )
+    {
+        return indexes.relationshipTypeIndex() != null;
     }
 }
