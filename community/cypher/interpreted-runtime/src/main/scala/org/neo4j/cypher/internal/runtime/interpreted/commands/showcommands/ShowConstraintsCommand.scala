@@ -77,7 +77,7 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
 
     val rows = sortedRelevantConstraints.map {
       case (constraintDescriptor: ConstraintDescriptor, constraintInfo: ConstraintInfo) =>
-        val escapedName = escapeBackticks(constraintDescriptor.getName)
+        val name = constraintDescriptor.getName
         val labels = constraintInfo.labelsOrTypes
         val properties = constraintInfo.properties
         val isIndexBacked = constraintDescriptor.isIndexBackedConstraint
@@ -88,7 +88,7 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
           // The id of the constraint
           "id" -> Values.longValue(constraintDescriptor.getId),
           // Name of the constraint, for example "myConstraint"
-          "name" -> Values.stringValue(escapedName),
+          "name" -> Values.stringValue(name),
           // The ConstraintType of this constraint, one of "UNIQUENESS", "NODE_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
           "type" -> Values.stringValue(constraintType.output),
           // Type of entities this constraint represents, either "NODE" or "RELATIONSHIP"
@@ -103,15 +103,15 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
         if (verbose) {
           val (options, createString) = if (isIndexBacked) {
             val index = constraintInfo.maybeIndex.getOrElse(
-              throw new IllegalStateException(s"Expected to find an index for index backed constraint $escapedName")
+              throw new IllegalStateException(s"Expected to find an index for index backed constraint $name")
             )
             val providerName = index.getIndexProvider.name
             val indexConfig = index.getIndexConfig
             val options: MapValue = extractOptionsMap(providerName, indexConfig)
-            val createWithOptions = createConstraintStatement(escapedName, constraintType, labels, properties, Some(providerName), Some(indexConfig))
+            val createWithOptions = createConstraintStatement(name, constraintType, labels, properties, Some(providerName), Some(indexConfig))
             (options, createWithOptions)
           } else {
-            val createWithoutOptions = createConstraintStatement(escapedName, constraintType, labels, properties)
+            val createWithoutOptions = createConstraintStatement(name, constraintType, labels, properties)
             (Values.NO_VALUE, createWithoutOptions)
           }
 
@@ -135,21 +135,22 @@ object ShowConstraintsCommand {
                                         providerName: Option[String] = None,
                                         indexConfig: Option[IndexConfig] = None): String = {
     val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+    val escapedName = escapeBackticks(name)
     constraintType match {
       case UniqueConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, UniqueConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $options"
+        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $options"
       case NodeKeyConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, NodeKeyConstraints.prettyPrint)
-        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
+        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
       case _: NodeExistsConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
-        s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NOT NULL"
+        s"CREATE CONSTRAINT `$escapedName` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NOT NULL"
       case _: RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
-        s"CREATE CONSTRAINT `$name` ON ()-[r$labelsOrTypesWithColons]-() ASSERT ($escapedProperties) IS NOT NULL"
+        s"CREATE CONSTRAINT `$escapedName` ON ()-[r$labelsOrTypesWithColons]-() ASSERT ($escapedProperties) IS NOT NULL"
       case _ => throw new IllegalArgumentException(s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command.")
     }
   }

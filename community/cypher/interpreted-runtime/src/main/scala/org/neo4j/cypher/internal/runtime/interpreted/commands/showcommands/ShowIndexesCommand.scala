@@ -86,13 +86,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         val indexType = indexDescriptor.getIndexType
         val isLookupIndex = indexType.equals(IndexType.LOOKUP)
 
-        /*
-         * The create command is the Cypher CREATE INDEX which needs the name to be escaped,
-         * in case it contains special characters.
-        */
         val name = indexDescriptor.getName
-        val escapedName = escapeBackticks(name)
-        val createName = s"`$escapedName`"
 
         val entityType = indexDescriptor.schema.entityType
         val labelsOrTypes = indexInfo.labelsOrTypes
@@ -107,7 +101,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           // The id of the index
           "id" -> Values.longValue(indexDescriptor.getId),
           // Name of the index, for example "myIndex"
-          "name" -> Values.stringValue(escapedName),
+          "name" -> Values.stringValue(name),
           // Current state of the index, one of "ONLINE", "FAILED", "POPULATING"
           "state" -> Values.stringValue(indexStatus.state),
           // % of index population, for example 0.0, 100.0, or 75.1
@@ -132,7 +126,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
             "options" -> optionsValue,
             "failureMessage" -> Values.stringValue(indexStatus.failureMessage),
             "createStatement" -> Values.stringValue(
-              createIndexStatement(createName, indexType, entityType, labelsOrTypes, properties, providerName, indexConfig, indexStatus.maybeConstraint))
+              createIndexStatement(name, indexType, entityType, labelsOrTypes, properties, providerName, indexConfig, indexStatus.maybeConstraint))
           )
         } else {
           briefResult
@@ -154,7 +148,7 @@ object ShowIndexesCommand {
     override final val toString: String = "NONUNIQUE"
   }
 
-  private def createIndexStatement(escapedName: String,
+  private def createIndexStatement(name: String,
                                    indexType: IndexType,
                                    entityType: EntityType,
                                    labelsOrTypes: List[String],
@@ -163,6 +157,7 @@ object ShowIndexesCommand {
                                    indexConfig: IndexConfig,
                                    maybeConstraint: Option[ConstraintDescriptor]): String = {
 
+    val escapedName = s"`${escapeBackticks(name)}`"
     indexType match {
       case IndexType.BTREE =>
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
