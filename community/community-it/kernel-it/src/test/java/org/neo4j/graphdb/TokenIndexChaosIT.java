@@ -31,7 +31,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
@@ -41,17 +40,19 @@ import org.neo4j.test.rule.RandomRule;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.fs.FileUtils.writeAll;
 
 /**
- * Tests functionality around missing or corrupted label scan store index, and that
+ * Tests functionality around missing or corrupted token indexes, and that
  * the database should repair (i.e. rebuild) that automatically and just work.
  */
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
-public class LabelScanStoreChaosIT
+public class TokenIndexChaosIT
 {
     @Inject
     private RandomRule random;
@@ -63,18 +64,31 @@ public class LabelScanStoreChaosIT
     private DbmsController controller;
 
     @Test
-    void shouldRebuildDeletedLabelScanStoreOnStartup()
+    void shouldRebuildDeletedTokenIndexesOnStartup()
     {
-        Node node1 = createLabeledNode( Labels.First );
-        Node node2 = createLabeledNode( Labels.First );
-        Node node3 = createLabeledNode( Labels.First );
-        deleteNode( node2 ); // just to create a hole in the store
+        assertOnlyDefaultTokenIndexesExists( db );
+        RelationshipType relType = RelationshipType.withName( "Sample" );
+        Node node1, node2, node3;
+        Relationship rel1, rel2;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = tx.createNode( Labels.First );
+            node2 = tx.createNode( Labels.First );
+            node3 = tx.createNode( Labels.First );
+            rel1 = node1.createRelationshipTo( node2, relType );
+            rel2 = node1.createRelationshipTo( node3, relType );
+            tx.commit();
+        }
+        // just to create a hole in the store
+        deleteRelation( rel2 );
+        deleteNode( node3 );
 
         controller.restartDbms( builder ->
         {
             try
             {
-                fs.deleteFile( storeFile( db.databaseLayout() ) );
+                fs.deleteFile( db.databaseLayout().labelScanStore() );
+                fs.deleteFile( db.databaseLayout().relationshipTypeScanStore() );
             }
             catch ( IOException e )
             {
@@ -83,36 +97,38 @@ public class LabelScanStoreChaosIT
             return builder;
         } );
 
-        assertEquals( asSet( node1, node3 ), getAllNodesWithLabel( Labels.First ) );
+        awaitIndexesOnline();
+        assertOnlyDefaultTokenIndexesExists( db );
+        assertEquals( asSet( node1, node2 ), getAllNodesWithLabel( Labels.First ) );
+        assertEquals( asSet( rel1 ), getRelationships( relType ) );
     }
 
     @Test
-    void rebuildCorruptedLabelScanStoreToStartup()
+    void shouldRebuildCorruptedTokenIndexesOnStartup()
     {
-        Node node = createLabeledNode( Labels.First );
+        assertOnlyDefaultTokenIndexesExists( db );
+        RelationshipType relType = RelationshipType.withName( "Sample" );
+        Node node1, node2;
+        Relationship relation;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = tx.createNode( Labels.First );
+            node2 = tx.createNode( Labels.First );
+            relation = node1.createRelationshipTo( node2, relType );
+            tx.commit();
+        }
 
         controller.restartDbms( builder ->
         {
-            scrambleFile( storeFile( db.databaseLayout() ) );
+            scrambleFile( db.databaseLayout().labelScanStore() );
+            scrambleFile( db.databaseLayout().relationshipTypeScanStore() );
             return builder;
         } );
 
-        assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
-    }
-
-    private static java.nio.file.Path storeFile( DatabaseLayout databaseLayout )
-    {
-        return databaseLayout.labelScanStore();
-    }
-
-    private Node createLabeledNode( Label... labels )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = tx.createNode( labels );
-            tx.commit();
-            return node;
-        }
+        awaitIndexesOnline();
+        assertOnlyDefaultTokenIndexesExists( db );
+        assertEquals( asSet( node1, node2 ), getAllNodesWithLabel( Labels.First ) );
+        assertEquals( asSet( relation ), getRelationships( relType ) );
     }
 
     private Set<Node> getAllNodesWithLabel( Label label )
@@ -123,9 +139,26 @@ public class LabelScanStoreChaosIT
         }
     }
 
+    private Set<Relationship> getRelationships( RelationshipType relType )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            return asSet( tx.findRelationships( relType ) );
+        }
+    }
+
     private void scrambleFile( java.nio.file.Path path )
     {
         scrambleFile( random.random(), path );
+    }
+
+    private void deleteRelation( Relationship relationship )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.getRelationshipById( relationship.getId() ).delete();
+            tx.commit();
+        }
     }
 
     private void deleteNode( Node node )
@@ -164,6 +197,15 @@ public class LabelScanStoreChaosIT
         for ( int i = 0; i < bytes.length; i++ )
         {
             bytes[i] = (byte) random.nextInt();
+        }
+    }
+
+    private void awaitIndexesOnline()
+    {
+        try ( Transaction transaction = db.beginTx() )
+        {
+            transaction.schema().awaitIndexesOnline( 2, MINUTES );
+            transaction.commit();
         }
     }
 }
