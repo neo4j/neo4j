@@ -27,6 +27,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.graphdb.schema.IndexType.LOOKUP;
 
 public class IndexingTestUtil
 {
@@ -34,10 +35,19 @@ public class IndexingTestUtil
     {
         try ( var tx = db.beginTx() )
         {
-            var indexes = stream( tx.schema().getIndexes().spliterator(), false ).collect( toList() );
-            assertThat( indexes.stream().filter( IndexDefinition::isNodeIndex ).count() ).isEqualTo( 1 );
-            assertThat( indexes.stream().filter( IndexDefinition::isRelationshipIndex ).count() ).isEqualTo( 1 );
-            assertThat( indexes.size() ).isEqualTo( 2 );
+            assertThat( stream( tx.schema().getIndexes().spliterator(), false ).count() ).isEqualTo( 2 );
+            assertDefaultTokenIndexesExists( db );
+        }
+    }
+
+    public static void assertDefaultTokenIndexesExists( GraphDatabaseService db )
+    {
+        try ( var tx = db.beginTx() )
+        {
+            var lookupIndexes = stream( tx.schema().getIndexes().spliterator(), false )
+                    .filter( idx -> idx.getIndexType() == LOOKUP ).collect( toList() );
+            assertThat( lookupIndexes.stream().anyMatch( IndexDefinition::isNodeIndex ) ).isTrue();
+            assertThat( lookupIndexes.stream().anyMatch( IndexDefinition::isRelationshipIndex ) ).isTrue();
         }
     }
 
