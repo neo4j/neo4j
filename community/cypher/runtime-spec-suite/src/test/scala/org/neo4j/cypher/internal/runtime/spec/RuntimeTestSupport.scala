@@ -231,14 +231,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val result = run(executionPlan, input.stream(), (_, result) => result, subscriber, profile = false, logicalQuery.readOnly, parameters = Map.empty)
     val executionPlanDescription = {
       val planDescriptionBuilder =
-        new PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
-                                   IDPPlannerName,
-                                   CypherVersion.default,
-                                   logicalQuery.readOnly,
-                                   logicalQuery.effectiveCardinalities,
-                                   debugOptions.rawCardinalitiesEnabled,
-                                   logicalQuery.providedOrders,
-                                   executionPlan)
+        PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
+                               IDPPlannerName,
+                               CypherVersion.default,
+                               logicalQuery.readOnly,
+                               logicalQuery.effectiveCardinalities,
+                               debugOptions.rawCardinalitiesEnabled,
+                               logicalQuery.providedOrders,
+                               executionPlan)
       planDescriptionBuilder.explain()
     }
     (RecordingRuntimeResult(result, subscriber), executionPlanDescription)
