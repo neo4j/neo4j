@@ -84,7 +84,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     val statistics = TransactionBoundGraphStatistics(read, schemaRead, log)
 
     //then
-    statistics.indexPropertyIsNotNullSelectivity(index) should equal(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
+    statistics.indexPropertyIsNotNullSelectivity(index) should equal(Some(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY))
   }
 
   test("indexPropertyExistsSelectivity should log if index returned from schema read but size cannot get computed") {

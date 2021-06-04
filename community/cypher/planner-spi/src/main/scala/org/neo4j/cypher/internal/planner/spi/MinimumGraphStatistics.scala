@@ -32,7 +32,7 @@ object MinimumGraphStatistics {
   val MIN_NODES_ALL_CARDINALITY: Cardinality = Cardinality(MIN_NODES_ALL)
   val MIN_NODES_WITH_LABEL_CARDINALITY: Cardinality = Cardinality(MIN_NODES_WITH_LABEL)
   val MIN_PATTERN_STEP_CARDINALITY: Cardinality = Cardinality(MIN_PATTERN_STEP)
-  val MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY: Option[Selectivity] = Selectivity.of(0.1d)
+  val MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY: Selectivity = Selectivity(0.1d)
 }
 
 /**
@@ -53,15 +53,21 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
 
   override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = index.entityType match {
     case IndexDescriptor.EntityType.Node(label) =>
-      nodesWithLabelCardinality(Some(label)) match {
-        case MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
-        case _ => delegate.indexPropertyIsNotNullSelectivity(index)
+      delegate.indexPropertyIsNotNullSelectivity(index).map {actualSelectivity =>
+        nodesWithLabelCardinality(Some(label)) match {
+          case MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY =>
+            Seq(actualSelectivity, MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY).max
+          case _ => actualSelectivity
+        }
       }
 
     case IndexDescriptor.EntityType.Relationship(relType) =>
-      patternStepCardinality(None, Some(relType), None) match {
-        case MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
-        case _ => delegate.indexPropertyIsNotNullSelectivity(index)
+      delegate.indexPropertyIsNotNullSelectivity(index).map {actualSelectivity =>
+        patternStepCardinality(None, Some(relType), None) match {
+          case MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY =>
+            Seq(actualSelectivity, MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY).max
+          case _ => actualSelectivity
+        }
       }
   }
 
