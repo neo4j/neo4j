@@ -33,6 +33,9 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -41,6 +44,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.max;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -103,6 +107,32 @@ class TokenIndexUpdaterTest
                     tree.seek( new TokenScanKey( i, 0 ), new TokenScanKey( i, Long.MAX_VALUE ), NULL ), NO_ID ) );
             assertArrayEquals( expectedNodeIds, actualNodeIds, "For label " + i );
         }
+    }
+
+    @Test
+    void shouldTracePageCacheAccess() throws Exception
+    {
+        //Given
+        int nodeCount = 5;
+        var cacheTracer = new DefaultPageCacheTracer();
+        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnWrite" ) );
+
+        //When
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( nodeCount, TokenIndex.EMPTY ) )
+        {
+            writer.initialize( tree.writer( cursorContext ) );
+            for ( int i = 0; i < nodeCount; i++ )
+            {
+                writer.process( TokenIndexEntryUpdate.change( i, null, EMPTY_LONG_ARRAY, new long[]{1} ) );
+            }
+        }
+
+        //Then
+        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
+        assertThat( cursorTracer.pins() ).isEqualTo( 5 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
+        assertThat( cursorTracer.hits() ).isEqualTo( 4 );
+        assertThat( cursorTracer.faults() ).isEqualTo( 1 );
     }
 
     @Test
