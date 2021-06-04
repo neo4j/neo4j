@@ -1003,7 +1003,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.3.15.RELEASE</version>
+        <version>3.3.17.RELEASE</version>
       </dependency>
 
       <!-- testing -->
