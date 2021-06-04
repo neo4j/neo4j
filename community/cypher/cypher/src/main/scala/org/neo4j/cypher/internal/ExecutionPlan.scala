@@ -52,7 +52,7 @@ abstract class ExecutionPlan {
 
   def metadata: Seq[Argument]
 
-  def operatorMetadata(plan: Id): Seq[Argument] = Seq.empty[Argument]
+  def operatorMetadata: Id => Seq[Argument] = _ => Seq.empty[Argument]
 
   def notifications: Set[InternalNotification]
 

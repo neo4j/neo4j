@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
+import java.util.function.Supplier
 import scala.collection.JavaConverters.asScalaBufferConverter
 
 /**
@@ -68,7 +69,7 @@ trait ExecutableQuery extends CacheabilityInfo {
   /**
    * Plan desc.
    */
-  def planDescription(): InternalPlanDescription
+  def planDescriptionSupplier(): Supplier[ExecutionPlanDescription]
 
   /**
    * Meta-data about the compiled used for this query.

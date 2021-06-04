@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -188,18 +187,20 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInte
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 
 object LogicalPlan2PlanDescription {
 
-  def apply(input: LogicalPlan,
-            plannerName: PlannerName,
-            cypherVersion: CypherVersion,
-            readOnly: Boolean,
-            cardinalities: Cardinalities,
-            providedOrders: ProvidedOrders,
-            executionPlan: ExecutionPlan): InternalPlanDescription = {
-    new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders, executionPlan).create(input)
+  def create(input: LogicalPlan,
+             plannerName: PlannerName,
+             cypherVersion: CypherVersion,
+             readOnly: Boolean,
+             cardinalities: Cardinalities,
+             providedOrders: ProvidedOrders,
+             runtimeOperatorMetadata: Id => Seq[Argument]): InternalPlanDescription = {
+    new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders, runtimeOperatorMetadata)
+      .create(input)
       .addArgument(Version("CYPHER " + cypherVersion.name))
       .addArgument(RuntimeVersion("4.2"))
       .addArgument(Planner(plannerName.toTextOutput))
@@ -208,7 +209,10 @@ object LogicalPlan2PlanDescription {
   }
 }
 
-case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, providedOrders: ProvidedOrders, executionPlan: ExecutionPlan)
+case class LogicalPlan2PlanDescription(readOnly: Boolean,
+                                       cardinalities: Cardinalities,
+                                       providedOrders: ProvidedOrders,
+                                       runtimeOperatorMetadata: Id => Seq[Argument])
   extends LogicalPlans.Mapper[InternalPlanDescription] {
   private val SEPARATOR = ", "
 
@@ -758,7 +762,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def addRuntimeAttributes(description: InternalPlanDescription, plan: LogicalPlan): InternalPlanDescription = {
-    executionPlan.operatorMetadata(plan.id).foldLeft(description)((acc, x) => acc.addArgument(x))
+    runtimeOperatorMetadata(plan.id).foldLeft(description)((acc, x) => acc.addArgument(x))
   }
 
   private def buildPredicatesDescription(maybeNodePredicate: Option[VariablePredicate],

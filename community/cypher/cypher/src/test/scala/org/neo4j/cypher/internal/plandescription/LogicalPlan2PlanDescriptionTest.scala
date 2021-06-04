@@ -1401,7 +1401,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   def assertGood(logicalPlan: LogicalPlan, expectedPlanDescription: InternalPlanDescription, validateAllArgs: Boolean = false): Unit = {
-    val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly, cardinalities, providedOrders, StubExecutionPlan())
+    val producedPlanDescription = LogicalPlan2PlanDescription.create(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly, cardinalities, providedOrders, StubExecutionPlan().operatorMetadata)
 
     def shouldValidateArg(arg: Argument) =
       validateAllArgs ||

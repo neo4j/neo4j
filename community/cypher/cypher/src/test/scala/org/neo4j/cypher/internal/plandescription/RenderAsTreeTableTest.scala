@@ -344,7 +344,8 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
     providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  FRESHID42")))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan().operatorMetadata)
+
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+--------------------+-------------+
@@ -802,7 +803,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val logicalPlan = MultiNodeIndexSeek(Seq(IndexSeek("x:Label(Prop = 10,Foo = 1,Distance = 6,Name = 'Karoline Getinge')", unique = true).asInstanceOf[IndexSeekLeafPlan], IndexSeek("y:Label(Prop = 12, Name = 'Foo')").asInstanceOf[IndexSeekLeafPlan], IndexSeek("z:Label(Prop > 100, Name = 'Bar')").asInstanceOf[IndexSeekLeafPlan]))
     val cardinalities = new Cardinalities
     cardinalities.set(logicalPlan.id, 2.0)
-    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, cardinalities , new ProvidedOrders, StubExecutionPlan())
+    val plan = LogicalPlan2PlanDescription.create(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, cardinalities , new ProvidedOrders, StubExecutionPlan().operatorMetadata)
 
     renderAsTreeTable(plan) should equal(
       """+---------------------+------------------------------------------------------------------------------------------------------+----------------+

@@ -112,7 +112,7 @@ trait QueryPlanTestSupport {
 object QueryPlanTestSupport {
   case class StubExecutionPlan(runtimeName: RuntimeName = InterpretedRuntimeName,
                                metadata: Seq[Argument] = Seq.empty[Argument],
-                               operatorMetadata: Id => Seq[Argument] = _ => Seq.empty[Argument],
+                               override val operatorMetadata: Id => Seq[Argument] = _ => Seq.empty[Argument],
                                notifications: Set[InternalNotification] = Set.empty[InternalNotification]) extends ExecutionPlan {
     override def run(queryContext: QueryContext, executionMode: ExecutionMode, params: MapValue, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber): RuntimeResult = ???
   }

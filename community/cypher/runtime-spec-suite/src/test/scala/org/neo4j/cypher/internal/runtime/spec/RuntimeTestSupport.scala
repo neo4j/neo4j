@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.CypherConfiguration
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -196,13 +197,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val result = run(executionPlan, input.stream(), (_, result) => result, subscriber, profile = false, parameters = Map.empty)
     val executionPlanDescription = {
       val planDescriptionBuilder =
-        new PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
+          PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
                                    IDPPlannerName,
                                    CypherVersion.default,
                                    logicalQuery.readOnly,
                                    logicalQuery.cardinalities,
                                    logicalQuery.providedOrders,
-                                   executionPlan)
+                                   StubExecutionPlan())
+
       planDescriptionBuilder.explain()
     }
     (RecordingRuntimeResult(result, subscriber), executionPlanDescription)
