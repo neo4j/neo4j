@@ -366,7 +366,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
     val providedOrders = new ProvidedOrders
     providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  FRESHID42")))
-    val description = LogicalPlan2PlanDescription(readOnly = true, new EffectiveCardinalities, withRawCardinalities = false, providedOrders, StubExecutionPlan())
+    val description = LogicalPlan2PlanDescription(readOnly = true, new EffectiveCardinalities, withRawCardinalities = false, providedOrders, StubExecutionPlan().operatorMetadata)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+--------------------+-------------+
@@ -894,7 +894,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val logicalPlan = MultiNodeIndexSeek(Seq(nodeIndexSeek("x:Label(Prop = 10,Foo = 1,Distance = 6,Name = 'Karoline Getinge')", unique = true).asInstanceOf[NodeIndexSeekLeafPlan], nodeIndexSeek("y:Label(Prop = 12, Name = 'Foo')").asInstanceOf[NodeIndexSeekLeafPlan], nodeIndexSeek("z:Label(Prop > 100, Name = 'Bar')").asInstanceOf[NodeIndexSeekLeafPlan]))
     val effectiveCardinalities = new EffectiveCardinalities
     effectiveCardinalities.set(logicalPlan.id, EffectiveCardinality(2.0))
-    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, effectiveCardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan())
+    val plan = LogicalPlan2PlanDescription.create(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, effectiveCardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan().operatorMetadata)
 
     renderAsTreeTable(plan) should equal(
       """+---------------------+------------------------------------------------------------------------------------------------------+----------------+

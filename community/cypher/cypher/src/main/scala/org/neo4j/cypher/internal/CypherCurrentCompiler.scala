@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util.function.Supplier
+
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
@@ -35,7 +37,6 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherVersion
-import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -66,6 +67,7 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
+import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.kernel.api.query.CompilerInfo
@@ -266,7 +268,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     private val resourceMonitor = if (enableMonitors) kernelMonitors.newMonitor(classOf[ResourceMonitor]) else ResourceMonitor.NOOP
 
     private val planDescriptionBuilder =
-      new PlanDescriptionBuilder(
+      PlanDescriptionBuilder(
         executionPlan.rewrittenPlan.getOrElse(logicalPlan),
         plannerName,
         cypherVersion,
@@ -391,7 +393,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
 
-    override def planDescription(): InternalPlanDescription = planDescriptionBuilder.explain()
+    override def planDescriptionSupplier(): Supplier[ExecutionPlanDescription] = {
+      val builder = planDescriptionBuilder
+      () => builder.explain()
+    }
 
     override def queryType: QueryExecutionType.QueryType = QueryTypeConversion.asPublic(internalQueryType)
   }

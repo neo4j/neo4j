@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import java.io.PrintStream
+import java.util.concurrent.ConcurrentLinkedQueue
+
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -73,8 +76,6 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-import java.io.PrintStream
-import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -231,14 +232,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val result = run(executionPlan, input.stream(), (_, result) => result, subscriber, profile = false, logicalQuery.readOnly, parameters = Map.empty)
     val executionPlanDescription = {
       val planDescriptionBuilder =
-        new PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
-                                   IDPPlannerName,
-                                   CypherVersion.default,
-                                   logicalQuery.readOnly,
-                                   logicalQuery.effectiveCardinalities,
-                                   debugOptions.rawCardinalitiesEnabled,
-                                   logicalQuery.providedOrders,
-                                   executionPlan)
+        PlanDescriptionBuilder(executionPlan.rewrittenPlan.getOrElse(logicalQuery.logicalPlan),
+                               IDPPlannerName,
+                               CypherVersion.default,
+                               logicalQuery.readOnly,
+                               logicalQuery.effectiveCardinalities,
+                               debugOptions.rawCardinalitiesEnabled,
+                               logicalQuery.providedOrders,
+                               executionPlan)
       planDescriptionBuilder.explain()
     }
     (RecordingRuntimeResult(result, subscriber), executionPlanDescription)

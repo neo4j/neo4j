@@ -20,16 +20,48 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Runtime
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
+import org.neo4j.cypher.internal.plandescription.rewrite.InternalPlanDescriptionRewriter
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
+
+object PlanDescriptionBuilder {
+  def apply(logicalPlan: LogicalPlan,
+            plannerName: PlannerName,
+            cypherVersion: CypherVersion,
+            readOnly: Boolean,
+            effectiveCardinalities: EffectiveCardinalities,
+            withRawCardinalities: Boolean,
+            providedOrders: ProvidedOrders,
+            executionPlan: ExecutionPlan): PlanDescriptionBuilder = {
+    // NOTE: We should not keep a reference to the ExecutionPlan in the PlanDescriptionBuilder since it can end up in long-lived caches, e.g. RecentQueryBuffer
+    val runtimeName = executionPlan.runtimeName
+    val runtimeMetadata = executionPlan.metadata
+    val runtimeOperatorMetadata = executionPlan.operatorMetadata
+    val internalPlanDescriptionRewriter = executionPlan.internalPlanDescriptionRewriter
+
+    new PlanDescriptionBuilder(logicalPlan: LogicalPlan,
+                               plannerName: PlannerName,
+                               cypherVersion: CypherVersion,
+                               readOnly: Boolean,
+                               effectiveCardinalities: EffectiveCardinalities,
+                               withRawCardinalities: Boolean,
+                               providedOrders: ProvidedOrders,
+                               runtimeName,
+                               runtimeMetadata,
+                               runtimeOperatorMetadata,
+                               internalPlanDescriptionRewriter)
+  }
+}
 
 class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              plannerName: PlannerName,
@@ -38,15 +70,19 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              effectiveCardinalities: EffectiveCardinalities,
                              withRawCardinalities: Boolean,
                              providedOrders: ProvidedOrders,
-                             executionPlan: ExecutionPlan) {
+                             runtimeName: RuntimeName,
+                             runtimeMetadata: Seq[Argument],
+                             runtimeOperatorMetadata: Id => Seq[Argument],
+                             internalPlanDescriptionRewriter: Option[InternalPlanDescriptionRewriter]) {
 
   def explain(): InternalPlanDescription = {
     val description =
-      LogicalPlan2PlanDescription(logicalPlan, plannerName, cypherVersion, readOnly, effectiveCardinalities, withRawCardinalities, providedOrders, executionPlan)
-        .addArgument(Runtime(executionPlan.runtimeName.toTextOutput))
-        .addArgument(RuntimeImpl(executionPlan.runtimeName.name))
+      LogicalPlan2PlanDescription
+        .create(logicalPlan, plannerName, cypherVersion, readOnly, effectiveCardinalities, withRawCardinalities, providedOrders, runtimeOperatorMetadata)
+        .addArgument(Runtime(runtimeName.toTextOutput))
+        .addArgument(RuntimeImpl(runtimeName.name))
 
-    executionPlan.metadata.foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
+    runtimeMetadata.foldLeft(description)((plan, metadata) => plan.addArgument(metadata))
   }
 
   def profile(queryProfile: QueryProfile): InternalPlanDescription = {
@@ -67,7 +103,7 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
           .plan
       }
 
-    executionPlan.internalPlanDescriptionRewriter match {
+    internalPlanDescriptionRewriter match {
       case Some(rewriter) => rewriter.rewrite(planDescription)
       case None => planDescription
     }
