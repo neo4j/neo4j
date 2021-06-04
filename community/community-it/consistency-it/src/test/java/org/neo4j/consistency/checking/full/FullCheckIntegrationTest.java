@@ -146,6 +146,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -197,6 +198,8 @@ public class FullCheckIntegrationTest
     protected int T;
     protected int M;
     protected final List<Long> indexedNodes = new ArrayList<>();
+    private final List<Long> indexedRelationships = new ArrayList<>();
+    private long relationshipOfTypeT;
     private final Map<Setting<?>,Object> settings = new HashMap<>();
 
     @BeforeEach
@@ -310,7 +313,7 @@ public class FullCheckIntegrationTest
     }
 
     @Test
-    void shouldReportLabelScanStoreInconsistencies() throws Exception
+    void shouldReportNodeLabelIndexInconsistencies() throws Exception
     {
         // given
         GraphStoreFixture.IdGenerator idGenerator = fixture.idGenerator();
@@ -358,10 +361,9 @@ public class FullCheckIntegrationTest
         // given
         // type index and store has different type for same relationship
         RecordStore<RelationshipRecord> relationshipStore = fixture.directStoreAccess().nativeStores().getRelationshipStore();
-        GraphStoreFixture.IdGenerator idGenerator = fixture.idGenerator();
         RelationshipRecord relationshipRecord = new RelationshipRecord( 0 );
 
-        long relationshipId = idGenerator.relationship() - 1;
+        long relationshipId = relationshipOfTypeT;
         try ( var cursor = relationshipStore.openPageCursorForReading( relationshipId, NULL ) )
         {
             relationshipStore.getRecordByCursor( relationshipId, relationshipRecord, RecordLoad.NORMAL, cursor );
@@ -552,15 +554,18 @@ public class FullCheckIntegrationTest
         while ( indexDescriptorIterator.hasNext() )
         {
             IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
-            IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
-            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+            if ( indexDescriptor.schema().entityType() == EntityType.NODE )
             {
-                for ( long nodeId : indexedNodes )
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
                 {
-                    EntityUpdates updates = fixture.nodeAsUpdates( nodeId );
-                    for ( IndexEntryUpdate<?> update : updates.valueUpdatesForIndexKeys( singletonList( indexDescriptor ) ) )
+                    for ( long nodeId : indexedNodes )
                     {
-                        updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, ((ValueIndexEntryUpdate<?>) update).values() ) );
+                        EntityUpdates updates = fixture.nodeAsUpdates( nodeId );
+                        for ( IndexEntryUpdate<?> update : updates.valueUpdatesForIndexKeys( singletonList( indexDescriptor ) ) )
+                        {
+                            updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, ((ValueIndexEntryUpdate<?>) update).values() ) );
+                        }
                     }
                 }
             }
@@ -572,6 +577,39 @@ public class FullCheckIntegrationTest
         // then
         on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
                    .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportRelationshipsThatAreNotIndexed() throws Exception
+    {
+        // given
+        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
+        while ( indexDescriptorIterator.hasNext() )
+        {
+            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            if ( indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP )
+            {
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexDescriptor );
+                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                {
+                    for ( long relId : indexedRelationships )
+                    {
+                        EntityUpdates updates = fixture.relationshipAsUpdates( relId );
+                        for ( IndexEntryUpdate<?> update : updates.valueUpdatesForIndexKeys( singletonList( indexDescriptor ) ) )
+                        {
+                            updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, ((ValueIndexEntryUpdate<?>) update).values() ) );
+                        }
+                    }
+                }
+            }
+        }
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.RELATIONSHIP, 3 ) // 1 relationship missing from 1 index + 1 relationship missing from 2 indexes
+                .andThatsAllFolks();
     }
 
     @ParameterizedTest
@@ -1783,14 +1821,15 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportDuplicatedIndexRules() throws Exception
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldReportDuplicatedIndexRules( EntityType entityType ) throws Exception
     {
         // Given
-        int labelId = createLabel();
+        int entityTokenId = createEntityToken( entityType );
         int propertyKeyId = createPropertyKey();
-        createIndexRule( labelId, propertyKeyId );
-        createIndexRule( labelId, propertyKeyId );
+        createIndexRule( entityType, entityTokenId, propertyKeyId );
+        createIndexRule( entityType, entityTokenId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1799,16 +1838,17 @@ public class FullCheckIntegrationTest
         on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportDuplicatedCompositeIndexRules() throws Exception
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldReportDuplicatedCompositeIndexRules( EntityType entityType ) throws Exception
     {
         // Given
-        int labelId = createLabel();
+        int entityTokenId = createEntityToken( entityType );
         int propertyKeyId1 = createPropertyKey( "p1" );
         int propertyKeyId2 = createPropertyKey( "p2" );
         int propertyKeyId3 = createPropertyKey( "p3" );
-        createIndexRule( labelId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
-        createIndexRule( labelId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+        createIndexRule( entityType, entityTokenId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+        createIndexRule( entityType, entityTokenId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1908,7 +1948,22 @@ public class FullCheckIntegrationTest
         // Given
         int labelId = fixture.idGenerator().label();
         int propertyKeyId = createPropertyKey();
-        createIndexRule( labelId, propertyKeyId );
+        createIndexRule( EntityType.NODE, labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportInvalidRelTypeIdInIndexRule() throws Exception
+    {
+        // Given
+        int relTypeId = fixture.idGenerator().relationshipType();
+        int propertyKeyId = createPropertyKey();
+        createIndexRule( EntityType.RELATIONSHIP, relTypeId, propertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1964,13 +2019,14 @@ public class FullCheckIntegrationTest
         on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportInvalidPropertyKeyIdInIndexRule() throws Exception
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldReportInvalidPropertyKeyIdInIndexRule( EntityType entityType ) throws Exception
     {
         // Given
-        int labelId = createLabel();
+        int entityTokenId = createEntityToken( entityType );
         int badPropertyKeyId = fixture.idGenerator().propertyKey();
-        createIndexRule( labelId, badPropertyKeyId );
+        createIndexRule( entityType, entityTokenId, badPropertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -1979,14 +2035,15 @@ public class FullCheckIntegrationTest
         on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
     }
 
-    @Test
-    void shouldReportInvalidSecondPropertyKeyIdInIndexRule() throws Exception
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldReportInvalidSecondPropertyKeyIdInIndexRule( EntityType entityType ) throws Exception
     {
         // Given
-        int labelId = createLabel();
+        int entityTokenId = createEntityToken( entityType );
         int propertyKeyId = createPropertyKey();
         int badPropertyKeyId = fixture.idGenerator().propertyKey();
-        createIndexRule( labelId, propertyKeyId, badPropertyKeyId );
+        createIndexRule( entityType, entityTokenId, propertyKeyId, badPropertyKeyId );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2486,6 +2543,9 @@ public class FullCheckIntegrationTest
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).create();
 
                     tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
+
+                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).create();
+                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).create();
                     tx.commit();
                 }
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -2498,9 +2558,11 @@ public class FullCheckIntegrationTest
                 {
                     Node node1 = set( tx.createNode( label( "label1" ) ) );
                     Node node2 = set( tx.createNode( label( "label2" ) ), property( PROP1, VALUE1 ) );
-                    node1.createRelationshipTo( node2, withName( "C" ) );
+                    indexedRelationships.add( set( node1.createRelationshipTo( node2, withName( "C" ) ), property( PROP1, VALUE1 ) ).getId() );
+                    indexedRelationships
+                            .add( set( node2.createRelationshipTo( node1, withName( "C" ) ), property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
                     // Just to create one more rel type
-                    tx.createNode().createRelationshipTo( tx.createNode(), withName( "T" ) );
+                    relationshipOfTypeT = tx.createNode().createRelationshipTo( tx.createNode(), withName( "T" ) ).getId();
                     indexedNodes.add( set( tx.createNode( label( "label3" ) ), property( PROP1, VALUE1 ) ).getId() );
                     indexedNodes.add( set( tx.createNode( label( "label3" ) ), property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
 
@@ -2653,6 +2715,15 @@ public class FullCheckIntegrationTest
         return StringUtils.EMPTY;
     }
 
+    private int createEntityToken( EntityType entityType ) throws Exception
+    {
+        if ( entityType.equals( EntityType.NODE ) )
+        {
+            return createLabel();
+        }
+        return createRelType();
+    }
+
     private int createLabel() throws Exception
     {
         final MutableInt id = new MutableInt( -1 );
@@ -2715,7 +2786,7 @@ public class FullCheckIntegrationTest
         return id.intValue();
     }
 
-    private void createIndexRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    private void createIndexRule( EntityType entityType, final int entityTokenId, final int... propertyKeyIds ) throws Exception
     {
         AtomicReference<String> indexName = new AtomicReference<>();
         fixture.apply( new GraphStoreFixture.Transaction()
@@ -2725,7 +2796,17 @@ public class FullCheckIntegrationTest
             {
                 int id = (int) next.schema();
                 String name = "index_" + id;
-                IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withName( name ).materialise( id );
+                IndexDescriptor index;
+                switch ( entityType )
+                {
+                case RELATIONSHIP:
+                    index = forSchema( forRelType( entityTokenId, propertyKeyIds ), DESCRIPTOR ).withName( name ).materialise( id );
+                    break;
+                case NODE:
+                default:
+                    index = forSchema( forLabel( entityTokenId, propertyKeyIds ), DESCRIPTOR ).withName( name ).materialise( id );
+                    break;
+                }
                 indexName.set( name );
                 index = tx.completeConfiguration( index );
 

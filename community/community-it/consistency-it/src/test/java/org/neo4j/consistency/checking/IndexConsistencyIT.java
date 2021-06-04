@@ -19,8 +19,9 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -37,6 +39,8 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -61,6 +65,8 @@ import static org.neo4j.io.fs.FileUtils.copyDirectory;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
+import static org.neo4j.test.mockito.mock.Property.property;
+import static org.neo4j.test.mockito.mock.Property.set;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
@@ -80,17 +86,23 @@ class IndexConsistencyIT
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABELS = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
+    private static final RelationshipType TYPE_ONE = RelationshipType.withName( "TYPE_ONE" );
+    private static final RelationshipType TYPE_TWO = RelationshipType.withName( "TYPE_TWO" );
+    private static final RelationshipType[] TYPES = new RelationshipType[]{TYPE_ONE,TYPE_TWO};
     private static final String PROPERTY_KEY = "numericProperty";
+    private static final String PROPERTY_KEY2 = "property2";
+    private static final String[] PROPERTY_KEYS = new String[]{PROPERTY_KEY, PROPERTY_KEY2};
     private static final double DELETE_RATIO = 0.2;
     private static final double UPDATE_RATIO = 0.2;
-    private static final int NODE_COUNT_BASELINE = 10;
+    private static final int ENTITY_COUNT_BASELINE = 10;
     private final Predicate<Path> SOURCE_COPY_FILE_FILTER = path -> Files.isDirectory( path ) || path.getFileName().toString().startsWith( "index" );
 
-    @Test
-    void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void reportNotCleanNativeIndex( EntityType entityType ) throws IOException, ConsistencyCheckIncompleteException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        someData();
+        someData( entityType );
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         Path indexesCopy = databaseLayout.file( "indexesCopy" );
         Path indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
@@ -98,7 +110,7 @@ class IndexConsistencyIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            createNewNode( tx, new Label[]{LABEL_ONE} );
+            createNewEntity( tx, entityType );
             tx.commit();
         }
 
@@ -112,11 +124,12 @@ class IndexConsistencyIT
                 "WARN  Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
     }
 
-    @Test
-    void reportNotCleanNativeIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void reportNotCleanNativeIndexWithCorrectData( EntityType entityType ) throws IOException, ConsistencyCheckIncompleteException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
-        someData();
+        someData( entityType );
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
         Path indexesCopy = databaseLayout.file( "indexesCopy" );
         Path indexSources = indexProviderMap.getDefaultProvider().directoryStructure().rootDirectory();
@@ -127,7 +140,7 @@ class IndexConsistencyIT
         copyDirectory( indexesCopy, indexSources );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
+        assertTrue( result.isSuccessful(), "Expected consistency check to succeed" );
         assertThat( readReport( result ) ).contains(
                 "WARN  Index was dirty on startup which means it was not shutdown correctly and need to be cleaned up with a successful recovery." );
     }
@@ -137,23 +150,21 @@ class IndexConsistencyIT
         return Files.readString( result.reportFile() );
     }
 
-    void someData()
+    void someData( EntityType entityType )
     {
-        someData( 50 );
+        someData( 50, entityType );
     }
 
-    void someData( int numberOfModifications )
+    void someData( int numberOfModifications, EntityType entityType )
     {
-        List<Pair<Long,Label[]>> existingNodes;
-        existingNodes = new ArrayList<>();
         try ( Transaction tx = db.beginTx() )
         {
-            randomModifications( tx, existingNodes, numberOfModifications );
+            randomModifications( tx, numberOfModifications, entityType );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().indexFor( LABEL_ONE ).on( PROPERTY_KEY ).create();
+            createIndex( tx, entityType );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -163,13 +174,37 @@ class IndexConsistencyIT
         }
     }
 
-    private void randomModifications( Transaction tx, List<Pair<Long,Label[]>> existingNodes,
-            int numberOfModifications )
+    private void createIndex( Transaction tx, EntityType entityType )
     {
+        if ( entityType.equals( EntityType.NODE ) )
+        {
+            tx.schema().indexFor( LABEL_ONE ).on( PROPERTY_KEY ).create();
+        }
+        else
+        {
+            tx.schema().indexFor( TYPE_ONE ).on( PROPERTY_KEY ).create();
+        }
+    }
+
+    private void randomModifications( Transaction tx, int numberOfModifications, EntityType entityType )
+    {
+        if ( entityType.equals( EntityType.NODE ) )
+        {
+            randomNodeModifications( tx, numberOfModifications );
+        }
+        else
+        {
+            randomRelationshipModifications( tx, numberOfModifications );
+        }
+    }
+
+    private void randomNodeModifications( Transaction tx, int numberOfModifications )
+    {
+        List<Pair<Long,Label[]>> existingNodes = new ArrayList<>();
         for ( int i = 0; i < numberOfModifications; i++ )
         {
             double selectModification = random.nextDouble();
-            if ( existingNodes.size() < NODE_COUNT_BASELINE || selectModification >= DELETE_RATIO + UPDATE_RATIO )
+            if ( existingNodes.size() < ENTITY_COUNT_BASELINE || selectModification >= DELETE_RATIO + UPDATE_RATIO )
             {
                 createNewNode( tx, existingNodes );
             }
@@ -180,6 +215,27 @@ class IndexConsistencyIT
             else
             {
                 modifyLabelsOnExistingNode( tx, existingNodes );
+            }
+        }
+    }
+
+    private void randomRelationshipModifications( Transaction tx, int numberOfModifications )
+    {
+        List<Long> existingRelationships = new ArrayList<>();
+        for ( int i = 0; i < numberOfModifications; i++ )
+        {
+            double selectModification = random.nextDouble();
+            if ( existingRelationships.size() < ENTITY_COUNT_BASELINE || selectModification >= DELETE_RATIO + UPDATE_RATIO )
+            {
+                createNewRelationship( tx, existingRelationships );
+            }
+            else if ( selectModification < DELETE_RATIO )
+            {
+                deleteExistingRelationship( tx, existingRelationships );
+            }
+            else
+            {
+                modifyPropertiesOnExistingRelationship( tx, existingRelationships );
             }
         }
     }
@@ -198,6 +254,26 @@ class IndexConsistencyIT
         return node;
     }
 
+    private void createNewEntity( Transaction tx, EntityType entityType )
+    {
+        if ( entityType.equals( EntityType.NODE ) )
+        {
+            createNewNode( tx, new Label[]{LABEL_ONE} );
+        }
+        else
+        {
+            Node node = tx.createNode();
+            set( node.createRelationshipTo( node, TYPE_ONE ), property( PROPERTY_KEY, random.nextInt() ) );
+        }
+    }
+
+    private void createNewRelationship( Transaction transaction, List<Long> existingRelationships )
+    {
+        Node node = transaction.createNode();
+        existingRelationships
+                .add( set( node.createRelationshipTo( node, random.among( TYPES ) ), property( random.among( PROPERTY_KEYS ), random.nextInt() ) ).getId() );
+    }
+
     private void modifyLabelsOnExistingNode( Transaction transaction, List<Pair<Long,Label[]>> existingNodes )
     {
         int targetIndex = random.nextInt( existingNodes.size() );
@@ -214,6 +290,19 @@ class IndexConsistencyIT
         existingNodes.add( Pair.of( nodeId, newLabels ) );
     }
 
+    private void modifyPropertiesOnExistingRelationship( Transaction transaction, List<Long> existingRelationships )
+    {
+        int targetIndex = random.nextInt( existingRelationships.size() );
+        long relId = existingRelationships.get( targetIndex );
+        Relationship relationship = transaction.getRelationshipById( relId );
+        relationship.getPropertyKeys().forEach( relationship::removeProperty );
+        String[] properties = random.selection( PROPERTY_KEYS, 0, PROPERTY_KEYS.length, false );
+        for ( String property : properties )
+        {
+            relationship.setProperty( property, random.nextInt() );
+        }
+    }
+
     private void deleteExistingNode( Transaction transaction, List<Pair<Long,Label[]>> existingNodes )
     {
         int targetIndex = random.nextInt( existingNodes.size() );
@@ -221,6 +310,14 @@ class IndexConsistencyIT
         Node node = transaction.getNodeById( existingPair.first() );
         node.delete();
         existingNodes.remove( targetIndex );
+    }
+
+    private void deleteExistingRelationship( Transaction transaction, List<Long> existingRelationship )
+    {
+        int targetIndex = random.nextInt( existingRelationship.size() );
+        Relationship relationship = transaction.getRelationshipById( existingRelationship.get( targetIndex ) );
+        relationship.delete();
+        existingRelationship.remove( targetIndex );
     }
 
     private Label[] randomLabels()

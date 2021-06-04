@@ -26,17 +26,24 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
 
+import java.util.function.Function;
+
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
@@ -46,7 +53,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -62,6 +71,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private int label1;
     private int label2;
     private int label3;
+    private int relType1;
 
     @Override
     void initialData( KernelTransaction tx ) throws KernelException
@@ -73,6 +83,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         label1 = tokenWrite.labelGetOrCreateForName( "A" );
         label2 = tokenWrite.labelGetOrCreateForName( "B" );
         label3 = tokenWrite.labelGetOrCreateForName( "C" );
+        relType1 = tokenWrite.relationshipTypeGetOrCreateForName( "R" );
     }
 
     @Test
@@ -155,6 +166,30 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     }
 
     @Test
+    void shouldReportNotIndexedRelationship() throws Exception
+    {
+        // given
+        RelationTypeSchemaDescriptor descriptor = forRelType( relType1, propertyKey1 );
+        index( descriptor );
+        long relId;
+        try ( AutoCloseable ignored = tx() )
+        {
+            // Rel w/ property (NOT indexed)
+            long propId = propertyStore.nextId( CursorContext.NULL );
+            relId = relationshipStore.nextId( CursorContext.NULL );
+            long nodeId = node( nodeStore.nextId( CursorContext.NULL ), NULL, relId );
+            relationship( relId, nodeId, nodeId, relType1, propId, NULL, NULL, NULL, NULL, true, true );
+            property( propId, NULL, NULL, propertyValue( propertyKey1, stringValue( "a" ) ) );
+        }
+
+        // when
+        checkRelationshipIndexed( relId );
+
+        // then
+        expect( ConsistencyReport.RelationshipConsistencyReport.class, report -> report.notIndexed( any(), any() ) );
+    }
+
+    @Test
     void shouldCheckIndexesWithLookupFiltering() throws Exception
     {
         // given
@@ -205,17 +240,34 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
                 context().indexAccessors.onlineRules( NODE ), CursorContext.NULL, INSTANCE ) )
         {
             NodeRecord node = loadNode( nodeId );
-            checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( nodeId ), reporter::forNode );
+            checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( node, reporter::forNode ), reporter::forNode );
         }
     }
 
-    private MutableIntObjectMap<Value> readPropertyValues( long nodeId ) throws Exception
+    private void checkRelationshipIndexed( long relId ) throws Exception
+    {
+        try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
+                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL, INSTANCE ) )
+        {
+            RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+            RelationshipRecord record;
+            try ( var cursor = relationshipStore.openPageCursorForReading( relId, CursorContext.NULL ) )
+            {
+                record = relationshipStore.getRecordByCursor( relId, relationshipStore.newRecord(), RecordLoad.NORMAL, cursor );
+            }
+
+            checker.checkCorrectlyIndexed( record, new long[]{record.getType()}, readPropertyValues( record, reporter::forRelationship ),
+                    reporter::forRelationship );
+        }
+    }
+
+    private <PRIMITIVE extends PrimitiveRecord> MutableIntObjectMap<Value> readPropertyValues( PRIMITIVE entity,
+            Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter ) throws Exception
     {
         try ( SafePropertyChainReader reader = new SafePropertyChainReader( context().withoutReporting(), CursorContext.NULL ) )
         {
-            NodeRecord node = loadNode( nodeId );
             MutableIntObjectMap<Value> values = new IntObjectHashMap<>();
-            reader.read( values, node, reporter::forNode, CursorContext.NULL );
+            reader.read( values, entity, primitiveReporter, CursorContext.NULL );
             return values;
         }
     }

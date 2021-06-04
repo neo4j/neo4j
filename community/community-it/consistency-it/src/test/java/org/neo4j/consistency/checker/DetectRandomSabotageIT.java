@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.LongPredicate;
 import java.util.function.LongSupplier;
@@ -63,6 +64,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -259,50 +261,73 @@ public class DetectRandomSabotageIT
     {
         for ( int i = 0; i < NUMBER_OF_INDEXES; i++ )
         {
-            Label label = Label.label( random.among( TOKEN_NAMES ) );
+            String entityToken = random.among( TOKEN_NAMES );
             String[] keys = random.selection( TOKEN_NAMES, 1, 3, false );
-            try ( Transaction tx = db.beginTx() )
+            if ( random.nextBoolean() )
             {
-                // A couple of node indexes
-                IndexCreator indexCreator = tx.schema().indexFor( label );
-                for ( String key : keys )
-                {
-                    indexCreator = indexCreator.on( key );
-                }
-                indexCreator.create();
-                tx.commit();
+                createNodeIndexAndConstraint( db, entityToken, keys );
             }
-            catch ( ConstraintViolationException e )
+            else
             {
-                // This is fine we've already created a similar index
-            }
-
-            if ( keys.length == 1 && random.nextFloat() < 0.3 )
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    // Also create a uniqueness constraint for this index
-                    ConstraintCreator constraintCreator = tx.schema().constraintFor( label );
-                    for ( String key : keys )
-                    {
-                        constraintCreator = constraintCreator.assertPropertyIsUnique( key );
-                    }
-                    // TODO also make it so that it's possible to add other types of constraints... this would mean
-                    //      guaranteeing e.g. property existence on entities given certain entity tokens and such
-                    constraintCreator.create();
-                    tx.commit();
-                }
-                catch ( ConstraintViolationException e )
-                {
-                    // This is fine, either we tried to create a uniqueness constraint on data that isn't unique (we just generate random data above)
-                    // or we already created a similar constraint.
-                }
+                createRelationshipIndex( db, entityToken, keys );
             }
         }
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
+        }
+    }
+
+    private void createNodeIndexAndConstraint( GraphDatabaseAPI db, String entityToken, String[] keys )
+    {
+        Label label = Label.label( entityToken );
+        createIndex( db, schema -> schema.indexFor( label ), keys );
+
+        if ( keys.length == 1 && random.nextFloat() < 0.3 )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                // Also create a uniqueness constraint for this index
+                ConstraintCreator constraintCreator = tx.schema().constraintFor( label );
+                for ( String key : keys )
+                {
+                    constraintCreator = constraintCreator.assertPropertyIsUnique( key );
+                }
+                // TODO also make it so that it's possible to add other types of constraints... this would mean
+                //      guaranteeing e.g. property existence on entities given certain entity tokens and such
+                constraintCreator.create();
+                tx.commit();
+            }
+            catch ( ConstraintViolationException e )
+            {
+                // This is fine, either we tried to create a uniqueness constraint on data that isn't unique (we just generate random data above)
+                // or we already created a similar constraint.
+            }
+        }
+    }
+
+    private void createRelationshipIndex( GraphDatabaseAPI db, String entityToken, String[] keys )
+    {
+        RelationshipType type = RelationshipType.withName( entityToken );
+        createIndex( db, schema -> schema.indexFor( type ), keys );
+    }
+
+    private void createIndex( GraphDatabaseAPI db, Function<Schema,IndexCreator> indexFunc, String[] keys )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            IndexCreator indexCreator = indexFunc.apply( tx.schema() );
+            for ( String key : keys )
+            {
+                indexCreator = indexCreator.on( key );
+            }
+            indexCreator.create();
+            tx.commit();
+        }
+        catch ( ConstraintViolationException e )
+        {
+            // This is fine we've already created a similar index
         }
     }
 
@@ -355,7 +380,8 @@ public class DetectRandomSabotageIT
             {
                 Node startNode = tx.getNodeById( nodeIds.get( random.nextInt( nodeIds.size() ) ) );
                 Node endNode = tx.getNodeById( nodeIds.get( random.nextInt( nodeIds.size() ) ) );
-                startNode.createRelationshipTo( endNode, RelationshipType.withName( random.among( TOKEN_NAMES ) ) );
+                Relationship relationship = startNode.createRelationshipTo( endNode, RelationshipType.withName( random.among( TOKEN_NAMES ) ) );
+                setRandomProperties( relationship );
                 // Prevent more relationships to be added to the "single-relationship" Nodes
                 if ( singleRelationshipNodes.remove( startNode.getId() ) )
                 {

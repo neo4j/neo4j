@@ -386,8 +386,14 @@ class CheckerTestBase
     long relationship( long id, long startNode, long endNode, int type, long startPrev, long startNext, long endPrev, long endNext, boolean firstInStart,
             boolean firstInEnd )
     {
-        RelationshipRecord relationship = new RelationshipRecord( id ).initialize( true, NULL, startNode, endNode, type, startPrev, startNext, endPrev,
-                endNext, firstInStart, firstInEnd );
+        return relationship( id, startNode, endNode, type, NULL, startPrev, startNext, endPrev, endNext, firstInStart, firstInEnd );
+    }
+
+    long relationship( long id, long startNode, long endNode, int type, long nextProp, long startPrev, long startNext, long endPrev, long endNext,
+            boolean firstInStart, boolean firstInEnd )
+    {
+        RelationshipRecord relationship = new RelationshipRecord( id ).initialize( true, nextProp, startNode, endNode, type, startPrev, startNext,
+                endPrev, endNext, firstInStart, firstInEnd );
         relationshipStore.updateRecord( relationship, CursorContext.NULL );
         return id;
     }

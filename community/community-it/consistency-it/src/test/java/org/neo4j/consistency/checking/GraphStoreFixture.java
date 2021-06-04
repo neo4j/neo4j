@@ -78,6 +78,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -246,6 +247,29 @@ public abstract class GraphStoreFixture implements AutoCloseable
             }
             nodeCursor.properties( propertyCursor );
             EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId, true ).withTokens( labels );
+            while ( propertyCursor.next() )
+            {
+                update.added( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
+            }
+            return update.build();
+        }
+    }
+
+    public EntityUpdates relationshipAsUpdates( long relId )
+    {
+        try ( StorageReader storeReader = storageEngine.newReader();
+              StorageRelationshipScanCursor relCursor = storeReader.allocateRelationshipScanCursor( NULL );
+              StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor( NULL );
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor( NULL, INSTANCE ) )
+        {
+            relCursor.single( relId );
+            if ( !relCursor.next() || !relCursor.hasProperties() )
+            {
+                return null;
+            }
+            int type = relCursor.type();
+            relCursor.properties( propertyCursor );
+            EntityUpdates.Builder update = EntityUpdates.forEntity( relId, true ).withTokens( type );
             while ( propertyCursor.next() )
             {
                 update.added( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
