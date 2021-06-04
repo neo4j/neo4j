@@ -1282,6 +1282,39 @@ class OrLeafPlanningIntegrationTest
     } should be(90)
   }
 
+  test("should solve id seekable predicates in OR expression") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .addNodeIndex("L", Seq("prop"), 0.5, 0.5)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n:L) WHERE id(n) = 1 OR n.prop > 123
+        |RETURN n""".stripMargin
+    )
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.filter("n:L")
+        .|.nodeByIdSeek("n", Set(), 1)
+        .nodeIndexOperator("n:L(prop > 123)", argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue))
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator("n:L(prop > 123)", argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue))
+        .filter("n:L")
+        .nodeByIdSeek("n", Set(), 1)
+        .build()
+    ))
+  }
+
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
     Await.result(scala.concurrent.Future(f)(scala.concurrent.ExecutionContext.global), Duration.apply(timeout, "s"))
   }

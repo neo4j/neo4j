@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.DisjunctionForOneVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.InlinedRelationshipTypePredicateKind
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.WhereClausePredicateKind
@@ -144,7 +145,14 @@ object OrLeafPlanner {
     override def stripAllFromQueryGraph(qg: QueryGraph): QueryGraph = qg.withSelections(Selections())
 
     override def collectRelatedPredicates(qg: QueryGraph, disjunction: DisjunctionForOneVariable): Seq[DistributablePredicate] = {
-      qg.selections.flatPredicates.collect {
+      // IdSeekable predicates are never related
+      def removeIdSeekablePredicates(predicates: Seq[Expression]) = {
+        predicates.filter{case _@AsIdSeekable(_) => false; case _ => true}
+      }
+
+      val predicates = removeIdSeekablePredicates(qg.selections.flatPredicates)
+
+      predicates.collect {
         // Those predicates which only use the variable that is used in the OR
         // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.
         case e if variableUsedInExpression(e, qg.argumentIds).map(_.name).contains(disjunction.variableName) && !e.isInstanceOf[Ors] => WhereClausePredicate(e)
