@@ -37,6 +37,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.internal.recordstorage.Command.Mode.CREATE;
 import static org.neo4j.internal.recordstorage.Command.Mode.DELETE;
@@ -236,6 +237,12 @@ public class OnlineIndexUpdates implements IndexUpdates
     public void close()
     {
         closeAllUnchecked( nodeCursor, relationshipCursor, reader );
+    }
+
+    @VisibleForTesting
+    protected Collection<IndexEntryUpdate<IndexDescriptor>> getUpdates()
+    {
+        return updates;
     }
 
     @Override
