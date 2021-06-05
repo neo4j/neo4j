@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
@@ -78,6 +79,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -667,6 +669,24 @@ class NeoStoreTransactionApplierTest
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
         verify( indexingService ).activateIndex( rule );
         verify( cacheAccess ).addSchemaRule( rule );
+    }
+
+    @Test
+    void closeIndexUpdatesOnContextClose() throws Exception
+    {
+        RecordStorageEngine storageEngine = mock( RecordStorageEngine.class );
+        RecordStorageReader storageReader = mock( RecordStorageReader.class );
+        when( storageEngine.newReader() ).thenReturn( storageReader );
+        try ( var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore, storageEngine,
+                mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE ) )
+        {
+            IndexUpdates indexEntryUpdates = batchContext.indexUpdates();
+            ((OnlineIndexUpdates) indexEntryUpdates).getUpdates().add( IndexEntryUpdate.add( 1, IndexDescriptor.NO_INDEX ) );
+
+            assertTrue( indexEntryUpdates.hasUpdates() );
+        }
+
+        verify( storageReader ).close();
     }
 
     @Test

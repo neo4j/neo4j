@@ -103,7 +103,6 @@ public class BatchContextImpl implements BatchContext
             {
                 throw new IOException( "Failed to flush index updates", e );
             }
-            indexUpdates = null;
         }
     }
 
