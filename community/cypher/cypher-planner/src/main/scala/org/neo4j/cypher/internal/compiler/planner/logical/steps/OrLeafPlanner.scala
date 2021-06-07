@@ -145,14 +145,10 @@ object OrLeafPlanner {
     override def stripAllFromQueryGraph(qg: QueryGraph): QueryGraph = qg.withSelections(Selections())
 
     override def collectRelatedPredicates(qg: QueryGraph, disjunction: DisjunctionForOneVariable): Seq[DistributablePredicate] = {
-      // IdSeekable predicates are never related
-      def removeIdSeekablePredicates(predicates: Seq[Expression]) = {
-        predicates.filter{case _@AsIdSeekable(_) => false; case _ => true}
-      }
-
-      val predicates = removeIdSeekablePredicates(qg.selections.flatPredicates)
-
-      predicates.collect {
+      qg.selections.flatPredicates
+          // IdSeekable predicates are never related
+          .filter{case _@AsIdSeekable(_) => false; case _ => true}
+          .collect {
         // Those predicates which only use the variable that is used in the OR
         // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.
         case e if variableUsedInExpression(e, qg.argumentIds).map(_.name).contains(disjunction.variableName) && !e.isInstanceOf[Ors] => WhereClausePredicate(e)
