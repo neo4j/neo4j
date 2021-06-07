@@ -56,13 +56,13 @@ public class IndexTxStateUpdaterTestBase
     IndexTxStateUpdater indexTxUpdater;
 
     StubPropertyCursor propertyCursor = new StubPropertyCursor();
+    StorageReader storageReader = mock( StorageReader.class );
 
     void setUp( List<IndexDescriptor> indexes ) throws IndexNotFoundKernelException
     {
         txState = mock( TransactionState.class );
         when( txState.memoryTracker() ).thenReturn( EmptyMemoryTracker.INSTANCE );
 
-        StorageReader storageReader = mock( StorageReader.class );
         when( storageReader.valueIndexesGetRelated( any(), anyInt(), any() ) ).thenAnswer( invocationOnMock ->
         {
             long[] tokens = invocationOnMock.getArgument( 0 );

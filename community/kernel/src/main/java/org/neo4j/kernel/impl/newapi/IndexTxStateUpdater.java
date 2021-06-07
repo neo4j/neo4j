@@ -72,18 +72,16 @@ public class IndexTxStateUpdater
     /**
      * A label has been changed, figure out what updates are needed to tx state.
      *
-     * @param labelId The id of the changed label
-     * @param existingPropertyKeyIds all property key ids the node has, sorted by id
      * @param node cursor to the node where the change was applied
      * @param propertyCursor cursor to the properties of node
      * @param changeType The type of change event
+     * @param indexes the indexes related to the node
      */
-    void onLabelChange( int labelId, int[] existingPropertyKeyIds, NodeCursor node, PropertyCursor propertyCursor, LabelChangeType changeType )
+    void onLabelChange( NodeCursor node, PropertyCursor propertyCursor, LabelChangeType changeType, Collection<IndexDescriptor> indexes )
     {
         assert noSchemaChangedInTx();
 
         // Check all indexes of the changed label
-        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( new long[]{labelId}, existingPropertyKeyIds, NODE );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();

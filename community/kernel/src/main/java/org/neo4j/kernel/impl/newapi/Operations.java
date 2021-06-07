@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -361,30 +362,47 @@ public class Operations implements Write, SchemaWrite
     private void checkConstraintsAndAddLabelToNode( long node, int nodeLabel )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        // Load the property key id list for this node. We may need it for constraint validation if there are any related constraints,
-        // but regardless we need it for tx state updating
-        int[] existingPropertyKeyIds = loadSortedNodePropertyKeyList();
+        Collection<IndexDescriptor> indexes = checkConstraintsAndGetIndexes( node, nodeLabel );
+        ktx.txState().nodeDoAddLabel( nodeLabel, node );
+        updater.onLabelChange( nodeCursor, propertyCursor, ADDED_LABEL, indexes );
+    }
 
-        //Check so that we are not breaking uniqueness constraints
-        //We do this by checking if there is an existing node in the index that
-        //with the same label and property combination.
-        if ( existingPropertyKeyIds.length > 0 )
+    private Collection<IndexDescriptor> checkConstraintsAndGetIndexes( long node, int nodeLabel )
+            throws UniquePropertyValueValidationException, UnableToValidateConstraintException
+    {
+        if ( storageReader.hasRelatedSchema( nodeLabel, NODE ) )
         {
-            for ( IndexBackedConstraintDescriptor uniquenessConstraint : storageReader.uniquenessConstraintsGetRelated( new long[]{nodeLabel},
-                    existingPropertyKeyIds, NODE ) )
+            // Load the property key id list for this node. We may need it for constraint validation if there are any related constraints,
+            // but regardless we need it for tx state updating
+            int[] existingPropertyKeyIds = loadSortedNodePropertyKeyList();
+
+            //Check so that we are not breaking uniqueness constraints
+            //We do this by checking if there is an existing node in the index that
+            //with the same label and property combination.
+            if ( existingPropertyKeyIds.length > 0 )
             {
-                PropertyIndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniquenessConstraint.schema(),
-                        StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
-                if ( propertyValues != null )
+                Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( new long[]{nodeLabel}, existingPropertyKeyIds, NODE );
+                for ( IndexDescriptor index : indexes )
                 {
-                    validateNoExistingNodeWithExactValues( uniquenessConstraint, propertyValues, node );
+                    if ( index.isUnique() )
+                    {
+                        PropertyIndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( index.schema(),
+                                                                                                   StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
+                        if ( propertyValues != null )
+                        {
+                            validateNoExistingNodeWithExactValues( (UniquenessConstraintDescriptor) storageReader.constraintGetForName( index.getName() ),
+                                                                   index,
+                                                                   propertyValues,
+                                                                   node );
+                        }
+                    }
                 }
+
+                return indexes;
             }
         }
 
-        //node is there and doesn't already have the label, let's add
-        ktx.txState().nodeDoAddLabel( nodeLabel, node );
-        updater.onLabelChange( nodeLabel, existingPropertyKeyIds, nodeCursor, propertyCursor, ADDED_LABEL );
+        return Collections.emptyList();
     }
 
     private int[] loadSortedNodePropertyKeyList()
@@ -560,10 +578,10 @@ public class Operations implements Write, SchemaWrite
      * Check so that there is not an existing node with the exact match of label and property
      */
     private void validateNoExistingNodeWithExactValues( IndexBackedConstraintDescriptor constraint,
+                                                        IndexDescriptor index,
             PropertyIndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        IndexDescriptor index = allStoreHolder.indexGetForName( constraint.getName() );
         try ( FullAccessNodeValueIndexCursor valueCursor = cursors.allocateFullAccessNodeValueIndexCursor( ktx.cursorContext(), memoryTracker );
               IndexReaders indexReaders = new IndexReaders( index, allStoreHolder ) )
         {
@@ -632,7 +650,9 @@ public class Operations implements Write, SchemaWrite
         ktx.txState().nodeDoRemoveLabel( labelId, node );
         if ( storageReader.hasRelatedSchema( labelId, NODE ) )
         {
-            updater.onLabelChange( labelId, loadSortedNodePropertyKeyList(), nodeCursor, propertyCursor, REMOVED_LABEL );
+            int[] existingPropertyKeyIds = loadSortedNodePropertyKeyList();
+            updater.onLabelChange( nodeCursor, propertyCursor, REMOVED_LABEL,
+                                   storageReader.valueIndexesGetRelated( new long[]{labelId}, existingPropertyKeyIds, NODE ) );
         }
         return true;
     }
@@ -715,7 +735,8 @@ public class Operations implements Write, SchemaWrite
     {
         Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = storageReader.uniquenessConstraintsGetRelated( labels, propertyKey, NODE );
         SchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds, constraint ->
-                validateNoExistingNodeWithExactValues( constraint, getAllPropertyValues( constraint.schema(), propertyKey, value ), node ) );
+                validateNoExistingNodeWithExactValues( constraint, storageReader.indexGetForName( constraint.getName() ),
+                                                       getAllPropertyValues( constraint.schema(), propertyKey, value ), node ) );
     }
 
     @Override

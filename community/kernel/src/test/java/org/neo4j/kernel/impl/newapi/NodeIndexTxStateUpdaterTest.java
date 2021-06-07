@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
@@ -77,8 +79,8 @@ class NodeIndexTxStateUpdaterTest extends IndexTxStateUpdaterTestBase
     void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
     {
         // WHEN
-        indexTxUpdater.onLabelChange( UN_INDEXED_LABEL_ID, PROPS, node, propertyCursor, ADDED_LABEL );
-        indexTxUpdater.onLabelChange( UN_INDEXED_LABEL_ID, PROPS, node, propertyCursor, REMOVED_LABEL );
+        indexTxUpdater.onLabelChange(  node, propertyCursor, ADDED_LABEL, Collections.emptyList() );
+        indexTxUpdater.onLabelChange(  node, propertyCursor, REMOVED_LABEL, Collections.emptyList() );
 
         // THEN
         verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
@@ -88,7 +90,7 @@ class NodeIndexTxStateUpdaterTest extends IndexTxStateUpdaterTestBase
     void shouldUpdateIndexesOnAddedLabel()
     {
         // WHEN
-        indexTxUpdater.onLabelChange( LABEL_ID_1, PROPS, node, propertyCursor, ADDED_LABEL );
+        indexTxUpdater.onLabelChange(  node, propertyCursor, ADDED_LABEL, storageReader.valueIndexesGetRelated( new long[]{LABEL_ID_1}, PROPS, NODE ) );
 
         // THEN
         verifyIndexUpdate( indexOn1_1.schema(), node.nodeReference(), null, values( "hi1" ) );
@@ -100,7 +102,7 @@ class NodeIndexTxStateUpdaterTest extends IndexTxStateUpdaterTestBase
     void shouldUpdateIndexesOnRemovedLabel()
     {
         // WHEN
-        indexTxUpdater.onLabelChange( LABEL_ID_2, PROPS, node, propertyCursor, REMOVED_LABEL );
+        indexTxUpdater.onLabelChange( node, propertyCursor, REMOVED_LABEL, storageReader.valueIndexesGetRelated( new long[]{LABEL_ID_2}, PROPS, NODE ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), null );
