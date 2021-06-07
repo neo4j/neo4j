@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class ParallelPartitionedNodeLabelScanTransactionStateEmptyDatabaseTest
-        extends ParallelPartitionedNodeLabelScanTransactionStateTestBase<WriteTestSupport>
+import org.junit.jupiter.api.Nested;
+
+class PartitionedScanTest
 {
-    @Override
-    public WriteTestSupport newTestSupport()
+    @Nested
+    class NodeLabelIndex extends NodeLabelIndexPartitionedScanTestSuite
     {
-        return new WriteTestSupport();
+    }
+
+    @Nested
+    class RelationshipTypeIndex extends RelationshipTypeIndexPartitionedScanTestSuite
+    {
     }
 }
