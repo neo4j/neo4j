@@ -408,20 +408,30 @@ public class Operations implements Write, SchemaWrite
 
         int[] propertyKeyIds = new int[4]; // just some arbitrary starting point, it grows on demand
         int cursor = 0;
+        boolean isSorted = true;
         do
         {
             if ( cursor == propertyKeyIds.length )
             {
                 propertyKeyIds = Arrays.copyOf( propertyKeyIds, cursor * 2 );
             }
-            propertyKeyIds[cursor++] = propertyCursor.propertyKey();
+            int key = propertyCursor.propertyKey();
+            propertyKeyIds[cursor] = key;
+            if ( cursor > 0 && key < propertyKeyIds[cursor - 1] )
+            {
+                isSorted = false;
+            }
+            cursor++;
         }
         while ( propertyCursor.next() );
         if ( cursor != propertyKeyIds.length )
         {
             propertyKeyIds = Arrays.copyOf( propertyKeyIds, cursor );
         }
-        Arrays.sort( propertyKeyIds );
+        if ( !isSorted )
+        {
+            Arrays.sort( propertyKeyIds );
+        }
         return propertyKeyIds;
     }
 
