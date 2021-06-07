@@ -62,18 +62,16 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     private static final SystemDatabaseExecutionContext NO_COMMIT_HOOK = ( db, tx ) -> {};
 
     private final DatabaseManager<?> databaseManager;
-    private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final Lifecycle globalLife;
     private final DatabaseEventListeners databaseEventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final Log log;
     private final Config globalConfig;
 
-    public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, CompositeDatabaseAvailabilityGuard globalAvailabilityGuard, Lifecycle globalLife,
+    public DatabaseManagementServiceImpl( DatabaseManager<?> databaseManager, Lifecycle globalLife,
             DatabaseEventListeners databaseEventListeners, GlobalTransactionEventListeners transactionEventListeners, Log log, Config globalConfig )
     {
         this.databaseManager = databaseManager;
-        this.globalAvailabilityGuard = globalAvailabilityGuard;
         this.globalLife = globalLife;
         this.databaseEventListeners = databaseEventListeners;
         this.transactionEventListeners = transactionEventListeners;
@@ -188,7 +186,6 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
         try
         {
             log.info( "Shutdown started" );
-            globalAvailabilityGuard.shutdown();
             globalLife.shutdown();
         }
         catch ( Exception throwable )

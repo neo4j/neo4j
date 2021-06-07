@@ -61,7 +61,7 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
     protected DatabaseManagementService createManagementService( GlobalModule globalModule, LifeSupport globalLife, Log internalLog,
                                                                  DatabaseManager<?> databaseManager )
     {
-        return new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
+        return new DatabaseManagementServiceImpl( databaseManager,
                                                   globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(),
                                                   internalLog, globalModule.getGlobalConfig() )
         {
