@@ -36,40 +36,45 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     private static final String ENGLISH = "english";
     static final String SWEDISH = "swedish";
     private static final String FOLDING = "standard-folding";
+    public static final String NODE_INDEX_NAME = "nodes";
+    public static final String REL_INDEX_NAME = "rels";
 
     @Test
     void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
-        }
+        createIndexes();
 
-        long id;
+        long nodeId;
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
             createNodeIndexableByPropertyValue( tx, LABEL, "Hello and hello again, in the end." );
-            id = createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
+            nodeId = createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
 
+            createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                        "Hello and hello again, in the end." );
+            relId = createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                                "En apa och en tomte bodde i ett hus." );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsNothing( ktx, true, "nodes", "and" );
-            assertQueryFindsNothing( ktx, true, "nodes", "in" );
-            assertQueryFindsNothing( ktx, true, "nodes", "the" );
-            assertQueryFindsIds( ktx, true, "nodes", "en", id );
-            assertQueryFindsIds( ktx, true, "nodes", "och", id );
-            assertQueryFindsIds( ktx, true, "nodes", "ett", id );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "and" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "in" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "the" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "and" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "in" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "the" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "en", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "och", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "ett", nodeId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "en", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "och", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "ett", relId );
         }
     }
 
@@ -78,21 +83,19 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, SWEDISH );
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
-        }
+        createIndexes();
 
-        long id;
+        long nodeId;
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
-            id = createNodeIndexableByPropertyValue( tx, LABEL, "Hello and hello again, in the end." );
+            nodeId = createNodeIndexableByPropertyValue( tx, LABEL, "Hello and hello again, in the end." );
             createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
+
+            relId = createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                        "Hello and hello again, in the end." );
+            createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                                "En apa och en tomte bodde i ett hus." );
 
             tx.commit();
         }
@@ -100,12 +103,18 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, true, "nodes", "and", id );
-            assertQueryFindsIds( ktx, true, "nodes", "in", id );
-            assertQueryFindsIds( ktx, true, "nodes", "the", id );
-            assertQueryFindsNothing( ktx, true, "nodes", "en" );
-            assertQueryFindsNothing( ktx, true, "nodes", "och" );
-            assertQueryFindsNothing( ktx, true, "nodes", "ett" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "and", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "in", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "the", nodeId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "and", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "in", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "the", relId );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "en" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "och" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "ett" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "en" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "och" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "ett" );
         }
     }
 
@@ -114,24 +123,26 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextSettings.fulltext_default_analyzer, FOLDING );
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
-        }
+        createIndexes();
 
-        long id;
-        long id2;
-        long id3;
+        long nodeId;
+        long nodeId2;
+        long nodeId3;
+        long relId;
+        long relId2;
+        long relId3;
         try ( Transaction tx = db.beginTx() )
         {
-            id = createNodeIndexableByPropertyValue( tx, LABEL, "Příliš žluťoučký kůň úpěl ďábelské ódy." );
-            id2 = createNodeIndexableByPropertyValue( tx, LABEL, "1SOMEDATA1" );
-            id3 = createNodeIndexableByPropertyValue( tx, LABEL, "Ⓐpa Ɐmma Ǣta Ꜷajaj Ꜻverka dett⒜" );
+            nodeId = createNodeIndexableByPropertyValue( tx, LABEL, "Příliš žluťoučký kůň úpěl ďábelské ódy." );
+            nodeId2 = createNodeIndexableByPropertyValue( tx, LABEL, "1SOMEDATA1" );
+            nodeId3 = createNodeIndexableByPropertyValue( tx, LABEL, "Ⓐpa Ɐmma Ǣta Ꜷajaj Ꜻverka dett⒜" );
+
+            relId = createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                                 "Příliš žluťoučký kůň úpěl ďábelské ódy." );
+            relId2 = createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                          "1SOMEDATA1" );
+            relId3 = createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                          "Ⓐpa Ɐmma Ǣta Ꜷajaj Ꜻverka dett⒜" );
 
             tx.commit();
         }
@@ -139,72 +150,115 @@ class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, true, "nodes", "prilis", id );
-            assertQueryFindsIds( ktx, true, "nodes", "zlutoucky", id );
-            assertQueryFindsIds( ktx, true, "nodes", "kun", id );
-            assertQueryFindsIds( ktx, true, "nodes", "upel", id );
-            assertQueryFindsIds( ktx, true, "nodes", "dabelske", id );
-            assertQueryFindsIds( ktx, true, "nodes", "ody", id );
-            assertQueryFindsIds( ktx, true, "nodes", "1SOMEDATA1", id2 );
-            assertQueryFindsIds( ktx, true, "nodes", "1somedata1", id2 );
-            assertQueryFindsIds( ktx, true, "nodes", "*SOMEDATA*", id2 );
-            assertQueryFindsIds( ktx, true, "nodes", "*somedata*", id2 );
-            assertQueryFindsIds( ktx, true, "nodes", "Apa", id3 );
-            assertQueryFindsIds( ktx, true, "nodes", "amma", id3 );
-            assertQueryFindsIds( ktx, true, "nodes", "AEta", id3 );
-            assertQueryFindsIds( ktx, true, "nodes", "Auajaj", id3 );
-            assertQueryFindsIds( ktx, true, "nodes", "Avverka", id3 );
-            assertQueryFindsIds( ktx, true, "nodes", "dett(a)", id3 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "prilis", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "zlutoucky", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "kun", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "upel", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "dabelske", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "ody", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "1SOMEDATA1", nodeId2 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "1somedata1", nodeId2 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "*SOMEDATA*", nodeId2 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "*somedata*", nodeId2 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "Apa", nodeId3 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "amma", nodeId3 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "AEta", nodeId3 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "Auajaj", nodeId3 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "Avverka", nodeId3 );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "dett(a)", nodeId3 );
+
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "prilis", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "zlutoucky", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "kun", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "upel", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "dabelske", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "ody", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "1SOMEDATA1", relId2 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "1somedata1", relId2 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "*SOMEDATA*", relId2 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "*somedata*", relId2 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "Apa", relId3 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "amma", relId3 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "AEta", relId3 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "Auajaj", relId3 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "Avverka", relId3 );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "dett(a)", relId3 );
         }
     }
 
     @Test
     void shouldNotReindexNodesWhenDefaultAnalyzerIsChanged() throws Exception
     {
-        long secondID;
         applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( "nodes" ).create();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexOnline( "nodes", 1, TimeUnit.MINUTES );
-        }
+        createIndexes();
 
+        long nodeId;
+        long relId;
         try ( Transaction tx = db.beginTx() )
         {
             createNodeIndexableByPropertyValue( tx, LABEL, "Hello and hello again, in the end." );
-            secondID = createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
+            nodeId = createNodeIndexableByPropertyValue( tx, LABEL, "En apa och en tomte bodde i ett hus." );
 
+            createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                        "Hello and hello again, in the end." );
+            relId = createRelationshipIndexableByPropertyValue( tx, tx.createNode().getId(), tx.createNode().getId(),
+                                                                "En apa och en tomte bodde i ett hus." );
             tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsNothing( ktx, true, "nodes", "and" );
-            assertQueryFindsNothing( ktx, true, "nodes", "in" );
-            assertQueryFindsNothing( ktx, true, "nodes", "the" );
-            assertQueryFindsIds( ktx, true, "nodes", "en", secondID );
-            assertQueryFindsIds( ktx, true, "nodes", "och", secondID );
-            assertQueryFindsIds( ktx, true, "nodes", "ett", secondID );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "and" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "in" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "the" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "en", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "och", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "ett", nodeId );
+
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "and" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "in" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "the" );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "en", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "och", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "ett", relId );
         }
 
         applySetting( FulltextSettings.fulltext_default_analyzer, SWEDISH );
         try ( KernelTransactionImplementation ktx = getKernelTransaction() )
         {
             SchemaRead schemaRead = ktx.schemaRead();
-            await( schemaRead.indexGetForName( "nodes" ) );
+            await( schemaRead.indexGetForName( NODE_INDEX_NAME ) );
             // These results should be exactly the same as before the configuration change and restart.
-            assertQueryFindsNothing( ktx, true, "nodes", "and" );
-            assertQueryFindsNothing( ktx, true, "nodes", "in" );
-            assertQueryFindsNothing( ktx, true, "nodes", "the" );
-            assertQueryFindsIds( ktx, true, "nodes", "en", secondID );
-            assertQueryFindsIds( ktx, true, "nodes", "och", secondID );
-            assertQueryFindsIds( ktx, true, "nodes", "ett", secondID );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "and" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "in" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "the" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "en", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "och", nodeId );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "ett", nodeId );
+
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "and" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "in" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "the" );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "en", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "och", relId );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "ett", relId );
+        }
+    }
+
+    private void createIndexes()
+    {
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().indexFor( LABEL ).on( PROP ).withIndexType( FULLTEXT ).withName( NODE_INDEX_NAME ).create();
+            tx.schema().indexFor( RELTYPE ).on( PROP ).withIndexType( FULLTEXT ).withName( REL_INDEX_NAME ).create();
+            tx.commit();
+        }
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexOnline( NODE_INDEX_NAME, 1, TimeUnit.MINUTES );
+            tx.schema().awaitIndexOnline( REL_INDEX_NAME, 1, TimeUnit.MINUTES );
         }
     }
 }

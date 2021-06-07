@@ -126,9 +126,20 @@ class FulltextIndexConsistencyCheckIT
     }
 
     @Test
-    void mustBeAbleToConsistencyCheckEmptyDatabaseWithFulltextIndexingEnabled() throws Exception
+    void mustBeAbleToConsistencyCheckEmptyDatabaseWithWithEmptyFulltextIndexes() throws Exception
     {
-        createDatabase();
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( NODE_CREATE, "nodes", asStrList( "Label" ), asStrList( "prop" ) ) ).close();
+            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1" ), asStrList( "p1" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            tx.commit();
+        }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
     }
