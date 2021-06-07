@@ -93,6 +93,7 @@ public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cu
      * </pre>
      *
      * @param cursor The cursor to be used for reading.
+     * @throws IllegalStateException if transaction contains changed state.
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      */
     boolean reservePartition( Cursor cursor );

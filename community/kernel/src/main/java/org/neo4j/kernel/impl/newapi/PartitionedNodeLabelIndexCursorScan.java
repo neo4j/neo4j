@@ -36,6 +36,7 @@ public class PartitionedNodeLabelIndexCursorScan<Cursor extends org.neo4j.intern
         this.read = read;
         this.query = query;
         this.tokenScan = tokenScan;
+        throwIfTxState();
     }
 
     @Override
@@ -47,6 +48,7 @@ public class PartitionedNodeLabelIndexCursorScan<Cursor extends org.neo4j.intern
     @Override
     public boolean reservePartition( Cursor cursor )
     {
+        throwIfTxState();
         var indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
         var indexProgressor = tokenScan.reservePartition( indexCursor );
@@ -56,5 +58,13 @@ public class PartitionedNodeLabelIndexCursorScan<Cursor extends org.neo4j.intern
         }
         indexCursor.initialize( indexProgressor, query.tokenId(), IndexOrder.NONE );
         return true;
+    }
+
+    protected void throwIfTxState()
+    {
+        if ( read.hasTxStateWithChanges() )
+        {
+            throw new IllegalStateException( "Transaction contains changes; PartitionScan is only valid in Read-Only transactions." );
+        }
     }
 }

@@ -54,10 +54,10 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 public class ParallelPartitionedNodeLabelScanTest extends KernelAPIReadTestBase<ReadTestSupport>
 {
     // We need a lot of nodes for the underlying GBPTree to have multiple subtrees to create partitions over
-    private static final int NUMBER_OF_NODES = 100_000;
+    static final int NUMBER_OF_NODES = 100_000;
     // Maximum number of partitions that can be created over this data
     // This number has been discovered experimentally.
-    private static final int MAX_NUMBER_OF_PARTITIONS = 7;
+    static final int MAX_NUMBER_OF_PARTITIONS = 7;
     private static final Map<Label,Integer> LABEL_IDS = new HashMap<>();
     private static final Map<Label,Set<Long>> LABEL_NODES = Arrays.stream( Label.values() ).collect( Collectors.toMap( l -> l, l -> new HashSet<>() ) );
 
