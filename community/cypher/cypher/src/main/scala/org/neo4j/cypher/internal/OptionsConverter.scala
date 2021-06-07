@@ -56,7 +56,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Collections
 import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import MapValueOps.Ops
 
 trait OptionsConverter[T] {
 
@@ -97,12 +97,12 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   val USE_EXISTING_DATA = "use"
 
   override def convert(map: MapValue): CreateDatabaseOptions = {
-      var dbSeed: Option[String] = None
-      map.foreach { case (key, value) =>
+
+      map.foldLeft(CreateDatabaseOptions(None, None)) { case (ops, (key, value)) =>
       //existingData
       if (key.equalsIgnoreCase(EXISTING_DATA)) {
         value match {
-          case existingDataVal: TextValue if USE_EXISTING_DATA.equalsIgnoreCase(existingDataVal.stringValue()) =>
+          case existingDataVal: TextValue if USE_EXISTING_DATA.equalsIgnoreCase(existingDataVal.stringValue()) => ops.copy(existingData = Some(USE_EXISTING_DATA))
           case value: TextValue =>
             throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_DATA '${value.stringValue()}'. Expected '$USE_EXISTING_DATA'.")
           case value: AnyValue =>
@@ -112,8 +112,7 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
         //existingDataSeedInstance
       } else if (key.equalsIgnoreCase(EXISTING_SEED_INSTANCE)) {
         value match {
-          case seed: TextValue =>
-            dbSeed = Some(seed.stringValue())
+          case seed: TextValue => ops.copy(databaseSeed = Some(seed.stringValue()))
           case _ =>
             throw new InvalidArgumentsException(s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected database uuid string.")
         }
@@ -121,29 +120,15 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
         throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $PERMITTED_OPTIONS.")
       }
     }
-    CreateDatabaseOptions(USE_EXISTING_DATA, dbSeed)
   }
 
   override def operation: String = "create database"
 }
 
 trait IndexOptionsConverter[T] extends OptionsConverter[T] {
-  implicit class MapValueExists(mv: MapValue) {
-    def exists(f: (String, Any) => Boolean): Boolean = {
-      var result = false
-      mv.foreach { case (k, v) => if (f(k, v)) result = true }
-      result
-    }
-
-    def getOption(key: String): Option[AnyValue] = mv.get(key) match {
-      case _: NoValue => None
-      case value => Some(value)
-    }
-  }
-
   def getOptionsParts(options: MapValue, schemaType: String): (Option[AnyValue], IndexConfig) = {
 
-    if (options.keySet().asScala.exists(k => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig"))) {
+    if (options.exists{ case (k,_) => !k.equalsIgnoreCase("indexProvider") && !k.equalsIgnoreCase("indexConfig")}) {
       throw new InvalidArgumentsException(s"Failed to create $schemaType: Invalid option provided, valid options are `indexProvider` and `indexConfig`.")
     }
     val maybeIndexProvider = options.getOption("indexprovider")
@@ -300,4 +285,50 @@ case object CreateFulltextIndexOptionsConverter extends IndexOptionsConverter[Cr
 
 case class CreateBtreeIndexOptions(provider: Option[String], config: IndexConfig)
 case class CreateFulltextIndexOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
-case class CreateDatabaseOptions(existingData: String, databaseSeed: Option[String])
+case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String]) {
+  def validate(dbName: String): Unit = {
+    (existingData, databaseSeed) match {
+      case (Some(_), None) | (None, Some(_)) =>
+        throw new InvalidArgumentsException(s"Could not create database '$dbName'. Both existingData and databaseSeed options are required to seed database.")
+      case _ => ()
+    }
+  }
+}
+
+object MapValueOps {
+
+  implicit class Ops(mv: MapValue) extends Map[String, AnyValue] {
+
+    def getOption(key: String): Option[AnyValue] = mv.get(key) match {
+      case _: NoValue => None
+      case value => Some(value)
+    }
+
+    override def +[V1 >: AnyValue](kv: (String, V1)): Map[String, V1] = {
+      val mvb = new MapValueBuilder()
+      mv.foreach((k,v) => mvb.add(k, v))
+      mvb.add(kv._1, kv._2.asInstanceOf[AnyValue])
+      mvb.build()
+    }
+
+    override def get(key: String): Option[AnyValue] = getOption(key)
+
+    override def iterator: Iterator[(String, AnyValue)] = {
+      val keys = mv.keySet().iterator()
+      new Iterator[(String, AnyValue)] {
+        override def hasNext: Boolean = keys.hasNext
+
+        override def next(): (String, AnyValue) = {
+          val k = keys.next()
+          (k, mv.get(k))
+        }
+      }
+    }
+
+    override def -(key: String): Map[String, AnyValue] = {
+      val mvb = new MapValueBuilder()
+      mv.foreach((k,v) => if (!k.equals(key)) mvb.add(k,v))
+      mvb.build()
+    }
+  }
+}
