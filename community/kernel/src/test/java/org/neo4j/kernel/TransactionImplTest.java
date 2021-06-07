@@ -64,7 +64,7 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( Status.Transaction.ConstraintsChanged,
-                "Proving that transaction does the right thing" ) ).when( kernelTransaction ).close();
+                "Proving that transaction does the right thing" ) ).when( kernelTransaction ).commit();
         TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         // WHEN
@@ -77,7 +77,7 @@ class TransactionImplTest
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
-        doThrow( new RuntimeException( "Just a random failure" ) ).when( kernelTransaction ).close();
+        doThrow( new RuntimeException( "Just a random failure" ) ).when( kernelTransaction ).commit();
         TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         // WHEN
@@ -98,7 +98,7 @@ class TransactionImplTest
                          return null;
                      }
                  }
-        ).when( kernelTransaction ).close();
+        ).when( kernelTransaction ).commit();
         TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         // WHEN
@@ -111,7 +111,7 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         doReturn( true ).when( kernelTransaction ).isOpen();
         RuntimeException error = new TransactionTerminatedException( Status.Transaction.Terminated );
-        doThrow( error ).when( kernelTransaction ).close();
+        doThrow( error ).when( kernelTransaction ).commit();
         TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         transaction.commit();

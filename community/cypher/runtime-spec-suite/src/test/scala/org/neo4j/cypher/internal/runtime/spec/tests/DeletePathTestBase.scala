@@ -113,7 +113,7 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
     val thrown = the [ConstraintViolationException] thrownBy restartTx()
     thrown.getMessage should include regex "Cannot delete.*because it still has relationships"
 
-    runtimeTestSupport.startNewTx()
+    val tx = runtimeTestSupport.startNewTx()
     tx.getAllNodes.stream().count() shouldBe (4*chainCount)
     tx.getAllRelationships.stream().count() shouldBe (3*chainCount)
   }

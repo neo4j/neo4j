@@ -213,7 +213,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
-     * {@link #close() transaction commit} and specifically with {@link #release()}.
+     * {@link #close() transaction commit} and specifically with {@link #reset()}.
      * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
      * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
      * instances are pooled.
@@ -405,7 +405,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * {@inheritDoc}
      * <p>
      * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
-     * {@link #close()} and {@link #release()} calls.
+     * {@link #close()} and {@link #reset()} calls.
      */
     @Override
     public void markForTermination( Status reason )
@@ -685,9 +685,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             finally
             {
-                release();
+                reset();
             }
         }
+    }
+
+    @Override
+    public void close() throws TransactionFailureException
+    {
+        if ( isOpen() )
+        {
+            closeTransaction();
+        }
+        pool.release( this );
     }
 
     @Override
@@ -1009,11 +1019,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     /**
-     * Release resources held up by this transaction & return it to the transaction pool.
+     * Resets all internal states of the transaction so that it's ready to be reused.
      * This method is guarded by {@link #terminationReleaseLock} to coordinate concurrent
      * {@link #markForTermination(Status)} calls.
      */
-    private void release()
+    private void reset()
     {
         terminationReleaseLock.lock();
         try
@@ -1038,7 +1048,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             commandCreationContext.close();
             cursorContext.close();
             initializationTrace = NONE;
-            pool.release( this );
             memoryTracker.reset();
         }
         finally

@@ -159,7 +159,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     val thrown = the [ConstraintViolationException] thrownBy restartTx()
     thrown.getMessage should include regex "Cannot delete.*because it still has relationships"
 
-    runtimeTestSupport.startNewTx()
+    val tx = runtimeTestSupport.startNewTx()
     // Nodes and relationships should still be there
     tx.getAllNodes.stream().count() shouldBe nodeCount
     tx.getAllRelationships.stream().count() shouldBe 1

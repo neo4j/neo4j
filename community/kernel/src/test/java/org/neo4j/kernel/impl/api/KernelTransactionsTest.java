@@ -36,6 +36,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.IntUnaryOperator;
+import java.util.stream.IntStream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -343,31 +345,25 @@ class KernelTransactionsTest
     @Test
     void transactionClosesUnderlyingStoreReaderWhenDisposed() throws Throwable
     {
+        // Given
         StorageReader storeStatement1 = mock( StorageReader.class );
         StorageReader storeStatement2 = mock( StorageReader.class );
         StorageReader storeStatement3 = mock( StorageReader.class );
+        KernelTransactions kernelTransactions =
+                newKernelTransactions( mock( TransactionCommitProcess.class ), storeStatement1, storeStatement2, storeStatement3 );
+        // And three active transactions
+        var txOne = kernelTransactions.newInstance( EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L );
+        var txTwo = kernelTransactions.newInstance( EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L );
+        var txThree = kernelTransactions.newInstance( EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L );
+        assertThat( kernelTransactions.activeTransactions().size() ).isEqualTo( 3 );
 
-        KernelTransactions kernelTransactions = newKernelTransactions( mock( TransactionCommitProcess.class ),
-                storeStatement1, storeStatement2, storeStatement3 );
-
-        // start and close 3 transactions from different threads
-        startAndCloseTransaction( kernelTransactions );
-
-        executorService.submit( () -> startAndCloseTransaction( kernelTransactions ) ).get();
-
-        // this is to guarantee that the execution will be in a new thread, not reused one
-        var executorService2 = Executors.newSingleThreadExecutor();
-        try
-        {
-            executorService2.submit( () -> startAndCloseTransaction( kernelTransactions ) ).get();
-        }
-        finally
-        {
-            executorService2.shutdown();
-        }
-
+        // When
+        txOne.close();
+        txTwo.close();
+        txThree.close();
         kernelTransactions.disposeAll();
 
+        // Then
         verify( storeStatement1 ).close();
         verify( storeStatement2 ).close();
         verify( storeStatement3 ).close();
@@ -498,7 +494,7 @@ class KernelTransactionsTest
     }
 
     @Test
-    void doNotAllowToCreateMoreThenMaxActiveTransactions() throws Throwable
+    void shouldNotAllowToCreateMoreThenMaxActiveTransactions() throws Throwable
     {
         Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, 2 );
         KernelTransactions kernelTransactions = newKernelTransactions( config );

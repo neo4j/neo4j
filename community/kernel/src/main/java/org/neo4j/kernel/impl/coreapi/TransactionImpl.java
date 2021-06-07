@@ -164,7 +164,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     public void commit( KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor )
     {
-        safeTerminalOperation( transaction -> transaction.commit( kernelTransactionMonitor ) );
+        safeTerminalOperation( transaction ->
+        {
+            try ( transaction )
+            {
+                transaction.commit( kernelTransactionMonitor );
+            }
+        } );
     }
 
     @Override
@@ -172,7 +178,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     {
         if ( isOpen() )
         {
-            safeTerminalOperation( KernelTransaction::rollback );
+            safeTerminalOperation( transaction ->
+            {
+                try ( transaction )
+                {
+                    transaction.rollback();
+                }
+            } );
         }
     }
 
@@ -655,8 +667,6 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             coreApiResourceTracker.closeAllCloseableResources();
 
             operation.perform( transaction );
-            closed = true;
-            transaction = null;
 
             if ( closeCallbacks != null )
             {
@@ -666,6 +676,11 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         catch ( Exception e )
         {
             throw exceptionMapper.mapException( e );
+        }
+        finally
+        {
+            closed = true;
+            transaction = null;
         }
     }
 

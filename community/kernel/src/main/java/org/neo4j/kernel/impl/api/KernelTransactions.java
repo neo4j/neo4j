@@ -29,7 +29,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.LinkedQueuePool;
-import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -130,10 +129,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
      */
     private final Set<KernelTransactionImplementation> allTransactions = ConcurrentHashMap.newKeySet();
 
-    // Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
-    private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool;
-    // Pool of unused transactions.
-    private final MarshlandPool<KernelTransactionImplementation> localTxPool;
+    private final MonitoredTransactionPool txPool;
     private final ConstraintSemantics constraintSemantics;
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
     private final TokenHoldersIdLookup tokenHoldersIdLookup;
@@ -188,8 +184,9 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
         this.leaseService = leaseService;
-        this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, new KernelTransactionImplementationFactory( allTransactions, tracers ) );
-        this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
+        this.txPool = new MonitoredTransactionPool(
+                new GlobalKernelTransactionPool( allTransactions, new KernelTransactionImplementationFactory( allTransactions, tracers ) ),
+                activeTransactionCounter, config );
         this.transactionMemoryPool = transactionsMemoryPool.newDatabasePool( namedDatabaseId.name(),
                 config.get( memory_transaction_database_max_size ), memory_transaction_database_max_size.name() );
         this.securityLog = databaseDependendies.resolveDependency( AbstractSecurityLog.class );
@@ -211,7 +208,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             {
                 assertRunning();
                 TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
-                KernelTransactionImplementation tx = localTxPool.acquire();
+                KernelTransactionImplementation tx = txPool.acquire();
                 Locks.Client lockClient = locks.newClient();
                 tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
                         lockClient, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet(), clientInfo );
@@ -265,8 +262,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     public void disposeAll()
     {
         terminateTransactions();
-        localTxPool.close();
-        globalTxPool.close();
+        txPool.close();
     }
 
     public void terminateTransactions()
@@ -405,7 +401,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( config, eventListeners,
                             constraintIndexCreator, globalProcedures,
-                            transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef,
+                            transactionCommitProcess, transactionMonitor, txPool, clock, cpuClockRef,
                             tracers, storageEngine, accessCapabilityFactory,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, indexStatisticsStore,
@@ -420,8 +416,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     {
         private final Set<KernelTransactionImplementation> transactions;
 
-        GlobalKernelTransactionPool( Set<KernelTransactionImplementation> transactions,
-                Factory<KernelTransactionImplementation> factory )
+        GlobalKernelTransactionPool( Set<KernelTransactionImplementation> transactions, Factory<KernelTransactionImplementation> factory )
         {
             super( 8, factory );
             this.transactions = transactions;
@@ -436,32 +431,38 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         }
     }
 
-    private static class LocalKernelTransactionPool extends MarshlandPool<KernelTransactionImplementation>
+    static class MonitoredTransactionPool implements Pool<KernelTransactionImplementation>
     {
         private final AtomicInteger activeTransactionCounter;
+        private final GlobalKernelTransactionPool delegate;
         private volatile int maxNumberOfTransaction;
 
-        LocalKernelTransactionPool( Pool<KernelTransactionImplementation> delegatePool, AtomicInteger activeTransactionCounter, Config config )
+        MonitoredTransactionPool( GlobalKernelTransactionPool delegate, AtomicInteger activeTransactionCounter, Config config )
         {
-            super( delegatePool );
+            this.delegate = delegate;
             this.activeTransactionCounter = activeTransactionCounter;
             this.maxNumberOfTransaction = config.get( GraphDatabaseSettings.max_concurrent_transactions );
-            config.addListener( GraphDatabaseSettings.max_concurrent_transactions,
-                    ( oldValue, newValue ) -> maxNumberOfTransaction = newValue );
+            config.addListener( GraphDatabaseSettings.max_concurrent_transactions, ( oldValue, newValue ) -> maxNumberOfTransaction = newValue );
         }
 
         @Override
         public KernelTransactionImplementation acquire()
         {
             verifyTransactionsLimit();
-            return super.acquire();
+            return delegate.acquire();
         }
 
         @Override
-        public void release( KernelTransactionImplementation obj )
+        public void release( KernelTransactionImplementation txn )
         {
             activeTransactionCounter.decrementAndGet();
-            super.release( obj );
+            delegate.release( txn );
+        }
+
+        @Override
+        public void close()
+        {
+            delegate.close();
         }
 
         private void verifyTransactionsLimit()

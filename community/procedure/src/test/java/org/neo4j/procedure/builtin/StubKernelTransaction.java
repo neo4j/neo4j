@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
@@ -168,6 +169,12 @@ public class StubKernelTransaction implements KernelTransaction
     public long closeTransaction()
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void close() throws TransactionFailureException
+    {
+
     }
 
     @Override

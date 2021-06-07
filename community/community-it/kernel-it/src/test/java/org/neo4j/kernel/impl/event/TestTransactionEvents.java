@@ -369,7 +369,7 @@ class TestTransactionEvents
             }
             try ( Transaction transaction = db.beginTx() )
             {
-                tx.createNode().delete();
+                transaction.createNode().delete();
                 transaction.commit();
             }
             verifyListenerCalls( listeners, true );

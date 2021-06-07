@@ -223,13 +223,7 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      * Closes this transaction, roll back any changes if {@link #commit()} was not called.
      */
     @Override
-    default void close() throws TransactionFailureException
-    {
-        if ( isOpen() )
-        {
-            closeTransaction();
-        }
-    }
+    void close() throws TransactionFailureException;
 
     /**
      * @return {@code true} if the transaction is still open, i.e. if {@link #close()} hasn't been called yet.

@@ -245,6 +245,10 @@ trait GraphIcing {
       tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex)
     })
 
+    def dropLookupIndex(isNodeIndex: Boolean): Unit = withTx(tx => {
+      tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex).foreach(idx => idx.drop());
+    })
+
     def getMaybeFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
       tx.schema().getIndexes().asScala.find(id =>
         id.getIndexType.equals(IndexType.FULLTEXT) &&
