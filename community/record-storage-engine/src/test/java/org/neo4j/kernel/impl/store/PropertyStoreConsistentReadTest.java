@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<PropertyRecord, PropertyStore>
 {
@@ -49,7 +50,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     @Override
     protected PageCursor getCursor( StoreCursors storeCursors )
     {
-        return storeCursors.propertyCursor();
+        return storeCursors.pageCursor( PROPERTY_CURSOR );
     }
 
     @Override

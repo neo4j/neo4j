@@ -62,7 +62,11 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -168,27 +172,27 @@ class RecordLoading
 
     NodeRecord node( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getNodeStore(), id, storeCursors.nodeCursor() );
+        return loadRecord( neoStores.getNodeStore(), id, storeCursors.pageCursor( NODE_CURSOR ) );
     }
 
     PropertyRecord property( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getPropertyStore(), id, storeCursors.propertyCursor() );
+        return loadRecord( neoStores.getPropertyStore(), id, storeCursors.pageCursor( PROPERTY_CURSOR ) );
     }
 
     RelationshipRecord relationship( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getRelationshipStore(), id, storeCursors.relationshipCursor() );
+        return loadRecord( neoStores.getRelationshipStore(), id, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
     }
 
     RelationshipRecord relationship( RelationshipRecord into, long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getRelationshipStore(), into, id, storeCursors.relationshipCursor() );
+        return loadRecord( neoStores.getRelationshipStore(), into, id, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
     }
 
     RelationshipGroupRecord relationshipGroup( long id, StoreCursors storeCursors )
     {
-        return loadRecord( neoStores.getRelationshipGroupStore(), id, storeCursors.groupCursor() );
+        return loadRecord( neoStores.getRelationshipGroupStore(), id, storeCursors.pageCursor( GROUP_CURSOR ) );
     }
 
     static <RECORD extends AbstractBaseRecord> RECORD loadRecord( RecordStore<RECORD> store, long id, PageCursor pageCursor )

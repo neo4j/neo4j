@@ -40,6 +40,14 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
 
 public class Loaders
 {
@@ -171,7 +179,7 @@ public class Loaders
 
     public static RecordLoader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.nodeCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( NODE_CURSOR ) )
         {
             @Override
             public NodeRecord newUnused( long key, Void additionalData )
@@ -189,7 +197,7 @@ public class Loaders
 
     public static RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.propertyCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( PROPERTY_CURSOR ) )
         {
             @Override
             public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
@@ -225,7 +233,7 @@ public class Loaders
 
     public static RecordLoader<RelationshipRecord,Void> relationshipLoader( final RecordStore<RelationshipRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.relationshipCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) )
         {
             @Override
             public RelationshipRecord newUnused( long key, Void additionalData )
@@ -244,7 +252,7 @@ public class Loaders
     public static RecordLoader<RelationshipGroupRecord,Integer> relationshipGroupLoader( final RecordStore<RelationshipGroupRecord> store,
             StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.groupCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( GROUP_CURSOR ) )
         {
             @Override
             public RelationshipGroupRecord newUnused( long key, Integer type )
@@ -264,7 +272,7 @@ public class Loaders
 
     private static RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.schemaCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( SCHEMA_CURSOR ) )
         {
             @Override
             public SchemaRecord newUnused( long key, SchemaRule additionalData )
@@ -282,7 +290,7 @@ public class Loaders
 
     public static RecordLoader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader( final RecordStore<PropertyKeyTokenRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.propertyKeyTokenCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( PROPERTY_KEY_TOKEN_CURSOR ) )
         {
             @Override
             public PropertyKeyTokenRecord newUnused( long key, Void additionalData )
@@ -300,7 +308,7 @@ public class Loaders
 
     public static RecordLoader<LabelTokenRecord,Void> labelTokenLoader( final RecordStore<LabelTokenRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.labelTokenStoreCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( LABEL_TOKEN_CURSOR ) )
         {
             @Override
             public LabelTokenRecord newUnused( long key, Void additionalData )
@@ -319,7 +327,7 @@ public class Loaders
     public static RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader( final RecordStore<RelationshipTypeTokenRecord> store,
             StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.relationshipTypeTokenCursor() )
+        return new RecordLoader<>( store, storeCursors.pageCursor( REL_TYPE_TOKEN_CURSOR ) )
         {
             @Override
             public RelationshipTypeTokenRecord newUnused( long key, Void additionalData )

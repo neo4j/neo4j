@@ -35,6 +35,9 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
+
 /**
  * Implementation of the label store.
  */
@@ -63,12 +66,12 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     @Override
     public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
     {
-        return storeCursors.labelTokenStoreCursor();
+        return storeCursors.pageCursor( LABEL_TOKEN_CURSOR );
     }
 
     @Override
     PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
     {
-        return storeCursors.dynamicLabelTokeStoreCursor();
+        return storeCursors.pageCursor( DYNAMIC_LABEL_TOKEN_CURSOR );
     }
 }

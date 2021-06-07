@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
 {
@@ -73,7 +75,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
             while ( nodeIds.hasNext() )
             {
                 long duplicateNodeId = nodeIds.next();
-                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, storeCursors.nodeCursor() );
+                nodeStore.getRecordByCursor( duplicateNodeId, nodeRecord, NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
                 nodeStore.ensureHeavy( nodeRecord, storeCursors );
@@ -82,7 +84,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 long nextProp = nodeRecord.getNextProp();
                 while ( !Record.NULL_REFERENCE.is( nextProp ) )
                 {
-                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, storeCursors.propertyCursor() );
+                    propertyStore.getRecordByCursor( nextProp, propertyRecord, NORMAL, storeCursors.pageCursor( PROPERTY_CURSOR ) );
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
                     propertyStore.ensureHeavy( propertyRecord, storeCursors );
                     propertiesRemoved += propertyRecord.numberOfProperties();

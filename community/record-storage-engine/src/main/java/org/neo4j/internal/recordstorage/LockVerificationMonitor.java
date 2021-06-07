@@ -31,7 +31,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -48,7 +47,11 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
-import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.lock.ResourceTypes.NODE;
@@ -309,26 +312,26 @@ public class LockVerificationMonitor implements LoadMonitor
         @Override
         public NodeRecord loadNode( long id )
         {
-            return readRecord( id, neoStores.getNodeStore(), storeCursors.nodeCursor() );
+            return readRecord( id, neoStores.getNodeStore(), storeCursors.pageCursor( NODE_CURSOR ) );
         }
 
         @Override
         public RelationshipRecord loadRelationship( long id )
         {
-            return readRecord( id, neoStores.getRelationshipStore(), storeCursors.relationshipCursor() );
+            return readRecord( id, neoStores.getRelationshipStore(), storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
         }
 
         @Override
         public RelationshipGroupRecord loadRelationshipGroup( long id )
         {
-            return readRecord( id, neoStores.getRelationshipGroupStore(), storeCursors.groupCursor() );
+            return readRecord( id, neoStores.getRelationshipGroupStore(), storeCursors.pageCursor( GROUP_CURSOR ) );
         }
 
         @Override
         public PropertyRecord loadProperty( long id )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
-            PropertyRecord record = readRecord( id, propertyStore, storeCursors.propertyCursor() );
+            PropertyRecord record = readRecord( id, propertyStore, storeCursors.pageCursor( PROPERTY_CURSOR ) );
             propertyStore.ensureHeavy( record, storeCursors );
             return record;
         }
@@ -349,7 +352,7 @@ public class LockVerificationMonitor implements LoadMonitor
         @Override
         public SchemaRecord loadSchemaRecord( long id )
         {
-            return readRecord( id, neoStores.getSchemaStore(), storeCursors.schemaCursor() );
+            return readRecord( id, neoStores.getSchemaStore(), storeCursors.pageCursor( SCHEMA_CURSOR ) );
         }
 
         private static <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store, PageCursor pageCursor )

@@ -43,6 +43,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 import static org.neo4j.kernel.impl.store.NodeLabelsField.firstDynamicLabelRecordId;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 
 public class DynamicNodeLabels implements NodeLabels
 {
@@ -76,7 +77,7 @@ public class DynamicNodeLabels implements NodeLabels
         {
             //dynamic records not there, stream the result from the dynamic label store
             dynamicLabelStore.streamRecords( firstDynamicLabelRecordId( node.getLabelField() ), RecordLoad.NORMAL, false,
-                    storeCursors.dynamicLabelStoreCursor(), subscriber );
+                    storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ), subscriber );
         }
         else
         {

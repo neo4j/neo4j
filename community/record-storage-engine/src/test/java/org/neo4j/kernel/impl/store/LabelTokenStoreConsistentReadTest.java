@@ -33,6 +33,7 @@ import org.neo4j.string.UTF8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
 
 class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<LabelTokenRecord, LabelTokenStore>
 {
@@ -49,7 +50,7 @@ class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<La
     @Override
     protected PageCursor getCursor( StoreCursors storeCursors )
     {
-        return storeCursors.labelTokenStoreCursor();
+        return storeCursors.pageCursor( LABEL_TOKEN_CURSOR );
     }
 
     @Override

@@ -25,6 +25,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
 
 class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<SchemaRecord, SchemaStore>
 {
@@ -37,7 +38,7 @@ class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<Schema
     @Override
     protected PageCursor getCursor( StoreCursors storeCursors )
     {
-        return storeCursors.schemaCursor();
+        return storeCursors.pageCursor( SCHEMA_CURSOR );
     }
 
     @Override

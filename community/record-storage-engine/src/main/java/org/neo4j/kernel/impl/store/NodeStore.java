@@ -43,6 +43,7 @@ import org.neo4j.util.Bits;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 
 /**
  * Implementation of the node store.
@@ -105,7 +106,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         try
         {
             node.setLabelField( node.getLabelField(),
-                    dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, storeCursors.dynamicLabelStoreCursor() ) );
+                    dynamicLabelStore.getRecords( firstDynamicLabelRecord, RecordLoad.NORMAL, false, storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ) ) );
         }
         catch ( InvalidRecordException e )
         {

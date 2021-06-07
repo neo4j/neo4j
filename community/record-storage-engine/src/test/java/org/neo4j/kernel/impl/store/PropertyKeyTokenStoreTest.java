@@ -35,13 +35,15 @@ import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 
 class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenRecord>
 {
     @Override
     protected PageCursor storeCursor()
     {
-        return storeCursors.propertyKeyTokenCursor();
+        return storeCursors.pageCursor( PROPERTY_KEY_TOKEN_CURSOR );
     }
 
     @Override
@@ -72,23 +74,25 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
         }
 
         @Override
-        public PageCursor propertyKeyTokenCursor()
+        public PageCursor pageCursor( short type )
         {
-            if ( storeCursor == null )
+            switch ( type )
             {
-                storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+            case PROPERTY_KEY_TOKEN_CURSOR:
+                if ( storeCursor == null )
+                {
+                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+                }
+                return storeCursor;
+            case DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR:
+                if ( dynamicCursor == null )
+                {
+                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
+                }
+                return dynamicCursor;
+            default:
+                return super.pageCursor( type );
             }
-            return storeCursor;
-        }
-
-        @Override
-        public PageCursor dynamicPropertyKeyTokenCursor()
-        {
-            if ( dynamicCursor == null )
-            {
-                dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
-            }
-            return dynamicCursor;
         }
 
         @Override
@@ -104,6 +108,7 @@ class PropertyKeyTokenStoreTest extends TokenStoreTestTemplate<PropertyKeyTokenR
                 storeCursor.close();
                 storeCursor = null;
             }
+            super.close();
         }
     }
 }

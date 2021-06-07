@@ -56,6 +56,7 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.longOf;
 import static org.neo4j.internal.helpers.Format.duration;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 /**
  * Checks relationship chains, i.e. their internal pointers between relationship records.
@@ -300,7 +301,7 @@ class RelationshipChainChecker implements Checker
                 else if ( !NULL_REFERENCE.is( fromCache ) )
                 {
                     // Load it from store
-                    store.getRecordByCursor( linkId, otherRelationship, FORCE, storeCursors.relationshipCursor() );
+                    store.getRecordByCursor( linkId, otherRelationship, FORCE, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) );
                 }
                 else
                 {

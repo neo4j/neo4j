@@ -56,6 +56,9 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+
 public class SchemaStorage implements SchemaRuleAccess
 {
     private final SchemaStore schemaStore;
@@ -244,7 +247,7 @@ public class SchemaStorage implements SchemaRuleAccess
             PropertyStore propertyStore = schemaStore.propertyStore();
             PropertyRecord props = propertyStore.newRecord();
             while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() &&
-                    propertyStore.getRecordByCursor( nextProp, props, RecordLoad.NORMAL, storeCursors.propertyCursor() ).inUse() )
+                    propertyStore.getRecordByCursor( nextProp, props, RecordLoad.NORMAL, storeCursors.pageCursor( PROPERTY_CURSOR ) ).inUse() )
             {
                 nextProp = props.getNextProp();
                 props.setInUse( false );
@@ -255,7 +258,7 @@ public class SchemaStorage implements SchemaRuleAccess
 
     private SchemaRecord loadSchemaRecord( long ruleId, StoreCursors storeCursors )
     {
-        return schemaStore.getRecordByCursor( ruleId, schemaStore.newRecord(), RecordLoad.NORMAL, storeCursors.schemaCursor() );
+        return schemaStore.getRecordByCursor( ruleId, schemaStore.newRecord(), RecordLoad.NORMAL, storeCursors.pageCursor( SCHEMA_CURSOR ) );
     }
 
     @VisibleForTesting
@@ -281,7 +284,7 @@ public class SchemaStorage implements SchemaRuleAccess
         }
 
         return Stream.concat( LongStream.range( startId, endId ).mapToObj(
-                id -> schemaStore.getRecordByCursor( id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, storeCursors.schemaCursor() ) )
+                id -> schemaStore.getRecordByCursor( id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, storeCursors.pageCursor( SCHEMA_CURSOR ) ) )
                 .filter( AbstractBaseRecord::inUse )
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, storeCursors ) ), nli );
     }
@@ -309,7 +312,7 @@ public class SchemaStorage implements SchemaRuleAccess
         catch ( MalformedSchemaRuleException e )
         {
             // In case we've raced with a record deletion, ignore malformed records that no longer appear to be in use.
-            if ( !ignoreMalformed && schemaStore.isInUse( record.getId(), storeCursors.schemaCursor() ) )
+            if ( !ignoreMalformed && schemaStore.isInUse( record.getId(), storeCursors.pageCursor( SCHEMA_CURSOR ) ) )
             {
                 throw new RuntimeException( e );
             }

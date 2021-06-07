@@ -41,85 +41,7 @@ public interface StoreCursors extends AutoCloseable
         }
 
         @Override
-        public PageCursor labelTokenStoreCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor dynamicLabelTokeStoreCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor propertyKeyTokenCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor dynamicPropertyKeyTokenCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor relationshipTypeTokenCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor dynamicRelationshipTypeTokenCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor dynamicLabelStoreCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor dynamicStringStoreCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor dynamicArrayStoreCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor nodeCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor propertyCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor relationshipCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor groupCursor()
-        {
-            return null;
-        }
-
-        @Override
-        public PageCursor schemaCursor()
+        public PageCursor pageCursor( short type )
         {
             return null;
         }
@@ -127,33 +49,7 @@ public interface StoreCursors extends AutoCloseable
 
     void reset( CursorContext cursorContext );
 
-    PageCursor labelTokenStoreCursor();
-
-    PageCursor dynamicLabelTokeStoreCursor();
-
-    PageCursor propertyKeyTokenCursor();
-
-    PageCursor dynamicPropertyKeyTokenCursor();
-
-    PageCursor relationshipTypeTokenCursor();
-
-    PageCursor dynamicRelationshipTypeTokenCursor();
-
-    PageCursor dynamicLabelStoreCursor();
-
-    PageCursor dynamicStringStoreCursor();
-
-    PageCursor dynamicArrayStoreCursor();
-
-    PageCursor nodeCursor();
-
-    PageCursor propertyCursor();
-
-    PageCursor relationshipCursor();
-
-    PageCursor groupCursor();
-
-    PageCursor schemaCursor();
+    PageCursor pageCursor( short type );
 
     void close();
 }

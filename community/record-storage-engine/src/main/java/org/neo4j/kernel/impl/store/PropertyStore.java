@@ -63,6 +63,8 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -285,9 +287,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         switch ( type )
         {
         case ARRAY:
-            return storeCursors.dynamicArrayStoreCursor();
+            return storeCursors.pageCursor( DYNAMIC_ARRAY_STORE_CURSOR );
         case STRING:
-            return storeCursors.dynamicStringStoreCursor();
+            return storeCursors.pageCursor( DYNAMIC_STRING_STORE_CURSOR );
         default:
             throw new IllegalArgumentException( "Unsupported type of dynamic property " + type );
         }

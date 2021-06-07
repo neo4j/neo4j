@@ -35,6 +35,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
+
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
  * relationship type names.
@@ -64,12 +67,12 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     @Override
     public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
     {
-        return storeCursors.relationshipTypeTokenCursor();
+        return storeCursors.pageCursor( REL_TYPE_TOKEN_CURSOR );
     }
 
     @Override
     PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
     {
-        return storeCursors.dynamicRelationshipTypeTokenCursor();
+        return storeCursors.pageCursor( DYNAMIC_REL_TYPE_TOKEN_CURSOR );
     }
 }

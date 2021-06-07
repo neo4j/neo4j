@@ -35,6 +35,9 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
+
 /**
  * Implementation of the property store.
  */
@@ -63,12 +66,12 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     @Override
     public PageCursor getTokenStoreCursor( StoreCursors storeCursors )
     {
-        return storeCursors.propertyKeyTokenCursor();
+        return storeCursors.pageCursor( PROPERTY_KEY_TOKEN_CURSOR );
     }
 
     @Override
     PageCursor getDynamicTokenCursor( StoreCursors storeCursors )
     {
-        return storeCursors.dynamicPropertyKeyTokenCursor();
+        return storeCursors.pageCursor( DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR );
     }
 }

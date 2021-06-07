@@ -35,13 +35,15 @@ import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_REL_TYPE_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.REL_TYPE_TOKEN_CURSOR;
 
 class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<RelationshipTypeTokenRecord>
 {
     @Override
     protected PageCursor storeCursor()
     {
-        return storeCursors.relationshipTypeTokenCursor();
+        return storeCursors.pageCursor( REL_TYPE_TOKEN_CURSOR );
     }
 
     @Override
@@ -72,23 +74,25 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
         }
 
         @Override
-        public PageCursor relationshipTypeTokenCursor()
+        public PageCursor pageCursor( short type )
         {
-            if ( storeCursor == null )
+            switch ( type )
             {
-                storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+            case REL_TYPE_TOKEN_CURSOR:
+                if ( storeCursor == null )
+                {
+                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+                }
+                return storeCursor;
+            case DYNAMIC_REL_TYPE_TOKEN_CURSOR:
+                if ( dynamicCursor == null )
+                {
+                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
+                }
+                return dynamicCursor;
+            default:
+                return super.pageCursor( type );
             }
-            return storeCursor;
-        }
-
-        @Override
-        public PageCursor dynamicRelationshipTypeTokenCursor()
-        {
-            if ( dynamicCursor == null )
-            {
-                dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
-            }
-            return dynamicCursor;
         }
 
         @Override
@@ -104,6 +108,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
                 storeCursor.close();
                 storeCursor = null;
             }
+            super.close();
         }
     }
 }

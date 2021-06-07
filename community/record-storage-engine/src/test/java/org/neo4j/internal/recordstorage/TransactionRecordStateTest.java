@@ -146,6 +146,7 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
 
 @EphemeralNeo4jLayoutExtension
 @EphemeralPageCacheExtension
@@ -1777,7 +1778,8 @@ class TransactionRecordStateTest
     private static void assertDynamicLabelRecordInUse( NeoStores store, long id, boolean inUse, StoreCursors storeCursors )
     {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
-        DynamicRecord record = dynamicLabelStore.getRecordByCursor( id, dynamicLabelStore.nextRecord( NULL ), FORCE, storeCursors.dynamicLabelStoreCursor() );
+        DynamicRecord record = dynamicLabelStore.getRecordByCursor( id, dynamicLabelStore.nextRecord( NULL ), FORCE,
+                storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ) );
         assertEquals( inUse, record.inUse() );
     }
 

@@ -23,6 +23,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
+import static org.neo4j.storageengine.api.cursor.CursorTypes.SCHEMA_CURSOR;
+
 public class SchemaStore35StoreCursors extends StoreCursorsAdapter
 {
     private final SchemaStore35 schemaStore35;
@@ -37,13 +39,20 @@ public class SchemaStore35StoreCursors extends StoreCursorsAdapter
     }
 
     @Override
-    public PageCursor schemaCursor()
+    public PageCursor pageCursor( short type )
     {
-        if ( schemaCursor == null )
+        if ( SCHEMA_CURSOR == type )
         {
-            schemaCursor = schemaStore35.openPageCursorForReading( 0, cursorContext );
+            if ( schemaCursor == null )
+            {
+                schemaCursor = schemaStore35.openPageCursorForReading( 0, cursorContext );
+            }
+            return schemaCursor;
         }
-        return schemaCursor;
+        else
+        {
+            return super.pageCursor( type );
+        }
     }
 
     @Override
@@ -54,5 +63,6 @@ public class SchemaStore35StoreCursors extends StoreCursorsAdapter
             schemaCursor.close();
             schemaCursor = null;
         }
+        super.close();
     }
 }

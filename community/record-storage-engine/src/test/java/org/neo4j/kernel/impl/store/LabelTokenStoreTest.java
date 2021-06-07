@@ -35,13 +35,15 @@ import org.neo4j.storageengine.api.cursor.StoreCursorsAdapter;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_TOKEN_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.LABEL_TOKEN_CURSOR;
 
 class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
 {
     @Override
     protected PageCursor storeCursor()
     {
-        return storeCursors.labelTokenStoreCursor();
+        return storeCursors.pageCursor( LABEL_TOKEN_CURSOR );
     }
 
     @Override
@@ -72,23 +74,25 @@ class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
         }
 
         @Override
-        public PageCursor labelTokenStoreCursor()
+        public PageCursor pageCursor( short type )
         {
-            if ( storeCursor == null )
+            switch ( type )
             {
-                storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+            case LABEL_TOKEN_CURSOR:
+                if ( storeCursor == null )
+                {
+                    storeCursor = store.openPageCursorForReading( 0, CursorContext.NULL );
+                }
+                return storeCursor;
+            case DYNAMIC_LABEL_TOKEN_CURSOR:
+                if ( dynamicCursor == null )
+                {
+                    dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
+                }
+                return dynamicCursor;
+            default:
+                return super.pageCursor( type );
             }
-            return storeCursor;
-        }
-
-        @Override
-        public PageCursor dynamicLabelTokeStoreCursor()
-        {
-            if ( dynamicCursor == null )
-            {
-                dynamicCursor = nameStore.openPageCursorForReading( 0, CursorContext.NULL );
-            }
-            return dynamicCursor;
         }
 
         @Override

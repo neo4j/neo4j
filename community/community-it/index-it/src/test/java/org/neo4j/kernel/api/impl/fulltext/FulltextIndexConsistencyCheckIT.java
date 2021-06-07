@@ -76,7 +76,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -95,6 +94,8 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NOD
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.test.TestDatabaseManagementServiceBuilder.INDEX_PROVIDERS_FILTER;
 
 @Neo4jLayoutExtension
@@ -614,7 +615,7 @@ class FulltextIndexConsistencyCheckIT
         NodeRecord record = nodeStore.newRecord();
         try ( var cursors = new CachedStoreCursors( stores, NULL ) )
         {
-            nodeStore.getRecordByCursor( nodeId, record, RecordLoad.NORMAL, cursors.nodeCursor() );
+            nodeStore.getRecordByCursor( nodeId, record, RecordLoad.NORMAL, cursors.pageCursor( NODE_CURSOR ) );
         }
         long propId = record.getNextProp();
 
@@ -624,7 +625,7 @@ class FulltextIndexConsistencyCheckIT
         List<NamedToken> propertyKeyTokens;
         try ( var cursors = new CachedStoreCursors( stores, NULL ) )
         {
-            propertyStore.getRecordByCursor( propId, propRecord, RecordLoad.NORMAL, cursors.propertyCursor() );
+            propertyStore.getRecordByCursor( propId, propRecord, RecordLoad.NORMAL, cursors.pageCursor( PROPERTY_CURSOR ) );
             propertyKeyTokens = stores.getPropertyKeyTokenStore().getAllReadableTokens( cursors );
         }
         NamedToken propertyKeyToken = propertyKeyTokens.stream().filter( token -> "p2".equals( token.name() ) ).findFirst().orElseThrow();

@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -54,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -99,7 +99,7 @@ class NodeImporterTest
 
                 // then
                 NodeStore nodeStore = stores.getNodeStore();
-                PageCursor nodeCursor = storeCursors.nodeCursor();
+                PageCursor nodeCursor = storeCursors.pageCursor( NODE_CURSOR );
                 NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
                 long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
                 assertEquals( numberOfLabels, labels.length );
@@ -140,7 +140,7 @@ class NodeImporterTest
 
                 NodeStore nodeStore = stores.getNodeStore();
 
-                PageCursor nodeCursor = storeCursors.nodeCursor();
+                PageCursor nodeCursor = storeCursors.pageCursor( NODE_CURSOR );
                 NodeRecord record = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor );
                 long[] labels = NodeLabelsField.parseLabelsField( record ).get( nodeStore, storeCursors );
                 assertEquals( numberOfLabels, labels.length );

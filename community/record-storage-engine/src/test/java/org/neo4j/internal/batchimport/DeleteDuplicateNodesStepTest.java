@@ -65,6 +65,11 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -131,7 +136,7 @@ class DeleteDuplicateNodesStepTest
         // then
         int expectedNodes = 0;
         int expectedProperties = 0;
-        var nodeCursor = storeCursors.nodeCursor();
+        var nodeCursor = storeCursors.pageCursor( NODE_CURSOR );
         for ( Ids entity : ids )
         {
             boolean expectedToBeInUse = !ArrayUtils.contains( duplicateNodeIds, entity.node.getId() );
@@ -144,13 +149,14 @@ class DeleteDuplicateNodesStepTest
             // Verify label records
             for ( DynamicRecord labelRecord : entity.node.getDynamicLabelRecords() )
             {
-                assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(), storeCursors.dynamicLabelStoreCursor() ) );
+                assertEquals( expectedToBeInUse, nodeStore.getDynamicLabelStore().isInUse( labelRecord.getId(),
+                        storeCursors.pageCursor( DYNAMIC_LABEL_STORE_CURSOR ) ) );
             }
 
             // Verify property records
             for ( PropertyRecord propertyRecord : entity.properties )
             {
-                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), storeCursors.propertyCursor() ) );
+                assertEquals( expectedToBeInUse, neoStores.getPropertyStore().isInUse( propertyRecord.getId(), storeCursors.pageCursor( PROPERTY_CURSOR ) ) );
                 for ( PropertyBlock property : propertyRecord )
                 {
                     // Verify property dynamic value records
@@ -162,11 +168,11 @@ class DeleteDuplicateNodesStepTest
                         {
                         case STRING:
                             valueStore = neoStores.getPropertyStore().getStringStore();
-                            valueCursor = storeCursors.dynamicStringStoreCursor();
+                            valueCursor = storeCursors.pageCursor( DYNAMIC_STRING_STORE_CURSOR );
                             break;
                         case ARRAY:
                             valueStore = neoStores.getPropertyStore().getArrayStore();
-                            valueCursor = storeCursors.dynamicArrayStoreCursor();
+                            valueCursor = storeCursors.pageCursor( DYNAMIC_ARRAY_STORE_CURSOR );
                             break;
                         default: throw new IllegalArgumentException( propertyRecord + " " + property );
                         }

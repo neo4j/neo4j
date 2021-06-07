@@ -20,12 +20,12 @@
 package org.neo4j.internal.batchimport;
 
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 /**
  * Looks up "input id" from a node. This is used when importing nodes and where the input data specifies ids
@@ -51,7 +51,7 @@ class NodeInputIdPropertyLookup implements PropertyValueLookup
     @Override
     public Object lookupProperty( long nodeId )
     {
-        propertyStore.getRecordByCursor( nodeId, propertyRecord, CHECK, storeCursors.propertyCursor() );
+        propertyStore.getRecordByCursor( nodeId, propertyRecord, CHECK, storeCursors.pageCursor( PROPERTY_CURSOR ) );
         if ( !propertyRecord.inUse() )
         {
             return null;

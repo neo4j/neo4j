@@ -86,6 +86,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @EphemeralNeo4jLayoutExtension
 class NodeStoreTest
@@ -185,7 +186,7 @@ class NodeStoreTest
 
         // WHEN
         // -- reading that record back
-        NodeRecord readRecord = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.nodeCursor() );
+        NodeRecord readRecord = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
         // THEN
         // -- the label field must be the same
         assertEquals( labels, readRecord.getLabelField() );
@@ -232,9 +233,9 @@ class NodeStoreTest
         store.updateRecord( new NodeRecord( deleted ).initialize( false, 20, false, 10, 0 ), NULL );
 
         // When & then
-        assertTrue( store.isInUse( exists, storeCursors.nodeCursor() ) );
-        assertFalse( store.isInUse( deleted, storeCursors.nodeCursor() ) );
-        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), storeCursors.nodeCursor() ) );
+        assertTrue( store.isInUse( exists, storeCursors.pageCursor( NODE_CURSOR ) ) );
+        assertFalse( store.isInUse( deleted, storeCursors.pageCursor( NODE_CURSOR ) ) );
+        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId(), storeCursors.pageCursor( NODE_CURSOR ) ) );
     }
 
     @Test
@@ -272,7 +273,7 @@ class NodeStoreTest
             assertTrue( nextRelSet.remove( record.getNextRel() ) );
             return false;
         };
-        nodeStore.scanAllRecords( scanner, storeCursors.nodeCursor() );
+        nodeStore.scanAllRecords( scanner, storeCursors.pageCursor( NODE_CURSOR ) );
 
         // ...NOR do we have anything left in the set afterwards.
         assertTrue( nextRelSet.isEmpty() );
@@ -387,7 +388,7 @@ class NodeStoreTest
         nodeStore.updateRecord( record, NULL );
 
         // when
-        nodeStore.getRecordByCursor( primaryUnitId, record, NORMAL, storeCursors.nodeCursor() );
+        nodeStore.getRecordByCursor( primaryUnitId, record, NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
         record.setSecondaryUnitIdOnCreate( secondaryUnitId );
         IdUpdateListener idUpdateListener = mock( IdUpdateListener.class );
         nodeStore.updateRecord( record, idUpdateListener, NULL );
@@ -416,7 +417,7 @@ class NodeStoreTest
 
         // when loading that node and making it heavy
         NodeRecord loadedRecord = nodeStore.newRecord();
-        nodeStore.getRecordByCursor( record.getId(), loadedRecord, NORMAL, storeCursors.nodeCursor() );
+        nodeStore.getRecordByCursor( record.getId(), loadedRecord, NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
         InvalidRecordException e = assertThrows( InvalidRecordException.class, () -> nodeStore.ensureHeavy( loadedRecord, storeCursors ) );
 
         // then
