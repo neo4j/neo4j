@@ -72,11 +72,6 @@ public class CachedStoreCursors implements StoreCursors
         cursorsByType = createEmptyCursorArray();
     }
 
-    public PageCursor dynamicLabelTokeStoreCursor()
-    {
-        return pageCursor( DYNAMIC_LABEL_TOKEN_CURSOR );
-    }
-
     @Override
     public PageCursor pageCursor( short type )
     {
@@ -134,6 +129,6 @@ public class CachedStoreCursors implements StoreCursors
 
     private static PageCursor[] createEmptyCursorArray()
     {
-        return new PageCursor[MAX_TYPE];
+        return new PageCursor[MAX_TYPE + 1];
     }
 }

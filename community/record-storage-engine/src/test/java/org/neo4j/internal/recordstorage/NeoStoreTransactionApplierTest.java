@@ -680,7 +680,7 @@ class NeoStoreTransactionApplierTest
         RecordStorageReader storageReader = mock( RecordStorageReader.class );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         try ( var batchContext = new BatchContextImpl( indexingService, indexUpdatesSync, nodeStore, propertyStore, storageEngine,
-                mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE ) )
+                mock( SchemaCache.class ), NULL, INSTANCE, IdUpdateListener.IGNORE, StoreCursors.NULL ) )
         {
             IndexUpdates indexEntryUpdates = batchContext.indexUpdates();
             ((OnlineIndexUpdates) indexEntryUpdates).getUpdates().add( IndexEntryUpdate.add( 1, IndexDescriptor.NO_INDEX ) );

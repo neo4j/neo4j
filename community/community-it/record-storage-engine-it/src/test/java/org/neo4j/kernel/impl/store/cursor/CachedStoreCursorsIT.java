@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -48,40 +49,22 @@ class CachedStoreCursorsIT
     {
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCursorTracer cursorTracer = pageCacheTracer.createPageCursorTracer( "cacheRequestedCursors" );
-        Method[] cursorMethods = cursorAccessors();
         try ( var cursorContext = new CursorContext( cursorTracer, EMPTY );
               var storageCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
-            Object[] cursors = new Object[cursorMethods.length];
-            for ( int j = 0, cursorMethodsLength = cursorMethods.length; j < cursorMethodsLength; j++ )
+            Object[] cursors = new Object[CursorTypes.MAX_TYPE + 1];
+            for ( short i = 0; i <= CursorTypes.MAX_TYPE; i++ )
             {
-                cursors[j] = invokeMethod( storageCursors, cursorMethods[j] );
+                cursors[i] = storageCursors.pageCursor( i );
             }
 
             for ( int i = 0; i < 10; i++ )
             {
-                for ( int j = 0, cursorMethodsLength = cursorMethods.length; j < cursorMethodsLength; j++ )
+                for ( short j = 0; j <= CursorTypes.MAX_TYPE; j++ )
                 {
-                    assertEquals( cursors[j], invokeMethod( storageCursors, cursorMethods[j] ) );
+                    assertEquals( cursors[j], storageCursors.pageCursor( j ) );
                 }
             }
-        }
-    }
-
-    private static Method[] cursorAccessors()
-    {
-        return Arrays.stream( StoreCursors.class.getMethods() ).filter( method -> method.getName().contains( "Cursor" ) ).toArray( Method[]::new );
-    }
-
-    private static Object invokeMethod( StoreCursors storageCursors, Method method )
-    {
-        try
-        {
-            return method.invoke( storageCursors );
-        }
-        catch ( IllegalAccessException | InvocationTargetException e )
-        {
-            throw new RuntimeException();
         }
     }
 }

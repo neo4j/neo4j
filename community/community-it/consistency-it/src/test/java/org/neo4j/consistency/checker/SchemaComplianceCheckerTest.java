@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -247,8 +248,9 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
     private void checkRelationshipIndexed( long relId ) throws Exception
     {
-        try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL, StoreCursors.NULL, INSTANCE ) )
+        try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL );
+                SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
+                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL, storeCursors, INSTANCE ) )
         {
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             RelationshipRecord record;
