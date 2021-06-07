@@ -112,12 +112,12 @@ class OptionReaderTest extends CypherFunSuite {
               .set(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35)
               .set(GraphDatabaseInternalSettings.cypher_runtime, GraphDatabaseInternalSettings.CypherRuntime.INTERPRETED)
               .build()),
-      keyValues = Set("version" -> "4.2", "planner" -> "dp", "runtime" -> "slotted", "debug" -> "toString", "debug" -> "ast"),
+      keyValues = Set("version" -> "4.3", "planner" -> "dp", "runtime" -> "slotted", "debug" -> "toString", "debug" -> "ast"),
     )
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        version = CypherVersion.v4_2,
+        version = CypherVersion.v4_3,
         planner = CypherPlannerOption.dp,
         runtime = CypherRuntimeOption.slotted,
         debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.ast))

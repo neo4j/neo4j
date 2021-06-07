@@ -243,7 +243,7 @@ object LogicalPlan2PlanDescription {
     new LogicalPlan2PlanDescription(readOnly, effectiveCardinalities, withRawCardinalities, providedOrders, runtimeOperatorMetadata)
       .create(input)
       .addArgument(Version("CYPHER " + cypherVersion.name))
-      .addArgument(RuntimeVersion("4.3"))
+      .addArgument(RuntimeVersion("4.4"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
       .addArgument(PlannerVersion(plannerName.version))

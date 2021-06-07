@@ -96,7 +96,7 @@ object CompilationPhases {
       initialConditions = Set(StatementCondition(containsNoReturnAll), StatementCondition(containsNamedPathOnlyForShortestPath))
     )
 
-  case class ParsingConfig(compatibilityMode: CypherCompatibilityVersion = Compatibility4_3,
+  case class ParsingConfig(compatibilityMode: CypherCompatibilityVersion = Compatibility4_4,
                            literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
                            parameterTypeMapping: Map[String, CypherType] = Map.empty,
                            semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
@@ -112,11 +112,11 @@ object CompilationPhases {
           parse andThen
             SyntaxAdditionsErrors(Additions.addedFeaturesIn4_x) andThen
             SyntaxDeprecationWarningsAndReplacements(Deprecations.removedFeaturesIn4_0) andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3)
-        case Compatibility4_2 =>
-          parse andThen
-            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_3)
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
         case Compatibility4_3 =>
+          parse andThen
+            SyntaxAdditionsErrors(Additions.addedFeaturesIn4_4)
+        case Compatibility4_4 =>
           parse
       }
 
@@ -184,6 +184,6 @@ object CompilationPhases {
 
 sealed trait CypherCompatibilityVersion
 case object Compatibility3_5 extends CypherCompatibilityVersion
-case object Compatibility4_2 extends CypherCompatibilityVersion
 case object Compatibility4_3 extends CypherCompatibilityVersion
+case object Compatibility4_4 extends CypherCompatibilityVersion
 

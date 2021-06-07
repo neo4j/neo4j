@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
@@ -58,8 +58,8 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
 
     val compatibilityMode = cypherVersion match {
       case CypherVersion.v3_5 => Compatibility3_5
-      case CypherVersion.v4_2 => Compatibility4_2
       case CypherVersion.v4_3 => Compatibility4_3
+      case CypherVersion.v4_4 => Compatibility4_4
     }
 
     val planner =

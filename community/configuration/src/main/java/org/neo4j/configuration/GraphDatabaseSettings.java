@@ -201,7 +201,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     public enum CypherParserVersion
     {
-        DEFAULT( "default" ), V_35( "3.5" ), V_42( "4.2" ), V_43( "4.3" );
+        DEFAULT( "default" ), V_35( "3.5" ), V_43( "4.3" ), V_44( "4.4" );
 
         private final String name;
 

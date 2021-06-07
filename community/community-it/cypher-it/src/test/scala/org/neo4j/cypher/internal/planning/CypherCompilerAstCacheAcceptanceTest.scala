@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.options.CypherPlannerOption
@@ -89,7 +89,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       CypherPlannerOption.default,
       CypherUpdateStrategy.default,
       () => 1,
-      compatibilityMode = Compatibility4_3)
+      compatibilityMode = Compatibility4_4)
     createCompiler(planner, log)
   }
 

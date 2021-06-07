@@ -43,7 +43,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     }
   }
 
-  Seq(CypherParserVersion.V_35, CypherParserVersion.V_42, CypherParserVersion.V_43).foreach { version =>
+  Seq(CypherParserVersion.V_35, CypherParserVersion.V_43, CypherParserVersion.V_44).foreach { version =>
 
     test(s"by default when using cypher ${version.name} some queries should default to COST") {
       //given

@@ -134,11 +134,11 @@ case object CypherVersion extends CypherOptionCompanion[CypherVersion](
   cypherConfigField = Some(_.version),
 ) {
   case object v3_5 extends CypherVersion("3.5")
-  case object v4_2 extends CypherVersion("4.2")
   case object v4_3 extends CypherVersion("4.3")
+  case object v4_4 extends CypherVersion("4.4")
 
-  val default: CypherVersion = v4_3
-  def values: Set[CypherVersion] = Set(v3_5, v4_2, v4_3)
+  val default: CypherVersion = v4_4
+  def values: Set[CypherVersion] = Set(v3_5, v4_3, v4_4)
 
   implicit val hasDefault: OptionDefault[CypherVersion] = OptionDefault.create(default)
   implicit val renderer: OptionRenderer[CypherVersion] = OptionRenderer.create(_.render)

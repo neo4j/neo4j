@@ -28,17 +28,17 @@ import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("cost should be default planner in 4.2") {
-    given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_2)
-      .shouldHaveCypherVersion(CypherVersion.v4_2)
-      .shouldHavePlanner(CostBasedPlannerName.default)
-  }
-
   test("cost should be default planner in 4.3") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v4_3)
       .shouldHaveCypherVersion(CypherVersion.v4_3)
+      .shouldHavePlanner(CostBasedPlannerName.default)
+  }
+
+  test("cost should be default planner in 4.4") {
+    given("match (n) return n")
+      .withCypherVersion(CypherVersion.v4_4)
+      .shouldHaveCypherVersion(CypherVersion.v4_4)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
@@ -48,15 +48,15 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveCypherVersion(CypherVersion.v3_5)
   }
 
-  test("interpreted should be default runtime in 4.2") {
-    given("match (n) return n")
-      .withCypherVersion(CypherVersion.v4_2)
-      .shouldHaveRuntime(InterpretedRuntimeName)
-  }
-
   test("interpreted should be default runtime in 4.3") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v4_3)
+      .shouldHaveRuntime(InterpretedRuntimeName)
+  }
+
+  test("interpreted should be default runtime in 4.4") {
+    given("match (n) return n")
+      .withCypherVersion(CypherVersion.v4_4)
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 

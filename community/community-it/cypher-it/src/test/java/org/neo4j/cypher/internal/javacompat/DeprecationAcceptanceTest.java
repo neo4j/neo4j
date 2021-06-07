@@ -220,7 +220,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     void existsSubclauseShouldNotBeDeprecated()
     {
         // Note: Exists subclause was introduced in Neo4j 4.0
-        assertNotificationsInVersions4_2and4_3("EXPLAIN MATCH (n) WHERE EXISTS { MATCH (n)-[]->() } RETURN n.prop",
+        assertNotificationsInSupportedVersions_4_X("EXPLAIN MATCH (n) WHERE EXISTS { MATCH (n)-[]->() } RETURN n.prop",
                 containsNoItem( deprecatedPropertyExistenceSyntax ) );
     }
 
@@ -228,29 +228,29 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     void deprecatedShowIndexSyntax()
     {
         // Note: Show indexes was introduced in Neo4j 4.2
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES BRIEF", containsItem( deprecatedShowSchemaSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES BRIEF OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES VERBOSE", containsItem( deprecatedShowSchemaSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES VERBOSE OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW INDEXES BRIEF", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW INDEXES BRIEF OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW INDEXES VERBOSE", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW INDEXES VERBOSE OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
     }
 
     @Test
     void deprecatedShowConstraintSyntax()
     {
         // Note: Show constraints was introduced in Neo4j 4.2
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS BRIEF", containsItem( deprecatedShowSchemaSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS BRIEF OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS VERBOSE", containsItem( deprecatedShowSchemaSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS VERBOSE OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW CONSTRAINTS BRIEF", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW CONSTRAINTS BRIEF OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW CONSTRAINTS VERBOSE", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW CONSTRAINTS VERBOSE OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
     }
 
     @Test
     void deprecatedShowExistenceConstraintSyntax()
     {
         // Note: Show constraints was introduced in Neo4j 4.2
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW NODE EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
-        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW RELATIONSHIP EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW NODE EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
+        assertNotificationsInSupportedVersions_4_X( "EXPLAIN SHOW RELATIONSHIP EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
     }
 
     @Test

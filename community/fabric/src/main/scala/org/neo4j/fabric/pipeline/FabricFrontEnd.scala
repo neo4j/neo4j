@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.Compatibility3_5
-import org.neo4j.cypher.internal.compiler.phases.Compatibility4_2
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
+import org.neo4j.cypher.internal.compiler.phases.Compatibility4_4
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -118,8 +118,8 @@ case class FabricFrontEnd(
     private val compatibilityMode =
       query.options.queryOptions.version match {
         case CypherVersion.v3_5 => Compatibility3_5
-        case CypherVersion.v4_2 => Compatibility4_2
         case CypherVersion.v4_3 => Compatibility4_3
+        case CypherVersion.v4_4 => Compatibility4_4
       }
 
     private val semanticFeatures =

@@ -755,7 +755,7 @@ class FabricPlannerTest
     "passes options on in remote and local parts" in {
 
       val inst = instance(
-        """CYPHER 4.2
+        """CYPHER 4.3
           |  planner=cost
           |  runtime=parallel
           |  updateStrategy=eager
@@ -783,7 +783,7 @@ class FabricPlannerTest
         isPeriodicCommit = false,
         queryOptions = CypherQueryOptions(
           executionMode = CypherExecutionMode.default,
-          version = CypherVersion.v4_2,
+          version = CypherVersion.v4_3,
           planner = CypherPlannerOption.cost,
           runtime = CypherRuntimeOption.parallel,
           updateStrategy = CypherUpdateStrategy.eager,
@@ -817,7 +817,7 @@ class FabricPlannerTest
     "default query options are not rendered" in {
 
       val inst = instance(
-        """CYPHER 4.3
+        """CYPHER 4.4
           |  interpretedPipesFallback=default
           |WITH 1 AS a
           |CALL {
