@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
-import org.neo4j.bolt.txtracking.SimpleReconciledTransactionTracker;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -49,8 +48,8 @@ import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.executor.FabricDatabaseAccess;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
-import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
+import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.executor.ThrowingFabricRemoteExecutor;
 import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlanner;
@@ -125,7 +124,8 @@ public abstract class FabricServicesBootstrap
         register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval, null ), TransactionMonitorScheduler.class );
 
         var errorReporter = new ErrorReporter( logService );
-        register( new TransactionManager( remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor ), TransactionManager.class );
+        register( new TransactionManager( remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, systemNanoClock, config ),
+                TransactionManager.class );
 
         var cypherConfig = CypherConfiguration.fromConfig( config );
 

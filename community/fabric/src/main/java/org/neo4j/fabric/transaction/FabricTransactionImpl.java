@@ -45,7 +45,6 @@ import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
-import org.neo4j.fabric.planning.QueryType;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -361,6 +360,12 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     public boolean isLocal()
     {
         return remoteTransactionContext.isEmptyContext();
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return state == State.OPEN;
     }
 
     @Override

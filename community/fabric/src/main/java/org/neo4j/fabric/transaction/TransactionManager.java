@@ -19,19 +19,27 @@
  */
 package org.neo4j.fabric.transaction;
 
+import java.time.Clock;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 public class TransactionManager extends LifecycleAdapter
 {
@@ -41,20 +49,25 @@ public class TransactionManager extends LifecycleAdapter
     private final ErrorReporter errorReporter;
     private final FabricConfig fabricConfig;
     private final FabricTransactionMonitor transactionMonitor;
+    private final Clock clock;
 
     private final Set<FabricTransactionImpl> openTransactions = ConcurrentHashMap.newKeySet();
+    private final long awaitActiveTransactionDeadlineMillis;
 
     public TransactionManager( FabricRemoteExecutor remoteExecutor,
             FabricLocalExecutor localExecutor,
             ErrorReporter errorReporter,
             FabricConfig fabricConfig,
-            FabricTransactionMonitor transactionMonitor )
+            FabricTransactionMonitor transactionMonitor,
+            Clock clock, Config config )
     {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
         this.errorReporter = errorReporter;
         this.fabricConfig = fabricConfig;
         this.transactionMonitor = transactionMonitor;
+        this.clock = clock;
+        this.awaitActiveTransactionDeadlineMillis = config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
     }
 
     public FabricTransaction begin( FabricTransactionInfo transactionInfo, TransactionBookmarkManager transactionBookmarkManager )
@@ -77,14 +90,41 @@ public class TransactionManager extends LifecycleAdapter
     @Override
     public void stop()
     {
-        openTransactions.forEach( tx -> {
-            // we canceling only transactions that are running over fabric shards here since they have cross instances timeouts and settings that we do
-            // not handle, all local transaction will be terminated with proper timeouts by databases themself
-            if ( !tx.isLocal() )
+        // On a fabric level we will deal with transactions that a cross databases.
+        // Any db specific transaction will be handled on a database level with own set of rules, checks etc
+        var nonLocalTransaction = collectNonLocalTransactions();
+        if ( nonLocalTransaction.isEmpty() )
+        {
+            return;
+        }
+        awaitTransactionsClosedWithinTimeout( nonLocalTransaction );
+        nonLocalTransaction.forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
+    }
+
+    private Collection<FabricTransactionImpl> collectNonLocalTransactions()
+    {
+        return openTransactions.stream().filter( tx -> !tx.isLocal() ).collect( Collectors.toList() );
+    }
+
+    private void awaitTransactionsClosedWithinTimeout( Collection<FabricTransactionImpl> nonLocalTransaction )
+    {
+        long deadline = clock.millis() + awaitActiveTransactionDeadlineMillis;
+        while ( hasOpenTransactions( nonLocalTransaction ) && clock.millis() < deadline )
+        {
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
+        }
+    }
+
+    private static boolean hasOpenTransactions( Collection<FabricTransactionImpl> nonLocalTransaction )
+    {
+        for ( FabricTransactionImpl fabricTransaction : nonLocalTransaction )
+        {
+            if ( fabricTransaction.isOpen() )
             {
-                tx.markForTermination( Status.Transaction.Terminated );
+                return true;
             }
-        } );
+        }
+        return false;
     }
 
     void removeTransaction( FabricTransactionImpl transaction )

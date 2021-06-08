@@ -34,7 +34,6 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface FabricTransaction
 {
-
     void commit();
 
     void rollback();
@@ -54,6 +53,8 @@ public interface FabricTransaction
     Optional<StatementLifecycle> getLastSubmittedStatement();
 
     void setMetaData( Map<String, Object> txMeta );
+
+    boolean isOpen();
 
     interface FabricExecutionContext
     {
