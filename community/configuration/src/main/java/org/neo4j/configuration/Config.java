@@ -679,16 +679,9 @@ public class Config implements Configuration
 
                 String prefix = groupEntry.getKey();
                 String keyWithoutPrefix = key.substring( prefix.length() + 1 );
-                String id;
-                if ( keyWithoutPrefix.matches("^[^.]+$") )
-                {
-                    id = keyWithoutPrefix;
-                }
-                else if ( keyWithoutPrefix.matches("^[^.]+\\.[^.]+$") )
-                {
-                    id = keyWithoutPrefix.substring( 0, keyWithoutPrefix.indexOf( '.' ) );
-                }
-                else
+                int dotIndex = keyWithoutPrefix.indexOf( '.' );
+                String id = dotIndex == -1 ? keyWithoutPrefix : keyWithoutPrefix.substring( 0, dotIndex );
+                if ( id.isEmpty() )
                 {
                     String msg = format( "Malformed group setting name: '%s', does not match any setting in its group.", key );
                     if ( strict )
