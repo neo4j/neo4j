@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.CachedMetricsFactory
-import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.CachedSimpleMetricsFactory
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 
@@ -34,7 +33,7 @@ class CypherPlannerFactory[C <: PlannerContext, T <: Transformer[C, LogicalPlanS
                         clock: Clock,
                         monitors: Monitors,
                         updateStrategy: Option[UpdateStrategy]): CypherPlanner[C] = {
-    val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
+    val metricsFactory = CachedSimpleMetricsFactory
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
     CypherPlanner(monitors, metricsFactory, config, actualUpdateStrategy, clock)
   }

@@ -51,7 +51,6 @@ import org.neo4j.cypher.internal.util.Selectivity
 
 object Metrics {
 
-
   object QueryGraphSolverInput {
 
     def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Map.empty)
@@ -106,7 +105,7 @@ object Metrics {
      *
      * @return the cardinality of the query
      */
-    def apply(query: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
+    def apply(queryPart: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
   }
 
   trait QueryGraphCardinalityModel {

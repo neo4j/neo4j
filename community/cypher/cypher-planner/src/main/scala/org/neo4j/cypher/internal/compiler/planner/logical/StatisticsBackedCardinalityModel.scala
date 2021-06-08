@@ -62,27 +62,28 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   private val expressionSelectivityCalculator = queryGraphCardinalityModel.expressionSelectivityCalculator
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
-  def apply(queryPart: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
-    queryPart match {
-      case query: SinglePlannerQuery =>
-        val output = query.fold(CardinalityAndInput(Cardinality.SINGLE, input)) {
-          case (CardinalityAndInput(inboundCardinality, input), plannerQuery) =>
-            val CardinalityAndInput(qgCardinality, afterQGInput) = calculateCardinalityForQueryGraph(plannerQuery.queryGraph, input, semanticTable)
-            val beforeHorizonCardinality = qgCardinality * inboundCardinality
+  override def apply(queryPart: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = queryPart match {
+    case singlePlannerQuery: SinglePlannerQuery => singlePlannerQueryCardinality(singlePlannerQuery, input, semanticTable)
+    case uq@UnionQuery(part, query, _, _) => combineUnion(uq, apply(part, input, semanticTable), apply(query, input, semanticTable))
+  }
 
-            val afterHorizon =
-              calculateCardinalityForQueryHorizon(CardinalityAndInput(beforeHorizonCardinality, afterQGInput), plannerQuery.horizon, semanticTable)
-            afterHorizon.copy(input = afterHorizon.input.withFusedLabelInfo(plannerQuery.firstLabelInfo))
-        }
-        output.cardinality
+  def singlePlannerQueryCardinality(query: SinglePlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+    val output = query.fold(CardinalityAndInput(Cardinality.SINGLE, input)) {
+      case (CardinalityAndInput(inboundCardinality, input), plannerQuery) =>
+        val CardinalityAndInput(qgCardinality, afterQGInput) = calculateCardinalityForQueryGraph(plannerQuery.queryGraph, input, semanticTable)
+        val beforeHorizonCardinality = qgCardinality * inboundCardinality
+        val afterHorizon = calculateCardinalityForQueryHorizon(CardinalityAndInput(beforeHorizonCardinality, afterQGInput), plannerQuery.horizon, semanticTable)
+        afterHorizon.copy(input = afterHorizon.input.withFusedLabelInfo(plannerQuery.firstLabelInfo))
+    }
+    output.cardinality
+  }
 
-      case UnionQuery(part, query, distinct, _) =>
-        val unionCardinality = apply(part, input, semanticTable) + apply(query, input, semanticTable)
-        if (distinct) {
-          unionCardinality * DEFAULT_DISTINCT_SELECTIVITY
-        } else {
-          unionCardinality
-        }
+  def combineUnion(unionQuery: UnionQuery, partCardinality: Cardinality, queryCardinality: Cardinality): Cardinality = {
+    val unionCardinality = partCardinality + queryCardinality
+    if (unionQuery.distinct) {
+      unionCardinality * DEFAULT_DISTINCT_SELECTIVITY
+    } else {
+      unionCardinality
     }
   }
 

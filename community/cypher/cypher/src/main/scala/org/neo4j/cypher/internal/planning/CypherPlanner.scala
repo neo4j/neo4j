@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.AdministrationCommandRuntime
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.CompilerWithExpressionCodeGenOption
@@ -53,8 +51,7 @@ import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.CachedMetricsFactory
-import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.CachedSimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DPSolverConfig
@@ -105,6 +102,7 @@ import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 
+import java.time.Clock
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -312,7 +310,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       executionModel,
       Some(options.offset),
       monitors,
-      CachedMetricsFactory(SimpleMetricsFactory),
+      CachedSimpleMetricsFactory,
       createQueryGraphSolver(config, plannerOption, options.queryOptions.connectComponentsPlanner, monitors),
       config,
       maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
