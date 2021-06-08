@@ -579,7 +579,8 @@ public class Operations implements Write, SchemaWrite
      */
     private void validateNoExistingNodeWithExactValues( IndexBackedConstraintDescriptor constraint,
                                                         IndexDescriptor index,
-            PropertyIndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
+                                                        PropertyIndexQuery.ExactPredicate[] propertyValues,
+                                                        long modifiedNode )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
         try ( FullAccessNodeValueIndexCursor valueCursor = cursors.allocateFullAccessNodeValueIndexCursor( ktx.cursorContext(), memoryTracker );
