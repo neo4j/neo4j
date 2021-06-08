@@ -69,6 +69,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -102,6 +103,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -125,6 +127,12 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_ARRAY_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_STRING_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.values.storable.Values.intValue;
 
 @ExtendWith( {TestDirectorySupportExtension.class, RandomExtension.class} )
@@ -233,16 +241,12 @@ public class DetectRandomSabotageIT
         PropertyStore propertyStore = schemaStore.propertyStore();
         long indexId = resolver.resolveDependency( IndexingService.class ).getIndexIds().longIterator().next();
         SchemaRecord schemaRecord = schemaStore.newRecord();
-        try ( var cursor = schemaStore.openPageCursorForReading( indexId, NULL ) )
-        {
-            schemaStore.getRecordByCursor( indexId, schemaRecord, RecordLoad.FORCE, cursor );
-        }
+        var cursor = storageCursors.pageCursor( CursorTypes.SCHEMA_CURSOR );
+        schemaStore.getRecordByCursor( indexId, schemaRecord, RecordLoad.FORCE, cursor );
 
         PropertyRecord indexConfigPropertyRecord = propertyStore.newRecord();
-        try ( var propertyCursor = propertyStore.openPageCursorForReading( 0, NULL ) )
-        {
-            propertyStore.getRecordByCursor( schemaRecord.getNextProp(), indexConfigPropertyRecord, RecordLoad.FORCE, propertyCursor );
-        }
+        var propertyCursor = storageCursors.pageCursor( CursorTypes.PROPERTY_CURSOR );
+        propertyStore.getRecordByCursor( schemaRecord.getNextProp(), indexConfigPropertyRecord, RecordLoad.FORCE, propertyCursor );
         propertyStore.ensureHeavy( indexConfigPropertyRecord, storageCursors );
 
         //When
@@ -487,7 +491,7 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), PrimitiveRecord::getNextProp, PrimitiveRecord::setNextProp,
-                                () -> randomLargeSometimesNegative( random ) );
+                                () -> randomLargeSometimesNegative( random ), storageCursors.pageCursor( NODE_CURSOR ) );
                     }
                 },
         NODE_REL
@@ -495,7 +499,8 @@ public class DetectRandomSabotageIT
                     @Override
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
-                        return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), NodeRecord::getNextRel, NodeRecord::setNextRel );
+                        return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), NodeRecord::getNextRel, NodeRecord::setNextRel,
+                                storageCursors.pageCursor( NODE_CURSOR ) );
                     }
                 },
         NODE_LABELS
@@ -504,12 +509,10 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         NodeStore store = stores.getNodeStore();
-                        NodeRecord node = randomRecord( random, store, usedRecord() );
+                        PageCursor nodeCursor = storageCursors.pageCursor( NODE_CURSOR );
+                        NodeRecord node = randomRecord( random, store, usedRecord(), nodeCursor );
                         NodeRecord before = store.newRecord();
-                        try ( var cursor = store.openPageCursorForReading( node.getId(), NULL ) )
-                        {
-                            store.getRecordByCursor( node.getId(), before, RecordLoad.NORMAL, cursor );
-                        }
+                        store.getRecordByCursor( node.getId(), before, RecordLoad.NORMAL, nodeCursor );
                         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
                         long[] existing = nodeLabels.get( store, storageCursors );
                         if ( random.nextBoolean() )
@@ -544,7 +547,7 @@ public class DetectRandomSabotageIT
                     @Override
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
-                        return setRandomRecordNotInUse( random, stores.getNodeStore() );
+                        return setRandomRecordNotInUse( random, stores.getNodeStore(), storageCursors.pageCursor( NODE_CURSOR ) );
                     }
                 },
         RELATIONSHIP_CHAIN
@@ -553,12 +556,10 @@ public class DetectRandomSabotageIT
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
                         RelationshipStore store = stores.getRelationshipStore();
-                        RelationshipRecord relationship = randomRecord( random, store, usedRecord() );
+                        PageCursor relCursor = storageCursors.pageCursor( RELATIONSHIP_CURSOR );
+                        RelationshipRecord relationship = randomRecord( random, store, usedRecord(), relCursor );
                         RelationshipRecord before = store.newRecord();
-                        try ( var cursor = store.openPageCursorForReading( relationship.getId(), NULL ) )
-                        {
-                            store.getRecordByCursor( relationship.getId(), before, RecordLoad.NORMAL, cursor );
-                        }
+                        store.getRecordByCursor( relationship.getId(), before, RecordLoad.NORMAL, relCursor );
                         LongSupplier rng = () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true );
                         switch ( random.nextInt( 4 ) )
                         {
@@ -595,7 +596,8 @@ public class DetectRandomSabotageIT
                         boolean startNode = random.nextBoolean();
                         ToLongFunction<RelationshipRecord> getter = startNode ? RelationshipRecord::getFirstNode : RelationshipRecord::getSecondNode;
                         BiConsumer<RelationshipRecord,Long> setter = startNode ? RelationshipRecord::setFirstNode : RelationshipRecord::setSecondNode;
-                        return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), getter, setter );
+                        return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), getter, setter,
+                                storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
                     }
                 },
         RELATIONSHIP_PROP
@@ -615,12 +617,9 @@ public class DetectRandomSabotageIT
 
                                     PropertyStore propertyStore = stores.getPropertyStore();
                                     PropertyRecord record = propertyStore.newRecord();
-                                    try ( var cursor = propertyStore.openPageCursorForReading( propertyId, NULL ) )
-                                    {
-                                        propertyStore.getRecordByCursor( propertyId, record, RecordLoad.CHECK, cursor );
-                                    }
+                                    propertyStore.getRecordByCursor( propertyId, record, RecordLoad.CHECK, storageCursors.pageCursor( PROPERTY_CURSOR ) );
                                     return !record.inUse() || !NULL_REFERENCE.is( record.getPrevProp() );
-                                } ) );
+                                } ), storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
                     }
                 },
         RELATIONSHIP_TYPE
@@ -630,7 +629,7 @@ public class DetectRandomSabotageIT
                     {
                         return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), RelationshipRecord::getType,
                                 ( relationship, type ) -> relationship.setType( type.intValue() ),
-                                () -> random.nextInt( TOKEN_NAMES.length * 2 ) - 1 );
+                                () -> random.nextInt( TOKEN_NAMES.length * 2 ) - 1, storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
                     }
                 },
         RELATIONSHIP_IN_USE
@@ -638,7 +637,7 @@ public class DetectRandomSabotageIT
                     @Override
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
-                        return setRandomRecordNotInUse( random, stores.getRelationshipStore() );
+                        return setRandomRecordNotInUse( random, stores.getRelationshipStore(), storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
                     }
                 },
         PROPERTY_CHAIN
@@ -650,10 +649,11 @@ public class DetectRandomSabotageIT
                         if ( prev )
                         {
                             return loadChangeUpdate( random, stores.getPropertyStore(), usedRecord(), PropertyRecord::getPrevProp,
-                                    PropertyRecord::setPrevProp );
+                                    PropertyRecord::setPrevProp, storageCursors.pageCursor( PROPERTY_CURSOR ) );
                         }
                         return loadChangeUpdate( random, stores.getPropertyStore(), usedRecord(), PropertyRecord::getNextProp, PropertyRecord::setNextProp,
-                                () -> randomLargeSometimesNegative( random ) ); //can not detect chains split with next = -1
+                                () -> randomLargeSometimesNegative( random ), storageCursors.pageCursor( PROPERTY_CURSOR ) );
+                        //can not detect chains split with next = -1
                     }
                 },
 //        PROPERTY_VALUE,
@@ -663,7 +663,7 @@ public class DetectRandomSabotageIT
                     @Override
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
-                        return setRandomRecordNotInUse( random, stores.getPropertyStore() );
+                        return setRandomRecordNotInUse( random, stores.getPropertyStore(), storageCursors.pageCursor( PROPERTY_CURSOR ) );
                     }
                 },
         // STRING_CHAIN - format doesn't allow us to detect these
@@ -674,7 +674,8 @@ public class DetectRandomSabotageIT
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getStringStore(),
                                 PropertyType.STRING, record ->
-                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true, storageCursors );
+                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true,
+                                storageCursors, storageCursors.pageCursor( DYNAMIC_STRING_STORE_CURSOR ) );
                     }
                 },
 //        STRING_DATA - format doesn't allow us to detect these
@@ -683,7 +684,8 @@ public class DetectRandomSabotageIT
                     @Override
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
-                        return setRandomRecordNotInUse( random, stores.getPropertyStore().getStringStore() );
+                        return setRandomRecordNotInUse( random, stores.getPropertyStore().getStringStore(),
+                                storageCursors.pageCursor( DYNAMIC_STRING_STORE_CURSOR ) );
                     }
                 },
         ARRAY_CHAIN
@@ -694,7 +696,7 @@ public class DetectRandomSabotageIT
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record ->
                                         record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ),
-                                v -> v.asObjectCopy() instanceof String[], storageCursors );
+                                v -> v.asObjectCopy() instanceof String[], storageCursors, storageCursors.pageCursor( DYNAMIC_ARRAY_STORE_CURSOR ) );
                     }
                 },
         ARRAY_LENGTH
@@ -704,7 +706,8 @@ public class DetectRandomSabotageIT
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record ->
-                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true, storageCursors );
+                                        record.setData( Arrays.copyOf( record.getData(), random.nextInt( record.getLength() ) ) ), v -> true, storageCursors,
+                                storageCursors.pageCursor( DYNAMIC_ARRAY_STORE_CURSOR ) );
                     }
                 },
 //        ARRAY_DATA?
@@ -713,7 +716,8 @@ public class DetectRandomSabotageIT
                     @Override
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
-                        return setRandomRecordNotInUse( random, stores.getPropertyStore().getArrayStore() );
+                        return setRandomRecordNotInUse( random, stores.getPropertyStore().getArrayStore(),
+                                storageCursors.pageCursor( DYNAMIC_ARRAY_STORE_CURSOR ) );
                     }
                 },
         RELATIONSHIP_GROUP_CHAIN
@@ -723,7 +727,8 @@ public class DetectRandomSabotageIT
                     {
                         // prev isn't stored in the record format
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getNext,
-                                RelationshipGroupRecord::setNext, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ) );
+                                RelationshipGroupRecord::setNext, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ),
+                                storageCursors.pageCursor( GROUP_CURSOR ) );
                     }
                 },
         RELATIONSHIP_GROUP_TYPE
@@ -733,7 +738,7 @@ public class DetectRandomSabotageIT
                     {
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getType,
                                 ( group, type ) -> group.setType( type.intValue() ),
-                                () -> random.nextInt( TOKEN_NAMES.length * 2 ) - 1 );
+                                () -> random.nextInt( TOKEN_NAMES.length * 2 ) - 1, storageCursors.pageCursor( GROUP_CURSOR ) );
                     }
                 },
         RELATIONSHIP_GROUP_FIRST_RELATIONSHIP
@@ -759,7 +764,7 @@ public class DetectRandomSabotageIT
                             break;
                         }
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), getter, setter,
-                                () -> randomLargeSometimesNegative( random ) );
+                                () -> randomLargeSometimesNegative( random ), storageCursors.pageCursor( GROUP_CURSOR ) );
                     }
                 },
         RELATIONSHIP_GROUP_IN_USE
@@ -767,7 +772,7 @@ public class DetectRandomSabotageIT
                     @Override
                     Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db, StoreCursors storageCursors )
                     {
-                        return setRandomRecordNotInUse( random, stores.getRelationshipGroupStore() );
+                        return setRandomRecordNotInUse( random, stores.getRelationshipGroupStore(), storageCursors.pageCursor( GROUP_CURSOR ) );
                     }
                 },
         SCHEMA_INDEX_ENTRY
@@ -868,7 +873,8 @@ public class DetectRandomSabotageIT
 
                         boolean add = random.nextBoolean();
                         NodeStore store = stores.getNodeStore();
-                        NodeRecord nodeRecord = randomRecord( random, store, r -> add || (r.inUse() && r.getLabelField() != NO_LABELS_FIELD.longValue()) );
+                        NodeRecord nodeRecord = randomRecord( random, store, r -> add || (r.inUse() && r.getLabelField() != NO_LABELS_FIELD.longValue()),
+                                storageCursors.pageCursor( NODE_CURSOR ) );
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
                         int labelId;
@@ -938,7 +944,7 @@ public class DetectRandomSabotageIT
                         IndexProxy rtiProxy = indexingService.getIndexProxy( rtiDescriptor );
 
                         RelationshipStore store = stores.getRelationshipStore();
-                        RelationshipRecord relationshipRecord = randomRecord( random, store, r -> true );
+                        RelationshipRecord relationshipRecord = randomRecord( random, store, r -> true, storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         Set<String> relationshipTypeNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
                         int typeBefore = relationshipRecord.getType();
@@ -1002,7 +1008,7 @@ public class DetectRandomSabotageIT
                         case 0: // node label
                         {
                             tokenHolders.labelTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
-                            NodeRecord node = randomRecord( random, stores.getNodeStore(), usedRecord() );
+                            NodeRecord node = randomRecord( random, stores.getNodeStore(), usedRecord(), storageCursors.pageCursor( NODE_CURSOR ) );
                             NodeLabelsField.parseLabelsField( node ).add( tokenId[0], stores.getNodeStore(), stores.getNodeStore().getDynamicLabelStore(),
                                     NULL, storageCursors, INSTANCE );
                             stores.getNodeStore().updateRecord( node, NULL );
@@ -1011,7 +1017,8 @@ public class DetectRandomSabotageIT
                         case 1: // property
                         {
                             tokenHolders.propertyKeyTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
-                            PropertyRecord property = randomRecord( random, stores.getPropertyStore(), usedRecord() );
+                            PropertyRecord property =
+                                    randomRecord( random, stores.getPropertyStore(), usedRecord(), storageCursors.pageCursor( PROPERTY_CURSOR ) );
                             PropertyBlock block = property.iterator().next();
                             property.removePropertyBlock( block.getKeyIndexId() );
                             PropertyBlock newBlock = new PropertyBlock();
@@ -1023,7 +1030,8 @@ public class DetectRandomSabotageIT
                         default: // relationship type
                         {
                             tokenHolders.relationshipTypeTokens().getOrCreateInternalIds( new String[]{tokenName}, tokenId );
-                            RelationshipRecord relationship = randomRecord( random, stores.getRelationshipStore(), usedRecord() );
+                            RelationshipRecord relationship =
+                                    randomRecord( random, stores.getRelationshipStore(), usedRecord(), storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
                             relationship.setType( tokenId[0] );
                             stores.getRelationshipStore().updateRecord( relationship, NULL );
                             return new Sabotage( "Relationship has type which is internal", relationship.toString() );
@@ -1032,14 +1040,11 @@ public class DetectRandomSabotageIT
                     }
                 };
 
-        protected static <T extends AbstractBaseRecord> Sabotage setRandomRecordNotInUse( RandomRule random, RecordStore<T> store )
+        protected static <T extends AbstractBaseRecord> Sabotage setRandomRecordNotInUse( RandomRule random, RecordStore<T> store, PageCursor readCursor )
         {
-            T before = randomRecord( random, store, usedRecord() );
+            T before = randomRecord( random, store, usedRecord(), readCursor );
             T record = store.newRecord();
-            try ( var cursor = store.openPageCursorForReading( before.getId(), NULL ) )
-            {
-                store.getRecordByCursor( before.getId(), record, RecordLoad.NORMAL, cursor );
-            }
+            store.getRecordByCursor( before.getId(), record, RecordLoad.NORMAL, readCursor );
             record.setInUse( false );
             store.updateRecord( record, NULL );
             return recordSabotage( before, record );
@@ -1051,21 +1056,18 @@ public class DetectRandomSabotageIT
         }
 
         protected static <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
-                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter )
+                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, PageCursor readCursor )
         {
             return loadChangeUpdate( random, store, filter, idGetter, idSetter,
-                    () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ) );
+                    () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ), readCursor );
         }
 
         protected static <T extends AbstractBaseRecord> Sabotage loadChangeUpdate( RandomRule random, RecordStore<T> store, Predicate<T> filter,
-                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, LongSupplier rng )
+                ToLongFunction<T> idGetter, BiConsumer<T,Long> idSetter, LongSupplier rng, PageCursor readCursor )
         {
-            T before = randomRecord( random, store, filter );
+            T before = randomRecord( random, store, filter, readCursor );
             T record = store.newRecord();
-            try ( var cursor = store.openPageCursorForReading( before.getId(), NULL ) )
-            {
-                store.getRecordByCursor( before.getId(), record, RecordLoad.NORMAL, cursor );
-            }
+            store.getRecordByCursor( before.getId(), record, RecordLoad.NORMAL, readCursor );
             guaranteedChangedId( () -> idGetter.applyAsLong( record ), changedId -> idSetter.accept( record, changedId ), rng );
             store.updateRecord( record, NULL );
             return recordSabotage( before, record );
@@ -1086,33 +1088,29 @@ public class DetectRandomSabotageIT
         }
 
         private static Sabotage loadChangeUpdateDynamicChain( RandomRule random, PropertyStore propertyStore, AbstractDynamicStore dynamicStore,
-                PropertyType valueType, Consumer<DynamicRecord> vandal, Predicate<Value> checkability, StoreCursors storeCursors )
+                PropertyType valueType, Consumer<DynamicRecord> vandal, Predicate<Value> checkability, StoreCursors storeCursors,
+                PageCursor dynamicReadCursor )
         {
             PropertyRecord propertyRecord = propertyStore.newRecord();
-            try ( var propertyCursor = propertyStore.openPageCursorForReading( 0, NULL ) )
+            var propertyCursor = storeCursors.pageCursor( CursorTypes.PROPERTY_CURSOR );
+            while ( true )
             {
-                while ( true )
+                propertyStore.getRecordByCursor( random.nextLong( propertyStore.getHighId() ), propertyRecord, RecordLoad.CHECK, propertyCursor );
+                if ( propertyRecord.inUse() )
                 {
-                    propertyStore.getRecordByCursor( random.nextLong( propertyStore.getHighId() ), propertyRecord, RecordLoad.CHECK, propertyCursor );
-                    if ( propertyRecord.inUse() )
+                    for ( PropertyBlock block : propertyRecord )
                     {
-                        for ( PropertyBlock block : propertyRecord )
+                        if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore, storeCursors ) ) )
                         {
-                            if ( block.getType() == valueType && checkability.test( block.getType().value( block, propertyStore, storeCursors ) ) )
+                            propertyStore.ensureHeavy( block, storeCursors );
+                            if ( block.getValueRecords().size() > 1 )
                             {
-                                propertyStore.ensureHeavy( block, storeCursors );
-                                if ( block.getValueRecords().size() > 1 )
-                                {
-                                    DynamicRecord dynamicRecord = block.getValueRecords().get( random.nextInt( block.getValueRecords().size() - 1 ) );
-                                    DynamicRecord before = dynamicStore.newRecord();
-                                    try ( var dynamicCursor = dynamicStore.openPageCursorForReading( dynamicRecord.getId(), NULL ) )
-                                    {
-                                        dynamicStore.getRecordByCursor( dynamicRecord.getId(), before, RecordLoad.NORMAL, dynamicCursor );
-                                    }
-                                    vandal.accept( dynamicRecord );
-                                    dynamicStore.updateRecord( dynamicRecord, NULL );
-                                    return recordSabotage( before, dynamicRecord );
-                                }
+                                DynamicRecord dynamicRecord = block.getValueRecords().get( random.nextInt( block.getValueRecords().size() - 1 ) );
+                                DynamicRecord before = dynamicStore.newRecord();
+                                dynamicStore.getRecordByCursor( dynamicRecord.getId(), before, RecordLoad.NORMAL, dynamicReadCursor );
+                                vandal.accept( dynamicRecord );
+                                dynamicStore.updateRecord( dynamicRecord, NULL );
+                                return recordSabotage( before, dynamicRecord );
                             }
                         }
                     }
@@ -1142,19 +1140,16 @@ public class DetectRandomSabotageIT
             return value;
         }
 
-        protected static <T extends AbstractBaseRecord> T randomRecord( RandomRule random, RecordStore<T> store, Predicate<T> filter )
+        protected static <T extends AbstractBaseRecord> T randomRecord( RandomRule random, RecordStore<T> store, Predicate<T> filter, PageCursor readCursor )
         {
             long highId = store.getHighId();
             T record = store.newRecord();
-            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            do
             {
-                do
-                {
-                    // Load with FORCE to ignore not-in-use and decoding errors at this stage.
-                    store.getRecordByCursor( random.nextLong( highId ), record, RecordLoad.FORCE, cursor );
-                }
-                while ( !filter.test( record ) );
+                // Load with FORCE to ignore not-in-use and decoding errors at this stage.
+                store.getRecordByCursor( random.nextLong( highId ), record, RecordLoad.FORCE, readCursor );
             }
+            while ( !filter.test( record ) );
             return record;
         }
 

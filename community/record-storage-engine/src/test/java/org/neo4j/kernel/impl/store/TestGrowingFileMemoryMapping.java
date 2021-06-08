@@ -29,8 +29,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -42,6 +44,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -67,25 +70,25 @@ class TestGrowingFileMemoryMapping
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache,
                 testDirectory.getFileSystem(), NullLogProvider.getInstance(), NULL, writable() );
 
-        NeoStores neoStores = storeFactory.openAllNeoStores( true );
-        NodeStore nodeStore = neoStores.getNodeStore();
-
-        // when
-        int iterations = 2 * NUMBER_OF_RECORDS;
-        long startingId = nodeStore.nextId( CursorContext.NULL );
-        long nodeId = startingId;
-        for ( int i = 0; i < iterations; i++ )
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true );
+               var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL ) )
         {
-            NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
-            record.setInUse( true );
-            nodeStore.updateRecord( record, CursorContext.NULL );
-            nodeId = nodeStore.nextId( CursorContext.NULL );
-        }
+            NodeStore nodeStore = neoStores.getNodeStore();
+            // when
+            int iterations = 2 * NUMBER_OF_RECORDS;
+            long startingId = nodeStore.nextId( CursorContext.NULL );
+            long nodeId = startingId;
+            for ( int i = 0; i < iterations; i++ )
+            {
+                NodeRecord record = new NodeRecord( nodeId ).initialize( false, 0, false, i, 0 );
+                record.setInUse( true );
+                nodeStore.updateRecord( record, CursorContext.NULL );
+                nodeId = nodeStore.nextId( CursorContext.NULL );
+            }
 
-        // then
-        NodeRecord record = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
-        try ( var pageCursor = nodeStore.openPageCursorForReading( 0, CursorContext.NULL ) )
-        {
+            // then
+            NodeRecord record = new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 );
+            var pageCursor = storeCursors.pageCursor( NODE_CURSOR );
             for ( int i = 0; i < iterations; i++ )
             {
                 record.setId( startingId + i );
@@ -94,6 +97,5 @@ class TestGrowingFileMemoryMapping
                 assertThat( record.getNextRel() ).as( "record[" + i + "] should have nextRelId of " + i ).isEqualTo( i );
             }
         }
-        neoStores.close();
     }
 }

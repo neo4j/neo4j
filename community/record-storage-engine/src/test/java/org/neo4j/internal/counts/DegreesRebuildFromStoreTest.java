@@ -33,12 +33,15 @@ import org.neo4j.internal.recordstorage.FlatRelationshipModifications.Relationsh
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.test.extension.Inject;
@@ -57,6 +60,7 @@ import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combin
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.applyLogicalChanges;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.openSimpleStorageEngine;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
 
 @ExtendWith( RandomExtension.class )
 @EphemeralPageCacheExtension
@@ -91,17 +95,17 @@ class DegreesRebuildFromStoreTest
             assertThat( expectedDegrees.isEmpty() ).isFalse();
 
             RelationshipGroupStore groupStore = storageEngine.testAccessNeoStores().getRelationshipGroupStore();
-            long highId = groupStore.getHighId();
-            assertThat( highId ).isGreaterThan( 1 );
-            for ( int i = 10; i < highId; i++ )
+            try ( StoreCursors storageCursors = storageEngine.createStorageCursors( NULL ) )
             {
-                RelationshipGroupRecord record;
-                try ( var readCursor = groupStore.openPageCursorForReading( i, NULL ) )
+                long highId = groupStore.getHighId();
+                assertThat( highId ).isGreaterThan( 1 );
+                for ( int i = 10; i < highId; i++ )
                 {
-                    record = groupStore.getRecordByCursor( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, readCursor );
+                    RelationshipGroupRecord record =
+                            groupStore.getRecordByCursor( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, storageCursors.pageCursor( GROUP_CURSOR ) );
+                    record.setInUse( false );
+                    groupStore.updateRecord( record, NULL );
                 }
-                record.setInUse( false );
-                groupStore.updateRecord( record, NULL );
             }
             storageEngine.flushAndForce( NULL );
         }

@@ -94,6 +94,7 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -147,6 +148,9 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.cursor.CursorTypes.DYNAMIC_LABEL_STORE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @EphemeralNeo4jLayoutExtension
 @EphemeralPageCacheExtension
@@ -1217,7 +1221,7 @@ class TransactionRecordStateTest
             apply( transaction( recordState ) );
 
             // Just a little validation of assumptions
-            assertRelationshipGroupsInOrder( neoStores, nodeId, type10 );
+            assertRelationshipGroupsInOrder( neoStores, storeCursors, nodeId, type10 );
         }
 
         // WHEN inserting a relationship of type 5
@@ -1229,7 +1233,7 @@ class TransactionRecordStateTest
             apply( transaction( recordState ) );
 
             // THEN that group should end up first in the chain
-            assertRelationshipGroupsInOrder( neoStores, nodeId, type5, type10 );
+            assertRelationshipGroupsInOrder( neoStores, storeCursors, nodeId, type5, type10 );
         }
 
         // WHEN inserting a relationship of type 15
@@ -1241,7 +1245,7 @@ class TransactionRecordStateTest
             apply( transaction( recordState ) );
 
             // THEN that group should end up last in the chain
-            assertRelationshipGroupsInOrder( neoStores, nodeId, type5, type10, type15 );
+            assertRelationshipGroupsInOrder( neoStores, storeCursors, nodeId, type5, type10, type15 );
         }
     }
 
@@ -1526,16 +1530,11 @@ class TransactionRecordStateTest
         apply( state );
 
         // then
-        try ( var nodeCursor = nodeStore.openPageCursorForReading( nodeId, NULL );
-              var groupCursor = groupStore.openPageCursorForReading( groupA, NULL );
-              var relCursor = relationshipStore.openPageCursorForReading( relationshipId, NULL ) )
-        {
-            assertThat( nodeStore.isInUse( nodeId, nodeCursor ) ).isFalse();
-            assertThat( groupStore.isInUse( groupA, groupCursor ) ).isFalse();
-            assertThat( groupStore.isInUse( groupB, groupCursor ) ).isFalse();
-            assertThat( groupStore.isInUse( groupC, groupCursor ) ).isFalse();
-            assertThat( relationshipStore.isInUse( relationshipId, relCursor ) ).isFalse();
-        }
+        assertThat( nodeStore.isInUse( nodeId, storeCursors.pageCursor( NODE_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupA, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupB, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupC, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( relationshipStore.isInUse( relationshipId, storeCursors.pageCursor( RELATIONSHIP_CURSOR ) ) ).isFalse();
     }
 
     @Test
@@ -1568,14 +1567,10 @@ class TransactionRecordStateTest
         apply( state );
 
         // then
-        try ( var nodeCursor = nodeStore.openPageCursorForReading( nodeId, NULL );
-                var groupCursor = groupStore.openPageCursorForReading( groupA, NULL ) )
-        {
-            assertThat( nodeStore.isInUse( nodeId, nodeCursor ) ).isFalse();
-            assertThat( groupStore.isInUse( groupA, groupCursor ) ).isFalse();
-            assertThat( groupStore.isInUse( groupB, groupCursor ) ).isFalse();
-            assertThat( groupStore.isInUse( groupC, groupCursor ) ).isFalse();
-        }
+        assertThat( nodeStore.isInUse( nodeId, storeCursors.pageCursor( NODE_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupA, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupB, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
+        assertThat( groupStore.isInUse( groupC, storeCursors.pageCursor( GROUP_CURSOR ) ) ).isFalse();
     }
 
     private static void addLabelsToNode( TransactionRecordState recordState, long nodeId, long[] labelIds )
@@ -1611,27 +1606,24 @@ class TransactionRecordStateTest
         return result;
     }
 
-    private static void assertRelationshipGroupsInOrder( NeoStores neoStores, long nodeId, int... types )
+    private static void assertRelationshipGroupsInOrder( NeoStores neoStores, StoreCursors storeCursors, long nodeId, int... types )
     {
         NodeStore nodeStore = neoStores.getNodeStore();
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        try ( var nodeCursor = nodeStore.openPageCursorForReading( nodeId, NULL );
-              var relGroupCursor = relationshipGroupStore.openPageCursorForReading( 0, NULL ) )
+        NodeRecord node = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, storeCursors.pageCursor( NODE_CURSOR ) );
+        assertTrue( node.isDense(), "Node should be dense, is " + node );
+        long groupId = node.getNextRel();
+        int cursor = 0;
+        List<RelationshipGroupRecord> seen = new ArrayList<>();
+        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            NodeRecord node = nodeStore.getRecordByCursor( nodeId, nodeStore.newRecord(), NORMAL, nodeCursor );
-            assertTrue( node.isDense(), "Node should be dense, is " + node );
-            long groupId = node.getNextRel();
-            int cursor = 0;
-            List<RelationshipGroupRecord> seen = new ArrayList<>();
-            while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                RelationshipGroupRecord group = relationshipGroupStore.getRecordByCursor( groupId, relationshipGroupStore.newRecord(), NORMAL, relGroupCursor );
-                seen.add( group );
-                assertEquals( types[cursor++], group.getType(), "Invalid type, seen groups so far " + seen );
-                groupId = group.getNext();
-            }
-            assertEquals( types.length, cursor, "Not enough relationship group records found in chain for " + node );
+            RelationshipGroupRecord group = relationshipGroupStore.getRecordByCursor( groupId, relationshipGroupStore.newRecord(), NORMAL,
+                    storeCursors.pageCursor( GROUP_CURSOR ) );
+            seen.add( group );
+            assertEquals( types[cursor++], group.getType(), "Invalid type, seen groups so far " + seen );
+            groupId = group.getNext();
         }
+        assertEquals( types.length, cursor, "Not enough relationship group records found in chain for " + node );
     }
 
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )

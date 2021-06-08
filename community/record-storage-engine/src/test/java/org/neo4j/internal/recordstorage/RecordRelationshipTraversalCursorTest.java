@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -309,11 +310,8 @@ public class RecordRelationshipTraversalCursorTest
     protected void unUseRecord( long recordId )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        RelationshipRecord relationshipRecord;
-        try ( var cursor = relationshipStore.openPageCursorForReading( recordId, CursorContext.NULL ) )
-        {
-            relationshipRecord = relationshipStore.getRecordByCursor( recordId, new RelationshipRecord( -1 ), RecordLoad.FORCE, cursor );
-        }
+        var cursor = storeCursors.pageCursor( CursorTypes.RELATIONSHIP_CURSOR );
+        RelationshipRecord relationshipRecord = relationshipStore.getRecordByCursor( recordId, new RelationshipRecord( -1 ), RecordLoad.FORCE, cursor );
         relationshipRecord.setInUse( false );
         relationshipStore.updateRecord( relationshipRecord, CursorContext.NULL );
     }

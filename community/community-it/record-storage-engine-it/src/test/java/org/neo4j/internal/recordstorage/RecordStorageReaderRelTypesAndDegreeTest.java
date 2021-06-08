@@ -29,6 +29,7 @@ import java.util.function.LongConsumer;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.util.EagerDegrees;
 import org.neo4j.storageengine.util.SingleDegree;
 import org.neo4j.test.extension.Inject;
@@ -63,6 +65,9 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.NODE_CURSOR;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.RELATIONSHIP_CURSOR;
 
 @ExtendWith( RandomExtension.class )
 public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase
@@ -606,27 +611,24 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         }
     }
 
-    protected static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
+    protected static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id, PageCursor storeCursor )
     {
-        try ( var cursor = store.openPageCursorForReading( id, NULL ) )
-        {
-            return store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, cursor );
-        }
+        return store.getRecordByCursor( id, store.newRecord(), RecordLoad.FORCE, storeCursor );
     }
 
     protected NodeRecord getNodeRecord( long id )
     {
-        return getRecord( resolveNeoStores().getNodeStore(), id );
+        return getRecord( resolveNeoStores().getNodeStore(), id, storageCursors.pageCursor( NODE_CURSOR ) );
     }
 
     protected RelationshipRecord getRelRecord( long id )
     {
-        return getRecord( resolveNeoStores().getRelationshipStore(), id );
+        return getRecord( resolveNeoStores().getRelationshipStore(), id, storageCursors.pageCursor( RELATIONSHIP_CURSOR ) );
     }
 
     protected RelationshipGroupRecord getRelGroupRecord( long id )
     {
-        return getRecord( resolveNeoStores().getRelationshipGroupStore(), id );
+        return getRecord( resolveNeoStores().getRelationshipGroupStore(), id, storageCursors.pageCursor( GROUP_CURSOR ) );
     }
 
     protected void update( RelationshipGroupRecord record )

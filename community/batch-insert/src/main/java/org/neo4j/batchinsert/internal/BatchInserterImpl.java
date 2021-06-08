@@ -94,7 +94,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -168,6 +167,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -933,12 +933,10 @@ public class BatchInserterImpl implements BatchInserter
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
         IdValidator.assertValidId( IdType.NODE, id, maxNodeId );
-        try ( PageCursor pageCursor = nodeStore.openPageCursorForReading( id, cursorContext ) )
+        var nodeCursor = storeCursors.pageCursor( CursorTypes.NODE_CURSOR );
+        if ( nodeStore.isInUse( id, nodeCursor ) )
         {
-            if ( nodeStore.isInUse( id, pageCursor ) )
-            {
-                throw new IllegalArgumentException( "id=" + id + " already in use" );
-            }
+            throw new IllegalArgumentException( "id=" + id + " already in use" );
         }
         long highId = nodeStore.getHighId();
         if ( highId <= id )
@@ -1035,10 +1033,7 @@ public class BatchInserterImpl implements BatchInserter
     public boolean nodeExists( long nodeId )
     {
         flushStrategy.forceFlush();
-        try ( PageCursor pageCursor = nodeStore.openPageCursorForReading( nodeId, cursorContext ) )
-        {
-            return nodeStore.isInUse( nodeId, pageCursor );
-        }
+        return nodeStore.isInUse( nodeId, storeCursors.pageCursor( CursorTypes.NODE_CURSOR ) );
     }
 
     @Override

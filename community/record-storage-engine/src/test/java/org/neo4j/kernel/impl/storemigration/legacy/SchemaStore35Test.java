@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -264,10 +265,8 @@ class SchemaStore35Test
     {
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = store.newRecord();
-        try ( var cursor = store.openPageCursorForReading( rule.getId(), cursorContext ) )
-        {
-            store.getRecordByCursor( rule.getId(), record, CHECK, cursor );
-        }
+        var cursor = storeCursors.pageCursor( CursorTypes.SCHEMA_CURSOR );
+        store.getRecordByCursor( rule.getId(), record, CHECK, cursor );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), store );
         allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule, INSTANCE ), recordAllocator, cursorContext, INSTANCE );
         return records;

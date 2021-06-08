@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -372,10 +373,8 @@ class CheckerTestBase
     NodeRecord loadNode( long id )
     {
         NodeStore nodeStore = neoStores.getNodeStore();
-        try ( var cursor = nodeStore.openPageCursorForReading( id, CursorContext.NULL ) )
-        {
-            return nodeStore.getRecordByCursor( id, nodeStore.newRecord(), RecordLoad.NORMAL, cursor );
-        }
+        var cursor = storeCursors.pageCursor( CursorTypes.NODE_CURSOR );
+        return nodeStore.getRecordByCursor( id, nodeStore.newRecord(), RecordLoad.NORMAL, cursor );
     }
 
     long node( long id, long nextProp, long nextRel, int... labels )

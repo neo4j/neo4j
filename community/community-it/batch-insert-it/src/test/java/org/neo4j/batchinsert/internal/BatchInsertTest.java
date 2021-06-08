@@ -98,6 +98,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -767,20 +768,18 @@ class BatchInsertTest
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         try ( var storeCursors = storageEngine.createStorageCursors( NULL ) )
         {
-            SchemaStore store = neoStores.getSchemaStore();
+            SchemaStore schemaStore = neoStores.getSchemaStore();
             TokenHolders tokenHolders = graphdb.getDependencyResolver().resolveDependency( TokenHolders.class );
-            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders, () -> KernelVersion.LATEST );
+            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
             List<Long> inUse = new ArrayList<>();
-            SchemaRecord record = store.newRecord();
-            try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+            SchemaRecord record = schemaStore.newRecord();
+            var cursor = storeCursors.pageCursor( CursorTypes.SCHEMA_CURSOR );
+            for ( long i = 1, high = schemaStore.getHighestPossibleIdInUse( NULL ); i <= high; i++ )
             {
-                for ( long i = 1, high = store.getHighestPossibleIdInUse( NULL ); i <= high; i++ )
+                schemaStore.getRecordByCursor( i, record, RecordLoad.FORCE, cursor );
+                if ( record.inUse() )
                 {
-                    store.getRecordByCursor( i, record, RecordLoad.FORCE, cursor );
-                    if ( record.inUse() )
-                    {
-                        inUse.add( i );
-                    }
+                    inUse.add( i );
                 }
             }
             assertEquals( 2, inUse.size(), "records in use" );

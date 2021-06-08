@@ -34,12 +34,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -47,6 +49,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.cursor.CursorTypes;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
@@ -63,10 +67,12 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.GROUP_CURSOR;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -89,6 +95,7 @@ class RelationshipGroupDefragmenterTest
         );
     }
 
+    private StoreCursors storeCursors;
     private BatchingNeoStores stores;
     private JobScheduler jobScheduler;
     private int units;
@@ -100,13 +107,13 @@ class RelationshipGroupDefragmenterTest
         stores = BatchingNeoStores.batchingNeoStores( testDirectory.getFileSystem(), databaseLayout, format, CONFIG, NullLogService.getInstance(),
             AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL, INSTANCE );
         stores.createNew();
+        storeCursors = new CachedStoreCursors( stores.getNeoStores(), NULL );
     }
 
     @AfterEach
-    void stop() throws Exception
+    void stop()
     {
-        stores.close();
-        jobScheduler.close();
+        closeAllUnchecked( storeCursors, stores, jobScheduler );
     }
 
     @Test
@@ -250,7 +257,6 @@ class RelationshipGroupDefragmenterTest
         long firstId = store.getNumberOfReservedLowIds();
         long groupCount = store.getHighId() - firstId;
         RelationshipGroupRecord groupRecord = store.newRecord();
-        PageCursor groupCursor = store.openPageCursorForReading( firstId, NULL );
         long highGroupId = store.getHighId();
         long currentNodeId = -1;
         int currentTypeId = -1;
@@ -258,7 +264,7 @@ class RelationshipGroupDefragmenterTest
         int currentGroupLength = 0;
         for ( long id = firstId; id < highGroupId; id++, newGroupCount++ )
         {
-            store.getRecordByCursor( id, groupRecord, CHECK, groupCursor );
+            store.getRecordByCursor( id, groupRecord, CHECK, storeCursors.pageCursor( GROUP_CURSOR ) );
             if ( !groupRecord.inUse() )
             {
                 // This will be the case if we have double record units, just assert that fact
