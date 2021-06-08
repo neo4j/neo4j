@@ -36,6 +36,9 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -69,6 +72,7 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            markTracerToIgnoreDifferences( transaction );
             Traverser traverse = transaction.traversalDescription().evaluator( atDepth( 4 ) )
                     .traverse( transaction.getNodeById( node( "A" ).getId() ) );
             Iterator<Path> resourceIterator = traverse.iterator();
@@ -84,6 +88,7 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            markTracerToIgnoreDifferences( transaction );
             a = transaction.getNodeById( a.getId() );
             Traverser traverse = transaction.traversalDescription()
                     .evaluator( atDepth( 0 ) ).traverse( a );
@@ -101,6 +106,7 @@ class TestPath extends TraversalTestBase
     {
         try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            markTracerToIgnoreDifferences( transaction );
             Traverser traverser = transaction.traversalDescription().evaluator( atDepth( 0 ) )
                     .traverse( transaction.getNodeById( a.getId() ) );
             Path path = getFirstPath( traverser );
@@ -126,6 +132,7 @@ class TestPath extends TraversalTestBase
         BidirectionalTraversalDescription bidirectional;
         try ( var transaction = graphDb.beginTx() )
         {
+            markTracerToIgnoreDifferences( transaction );
             Node a = transaction.getNodeById( this.a.getId() );
             Node e = transaction.getNodeById( this.e.getId() );
             TraversalDescription side = transaction.traversalDescription().uniqueness( Uniqueness.NODE_PATH );
@@ -196,5 +203,11 @@ class TestPath extends TraversalTestBase
         {
             return iterator.next();
         }
+    }
+
+    private static void markTracerToIgnoreDifferences( Transaction transaction )
+    {
+        PageCursorTracer cursorTracer = ((InternalTransaction) transaction).kernelTransaction().cursorContext().getCursorTracer();
+        ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
     }
 }

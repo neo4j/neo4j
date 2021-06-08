@@ -107,14 +107,10 @@ public abstract class KnownSystemComponentVersion
 
     protected static boolean nodesWithLabelExist( Transaction tx, Label label )
     {
-        boolean result = false;
-        ResourceIterator<Node> nodes = tx.findNodes( label );
-        if ( nodes.hasNext() )
+        try ( ResourceIterator<Node> nodes = tx.findNodes( label ) )
         {
-            result = true;
+            return nodes.hasNext();
         }
-        nodes.close();
-        return result;
     }
 
     public void setVersionProperty( Transaction tx, int newVersion )

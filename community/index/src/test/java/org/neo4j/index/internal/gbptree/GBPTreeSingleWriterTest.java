@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -168,6 +169,7 @@ class GBPTreeSingleWriterTest
             assertThat( cursorTracer.hits() ).isEqualTo( 4 );
             assertThat( cursorTracer.faults() ).isEqualTo( 1 );
 
+            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
             cursorTracer.reportEvents();
             assertZeroCursor( cursorContext );
 

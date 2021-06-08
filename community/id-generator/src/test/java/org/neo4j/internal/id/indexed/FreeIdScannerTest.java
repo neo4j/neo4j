@@ -46,6 +46,7 @@ import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
@@ -671,7 +672,9 @@ class FreeIdScannerTest
         public ReservedMarker getMarker( CursorContext cursorContext )
         {
             ReservedMarker actual = instantiateRealMarker();
-            cursorContext.getCursorTracer().beginPin( false, 1, null ).done();
+            PinEvent pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, null );
+            pinEvent.hit();
+            pinEvent.done();
             return new ReservedMarker()
             {
                 @Override

@@ -83,6 +83,7 @@
       -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
+      -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.test.extension.ThreadLeakageGuardExtension.PRINT_ONLY=${ThreadLeakageGuardExtension.PRINT_ONLY}
       -Dorg.neo4j.test.extension.ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS=${ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS}

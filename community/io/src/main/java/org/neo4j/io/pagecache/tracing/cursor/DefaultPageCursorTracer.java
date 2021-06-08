@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.tracing.cursor;
 import java.io.IOException;
 
 import org.neo4j.internal.helpers.MathUtil;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -30,8 +31,12 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
+import static org.neo4j.util.FeatureToggles.flag;
+
 public class DefaultPageCursorTracer implements PageCursorTracer
 {
+    private static final boolean CHECK_REPORTED_COUNTERS = flag( DefaultPageCursorTracer.class, "CHECK_REPORTED_COUNTERS", false );
+
     private long pins;
     private long unpins;
     private long hits;
@@ -46,6 +51,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
     private final PageCacheTracer pageCacheTracer;
     private final String tag;
+    private boolean ignoreCounterCheck;
 
     public DefaultPageCursorTracer( PageCacheTracer pageCacheTracer, String tag )
     {
@@ -68,6 +74,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     @Override
     public void reportEvents()
     {
+        if ( CHECK_REPORTED_COUNTERS && !ignoreCounterCheck )
+        {
+            checkCounters();
+        }
         if ( pins > 0 )
         {
             pageCacheTracer.pins( pins );
@@ -109,6 +119,24 @@ public class DefaultPageCursorTracer implements PageCursorTracer
             pageCacheTracer.merges( merges );
         }
         reset();
+    }
+
+    private void checkCounters()
+    {
+        boolean pinsMismatch = pins != unpins;
+        boolean hitsMismatch = pins > hits + faults;
+        if ( pinsMismatch || hitsMismatch )
+        {
+            throw new RuntimeException( "Mismatch cursor counters. " + this );
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "PageCursorTracer{" + "pins=" + pins + ", unpins=" + unpins + ", hits=" + hits + ", faults=" + faults + ", bytesRead=" + bytesRead +
+                ", bytesWritten=" + bytesWritten + ", evictions=" + evictions + ", evictionExceptions=" + evictionExceptions + ", flushes=" + flushes +
+                ", merges=" + merges + ", tag='" + tag + '\'' + '}';
     }
 
     private void reset()
@@ -298,6 +326,11 @@ public class DefaultPageCursorTracer implements PageCursorTracer
             merges += pagesMerged;
         }
     };
+
+    public void setIgnoreCounterCheck( boolean ignoreCounterCheck )
+    {
+        this.ignoreCounterCheck = ignoreCounterCheck;
+    }
 
     private class DefaultPinEvent implements PinEvent
     {

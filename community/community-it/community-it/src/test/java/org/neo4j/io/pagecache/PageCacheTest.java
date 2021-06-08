@@ -6291,6 +6291,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertFalse( nofault.next( 2 ) ); // Still no page id two, even when using next with id.
 
         // Also check that no faults happened.
+        ((DefaultPageCursorTracer) cursorContext.getCursorTracer()).setIgnoreCounterCheck( true );
         cursorContext.getCursorTracer().reportEvents();
         assertThat( cacheTracer.faults() - initialFaults ).isEqualTo( 0L );
     }

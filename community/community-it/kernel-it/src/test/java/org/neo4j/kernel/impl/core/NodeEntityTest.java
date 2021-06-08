@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
@@ -90,6 +91,7 @@ public class NodeEntityTest extends EntityTest
             var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             var source = tx.getNodeById( sourceId );
+            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
             cursorTracer.reportEvents();
             assertZeroTracer( cursorContext );
 
@@ -119,6 +121,7 @@ public class NodeEntityTest extends EntityTest
             var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             var source = tx.getNodeById( sourceId );
+            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
             cursorTracer.reportEvents();
             assertZeroTracer( cursorContext );
 
@@ -151,6 +154,7 @@ public class NodeEntityTest extends EntityTest
             var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             var source = tx.getNodeById( targetId );
+            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
             cursorTracer.reportEvents();
             assertZeroTracer( cursorContext );
 
