@@ -110,4 +110,15 @@ public interface PageCacheCounters
      * @return The number of millis page cache io was throttled by io limiter thus far.
      */
     long ioLimitedMillis();
+
+    /**
+     * @return Total number of opened page cache cursors.
+     */
+    long openedCursors();
+
+    /**
+     *
+     * @return Total number of closed page cache cursors.
+     */
+    long closedCursors();
 }

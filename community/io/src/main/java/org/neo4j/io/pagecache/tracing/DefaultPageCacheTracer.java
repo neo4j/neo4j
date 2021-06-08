@@ -49,6 +49,8 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder iopqPerformed = new LongAdder();
     protected final LongAdder ioLimitedTimes = new LongAdder();
     protected final LongAdder ioLimitedMillis = new LongAdder();
+    protected final LongAdder openedCursors = new LongAdder();
+    protected final LongAdder closedCursors = new LongAdder();
     protected final AtomicLong maxPages = new AtomicLong();
 
     private final FlushEvent flushEvent = new FlushEvent()
@@ -331,6 +333,18 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long openedCursors()
+    {
+        return openedCursors.sum();
+    }
+
+    @Override
+    public long closedCursors()
+    {
+        return closedCursors.sum();
+    }
+
+    @Override
     public void iopq( long iopq )
     {
         iopqPerformed.add( iopq );
@@ -341,6 +355,18 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     {
         ioLimitedTimes.increment();
         ioLimitedMillis.add( millis );
+    }
+
+    @Override
+    public void closeCursor()
+    {
+        closedCursors.increment();
+    }
+
+    @Override
+    public void openCursor()
+    {
+        openedCursors.increment();
     }
 
     @Override

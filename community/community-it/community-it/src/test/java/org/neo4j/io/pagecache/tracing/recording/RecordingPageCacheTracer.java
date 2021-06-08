@@ -211,6 +211,18 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long openedCursors()
+    {
+        return 0;
+    }
+
+    @Override
+    public long closedCursors()
+    {
+        return 0;
+    }
+
+    @Override
     public void pins( long pins )
     {
         this.pins.getAndAdd( pins );
@@ -275,6 +287,16 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void limitIO( long millis )
+    {
+    }
+
+    @Override
+    public void closeCursor()
+    {
+    }
+
+    @Override
+    public void openCursor()
     {
     }
 

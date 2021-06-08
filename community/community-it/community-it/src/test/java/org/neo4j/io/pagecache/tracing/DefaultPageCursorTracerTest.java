@@ -50,6 +50,25 @@ class DefaultPageCursorTracerTest
     }
 
     @Test
+    void countClosedAndOpenCursors()
+    {
+        assertEquals( 0, cacheTracer.closedCursors() );
+        assertEquals( 0, cacheTracer.openedCursors() );
+
+        cacheTracer.openCursor();
+        cacheTracer.openCursor();
+        cacheTracer.openCursor();
+        cacheTracer.openCursor();
+
+        cacheTracer.closeCursor();
+        cacheTracer.closeCursor();
+        cacheTracer.closeCursor();
+
+        assertEquals( 3, cacheTracer.closedCursors() );
+        assertEquals( 4, cacheTracer.openedCursors() );
+    }
+
+    @Test
     void countPinsAndUnpins()
     {
         pageCursorTracer.beginPin( true, 0, swapper ).done();

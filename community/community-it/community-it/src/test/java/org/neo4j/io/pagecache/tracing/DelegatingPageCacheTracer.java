@@ -152,6 +152,18 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long openedCursors()
+    {
+        return delegate.openedCursors();
+    }
+
+    @Override
+    public long closedCursors()
+    {
+        return delegate.closedCursors();
+    }
+
+    @Override
     public void pins( long pins )
     {
         delegate.pins( pins );
@@ -227,6 +239,18 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public void limitIO( long millis )
     {
         delegate.limitIO( millis );
+    }
+
+    @Override
+    public void closeCursor()
+    {
+        delegate.closeCursor();
+    }
+
+    @Override
+    public void openCursor()
+    {
+        delegate.openCursor();
     }
 
     @Override

@@ -60,6 +60,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     }
 
     @Override
+    public void closeCursor()
+    {
+        pageCacheTracer.closeCursor();
+    }
+
+    @Override
     public void reportEvents()
     {
         if ( pins > 0 )

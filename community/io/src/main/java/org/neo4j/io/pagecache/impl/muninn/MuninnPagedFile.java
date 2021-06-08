@@ -212,6 +212,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         {
             throw wrongLocksArgument( lockFlags );
         }
+        pageCacheTracer.openCursor();
 
         cursor.rewind();
         if ( ( pf_flags & PF_READ_AHEAD ) == PF_READ_AHEAD && ( pf_flags & PF_NO_FAULT ) != PF_NO_FAULT )

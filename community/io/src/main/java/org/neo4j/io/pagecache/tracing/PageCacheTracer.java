@@ -179,6 +179,18 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public long openedCursors()
+        {
+            return 0;
+        }
+
+        @Override
+        public long closedCursors()
+        {
+            return 0;
+        }
+
+        @Override
         public void pins( long pins )
         {
         }
@@ -240,6 +252,16 @@ public interface PageCacheTracer extends PageCacheCounters
 
         @Override
         public void limitIO( long millis )
+        {
+        }
+
+        @Override
+        public void closeCursor()
+        {
+        }
+
+        @Override
+        public void openCursor()
         {
         }
 
@@ -370,4 +392,14 @@ public interface PageCacheTracer extends PageCacheCounters
      * @param millis number of millisecond io should be blocked.
      */
     void limitIO( long millis );
+
+    /**
+     * Page cache cursor closed
+     */
+    void closeCursor();
+
+    /**
+     * Page cache cursor opened
+     */
+    void openCursor();
 }

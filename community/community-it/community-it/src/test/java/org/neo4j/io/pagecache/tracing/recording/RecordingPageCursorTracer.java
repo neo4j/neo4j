@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
  */
 public class RecordingPageCursorTracer extends RecordingTracer implements PageCursorTracer
 {
-
     private int pins;
     private int faults;
     private final PageCacheTracer tracer;
@@ -199,6 +198,11 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     public String getTag()
     {
         return tag;
+    }
+
+    @Override
+    public void closeCursor()
+    {
     }
 
     private void pageFaulted( long filePageId, PageSwapper swapper )

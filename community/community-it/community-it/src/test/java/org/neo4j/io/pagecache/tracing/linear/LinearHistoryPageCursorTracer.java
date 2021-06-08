@@ -125,4 +125,9 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     {
         return tag;
     }
+
+    @Override
+    public void closeCursor()
+    {
+    }
 }

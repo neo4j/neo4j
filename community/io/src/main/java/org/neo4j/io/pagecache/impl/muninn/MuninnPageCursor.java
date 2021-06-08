@@ -214,6 +214,7 @@ public abstract class MuninnPageCursor extends PageCursor
             return; // already closed
         }
         closeLinks( this );
+        tracer.closeCursor();
     }
 
     private void closeLinks( MuninnPageCursor cursor )

@@ -193,6 +193,18 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long openedCursors()
+    {
+        return 0;
+    }
+
+    @Override
+    public long closedCursors()
+    {
+        return 0;
+    }
+
+    @Override
     public void pins( long pins )
     {
     }
@@ -254,6 +266,16 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     @Override
     public void limitIO( long millis )
+    {
+    }
+
+    @Override
+    public void closeCursor()
+    {
+    }
+
+    @Override
+    public void openCursor()
     {
     }
 }

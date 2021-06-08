@@ -129,6 +129,47 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    void countOpenedAndClosedCursors() throws IOException
+    {
+        DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
+        try ( MuninnPageCache pageCache = createPageCache( fs, 42, defaultPageCacheTracer ) )
+        {
+            int iterations = 14;
+            for ( int i = 0; i < iterations; i++ )
+            {
+                writeInitialDataTo( file( "a" + i ) );
+                try ( var cursorContext = new CursorContext( defaultPageCacheTracer.createPageCursorTracer( "countOpenedAndClosedCursors" ) );
+                        PagedFile pagedFile = map( pageCache, file( "a" + i ), 8 ) )
+                {
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
+                    {
+                        assertEquals( i * 3 + 1, defaultPageCacheTracer.openedCursors() );
+                        assertEquals( i * 3, defaultPageCacheTracer.closedCursors() );
+
+                        assertTrue( cursor.next() );
+                        cursor.putLong( 0L );
+                    }
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
+                    {
+                        assertEquals( i * 3 + 2, defaultPageCacheTracer.openedCursors() );
+                        assertEquals( i * 3 + 1, defaultPageCacheTracer.closedCursors() );
+                    }
+                    try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
+                    {
+                        assertTrue( cursor.next() );
+                        assertEquals( i * 3 + 3, defaultPageCacheTracer.openedCursors() );
+                        assertEquals( i * 3 + 2, defaultPageCacheTracer.closedCursors() );
+                    }
+                    pagedFile.setDeleteOnClose( true );
+                }
+            }
+
+            assertEquals( iterations * 3, defaultPageCacheTracer.openedCursors() );
+            assertEquals( iterations * 3, defaultPageCacheTracer.closedCursors() );
+        }
+    }
+
+    @Test
     void shouldBeAbleToSetDeleteOnCloseFileAfterItWasMapped() throws IOException
     {
         DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
