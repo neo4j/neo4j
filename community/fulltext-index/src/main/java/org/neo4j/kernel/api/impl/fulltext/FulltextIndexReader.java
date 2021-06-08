@@ -249,12 +249,7 @@ public class FulltextIndexReader implements ValueIndexReader
 
             for ( PreparedSearch search : searches )
             {
-                // Weights are bonded with the top IndexReaderContext of the index searcher that they are created for.
-                // That's why we have to create a new StatsCachingIndexSearcher, and a new weight, for every index partition.
-                // However, the important thing is that we re-use the statsCollector.
-                StatsCachingIndexSearcher statsCachingIndexSearcher = new StatsCachingIndexSearcher( search, statsCollector );
-                Weight weight = statsCachingIndexSearcher.createWeight( query, ScoreMode.COMPLETE, 1 );
-                results.add( search.search( weight, constraints ) );
+                results.add( search.search( query, constraints, statsCollector ) );
             }
 
             return ScoreEntityIterator.mergeIterators( results );

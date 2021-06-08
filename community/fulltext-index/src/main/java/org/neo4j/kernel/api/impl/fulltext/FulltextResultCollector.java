@@ -26,6 +26,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.eclipse.collections.api.block.procedure.primitive.LongFloatProcedure;
 
 import java.io.IOException;
@@ -36,9 +37,18 @@ import java.util.function.LongPredicate;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
+/**
+ * Collects hits from lucene search and stores them in priority queue comparing by scores.
+ *
+ * If limit is specified by constraints it will employ approach similar to {@link TopScoreDocCollector} and will give hints to scorer to skip
+ * non-competitive document improving search performance.
+ *
+ * This collector doesn't track total number of hits.
+ */
 class FulltextResultCollector implements Collector
 {
     private static final int NO_LIMIT = -1;
+
     private final long limit;
     private final EntityScorePriorityQueue pq;
     private final LongPredicate exclusionFilter;
@@ -46,33 +56,15 @@ class FulltextResultCollector implements Collector
     FulltextResultCollector( IndexQueryConstraints constraints, LongPredicate exclusionFilter )
     {
         this.exclusionFilter = exclusionFilter;
-        if ( constraints.limit().isPresent() )
+        this.limit = getLimit( constraints );
+        if ( this.limit == NO_LIMIT )
         {
-            long limit = constraints.limit().getAsLong();
-            if ( constraints.skip().isPresent() )
-            {
-                limit += constraints.skip().getAsLong();
-            }
-
-            if ( limit < Integer.MAX_VALUE )
-            {
-                this.limit = limit;
-                // Use a min-queue to continuously drop the entry with the lowest score.
-                pq = new EntityScorePriorityQueue( false );
-            }
-            else
-            {
-                // The limit is enormous, and we will never reach it from just querying a single index partition.
-                // An index partition can "only" hold 2 billion documents.
-                // Just let the FulltextIndexProgressor apply the skip and limit.
-                this.limit = NO_LIMIT;
-                pq = new EntityScorePriorityQueue();
-            }
+            pq = new EntityScorePriorityQueue();
         }
         else
         {
-            limit = NO_LIMIT;
-            pq = new EntityScorePriorityQueue();
+            // Use a min-queue to continuously drop the entry with the lowest score.
+            pq = new EntityScorePriorityQueue( false );
         }
     }
 
@@ -100,7 +92,27 @@ class FulltextResultCollector implements Collector
     @Override
     public ScoreMode scoreMode()
     {
-        return ScoreMode.COMPLETE;
+        return limit == NO_LIMIT ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+    }
+
+    private static long getLimit( IndexQueryConstraints constraints )
+    {
+        if ( constraints.limit().isPresent() )
+        {
+            long limit = constraints.limit().getAsLong() + constraints.skip().orElse( 0 );
+            if ( limit < Integer.MAX_VALUE )
+            {
+                return limit;
+            }
+            else
+            {
+                // The limit is enormous, and we will never reach it from just querying a single index partition.
+                // An index partition can "only" hold 2 billion documents.
+                // Just let the FulltextIndexProgressor apply the skip and limit.
+                return NO_LIMIT;
+            }
+        }
+        return NO_LIMIT;
     }
 
     private static class ScoredEntityLeafCollector implements LeafCollector
@@ -110,6 +122,8 @@ class FulltextResultCollector implements Collector
         private final LongPredicate exclusionFilter;
         private final NumericDocValues values;
         private Scorable scorer;
+
+        private float minCompetitiveScore;
 
         ScoredEntityLeafCollector( LeafReaderContext context, EntityScorePriorityQueue pq, long limit, LongPredicate exclusionFilter ) throws IOException
         {
@@ -121,9 +135,11 @@ class FulltextResultCollector implements Collector
         }
 
         @Override
-        public void setScorer( Scorable scorer )
+        public void setScorer( Scorable scorer ) throws IOException
         {
             this.scorer = scorer;
+            minCompetitiveScore = 0f;
+            updateMinCompetitiveScore( scorer );
         }
 
         @Override
@@ -138,22 +154,53 @@ class FulltextResultCollector implements Collector
                 {
                     return;
                 }
-                if ( limit == NO_LIMIT || pq.size() < limit )
+                if ( limit == NO_LIMIT )
                 {
                     pq.insert( entityId, score );
                 }
-                else if ( pq.peekTopScore() < score )
+                else
                 {
-                    pq.removeTop();
-                    pq.insert( entityId, score );
+                    if ( pq.size() < limit )
+                    {
+                        pq.insert( entityId, score );
+                        updateMinCompetitiveScore( scorer );
+                    }
+                    else if ( pq.peekTopScore() < score ) // when limit is set pq is min-queue, if new score is better use it
+                    {
+                        pq.removeTop();
+                        pq.insert( entityId, score );
+                        updateMinCompetitiveScore( scorer );
+                    }
+                    // Otherwise, don't bother inserting this entry.
                 }
-                // Otherwise, don't bother inserting this entry.
             }
             else
             {
                 throw new RuntimeException( "No document value for document id " + doc + "." );
             }
         }
+
+        /**
+         * Update minimum competitive score for scorer, so it can skip documents with lower score, to improve search performance with limit.
+         * This score is updated only if limit is specified. In this case pq is min-queue and top element contains lowest collected score,
+         * we are not interested in documents with score lower then that.
+         */
+        private void updateMinCompetitiveScore( Scorable scorer ) throws IOException
+        {
+            // limit is set and enough elements have already collected, we can start skipping low scored documents
+            if ( limit != NO_LIMIT && pq.size() >= limit )
+            {
+                // since we tie-break on doc id and collect in doc id order, we can require
+                // the next float
+                var localMinScore = Math.nextUp( pq.peekTopScore() );
+                if ( localMinScore > minCompetitiveScore )
+                {
+                    scorer.setMinCompetitiveScore( localMinScore );
+                    minCompetitiveScore = localMinScore;
+                }
+            }
+        }
+
     }
 
     /**
