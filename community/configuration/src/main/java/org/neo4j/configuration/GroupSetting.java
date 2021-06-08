@@ -32,6 +32,9 @@ public abstract class GroupSetting
 {
     private final String name;
 
+    /**
+     * @param name The name of this group, this name can not contain dots (.)
+     */
     protected GroupSetting( String name )
     {
         this.name = name;

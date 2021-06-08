@@ -265,7 +265,7 @@ class ConfigTest
     @Test
     void testMalformedGroupSetting()
     {
-        Map<String,String> settings = Map.of( "test.connection.http.1.foo.bar", "1111");
+        Map<String,String> settings = Map.of( "test.connection.http..foo.bar", "1111");
 
         Config.Builder builder = Config.newBuilder()
                 .set( GraphDatabaseSettings.strict_config_validation, true )
