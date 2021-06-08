@@ -2543,16 +2543,17 @@ EXPRESSION StringLiteral() :
 
 EXPRESSION NumberLiteral() :
 {
+    Token sign = null;
     Token t;
     boolean negated = false;
 }
 {
     t=<DECIMAL_DOUBLE> { return astFactory.newDouble( pos( t ), token.image ); }
-    | ( <MINUS> { negated = true; })?
+    | ( sign=<MINUS> { negated = true; })?
     (
-        t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger( pos( t ), token.image, negated ); }
-        | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger( pos( t ), token.image, negated ); }
-        | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger( pos( t ), token.image, negated ); }
+        t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger( pos( sign != null ? sign : t ), token.image, negated ); }
+        | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger( pos( sign != null ? sign : t ), token.image, negated ); }
+        | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger( pos( sign != null ? sign : t ), token.image, negated ); }
     )
 }
 
