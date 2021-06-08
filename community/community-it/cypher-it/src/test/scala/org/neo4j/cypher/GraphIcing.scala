@@ -69,9 +69,21 @@ trait GraphIcing {
       } )
     }
 
+    def createUniqueConstraint(label: String, properties: String*): Result = {
+      withTx( tx => {
+        tx.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS UNIQUE")
+      })
+    }
+
     def createUniqueConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
       withTx( tx =>  {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
+      } )
+    }
+
+    def createUniqueConstraintWithName(name: String, label: String, properties: String*): Result = {
+      withTx( tx =>  {
+        tx.execute(s"CREATE CONSTRAINT `$name` ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS UNIQUE")
       } )
     }
 

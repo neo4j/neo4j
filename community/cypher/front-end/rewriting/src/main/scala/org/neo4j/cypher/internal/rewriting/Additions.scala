@@ -176,7 +176,12 @@ object Additions {
   // This is functionality that has been added in 4.4 and should not work when using CYPHER 3.5 and CYPHER 4.3
   case object addedFeaturesIn4_4 extends Additions {
 
-    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = {}
+    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+
+      case c: CreateUniquePropertyConstraint if c.properties.size > 1 =>
+        throw cypherExceptionFactory.syntaxException("Multi-property uniqueness constraints are not supported in this Cypher version.", c.position)
+
+    }
   }
 
 }
