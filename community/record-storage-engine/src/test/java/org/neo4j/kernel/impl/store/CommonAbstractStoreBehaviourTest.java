@@ -165,7 +165,10 @@ class CommonAbstractStoreBehaviourTest
     void getRawRecordDataMustNotThrowOnPageOverflow() throws Exception
     {
         prepareStoreForOutOfBoundsAccess();
-        store.getRawRecordData( 5, NULL );
+        try ( var cursor = store.openPageCursorForReading( 0, NULL ) )
+        {
+            store.getRawRecordData( 5, cursor );
+        }
     }
 
     @Test

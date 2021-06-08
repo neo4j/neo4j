@@ -49,6 +49,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.storageengine.api.cursor.CursorTypes.PROPERTY_CURSOR;
 
 @DbmsExtension( configurationCallback = "configure" )
 class NeoStoresIT
@@ -106,7 +107,10 @@ class NeoStoresIT
         }
 
         var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRawRecordData" ) );
-        propertyStore.getRawRecordData( 1L, cursorContext );
+        try ( var storeCursors = storageEngine.createStorageCursors( cursorContext ) )
+        {
+            propertyStore.getRawRecordData( 1L, storeCursors.pageCursor( PROPERTY_CURSOR ) );
+        }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
         assertEquals( 1, cursorTracer.hits() );

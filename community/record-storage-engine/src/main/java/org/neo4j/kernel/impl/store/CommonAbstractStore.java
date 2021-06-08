@@ -336,25 +336,22 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * Read raw record data. Should <strong>ONLY</strong> be used in tests or tools.
      */
-    public byte[] getRawRecordData( long id, CursorContext cursorContext ) throws IOException
+    public byte[] getRawRecordData( long id, PageCursor cursor ) throws IOException
     {
         byte[] data = new byte[recordSize];
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
+        if ( cursor.next(pageId) )
         {
-            if ( cursor.next() )
+            cursor.setOffset( offset );
+            cursor.mark();
+            do
             {
-                cursor.setOffset( offset );
-                cursor.mark();
-                do
-                {
-                    cursor.setOffsetToMark();
-                    cursor.getBytes( data );
-                }
-                while ( cursor.shouldRetry() );
-                checkForDecodingErrors( cursor, id, FORCE ); // Clear errors from the cursor.
+                cursor.setOffsetToMark();
+                cursor.getBytes( data );
             }
+            while ( cursor.shouldRetry() );
+            checkForDecodingErrors( cursor, id, FORCE ); // Clear errors from the cursor.
         }
         return data;
     }
