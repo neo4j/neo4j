@@ -1113,11 +1113,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 }
                 while ( seek.next() )
                 {
-                    KEY key = seek.key();
-                    if ( layout.compare( key, fromInclusive ) > 0 && layout.compare( key, toExclusive ) < 0 )
-                    {
-                        splitterKeysInRange.add( layout.copyKey( key, layout.newKey() ) );
-                    }
+                    splitterKeysInRange.add( layout.copyKey( seek.key(), layout.newKey() ) );
                 }
             }
             searchLevel++;

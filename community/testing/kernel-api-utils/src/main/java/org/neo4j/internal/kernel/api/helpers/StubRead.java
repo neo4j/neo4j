@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
@@ -87,6 +88,12 @@ public class StubRead implements Read
 
     @Override
     public Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
     {
         throw new UnsupportedOperationException();
     }

@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
 
 public class StubTokenIndexReader implements TokenIndexReader
@@ -63,6 +64,12 @@ public class StubTokenIndexReader implements TokenIndexReader
 
     @Override
     public TokenScan entityTokenScan( int tokenId, CursorContext cursorContext )
+    {
+        throw new UnsupportedOperationException( "Stub implementation does not support this method." );
+    }
+
+    @Override
+    public PartitionedTokenScan entityTokenScan( TokenPredicate query, int desiredNumberOfPartitions )
     {
         throw new UnsupportedOperationException( "Stub implementation does not support this method." );
     }

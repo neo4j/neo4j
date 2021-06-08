@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -33,6 +35,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUpdater.rangeOf;
@@ -79,6 +82,19 @@ public class DefaultTokenIndexReader implements TokenIndexReader
         {
             long highestEntityIdForToken = highestEntityIdForToken( tokenId, cursorContext );
             return new NativeTokenScan( tokenId, highestEntityIdForToken );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
+    public PartitionedTokenScan entityTokenScan( TokenPredicate query, int desiredNumberOfPartitions )
+    {
+        try
+        {
+            return new NativePartitionedTokenScan( query, desiredNumberOfPartitions, CursorContext.NULL );
         }
         catch ( IOException e )
         {
@@ -175,6 +191,46 @@ public class DefaultTokenIndexReader implements TokenIndexReader
             }
 
             return new TokenScanValueIndexProgressor( cursor, client, indexOrder, range );
+        }
+    }
+
+    private class NativePartitionedTokenScan implements PartitionedTokenScan
+    {
+        private final EntityRange range = EntityRange.FULL;
+        private final Iterator<Seeker<TokenScanKey,TokenScanValue>> partitions;
+        private final int numberOfPartitions;
+
+        NativePartitionedTokenScan( TokenPredicate query, int desiredNumberOfPartitions, CursorContext cursorContext ) throws IOException
+        {
+            Preconditions.requirePositive( desiredNumberOfPartitions );
+            int tokenId = query.tokenId();
+            final var fromInclusive = new TokenScanKey( tokenId, rangeOf( range.fromInclusive ) );
+            final var toExclusive = new TokenScanKey( tokenId, rangeOf( range.toExclusive ) );
+            final var partitions = index.partitionedSeek( fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext );
+            this.numberOfPartitions = partitions.size();
+            this.partitions = partitions.iterator();
+        }
+
+        @Override
+        public int getNumberOfPartitions()
+        {
+            return numberOfPartitions;
+        }
+
+        @Override
+        public IndexProgressor reservePartition( IndexProgressor.EntityTokenClient client )
+        {
+            final var partition = getNextPotentialPartition();
+            if ( partition.isEmpty() )
+            {
+                return IndexProgressor.EMPTY;
+            }
+            return new TokenScanValueIndexProgressor( partition.get(), client, IndexOrder.NONE, range );
+        }
+
+        private synchronized Optional<Seeker<TokenScanKey,TokenScanValue>> getNextPotentialPartition()
+        {
+            return partitions.hasNext() ? Optional.of( partitions.next() ) : Optional.empty();
         }
     }
 }

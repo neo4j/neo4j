@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -230,6 +232,15 @@ abstract class Read implements TxStateHolder,
             throw new RuntimeException( e );
         }
         return new NodeLabelIndexCursorScan( this, label, tokenScan, cursorContext );
+    }
+
+    @Override
+    public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions )
+    {
+        ktx.assertOpen();
+        DefaultTokenReadSession defaultSession = (DefaultTokenReadSession) session;
+        PartitionedTokenScan tokenScan = defaultSession.reader.entityTokenScan( query, desiredNumberOfPartitions );
+        return new PartitionedNodeLabelIndexCursorScan<>( this, query, tokenScan );
     }
 
     @Override

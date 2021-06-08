@@ -116,6 +116,17 @@ public interface Read
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
 
     /**
+     * Scan node label index in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param session {@link TokenReadSession} token read session to query.
+     * @param query the query to run against index
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @return {@link PartitionedScan} over the query
+     */
+    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan( TokenReadSession session, TokenPredicate query, int desiredNumberOfPartitions );
+
+    /**
      * Scan all nodes in a token index.
      * @param session {@link TokenReadSession} token read session to query.
      * @param cursor the cursor to use for consuming the results.
