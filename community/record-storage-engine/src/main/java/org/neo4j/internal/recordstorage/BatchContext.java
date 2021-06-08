@@ -122,7 +122,6 @@ public class BatchContext implements AutoCloseable
             {
                 throw new IOException( "Failed to flush index updates", e );
             }
-            indexUpdates = null;
         }
 
         if ( labelUpdatesApply != null )
