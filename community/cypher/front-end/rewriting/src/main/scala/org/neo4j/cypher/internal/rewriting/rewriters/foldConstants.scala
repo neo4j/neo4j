@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.BinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
@@ -31,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.Pow
+import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
@@ -55,7 +57,16 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
   } catch {
     case e: java.lang.ArithmeticException => throw cypherExceptionFactory.arithmeticException(e.getMessage, e)
   }
+
+  private def containsSensitive(e: BinaryOperatorExpression): Boolean = (e.lhs, e.rhs) match {
+    case (_: SensitiveLiteral, _) => true
+    case (_, _: SensitiveLiteral) => true
+    case _ => false
+  }
+
   private val instance: Rewriter = bottomUp(Rewriter.lift {
+    case e: BinaryOperatorExpression if containsSensitive(e) => e
+
     case e@Add(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
       SignedDecimalIntegerLiteral((lhs.value + rhs.value).toString)(e.position)
     case e@Add(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
@@ -83,7 +94,7 @@ case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends
     case e@Multiply(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
       DecimalDoubleLiteral((lhs.value * rhs.value).toString)(e.position)
 
-    case e@Multiply(lhs: NumberLiteral, rhs: NumberLiteral) =>
+    case e@Multiply(_: NumberLiteral, _: NumberLiteral) =>
       e
     case e@Multiply(lhs: NumberLiteral, rhs) =>
       Multiply(rhs, lhs)(e.position).rewrite(instance)
