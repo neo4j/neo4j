@@ -21,7 +21,11 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.junit.runner.RunWith
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.scalatest.Assertion
@@ -69,7 +73,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   /**
    * Tests that the JavaCC parser produce correct AST.
    */
-  protected def assertJavaCCAST(query: String, expected: Statement): Assertion = {
+  protected def assertJavaCCAST(query: String, expected: Statement): Unit = {
     val ast = JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator())
     ast shouldBe expected
   }
@@ -77,9 +81,9 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   /**
    * Tests that the parboiled and JavaCC parsers produce the same AST and error positions.
    */
-  protected def assertSameAST(query: String): Assertion = assertSameAST(query, query)
+  protected def assertSameAST(query: String): Unit = assertSameAST(query, query)
 
-  protected def assertSameAST(query: String, parBoiledQuery: String): Assertion = {
+  protected def assertSameAST(query: String, parBoiledQuery: String): Unit = {
     withClue(query+System.lineSeparator()) {
       val parboiledParser = new org.neo4j.cypher.internal.parser.CypherParser()
       val parboiledAST = Try(parboiledParser.parse(parBoiledQuery, exceptionFactory, None))
@@ -93,9 +97,27 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
           }
         case (Failure(javaccEx), Success(_)) =>
           throw javaccEx
+        case (Success(javaCCStatement), Success(parboiledStatement)) =>
+          javaCCStatement shouldBe parboiledStatement
+          verifyPositions(javaCCStatement, parboiledStatement)
+        case (Success(_), Failure(parboiledEx)) =>
+          throw parboiledEx
         case _ =>
-          javaccAST shouldBe parboiledAST
       }
     }
+  }
+
+  def verifyPositions(javaCCAstNode: ASTNode, parboiledASTNode: ASTNode): Unit = {
+    def getLiteralPositions(astNode: ASTNode) = astNode.treeFold(Seq.empty[(ASTNode, InputPosition)]) {
+      case astNode: Literal => acc => TraverseChildren(acc :+ (astNode, astNode.position))
+      case _ => acc => TraverseChildren(acc)
+    }
+
+    getLiteralPositions(javaCCAstNode).zip(getLiteralPositions(parboiledASTNode))
+      .foreach {
+        case ((astChildNode1, pos1), (astChildNode2, pos2)) => withClue(
+          s"ASTNode $astChildNode1 should have the same position as $astChildNode2")(pos1 shouldBe pos2)
+        case _ => // Do nothing
+      }
   }
 }
