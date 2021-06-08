@@ -43,6 +43,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
   )
 
   private val currentVersion = "4.4"
+  private val previousMinor = "4.3"
+  private val previousMajor = "3.5"
   private val empty_parameters = "Map()"
 
   test("AstLogicalPlanCache re-uses cached plan across different execution modes") {
@@ -560,6 +562,82 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"String: cacheHit: (CYPHER $currentVersion $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       // 5th run
       s"String: cacheHit: (CYPHER $currentVersion $query, Map(n -> class org.neo4j.values.storable.LongValue))"))
+  }
+
+  test("Different cypher version results in cache miss") {
+    val cacheListener = new LoggingTracer()
+
+    val query = "RETURN 1"
+
+    graph.withTx( tx => {
+      tx.execute(s"CYPHER $query").resultAsString()
+      tx.execute(s"CYPHER $previousMinor $query").resultAsString()
+      tx.execute(s"CYPHER $previousMajor $query").resultAsString()
+      tx.execute(s"CYPHER $currentVersion $query").resultAsString()
+      tx.execute(s"CYPHER $query").resultAsString()
+      tx.execute(s"CYPHER $previousMinor $query").resultAsString()
+      tx.execute(s"CYPHER $previousMajor $query").resultAsString()
+      tx.execute(s"CYPHER $currentVersion $query").resultAsString()
+      tx.execute(s"CYPHER $query").resultAsString()
+      tx.execute(s"CYPHER $previousMinor $query").resultAsString()
+      tx.execute(s"CYPHER $previousMajor $query").resultAsString()
+      tx.execute(s"CYPHER $currentVersion $query").resultAsString()
+    } )
+
+    cacheListener.expectTrace(List(
+
+      // Round 1
+
+      // CYPHER $query
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER $currentVersion $query, Map())",
+      s"String: cacheCompile: (CYPHER $currentVersion $query, Map())",
+      // CYPHER $previousMinor $query
+      s"AST:    cacheFlushDetected", // Different cypher versions actually use different compilers (thus different AST caches), but they write to the same monitor
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER $previousMinor $query, Map())",
+      s"String: cacheCompile: (CYPHER $previousMinor $query, Map())",
+      // CYPHER $previousMajor $query
+      s"AST:    cacheFlushDetected", // Different cypher versions actually use different compilers (thus different AST caches), but they write to the same monitor
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER $previousMajor $query, Map())",
+      s"String: cacheCompile: (CYPHER $previousMajor $query, Map())",
+      // CYPHER $currentVersion $query
+      s"String: cacheHit: (CYPHER $currentVersion $query, Map())",
+      s"AST: cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER $currentVersion RETURN 1, Map())",
+
+      // Round 2
+
+      // CYPHER $query
+      s"String: cacheHit: (CYPHER $currentVersion $query, Map())",
+      // CYPHER $previousMinor $query
+      s"String: cacheHit: (CYPHER $previousMinor $query, Map())",
+      s"AST: cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER $previousMinor RETURN 1, Map())",
+      // CYPHER $previousMajor $query
+      s"String: cacheHit: (CYPHER $previousMajor $query, Map())",
+      s"AST: cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER $previousMajor RETURN 1, Map())",
+      // CYPHER $currentVersion $query
+      s"String: cacheHit: (CYPHER $currentVersion $query, Map())",
+
+      // Round 3 - Now everything is fully cached
+
+      // CYPHER $query
+      s"String: cacheHit: (CYPHER $currentVersion $query, Map())",
+      // CYPHER $previousMinor $query
+      s"String: cacheHit: (CYPHER $previousMinor $query, Map())",
+      // CYPHER $previousMajor $query
+      s"String: cacheHit: (CYPHER $previousMajor $query, Map())",
+      // CYPHER $currentVersion $query
+      s"String: cacheHit: (CYPHER $currentVersion $query, Map())",
+    ))
   }
 
   private class LoggingTracer(traceAstLogicalPlanCache: Boolean = true, traceExecutionEngineQueryCache: Boolean = true)
