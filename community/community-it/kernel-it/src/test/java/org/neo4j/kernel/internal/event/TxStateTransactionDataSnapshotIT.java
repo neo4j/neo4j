@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -278,6 +279,7 @@ class TxStateTransactionDataSnapshotIT
             var transactionState = kernelTransaction.txState();
             var cursorContext = kernelTransaction.cursorContext();
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
+            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck( true );
             cursorTracer.reportEvents();
 
             try ( var snapshot = new TxStateTransactionDataSnapshot( transactionState, kernelTransaction.newStorageReader(), kernelTransaction ) )

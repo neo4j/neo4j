@@ -70,7 +70,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
     @Override
     public void close()
     {
-        IOUtils.closeAllUnchecked( storePropertyCursor, cursorContext );
+        IOUtils.closeAllUnchecked( cursor, storePropertyCursor, cursorContext );
     }
 
     @Override

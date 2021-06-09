@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -84,6 +85,8 @@ class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             KernelTransaction ktx = kernelTransaction( tx );
 
             var cursorContext = ktx.cursorContext();
+            ((DefaultPageCursorTracer) cursorContext.getCursorTracer()).setIgnoreCounterCheck( true );
+
             cursorContext.getCursorTracer().reportEvents();
             assertZeroTracer( cursorContext );
 

@@ -365,7 +365,7 @@ public abstract class MuninnPageCursor extends PageCursor
         {
             // The only page state that needs to be cleared is the currentPageId, since it was set prior to pin.
             storeCurrentPageId( UNBOUND_PAGE_ID );
-            pinnedPageRef = UNBOUND_PAGE_ID;
+            pinEvent.done();
             return true;
         }
         // Looks like there's no mapping, so we'd like to do a page fault.

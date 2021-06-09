@@ -124,8 +124,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     private void checkCounters()
     {
         boolean pinsMismatch = pins != unpins;
-        boolean hitsMismatch = pins > hits + faults;
-        if ( pinsMismatch || hitsMismatch )
+        if ( pinsMismatch )
         {
             throw new RuntimeException( "Mismatch cursor counters. " + this );
         }

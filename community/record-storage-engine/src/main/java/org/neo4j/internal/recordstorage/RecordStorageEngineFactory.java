@@ -320,12 +320,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
             return Math.toIntExact( tokenId );
         };
-        try ( var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
-        {
-            TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, storeCursors );
-            return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST ), cursorContext,
-                    memoryTracker, storeCursors );
-        }
+        var storeCursors = new CachedStoreCursors( stores, cursorContext );
+        TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, storeCursors );
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders, () -> KernelVersion.LATEST ), cursorContext,
+                memoryTracker, storeCursors );
     }
 
     private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, StoreCursors storeCursors )

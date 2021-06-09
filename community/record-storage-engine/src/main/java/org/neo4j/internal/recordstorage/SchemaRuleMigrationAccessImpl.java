@@ -63,6 +63,7 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     public void close() throws IOException
     {
         neoStores.flush( cursorContext );
+        storeCursors.close();
         neoStores.close();
     }
 }
