@@ -540,8 +540,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "anon_0"
-    val nodeName = "anon_1"
+    val relName = "anon_2"
+    val nodeName = "anon_3"
     val exp = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -586,8 +586,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop = 42 OR (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "anon_0"
-    val nodeName = "anon_1"
+    val relName = "anon_2"
+    val nodeName = "anon_3"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -606,8 +606,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "anon_0"
-    val nodeName = "anon_1"
+    val relName = "anon_2"
+    val nodeName = "anon_3"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -626,8 +626,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "anon_0"
-    val nodeName = "anon_1"
+    val relName = "anon_2"
+    val nodeName = "anon_3"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -928,8 +928,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // (owner)-[anon_0]-(anon_0)
     val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("owner")), Seq.empty, None)(pos),
-      RelationshipPattern(Some(varFor("anon_0")), Seq.empty, None, None, BOTH)(pos),
-      NodePattern(Some(varFor("anon_1")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("anon_0"), varFor("anon_1")), "", "")
+      RelationshipPattern(Some(varFor("anon_2")), Seq.empty, None, None, BOTH)(pos),
+      NodePattern(Some(varFor("anon_3")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("anon_2"), varFor("anon_3")), "", "")
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("owner")),

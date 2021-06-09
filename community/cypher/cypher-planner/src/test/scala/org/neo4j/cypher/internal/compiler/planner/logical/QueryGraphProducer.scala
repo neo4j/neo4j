@@ -70,7 +70,8 @@ trait QueryGraphProducer extends MockitoSugar {
     val appendix = if (appendReturn) " RETURN 1 AS Result" else ""
     val q = query + appendix
     val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
-    val ast = parser.parse(q, exceptionFactory)
+    val nameGenerator = new AnonymousVariableNameGenerator
+    val ast = parser.parse(q, exceptionFactory, nameGenerator)
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)

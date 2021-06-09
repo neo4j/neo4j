@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.parser.ParserFixture.parser
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -27,10 +27,13 @@ class nameAllPatternElementsTest extends CypherFunSuite {
 
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
+  private val parser = JavaCCParser
+
   private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
-    val original = parser.parse(originalQuery, exceptionFactory)
-    val expected = removeGeneratedNamesAndParamsOnTree(parser.parse(expectedQuery, exceptionFactory))
-    val result = removeGeneratedNamesAndParamsOnTree(original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator())))
+    val nameGenerator = new AnonymousVariableNameGenerator()
+    val original = parser.parse(originalQuery, exceptionFactory, new AnonymousVariableNameGenerator)
+    val expected = removeGeneratedNamesAndParamsOnTree(parser.parse(expectedQuery, exceptionFactory, new AnonymousVariableNameGenerator))
+    val result = removeGeneratedNamesAndParamsOnTree(original.rewrite(nameAllPatternElements(nameGenerator)))
 
     assert(result === expected)
   }
@@ -102,9 +105,9 @@ class nameAllPatternElementsTest extends CypherFunSuite {
   }
 
   test("should not change names of already named things") {
-    val original = parser.parse("RETURN [p=(a)-[r]->(b) | 'foo'] AS foo", exceptionFactory)
+    val original = parser.parse("RETURN [p=(a)-[r]->(b) | 'foo'] AS foo", exceptionFactory, new AnonymousVariableNameGenerator)
 
-    val result = original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator()))
+    val result = original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator))
     assert(result === original)
   }
 
@@ -113,9 +116,9 @@ class nameAllPatternElementsTest extends CypherFunSuite {
       """
         |MATCH (a:A), (b:B)
         |WITH shortestPath((a)-[:REL]->(b)) AS x
-        |RETURN x AS x""".stripMargin, exceptionFactory)
+        |RETURN x AS x""".stripMargin, exceptionFactory, new AnonymousVariableNameGenerator)
 
-    val result = original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator()))
+    val result = original.rewrite(nameAllPatternElements(new AnonymousVariableNameGenerator))
     assert(result === original)
   }
 }

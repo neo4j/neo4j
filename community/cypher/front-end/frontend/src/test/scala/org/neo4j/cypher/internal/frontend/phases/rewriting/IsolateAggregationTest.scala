@@ -68,8 +68,8 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   }
 
   test("does not rewrite things that should not be rewritten") {
-    assertIsNotRewritten("MATCH n RETURN n AS n")
-    assertIsNotRewritten("MATCH n RETURN n AS n, count(*) AS count, max(n.prop) AS max")
+    assertIsNotRewritten("MATCH (n) RETURN n AS n")
+    assertIsNotRewritten("MATCH (n) RETURN n AS n, count(*) AS count, max(n.prop) AS max")
   }
 
   test("MATCH (n) RETURN { name: n.name, count: count(*) } AS result") {

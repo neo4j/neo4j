@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.ast.semantics
+package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StatementHelper.RichStatement
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
@@ -24,7 +26,8 @@ import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.pathCollectionSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.typedSymbol
-import org.neo4j.cypher.internal.parser.ParserFixture.parse
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.StorableType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -242,5 +245,9 @@ class ScopeTreeTest extends CypherFunSuite {
     )
 
     actual should equal(expected)
+  }
+
+  def parse(queryText: String): Statement = {
+    JavaCCParser.parse(queryText, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
   }
 }

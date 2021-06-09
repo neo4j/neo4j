@@ -22,10 +22,11 @@ package org.neo4j.internal.collector
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.scalatest.Matchers.equal
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -277,16 +278,16 @@ object DataCollectorMatchers {
 
   case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
 
-    val parser = new CypherParser
+    val parser = JavaCCParser
     private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected, profile = false)
-    private val expectedAst = parser.parse(preParsedQuery.statement, Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset)))
+    private val expectedAst = parser.parseWithFallback(preParsedQuery.statement, Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.options.offset)), new AnonymousVariableNameGenerator)
 
     override def apply(left: AnyRef): MatchResult =
       MatchResult(
         matches = left match {
           case text: String =>
             val preParsedQuery1 = preParser.preParseQuery(text, profile = false)
-            parser.parse(preParsedQuery1.statement, Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset))) == expectedAst
+            parser.parseWithFallback(preParsedQuery1.statement, Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset)), new AnonymousVariableNameGenerator) == expectedAst
           case _ => false
         },
         rawFailureMessage = s"'$left' is not the same Cypher as '$expected'",

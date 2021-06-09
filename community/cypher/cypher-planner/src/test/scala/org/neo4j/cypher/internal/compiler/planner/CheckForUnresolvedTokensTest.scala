@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
@@ -56,7 +58,7 @@ import org.neo4j.values.storable.TemporalValue.TemporalFields
 
 import scala.collection.JavaConverters.asScalaSetConverter
 
-class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
+class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
 
   test("warn when missing label") {
     //given
@@ -269,7 +271,7 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     notificationLogger.notifications
   }
 
-  private def parse(query: String): Query = parser.parse(query, Neo4jCypherExceptionFactory(query, None)) match {
+  private def parse(query: String): Query = JavaCCParser.parse(query, Neo4jCypherExceptionFactory(query, None), new AnonymousVariableNameGenerator) match {
     case q: Query => q
     case _ => fail("Must be a Query")
   }

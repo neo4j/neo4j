@@ -79,11 +79,6 @@
         <!-- Test are located with other IT tests to solve problems with depending of TestGraphDatabaseFactory et.c. -->
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-rewriting</artifactId>
             <version>${project.version}</version>
         </dependency>

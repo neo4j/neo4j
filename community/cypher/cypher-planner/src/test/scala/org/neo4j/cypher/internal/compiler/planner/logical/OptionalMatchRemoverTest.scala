@@ -385,5 +385,5 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table, new AnonymousVariableNameGenerator())
   }
 
-  private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None))
+  private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None), new AnonymousVariableNameGenerator)
 }

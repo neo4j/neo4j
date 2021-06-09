@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.parser.ParserFixture
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
@@ -29,7 +29,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
-  val parser = new CypherParser
+  val parser = ParserFixture.parser
   val tests: Seq[(String, String)] = queryTests() ++ schemaTests() ++ showCommandTests() ++ administrationTests()
 
   def queryTests(): Seq[(String, String)] = Seq[(String, String)](

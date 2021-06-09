@@ -25,7 +25,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
 
   test("does not introduce predicate not needed") {
     assertIsNotRewritten("RETURN 42")
-    assertIsNotRewritten("MATCH n RETURN n")
+    assertIsNotRewritten("MATCH (n) RETURN n")
     assertIsNotRewritten("MATCH (n)-[r1]->(m) RETURN n")
     assertIsNotRewritten("MATCH (n)-[r1]->(m) MATCH (m)-[r2]->(x) RETURN x")
   }

@@ -25,24 +25,15 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PARSING
-import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.Phase
-import org.neo4j.exceptions.SyntaxException
 
 /**
  * Parse text into an AST object.
  */
 case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
-  override def process(in: BaseState, context: BaseContext): BaseState = {
-    try {
-      val statement = JavaCCParser.parse(in.queryText, context.cypherExceptionFactory, in.anonymousVariableNameGenerator)
-      in.withStatement(statement)
-    } catch {
-      case e: SyntaxException if JavaCCParser.shouldFallBack(e.getMessage) =>
-        Parsing.process(in, context)
-    }
-  }
+  override def process(in: BaseState, context: BaseContext): BaseState =
+    in.withStatement(JavaCCParser.parseWithFallback(in.queryText, context.cypherExceptionFactory, in.anonymousVariableNameGenerator, in.startPosition))
 
   override val phase = PARSING
 

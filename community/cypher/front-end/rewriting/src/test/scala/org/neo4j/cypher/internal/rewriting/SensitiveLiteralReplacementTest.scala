@@ -18,11 +18,12 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.SetOwnPassword
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
-import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.Matcher
@@ -32,6 +33,8 @@ import java.nio.charset.StandardCharsets
 class SensitiveLiteralReplacementTest extends CypherFunSuite {
 
   val exceptionFactory = OpenCypherExceptionFactory(None)
+
+  val nameGenerator = new AnonymousVariableNameGenerator
 
   val passwordBytes = "password".getBytes(StandardCharsets.UTF_8)
   val currentBytes = "current".getBytes(StandardCharsets.UTF_8)
@@ -63,14 +66,14 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
   test("should ignore queries with no passwords") {
     val query = "MATCH (n:Node{name:'foo'}) RETURN n"
 
-    val expected = parser.parse(query, exceptionFactory)
+    val expected = JavaCCParser.parse(query, exceptionFactory, nameGenerator)
     val expectedPattern: Matcher[Any] = matchPattern {case `expected` => }
 
     assertRewrite(query, expectedPattern, Map())
   }
 
   private def assertRewrite(originalQuery: String, matchExpectedPattern: Matcher[Any], replacements: Map[String, Any]) {
-    val original = parser.parse(originalQuery, exceptionFactory)
+    val original = JavaCCParser.parse(originalQuery, exceptionFactory, nameGenerator)
 
     val (rewriter, replacedLiterals) = sensitiveLiteralReplacement(original)
 
