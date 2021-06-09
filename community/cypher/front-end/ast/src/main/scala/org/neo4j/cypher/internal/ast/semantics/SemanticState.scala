@@ -60,7 +60,6 @@ final case class Symbol(name: String, positions: Set[InputPosition],
   if (positions.isEmpty)
     throw new IllegalStateException(s"Cannot create empty symbol with name '$name'")
 
-  def uses: Set[SymbolUse] = positions.map { pos => SymbolUse(name, pos) }
 
   val definition = SymbolUse(name, positions.toSeq.min(InputPosition.byOffset))
 
