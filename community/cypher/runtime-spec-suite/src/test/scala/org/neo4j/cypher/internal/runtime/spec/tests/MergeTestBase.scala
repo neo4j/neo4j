@@ -78,6 +78,21 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     an[InvalidSemanticsException] shouldBe thrownBy(consume(runtimeResult))
   }
 
+  test("merge should fail to create nodes with NaN property") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq.empty, "{prop1: 1, prop2: sqrt(-1)}")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    an[InvalidSemanticsException] shouldBe thrownBy(consume(runtimeResult))
+  }
+
   test("merge should fail to create relationship with null property") {
     // given no nodes
 
@@ -87,6 +102,24 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .merge(
         nodes = Seq(createNode("n")),
         relationships = Seq(createRelationship("r", "n", "R", "n", properties = Some("{prop1: 1, prop2: null}"))))
+      .expandInto("(n)-[r:R]->(n)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    an[InvalidSemanticsException] shouldBe thrownBy(consume(runtimeResult))
+  }
+
+  test("merge should fail to create relationship with NaN property") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(
+        nodes = Seq(createNode("n")),
+        relationships = Seq(createRelationship("r", "n", "R", "n", properties = Some("{prop1: 1, prop2: sqrt(-1)}"))))
       .expandInto("(n)-[r:R]->(n)")
       .allNodeScan("n")
       .build(readOnly = false)

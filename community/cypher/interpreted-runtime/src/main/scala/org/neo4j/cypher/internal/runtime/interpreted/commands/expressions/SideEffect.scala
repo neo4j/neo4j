@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode.handleNaNValue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode.handleNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
@@ -34,6 +36,7 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -42,7 +45,7 @@ trait SideEffect {
   def execute(row: CypherRow, state: QueryState): Unit
 }
 
-case class CreateNode(command: CreateNodeCommand, allowNullProperty: Boolean) extends SideEffect {
+case class CreateNode(command: CreateNodeCommand, allowNullOrNaNProperty: Boolean) extends SideEffect {
   override def execute(row: CypherRow,
                        state: QueryState): Unit = {
     val query = state.query
@@ -50,17 +53,16 @@ case class CreateNode(command: CreateNodeCommand, allowNullProperty: Boolean) ex
     val node = query.createNode(labelIds)
     command.properties.foreach(p => p.apply(row, state) match {
       case IsMap(map) =>
-        map(state).foreach((k: String, v: AnyValue) => {
-          if (v eq Values.NO_VALUE) {
-            if (!allowNullProperty) {
-              CreateNode.handleNoValue(command.labels.map(_.name), k)
+        map(state).foreach {
+          case (k, v) if v eq Values.NO_VALUE =>
+            if (!allowNullOrNaNProperty) {
+              handleNoValue(command.labels.map(_.name), k)
             }
-          }
-          else {
+          case (k, v: FloatingPointValue) if !allowNullOrNaNProperty && v.isNaN => handleNaNValue(command.labels.map(_.name), k)
+          case (k, v) =>
             val propId = query.getOrCreatePropertyKeyId(k)
             query.nodeOps.setProperty(node.id(), propId, makeValueNeoSafe(v))
           }
-        })
 
       case value =>
         throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
@@ -75,9 +77,14 @@ object CreateNode {
     val labelsString = if (labels.nonEmpty) ":" + labels.mkString(":") else ""
     throw new InvalidSemanticsException(s"Cannot merge the following node because of null property value for '$key': ($labelsString {$key: null})")
   }
+
+  def handleNaNValue(labels: Seq[String], key: String): Unit = {
+    val labelsString = if (labels.nonEmpty) ":" + labels.mkString(":") else ""
+    throw new InvalidSemanticsException(s"Cannot merge the following node because of NaN property value for '$key': ($labelsString {$key: NaN})")
+  }
 }
 
-case class CreateRelationship(command: CreateRelationshipCommand, allowNullProperty: Boolean) extends SideEffect {
+case class CreateRelationship(command: CreateRelationshipCommand, allowNullOrNaNProperty: Boolean) extends SideEffect {
   override def execute(row: CypherRow,
                        state: QueryState): Unit = {
     val start = getNode(row, command.idName, command.startNode, state.lenientCreateRelationship)
@@ -91,16 +98,19 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullPrope
       val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
       command.properties.foreach(p => p.apply(row, state) match {
         case IsMap(map) =>
-          map(state).foreach((k: String, v: AnyValue) => {
-            if (v eq Values.NO_VALUE) {
-              if (!allowNullProperty) {
-               CreateRelationship.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
+          map(state).foreach {
+            case (k, v) if v eq Values.NO_VALUE =>
+              if (!allowNullOrNaNProperty) {
+                CreateRelationship.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
               }
-            } else {
+            case (k, v: FloatingPointValue) if v.isNaN =>
+              if (!allowNullOrNaNProperty) {
+                CreateRelationship.handleNaNValue(command.startNode, command.relType.name, command.endNode, k)
+              }
+            case (k, v) =>
               val propId = state.query.getOrCreatePropertyKeyId(k)
               state.query.relationshipOps.setProperty(relationship.id(), propId, makeValueNeoSafe(v))
-            }
-          })
+          }
 
         case value =>
           throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
@@ -123,7 +133,11 @@ case class CreateRelationship(command: CreateRelationshipCommand, allowNullPrope
 }
 
 object CreateRelationship {
-  def handleNoValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit = {
+  private def fail(startVariableName: String,
+                      relTypeName:String,
+                      endVariableName:String,
+                      key: String,
+                      value: String) = {
     val startVarPart =
       if (startVariableName.startsWith(" ")) {
         ""
@@ -136,9 +150,16 @@ object CreateRelationship {
       } else {
         endVariableName
       }
+    s"($startVarPart)-[:$relTypeName {$key: $value}]->($endVarPart)"
     throw new InvalidSemanticsException(
-      s"Cannot merge the following relationship because of null property value for '$key': ($startVarPart)-[:$relTypeName {$key: null}]->($endVarPart)")
+      s"Cannot merge the following relationship because of $value property value for '$key': ($startVarPart)-[:$relTypeName {$key: $value}]->($endVarPart)")
   }
+
+  def handleNoValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit =
+    fail(startVariableName, relTypeName, endVariableName, key, "null")
+
+  def handleNaNValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit =
+    fail(startVariableName, relTypeName, endVariableName, key, "NaN")
 }
 
 case class RemoveLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SideEffect {

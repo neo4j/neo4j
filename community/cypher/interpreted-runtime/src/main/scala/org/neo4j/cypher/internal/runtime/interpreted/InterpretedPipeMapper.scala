@@ -425,11 +425,11 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         case CreatePattern(nodes, relationships) =>
           val nodeOps = nodes.map {
             case ir.CreateNode(node, labels, properties) =>
-              CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)), allowNullProperty = true)
+              CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)), allowNullOrNaNProperty = true)
           }
           val relOps = relationships.map { r: ir.CreateRelationship =>
             CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),
-              allowNullProperty = true)
+              allowNullOrNaNProperty = true)
           }
           nodeOps ++ relOps
 
@@ -701,11 +701,11 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val creates = createNodes.map {
           case ir.CreateNode(node, labels, properties) =>
             CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)),
-              allowNullProperty = false)
+              allowNullOrNaNProperty = false)
         }  ++ createRelationships.map {
           r: ir.CreateRelationship =>
             CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)),
-              allowNullProperty = false)
+              allowNullOrNaNProperty = false)
         }
         if (nodesToLock.isEmpty) new MergePipe(source, (creates ++ onCreate.flatMap(compileEffects)).toArray , onMatch.flatMap(compileEffects).toArray)(id = id)
         else new LockingMergePipe(source,  (creates ++ onCreate.flatMap(compileEffects)).toArray, onMatch.flatMap(compileEffects).toArray,  nodesToLock.toArray)(id = id)
