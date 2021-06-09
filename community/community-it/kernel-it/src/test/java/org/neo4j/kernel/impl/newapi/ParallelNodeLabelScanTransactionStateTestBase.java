@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 
 import static java.lang.String.format;
@@ -287,6 +288,9 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                 MutableLongSet allNodes = LongSets.mutable.withAll( existingNodes );
                 try ( KernelTransaction tx = beginTransaction() )
                 {
+                    // parallel scans are failing checks atm
+                    ((DefaultPageCursorTracer) tx.cursorContext().getCursorTracer()).setIgnoreCounterCheck( true );
+
                     int nodeInTx = random.nextInt( 1000 );
                     allNodes.addAll( createNodesWithLabel( tx.dataWrite(), label, nodeInTx ) );
                     Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );

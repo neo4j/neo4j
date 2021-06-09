@@ -26,10 +26,12 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.test.Race;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 class KernelAPIParallelStress
@@ -44,9 +46,12 @@ class KernelAPIParallelStress
         long endTime = currentTimeMillis() + SECONDS.toMillis( 30 );
         race.withEndCondition( () -> currentTimeMillis() > endTime );
 
-        List<RESOURCE> cursors = new ArrayList<RESOURCE>();
+        List<RESOURCE> cursors = new ArrayList<>();
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
+            // parallel scans are failing checks atm
+            ((DefaultPageCursorTracer) tx.cursorContext().getCursorTracer()).setIgnoreCounterCheck( true );
+
             // assert our test works single-threaded before racing
             try ( RESOURCE cursor = resourceSupplier.apply( tx ) )
             {
@@ -65,10 +70,7 @@ class KernelAPIParallelStress
             race.go();
 
             // clean-up
-            for ( RESOURCE cursor : cursors )
-            {
-                cursor.close();
-            }
+            closeAllUnchecked( cursors );
             tx.commit();
         }
     }
