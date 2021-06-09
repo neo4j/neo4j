@@ -503,8 +503,8 @@ public interface Status
         NotALeader( ClientError,
                 "The request cannot be processed by this server. Write requests can only be processed by the leader." ),
 
-        Routing( TransientError, "Unable to route the request to the appropriate server" )
-                ;
+        Routing( ClientError, "Unable to route the request to the appropriate server" )
+        ;
 
         private final Code code;
 

@@ -88,7 +88,7 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
                 accessMode,
                 loginContext,
                 clientInfo,
-                namedDatabaseId.name(),
+                namedDatabaseId,
                 KernelTransaction.Type.IMPLICIT == type,
                 txTimeout,
                 txMetadata,
