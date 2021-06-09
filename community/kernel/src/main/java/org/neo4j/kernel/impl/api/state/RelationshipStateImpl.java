@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
@@ -46,6 +47,12 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
 
         @Override
         public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor )
+        {
+            return false;
+        }
+
+        @Override
+        public <EX extends Exception> boolean accept( RelationshipVisitorWithProperties<EX> visitor ) throws EX
         {
             return false;
         }
@@ -93,26 +100,34 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
         }
     };
 
-    private long startNode = -1;
-    private long endNode = -1;
-    private int type = -1;
+    private final long startNode;
+    private final long endNode;
+    private final int type;
+    private boolean deleted;
 
-    static RelationshipStateImpl createRelationshipStateImpl( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    static RelationshipStateImpl createRelationshipStateImpl( long id, int type, long startNode, long endNode, CollectionsFactory collectionsFactory,
+            MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE );
-        return new RelationshipStateImpl( id, collectionsFactory, memoryTracker );
+        return new RelationshipStateImpl( id, type, startNode, endNode, collectionsFactory, memoryTracker );
     }
 
-    private RelationshipStateImpl( long id, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
+    private RelationshipStateImpl( long id, int type, long startNode, long endNode, CollectionsFactory collectionsFactory, MemoryTracker memoryTracker )
     {
         super( id, collectionsFactory, memoryTracker );
-    }
-
-    void setMetaData( long startNode, long endNode, int type )
-    {
+        this.type = type;
         this.startNode = startNode;
         this.endNode = endNode;
-        this.type = type;
+    }
+
+    void setDeleted()
+    {
+        this.deleted = true;
+    }
+
+    boolean isDeleted()
+    {
+        return this.deleted;
     }
 
     @Override
@@ -121,6 +136,17 @@ class RelationshipStateImpl extends EntityStateImpl implements RelationshipState
         if ( type != -1 )
         {
             visitor.visit( getId(), type, startNode, endNode );
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public <EX extends Exception> boolean accept( RelationshipVisitorWithProperties<EX> visitor ) throws EX
+    {
+        if ( type != -1 )
+        {
+            visitor.visit( getId(), type, startNode, endNode, addedProperties() );
             return true;
         }
         return false;

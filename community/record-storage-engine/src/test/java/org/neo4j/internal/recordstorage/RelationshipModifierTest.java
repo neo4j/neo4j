@@ -411,8 +411,10 @@ class RelationshipModifierTest
     {
         // Acquire the "external" locks that the RelationshipModifier rely on when making decisions internally
         CommandCreationLocking context = new CommandCreationLocking();
-        modifications.creations().forEach( ( id, type, start, end ) -> context.acquireRelationshipCreationLock( txState, locks, NONE, start, end ) );
-        modifications.deletions().forEach( ( id, type, start, end ) -> context.acquireRelationshipDeletionLock( txState, locks, NONE, start, end , id ) );
+        modifications.creations().forEach(
+                ( id, type, start, end, addedProperties ) -> context.acquireRelationshipCreationLock( txState, locks, NONE, start, end ) );
+        modifications.deletions().forEach(
+                ( id, type, start, end, noProperties ) -> context.acquireRelationshipDeletionLock( txState, locks, NONE, start, end, id ) );
 
         RecordAccessSet changes = store.newRecordChanges( loadMonitor, readMonitor );
         modifier.modifyRelationships( modifications, changes, groupUpdater, locks, NONE );
@@ -498,9 +500,9 @@ class RelationshipModifierTest
 
     private static void applyModificationsToExpectedRelationships( RelationshipModifications modifications, List<RelationshipData> expectedRelationships )
     {
-        modifications.creations().forEach( ( relationshipId, typeId, startNodeId, endNodeId ) -> expectedRelationships.add(
+        modifications.creations().forEach( ( relationshipId, typeId, startNodeId, endNodeId, addedProperties ) -> expectedRelationships.add(
                 new RelationshipData( relationshipId, typeId, startNodeId, endNodeId ) ) );
-        modifications.deletions().forEach( ( relationshipId, typeId, startNodeId, endNodeId ) -> expectedRelationships.remove(
+        modifications.deletions().forEach( ( relationshipId, typeId, startNodeId, endNodeId, noProperties ) -> expectedRelationships.remove(
                 new RelationshipData( relationshipId, typeId, startNodeId, endNodeId ) ) );
     }
 

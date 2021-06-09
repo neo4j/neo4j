@@ -19,19 +19,14 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.neo4j.storageengine.api.RelationshipVisitor;
-import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
-
-/**
- * Represents the transactional changes to a relationship.
- *
- * @see EntityState
- */
-public interface RelationshipState extends EntityState
+public interface TransactionStateBehaviour
 {
-    long getId();
+    TransactionStateBehaviour DEFAULT_BEHAVIOUR = () -> false;
 
-    <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX;
-
-    <EX extends Exception> boolean accept( RelationshipVisitorWithProperties<EX> visitor ) throws EX;
+    /**
+     * @return whether or not meta data about relationships is kept for deleted relationships.
+     * If {@code true} then the memory overhead of deleting relationships will be larger, with the benefit of
+     * not having to look up that information during commit.
+     */
+    boolean keepMetaDataForDeletedRelationship();
 }

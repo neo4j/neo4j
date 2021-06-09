@@ -171,7 +171,7 @@ final class RelationshipLockHelper
             //First will build the list of locks we need
             SortedLockList lockList = new SortedLockList( upperLimitOfLocks );
             lockList.add( optionalFirstInChain ); //The locklist does not accept NULL(-1) values, so we don't need to care about that
-            ids.forEach( ( id, type, startNode, endNode ) ->
+            ids.forEach( ( id, type, startNode, endNode, noProperties ) ->
             {
                 RelationshipRecord relationship = relRecords.getOrLoad( id, null ).forReadingLinkage();
                 optimistic.put( id, relationship );

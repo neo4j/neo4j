@@ -71,7 +71,7 @@ class RelationshipDeleter
     void relationshipDelete( RelationshipBatch deletions, RecordAccessSet recordChanges, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
             MappedNodeDataLookup nodeDataLookup, ResourceLocker locks )
     {
-        deletions.forEach( ( id, type, startNode, endNode ) ->
+        deletions.forEach( ( id, type, startNode, endNode, noProperties ) ->
         {
             RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
             propertyChainDeleter.deletePropertyChain( record, recordChanges.getPropertyRecords() );

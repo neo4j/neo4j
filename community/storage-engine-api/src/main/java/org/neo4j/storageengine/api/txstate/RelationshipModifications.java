@@ -24,11 +24,13 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -63,7 +65,7 @@ public interface RelationshipModifications
         }
 
         @Override
-        public void forEach( RelationshipVisitor relationship )
+        public void forEach( RelationshipVisitorWithProperties relationship )
         {
         }
     };
@@ -73,9 +75,9 @@ public interface RelationshipModifications
         return new IdDataDecorator()
         {
             @Override
-            public <E extends Exception> void accept( long id, RelationshipVisitor<E> visitor ) throws E
+            public <E extends Exception> void accept( long id, RelationshipVisitorWithProperties<E> visitor ) throws E
             {
-                visitor.visit( id, -1, -1, -1 );
+                visitor.visit( id, -1, -1, -1, Collections.emptyList() );
             }
         };
     }
@@ -114,7 +116,7 @@ public interface RelationshipModifications
             }
 
             @Override
-            public <E extends Exception> void forEach( RelationshipVisitor<E> relationship ) throws E
+            public <E extends Exception> void forEach( RelationshipVisitorWithProperties<E> relationship ) throws E
             {
                 LongIterator iterator = ids.longIterator();
                 while ( iterator.hasNext() )
@@ -297,7 +299,7 @@ public interface RelationshipModifications
          * @param <E> type of exception visitor can throw.
          * @throws E on visitor error.
          */
-        <E extends Exception> void forEach( RelationshipVisitor<E> relationship ) throws E;
+        <E extends Exception> void forEach( RelationshipVisitorWithProperties<E> relationship ) throws E;
 
         // The default implementations below are inefficient, but are implemented like this for simplicity of test versions of this interface,
         // any implementor that is in production code will implement properly
@@ -321,7 +323,7 @@ public interface RelationshipModifications
                 return false;
             }
             MutableBoolean contains = new MutableBoolean();
-            forEach( ( relationshipId, typeId, startNodeId, endNodeId ) ->
+            forEach( ( relationshipId, typeId, startNodeId, endNodeId, addedProperties ) ->
             {
                 if ( relationshipId == id )
                 {
@@ -339,7 +341,7 @@ public interface RelationshipModifications
         {
             Preconditions.checkState( !isEmpty(), "No ids" );
             MutableLong first = new MutableLong( -1 );
-            forEach( ( relationshipId, typeId, startNodeId, endNodeId ) ->
+            forEach( ( relationshipId, typeId, startNodeId, endNodeId, addedProperties ) ->
             {
                 if ( first.longValue() == -1 )
                 {
@@ -363,6 +365,6 @@ public interface RelationshipModifications
          * @param <E> type of exception visitor can throw.
          * @throws E on visitor error.
          */
-        <E extends Exception> void accept( long id, RelationshipVisitor<E> visitor ) throws E;
+        <E extends Exception> void accept( long id, RelationshipVisitorWithProperties<E> visitor ) throws E;
     }
 }

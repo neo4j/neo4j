@@ -23,6 +23,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.function.LongConsumer;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.CountsDelta;
@@ -97,15 +98,24 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     @Override
     public void visitRelationshipModifications( RelationshipModifications ids ) throws ConstraintValidationException
     {
-        ids.creations().forEach( ( id, type, startNode, endNode ) -> updateRelationshipCount( startNode, type, endNode, 1 ) );
-        ids.deletions().forEach( ( id, type, startNode, endNode ) ->
+        ids.creations().forEach( ( id, type, startNode, endNode, addedProperties ) -> updateRelationshipCount( startNode, type, endNode, 1 ) );
+        ids.deletions().forEach( ( id, type, startNode, endNode, noProperties ) ->
         {
-            relationshipCursor.single( id );
-            if ( !relationshipCursor.next() )
+            if ( type == ANY_RELATIONSHIP_TYPE )
             {
-                throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]" );
+                // Indication that no meta data for deleted relationships is kept, we have to look it up here instead
+                relationshipCursor.single( id );
+                if ( !relationshipCursor.next() )
+                {
+                    throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]" );
+                }
+                updateRelationshipCount( relationshipCursor.sourceNodeReference(), relationshipCursor.type(), relationshipCursor.targetNodeReference(), -1 );
             }
-            updateRelationshipCount( relationshipCursor.sourceNodeReference(), relationshipCursor.type(), relationshipCursor.targetNodeReference(), -1 );
+            else
+            {
+                // All meta data about this deleted relationship is available, just use it
+                updateRelationshipCount( startNode, type, endNode, -1 );
+            }
         } );
         super.visitRelationshipModifications( ids );
     }
@@ -193,7 +203,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     }
 
     @Override
-    public void close()
+    public void close() throws KernelException
     {
         super.close();
         closeAllUnchecked( nodeCursor, relationshipCursor );

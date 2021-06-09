@@ -44,7 +44,11 @@ public interface TxStateVisitor extends AutoCloseable
     void visitNodePropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed,
             IntIterable removed ) throws ConstraintValidationException;
 
-    void visitRelPropertyChanges( long id, Iterable<StorageProperty> added, Iterable<StorageProperty> changed,
+    /**
+     * Only called for property changes on existing relationships. For created relationships the relationship properties will be trickle in
+     * via {@link #visitRelationshipModifications(RelationshipModifications)}.
+     */
+    void visitRelPropertyChanges( long id, int type, long startNode, long endNode, Iterable<StorageProperty> added, Iterable<StorageProperty> changed,
             IntIterable removed ) throws ConstraintValidationException;
 
     void visitNodeLabelChanges( long id, LongSet added, LongSet removed ) throws ConstraintValidationException;
@@ -64,7 +68,7 @@ public interface TxStateVisitor extends AutoCloseable
     void visitCreatedRelationshipTypeToken( long id, String name, boolean internal );
 
     @Override
-    void close();
+    void close() throws KernelException;
 
     class Adapter implements TxStateVisitor
     {
@@ -90,7 +94,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitRelPropertyChanges( long id, Iterable<StorageProperty> added,
+        public void visitRelPropertyChanges( long id, int type, long startNode, long endNode, Iterable<StorageProperty> added,
                 Iterable<StorageProperty> changed, IntIterable removed )
         {
         }
@@ -179,11 +183,11 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitRelPropertyChanges( long id, Iterable<StorageProperty> added,
+        public void visitRelPropertyChanges( long id, int type, long startNode, long endNode, Iterable<StorageProperty> added,
                 Iterable<StorageProperty> changed, IntIterable removed )
                         throws ConstraintValidationException
         {
-            actual.visitRelPropertyChanges( id, added, changed, removed );
+            actual.visitRelPropertyChanges( id, type, startNode, endNode, added, changed, removed );
         }
 
         @Override
@@ -236,7 +240,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void close()
+        public void close() throws KernelException
         {
             actual.close();
         }

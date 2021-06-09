@@ -298,7 +298,7 @@ public class PlainOperationsTest extends OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
-        order.verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
+        order.verify( txState ).relationshipDoReplaceProperty( eq( 123L ), anyInt(), anyLong(), anyLong(), eq( propertyKeyId ), eq( NO_VALUE ), eq( value ) );
     }
 
     @Test
@@ -335,7 +335,7 @@ public class PlainOperationsTest extends OperationsTest
 
         // then
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
-        verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
+        order.verify( txState ).relationshipDoReplaceProperty( eq( 123L ), anyInt(), anyLong(), anyLong(), eq( propertyKeyId ), eq( NO_VALUE ), eq( value ) );
     }
 
     @Test

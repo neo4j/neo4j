@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.storageengine.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
@@ -352,7 +352,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         }
 
         @Override
-        public <E extends Exception> void forEach( RelationshipVisitor<E> relationship ) throws E
+        public <E extends Exception> void forEach( RelationshipVisitorWithProperties<E> relationship ) throws E
         {
             relationships.visitIds( id -> decorator.accept( id, relationship ) );
         }

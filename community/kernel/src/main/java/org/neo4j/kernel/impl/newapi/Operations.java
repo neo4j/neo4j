@@ -781,7 +781,8 @@ public class Operations implements Write, SchemaWrite
         if ( existingValue == NO_VALUE )
         {
             ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, propertyKey );
-            ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, NO_VALUE, value );
+            ktx.txState().relationshipDoReplaceProperty( relationship, relationshipCursor.type(), relationshipCursor.sourceNodeReference(),
+                    relationshipCursor.targetNodeReference(), propertyKey, NO_VALUE, value );
             if ( hasRelatedSchema )
             {
                 updater.onPropertyAdd( relationshipCursor, propertyCursor, type, propertyKey, existingPropertyKeyIds, value );
@@ -793,7 +794,8 @@ public class Operations implements Write, SchemaWrite
             if ( propertyHasChanged( existingValue, value ) )
             {
                 ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, propertyKey );
-                ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
+                ktx.txState().relationshipDoReplaceProperty( relationship, relationshipCursor.type(), relationshipCursor.sourceNodeReference(),
+                        relationshipCursor.targetNodeReference(), propertyKey, existingValue, value );
                 if ( hasRelatedSchema )
                 {
                     updater.onPropertyChange( relationshipCursor, propertyCursor, type, propertyKey, existingPropertyKeyIds, existingValue, value );
@@ -816,7 +818,8 @@ public class Operations implements Write, SchemaWrite
         {
             int type = acquireSharedRelationshipTypeLock();
             ktx.securityAuthorizationHandler().assertAllowsSetProperty( ktx.securityContext(), this::resolvePropertyKey, type, propertyKey );
-            ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey );
+            ktx.txState().relationshipDoRemoveProperty( relationship, relationshipCursor.type(), relationshipCursor.sourceNodeReference(),
+                    relationshipCursor.targetNodeReference(), propertyKey );
             if ( storageReader.hasRelatedSchema( new long[]{type}, propertyKey, RELATIONSHIP ) )
             {
                 updater.onPropertyRemove( relationshipCursor, propertyCursor, type, propertyKey, loadSortedRelationshipPropertyKeyList(), existingValue );

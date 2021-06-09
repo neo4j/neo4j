@@ -71,7 +71,7 @@ public class TransactionCountingStateVisitorTraceIT
     @Test
     void traceDeletedRelationshipPageCacheAccess() throws KernelException
     {
-        traceStateWithChanges( tx -> tx.getRelationshipById( relationshipId ).delete() );
+        traceStateWithChanges( tx -> tx.getRelationshipById( relationshipId ).delete(), 2 );
     }
 
     @Test
@@ -87,6 +87,11 @@ public class TransactionCountingStateVisitorTraceIT
     }
 
     private void traceStateWithChanges( Consumer<Transaction> transactionalOperation ) throws KernelException
+    {
+        traceStateWithChanges( transactionalOperation, 2 );
+    }
+
+    private void traceStateWithChanges( Consumer<Transaction> transactionalOperation, int traceCount ) throws KernelException
     {
         try ( var transaction = database.beginTx() )
         {
@@ -108,16 +113,16 @@ public class TransactionCountingStateVisitorTraceIT
                 transactionState.accept( stateVisitor );
             }
 
-            assertTwoCursor( cursorContext );
+            assertCursorTracer( cursorContext, traceCount );
         }
     }
 
-    private static void assertTwoCursor( CursorContext cursorContext )
+    private static void assertCursorTracer( CursorContext cursorContext, int count )
     {
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( 2 );
-        assertThat( cursorTracer.hits() ).isEqualTo( 2 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+        assertThat( cursorTracer.pins() ).isEqualTo( count );
+        assertThat( cursorTracer.hits() ).isEqualTo( count );
+        assertThat( cursorTracer.unpins() ).isEqualTo( count );
     }
 
     private static void assertZeroCursor( CursorContext cursorContext )

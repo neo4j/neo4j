@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,7 +30,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.storageengine.api.RelationshipVisitor;
+import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 
 import static java.util.stream.Collectors.toList;
@@ -271,11 +272,11 @@ public class FlatRelationshipModifications implements RelationshipModifications
         }
 
         @Override
-        public <E extends Exception> void forEach( RelationshipVisitor<E> relationship ) throws E
+        public <E extends Exception> void forEach( RelationshipVisitorWithProperties<E> relationship ) throws E
         {
             for ( RelationshipData rel : relationships )
             {
-                relationship.visit( rel.id, rel.type, rel.startNode, rel.endNode );
+                relationship.visit( rel.id, rel.type, rel.startNode, rel.endNode, Collections.emptyList() );
             }
         }
     }

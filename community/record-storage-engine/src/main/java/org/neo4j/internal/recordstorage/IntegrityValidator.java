@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -60,9 +60,7 @@ class IntegrityValidator
     {
         if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            throw new ConstraintViolationTransactionFailureException(
-                    "Cannot delete node<" + record.getId() + ">, because it still has relationships. " +
-                    "To delete this node, you must first delete its relationships." );
+            throw new DeletedNodeStillHasRelationshipsException( record.getId() );
         }
     }
 

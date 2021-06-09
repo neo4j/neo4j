@@ -30,13 +30,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -66,6 +67,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
+import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -95,7 +97,6 @@ import static org.neo4j.values.storable.Values.stringValue;
 @ExtendWith( RandomExtension.class )
 abstract class TxStateTest
 {
-
     @Inject
     private RandomRule random;
 
@@ -117,7 +118,7 @@ abstract class TxStateTest
     {
         memoryTracker = new LocalMemoryTracker();
         collectionsFactory = spy( collectionsFactorySupplier.create() );
-        state = new TxState( collectionsFactory, memoryTracker );
+        state = new TxState( collectionsFactory, memoryTracker, TransactionStateBehaviour.DEFAULT_BEHAVIOUR );
     }
 
     @AfterEach
@@ -625,8 +626,8 @@ abstract class TxStateTest
             public void visitRelationshipModifications( RelationshipModifications modifications )
             {
                 modifications.creations()
-                        .forEach( ( id, type, startNode, endNode ) -> assertEquals( 1, id, "Should not create any other relationship than 1" ) );
-                modifications.deletions().forEach( ( id, type, startNode, endNode ) -> fail( "Should not delete any relationship" ) );
+                        .forEach( ( id, type, startNode, endNode, addedProps ) -> assertEquals( 1, id, "Should not create any other relationship than 1" ) );
+                modifications.deletions().forEach( ( id, type, startNode, endNode, noProps ) -> fail( "Should not delete any relationship" ) );
             }
         } );
     }
@@ -697,7 +698,7 @@ abstract class TxStateTest
             {
                 // Then
                 assertThat( ids.deletions().size() ).isEqualTo( 1 );
-                ids.deletions().forEach( ( id, type, start, end ) -> assertEquals( 42, id, "Wrong deleted relationship id" ) );
+                ids.deletions().forEach( ( id, type, start, end, noProps ) -> assertEquals( 42, id, "Wrong deleted relationship id" ) );
             }
         } );
     }
@@ -934,15 +935,15 @@ abstract class TxStateTest
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
         assertTrue( state.hasDataChanges() );
 
-        state.relationshipDoReplaceProperty( 0, 0, Values.NO_VALUE, Values.booleanValue( true ) );
+        state.relationshipDoReplaceProperty( 0, 0, 0, 0, 0, Values.NO_VALUE, Values.booleanValue( true ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
         assertTrue( state.hasDataChanges() );
 
-        state.relationshipDoReplaceProperty( 0, 0, Values.booleanValue( true ), Values.booleanValue( false ) );
+        state.relationshipDoReplaceProperty( 0, 0, 0, 0, 0, Values.booleanValue( true ), Values.booleanValue( false ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
         assertTrue( state.hasDataChanges() );
 
-        state.relationshipDoRemoveProperty( 0, 0 );
+        state.relationshipDoRemoveProperty( 0, 0, 0, 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
         assertTrue( state.hasDataChanges() );
 
@@ -1085,6 +1086,50 @@ abstract class TxStateTest
         //Then
         assertThat( visitedRelationshipIds ).isNotEmpty();
         assertThat( visitedRelationshipIds ).isSorted();
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldKeepMetaDataForDeletedRelationshipsIfToldTo( boolean keepDeletedRelationshipMetaData ) throws KernelException
+    {
+        // given
+        TxState state = new TxState( collectionsFactory, memoryTracker, () -> keepDeletedRelationshipMetaData );
+        long id = 9;
+        int type = 10;
+        long startNode = 11;
+        long endNode = 12;
+        state.relationshipDoDelete( id, type, startNode, endNode );
+
+        // when/then
+        MutableBoolean found = new MutableBoolean();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitRelationshipModifications( RelationshipModifications modifications )
+            {
+                modifications.deletions().forEach( ( relationshipId, typeId, startNodeId, endNodeId, addedProperties ) ->
+                {
+                    assertThat( found.booleanValue() ).isFalse();
+                    found.setTrue();
+
+                    if ( keepDeletedRelationshipMetaData )
+                    {
+                        assertThat( relationshipId ).isEqualTo( id );
+                        assertThat( typeId ).isEqualTo( type );
+                        assertThat( startNodeId ).isEqualTo( startNode );
+                        assertThat( endNodeId ).isEqualTo( endNode );
+                    }
+                    else
+                    {
+                        assertThat( relationshipId ).isEqualTo( id );
+                        assertThat( typeId ).isEqualTo( -1 );
+                        assertThat( startNodeId ).isEqualTo( -1 );
+                        assertThat( endNodeId ).isEqualTo( -1 );
+                    }
+                } );
+            }
+        } );
+        assertThat( found.booleanValue() ).isTrue();
     }
 
     private LongDiffSets addedNodes( long... added )

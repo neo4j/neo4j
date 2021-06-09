@@ -94,7 +94,7 @@ public class RelationshipCreator
     public void relationshipCreate( RelationshipBatch creations, RecordAccessSet recordChanges, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
             NodeDataLookup nodeDataLookup )
     {
-        creations.forEach( ( id, type, firstNodeId, secondNodeId ) ->
+        creations.forEach( ( id, type, firstNodeId, secondNodeId, addedProperties ) ->
                 relationshipCreate( id, type, firstNodeId, secondNodeId, recordChanges, groupDegreesUpdater, nodeDataLookup ) );
     }
 

@@ -38,6 +38,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 /**
@@ -189,4 +190,12 @@ public interface StorageEngine extends Lifecycle
      * @return an interface for accessing data in the storage.
      */
     StorageReader newReader();
+
+    /**
+     * @return specific behaviour of transaction state that is optimal for this storage engine.
+     */
+    default TransactionStateBehaviour transactionStateBehaviour()
+    {
+        return TransactionStateBehaviour.DEFAULT_BEHAVIOUR;
+    }
 }

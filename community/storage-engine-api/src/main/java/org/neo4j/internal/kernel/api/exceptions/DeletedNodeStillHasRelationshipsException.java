@@ -17,21 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.txstate;
+package org.neo4j.internal.kernel.api.exceptions;
 
-import org.neo4j.storageengine.api.RelationshipVisitor;
-import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
-
-/**
- * Represents the transactional changes to a relationship.
- *
- * @see EntityState
- */
-public interface RelationshipState extends EntityState
+public class DeletedNodeStillHasRelationshipsException extends ConstraintViolationTransactionFailureException
 {
-    long getId();
-
-    <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX;
-
-    <EX extends Exception> boolean accept( RelationshipVisitorWithProperties<EX> visitor ) throws EX;
+    public DeletedNodeStillHasRelationshipsException( long nodeId )
+    {
+        super( "Cannot delete node<" + nodeId + ">, because it still has relationships. To delete this node, you must first delete its relationships." );
+    }
 }

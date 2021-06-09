@@ -576,7 +576,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             leaseClient.ensureValid();
             readOnlyDatabaseChecker.check();
             transactionMonitor.upgradeToWriteTransaction();
-            txState = new TxState( collectionsFactory, memoryTracker );
+            txState = new TxState( collectionsFactory, memoryTracker, storageEngine.transactionStateBehaviour() );
         }
         return txState;
     }
