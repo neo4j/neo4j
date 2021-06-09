@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 
 public interface Command extends Callable<Integer>
 {
+    //NOTE! The order of declaration here is the order they get listed in the CLI. Please keep it grouped by area of usage.
     enum CommandType
     {
         ONLINE_BACKUP,
@@ -30,6 +31,7 @@ public interface Command extends Callable<Integer>
         PREPARE_RESTORE,
         LOAD,
         UNBIND,
+        GET_SERVER_ID,
         CHECK_CONSISTENCY,
         DIAGNOSTICS_REPORT,
         MEMORY_RECOMMENDATION,
