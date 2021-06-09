@@ -26,13 +26,9 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
@@ -115,18 +111,6 @@ final class TestUtils
         };
     }
 
-    static <T> T unsafeGet( Future<T> future )
-    {
-        try
-        {
-            return future.get();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
     static int count( Cursor cursor )
     {
         int count = 0;
@@ -135,13 +119,5 @@ final class TestUtils
             count++;
         }
         return count;
-    }
-
-    static Path createTemporaryFolder() throws IOException
-    {
-        Path createdFolder = Files.createTempFile( "neo4j", "" );
-        Files.delete( createdFolder );
-        Files.createDirectory( createdFolder );
-        return createdFolder;
     }
 }

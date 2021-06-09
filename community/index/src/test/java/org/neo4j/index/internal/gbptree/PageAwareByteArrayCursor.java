@@ -41,6 +41,7 @@ class PageAwareByteArrayCursor extends PageCursor
     private long nextPageId;
     private PageCursor linkedCursor;
     private boolean shouldRetry;
+    private int closeCount;
 
     PageAwareByteArrayCursor( int pageSize )
     {
@@ -343,6 +344,7 @@ class PageAwareByteArrayCursor extends PageCursor
     @Override
     public void close()
     {
+        closeCount++;
         if ( linkedCursor != null )
         {
             linkedCursor.close();
@@ -425,5 +427,10 @@ class PageAwareByteArrayCursor extends PageCursor
     public boolean isWriteLocked()
     {
         return current == null || current.isWriteLocked();
+    }
+
+    public int getCloseCount()
+    {
+        return closeCount;
     }
 }

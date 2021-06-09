@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -48,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
+import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -234,7 +234,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             service.awaitTermination( 1, TimeUnit.MINUTES );
 
             // then
-            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = getAllResults( futures );
 
             TestUtils.assertDistinct( lists );
             LongList concat = TestUtils.concat( lists ).toSortedList();

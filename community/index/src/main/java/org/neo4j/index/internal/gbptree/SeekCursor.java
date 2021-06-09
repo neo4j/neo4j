@@ -1286,8 +1286,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     @Override
     public void close()
     {
-        cursor.close();
-        closed = true;
+        if ( !closed )
+        {
+            cursor.close();
+            closed = true;
+        }
     }
 
     private void assertHasResult()

@@ -38,7 +38,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -57,6 +56,7 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
+import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
@@ -232,8 +232,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    void shouldScanAllNodesFromRandomlySizedWorkers()
-            throws InterruptedException, KernelException
+    void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, KernelException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -257,7 +256,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             }
 
             // then
-            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = getAllResults( futures );
 
             assertDistinct( lists );
             assertEquals( ids.toSortedList(), concat( lists ).toSortedList() );
@@ -271,8 +270,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    void parallelTxStateScanStressTest()
-            throws KernelException, InterruptedException
+    void parallelTxStateScanStressTest() throws KernelException, InterruptedException, ExecutionException
     {
         int label = label( "L" );
         MutableLongSet existingNodes = LongSets.mutable.withAll( createNodesWithLabel( label, 1000 ) );
@@ -301,15 +299,13 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                                         randomBatchWorker( scan, () -> cursors.allocateNodeLabelIndexCursor( tx.cursorContext() ), NODE_GET ) ) );
                     }
 
-                    List<LongList> lists =
-                            futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+                    List<LongList> lists = getAllResults( futures );
 
                     assertDistinct( lists );
                     LongList concat = concat( lists );
                     assertEquals( allNodes, LongSets.immutable.withAll( concat ),
                             format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ) );
                     assertEquals( allNodes.size(), concat.size(), format( "nodes=%d", nodeInTx ) );
-                    tx.rollback();
                 }
             }
         }

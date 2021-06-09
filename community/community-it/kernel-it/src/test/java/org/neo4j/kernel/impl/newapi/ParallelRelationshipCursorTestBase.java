@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
@@ -34,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
@@ -52,6 +50,7 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
+import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -219,7 +218,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    void shouldScanAllRelationshipsFromRandomlySizedWorkers() throws InterruptedException
+    void shouldScanAllRelationshipsFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -239,7 +238,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
             service.awaitTermination( 1, TimeUnit.MINUTES );
 
             // then
-            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = getAllResults( futures );
 
             assertDistinct( lists );
             LongList concat = concat( lists ).toSortedList();

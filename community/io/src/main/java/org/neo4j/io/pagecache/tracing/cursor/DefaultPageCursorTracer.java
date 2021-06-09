@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.tracing.cursor;
 import java.io.IOException;
 
 import org.neo4j.internal.helpers.MathUtil;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;

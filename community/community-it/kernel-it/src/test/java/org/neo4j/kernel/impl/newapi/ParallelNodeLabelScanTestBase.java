@@ -36,7 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -57,6 +56,7 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
+import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -239,7 +239,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     }
 
     @Test
-    void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException
+    void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -257,7 +257,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             }
 
             // then
-            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = getAllResults( futures );
 
             assertDistinct( lists );
             assertEquals( FOO_NODES, LongSets.immutable.withAll( concat( lists ) ) );

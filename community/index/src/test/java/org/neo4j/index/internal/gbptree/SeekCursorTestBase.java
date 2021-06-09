@@ -2186,6 +2186,19 @@ abstract class SeekCursorTestBase<KEY, VALUE>
         }
     }
 
+    @Test
+    void avoidDoubleCloseOfUnderlyingCursor() throws IOException
+    {
+        try ( SeekCursor<KEY,VALUE> cursor = seekCursor( 0, Long.MAX_VALUE ) )
+        {
+            while ( cursor.next() )
+            {
+                // empty
+            }
+        }
+        assertEquals( 1, cursor.getCloseCount() );
+    }
+
     private List<Long> allKeysOnLevel( int level, long fromInclusive, long toExclusive ) throws IOException
     {
         List<Long> allKeysOnLevel = new ArrayList<>();

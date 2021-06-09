@@ -37,7 +37,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -56,6 +55,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
+import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
@@ -289,8 +289,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
     }
 
     @Test
-    void shouldScanAllRelationshipFromRandomlySizedWorkers()
-            throws InterruptedException, KernelException
+    void shouldScanAllRelationshipFromRandomlySizedWorkers() throws InterruptedException, KernelException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -319,7 +318,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             }
 
             // then
-            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = getAllResults( futures );
 
             TestUtils.assertDistinct( lists );
             LongList concat = TestUtils.concat( lists );
@@ -335,8 +334,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
     }
 
     @Test
-    void parallelTxStateScanStressTest()
-            throws InterruptedException, KernelException
+    void parallelTxStateScanStressTest() throws InterruptedException, KernelException, ExecutionException
     {
         LongSet existingRelationships = createRelationships( 77 );
         int workers = Runtime.getRuntime().availableProcessors();
@@ -367,8 +365,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
                                 randomBatchWorker( scan, () -> cursors.allocateRelationshipScanCursor( NULL ), REL_GET ) ) );
                     }
 
-                    List<LongList> lists =
-                            futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+                    List<LongList> lists = getAllResults( futures );
 
                     TestUtils.assertDistinct( lists );
                     LongList concat = TestUtils.concat( lists );

@@ -37,7 +37,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -56,6 +55,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.newapi.TestUtils.count;
 import static org.neo4j.kernel.impl.newapi.TestUtils.randomBatchWorker;
 import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
+import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 public abstract class ParallelNodeCursorTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
@@ -286,8 +286,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
 
     @Test
     void shouldScanAllNodesFromRandomlySizedWorkers()
-            throws InterruptedException, TransactionFailureException,
-            InvalidTransactionTypeKernelException
+            throws InterruptedException, TransactionFailureException, InvalidTransactionTypeKernelException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -314,7 +313,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             }
 
             // then
-            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = getAllResults( futures );
 
             TestUtils.assertDistinct( lists );
             LongList concat = TestUtils.concat( lists );
@@ -330,7 +329,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    void parallelTxStateScanStressTest() throws InvalidTransactionTypeKernelException, TransactionFailureException, InterruptedException
+    void parallelTxStateScanStressTest() throws InvalidTransactionTypeKernelException, TransactionFailureException, InterruptedException, ExecutionException
     {
         LongSet existingNodes = createNodes( 77 );
         int workers = Runtime.getRuntime().availableProcessors();
@@ -358,8 +357,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                         futures.add( threadPool.submit( randomBatchWorker( scan, () -> cursors.allocateNodeCursor( NULL ), NODE_GET ) ) );
                     }
 
-                    List<LongList> lists =
-                            futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+                    List<LongList> lists = getAllResults( futures );
 
                     TestUtils.assertDistinct( lists );
                     LongList concat = TestUtils.concat( lists );
