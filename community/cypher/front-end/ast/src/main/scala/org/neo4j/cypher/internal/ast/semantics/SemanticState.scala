@@ -188,17 +188,7 @@ object SemanticState {
 
   implicit object ScopeZipper extends TreeZipper[Scope]
 
-  def withStartingVariables(variables: (String, CypherType)*) =
-    SemanticState(
-      Scope.empty.copy(variables.toMap.map {
-        case (name, t) =>
-          name -> Symbol(name, Set(InputPosition.NONE), TypeSpec.exact(t))
-      }).location,
-      ASTAnnotationMap.empty,
-      ASTAnnotationMap.empty
-    )
-
-  val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
+  val clean: SemanticState = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
     def scope: Scope = location.elem

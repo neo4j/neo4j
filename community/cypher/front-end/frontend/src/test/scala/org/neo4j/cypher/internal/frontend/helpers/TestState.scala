@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
-import org.neo4j.cypher.internal.util.symbols.CypherType
 
 //noinspection TypeAnnotation
 case class TestState(override val maybeStatement: Option[ast.Statement]) extends BaseState {
@@ -62,8 +61,6 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
   override def withParams(p: Map[String, Any]) = fail("not implemented")
 
   override def withObfuscationMetadata(o: ObfuscationMetadata) = fail("not implemented")
-
-  override def initialFields: Map[String, CypherType] = Map.empty
 
   override val anonymousVariableNameGenerator: AnonymousVariableNameGenerator = new AnonymousVariableNameGenerator()
 }

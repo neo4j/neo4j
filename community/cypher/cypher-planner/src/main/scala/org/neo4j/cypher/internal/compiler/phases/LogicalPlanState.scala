@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.CypherType
 
 /*
 This is the state that is used during query compilation. It accumulates more and more values as it passes through
@@ -55,7 +54,6 @@ case class LogicalPlanState(queryText: String,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
                             accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
-                            initialFields: Map[String, CypherType] = Map.empty,
                             hasLoadCSV: Boolean = false,
                             maybeReturnColumns: Option[Seq[String]] = None,
                             maybeObfuscationMetadata: Option[ObfuscationMetadata] = None) extends BaseState {
@@ -82,7 +80,6 @@ object LogicalPlanState {
     LogicalPlanState(queryText = state.queryText,
                      startPosition = state.startPosition,
                      plannerName = state.plannerName,
-                     initialFields = state.initialFields,
                      planningAttributes = PlanningAttributes.newAttributes,
                      maybeStatement = state.maybeStatement,
                      maybeSemantics = state.maybeSemantics,

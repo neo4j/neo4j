@@ -23,9 +23,6 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SemanticAnalysisTest extends CypherFunSuite {
@@ -33,30 +30,10 @@ class SemanticAnalysisTest extends CypherFunSuite {
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
   private val pipeline = Parsing andThen SemanticAnalysis(warn = true) andThen SemanticAnalysis(warn = false)
 
-  test("can inject starting semantic state") {
-    val query = "RETURN name AS name"
-    val startState = initStartState(query, Map("name" -> CTString))
-
-    val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
-
-    context.errors shouldBe empty
-  }
-
-  test("can inject starting semantic state for larger query") {
-    val query = "MATCH (n:Label {name: name}) WHERE n.age > age RETURN n.name AS name"
-
-    val startState = initStartState(query, Map("name" -> CTString, "age" -> CTInteger))
-    val context = new ErrorCollectingContext()
-    pipeline.transform(startState, context)
-
-    context.errors shouldBe empty
-  }
-
   test("should fail for max() with no arguments") {
     val query = "RETURN max() AS max"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
     pipeline.transform(startState, context)
 
@@ -66,7 +43,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
   test("Should allow overriding variable name in RETURN clause with an ORDER BY") {
     val query = "MATCH (n) RETURN n.prop AS n ORDER BY n + 2"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -77,7 +54,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
   test("Should not allow multiple columns with the same name in WITH") {
     val query = "MATCH (n) WITH n.prop AS n, n.foo AS n ORDER BY n + 2 RETURN 1 AS one"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -88,7 +65,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
   test("Should not allow duplicate variable name") {
     val query = "CREATE (n),(n) RETURN 1 as one"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -107,7 +84,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     queries.foreach { query =>
       withClue(query) {
         val context = new ErrorCollectingContext()
-        pipeline.transform(initStartState(query, Map.empty).withParams(Map("p" -> 42)), context)
+        pipeline.transform(initStartState(query).withParams(Map("p" -> 42)), context)
         context.errors shouldBe empty
       }
     }
@@ -124,7 +101,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     queries.foreach { query =>
       withClue(query) {
         val context = new ErrorCollectingContext()
-        pipeline.transform(initStartState(query, Map.empty), context)
+        pipeline.transform(initStartState(query), context)
         context.errors shouldBe empty
       }
     }
@@ -136,7 +113,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     // Property without escaping: `abc123``
     val query = "CREATE ({prop: 5, ```abc123`````: 1})"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -148,7 +125,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     // Property without escaping: abc`123
     val query = "MATCH ()-[r]->() RETURN r.`abc``123` as result"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -160,7 +137,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     // Label without escaping: `abc123
     val query = "MATCH (n) SET n:```abc123`"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -172,7 +149,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     // Relationship type without escaping: abc123``
     val query = "MERGE ()-[r:`abc123`````]->()"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -183,7 +160,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
   test("Should allow escaped backtick in indexes") {
     // Query without proper escaping: CREATE INDEX `abc`123`` FOR (n:`Per`son`) ON (n.first``name`, n.``last`name)
     val query = "CREATE INDEX ```abc``123````` FOR (n:```Per``son```) ON (n.`first````name```, n.`````last``name`)"
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -195,7 +172,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     // Query without proper escaping: CREATE CONSTRAINT abc123` ON (n:``Label) ASSERT (n.pr``op) IS NODE KEY
     val query = "CREATE CONSTRAINT `abc123``` ON (n:`````Label`) ASSERT (n.`pr````op`) IS NODE KEY"
 
-    val startState = initStartState(query, Map.empty)
+    val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
     pipeline.transform(startState, context)
@@ -203,6 +180,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     context.errors should be(empty)
   }
 
-  private def initStartState(query: String, initialFields: Map[String, CypherType]) =
-    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator, initialFields)
+  private def initStartState(query: String) =
+    InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
 }

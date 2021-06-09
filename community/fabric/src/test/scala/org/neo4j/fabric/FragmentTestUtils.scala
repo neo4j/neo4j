@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.AnyType
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.fabric.pipeline.FabricFrontEnd
 import org.neo4j.fabric.planning.FabricFragmenter
@@ -79,7 +78,6 @@ trait FragmentTestUtils {
       def version: String = ""
     }
     override val startPosition: Option[InputPosition] = Option.empty
-    override val initialFields: Map[String, CypherType] = Map.empty
     override val maybeStatement: Option[Statement] = Option.empty
     override val maybeReturnColumns: Option[Seq[String]] = Option.empty
     override val maybeSemantics: Option[SemanticState] = Option.empty
