@@ -41,6 +41,7 @@ public interface Command extends Callable<Integer>
         RESTORE_DB,
         PREPARE_RESTORE,
         UNBIND,
+        GET_SERVER_ID,
         PUSH_TO_CLOUD
     }
 }
