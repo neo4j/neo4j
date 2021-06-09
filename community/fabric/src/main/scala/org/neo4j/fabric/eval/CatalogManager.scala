@@ -20,11 +20,12 @@
 package org.neo4j.fabric.eval
 
 import org.neo4j.fabric.executor.Location
+import org.neo4j.kernel.database.NamedDatabaseId
 
 trait CatalogManager {
 
   def currentCatalog(): Catalog
 
-  def locationOf(graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location
+  def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location
 
 }

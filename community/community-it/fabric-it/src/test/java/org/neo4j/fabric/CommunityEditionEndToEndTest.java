@@ -28,6 +28,7 @@ import org.junit.jupiter.api.TestInstance;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,7 @@ import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionManager;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -151,7 +153,7 @@ class CommunityEditionEndToEndTest
         var transactionManager = dependencyResolver.resolveDependency( TransactionManager.class );
         var fabricExecutor = dependencyResolver.resolveDependency( FabricExecutor.class );
         var transactionInfo = new FabricTransactionInfo( org.neo4j.bolt.runtime.AccessMode.READ, AUTH_DISABLED,
-                EMBEDDED_CONNECTION, "mega", false, Duration.ZERO, Map.of(), new RoutingContext( false, Map.of() ) );
+                EMBEDDED_CONNECTION, DatabaseIdFactory.from("mega", UUID.randomUUID()), false, Duration.ZERO, Map.of(), new RoutingContext( false, Map.of() ) );
         var bookmarkManager = mock( TransactionBookmarkManager.class );
 
         var tx1 = transactionManager.begin( transactionInfo, bookmarkManager );

@@ -26,6 +26,7 @@ import org.neo4j.fabric.eval.Catalog.InternalGraph
 import org.neo4j.fabric.executor.Location
 import org.neo4j.graphdb.event.DatabaseEventContext
 import org.neo4j.graphdb.event.DatabaseEventListener
+import org.neo4j.kernel.database.NamedDatabaseId
 
 class CommunityCatalogManager(databaseLookup: DatabaseLookup, databaseManagementService: DatabaseManagementService ) extends CatalogManager {
 
@@ -83,7 +84,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, databaseManagement
     databaseName = new NormalizedDatabaseName(namedDatabaseId.name())
   } yield InternalGraph(id, namedDatabaseId.databaseId().uuid(), graphName, databaseName)
 
-  override def locationOf(graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
+  override def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException( s"Unexpected graph type $graph" )
