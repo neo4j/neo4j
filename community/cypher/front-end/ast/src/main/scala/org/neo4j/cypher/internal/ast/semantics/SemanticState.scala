@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.TreeElem
 import org.neo4j.cypher.internal.util.helpers.TreeZipper
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 import scala.collection.immutable.HashMap
@@ -66,9 +65,6 @@ final case class Symbol(name: String, positions: Set[InputPosition],
   val definition = SymbolUse(name, positions.toSeq.min(InputPosition.byOffset))
 
   def asGenerated: Symbol = copy(generated = true)
-
-  def withMergedPositions(additionalPositions: Set[InputPosition]): Symbol =
-    copy(positions = positions ++ additionalPositions)
 
   override def toString: String =
     s"${definition.nameWithPosition}(${positions.map(_.offset).mkString(",")}): ${types.toShortString}"
@@ -113,12 +109,6 @@ final case class Scope(symbolTable: Map[String, Symbol],
 
   def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): Scope =
     copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
-
-  def mergePositions(variable: String, positions: Set[InputPosition]): Scope =
-    symbolTable.get(variable) match {
-      case Some(symbol) => copy(symbolTable = symbolTable.updated(variable, symbol.withMergedPositions(positions)))
-      case None => self
-    }
 
   def allSymbolDefinitions: Map[String, Set[SymbolUse]] = {
     val allScopes1 = allScopes
@@ -226,20 +216,8 @@ object SemanticState {
     def localMarkAsGenerated(name: String): ScopeLocation =
       location.replace(scope.markAsGenerated(name))
 
-    def mergeSymbolPositionsFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
-      other.symbolTable.values.foldLeft(location) {
-        case (loc, sym) if exclude(sym.name) => loc
-        case (loc, sym) =>
-          val locWithMergedPos = loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
-          val leftWithMergedPos = loc.leftList.map(_.mergePositions(sym.name, sym.positions))
-          locWithMergedPos.replaceLeftList(leftWithMergedPos)
-      }
-
     def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateVariable(variable, types, positions))
-
-    def mergePositions(variable: String, positions: Set[InputPosition]): ScopeLocation =
-      location.replace(scope.mergePositions(variable, positions))
   }
 
   def recordCurrentScope(node: ASTNode): SemanticCheck =
