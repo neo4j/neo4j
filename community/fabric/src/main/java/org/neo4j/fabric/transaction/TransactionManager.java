@@ -63,7 +63,7 @@ public class TransactionManager extends LifecycleAdapter
 
     public FabricTransaction begin( FabricTransactionInfo transactionInfo, TransactionBookmarkManager transactionBookmarkManager )
     {
-        transactionInfo.getLoginContext().authorize( LoginContext.IdLookup.EMPTY, transactionInfo.getDatabaseName(), securityLog );
+        transactionInfo.getLoginContext().authorize( LoginContext.IdLookup.EMPTY, transactionInfo.getSessionDatabaseId().name(), securityLog );
 
         FabricTransactionImpl fabricTransaction = new FabricTransactionImpl( transactionInfo,
                 transactionBookmarkManager,

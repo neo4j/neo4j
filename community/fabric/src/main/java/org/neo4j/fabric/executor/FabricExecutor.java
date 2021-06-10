@@ -114,7 +114,7 @@ public class FabricExecutor
 
         try
         {
-            String defaultGraphName = fabricTransaction.getTransactionInfo().getDatabaseName();
+            String defaultGraphName = fabricTransaction.getTransactionInfo().getSessionDatabaseId().name();
             FabricPlanner.PlannerInstance plannerInstance = planner.instance( statement, parameters, defaultGraphName );
             UseEvaluation.Instance useEvaluator = useEvaluation.instance( statement );
             FabricPlan plan = plannerInstance.plan();
@@ -189,9 +189,10 @@ public class FabricExecutor
     {
         try
         {
-            var dbName = fabricTransaction.getTransactionInfo().getDatabaseName();
-            var graph = catalogManager.currentCatalog().resolve( CatalogName.apply( dbName, scala.collection.immutable.List.<String>empty() ) );
-            var location = (Location.Local) catalogManager.locationOf( graph, false, false );
+            var dbId = fabricTransaction.getTransactionInfo().getSessionDatabaseId();
+            var dbName = dbId.name();
+            var graph = catalogManager.currentCatalog().resolve( CatalogName.apply( dbName, scala.collection.immutable.List.empty() ) );
+            var location = (Location.Local) catalogManager.locationOf( dbId, graph, false, false );
             var internalTransaction = new CompletableFuture<InternalTransaction>();
             fabricTransaction.execute( ctx ->
                                        {
@@ -350,7 +351,8 @@ public class FabricExecutor
 
             Catalog.Graph graph = evalUse( fragment.use().graphSelection(), argumentValues );
             var transactionMode = getTransactionMode( fragment.queryType(), graph.toString() );
-            Location location = catalogManager.locationOf( graph, transactionMode.requiresWrite(), routingContext.isServerRoutingEnabled() );
+            Location location = catalogManager
+                    .locationOf( ctx.getSessionDatabaseId(), graph, transactionMode.requiresWrite(), routingContext.isServerRoutingEnabled() );
             if ( location instanceof Location.Local )
             {
                 Location.Local local = (Location.Local) location;

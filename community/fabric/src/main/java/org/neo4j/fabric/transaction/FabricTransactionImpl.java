@@ -49,6 +49,7 @@ import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
@@ -151,6 +152,12 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     {
         var type = statementType.get();
         return type != null && type.isSchemaCommand();
+    }
+
+    @Override
+    public NamedDatabaseId getSessionDatabaseId()
+    {
+        return transactionInfo.getSessionDatabaseId();
     }
 
     @Override
