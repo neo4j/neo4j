@@ -609,15 +609,16 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                 if ( cachedIndex + 1 < cachedLength && !closed && !(concurrentWriteHappened = cursor.shouldRetry()) )
                 {   // FAST, key/value is readily available
                     cachedIndex++;
-                    if ( 0 <= pos && pos < keyCount )
+                    if ( resultOnTrack )
                     {
-                        if ( resultOnTrack || isResultKey() )
-                        {
-                            resultOnTrack = true;
-                            return true; // which marks this read a hit that user can see
-                        }
-                        continue;
+                        return true;
                     }
+                    if ( isResultKey() )
+                    {
+                        resultOnTrack = true;
+                        return true;
+                    }
+                    continue;
                 }
                 else
                 {   // SLOW, next batch of keys/values needs to be read
