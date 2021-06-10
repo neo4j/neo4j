@@ -37,6 +37,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -44,6 +45,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
@@ -64,10 +66,12 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -305,6 +309,80 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         accessor.close();
 
         assertThrows( IllegalStateException.class, () -> accessor.newTokenReader() );
+    }
+
+    @Test
+    void shouldScanSingleRange() throws IndexEntryConflictException
+    {
+        // GIVEN
+        int labelId1 = 1;
+        int labelId2 = 2;
+        long nodeId1 = 10;
+        long nodeId2 = 11;
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL ) )
+        {
+            indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
+            indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
+        }
+
+        // WHEN
+        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL );
+        EntityTokenRange range = single( reader.iterator() );
+
+        // THEN
+        assertThat( new long[]{nodeId1, nodeId2} ).isEqualTo( reducedNodes( range ) );
+        assertThat( new long[]{labelId1} ).isEqualTo( sorted( range.tokens( nodeId1 ) ) );
+        assertThat( new long[]{labelId1, labelId2} ).isEqualTo( sorted( range.tokens( nodeId2 ) ) );
+    }
+
+    @Test
+    void shouldScanMultipleRanges() throws IndexEntryConflictException
+    {
+        // GIVEN
+        int labelId1 = 1;
+        int labelId2 = 2;
+        long nodeId1 = 10;
+        long nodeId2 = 1280;
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( ONLINE, NULL ) )
+        {
+            indexUpdater.process( IndexEntryUpdate.change( nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1} ) );
+            indexUpdater.process( IndexEntryUpdate.change( nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId1, labelId2} ) );
+        }
+
+        // WHEN
+        BoundedIterable<EntityTokenRange> reader = accessor.newAllEntriesTokenReader( Long.MIN_VALUE, Long.MAX_VALUE, NULL );
+        Iterator<EntityTokenRange> iterator = reader.iterator();
+        EntityTokenRange range1 = iterator.next();
+        EntityTokenRange range2 = iterator.next();
+        assertFalse( iterator.hasNext() );
+
+        // THEN
+        assertThat( new long[]{nodeId1} ).isEqualTo( reducedNodes( range1 ) );
+        assertThat( new long[]{nodeId2} ).isEqualTo( reducedNodes( range2 ) );
+
+        assertThat( new long[]{labelId1} ).isEqualTo( sorted( range1.tokens( nodeId1 ) ) );
+        assertThat( new long[]{labelId1, labelId2} ).isEqualTo( sorted( range2.tokens( nodeId2 ) ) );
+    }
+
+    private static long[] sorted( long[] input )
+    {
+        Arrays.sort( input );
+        return input;
+    }
+
+    private static long[] reducedNodes( EntityTokenRange range )
+    {
+        long[] nodes = range.entities();
+        long[] result = new long[nodes.length];
+        int cursor = 0;
+        for ( long node : nodes )
+        {
+            if ( range.tokens( node ).length > 0 )
+            {
+                result[cursor++] = node;
+            }
+        }
+        return Arrays.copyOf( result, cursor );
     }
 
     private void readerShouldFindRandomizedUpdates( Executable additionalOperation ) throws Throwable
