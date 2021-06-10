@@ -73,7 +73,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       cost = {
         case (_: AllNodesScan, _, _, _) => 2000000.0
         case (_: NodeByLabelScan, _, _, _) => 20.0
-        case (p: Expand, _, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
+        case (p: Expand, _, _, _) if p.findAllByClass[CartesianProduct].nonEmpty => Double.MaxValue
         case (_: Expand, _, _, _) => 10.0
         case (_: LeftOuterHashJoin, _, _, _) => 20.0
         case (_: Argument, _, _, _) => 1.0
@@ -92,7 +92,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       cost = {
         case (_: AllNodesScan, _, _, _) => 2000000.0
         case (_: NodeByLabelScan, _, _, _) => 20.0
-        case (p: Expand, _, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
+        case (p: Expand, _, _, _) if p.findAllByClass[CartesianProduct].nonEmpty => Double.MaxValue
         case (_: Expand, _, _, _) => 10.0
         case (_: RightOuterHashJoin, _, _, _) => 20.0
         case (_: Argument, _, _, _) => 1.0

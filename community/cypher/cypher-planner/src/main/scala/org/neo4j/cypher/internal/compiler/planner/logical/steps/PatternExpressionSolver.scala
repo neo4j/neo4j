@@ -245,7 +245,7 @@ object PatternExpressionSolver {
     }
 
     def rewriteInnerExpressions(plan: LogicalPlan, expression: Expression, context: LogicalPlanningContext): RewriteResult = {
-      val patternExpressions: Seq[T] = expression.findByAllClass[T]
+      val patternExpressions: Seq[T] = expression.findAllByClass[T]
 
       patternExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
         case (RewriteResult(currentPlan, currentExpression, introducedVariables), patternExpression) =>

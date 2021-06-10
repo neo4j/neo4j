@@ -420,7 +420,7 @@ class FabricPlannerTest
 
       val whereAnons = statement
         .findByClass[Where]
-        .findByAllClass[Variable]
+        .findAllByClass[Variable]
         .map(_.name)
         .map(NameDeduplicator.removeGeneratedNamesAndParams)
 

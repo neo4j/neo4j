@@ -57,8 +57,8 @@ trait QueryHorizon {
      */
   protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
-    val patternComprehensions = filtered.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
-    val patternExpressions = filtered.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternComprehensions = filtered.findAllByClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternExpressions = filtered.findAllByClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
     (patternComprehensions ++ patternExpressions).map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
   }
 

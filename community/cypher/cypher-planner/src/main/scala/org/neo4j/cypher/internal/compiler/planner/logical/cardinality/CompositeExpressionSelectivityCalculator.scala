@@ -94,7 +94,7 @@ case class CompositeExpressionSelectivityCalculator(stats: GraphStatistics, comb
              aggregatingProperties: Set[PropertyAccess],
            ): Selectivity = {
 
-    val variables = selections.findByAllClass[Variable].map(_.name)
+    val variables = selections.findAllByClass[Variable].map(_.name)
     val nodes = variables.filter(labelInfo.contains)
     val relationships = variables.filter(relTypeInfo.contains)
 

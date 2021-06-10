@@ -108,7 +108,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       case (acc: QueryGraph, patternExpr: Expression) => {
         val outerVariableNames = e.outerScope.map(id => id.name)
         val usedVariables: Seq[String] = patternExpr.arguments
-          .findByAllClass[Variable]
+          .findAllByClass[Variable]
           .map(_.name)
           .distinct
 

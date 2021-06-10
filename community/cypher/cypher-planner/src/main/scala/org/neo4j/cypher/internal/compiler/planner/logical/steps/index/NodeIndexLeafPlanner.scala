@@ -215,6 +215,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       // or
       // n:User with CREATE CONSTRAINT ON (n:User) ASSERT n.prop IS NOT NULL
       case HasLabels(variable: Variable, labels) if valid(variable, Set.empty) =>
+        // HasLabels has been normalized in normalizeComparisons to only have one label each, which is why we can look only at the head here.
         val constrainedPropNames = planContext.getNodePropertiesWithExistenceConstraint(labels.head.name)
         implicitIsNotNullPredicates(variable, aggregatingProperties, constrainedPropNames, explicitCompatiblePredicates)
 

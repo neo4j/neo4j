@@ -445,7 +445,7 @@ case class Match(
     allLabels.contains(labelOrRelType) || allRelTypes.contains(labelOrRelType)
   }
 
-  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findByAllClass[LogicalVariable].toSet
+  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findAllByClass[LogicalVariable].toSet
 }
 
 sealed trait CommandClause extends Clause with SemanticAnalysisTooling {

@@ -654,7 +654,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
           val errors = SemanticExpressionCheck.check(Results, e)(semanticState).errors
           errors.isEmpty
         })
-      parameters = expression.findByAllClass[Parameter].map(_.name)
+      parameters = expression.findAllByClass[Parameter].map(_.name)
       state <- state.addParameters(parameters.toSet)
     } yield {
       WithState(expression, state)

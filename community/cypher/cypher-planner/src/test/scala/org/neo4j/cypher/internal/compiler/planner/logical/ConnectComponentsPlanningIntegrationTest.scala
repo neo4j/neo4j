@@ -150,7 +150,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     // For Volcano the shape of the CP tree is not important.
     // They all have the same cost, as long as the label scans appear in the right order from left to right in the tree.
-    volcanoPlan.findByAllClass[NodeByLabelScan].map(_.idName) shouldEqual varsAndLabels.map(_._1)
+    volcanoPlan.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual varsAndLabels.map(_._1)
     // For Batched, a right deep tree is always equally good or better than other tree shapes.
     batchedPlan shouldEqual rightDeepPlan
   }

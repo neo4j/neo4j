@@ -155,7 +155,7 @@ object Foldable {
     def findByClass[A: ClassTag]: A =
       findAcc[A](mutable.ArrayStack(that))
 
-    def findByAllClass[A: ClassTag]: Seq[A] = {
+    def findAllByClass[A: ClassTag]: Seq[A] = {
       val remaining = mutable.ArrayStack(that)
       val result = mutable.ListBuffer[A]()
 
