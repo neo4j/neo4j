@@ -96,7 +96,7 @@ object PlannerContext {
             params: MapValue): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
-    val metrics = metricsFactory.newMetrics(planContext.statistics, evaluator, config, executionModel)
+    val metrics = metricsFactory.newMetrics(planContext, evaluator, config, executionModel)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
       monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel)

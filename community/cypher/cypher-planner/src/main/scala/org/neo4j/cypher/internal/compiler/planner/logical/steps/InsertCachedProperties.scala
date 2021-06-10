@@ -346,6 +346,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
       s.predicate.exprs,
       QueryGraphSolverInput.empty,
       from.semanticTable(),
+      Set.empty,
       from.planningAttributes.solveds,
       // These do not include effective cardinalities, which is important since this methods assumes "original" cardinalities.
       from.planningAttributes.cardinalities,

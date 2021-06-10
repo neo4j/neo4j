@@ -25,14 +25,17 @@ import org.mockito.Mockito.spy
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.JavaccParsing
@@ -85,6 +88,7 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -113,12 +117,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
-    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
-      SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
+    def newCardinalityEstimator(planContext: PlanContext,
+                                queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                evaluator: ExpressionEvaluator) =
+      SimpleMetricsFactory.newCardinalityEstimator(planContext, queryGraphCardinalityModel, evaluator)
     def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel) =
       SimpleMetricsFactory.newCostModel(config, executionModel)
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics)
+    def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel =
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext)
   }
 
   def newMockedQueryGraph = mock[QueryGraph]
@@ -129,8 +135,22 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     override def evaluateExpression(expr: Expression): Option[Any] = None
   }
 
-  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) =
-    newMetricsFactory.newMetrics(stats, newExpressionEvaluator, config, ExecutionModel.default)
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics): Metrics = {
+    val planContext = notImplementedPlanContext(stats)
+    newMetricsFactory.newMetrics(planContext, newExpressionEvaluator, config, ExecutionModel.default)
+  }
+
+  def notImplementedPlanContext(stats: GraphStatistics) = {
+    new NotImplementedPlanContext {
+      override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
+        stats,
+        new MutableGraphStatisticsSnapshot())
+
+      override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+      override def getRelationshipPropertiesWithExistenceConstraint(relationshipTypeName: String): Set[String] = Set.empty
+    }
+  }
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -142,6 +162,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     when(m.id(any[PropertyKeyName]())).thenReturn(None)
     when(m.id(any[LabelName])).thenReturn(None)
     when(m.id(any[RelTypeName])).thenReturn(None)
+    when(m.types).thenReturn(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo])
     m
   }
 

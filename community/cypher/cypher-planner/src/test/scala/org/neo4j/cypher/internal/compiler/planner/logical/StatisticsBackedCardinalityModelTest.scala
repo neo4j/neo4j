@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.math.sqrt
+
 class StatisticsBackedCardinalityModelTest extends CypherFunSuite with CardinalityModelIntegrationTest {
 
   val allNodes = 733.0
@@ -484,11 +486,15 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
 
   test ("should only use predicates marked as solved for cardinality estimation of node index seek") {
     val labelCardinality = 50
-    val propSelectivity = 0.5
+    val propExistsSelectivity = 0.5
+    val propUniqueSelectivity = 0.0625
+    // because propUniqueSelectivity is a rather high value, we pick this as our range selectivity
+    val singlePropRangeSelectivity = sqrt(propUniqueSelectivity)
+    val singlePropEqualsSelectivity = sqrt(propUniqueSelectivity)
     val config = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", labelCardinality)
-      .addNodeIndex("Person", Seq("prop1", "prop2"), propSelectivity, 1)
+      .addNodeIndex("Person", Seq("prop1", "prop2"), propExistsSelectivity, propUniqueSelectivity)
       .build()
 
     val query = "MATCH (n:Person) WHERE n.prop1 > 0 AND n.prop2 = 0"
@@ -498,9 +504,9 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val cardinalities = planState.planningAttributes.effectiveCardinalities
     val nodeIndexSeekCardinality = plan.flatten.collectFirst{case lp:NodeIndexSeek => cardinalities.get(lp.id)}.get
 
-    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * DEFAULT_RANGE_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY)
+    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * propExistsSelectivity * singlePropRangeSelectivity)
 
     queryShouldHaveCardinality(config, query,
-      labelCardinality * DEFAULT_RANGE_SELECTIVITY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+      labelCardinality * propExistsSelectivity * singlePropRangeSelectivity * singlePropEqualsSelectivity)
   }
 }

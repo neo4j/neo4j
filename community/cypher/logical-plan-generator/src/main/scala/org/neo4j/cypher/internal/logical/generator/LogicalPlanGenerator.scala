@@ -81,7 +81,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -189,7 +189,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
  */
 class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
                            relTypesWithIds: Map[String, Int],
-                           stats: GraphStatistics,
+                           planContext: PlanContext,
                            costLimit: Cost,
                            nodes: Seq[Node],
                            rels: Seq[Relationship]) extends AstConstructionTestSupport {
@@ -556,7 +556,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
   // Other stuff
 
   private def annotate[T <: LogicalPlan](plan: T, state: State)(implicit cardinalityCalculator: CardinalityCalculator[T]): WithState[T] = {
-    state.cardinalities.set(plan.id, cardinalityCalculator(plan, state, stats, labelsWithIds))
+    state.cardinalities.set(plan.id, cardinalityCalculator(plan, state, planContext, labelsWithIds))
     WithState(plan, state)
   }
 

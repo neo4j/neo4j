@@ -56,13 +56,13 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier
 
 trait CardinalityCalculator[-T <: LogicalPlan] {
-  def apply(plan: T, state: LogicalPlanGenerator.State, stats: GraphStatistics, labelsWithIds: Map[String, Int]): Cardinality
+  def apply(plan: T, state: LogicalPlanGenerator.State, planContext: PlanContext, labelsWithIds: Map[String, Int]): Cardinality
 }
 
 object CardinalityCalculator {
@@ -76,7 +76,7 @@ object CardinalityCalculator {
     SAME_AS_LEFT
 
   implicit val allNodesScanCardinality: CardinalityCalculator[AllNodesScan] =
-    (_, state, stats, _) => state.leafCardinalityMultiplier * stats.nodesAllCardinality()
+    (_, state, planContext, _) => state.leafCardinalityMultiplier * planContext.statistics.nodesAllCardinality()
 
   implicit val undirectedRelationshipByIdSeek: CardinalityCalculator[UndirectedRelationshipByIdSeek] =
     (plan, state, _, _) => {
@@ -95,9 +95,9 @@ object CardinalityCalculator {
     }
 
   implicit val nodeByLabelScanCardinality: CardinalityCalculator[NodeByLabelScan] = {
-    (plan, state, stats, labelsWithIds) =>
+    (plan, state, planContext, labelsWithIds) =>
       val labelId = Some(LabelId(labelsWithIds(plan.label.name)))
-      state.leafCardinalityMultiplier * stats.nodesWithLabelCardinality(labelId)
+      state.leafCardinalityMultiplier * planContext.statistics.nodesWithLabelCardinality(labelId)
   }
 
   implicit val argumentCardinality: CardinalityCalculator[Argument] =
@@ -107,7 +107,7 @@ object CardinalityCalculator {
     SAME_AS_LEFT
 
   implicit val expandCardinality: CardinalityCalculator[Expand] = {
-    (plan, state, stats, _) =>
+    (plan, state, planContext, _) =>
       val Expand(source, from, dir, relTypes, to, relName, _) = plan
       val inboundCardinality = state.cardinalities.get(source.id)
       val qg = QueryGraph(
@@ -116,8 +116,8 @@ object CardinalityCalculator {
         argumentIds = state.arguments
       )
       val qgsi = QueryGraphSolverInput(labelInfo = state.labelInfo, state.relTypeInfo)
-      val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(stats, IndependenceCombiner)
-      val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable)
+      val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(planContext, IndependenceCombiner)
+      val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable, Set.empty)
       expandCardinality * inboundCardinality
   }
 

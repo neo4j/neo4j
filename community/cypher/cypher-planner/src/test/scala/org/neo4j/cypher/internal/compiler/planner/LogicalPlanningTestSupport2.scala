@@ -75,13 +75,13 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.OrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.ValueCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -197,10 +197,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) =>
           config.costModel(executionModel)((plan, input, semanticTable, cardinalities, providedOrders, monitor))
 
-      override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel =
-        config.cardinalityModel(queryGraphCardinalityModel, mock[ExpressionEvaluator])
+      override def newCardinalityEstimator(planContext: PlanContext,
+                                           queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                           evaluator: ExpressionEvaluator): CardinalityModel =
+        config.cardinalityModel(planContext, queryGraphCardinalityModel, mock[ExpressionEvaluator])
 
-      override def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = QueryGraphCardinalityModel.default(statistics)
+      override def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel = QueryGraphCardinalityModel.default(planContext)
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]
@@ -326,7 +328,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           debugOptions: CypherDebugOptions = CypherDebugOptions.default
                          ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], cypherConfig, config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], cypherConfig, config.executionModel)
       def context = ContextHelper.create(planContext = planContext,
         cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,
@@ -347,7 +349,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], cypherCompilerConfig, config.executionModel)
       val planningAttributes = PlanningAttributes.newAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(
@@ -370,7 +372,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig, config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], cypherCompilerConfig, config.executionModel)
       val planningAttributes = newStubbedPlanningAttributes
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
       val ctx = LogicalPlanningContext(

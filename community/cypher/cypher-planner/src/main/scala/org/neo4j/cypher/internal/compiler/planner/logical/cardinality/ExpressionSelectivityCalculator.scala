@@ -32,6 +32,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.getPropertyPredicateRangeSelectivity
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.getStringLength
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.indexSelectivityWithSizeHint
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
@@ -67,6 +71,8 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+
+import scala.language.postfixOps
 
 case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
 
@@ -119,7 +125,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsValueRangeSeekable(seekable) =>
       calculateSelectivityForValueRangeSeekable(seekable, labelInfo, relTypeInfo)
 
-    // WHERE has(x.prop)
+    // WHERE x.prop IS NOT NULL
     case AsPropertyScannable(scannable) =>
       calculateSelectivityForPropertyExistence(scannable.name, labelInfo, relTypeInfo, scannable.propertyKey)
 
@@ -206,26 +212,24 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                       relTypeInfo: RelTypeInfo,
                                                       propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
-    sizeHint.getOrElse(DEFAULT_LIST_CARDINALITY.amount.toInt) match {
-      case 0    => Selectivity.ZERO
-      case size =>
-        val labels = labelInfo.getOrElse(variable, Set.empty)
-        val relTypes = relTypeInfo.get(variable)
-        val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
+    indexSelectivityWithSizeHint(sizeHint, { size =>
+      val labels = labelInfo.getOrElse(variable, Set.empty)
+      val relTypes = relTypeInfo.get(variable)
+      val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
 
-          val descriptor: Option[IndexDescriptor] = (name, semanticTable.id(propertyKey)) match {
-            case (labelName: LabelName, Some(propKeyId))     => semanticTable.id(labelName).map(id => IndexDescriptor.forLabel(id, Seq(propKeyId)))
-            case (relTypeName: RelTypeName, Some(propKeyId)) => semanticTable.id(relTypeName).map(id => IndexDescriptor.forRelType(id, Seq(propKeyId)))
-            case _ => None
-          }
-
-          descriptor.flatMap(indexSelectivityForPropertyEquality(_, size))
+        val descriptor: Option[IndexDescriptor] = (name, semanticTable.id(propertyKey)) match {
+          case (labelName: LabelName, Some(propKeyId)) => semanticTable.id(labelName).map(id => IndexDescriptor.forLabel(id, Seq(propKeyId)))
+          case (relTypeName: RelTypeName, Some(propKeyId)) => semanticTable.id(relTypeName).map(id => IndexDescriptor.forRelType(id, Seq(propKeyId)))
+          case _ => None
         }
 
-        combiner.orTogetherSelectivities(indexSelectivities)
-                .orElse(defaultSelectivityForPropertyEquality(size))
-                .getOrElse(DEFAULT_PREDICATE_SELECTIVITY)
-    }
+        descriptor.flatMap(indexSelectivityForPropertyEquality(_, size))
+      }
+
+      combiner.orTogetherSelectivities(indexSelectivities)
+        .orElse(defaultSelectivityForPropertyEquality(size))
+        .getOrElse(DEFAULT_PREDICATE_SELECTIVITY)
+    })
   }
 
   private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int): Option[Selectivity] =
@@ -275,11 +279,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
             propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
             propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
           } yield {
-            val pNeq = propEqValueSelectivity.negate
-            val pNeqRange = pNeq.factor * DEFAULT_RANGE_SEEK_FACTOR / Math.min(seekable.expr.inequalities.size, 2)
-
-            val pRange = Selectivity(if (seekable.hasEquality) propEqValueSelectivity.factor + pNeqRange else pNeqRange)
-            val pRangeBounded = Selectivity(math.max(propEqValueSelectivity.factor, pRange.factor))
+            val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(seekable, propEqValueSelectivity)
             pRangeBounded * propertyExistsSelectivity
           }
 
@@ -305,10 +305,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                        propertyKey: PropertyKeyName,
                                                        maybeString: Option[String])
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
-    val stringLength = maybeString match {
-      case Some(n) => n.length
-      case None => DEFAULT_STRING_LENGTH
-    }
+    val stringLength = getStringLength(maybeString)
 
     def default = if (stringLength == 0) {
       // This is equal to exists && isString
@@ -320,15 +317,70 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     val indexPropertyExistsSelectivities = indexPropertyExistsSelectivitiesFor(variable, labelInfo, relTypeInfo, propertyKey)
     val indexSubstringSelectivities = indexPropertyExistsSelectivities.map { exists =>
-      if (stringLength == 0) {
-        // This is equal to exists && isString
-        exists * DEFAULT_TYPE_SELECTIVITY
-      } else {
-        // This is equal to range, but anti-proportional to the string length
-        val res = exists.factor * DEFAULT_RANGE_SEEK_FACTOR / stringLength
-        Selectivity(res)
-      }
+      exists * indexSelectivityForSubstringSargable(stringLength)
     }
     combiner.orTogetherSelectivities(indexSubstringSelectivities).getOrElse(default)
+  }
+}
+
+object ExpressionSelectivityCalculator {
+
+  /**
+   * The selectivity that a string starts with, contains or ends with a certain substring of length `stringLength`,
+   * given that the property IS NOT NULL.
+   */
+  def indexSelectivityForSubstringSargable(stringLength: Int): Selectivity = {
+    if (stringLength == 0) {
+      // selectivity is only that the property is of type string
+      DEFAULT_TYPE_SELECTIVITY
+    } else {
+      // This is equal to range, but anti-proportional to the string length
+      Selectivity(DEFAULT_RANGE_SEEK_FACTOR / stringLength)
+    }
+  }
+
+  /**
+   * The selectivity that a string starts with, contains or ends with a certain substring,
+   * given that the property IS NOT NULL.
+   */
+  def indexSelectivityForSubstringSargable(maybeString: Option[String]): Selectivity = {
+    indexSelectivityForSubstringSargable(getStringLength(maybeString))
+  }
+
+  /**
+   * The length of an optional string, or the default length.
+   */
+  def getStringLength(maybeString: Option[String]): Int = {
+    maybeString match {
+      case Some(n) => n.length
+      case None => DEFAULT_STRING_LENGTH
+    }
+  }
+
+  /**
+   * Estimates the seekable predicate's selectivity assuming existence of the predicate's property.
+   * @param seekable the predicate
+   * @param propEqValueSelectivity selectivity for equality on that property
+   */
+  def getPropertyPredicateRangeSelectivity(seekable: InequalityRangeSeekable,
+                                           propEqValueSelectivity: Selectivity): Selectivity = {
+    val pNeq = propEqValueSelectivity.negate
+    val pNeqRange = pNeq.factor * DEFAULT_RANGE_SEEK_FACTOR / Math.min(seekable.expr.inequalities.size, 2)
+
+    val pRange = Selectivity(if (seekable.hasEquality) propEqValueSelectivity.factor + pNeqRange else pNeqRange)
+    Selectivity(math.max(propEqValueSelectivity.factor, pRange.factor))
+  }
+
+  /**
+   * Calculate a selectivity of an index with an optional list size hint.
+   * @param sizeHint an optional hint for the size of the list
+   * @param selectivityCalculator calculate the selectivity given a size
+   */
+  def indexSelectivityWithSizeHint(sizeHint: Option[Int],
+                                   selectivityCalculator: Int => Selectivity): Selectivity = {
+    sizeHint.getOrElse(DEFAULT_LIST_CARDINALITY.amount.toInt) match {
+      case 0 => Selectivity.ZERO
+      case size => selectivityCalculator(size)
+    }
   }
 }

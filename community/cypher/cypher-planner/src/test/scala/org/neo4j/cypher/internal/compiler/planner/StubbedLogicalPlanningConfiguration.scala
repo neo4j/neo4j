@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -164,9 +166,12 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
       }
   }
 
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
+  override def cardinalityModel(planContext: PlanContext, queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
     new CardinalityModel {
-      override def apply(pq: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+      override def apply(pq: PlannerQueryPart,
+                         input: QueryGraphSolverInput,
+                         semanticTable: SemanticTable,
+                         aggregatingProperties: Set[PropertyAccess]): Cardinality = {
         val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
           case (name: String, cardinality: Cardinality) =>
             semanticTable.resolvedLabelNames(name) -> cardinality
@@ -178,12 +183,13 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
         }
 
         val r: PartialFunction[PlannerQueryPart, Cardinality] = labelScanCardinality.orElse(cardinality)
-        if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel, evaluator)(pq, input, semanticTable)
+        if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(planContext, queryGraphCardinalityModel, evaluator)(pq, input, semanticTable, aggregatingProperties)
       }
     }
   }
 
-  private def computeOptionCardinality(queryGraph: QueryGraph, semanticTable: SemanticTable,
+  private def computeOptionCardinality(queryGraph: QueryGraph,
+                                       semanticTable: SemanticTable,
                                        labelIdCardinality: Map[LabelId, Cardinality]) = {
     val labelMap: Map[String, Set[HasLabels]] = queryGraph.selections.labelPredicates
     val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)

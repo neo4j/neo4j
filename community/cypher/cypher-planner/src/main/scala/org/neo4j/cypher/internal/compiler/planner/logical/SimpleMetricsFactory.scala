@@ -24,14 +24,16 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 
 object SimpleMetricsFactory extends MetricsFactory {
   override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = CardinalityCostModel(executionModel)
 
-  override def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): StatisticsBackedCardinalityModel =
-    new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
+  override def newCardinalityEstimator(planContext: PlanContext,
+                                       queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                       expressionEvaluator: ExpressionEvaluator): StatisticsBackedCardinalityModel =
+    new StatisticsBackedCardinalityModel(planContext, queryGraphCardinalityModel, expressionEvaluator)
 
-  override def newQueryGraphCardinalityModel(statistics: GraphStatistics) =
-    QueryGraphCardinalityModel.default(statistics)
+  override def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel =
+    QueryGraphCardinalityModel.default(planContext)
 }

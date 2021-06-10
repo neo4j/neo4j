@@ -50,11 +50,19 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val D = N * Dsel // Nodes with label D
   val E = N * Esel // Nodes with label E
 
-  val Aprop = 0.5 // Selectivity of index on :A(prop)
-  val Bprop = 0.003 // Selectivity of index on :B(prop)
-  val Abar = 0.002 // Selectivity of index on :A(bar)
+  val Aprop = 0.5         // Unique selectivity of index on :A(prop)
+  val Bprop = 0.003       // Unique selectivity of index on :B(prop)
+  val Abar = 0.002        // Unique selectivity of index on :A(bar)
+  val CpropBarUnique = 0.01 // Unique selectivity of index on :C(prop, bar)
+  val CpropBarExists = 0.7 // Exists selectivity of index on :C(prop, bar)
+  val DfooBarBazUnique = 0.0006 // Unique selectivity of index on :D(foo, bar, baz)
+  val DfooBarBazExists = 0.2 // Exists selectivity of index on :D(foo, bar, baz)
+  val EsomeUnique = 0.3   // Unique selectivity of index on :E(some)
+  val EsomeExists = 0.5   // Exists selectivity of index on :E(some)
 
   val T1prop = 0.003 // Selectivity of index on :T1(prop)
+  val T2propFooExists = 0.2   // Exists selectivity of index on :T2(prop, foo)
+  val T2propFooUnique = 0.009 // Unique selectivity of index on :T2(prop, foo)
 
   // Multipliers for patterns
 
@@ -198,9 +206,16 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
       .setLabelCardinality("D", D)
       .setLabelCardinality("E", E)
       .setLabelCardinality("EMPTY", 0)
+
       .addNodeIndex("A", Seq("prop"), 1.0, Aprop)
       .addNodeIndex("B", Seq("prop"), 1.0, Bprop)
       .addNodeIndex("A", Seq("bar"), 1.0, Abar)
+      .addNodeIndex("C", Seq("prop", "bar"), CpropBarExists, CpropBarUnique)
+      .addNodeIndex("D", Seq("foo", "bar", "baz"), DfooBarBazExists, DfooBarBazUnique)
+      .addNodeIndex("E", Seq("some"), EsomeExists, EsomeUnique)
+
+      .addNodeExistenceConstraint("C", "bar")
+
       .setRelationshipCardinality("()-[:T1]->()", ANY_T1_ANY)
       .setRelationshipCardinality("()-[:T2]->()", ANY_T2_ANY)
       .setRelationshipCardinality("()-[]->(:A)", ANY_ANY_A)
@@ -290,4 +305,5 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
       .setRelationshipCardinality("(:E)-[:T2]->(:E)", E_T2_E)
 
       .addRelationshipIndex("T1", Seq("prop"), 1.0, T1prop)
+      .addRelationshipIndex("T2", Seq("prop", "foo"), T2propFooExists, T2propFooUnique)
 }

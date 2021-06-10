@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -49,7 +50,7 @@ import scala.collection.mutable
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
+  def cardinalityModel(planContext: PlanContext, queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def costModel(executionModel: ExecutionModel = executionModel): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Map[IndexDef, IndexType]
@@ -79,8 +80,8 @@ class IndexType(var isUnique: Boolean = false,
 
 class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
   override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
-    parent.cardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
+  override def cardinalityModel(planContext: PlanContext, queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
+    parent.cardinalityModel(planContext, queryGraphCardinalityModel, expressionEvaluator)
   override def costModel(executionModel: ExecutionModel = executionModel) = parent.costModel(executionModel)
   override def graphStatistics = parent.graphStatistics
   override def indexes = parent.indexes

@@ -20,50 +20,62 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel.CardinalityAndInput
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
-import org.neo4j.cypher.internal.util.Selectivity
 
-case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner) extends QueryGraphCardinalityModel {
+case class AssumeIndependenceQueryGraphCardinalityModel(planContext: PlanContext, combiner: SelectivityCombiner) extends QueryGraphCardinalityModel {
 
   private implicit val numericCardinality: NumericCardinality.type = NumericCardinality
   private implicit val numericMultiplier: NumericMultiplier.type = NumericMultiplier
 
-  override val expressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(stats, combiner)
-  private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(stats, combiner)
+  override val compositeExpressionSelectivityCalculator: CompositeExpressionSelectivityCalculator = CompositeExpressionSelectivityCalculator(planContext.statistics, combiner)
+  private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(planContext.statistics, combiner)
 
-  def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+  def apply(queryGraph: QueryGraph,
+            input: QueryGraphSolverInput,
+            semanticTable: SemanticTable,
+            aggregatingProperties: Set[PropertyAccess]): Cardinality = {
     val cardinalityAndInput = CardinalityAndInput(Cardinality.SINGLE, input)
     // Fold over query graph and optional query graphs, aggregating cardinality and label info using QueryGraphSolverInput
-    val afterOuter = visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable)
-    val afterOptionalMatches = visitOptionalMatchQueryGraphs(queryGraph.optionalMatches, afterOuter, semanticTable)
+    val afterOuter = visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable, aggregatingProperties)
+    val afterOptionalMatches = visitOptionalMatchQueryGraphs(queryGraph.optionalMatches, afterOuter, semanticTable, aggregatingProperties)
     afterOptionalMatches.cardinality
   }
 
-  private def visitQueryGraph(outer: QueryGraph, cardinalityAndInput: CardinalityAndInput, semanticTable: SemanticTable): CardinalityAndInput = {
-    cardinalityAndInput.copy(cardinality = cardinalityForQueryGraph(outer, cardinalityAndInput.input, semanticTable))
+  private def visitQueryGraph(outer: QueryGraph,
+                              cardinalityAndInput: CardinalityAndInput,
+                              semanticTable: SemanticTable,
+                              aggregatingProperties: Set[PropertyAccess]): CardinalityAndInput = {
+    cardinalityAndInput.copy(cardinality = cardinalityForQueryGraph(outer, cardinalityAndInput.input, semanticTable, aggregatingProperties))
   }
 
-  private def visitOptionalMatchQueryGraphs(optionals: Seq[QueryGraph], cardinalityAndInput: CardinalityAndInput, semanticTable: SemanticTable): CardinalityAndInput = {
+  private def visitOptionalMatchQueryGraphs(optionals: Seq[QueryGraph],
+                                            cardinalityAndInput: CardinalityAndInput,
+                                            semanticTable: SemanticTable,
+                                            aggregatingProperties: Set[PropertyAccess]): CardinalityAndInput = {
     optionals.foldLeft(cardinalityAndInput) { case (current, optional) =>
-      visitOptionalQueryGraph(optional, current, semanticTable)
+      visitOptionalQueryGraph(optional, current, semanticTable, aggregatingProperties)
     }
   }
 
-  private def visitOptionalQueryGraph(optional: QueryGraph, cardinalityAndInput: CardinalityAndInput, semanticTable: SemanticTable): CardinalityAndInput = {
+  private def visitOptionalQueryGraph(optional: QueryGraph,
+                                      cardinalityAndInput: CardinalityAndInput,
+                                      semanticTable: SemanticTable,
+                                      aggregatingProperties: Set[PropertyAccess]): CardinalityAndInput = {
     val inputWithKnownLabelInfo = cardinalityAndInput.input.withFusedLabelInfo(optional.selections.labelInfo)
-    val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(optional, inputWithKnownLabelInfo, semanticTable)
+    val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(optional, inputWithKnownLabelInfo, semanticTable, aggregatingProperties)
     // OPTIONAL MATCH can't decrease cardinality
     cardinalityAndInput.copy(
       cardinality = Cardinality.max(cardinalityAndInput.cardinality, optionalCardinality),
@@ -71,24 +83,28 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     )
   }
 
-  private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
-    val patternMultiplier = calculateMultiplier(qg, input.labelInfo, input.relTypeInfo, semanticTable)
+  private def cardinalityForQueryGraph(qg: QueryGraph,
+                                       input: QueryGraphSolverInput,
+                                       semanticTable: SemanticTable,
+                                       aggregatingProperties: Set[PropertyAccess]): Cardinality = {
+    val patternMultiplier = calculateMultiplier(qg, input.labelInfo, input.relTypeInfo, semanticTable, aggregatingProperties)
     val numberOfPatternNodes = qg.patternNodes.count { n =>
       !qg.argumentIds.contains(n) && !qg.patternRelationships.exists(r =>
         qg.argumentIds.contains(r.name) && Seq(r.left, r.right).contains(n)
       )
     }
 
-    val numberOfGraphNodes = stats.nodesAllCardinality()
+    val numberOfGraphNodes = planContext.statistics.nodesAllCardinality()
 
     (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
   }
 
-  private def calculateMultiplier(qg: QueryGraph, labels: LabelInfo, relTypes: RelTypeInfo, semanticTable: SemanticTable): Multiplier = {
-    val expressions = qg.selections.flatPredicates
-    val expressionSelectivities = expressions.map(expressionSelectivityCalculator(_, labels, relTypes)(semanticTable))
-    val expressionSelectivity = combiner.andTogetherSelectivities(expressionSelectivities)
-                                        .getOrElse(Selectivity.ONE)
+  private def calculateMultiplier(qg: QueryGraph,
+                                  labels: LabelInfo,
+                                  relTypes: RelTypeInfo,
+                                  semanticTable: SemanticTable,
+                                  aggregatingProperties: Set[PropertyAccess]): Multiplier = {
+    val expressionSelectivity = compositeExpressionSelectivityCalculator(qg.selections, labels, relTypes, semanticTable, planContext, aggregatingProperties)
 
     val patternRelationships = qg.patternRelationships.toIndexedSeq
     val patternMultipliers = patternRelationships.map(r =>

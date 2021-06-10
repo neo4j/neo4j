@@ -47,6 +47,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
 
+  private val planContext = notImplementedPlanContext(hardcodedStatistics)
+
   private val aNode = "a"
   private val bNode = "b"
   private val r1Name = "r1"
@@ -72,7 +74,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -104,7 +106,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
@@ -140,7 +142,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
-      metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
+      metrics = factory.newMetrics(planContext, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))

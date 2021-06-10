@@ -26,11 +26,15 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.TestName
+
+import scala.math.cbrt
+import scala.math.sqrt
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData with TestName {
 
@@ -78,6 +82,18 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * Aprop)
   }
 
+  test("MATCH (e:E) WHERE e.some = 42") {
+    expectCardinality(E * EsomeExists * EsomeUnique)
+  }
+
+  test("MATCH (e:E) WHERE e.some IS NOT NULL") {
+    expectCardinality(E * EsomeExists)
+  }
+
+  test("MATCH (e:E) WHERE e.some = 42 or e.some = 23") {
+    expectCardinality(E * EsomeExists * or(EsomeUnique, EsomeUnique))
+  }
+
   test("MATCH (a:A) WHERE a.prop STARTS WITH 'p'") {
     expectCardinality(A * DEFAULT_RANGE_SEEK_FACTOR)
   }
@@ -112,6 +128,64 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
 
   test("MATCH (a:B) WHERE a.prop = 42 AND a.bar = 43") {
     expectCardinality(B * Bprop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+  }
+
+  test("MATCH (c:C) WHERE c.prop = 42 AND c.bar = 43") {
+    expectCardinality(C * CpropBarExists * CpropBarUnique)
+  }
+
+  test("MATCH (c:C) WHERE c.prop = 42 AND c.bar IS NOT NULL") {
+    expectCardinality(C * CpropBarExists * sqrt(CpropBarUnique))
+  }
+
+  test("MATCH (c:C) WHERE c.prop IS NOT NULL AND c.bar = 42") {
+    expectCardinality(C * CpropBarExists * sqrt(CpropBarUnique))
+  }
+
+  test("MATCH (c:C) WHERE c.prop = 42 AND c.bar STARTS WITH 'p'") {
+    expectCardinality(C * CpropBarExists * sqrt(CpropBarUnique) * DEFAULT_RANGE_SEEK_FACTOR)
+  }
+
+  test("MATCH (c:C) WHERE c.prop STARTS WITH 'q' AND c.bar STARTS WITH 'p'") {
+    expectCardinality(C * CpropBarExists * DEFAULT_RANGE_SEEK_FACTOR * DEFAULT_RANGE_SEEK_FACTOR)
+  }
+
+  test("MATCH (c:C) WITH *, 1 AS horizon MATCH (c) WHERE c.prop = 2 AND c.bar = 42") {
+    expectCardinality(C * CpropBarExists * CpropBarUnique)
+  }
+
+  test("MATCH (c:C) OPTIONAL MATCH (c) WHERE c.prop = 17 AND c.bar = 42") {
+    expectCardinality(Math.max(C, C * CpropBarExists * CpropBarUnique))
+  }
+
+  test("MATCH (c:C) OPTIONAL MATCH (c), (n) WHERE c.prop = 17 AND c.bar = 42") {
+    expectCardinality(C * N * CpropBarExists * CpropBarUnique)
+  }
+
+  test("MATCH (c:C) WITH * CALL { WITH c MATCH (c) WHERE c.prop = 17 AND c.bar = 42 RETURN 42 as ft }") {
+    expectCardinality(C * CpropBarExists * CpropBarUnique)
+  }
+
+  test("MATCH (c:C) WITH *, 1 AS horizon MATCH (n) WHERE c.prop = 42 AND c.bar IS NOT NULL") {
+    expectCardinality(C * N * CpropBarExists * sqrt(CpropBarUnique))
+  }
+
+  test("MATCH (c:C) WITH *, 1 AS horizon WHERE c.prop = 42 AND c.bar IS NOT NULL") {
+    expectCardinality(C * CpropBarExists * sqrt(CpropBarUnique))
+  }
+
+  test("MATCH (d:D) WHERE d.foo = 0 AND d.bar = 1 WITH max(d.baz) AS maxBaz") {
+    expectPlanCardinality({
+      case _:NodeIndexSeek => true
+    }, D * DfooBarBazExists * cbrt(DfooBarBazUnique) * cbrt(DfooBarBazUnique))
+  }
+
+  test("MATCH (c:C) WHERE c.prop = 0") {
+    expectCardinality(C * CpropBarExists * sqrt(CpropBarUnique))
+  }
+
+  test("MATCH (c:C) WHERE c.prop IN [0, 1]") {
+    expectCardinality(C * CpropBarExists * or(sqrt(CpropBarUnique), sqrt(CpropBarUnique)))
   }
 
   test("MATCH (a)-->(b)") {
@@ -343,6 +417,34 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(ANY_T1_ANY * T1prop)
   }
 
+  test("MATCH ()-[t: T2]-() WHERE t.prop = 2 AND t.foo = 42") {
+    expectCardinality(ANY_T2_ANY * 2 * T2propFooExists * T2propFooUnique)
+  }
+
+  test("MATCH ()-[t: T2]-() WHERE t.prop = 2 AND t.foo IS NOT NULL") {
+    expectCardinality(ANY_T2_ANY * 2 * T2propFooExists * sqrt(T2propFooUnique))
+  }
+
+  test("MATCH ()-[t: T2]->() WHERE t.prop = 2 AND t.foo = 42") {
+    expectCardinality(ANY_T2_ANY * T2propFooExists * T2propFooUnique)
+  }
+
+  test("MATCH ()-[t: T2]->() WITH *, 1 AS horizon MATCH ()-[t]->() WHERE t.prop = 2 AND t.foo = 42") {
+    expectCardinality(ANY_T2_ANY * T2propFooExists * T2propFooUnique)
+  }
+
+  test("MATCH ()-[t:T2]->() OPTIONAL MATCH ()-[t]->() WHERE t.prop = 17 AND t.foo = 42") {
+    expectCardinality(Math.max(ANY_T2_ANY, ANY_T2_ANY * T2propFooExists * T2propFooUnique))
+  }
+
+  test("MATCH ()-[t:T2]->() OPTIONAL MATCH ()-[t]->(), (n) WHERE t.prop = 17 AND t.foo = 42") {
+    expectCardinality(ANY_T2_ANY * N * T2propFooExists * T2propFooUnique)
+  }
+
+  test("MATCH ()-[t: T2]->() WITH * CALL { WITH t MATCH ()-[t]->() WHERE t.prop = 17 AND t.foo = 42 RETURN 42 as ft }") {
+    expectCardinality(ANY_T2_ANY * T2propFooExists * T2propFooUnique)
+  }
+
   test("MATCH (a) WITH a, 1 AS foo WHERE a:A AND a.prop = 2") {
     // Use index for a.prop = 2
     expectCardinality(A * Aprop)
@@ -351,6 +453,11 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   test("MATCH (a) WITH a, 1 AS foo WHERE a:A MATCH (a) WHERE a.prop = 2") {
     // Propagate label info and use index for a.prop = 2
     expectCardinality(A * Aprop)
+  }
+
+  test("MATCH (a) WITH a, 1 AS foo WHERE a:A MATCH (n) WHERE a.prop = 2") {
+    // Propagate label info and use index for a.prop = 2
+    expectCardinality(A * Aprop * N)
   }
 
   test("MATCH (a:A) WITH 1 AS foo MATCH (a) WHERE a.prop = 2") {
@@ -364,7 +471,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
   }
 
   test("MATCH (a) OPTIONAL MATCH (a)-[:T1]->(:B)") {
-    expectCardinality((A_T1_B + B_T1_B))
+    expectCardinality(A_T1_B + B_T1_B)
   }
 
   test("MATCH (a:A) OPTIONAL MATCH (a)-[:T1]->(:B)") {

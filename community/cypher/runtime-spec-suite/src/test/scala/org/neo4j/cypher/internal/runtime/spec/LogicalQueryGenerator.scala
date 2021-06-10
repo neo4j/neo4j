@@ -27,10 +27,12 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Default
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -48,13 +50,14 @@ object LogicalQueryGenerator {
     val leveragedOrders = new LeveragedOrders
 
     val tokenRead = txContext.kernelTransaction().tokenRead()
-    val stats = TransactionBoundGraphStatistics(txContext, NullLog.getInstance())
+    val log = NullLog.getInstance()
+    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(txContext), devNullLogger, log)
 
     val labelMap = tokenRead.labelsGetAllTokens().asScala.map(l => l.name() -> l.id()).toMap
     val relMap = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(r => r.name() -> r.id()).toMap
 
     for {
-      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relMap, stats, costLimit, nodes, rels).logicalPlan
+      WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relMap, planContext, costLimit, nodes, rels).logicalPlan
     } yield {
 
       val effectiveCardinalities = new EffectiveCardinalities

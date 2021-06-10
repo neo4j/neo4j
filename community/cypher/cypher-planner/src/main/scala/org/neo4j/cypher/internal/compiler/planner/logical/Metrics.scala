@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
@@ -40,7 +41,7 @@ import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -103,14 +104,32 @@ object Metrics {
      * This metric estimates how many rows of data a query produces
      * (e.g. by asking the database for statistics)
      *
+     * @param query                 the query to estimate cardinality
+     * @param aggregatingProperties A set of all properties over which aggregation is performed,
+     *                              where we potentially could use an IndexScan.
+     *                              E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
      * @return the cardinality of the query
      */
-    def apply(queryPart: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
+    def apply(queryPart: PlannerQueryPart,
+              input: QueryGraphSolverInput,
+              semanticTable: SemanticTable,
+              aggregatingProperties: Set[PropertyAccess]): Cardinality
   }
 
   trait QueryGraphCardinalityModel {
-    def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
-    def expressionSelectivityCalculator: ExpressionSelectivityCalculator
+    /**
+     *
+     * @param queryGraph            the query graph to estimate cardinality
+     * @param aggregatingProperties A set of all properties over which aggregation is performed,
+     *                              where we potentially could use an IndexScan.
+     *                              E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(PropertyAccess("n", "prop1"), PropertyAccess("m", "prop2"))
+     * @return the cardinality of the query graph
+     */
+    def apply(queryGraph: QueryGraph,
+              input: QueryGraphSolverInput,
+              semanticTable: SemanticTable,
+              aggregatingProperties: Set[PropertyAccess]): Cardinality
+    def compositeExpressionSelectivityCalculator: CompositeExpressionSelectivityCalculator
   }
 
   /**
@@ -159,13 +178,13 @@ case class Metrics(cost: CostModel,
                    queryGraphCardinalityModel: QueryGraphCardinalityModel)
 
 trait MetricsFactory {
-  def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
+  def newCardinalityEstimator(planContext: PlanContext, queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
+  def newQueryGraphCardinalityModel(planContext: PlanContext): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics, expressionEvaluator: ExpressionEvaluator, config: CypherPlannerConfiguration, executionModel: ExecutionModel): Metrics = {
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
-    val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
+  def newMetrics(planContext: PlanContext, expressionEvaluator: ExpressionEvaluator, config: CypherPlannerConfiguration, executionModel: ExecutionModel): Metrics = {
+    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext)
+    val cardinality = newCardinalityEstimator(planContext, queryGraphCardinalityModel, expressionEvaluator)
     Metrics(newCostModel(config, executionModel), cardinality, queryGraphCardinalityModel)
   }
 }

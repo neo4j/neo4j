@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -1107,8 +1108,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solvedSkip = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(skipExpr))))
     val solvedSkipAndLimit = solvedSkip.updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(limitExpr))))
 
-    val skipCardinality = cardinalityModel(solvedSkip, context.input, context.semanticTable)
-    val limitCardinality = cardinalityModel(solvedSkipAndLimit, context.input, context.semanticTable)
+    val skipCardinality = cardinalityModel(solvedSkip, context.input, context.semanticTable, context.aggregatingProperties)
+    val limitCardinality = cardinalityModel(solvedSkipAndLimit, context.input, context.semanticTable, context.aggregatingProperties)
     val innerCardinality = cardinalities.get(inner.id)
     val skippedRows = innerCardinality - skipCardinality
 
@@ -1312,7 +1313,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         that.withQueryGraph(solvedQueryGraph.withHints(newHints))
       }
     }
-    val cardinality = context.cardinality.apply(solved, context.input, context.semanticTable)
+    val cardinality = context.cardinality.apply(solved, context.input, context.semanticTable, context.aggregatingProperties)
     // Change solved and cardinality
     val keptAttributes = Attributes(idGen, providedOrders, leveragedOrders)
     val newPlan = orPlan.copyPlanWithIdGen(keptAttributes.copy(orPlan.id))
@@ -1594,7 +1595,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   private def annotate[T <: LogicalPlan](plan: T, solved: PlannerQueryPart, providedOrder: ProvidedOrder, context: LogicalPlanningContext): T = {
     assertNoBadExpressionsExists(plan)
     assertRhsDoesNotInvalidateLhsOrder(plan, providedOrder)
-    val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
+    val cardinality = cardinalityModel(solved, context.input, context.semanticTable, context.aggregatingProperties)
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
     providedOrders.set(plan.id, providedOrder)
@@ -1722,7 +1723,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   private def sortPredicatesBySelectivity(source: LogicalPlan,
                                           predicates: Seq[Expression],
                                           context: LogicalPlanningContext): Seq[Expression] =
-    LogicalPlanProducer.sortPredicatesBySelectivity(source, predicates, context.input, context.semanticTable, solveds, cardinalities, cardinalityModel)
+    LogicalPlanProducer.sortPredicatesBySelectivity(
+      source,
+      predicates,
+      context.input,
+      context.semanticTable,
+      context.aggregatingProperties,
+      solveds,
+      cardinalities,
+      cardinalityModel,
+    )
 
 }
 
@@ -1732,6 +1742,7 @@ object LogicalPlanProducer {
                                   predicates: Seq[Expression],
                                   queryGraphSolverInput: QueryGraphSolverInput,
                                   semanticTable: SemanticTable,
+                                  aggregatingProperties: Set[PropertyAccess],
                                   solveds: Solveds,
                                   cardinalities: Cardinalities,
                                   cardinalityModel: CardinalityModel): Seq[Expression] = {
@@ -1751,7 +1762,7 @@ object LogicalPlanProducer {
       def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {
         val costPerRow = CardinalityCostModel.costPerRowFor(predicate, semanticTable)
         val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-        val cardinality = cardinalityModel(solved, queryGraphSolverInput, semanticTable)
+        val cardinality = cardinalityModel(solved, queryGraphSolverInput, semanticTable, aggregatingProperties)
         val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
         (costPerRow, selectivity)
       }

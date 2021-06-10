@@ -20,23 +20,30 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.util.EffectiveCardinality
+import org.neo4j.cypher.internal.util.Selectivity
 import org.scalactic.Equality
 import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
 import org.scalactic.TripleEquals.convertToEqualizer
 
 object CardinalitySupport {
 
-
-  implicit object Eq extends Equality[EffectiveCardinality] {
+  implicit object EffectiveCardinalityEquality extends Equality[EffectiveCardinality] {
     def areEqual(a: EffectiveCardinality, b: Any): Boolean = b match {
-      case b: EffectiveCardinality => a.amount === (b.amount +- tolerance(a))
+      case b: EffectiveCardinality => a.amount === (b.amount +- tolerance(a.amount))
       case _ => false
     }
-
-    /**
-     * .00000001% off is acceptable
-     * We have to be that strict because otherwise some of the var-expand tests would succeed without considering all path lengths.
-     */
-    private def tolerance(a: EffectiveCardinality) = Math.max(1e-10, a.amount * 1e-10)
   }
+
+  implicit object SelectivityEquality extends Equality[Selectivity] {
+    def areEqual(a: Selectivity, b: Any): Boolean = b match {
+      case b: Selectivity => a.factor === (b.factor +- tolerance(a.factor))
+      case _ => false
+    }
+  }
+
+  /**
+   * .00000001% off is acceptable
+   * We have to be that strict because otherwise some of the var-expand tests would succeed without considering all path lengths.
+   */
+  private def tolerance(a: Double) = Math.max(1e-10, a * 1e-10)
 }

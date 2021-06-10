@@ -68,8 +68,8 @@ trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSup
     val actualCardinality = planState.planningAttributes.effectiveCardinalities.get(planId)
 
     // used to handle double rounding errors in assertion
-    import org.neo4j.cypher.internal.compiler.planner.logical.CardinalitySupport.Eq
-    actualCardinality should equal(EffectiveCardinality(expectedCardinality))(Eq)
+    import org.neo4j.cypher.internal.compiler.planner.logical.CardinalitySupport.EffectiveCardinalityEquality
+    actualCardinality should equal(EffectiveCardinality(expectedCardinality))(EffectiveCardinalityEquality)
   }
 
   def queryShouldHaveCardinality(query: String, expectedCardinality: Double): Unit = {

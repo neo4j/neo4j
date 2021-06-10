@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import java.math
-
 import org.neo4j.cypher.internal.util.Selectivity
+
+import java.math
 
 trait SelectivityCombiner {
 
-  def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity]
+  def andTogetherSelectivities(selectivities: Iterable[Selectivity]): Option[Selectivity]
 
   // A ∪ B = ¬ ( ¬ A ∩ ¬ B )
-  def orTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity]
+  def orTogetherSelectivities(selectivities: Iterable[Selectivity]): Option[Selectivity]
 }
 
 case object IndependenceCombiner extends SelectivityCombiner {
 
-  override def andTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] =
+  override def andTogetherSelectivities(selectivities: Iterable[Selectivity]): Option[Selectivity] =
     selectivities.reduceOption(_ * _)
 
   /**
@@ -51,7 +51,7 @@ case object IndependenceCombiner extends SelectivityCombiner {
    * r[i] = r[i-1] + s[i].factor - r[i-1] * s[i].factor
    * We then implement this formula with reduce.
    */
-  override def orTogetherSelectivities(selectivities: Seq[Selectivity]): Option[Selectivity] = {
+  override def orTogetherSelectivities(selectivities: Iterable[Selectivity]): Option[Selectivity] = {
     selectivities.map(_.factor).reduceLeftOption((result, value) => result + value - result * value).flatMap(Selectivity.of)
   }
 }

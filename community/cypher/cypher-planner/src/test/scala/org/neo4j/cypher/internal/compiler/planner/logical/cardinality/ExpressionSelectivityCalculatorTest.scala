@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
@@ -34,13 +32,17 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculatorTest.IndexDescriptorHelper
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
 import org.neo4j.cypher.internal.expressions.PartialPredicate
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.functions.Distance
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
@@ -48,6 +50,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL_CARDINALITY
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.ListSizeBucket
 import org.neo4j.cypher.internal.util.NameId
@@ -56,6 +59,7 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -63,31 +67,31 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   // NODES
 
-  private val indexPerson = IndexDescriptor.forLabel(LabelId(0), Seq(PropertyKeyId(0)))
-  private val indexAnimal = IndexDescriptor.forLabel(LabelId(1), Seq(PropertyKeyId(0)))
+  protected val indexPerson: IndexDescriptor = IndexDescriptor.forLabel(LabelId(0), Seq(PropertyKeyId(0)))
+  protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(LabelId(1), Seq(PropertyKeyId(0)))
 
-  private val nProp = prop("n", "nodeProp")
+  protected val nProp: Property = prop("n", "nodeProp")
 
-  private val nIsPerson = nPredicate(HasLabels(varFor("n"), Seq(labelName("Person"))) _)
-  private val nIsAnimal = nPredicate(HasLabels(varFor("n"), Seq(labelName("Animal"))) _)
+  protected val nIsPerson: Predicate = nPredicate(HasLabels(varFor("n"), Seq(labelName("Person"))) _)
+  protected val nIsAnimal: Predicate = nPredicate(HasLabels(varFor("n"), Seq(labelName("Animal"))) _)
 
-  private val nIsPersonLabelInfo = Map("n" -> Set(labelName("Person")))
-  private val nIsPersonAndAnimalLabelInfo = Map("n" -> Set(labelName("Person"), labelName("Animal")))
+  protected val nIsPersonLabelInfo: Map[String, Set[LabelName]] = Map("n" -> Set(labelName("Person")))
+  protected val nIsPersonAndAnimalLabelInfo: Map[String, Set[LabelName]] = Map("n" -> Set(labelName("Person"), labelName("Animal")))
 
-  private val personPropIsNotNullSel = 0.2
-  private val indexPersonUniqueSel = 1.0 / 180.0
-  private val animalPropIsNotNullSel = 0.5
+  protected val personPropIsNotNullSel: Double = 0.2
+  protected val indexPersonUniqueSel: Double= 1.0 / 180.0
+  protected val animalPropIsNotNullSel: Double = 0.5
 
   // RELATIONSHIPS
 
-  private val indexFriends = IndexDescriptor.forRelType(RelTypeId(0), Seq(PropertyKeyId(0)))
+  protected val indexFriends: IndexDescriptor = IndexDescriptor.forRelType(RelTypeId(0), Seq(PropertyKeyId(0)))
 
-  private val rProp = prop("r", "relProp")
+  protected val rProp: Property = prop("r", "relProp")
 
-  private val rFriendsRelTypeInfo = Map("r" -> relTypeName("Friends"))
+  protected val rFriendsRelTypeInfo: Map[String, RelTypeName] = Map("r" -> relTypeName("Friends"))
 
-  private val friendsPropIsNotNullSel = 0.2
-  private val indexFriendsUniqueSel = 1.0 / 180.0
+  protected val friendsPropIsNotNullSel: Double = 0.2
+  protected val indexFriendsUniqueSel: Double = 1.0 / 180.0
 
   // RANGE SEEK
 
@@ -1168,8 +1172,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   // HELPER METHODS
 
-  private def setUpCalculator(labelInfo: LabelInfo = Map.empty, relTypeInfo: RelTypeInfo = Map.empty, stats: GraphStatistics = mockStats()): Expression => Selectivity = {
-    implicit val semanticTable: SemanticTable = SemanticTable()
+  protected def setupSemanticTable(): SemanticTable = {
+    val semanticTable: SemanticTable = SemanticTable()
     semanticTable.resolvedLabelNames.put("Person", indexPerson.label)
     semanticTable.resolvedLabelNames.put("Animal", indexAnimal.label)
     semanticTable.resolvedPropertyKeyNames.put("nodeProp", indexPerson.property)
@@ -1178,6 +1182,15 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     semanticTable.resolvedRelTypeNames.put("Friends", indexFriends.relType)
     semanticTable.resolvedPropertyKeyNames.put("relProp", indexFriends.property)
 
+    semanticTable
+      .addTypeInfo(literalInt(3), CTInteger)
+      .addTypeInfo(literalInt(4), CTInteger)
+      .addTypeInfo(literalInt(7), CTInteger)
+  }
+
+  protected def setUpCalculator(labelInfo: LabelInfo = Map.empty, relTypeInfo: RelTypeInfo = Map.empty, stats: GraphStatistics = mockStats()): Expression => Selectivity = {
+    implicit val semanticTable: SemanticTable = setupSemanticTable()
+
     val combiner = IndependenceCombiner
     val calculator = ExpressionSelectivityCalculator(stats, combiner)
     exp: Expression => calculator(exp, labelInfo, relTypeInfo)
@@ -1185,16 +1198,17 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   /**
    * @param allNodesCardinality      total number of nodes
-   * @param labelOrRelCardinalities       for each label, the number of nodes that have that label
+   * @param labelOrRelCardinalities  for each label, the number of nodes that have that label
    * @param indexCardinalities       for each index, the number of values in that index
    * @param indexUniqueCardinalities for each index, the number of unique values in that index
    */
-  private def mockStats(allNodesCardinality: Double = 10000.0,
-                        allRelCardinality: Double = 10000.0,
-                        labelOrRelCardinalities: Map[NameId, Double] = Map(indexPerson.label -> 1000.0, indexFriends.relType -> 1000.0),
-                        indexCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 200.0, indexFriends -> 200.0),
-                        indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 180.0, indexFriends -> 180.0)
-                       ): GraphStatistics = {
+  protected case class mockStats(
+                                  allNodesCardinality: Double = 10000.0,
+                                  allRelCardinality: Double = 10000.0,
+                                  labelOrRelCardinalities: Map[NameId, Double] = Map(indexPerson.label -> 1000.0, indexFriends.relType -> 1000.0),
+                                  indexCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 200.0, indexFriends -> 200.0),
+                                  indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 180.0, indexFriends -> 180.0)
+                                ) extends GraphStatistics {
 
     // sanity check:
     for {
@@ -1214,34 +1228,27 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
       }
     }
 
-    val stats = mock[GraphStatistics]
-    when(stats.nodesAllCardinality()).thenReturn(allNodesCardinality)
-    when(stats.patternStepCardinality(None, None, None)).thenReturn(allRelCardinality)
-    labelOrRelCardinalities.foreach {
-      case (label: LabelId, number) => when(stats.nodesWithLabelCardinality(Some(label))).thenReturn(number)
-      case (relType: RelTypeId, number) => when(stats.patternStepCardinality(None, Some(relType), None)).thenReturn(number)
+    override def nodesAllCardinality(): Cardinality = allNodesCardinality
+
+    override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = (fromLabel, relTypeId, toLabel) match {
+      case (None, None, None) => allRelCardinality
+      case (None, relTypeId: Option[RelTypeId], None) => labelOrRelCardinalities(relTypeId.get)
     }
 
-    when(stats.indexPropertyIsNotNullSelectivity(any())).thenAnswer(new Answer[Option[Selectivity]] {
-      override def answer(invocationOnMock: InvocationOnMock): Option[Selectivity] = {
-        val theIndex = invocationOnMock.getArgument[IndexDescriptor](0)
-        for {
-          indexCardinality <- indexCardinalities.get(theIndex)
-          labelOrRelCardinality <- labelOrRelCardinalities.get(theIndex.id)
-        } yield Selectivity(indexCardinality / labelOrRelCardinality)
-      }
-    })
+    override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelOrRelCardinalities(labelId.get)
 
-    when(stats.uniqueValueSelectivity(any())).thenAnswer(new Answer[Option[Selectivity]] {
-      override def answer(invocationOnMock: InvocationOnMock): Option[Selectivity] = {
-        val theIndex = invocationOnMock.getArgument[IndexDescriptor](0)
-        for {
-          indexUniqueCardinality <- indexUniqueCardinalities.get(theIndex)
-        } yield Selectivity(1 / indexUniqueCardinality)
-      }
-    })
+    override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+      for {
+        indexCardinality <- indexCardinalities.get(index)
+        labelOrRelCardinality <- labelOrRelCardinalities.get(index.id)
+      } yield Selectivity(indexCardinality / labelOrRelCardinality)
+    }
 
-    stats
+    override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+      for {
+        indexUniqueCardinality <- indexUniqueCardinalities.get(index)
+      } yield Selectivity(1 / indexUniqueCardinality)
+    }
   }
 
   private def nPredicate(expr: Expression) = Predicate(Set("n"), expr)
@@ -1249,8 +1256,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   private def nAnded(exprs: NonEmptyList[InequalityExpression]) = AndedPropertyInequalities(varFor("n"), nProp, exprs)
   private def rAnded(exprs: NonEmptyList[InequalityExpression]) = AndedPropertyInequalities(varFor("r"), rProp, exprs)
+}
 
-  implicit private class IndexDescriptorHelper(index: IndexDescriptor) {
+object ExpressionSelectivityCalculatorTest {
+
+  implicit class IndexDescriptorHelper(index: IndexDescriptor) {
     def label: LabelId = index.entityType match {
       case IndexDescriptor.EntityType.Node(label) => label
       case IndexDescriptor.EntityType.Relationship(_) => throw new IllegalStateException("Should not have been called in this test.")
