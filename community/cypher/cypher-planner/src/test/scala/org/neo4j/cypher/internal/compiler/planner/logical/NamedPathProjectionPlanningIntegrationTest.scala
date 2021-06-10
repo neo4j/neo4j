@@ -19,67 +19,74 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
-import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+
+  private def plannerConfig(): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("X", 50)
+      .setRelationshipCardinality("(:X)-[]->()", 100)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+  // p = (a:X)-[r]->(b)
+  private val pathExpr: PathExpression =
+    PathExpression(
+      NodePathStep(varFor("a"),
+        SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")),
+          NilPathStep))
+    )(pos)
 
   test("should build plans containing outgoing path projections") {
-    planFor("MATCH p = (a:X)-[r]->(b) RETURN p")._2 should equal(
-      Projection(
-        Expand( NodeByLabelScan("a",  labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-        projectExpressions = Map(
-          "p" -> PathExpression(NodePathStep(varFor("a"),SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep)))_
-        )
-      )
-    )
+    val cfg = plannerConfig()
+    val plan = cfg.plan("MATCH p = (a:X)-[r]->(b) RETURN p").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection(Map("p" -> pathExpr))
+      .expandAll("(a)-[r]->(b)")
+      .nodeByLabelScan("a", "X")
+      .build()
   }
 
   test("should build plans containing path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(varFor("a"),SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep)))_
-
-    val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b")._2
-
-    result should equal(
-      Selection(
-        ands(equals(
-          function("head", function("nodes", pathExpr)),
+    val cfg = plannerConfig()
+    val plan = cfg.plan("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filterExpression(
+        equals(
+          function("head",
+            function("nodes", pathExpr)),
           varFor("a")
-        )),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
-      )
-    )
+      ))
+      .expandAll("(a)-[r]->(b)")
+      .nodeByLabelScan("a", "X")
+      .build()
   }
 
   test("should build plans containing multiple path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(varFor("a"),SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep)))_
-
-    val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b")._2
-
-    result should equal(
-      Selection(
-        ands(
-          equals(
-            function("head", function("nodes", pathExpr)),
-            varFor("a")
-          ),
-          greaterThan(
-            function("length", pathExpr),
-            literalInt(10)
-          )
-        ),
-        Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+    val cfg = plannerConfig()
+    val plan = cfg.plan("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .filterExpression(
+        equals(
+          function("head", function("nodes", pathExpr)),
+          varFor("a")),
+        greaterThan(
+          function("length", pathExpr),
+          literalInt(10))
       )
-    )
+      .expandAll("(a)-[r]->(b)")
+      .nodeByLabelScan("a", "X", IndexOrderNone)
+      .build()
   }
 }

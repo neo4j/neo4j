@@ -19,24 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
   test("should use GetDegree to compute the degree of a node") {
-    val result = (new given {
-    } getLogicalPlanFor  "MATCH (n) RETURN size((n)-->()) AS deg")._2
-
-    result should equal(
-      Projection(
-        AllNodesScan("n", Set.empty),
-        Map("deg" -> GetDegree(varFor("n"), None, OUTGOING)_)
-      )
-    )
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) RETURN size((n)-->()) AS deg").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection(Map("deg" -> getDegree(varFor("n"), OUTGOING)))
+      .allNodeScan("n")
+      .build()
   }
 }

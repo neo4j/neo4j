@@ -19,21 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
+  
+  private def planFor(query: String): LogicalPlan = {
+    plannerBuilder().setAllNodesCardinality(1000).build().plan(query)
+  }
 
   // Uncorrelated subqueries
 
   test("CALL around single query") {
     val query = "CALL { RETURN 1 as x } RETURN 2 as y"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
         .projection("2 AS y")
@@ -45,7 +51,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("CALL around single query - using returned var in outer query") {
     val query = "CALL { RETURN 1 as x } RETURN x"
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
         .projection("1 AS x")
@@ -56,7 +62,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("CALLs in sequence") {
     val query = "CALL { RETURN 1 AS x } CALL { RETURN 2 AS y } RETURN x, y"
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x", "y")
         .cartesianProduct(fromSubquery = true)
@@ -70,7 +76,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("Simple nested subqueries") {
     val query = "CALL { CALL { CALL { RETURN 1 as x } RETURN x } RETURN x } RETURN x"
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
         .projection("1 AS x")
@@ -91,7 +97,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |  MATCH (c) RETURN a, b, c
         |}
         |RETURN a, b, c""".stripMargin
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("a", "b", "c")
         .apply()
@@ -106,7 +112,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("CALL around union query") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } RETURN 3 as y"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
         .projection("3 AS y")
@@ -125,7 +131,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("CALL around union query - using returned var in outer query") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } RETURN x"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
         .distinct("x AS x")
@@ -143,7 +149,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("CALL around union query - using returned var in outer query with MATCH afterwards") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } MATCH (y) WHERE y.prop = x RETURN y"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
         .filter("y.prop = x")
@@ -164,7 +170,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("CALL around union query - using returned var in outer query with STUFF afterwards") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } MATCH (y) WHERE y.prop = x RETURN sum(y.number) AS sum"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("sum")
         .aggregation(Seq.empty, Seq("sum(y.number) AS sum"))
@@ -185,7 +191,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("This should solve the WHERE clause") {
     val query = "WITH 1 AS x CALL { MATCH (y) WHERE y.prop = 5 RETURN y } RETURN x + 1 AS res, y"
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("res", "y")
         .projection("x + 1 AS res")
@@ -200,7 +206,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("This should solve the aggregation on the RHS of the CartesianProduct") {
     val query = "WITH 1 AS x CALL { MATCH (y) RETURN sum(y.prop) AS sum } RETURN x + 1 AS res, sum"
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("res", "sum")
         .projection("x + 1 AS res")
@@ -214,16 +220,24 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("Complex query") {
-    val query = normalizeNewLines(
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("X", 100)
+      .setLabelCardinality("Y", 200)
+      .setRelationshipCardinality("(:X)-[]->()", 100)
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val query =
       """MATCH (x:X)-[r]->(n) WHERE x.prop = 5
         |CALL {
         |  MATCH (y:Y) RETURN sum(y.number) AS sum
         |   UNION
         |  UNWIND range(0, 10) AS i MATCH (x:X) WHERE x.prop = i RETURN sum(x.number) AS sum
         |}
-        |RETURN count(n) AS c, sum""".stripMargin)
+        |RETURN count(n) AS c, sum""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    cfg.plan(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("c", "sum")
         .aggregation(Seq("sum AS sum"), Seq("count(n) AS c"))
@@ -248,10 +262,17 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("Should treat variables with the same name but different scopes correctly") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("X", 100)
+      .setRelationshipCardinality("()-[]->(:X)", 100)
+      .setRelationshipCardinality("()-[]->()", 200)
+      .build()
+
     // Here x and x are two different things
     val query = "MATCH (x) CALL { MATCH (y)-[r]->(x:X) RETURN y } RETURN 5 AS five"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    cfg.plan(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("five")
         .projection("5 AS five")
@@ -264,6 +285,11 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("should plan count store lookup in uncorrelated subquery") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .build()
+
     val query =
       """MATCH (n)
         |CALL {
@@ -272,7 +298,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |}
         |RETURN n, c""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    cfg.plan(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("n", "c")
         .cartesianProduct(fromSubquery = true)
@@ -287,7 +313,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("CALL around single correlated query") {
     val query = "WITH 1 AS x CALL { WITH x RETURN x as y } RETURN y"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
         .projection("x AS y")
@@ -299,7 +325,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("nested correlated subqueries") {
     val query = "WITH 1 AS a CALL { WITH a CALL { WITH a CALL { WITH a RETURN a AS b } RETURN b AS c } RETURN c AS d } RETURN d"
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("d")
         .projection("c AS d")
@@ -312,15 +338,15 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("CALL around correlated union query") {
-    val query = normalizeNewLines(
+    val query =
       """
         |WITH 1 AS x, 2 AS y CALL {
         |  WITH x RETURN x AS z
         |  UNION
         |  WITH y RETURN y AS z
-        |} RETURN z""".stripMargin)
+        |} RETURN z""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("z")
         .apply(fromSubquery = true)
@@ -340,7 +366,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("This should solve the aggregation on the RHS of the Apply") {
     val query = "WITH 1 AS x CALL { WITH x MATCH (y) WHERE y.value > x RETURN sum(y.prop) AS sum } RETURN sum"
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("sum")
         .apply(fromSubquery = true)
@@ -356,7 +382,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("correlated CALL in a sequence with ambiguous variable names") {
     val query = "WITH 1 AS x CALL { WITH x RETURN x as y } CALL { MATCH (x) RETURN 1 AS z } RETURN y"
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
         .cartesianProduct(fromSubquery = true)
@@ -381,7 +407,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |RETURN x, xmax, xmin
         |""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x", "xmax", "xmin")
         .apply(fromSubquery = true)
@@ -408,7 +434,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |RETURN x, y, ymax
         |""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("x", "y", "ymax")
         .apply(fromSubquery = true)
@@ -423,7 +449,13 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("excessive aliasing should not confuse namespacer") {
-    val query = normalizeNewLines(
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .build()
+
+    val query =
       """WITH 1 AS q
         |CALL {
         |  MATCH (a:A)
@@ -434,9 +466,9 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |  RETURN q AS b, a AS a
         |}
         |RETURN a AS q, b AS a, q AS b
-        |""".stripMargin)
+        |""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal {
+    cfg.plan(query) should equal {
       new LogicalPlanBuilder()
         .produceResults("q", "a", "b")
         .projection(s"a AS q", s"b AS a", s"q AS b")
@@ -456,6 +488,11 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("should not plan count store lookup in correlated subquery when node-variable is already bound") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .build()
+
     val query =
       """MATCH (n)
         |CALL {
@@ -465,7 +502,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |}
         |RETURN n, c""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    cfg.plan(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("n", "c")
         .apply(fromSubquery = true)
@@ -478,6 +515,13 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   }
 
   test("should not plan count store lookup in correlated subquery when relationship-variable is already bound") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("M", 100)
+      .setRelationshipCardinality("()-[:REL]->()", 200)
+      .setRelationshipCardinality("()-[:REL]->(:M)", 100)
+      .build()
+
     val query =
       """MATCH (n)-[r:REL]->(m:M)
         |CALL {
@@ -487,7 +531,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |}
         |RETURN n, c""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    cfg.plan(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("n", "c")
         .apply(fromSubquery = true)
@@ -510,7 +554,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |RETURN count(*) AS count
         |""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
@@ -535,7 +579,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |RETURN count(*) AS count
         |""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
@@ -561,7 +605,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |RETURN count(*) AS count
         |""".stripMargin
 
-    planFor(query, stripProduceResults = false)._2 should equal(
+    planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))

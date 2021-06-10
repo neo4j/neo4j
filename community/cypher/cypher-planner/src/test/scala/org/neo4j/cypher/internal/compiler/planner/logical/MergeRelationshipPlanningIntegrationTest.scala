@@ -19,171 +19,180 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
+import org.neo4j.cypher.internal.compiler.planner.UsingMatcher.using
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.CreateRelationship
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.EmptyResult
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.Merge
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+
+  private def plannerConfigForSimpleExpandTests(): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 50)
+      .setRelationshipCardinality("(:A)-[:R]->()", 100)
+      .setRelationshipCardinality("()-[:R]->()", 100)
+      .build()
+
   test("should plan simple expand") {
-    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
-    val expand = Expand(nodeByLabelScan, "a", OUTGOING, Seq(RelTypeName("R")(pos)), "b", "r")
+    val cfg = plannerConfigForSimpleExpandTests()
 
-    val createNodeA = CreateNode("a", Seq(labelName("A")), None)
-    val createNodeB = CreateNode("b", Seq.empty, None)
+    val plan = cfg.plan("MERGE (a:A)-[r:R]->(b)").stripProduceResults
 
-    val createRel = CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)
-
-    val mergeNode = Merge(expand, Seq(createNodeA, createNodeB), Seq(createRel), Seq.empty, Seq.empty, Set.empty)
-    val emptyResult = EmptyResult(mergeNode)
-
-    planFor("MERGE (a:A)-[r:R]->(b)")._2 should equal(emptyResult)
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .merge(
+        nodes = Seq(createNode("a", "A"), createNode("b")),
+        relationships = Seq(createRelationship("r", "a", "R", "b", OUTGOING)))
+      .expandAll("(a)-[r:R]->(b)")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
   }
 
   test("should plan simple expand with argument dependency") {
-    val leaf = Argument()
-    val projection = Projection(leaf, Map("arg" -> literalInt(42)))
-    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set("arg"), IndexOrderNone)
-    val selection = Selection(Seq(equals(prop("a", "p"), varFor("arg"))), nodeByLabelScan)
-    val expand = Expand(selection, "a", OUTGOING, Seq(RelTypeName("R")(pos)), "b", "r")
+    val cfg = plannerConfigForSimpleExpandTests()
 
-    val createNodeA = CreateNode("a", Seq(labelName("A")), Some(mapOf(("p", varFor("arg")))))
-    val createNodeB = CreateNode("b", Seq.empty, None)
+    val plan = cfg.plan("WITH 42 AS arg MERGE (a:A {p: arg})-[r:R]->(b)").stripProduceResults
 
-    val createRel = CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)
+    val mergeNodes = Seq(createNodeWithProperties("a", Seq("A"), "{p: arg}"), createNode("b"))
+    val mergeRelationships = Seq(createRelationship("r", "a", "R", "b", OUTGOING))
 
-    val mergeNode = Merge(expand, Seq(createNodeA, createNodeB), Seq(createRel), Seq.empty, Seq.empty, Set.empty)
-    val apply = Apply(projection, mergeNode)
-    val emptyResult = EmptyResult(apply)
-
-    planFor("WITH 42 AS arg MERGE (a:A {p: arg})-[r:R]->(b)")._2 should equal(emptyResult)
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .apply()
+      .|.merge(mergeNodes, mergeRelationships)
+      .|.expandAll("(a)-[r:R]->(b)")
+      .|.filter("a.p = arg")
+      .|.nodeByLabelScan("a", "A", "arg")
+      .projection("42 AS arg")
+      .argument()
+      .build()
   }
 
   test("should use AssertSameNode when multiple unique index matches") {
-    val plan = (new given {
-      uniqueIndexOn("X", "prop")
-      uniqueIndexOn("Y", "prop")
-    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})-[:T]->(b)")._2
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("X", 50)
+      .setLabelCardinality("Y", 50)
+      .addNodeIndex("X", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, isUnique = true)
+      .addNodeIndex("Y", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, isUnique = true)
+      .setRelationshipCardinality("(:X)-[:T]->()", 100)
+      .setRelationshipCardinality("(:Y)-[:T]->()", 100)
+      .build()
+
+    val plan = cfg.plan("MERGE (a:X:Y {prop: 42})-[:T]->(b)").stripProduceResults
 
     plan shouldBe using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
   }
 
   test("should not use AssertSameNode when one unique index matches") {
-    val plan = (new given {
-      uniqueIndexOn("X", "prop")
-    } getLogicalPlanFor "MERGE (a:X:Y {prop: 42})")._2
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("X", 50)
+      .setLabelCardinality("Y", 50)
+      .addNodeIndex("X", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, isUnique = true)
+      .setRelationshipCardinality("(:X)-[:T]->()", 100)
+      .setRelationshipCardinality("(:Y)-[:T]->()", 100)
+      .build()
+
+    val plan = cfg.plan("MERGE (a:X:Y {prop: 42})").stripProduceResults
 
     plan should not be using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
   }
 
   test("should plan only one create node when the other node is already in scope when creating a relationship") {
-    planFor("MATCH (n) MERGE (n)-[r:T]->(b)")._2 should equal(
-      EmptyResult(
-        Apply(
-          AllNodesScan("n", Set()),
-          Merge(
-                Expand(
-                  Argument(Set("n")),
-                  "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
-            Seq(CreateNode("b", Seq.empty, None)),
-            Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
-            Seq(),
-            Seq(),
-            Set("n")
-          )
-        )
-      )
-    )
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:T]->()", 100)
+      .build()
+
+    val plan = cfg.plan("MATCH (n) MERGE (n)-[r:T]->(b)").stripProduceResults
+
+    val mergeNodes = Seq(createNode("b"))
+    val mergeRelationships = Seq(createRelationship("r", "n", "T", "b", OUTGOING))
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .apply()
+      .|.merge(mergeNodes, mergeRelationships, lockNodes = Set("n"))
+      .|.expandAll("(n)-[r:T]->(b)")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
   }
 
+  private def plannerConfigForMergeOnExistingVariableTests(): StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:T]->()", 100)
+      .build()
+
   test("should not plan two create nodes when they are already in scope when creating a relationship") {
-    val plan = planFor("MATCH (n) MATCH (m) MERGE (n)-[r:T]->(m)")._2
-    plan should equal(EmptyResult(
-      Apply(
-        CartesianProduct(
-          AllNodesScan("n", Set()),
-          AllNodesScan("m", Set())
-        ),
-        Merge(
-            Expand(
-              Argument(Set("n", "m")),
-              "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto),
-          Seq(),
-          Seq(CreateRelationship("r", "n", RelTypeName("T")(pos), "m", SemanticDirection.OUTGOING, None)),
-          Seq(),
-          Seq(),
-          Set("n", "m")
-        )
-      )
-    ))
+    val cfg = plannerConfigForMergeOnExistingVariableTests()
+
+    val plan = cfg.plan("MATCH (n) MATCH (m) MERGE (n)-[r:T]->(m)").stripProduceResults
+
+    val mergeRelationships = Seq(createRelationship("r", "n", "T", "m", OUTGOING))
+    val mergeLockNodes = Set("n", "m")
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .apply()
+      .|.merge(relationships = mergeRelationships, lockNodes = mergeLockNodes)
+      .|.expandInto("(n)-[r:T]->(m)")
+      .|.argument("n", "m")
+      .cartesianProduct()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should not plan two create nodes when they are already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b MERGE (a)-[r:T]->(b)")._2 should equal(
-      EmptyResult(
-        Apply(
-          Projection(
-            CartesianProduct(
-              AllNodesScan("n", Set()),
-              AllNodesScan("m", Set())
-            ),
-            Map("a" -> varFor("n"), "b" -> varFor("m"))
-          ),
-          Merge(
-            Expand(
-              Argument(Set("a", "b")),
-              "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
-            Seq(),
-            Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
-            Seq(),
-            Seq(),
-            Set("a", "b")
-          )
-        )
-      )
-    )
+    val cfg = plannerConfigForMergeOnExistingVariableTests()
+
+    val plan = cfg.plan("MATCH (n) MATCH (m) WITH n AS a, m AS b MERGE (a)-[r:T]->(b)").stripProduceResults
+
+    val mergeRelationships = Seq(createRelationship("r", "a", "T", "b", OUTGOING))
+    val mergeLockNodes = Set("a", "b")
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .apply()
+      .|.merge(relationships = mergeRelationships, lockNodes = mergeLockNodes)
+      .|.expandInto("(a)-[r:T]->(b)")
+      .|.argument("a", "b")
+      .projection("n AS a", "m AS b")
+      .cartesianProduct()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+      .build()
   }
 
   test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
-    planFor("MATCH (n) WITH n AS a MERGE (a)-[r:T]->(b)")._2 should equal(
-      EmptyResult(
-        Apply(
-          Projection(
-            AllNodesScan("n", Set()),
-            Map("a" -> varFor("n"))
-          ),
-          Merge(
-            Expand(
-              Argument(Set("a")),
-              "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
-            Seq(CreateNode("b", Seq.empty, None)),
-            Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
-            Seq(),
-            Seq(),
-            Set("a")
-          )
-        )
-      )
-    )
+    val cfg = plannerConfigForMergeOnExistingVariableTests()
+
+    val plan = cfg.plan("MATCH (n) WITH n AS a MERGE (a)-[r:T]->(b)").stripProduceResults
+
+    val mergeNodes = Seq(createNode("b"))
+    val mergeRelationships = Seq(createRelationship("r", "a", "T", "b", OUTGOING))
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .apply()
+      .|.merge(mergeNodes, mergeRelationships, lockNodes = Set("a"))
+      .|.expandAll("(a)-[r:T]->(b)")
+      .|.argument("a")
+      .projection("n AS a")
+      .allNodeScan("n")
+      .build()
   }
 }

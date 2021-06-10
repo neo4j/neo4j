@@ -19,150 +19,154 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
   test("one UNION all") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 200)
+      .build()
 
-    val (_, logicalPlan, _, _) = new given {
-      knownLabels = Set("A", "B")
-    }.getLogicalPlanFor(normalizeNewLines(
+    val query =
       """
         |MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION ALL
-        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin), stripProduceResults = false)
+        |MATCH (a:B) RETURN 1 AS b, a AS a
+        |""".stripMargin
 
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a", "b")
-        .union()
-        .|.projection("a AS a", "b AS b")
-        .|.projection("1 AS b")
-        .|.nodeByLabelScan("a", "B", IndexOrderNone)
-        .projection("a AS a", "b AS b")
-        .projection("1 AS b")
-        .nodeByLabelScan("a", "A", IndexOrderNone)
-        .build()
-    )
+    cfg.plan(query) shouldEqual cfg.planBuilder()
+      .produceResults("a", "b")
+      .union()
+      .|.projection("a AS a", "b AS b")
+      .|.projection("1 AS b")
+      .|.nodeByLabelScan("a", "B", IndexOrderNone)
+      .projection("a AS a", "b AS b")
+      .projection("1 AS b")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
   }
 
   test("one UNION distinct") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 200)
+      .build()
 
-    val (_, logicalPlan, _, _) = new given {
-      knownLabels = Set("A", "B")
-    }.getLogicalPlanFor(normalizeNewLines(
+    val query =
       """
         |MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION
-        |MATCH (a:B) RETURN 1 AS b, a AS a""".stripMargin), stripProduceResults = false)
+        |MATCH (a:B) RETURN 1 AS b, a AS a"""
+        .stripMargin
 
-
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a", "b")
-        .distinct("a AS a", "b AS b")
-        .union()
-        .|.projection("a AS a", "b AS b")
-        .|.projection("1 AS b")
-        .|.nodeByLabelScan("a", "B", IndexOrderNone)
-        .projection("a AS a", "b AS b")
-        .projection("1 AS b")
-        .nodeByLabelScan("a", "A", IndexOrderNone)
-        .build()
-    )
+    cfg.plan(query) shouldEqual cfg.planBuilder()
+      .produceResults("a", "b")
+      .distinct("a AS a", "b AS b")
+      .union()
+      .|.projection("a AS a", "b AS b")
+      .|.projection("1 AS b")
+      .|.nodeByLabelScan("a", "B", IndexOrderNone)
+      .projection("a AS a", "b AS b")
+      .projection("1 AS b")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
   }
-  test("two UNION all") {
 
-    val (_, logicalPlan, _, _) = new given {
-      knownLabels = Set("A", "B", "C")
-    }.getLogicalPlanFor(normalizeNewLines(
+  test("two UNION all") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 200)
+      .setLabelCardinality("C", 300)
+      .build()
+
+    val query =
       """MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION ALL
         |MATCH (a:B) RETURN 1 AS b, a AS a
         |UNION ALL
         |MATCH (a:C) RETURN a AS a, 1 AS b
-        |""".stripMargin), stripProduceResults = false)
+        |""".stripMargin
 
-
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a", "b")
-        .union()
-        .|.projection("a AS a", "b AS b")
-        .|.projection("1 AS b")
-        .|.nodeByLabelScan("a", "C", IndexOrderNone)
-        .projection("a AS a", "b AS b")
-        .union()
-        .|.projection("a AS a", "b AS b")
-        .|.projection("1 AS b")
-        .|.nodeByLabelScan("a", "B", IndexOrderNone)
-        .projection("a AS a", "b AS b")
-        .projection("1 AS b")
-        .nodeByLabelScan("a", "A", IndexOrderNone)
-        .build()
-    )
+    cfg.plan(query) shouldEqual cfg.planBuilder()
+      .produceResults("a", "b")
+      .union()
+      .|.projection("a AS a", "b AS b")
+      .|.projection("1 AS b")
+      .|.nodeByLabelScan("a", "C", IndexOrderNone)
+      .projection("a AS a", "b AS b")
+      .union()
+      .|.projection("a AS a", "b AS b")
+      .|.projection("1 AS b")
+      .|.nodeByLabelScan("a", "B", IndexOrderNone)
+      .projection("a AS a", "b AS b")
+      .projection("1 AS b")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
   }
 
   test("two UNION distinct") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 200)
+      .setLabelCardinality("C", 300)
+      .build()
 
-    val (_, logicalPlan, _, _) = new given {
-      knownLabels = Set("A", "B", "C")
-    }.getLogicalPlanFor(normalizeNewLines(
+    val query =
       """MATCH (a:A) RETURN a AS a, 1 AS b
         |UNION
         |MATCH (a:B) RETURN 1 AS b, a AS a
         |UNION
         |MATCH (a:C) RETURN a AS a, 1 AS b
-        |""".stripMargin), stripProduceResults = false)
+        |""".stripMargin
 
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a", "b")
-        .distinct("a AS a", "b AS b")
-        .union()
-        .|.projection("a AS a", "b AS b")
-        .|.projection("1 AS b")
-        .|.nodeByLabelScan("a", "C", IndexOrderNone)
-        .projection("a AS a", "b AS b")
-        .union()
-        .|.projection("a AS a", "b AS b")
-        .|.projection("1 AS b")
-        .|.nodeByLabelScan("a", "B", IndexOrderNone)
-        .projection("a AS a", "b AS b")
-        .projection("1 AS b")
-        .nodeByLabelScan("a", "A", IndexOrderNone)
-        .build()
-    )
+    cfg.plan(query) shouldEqual cfg.planBuilder()
+      .produceResults("a", "b")
+      .distinct("a AS a", "b AS b")
+      .union()
+      .|.projection("a AS a", "b AS b")
+      .|.projection("1 AS b")
+      .|.nodeByLabelScan("a", "C", IndexOrderNone)
+      .projection("a AS a", "b AS b")
+      .union()
+      .|.projection("a AS a", "b AS b")
+      .|.projection("1 AS b")
+      .|.nodeByLabelScan("a", "B", IndexOrderNone)
+      .projection("a AS a", "b AS b")
+      .projection("1 AS b")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
   }
 
   test("one UNION distinct without columns") {
+    val cfg = plannerBuilder().setAllNodesCardinality(1000).build()
 
-    val (_, logicalPlan, _, _) = new given {
-    }.getLogicalPlanFor(
+    val query =
       """
         |CREATE (a)
         |UNION
         |CREATE (b)
-        |""".stripMargin, stripProduceResults = false)
+        |""".stripMargin
 
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults()
-        .union()
-        .|.projection()
-        .|.emptyResult()
-        .|.create(createNode("b"))
-        .|.argument()
-        .projection()
-        .emptyResult()
-        .create(createNode("a"))
-        .argument()
-        .build()
-    )
+    cfg.plan(query) shouldEqual cfg.planBuilder()
+      .produceResults()
+      .union()
+      .|.projection()
+      .|.emptyResult()
+      .|.create(createNode("b"))
+      .|.argument()
+      .projection()
+      .emptyResult()
+      .create(createNode("a"))
+      .argument()
+      .build()
   }
 }

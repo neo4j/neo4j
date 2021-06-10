@@ -19,50 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.CacheProperties
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
   test("should build plans containing joins") {
-    val result= (new given {
-      cardinality = mapCardinality {
-        // node label scan
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
-        // all node scan
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
-        // expand
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
-        case _                             => Double.MaxValue
-      }
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("X", 100)
+      .setRelationshipCardinality("()-[]->(:X)", 100)
+      .setRelationshipCardinality("()-[]->()", Double.MaxValue)
+      .build()
 
-    } getLogicalPlanFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b")._2
+    val plan = cfg.plan("MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").stripProduceResults
 
-    val expected =
-      Selection(
-        ands(not(equals(varFor("r1"), varFor("r2")))),
-        NodeHashJoin(
-          Set("b"),
-          Expand(
-            NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone),
-            "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1"),
-          Expand(
-            NodeByLabelScan("c", labelName("X"), Set.empty, IndexOrderNone),
-            "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2")
-        )
-      )
-
-    result should equal(expected)
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("not r1 = r2")
+      .nodeHashJoin("b")
+      .|.expandAll("(c)<-[r2]-(b)")
+      .|.nodeByLabelScan("c", "X")
+      .expandAll("(a)<-[r1]-(b)")
+      .nodeByLabelScan("a", "X")
+      .build()
   }
 
   test("should plan hash join when join hint is used") {
@@ -72,39 +51,26 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
                         |WHERE a.prop = c.prop
                         |RETURN b""".stripMargin
 
-    val result = (new given {
-      cardinality = mapCardinality {
-        // node label scan
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
-        // all node scan
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
-        case _ => Double.MaxValue
-      }
-    }  getLogicalPlanFor cypherQuery)._2
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("C", 100)
+      .setLabelCardinality("X", 100)
+      .setRelationshipCardinality("(:A)-[:X]->()", 100)
+      .setRelationshipCardinality("()-[:X]->()", 200)
+      .setRelationshipCardinality("()-[:X]->(:C)", 100)
+      .setRelationshipCardinality("()-[]->()", Double.MaxValue)
+      .build()
 
-    val expected =
-      Selection(
-        ands(
-          equals(cachedNodeProp("a", "prop"), cachedNodeProp("c", "prop")),
-          not(equals(varFor("r1"), varFor("r2")))
-        ),
-        NodeHashJoin(
-          Set("b"),
-          Expand(
-            CacheProperties(
-              NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone),
-              Set(cachedNodePropFromStore("a", "prop"))
-            ),
-            "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll),
-          Expand(
-            CacheProperties(
-              NodeByLabelScan("c", labelName("C"), Set.empty, IndexOrderNone),
-              Set(cachedNodePropFromStore("c", "prop"))
-            ),
-            "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)
-        )
-      )
+    val plan = cfg.plan(cypherQuery).stripProduceResults
 
-    result shouldEqual expected
+    plan shouldEqual cfg.subPlanBuilder()
+      .filter("a.prop = c.prop", "not r1 = r2")
+      .nodeHashJoin("b")
+      .|.expandAll("(c)<-[r2:X]-(b)")
+      .|.nodeByLabelScan("c", "C")
+      .expandAll("(a)-[r1:X]->(b)")
+      .nodeByLabelScan("a", "A")
+      .build()
   }
 }
