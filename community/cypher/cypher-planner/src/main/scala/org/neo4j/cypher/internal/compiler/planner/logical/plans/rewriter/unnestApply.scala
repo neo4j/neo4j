@@ -74,16 +74,16 @@ case class unnestApply(override val solveds: Solveds,
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case Apply(arg: Argument, rhs, _) =>
+    case RemovableApply(arg: Argument, rhs, _) =>
       assertArgumentHasCardinality1(arg)
       rhs
 
     // L Ax Arg => L
-    case Apply(lhs, _: Argument, _) =>
+    case RemovableApply(lhs, _: Argument, _) =>
       lhs
 
     // L Ax (Arg FE R) => L FE R
-    case apply@Apply(lhs, foreach@ForeachApply(arg: Argument, _, _, _), _) =>
+    case apply@RemovableApply(lhs, foreach@ForeachApply(arg: Argument, _, _, _), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryLeft(apply, lhs, foreach)
 
@@ -111,22 +111,22 @@ case class unnestApply(override val solveds: Solveds,
       Apply(selectionLHS, apply2, isSubquery2)(SameId(original.id))
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) =>
+    case apply@RemovableApply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryLeft(apply, lhs, join)
 
     // L Ax (L2 ROJ Arg) => L2 ROJ L
-    case apply@Apply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) =>
+    case apply@RemovableApply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryRight(apply, lhs, join)
 
-    // L Ax (OEX Arg) => OEX L
+    // L Ax (OEX Arg) => OEX (L Ax Arg)
     case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _), _) =>
       unnestRightUnary(apply, lhs, oex)
 
 
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
-    case apply@Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan, _)
+    case apply@RemovableApply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan, _)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
       val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))
@@ -144,7 +144,7 @@ case class unnestApply(override val solveds: Solveds,
       res
 
     // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree && Ax.fromSubquery = false
-    case apply@Apply(lhs1, innerApplyPlan@ApplyPlan(lhs2, _), false) if isUnnestableUnaryPlanTree(lhs2) =>
+    case apply@RemovableApply(lhs1, innerApplyPlan@ApplyPlan(lhs2, _), _) if isUnnestableUnaryPlanTree(lhs2) =>
       val res = innerApplyPlan.withLhs(putOnTopOf(lhs1, lhs2))(attributes.copy(apply.id))
       solveds.copy(apply.id, res.id)
       cardinalities.set(res.id, cardinalities(apply.id))
@@ -187,6 +187,18 @@ object UnnestableUnaryPlan {
     case p: Projection => Some(p)
     case p: Expand => Some(p)
     case p: VarExpand => Some(p)
+    case _ => None
+  }
+}
+
+object RemovableApply {
+  /**
+   * An 'Apply' is removable if 'fromSubquery' is false.
+   * When 'fromSubquery' is true, the 'Apply' can only be _replaced_ with another 'Apply' that preserves that 'fromSubquery' is true.
+   */
+  def unapply(v: Apply): Option[(LogicalPlan, LogicalPlan, Boolean)] = v match {
+    case Apply(lhs, rhs, fromSubquery) if !fromSubquery => Some((lhs, rhs, fromSubquery))
+    case Apply(lhs, rhs: Argument, fromSubquery) => Some((lhs, rhs, fromSubquery))
     case _ => None
   }
 }
