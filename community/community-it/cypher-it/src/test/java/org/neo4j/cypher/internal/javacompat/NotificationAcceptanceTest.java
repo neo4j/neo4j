@@ -42,7 +42,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CS
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.index;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeIndex;
 
 class NotificationAcceptanceTest extends NotificationTestSupport
 {
@@ -90,7 +90,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled()
     {
         shouldNotifyInStreamWithDetail( " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", InputPosition.empty,
-                INDEX_HINT_UNFULFILLABLE, index( "Person", "name" ) );
+                                        INDEX_HINT_UNFULFILLABLE, nodeIndex( "Person", "name" ) );
     }
 
     @Test
@@ -99,9 +99,9 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         String query = " EXPLAIN MATCH (n:Person), (m:Party), (k:Animal) " + "USING INDEX n:Person(name) " + "USING INDEX m:Party(city) " +
                 "USING INDEX k:Animal(species) " + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' " + "RETURN n";
 
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Person", "name" ) );
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Party", "city" ) );
-        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Animal", "species" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "Person", "name" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "Party", "city" ) );
+        shouldNotifyInStreamWithDetail( query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, nodeIndex( "Animal", "species" ) );
     }
 
     @Test

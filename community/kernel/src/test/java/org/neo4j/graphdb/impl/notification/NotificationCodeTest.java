@@ -39,9 +39,9 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.JOIN_HINT_UNF
 class NotificationCodeTest
 {
     @Test
-    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE()
+    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index()
     {
-        NotificationDetail indexDetail = NotificationDetail.Factory.index( "Person", "name" );
+        NotificationDetail indexDetail = NotificationDetail.Factory.nodeIndex( "Person", "name" );
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
 
         assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
@@ -49,7 +49,21 @@ class NotificationCodeTest
         assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
         assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
         assertThat( notification.getDescription() ).isEqualTo(
-                "The hinted index does not exist, please check the schema (hinted index is: index on :Person(name))" );
+                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR (:`Person`) ON (.`name`))" );
+    }
+
+    @Test
+    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_index()
+    {
+        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipIndex( "Person", "name" );
+        Notification notification = INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty, indexDetail );
+
+        assertThat( notification.getTitle() ).isEqualTo( "The request (directly or indirectly) referred to an index that does not exist." );
+        assertThat( notification.getSeverity() ).isEqualTo( SeverityLevel.WARNING );
+        assertThat( notification.getCode() ).isEqualTo( "Neo.ClientError.Schema.IndexNotFound" );
+        assertThat( notification.getPosition() ).isEqualTo( InputPosition.empty );
+        assertThat( notification.getDescription() ).isEqualTo(
+                "The hinted index does not exist, please check the schema (hinted index is: INDEX FOR ()-[:`Person`]-() ON (.`name`))" );
     }
 
     @Test

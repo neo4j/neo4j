@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -37,14 +39,14 @@ import org.neo4j.exceptions.JoinHintException
 
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
-object verifyBestPlan {
+object VerifyBestPlan {
   def apply(plan: LogicalPlan, expected: PlannerQueryPart, context: LogicalPlanningContext): Unit = {
     val constructed: PlannerQueryPart = context.planningAttributes.solveds.get(plan.id)
 
     if (expected != constructed) {
-      val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext)
+      val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext, context.semanticTable)
       val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
-      val expectedWithoutHints = expected.withoutHints(unfulfillableIndexHints ++ unfulfillableJoinHints)
+      val expectedWithoutHints = expected.withoutHints(unfulfillableIndexHints.map(_.hint) ++ unfulfillableJoinHints)
       if (expectedWithoutHints != constructed) {
         val a: PlannerQueryPart = expected.withoutHints(expected.allHints)
         val b: PlannerQueryPart = constructed.withoutHints(constructed.allHints)
@@ -93,15 +95,16 @@ object verifyBestPlan {
     }
   }
 
-  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Set[UsingIndexHint]): Unit = {
+  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Set[UnfulfillableIndexHint]): Unit = {
     if (hints.nonEmpty) {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
-        val firstIndexHint = hints.head
-        throw new IndexHintException(firstIndexHint.labelOrRelType.name, firstIndexHint.properties.map(_.name).asJava, "No such index")
+        val UnfulfillableIndexHint(firstIndexHint, entityType) = hints.head
+        throw new IndexHintException(firstIndexHint.labelOrRelType.name, firstIndexHint.properties.map(_.name).asJava, entityType)
       } else {
-        hints.foreach { hint =>
-          context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.labelOrRelType.name, hint.properties.map(_.name)))
+        hints.foreach {
+          case UnfulfillableIndexHint(hint, entityType) =>
+            context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.labelOrRelType.name, hint.properties.map(_.name), entityType))
         }
       }
     }
@@ -120,13 +123,18 @@ object verifyBestPlan {
     }
   }
 
-  private def findUnfulfillableIndexHints(query: PlannerQueryPart, planContext: PlanContext): Set[UsingIndexHint] = {
+  case class UnfulfillableIndexHint(hint: UsingIndexHint, entityType: EntityType)
+
+  private def findUnfulfillableIndexHints(query: PlannerQueryPart, planContext: PlanContext, semanticTable: SemanticTable): Set[UnfulfillableIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(_, LabelOrRelTypeName(label), properties, _)
         if planContext.indexExistsForLabelAndProperties(label, properties.map(_.name)) => None
       // no such index exists
-      case hint: UsingIndexHint => Some(hint)
+      case hint: UsingIndexHint =>
+        // Let's assume node type by default, in case we have no type information.
+        val entityType = if (semanticTable.isRelationshipNoFail(hint.variable)) EntityType.RELATIONSHIP else EntityType.NODE
+        Some(UnfulfillableIndexHint(hint, entityType))
       // don't care about other hints
       case _ => None
     }

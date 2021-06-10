@@ -19,8 +19,10 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface NotificationDetail
 {
@@ -39,10 +41,22 @@ public interface NotificationDetail
             return createDeprecationNotificationDetail( oldName, newName );
         }
 
-        public static NotificationDetail index( final String labelName, final String... propertyKeyNames )
+        public static NotificationDetail nodeIndex( final String labelName, final String... propertyKeyNames )
         {
+            String propertyNames = Arrays.stream( propertyKeyNames )
+                                         .map( p -> ".`" + p + "`" )
+                                         .collect( Collectors.joining( ", " ) );
             return createNotificationDetail( "hinted index",
-                    String.format( "index on :%s(%s)", labelName, String.join( ",", propertyKeyNames ) ), true );
+                                             String.format( "INDEX FOR (:`%s`) ON (%s)", labelName, propertyNames ), true );
+        }
+
+        public static NotificationDetail relationshipIndex( final String relationshipTypeName, final String... propertyKeyNames )
+        {
+            String propertyNames = Arrays.stream( propertyKeyNames )
+                                         .map( p -> ".`" + p + "`" )
+                                         .collect( Collectors.joining( ", " ) );
+            return createNotificationDetail( "hinted index",
+                                             String.format( "INDEX FOR ()-[:`%s`]-() ON (%s)", relationshipTypeName, propertyNames ), true );
         }
 
         public static NotificationDetail suboptimalIndex( final String labelName, final String... propertyKeyNames )

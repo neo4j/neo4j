@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.TokensResolved
@@ -116,7 +116,7 @@ case object QueryPlanner
     }
 
     val planWithProduceResults = context.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder)
-    verifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
+    VerifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
     planWithProduceResults
   }
 

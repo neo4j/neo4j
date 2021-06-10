@@ -293,8 +293,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanWithPatterns(planningAttributes: PlanningAttributes,
                                        idNames: Set[String],
                                        patterns: Seq[PatternRelationship] = Seq.empty,
+                                       hints: Set[Hint] = Set[Hint](),
                                        availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns))
+    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns).addHints(hints))
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 

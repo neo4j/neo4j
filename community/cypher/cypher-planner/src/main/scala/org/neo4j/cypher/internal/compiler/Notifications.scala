@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 
@@ -34,7 +35,7 @@ case class CreateUniqueDeprecated(position: InputPosition) extends InternalNotif
 
 case class RuntimeUnsupportedNotification(msg: String) extends InternalNotification
 
-case class IndexHintUnfulfillableNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
+case class IndexHintUnfulfillableNotification(labelOrRelType: String, propertyKeys: Seq[String], entityType: EntityType) extends InternalNotification
 
 case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends InternalNotification
 

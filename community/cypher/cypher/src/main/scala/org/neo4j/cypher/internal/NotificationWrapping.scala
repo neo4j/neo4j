@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.compiler.CodeGenerationFailedNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
 import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
@@ -79,8 +80,12 @@ object NotificationWrapping {
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
     case RuntimeUnsupportedNotification(msg) =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Runtime unsupported", msg))
-    case IndexHintUnfulfillableNotification(label, propertyKeys) =>
-      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKeys: _*))
+    case IndexHintUnfulfillableNotification(label, propertyKeys, entityType) =>
+      val detail = entityType match {
+        case EntityType.NODE => NotificationDetail.Factory.nodeIndex(label, propertyKeys: _*)
+        case EntityType.RELATIONSHIP => NotificationDetail.Factory.relationshipIndex(label, propertyKeys: _*)
+      }
+      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>
       NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case IndexLookupUnfulfillableNotification(labels) =>

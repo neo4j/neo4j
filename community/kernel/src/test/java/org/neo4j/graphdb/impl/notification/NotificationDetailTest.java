@@ -32,13 +32,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NotificationDetailTest
 {
     @Test
-    void shouldConstructIndexDetails()
+    void shouldConstructNodeIndexDetails()
     {
-        NotificationDetail detail = NotificationDetail.Factory.index( "Person", "name" );
+        NotificationDetail detail = NotificationDetail.Factory.nodeIndex( "Person", "name" );
 
         assertThat( detail.name() ).isEqualTo( "hinted index" );
-        assertThat( detail.value() ).isEqualTo( "index on :Person(name)" );
-        assertThat( detail.toString() ).isEqualTo( "hinted index is: index on :Person(name)" );
+        assertThat( detail.value() ).isEqualTo( "INDEX FOR (:`Person`) ON (.`name`)" );
+        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR (:`Person`) ON (.`name`)" );
+    }
+
+    @Test
+    void shouldConstructRelationshipIndexDetails()
+    {
+        NotificationDetail detail = NotificationDetail.Factory.relationshipIndex( "Person", "name" );
+
+        assertThat( detail.name() ).isEqualTo( "hinted index" );
+        assertThat( detail.value() ).isEqualTo( "INDEX FOR ()-[:`Person`]-() ON (.`name`)" );
+        assertThat( detail.toString() ).isEqualTo( "hinted index is: INDEX FOR ()-[:`Person`]-() ON (.`name`)" );
     }
 
     @Test

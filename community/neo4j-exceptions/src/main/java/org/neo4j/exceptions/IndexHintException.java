@@ -22,14 +22,15 @@ package org.neo4j.exceptions;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class IndexHintException extends Neo4jException
 {
 
-    public IndexHintException( String label, List<String> properties, String message )
+    public IndexHintException( String labelOrRelType, List<String> properties, EntityType entityType )
     {
-        super( msg(label, properties, message) );
+        super( msg( labelOrRelType, properties, entityType ) );
     }
 
     @Override
@@ -38,11 +39,22 @@ public class IndexHintException extends Neo4jException
         return Status.Schema.IndexNotFound;
     }
 
-    private static String msg( String label, List<String> properties, String message )
+    private static String msg( String labelOrRelType, List<String> properties, EntityType entityType )
     {
-        return String.format( "%s\nLabel: `%s`\nProperty name: %s}",
-                              message,
-                              label,
-        properties.stream().map( p -> "'" + p + "'").collect( Collectors.joining( ",") ) );
+        String propertyNames = properties.stream().map( p -> ".`" + p + "`" ).collect( Collectors.joining( ", " ) );
+        String indexFormatString;
+        switch ( entityType )
+        {
+        case NODE:
+            indexFormatString = String.format( "INDEX FOR (:`%s`) ON (%s)", labelOrRelType, propertyNames );
+            break;
+        case RELATIONSHIP:
+            indexFormatString = String.format( "INDEX FOR ()-[:`%s`]-() ON (%s)", labelOrRelType, propertyNames );
+            break;
+        default:
+            indexFormatString = "";
+            break;
+        }
+        return String.format( "No such index: %s", indexFormatString );
     }
 }

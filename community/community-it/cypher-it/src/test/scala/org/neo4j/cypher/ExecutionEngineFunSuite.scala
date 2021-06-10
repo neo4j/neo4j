@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.planning.CypherCacheMonitor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.Result
 import org.neo4j.internal.helpers.collection.Pair
@@ -91,9 +92,15 @@ abstract class ExecutionEngineFunSuite
     }
   }
 
-  def shouldHaveWarning(result: Result, statusCode: Status): Unit = {
-    val resultCodes = result.getNotifications.asScala.map(_.getCode)
-    resultCodes should contain(statusCode.code.serialize())
+  def shouldHaveWarning(result: Result, statusCode: Status, detailMessage: String): Unit = {
+    val notifications: Iterable[Notification] = result.getNotifications.asScala
+
+    withClue(s"Expected a notification with status code: $statusCode and detail message: $detailMessage\nBut got: $notifications") {
+      notifications.exists { notification =>
+        notification.getCode == statusCode.code().serialize() &&
+          notification.getDescription == detailMessage
+      } should be(true)
+    }
   }
 
   def shouldHaveNoWarnings(result: Result): Unit = {
