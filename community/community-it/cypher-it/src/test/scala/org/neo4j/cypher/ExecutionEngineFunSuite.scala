@@ -91,17 +91,13 @@ abstract class ExecutionEngineFunSuite
     }
   }
 
-  def shouldHaveWarnings(result: Result, statusCodes: List[Status]) {
+  def shouldHaveWarning(result: Result, statusCode: Status): Unit = {
     val resultCodes = result.getNotifications.asScala.map(_.getCode)
-    statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
+    resultCodes should contain(statusCode.code.serialize())
   }
 
-  def shouldHaveWarning(result: Result, notification: Status) {
-    shouldHaveWarnings(result, List(notification))
-  }
-
-  def shouldHaveNoWarnings(result: Result) {
-    shouldHaveWarnings(result, List())
+  def shouldHaveNoWarnings(result: Result): Unit = {
+    result.getNotifications.asScala should be(empty)
   }
 
   def selectDatabase(name: String): Unit = {
