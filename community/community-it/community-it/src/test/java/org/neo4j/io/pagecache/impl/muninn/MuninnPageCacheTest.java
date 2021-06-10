@@ -83,6 +83,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -299,6 +300,27 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             ByteBuffer buf = readIntoBuffer( "a" );
             assertThat( buf.getLong() ).isEqualTo( x );
             assertThat( buf.getLong() ).isEqualTo( 0L );
+        }
+    }
+
+    @Test
+    void finishPinEventWhenOpenedWithNoFaultOption() throws IOException
+    {
+        writeInitialDataTo( file( "a" ) );
+        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        PageCursorTracer pageCursorTracer = cacheTracer.createPageCursorTracer( "finishPinEventWhenOpenedWithNoFaultOption" );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 4, cacheTracer );
+                PagedFile pagedFile = map( pageCache, file( "a" ), 8 ) )
+        {
+            CursorContext cursorContext = new CursorContext( pageCursorTracer );
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext ) )
+            {
+                assertTrue( cursor.next() );
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next() );
+            }
+            assertEquals( 2, cursorContext.getCursorTracer().pins() );
+            assertEquals( 2, cursorContext.getCursorTracer().unpins() );
         }
     }
 
