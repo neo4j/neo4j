@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
@@ -109,7 +108,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
                         Value value = generateUniqueRandomValue( types, uniqueValues );
                         long id = nextId.getAndIncrement();
                         sortedValues.add( new ValueAndId( value, id ) );
-                        updates.add( add( id, descriptor.schema(), value ) );
+                        updates.add( add( id, descriptor, value ) );
                     }
                     else if ( type == 1 )
                     {   // update
@@ -118,14 +117,14 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
                         Value newValue = generateUniqueRandomValue( types, uniqueValues );
                         uniqueValues.remove( existing.value );
                         sortedValues.add( new ValueAndId( newValue, existing.id ) );
-                        updates.add( change( existing.id, descriptor.schema(), existing.value, newValue ) );
+                        updates.add( change( existing.id, descriptor, existing.value, newValue ) );
                     }
                     else
                     {   // remove
                         ValueAndId existing = random.among( sortedValues.toArray( new ValueAndId[0] ) );
                         sortedValues.remove( existing );
                         uniqueValues.remove( existing.value );
-                        updates.add( remove( existing.id, descriptor.schema(), existing.value ) );
+                        updates.add( remove( existing.id, descriptor, existing.value ) );
                     }
                 }
             }
@@ -210,7 +209,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
         for ( Value value : values )
         {
-            ValueIndexEntryUpdate<SchemaDescriptor> update = add( nextId.getAndIncrement(), descriptor.schema(), value );
+            var update = add( nextId.getAndIncrement(), descriptor, value );
             updates.add( update );
         }
         return updates;

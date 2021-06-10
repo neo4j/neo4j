@@ -423,7 +423,7 @@ class BlockBasedIndexPopulatorTest
         {
             for ( int i = 0; i < numberOfUpdatesAfterCompleted; i++ )
             {
-                updater.process( IndexEntryUpdate.add( 10_000 + i, SCHEMA_DESCRIPTOR, intValue( i ) ) );
+                updater.process( IndexEntryUpdate.add( 10_000 + i, INDEX_DESCRIPTOR, intValue( i ) ) );
             }
         }
         populator.close( true, NULL );

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -37,6 +38,11 @@ public class NoSuchConstraintException extends SchemaKernelException
         super( Status.Schema.ConstraintNotFound, format( MESSAGE, constraint.userDescription( lookup ) ) );
         this.constraint = constraint;
         this.name = "";
+    }
+
+    public NoSuchConstraintException( SchemaDescriptor constraint, TokenNameLookup lookup )
+    {
+        this( () -> constraint, lookup );
     }
 
     public NoSuchConstraintException( String name )

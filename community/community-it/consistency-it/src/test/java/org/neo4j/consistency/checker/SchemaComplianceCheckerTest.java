@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
@@ -232,7 +231,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         try ( IndexUpdater indexUpdater = indexingService.getIndexProxy( indexId ).newUpdater( ONLINE, CursorContext.NULL ) )
         {
-            indexUpdater.process( add( nodeId, descriptor, value ) );
+            indexUpdater.process( add( nodeId, () -> descriptor, value ) );
         }
     }
 

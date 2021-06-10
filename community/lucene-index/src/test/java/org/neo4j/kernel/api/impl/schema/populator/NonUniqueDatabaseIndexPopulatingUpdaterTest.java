@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
@@ -43,9 +44,9 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
 class NonUniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final SchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabel( 1, 42 );
+    private static final SchemaDescriptorSupplier SCHEMA_DESCRIPTOR = () -> SchemaDescriptor.forLabel( 1, 42 );
     private static final int SAMPLING_BUFFER_SIZE_LIMIT = 100;
-    private static final SchemaDescriptor COMPOSITE_SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabel( 1, 42, 43 );
+    private static final SchemaDescriptorSupplier COMPOSITE_SCHEMA_DESCRIPTOR = () -> SchemaDescriptor.forLabel( 1, 42, 43 );
 
     @Test
     void addedNodePropertiesIncludedInSample()

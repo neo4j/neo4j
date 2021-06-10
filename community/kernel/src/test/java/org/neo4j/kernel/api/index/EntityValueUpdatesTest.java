@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -83,13 +84,16 @@ class EntityValueUpdatesTest
     private static final long[] ALL_TOKENS = new long[]{TOKEN_ID_1, TOKEN_ID_2};
     private static final long[] EMPTY = new long[]{};
 
-    private static final SchemaDescriptor NODE_INDEX_1 = SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_1 );
-    private static final SchemaDescriptor NODE_INDEX_2 = SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_2 );
-    private static final SchemaDescriptor NODE_INDEX_3 = SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_3 );
-    private static final SchemaDescriptor NODE_INDEX_123 = SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_1, PROPERTY_KEY_ID_2, PROPERTY_KEY_ID_3 );
-    private static final List<SchemaDescriptor> NODE_INDEXES = Arrays.asList( NODE_INDEX_1, NODE_INDEX_2, NODE_INDEX_3, NODE_INDEX_123 );
-    private static final SchemaDescriptor NON_SCHEMA_NODE_INDEX = SchemaDescriptor.fulltext( EntityType.NODE, new int[]{TOKEN_ID_1, TOKEN_ID_2},
-            new int[]{PROPERTY_KEY_ID_1, PROPERTY_KEY_ID_2, PROPERTY_KEY_ID_3} );
+    private static final SchemaDescriptorSupplier NODE_INDEX_1 = () -> SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_1 );
+    private static final SchemaDescriptorSupplier NODE_INDEX_2 = () -> SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_2 );
+    private static final SchemaDescriptorSupplier NODE_INDEX_3 = () -> SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_3 );
+    private static final SchemaDescriptorSupplier NODE_INDEX_123 = () -> SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_1,
+                                                                                                                       PROPERTY_KEY_ID_2, PROPERTY_KEY_ID_3 );
+    private static final List<SchemaDescriptorSupplier> NODE_INDEXES = Arrays.asList( NODE_INDEX_1, NODE_INDEX_2, NODE_INDEX_3, NODE_INDEX_123 );
+    private static final SchemaDescriptorSupplier NON_SCHEMA_NODE_INDEX =
+            () -> SchemaDescriptor.fulltext( EntityType.NODE, new int[]{TOKEN_ID_1, TOKEN_ID_2},
+                                                                new int[]{PROPERTY_KEY_ID_1, PROPERTY_KEY_ID_2,
+                                                                          PROPERTY_KEY_ID_3} );
 
     private static final StorageProperty PROPERTY_1 = new PropertyKeyValue( PROPERTY_KEY_ID_1, Values.of( "Neo" ) );
     private static final StorageProperty PROPERTY_2 = new PropertyKeyValue( PROPERTY_KEY_ID_2, Values.of( 100L ) );
@@ -611,7 +615,7 @@ class EntityValueUpdatesTest
         NODE
                 {
                     @Override
-                    List<SchemaDescriptor> indexes()
+                    List<SchemaDescriptorSupplier> indexes()
                     {
                         return NODE_INDEXES;
                     }
@@ -623,31 +627,31 @@ class EntityValueUpdatesTest
                     }
 
                     @Override
-                    SchemaDescriptor index1()
+                    SchemaDescriptorSupplier index1()
                     {
                         return NODE_INDEX_1;
                     }
 
                     @Override
-                    SchemaDescriptor index2()
+                    SchemaDescriptorSupplier index2()
                     {
                         return NODE_INDEX_2;
                     }
 
                     @Override
-                    SchemaDescriptor index3()
+                    SchemaDescriptorSupplier index3()
                     {
                         return NODE_INDEX_3;
                     }
 
                     @Override
-                    SchemaDescriptor index123()
+                    SchemaDescriptorSupplier index123()
                     {
                         return NODE_INDEX_123;
                     }
 
                     @Override
-                    SchemaDescriptor nonSchemaIndex()
+                    SchemaDescriptorSupplier nonSchemaIndex()
                     {
                         return NON_SCHEMA_NODE_INDEX;
                     }
@@ -655,17 +659,17 @@ class EntityValueUpdatesTest
         RELATIONSHIP
                 {
 
-                    private final SchemaDescriptor index1 = SchemaDescriptor.forRelType( TOKEN_ID_1, PROPERTY_KEY_ID_1 );
-                    private final SchemaDescriptor index2 = SchemaDescriptor.forRelType( TOKEN_ID_1, PROPERTY_KEY_ID_2 );
-                    private final SchemaDescriptor index3 = SchemaDescriptor.forRelType( TOKEN_ID_1, PROPERTY_KEY_ID_3 );
-                    private final SchemaDescriptor index123 =
-                            SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_1, PROPERTY_KEY_ID_2, PROPERTY_KEY_ID_3 );
-                    private final List<SchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index123 );
-                    private final SchemaDescriptor nonSchemaIndex = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, new int[]{TOKEN_ID_1, TOKEN_ID_2},
-                            new int[]{PROPERTY_KEY_ID_1, PROPERTY_KEY_ID_2, PROPERTY_KEY_ID_3} );
+                    private final SchemaDescriptorSupplier index1 = () -> SchemaDescriptor.forRelType( TOKEN_ID_1, PROPERTY_KEY_ID_1 );
+                    private final SchemaDescriptorSupplier index2 = () -> SchemaDescriptor.forRelType( TOKEN_ID_1, PROPERTY_KEY_ID_2 );
+                    private final SchemaDescriptorSupplier index3 = () -> SchemaDescriptor.forRelType( TOKEN_ID_1, PROPERTY_KEY_ID_3 );
+                    private final SchemaDescriptorSupplier index123 =
+                            () -> SchemaDescriptor.forLabel( TOKEN_ID_1, PROPERTY_KEY_ID_1, PROPERTY_KEY_ID_2, PROPERTY_KEY_ID_3 );
+                    private final List<SchemaDescriptorSupplier> indexes = Arrays.asList( index1, index2, index3, index123 );
+                    private final SchemaDescriptorSupplier nonSchemaIndex = () -> SchemaDescriptor.fulltext(
+                            EntityType.RELATIONSHIP, new int[]{TOKEN_ID_1, TOKEN_ID_2}, new int[]{PROPERTY_KEY_ID_1, PROPERTY_KEY_ID_2, PROPERTY_KEY_ID_3} );
 
                     @Override
-                    List<SchemaDescriptor> indexes()
+                    List<SchemaDescriptorSupplier> indexes()
                     {
                         return indexes;
                     }
@@ -677,48 +681,48 @@ class EntityValueUpdatesTest
                     }
 
                     @Override
-                    SchemaDescriptor index1()
+                    SchemaDescriptorSupplier index1()
                     {
                         return index1;
                     }
 
                     @Override
-                    SchemaDescriptor index2()
+                    SchemaDescriptorSupplier index2()
                     {
                         return index2;
                     }
 
                     @Override
-                    SchemaDescriptor index3()
+                    SchemaDescriptorSupplier index3()
                     {
                         return index3;
                     }
 
                     @Override
-                    SchemaDescriptor index123()
+                    SchemaDescriptorSupplier index123()
                     {
                         return index123;
                     }
 
                     @Override
-                    SchemaDescriptor nonSchemaIndex()
+                    SchemaDescriptorSupplier nonSchemaIndex()
                     {
                         return nonSchemaIndex;
                     }
                 };
 
-        abstract List<SchemaDescriptor> indexes();
+        abstract List<SchemaDescriptorSupplier> indexes();
 
         abstract EntityType type();
 
-        abstract SchemaDescriptor index1();
+        abstract SchemaDescriptorSupplier index1();
 
-        abstract SchemaDescriptor index2();
+        abstract SchemaDescriptorSupplier index2();
 
-        abstract SchemaDescriptor index3();
+        abstract SchemaDescriptorSupplier index3();
 
-        abstract SchemaDescriptor index123();
+        abstract SchemaDescriptorSupplier index123();
 
-        abstract SchemaDescriptor nonSchemaIndex();
+        abstract SchemaDescriptorSupplier nonSchemaIndex();
     }
 }

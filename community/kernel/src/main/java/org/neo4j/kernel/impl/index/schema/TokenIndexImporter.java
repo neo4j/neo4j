@@ -28,7 +28,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -58,7 +57,7 @@ public class TokenIndexImporter implements IndexImporter
     {
         try
         {
-            updater.process( IndexEntryUpdate.change( entity, index.schema(), new long[0], tokens ) );
+            updater.process( IndexEntryUpdate.change( entity, index, new long[0], tokens ) );
         }
         catch ( IndexEntryConflictException e )
         {

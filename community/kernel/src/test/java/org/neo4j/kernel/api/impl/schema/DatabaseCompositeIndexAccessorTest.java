@@ -354,17 +354,17 @@ public class DatabaseCompositeIndexAccessorTest
 
     private static IndexEntryUpdate<?> add( long nodeId, Object... values )
     {
-        return IndexQueryHelper.add( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), values );
+        return IndexQueryHelper.add( nodeId, SCHEMA_INDEX_DESCRIPTOR, values );
     }
 
     private static IndexEntryUpdate<?> remove( long nodeId, Object... values )
     {
-        return IndexQueryHelper.remove( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), values );
+        return IndexQueryHelper.remove( nodeId, SCHEMA_INDEX_DESCRIPTOR, values );
     }
 
     private static IndexEntryUpdate<?> change( long nodeId, Object[] valuesBefore, Object[] valuesAfter )
     {
-        return IndexQueryHelper.change( nodeId, SCHEMA_INDEX_DESCRIPTOR.schema(), valuesBefore, valuesAfter );
+        return IndexQueryHelper.change( nodeId, SCHEMA_INDEX_DESCRIPTOR, valuesBefore, valuesAfter );
     }
 
     private static void updateAndCommit( IndexAccessor accessor, List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException

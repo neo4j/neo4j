@@ -105,11 +105,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void testIndexSeekByPrefix() throws Exception
     {
         updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "a" ),
-                add( 2L, descriptor.schema(), "A" ),
-                add( 3L, descriptor.schema(), "apa" ),
-                add( 4L, descriptor.schema(), "apA" ),
-                add( 5L, descriptor.schema(), "b" ) ) );
+                add( 1L, descriptor, "a" ),
+                add( 2L, descriptor, "A" ),
+                add( 3L, descriptor, "apa" ),
+                add( 4L, descriptor, "apA" ),
+                add( 5L, descriptor, "b" ) ) );
 
         assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 1L, 3L, 4L ) );
         assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( singletonList( 2L ) );
@@ -121,9 +121,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void testIndexSeekByPrefixOnNonStrings() throws Exception
     {
         updateAndCommit( asList(
-                add( 1L, descriptor.schema(), "2a" ),
-                add( 2L, descriptor.schema(), 2L ),
-                add( 2L, descriptor.schema(), 20L ) ) );
+                add( 1L, descriptor, "2a" ),
+                add( 2L, descriptor, 2L ),
+                add( 2L, descriptor, 20L ) ) );
         assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "2" ) ) ) ).isEqualTo( singletonList( 1L ) );
     }
 
@@ -138,12 +138,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         DateTimeValue d8 = datetime( 10000, 101, ZoneId.of( "UTC" ) );
 
         updateAndCommit( asList(
-                add( 1L, descriptor.schema(), d1 ),
-                add( 4L, descriptor.schema(), d4 ),
-                add( 5L, descriptor.schema(), d5 ),
-                add( 6L, descriptor.schema(), d6 ),
-                add( 7L, descriptor.schema(), d7 ),
-                add( 8L, descriptor.schema(), d8 )
+                add( 1L, descriptor, d1 ),
+                add( 4L, descriptor, d4 ),
+                add( 5L, descriptor, d5 ),
+                add( 6L, descriptor, d6 ),
+                add( 7L, descriptor, d7 ),
+                add( 8L, descriptor, d8 )
             ) );
 
         assertThat( query( range( 1, d4, true, d7, true ) ) ).containsExactly( 4L, 5L, 6L, 7L );
@@ -174,9 +174,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         PointValue p3 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
 
         updateAndCommit( asList(
-                add( 1L, descriptor.schema(), p1 ),
-                add( 2L, descriptor.schema(), p2 ),
-                add( 3L, descriptor.schema(), p3 )
+                add( 1L, descriptor, p1 ),
+                add( 2L, descriptor, p2 ),
+                add( 3L, descriptor, p3 )
             ) );
 
         assertThat( query( range( 1, p1, true, p2, true ) ) ).containsExactly( 1L, 2L );
@@ -390,7 +390,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         values.sort( Values.COMPARATOR );
         for ( int i = 0; i < count; i++ )
         {
-            updates.add( add( i + 1, descriptor.schema(), values.get( i ) ) );
+            updates.add( add( i + 1, descriptor, values.get( i ) ) );
         }
         Collections.shuffle( updates ); // <- Don't rely on insert order
 
@@ -924,7 +924,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             Assume.assumeTrue( "Assume support for order " + order, indexOrders.supportsDesc() );
         }
 
-        List<ValueIndexEntryUpdate<?>> additions = Arrays.stream( objects ).map( o -> add( 1, descriptor.schema(), o ) ).collect( Collectors.toList() );
+        List<ValueIndexEntryUpdate<?>> additions = Arrays.stream( objects ).map( o -> add( 1, descriptor, o ) ).collect( Collectors.toList() );
         Collections.shuffle( additions, random.random() );
         updateAndCommit( additions );
 
@@ -945,7 +945,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         {
             // given
             Value value = random.nextValue( valueType );
-            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor, value ) ) );
             assertEquals( singletonList( entityId ), query( PropertyIndexQuery.exact( 0, value ) ) );
 
             // when
@@ -955,7 +955,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 newValue = random.nextValue( valueType );
             }
             while ( value.equals( newValue ) );
-            updateAndCommit( singletonList( IndexEntryUpdate.change( entityId, descriptor.schema(), value, newValue ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.change( entityId, descriptor, value, newValue ) ) );
 
             // then
             assertEquals( emptyList(), query( PropertyIndexQuery.exact( 0, value ) ) );
@@ -972,11 +972,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         {
             // given
             Value value = random.nextValue( valueType );
-            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor, value ) ) );
             assertEquals( singletonList( entityId ), query( PropertyIndexQuery.exact( 0, value ) ) );
 
             // when
-            updateAndCommit( singletonList( IndexEntryUpdate.remove( entityId, descriptor.schema(), value ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.remove( entityId, descriptor, value ) ) );
 
             // then
             assertTrue( query( PropertyIndexQuery.exact( 0, value ) ).isEmpty() );
@@ -1003,8 +1003,8 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // the exact-match filtering we do on index seeks.
 
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a" ),
-                    add( 2L, descriptor.schema(), "a" ) ) );
+                    add( 1L, descriptor, "a" ),
+                    add( 2L, descriptor, "a" ) ) );
 
             assertThat( query( exact( 1, "a" ) ) ).containsExactly( 1L, 2L );
         }
@@ -1013,9 +1013,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         public void testIndexSeekAndScan() throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a" ),
-                    add( 2L, descriptor.schema(), "a" ),
-                    add( 3L, descriptor.schema(), "b" ) ) );
+                    add( 1L, descriptor, "a" ),
+                    add( 2L, descriptor, "a" ),
+                    add( 3L, descriptor, "b" ) ) );
 
             assertThat( query( exact( 1, "a" ) ) ).containsExactly( 1L, 2L );
             assertThat( query( exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
@@ -1025,11 +1025,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         public void testIndexRangeSeekByNumberWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), -5 ),
-                    add( 2L, descriptor.schema(), -5 ),
-                    add( 3L, descriptor.schema(), 0 ),
-                    add( 4L, descriptor.schema(), 5 ),
-                    add( 5L, descriptor.schema(), 5 ) ) );
+                    add( 1L, descriptor, -5 ),
+                    add( 2L, descriptor, -5 ),
+                    add( 3L, descriptor, 0 ),
+                    add( 4L, descriptor, 5 ),
+                    add( 5L, descriptor, 5 ) ) );
 
             assertThat( query( range( 1, -5, true, 5, true ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
             assertThat( query( range( 1, -3, true, -1, true ) ) ).isEmpty();
@@ -1042,11 +1042,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         public void testIndexRangeSeekByStringWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "Anna" ),
-                    add( 2L, descriptor.schema(), "Anna" ),
-                    add( 3L, descriptor.schema(), "Bob" ),
-                    add( 4L, descriptor.schema(), "William" ),
-                    add( 5L, descriptor.schema(), "William" ) ) );
+                    add( 1L, descriptor, "Anna" ),
+                    add( 2L, descriptor, "Anna" ),
+                    add( 3L, descriptor, "Bob" ),
+                    add( 4L, descriptor, "William" ),
+                    add( 5L, descriptor, "William" ) ) );
 
             assertThat( query( range( 1, "Anna", false, "William", false ) ) ).containsExactly( 3L );
             assertThat( query( range( 1, "Arabella", false, "Bob", false ) ) ).isEmpty();
@@ -1124,11 +1124,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         private <VALUE extends Value> void testIndexRangeSeekWithDuplicates( VALUE v1, VALUE v2, VALUE v3, VALUE v4 ) throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), v1 ),
-                    add( 2L, descriptor.schema(), v1 ),
-                    add( 3L, descriptor.schema(), v3 ),
-                    add( 4L, descriptor.schema(), v4 ),
-                    add( 5L, descriptor.schema(), v4 ) ) );
+                    add( 1L, descriptor, v1 ),
+                    add( 2L, descriptor, v1 ),
+                    add( 3L, descriptor, v3 ),
+                    add( 4L, descriptor, v4 ),
+                    add( 5L, descriptor, v4 ) ) );
 
             assertThat( query( range( 1, v1, false, v4, false ) ) ).containsExactly( 3L );
             assertThat( query( range( 1, v2, false, v3, false ) ) ).isEmpty();
@@ -1141,11 +1141,11 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         public void testIndexRangeSeekByPrefixWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a" ),
-                    add( 2L, descriptor.schema(), "A" ),
-                    add( 3L, descriptor.schema(), "apa" ),
-                    add( 4L, descriptor.schema(), "apa" ),
-                    add( 5L, descriptor.schema(), "apa" ) ) );
+                    add( 1L, descriptor, "a" ),
+                    add( 2L, descriptor, "A" ),
+                    add( 3L, descriptor, "apa" ),
+                    add( 4L, descriptor, "apa" ),
+                    add( 5L, descriptor, "apa" ) ) );
 
             assertThat( query( stringPrefix( 1, stringValue( "a" ) ) ) ).containsExactly( 1L, 3L, 4L, 5L );
             assertThat( query( stringPrefix( 1, stringValue( "apa" ) ) ) ).containsExactly( 3L, 4L, 5L );
@@ -1155,12 +1155,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         public void testIndexFullSearchWithDuplicates() throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a" ),
-                    add( 2L, descriptor.schema(), "A" ),
-                    add( 3L, descriptor.schema(), "apa" ),
-                    add( 4L, descriptor.schema(), "apa" ),
-                    add( 5L, descriptor.schema(), "apalong" ),
-                    add( 6L, descriptor.schema(), "apa apa" )
+                    add( 1L, descriptor, "a" ),
+                    add( 2L, descriptor, "A" ),
+                    add( 3L, descriptor, "apa" ),
+                    add( 4L, descriptor, "apa" ),
+                    add( 5L, descriptor, "apalong" ),
+                    add( 6L, descriptor, "apa apa" )
             ) );
 
             assertThat( query( stringContains( 1, stringValue( "a" ) ) ) ).containsExactly( 1L, 3L, 4L, 5L, 6L );
@@ -1173,13 +1173,13 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         public void testIndexEndsWithWithDuplicated() throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a" ),
-                    add( 2L, descriptor.schema(), "A" ),
-                    add( 3L, descriptor.schema(), "apa" ),
-                    add( 4L, descriptor.schema(), "apa" ),
-                    add( 5L, descriptor.schema(), "longapa" ),
-                    add( 6L, descriptor.schema(), "apalong" ),
-                    add( 7L, descriptor.schema(), "apa apa" )
+                    add( 1L, descriptor, "a" ),
+                    add( 2L, descriptor, "A" ),
+                    add( 3L, descriptor, "apa" ),
+                    add( 4L, descriptor, "apa" ),
+                    add( 5L, descriptor, "longapa" ),
+                    add( 6L, descriptor, "apalong" ),
+                    add( 7L, descriptor, "apa apa" )
                     ) );
 
             assertThat( query( stringSuffix( 1, stringValue( "a" ) ) ) ).containsExactly( 1L, 3L, 4L, 5L, 7L );
@@ -1202,7 +1202,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             for ( long i = 0; i < 1000; i++ )
             {
                 nodeIds.add( i );
-                updates.add( add( i, descriptor.schema(), value ) );
+                updates.add( add( i, descriptor, value ) );
             }
             updateAndCommit( updates );
 
@@ -1242,8 +1242,8 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // the exact-match filtering we do on index seeks.
 
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a" ),
-                    add( 2L, descriptor.schema(), "a" ) ) );
+                    add( 1L, descriptor, "a" ),
+                    add( 2L, descriptor, "a" ) ) );
 
             assertThat( query( exact( 1, "a" ) ) ).containsExactly( 1L, 2L );
         }
@@ -1252,9 +1252,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         public void testIndexSeekAndScan() throws Exception
         {
             updateAndCommit( asList(
-                    add( 1L, descriptor.schema(), "a" ),
-                    add( 2L, descriptor.schema(), "b" ),
-                    add( 3L, descriptor.schema(), "c" ) ) );
+                    add( 1L, descriptor, "a" ),
+                    add( 2L, descriptor, "b" ),
+                    add( 3L, descriptor, "c" ) ) );
 
             assertThat( query( exact( 1, "a" ) ) ).containsExactly( 1L );
             assertThat( query( PropertyIndexQuery.exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );

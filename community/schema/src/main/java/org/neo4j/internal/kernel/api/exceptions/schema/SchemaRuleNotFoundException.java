@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -30,5 +31,10 @@ public class SchemaRuleNotFoundException extends SchemaRuleException
     public SchemaRuleNotFoundException( SchemaDescriptorSupplier schemaThing, TokenNameLookup tokenNameLookup )
     {
         super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, schemaThing, tokenNameLookup );
+    }
+
+    public SchemaRuleNotFoundException( SchemaDescriptor schema, TokenNameLookup tokenNameLookup )
+    {
+        super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, () -> schema, tokenNameLookup );
     }
 }

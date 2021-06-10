@@ -27,8 +27,8 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -44,6 +44,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Values;
 
@@ -156,8 +157,8 @@ class IndexPopulationTest
         return new ValueIndexProxyStrategy( TestIndexDescriptorFactory.forLabel( 0, 0 ), indexStatisticsStore, tokens );
     }
 
-    private static IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()
+    private static ValueIndexEntryUpdate<SchemaDescriptorSupplier> someUpdate()
     {
-        return IndexEntryUpdate.add( 0, SchemaDescriptor.forLabel( 0, 0 ), Values.numberValue( 0 ) );
+        return IndexEntryUpdate.add( 0, () -> SchemaDescriptor.forLabel( 0, 0 ), Values.numberValue( 0 ) );
     }
 }

@@ -184,7 +184,7 @@ class CheckerTestBase
     {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         final IndexDescriptor[] indexDescriptors =
-                schemaStorage.indexGetForSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), storeCursors );
+                schemaStorage.indexGetForSchema( () -> SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), storeCursors );
         // The Node Label Index should exist and be unique.
         assertThat( indexDescriptors.length ).isEqualTo( 1 );
         IndexDescriptor nli = indexDescriptors[0];

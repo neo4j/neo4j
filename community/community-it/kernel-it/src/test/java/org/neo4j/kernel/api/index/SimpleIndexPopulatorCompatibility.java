@@ -35,7 +35,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -134,7 +133,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
             long nodeId = 1;
 
             // update using populator...
-            IndexEntryUpdate<SchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
+            var update = add( nodeId, descriptor, propertyValue );
             p.add( singletonList( update ), NULL );
             // ...is the same as update using updater
             try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorContext ) -> propertyValue, NULL ) )
@@ -177,7 +176,7 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
             {
                 for ( NodeAndValue entry : valueSet1 )
                 {
-                    updater.process( add( entry.nodeId, descriptor.schema(), entry.value ) );
+                    updater.process( add( entry.nodeId, descriptor, entry.value ) );
                 }
             }
         } );
@@ -404,8 +403,8 @@ public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderComp
                 try
                 {
                     p.add( Arrays.asList(
-                            add( nodeId1, descriptor.schema(), value ),
-                            add( nodeId2, descriptor.schema(), value ) ), NULL );
+                            add( nodeId1, descriptor, value ),
+                            add( nodeId2, descriptor, value ) ), NULL );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value );

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -51,7 +52,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
 class UniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final SchemaDescriptor descriptor = SchemaDescriptor.forLabel( 1, 42 );
+    private static final SchemaDescriptorSupplier descriptor = () -> SchemaDescriptor.forLabel( 1, 42 );
 
     @Test
     void closeVerifiesUniquenessOfAddedValues() throws Exception
@@ -236,17 +237,17 @@ class UniqueDatabaseIndexPopulatingUpdaterTest
     private static UniqueLuceneIndexPopulatingUpdater newUpdater( SchemaIndex index, LuceneIndexWriter writer,
             UniqueIndexSampler sampler )
     {
-        return new UniqueLuceneIndexPopulatingUpdater( writer, descriptor.getPropertyIds(), index,
+        return new UniqueLuceneIndexPopulatingUpdater( writer, descriptor.schema().getPropertyIds(), index,
                 mock( NodePropertyAccessor.class ), sampler );
     }
 
-    private static void verifyVerifyUniqueness( SchemaIndex index, SchemaDescriptor descriptor, Object... values )
+    private static void verifyVerifyUniqueness( SchemaIndex index, SchemaDescriptorSupplier descriptor, Object... values )
             throws IOException, IndexEntryConflictException
     {
         @SuppressWarnings( "unchecked" )
         ArgumentCaptor<List<Value[]>> captor = ArgumentCaptor.forClass( List.class );
         verify( index ).verifyUniqueness(
-                any(), eq( descriptor.getPropertyIds() ), captor.capture() );
+                any(), eq( descriptor.schema().getPropertyIds() ), captor.capture() );
 
         assertThat( captor.getValue() ).containsAll( valueTupleList( values ) );
     }

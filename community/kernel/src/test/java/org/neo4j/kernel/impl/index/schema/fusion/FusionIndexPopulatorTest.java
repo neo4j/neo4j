@@ -26,18 +26,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -223,7 +220,7 @@ abstract class FusionIndexPopulatorTest
     private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, Value... numberValues )
             throws IndexEntryConflictException
     {
-        Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = Collections.singletonList( add( numberValues ) );
+        var update = Collections.singletonList( add( numberValues ) );
         fusionIndexPopulator.add( update, NULL );
         verify( correctPopulator ).add( update, NULL );
         for ( IndexPopulator alivePopulator : alivePopulators )
@@ -398,7 +395,7 @@ abstract class FusionIndexPopulatorTest
         for ( Value value : values )
         {
             // when
-            IndexEntryUpdate<LabelSchemaDescriptor> update = add( value );
+            var update = add( value );
             fusionIndexPopulator.includeSample( update );
 
             // then

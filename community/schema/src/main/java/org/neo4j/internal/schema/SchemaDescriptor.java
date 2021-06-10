@@ -22,6 +22,7 @@ package org.neo4j.internal.schema;
 import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.token.api.TokenConstants;
 
@@ -40,7 +41,7 @@ import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
  * with a new concrete type, the process method implementations need to be added to {@link SchemaDescriptorImplementation}
  * and the {@link SchemaProcessor} interfaces need to be extended with methods taking the new concrete type as argument.
  */
-public interface SchemaDescriptor extends SchemaDescriptorSupplier
+public interface SchemaDescriptor
 {
     static SchemaDescriptor noSchema()
     {
@@ -272,4 +273,12 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return PropertySchemaType of this schema unit.
      */
     PropertySchemaType propertySchemaType();
+
+    /**
+     * Produce a user-friendly description of this schema entity.
+     *
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return a user friendly description of this schema entity.
+     */
+    String userDescription( TokenNameLookup tokenNameLookup );
 }

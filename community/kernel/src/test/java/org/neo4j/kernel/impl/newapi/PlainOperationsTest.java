@@ -595,8 +595,8 @@ public class PlainOperationsTest extends OperationsTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
         when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
-        when( storageReader.constraintsGetForSchema( schema.schema() ) ).thenReturn( Collections.emptyIterator() );
-        when( storageReader.indexGetForSchema( schema.schema() ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.constraintsGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
 
         // when
         operations.uniquePropertyConstraintCreate( prototype );

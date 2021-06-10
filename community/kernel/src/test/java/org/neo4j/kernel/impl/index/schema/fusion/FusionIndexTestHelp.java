@@ -31,7 +31,9 @@ import java.util.concurrent.Callable;
 
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
@@ -133,40 +135,40 @@ final class FusionIndexTestHelp
         }
     }
 
-    static IndexEntryUpdate<LabelSchemaDescriptor> add( Value... value )
+    static ValueIndexEntryUpdate<SchemaDescriptorSupplier> add( Value... value )
     {
         switch ( value.length )
         {
         case 1:
-            return IndexEntryUpdate.add( 0, INDEX_KEY, value );
+            return IndexEntryUpdate.add( 0, () -> INDEX_KEY, value );
         case 2:
-            return IndexEntryUpdate.add( 0, COMPOSITE_INDEX_KEY, value );
+            return IndexEntryUpdate.add( 0, () -> COMPOSITE_INDEX_KEY, value );
         default:
             return null;
         }
     }
 
-    static IndexEntryUpdate<LabelSchemaDescriptor> remove( Value... value )
+    static ValueIndexEntryUpdate<SchemaDescriptorSupplier> remove( Value... value )
     {
         switch ( value.length )
         {
         case 1:
-            return IndexEntryUpdate.remove( 0, INDEX_KEY, value );
+            return IndexEntryUpdate.remove( 0, () -> INDEX_KEY, value );
         case 2:
-            return IndexEntryUpdate.remove( 0, COMPOSITE_INDEX_KEY, value );
+            return IndexEntryUpdate.remove( 0, () -> COMPOSITE_INDEX_KEY, value );
         default:
             return null;
         }
     }
 
-    static IndexEntryUpdate<LabelSchemaDescriptor> change( Value[] before, Value[] after )
+    static ValueIndexEntryUpdate<SchemaDescriptorSupplier> change( Value[] before, Value[] after )
     {
-        return IndexEntryUpdate.change( 0, COMPOSITE_INDEX_KEY, before, after );
+        return IndexEntryUpdate.change( 0, () -> COMPOSITE_INDEX_KEY, before, after );
     }
 
-    static IndexEntryUpdate<LabelSchemaDescriptor> change( Value before, Value after )
+    static ValueIndexEntryUpdate<SchemaDescriptorSupplier> change( Value before, Value after )
     {
-        return IndexEntryUpdate.change( 0, INDEX_KEY, before, after );
+        return IndexEntryUpdate.change( 0, () -> INDEX_KEY, before, after );
     }
 
     static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable, AutoCloseable... successfulCloseables )

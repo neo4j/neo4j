@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
@@ -42,26 +42,26 @@ public final class IndexQueryHelper
         return PropertyIndexQuery.exact( propertyKeyId, value );
     }
 
-    public static ValueIndexEntryUpdate<SchemaDescriptor> add(
-            long nodeId, SchemaDescriptor schema, Object... objects )
+    public static ValueIndexEntryUpdate<SchemaDescriptorSupplier> add(
+            long nodeId, SchemaDescriptorSupplier schema, Object... objects )
     {
         return IndexEntryUpdate.add( nodeId, schema, toValues( objects ) );
     }
 
-    public static ValueIndexEntryUpdate<SchemaDescriptor> remove(
-            long nodeId, SchemaDescriptor schema, Object... objects )
+    public static ValueIndexEntryUpdate<SchemaDescriptorSupplier> remove(
+            long nodeId, SchemaDescriptorSupplier schema, Object... objects )
     {
         return IndexEntryUpdate.remove( nodeId, schema, toValues( objects ) );
     }
 
-    public static ValueIndexEntryUpdate<SchemaDescriptor> change(
-            long nodeId, SchemaDescriptor schema, Object o1, Object o2 )
+    public static ValueIndexEntryUpdate<SchemaDescriptorSupplier> change(
+            long nodeId, SchemaDescriptorSupplier schema, Object o1, Object o2 )
     {
         return IndexEntryUpdate.change( nodeId, schema, Values.of( o1 ), Values.of( o2 ) );
     }
 
-    public static ValueIndexEntryUpdate<SchemaDescriptor> change(
-            long nodeId, SchemaDescriptor schema, Object[] o1, Object[] o2 )
+    public static ValueIndexEntryUpdate<SchemaDescriptorSupplier> change(
+            long nodeId, SchemaDescriptorSupplier schema, Object[] o1, Object[] o2 )
     {
         return IndexEntryUpdate.change( nodeId, schema, toValues( o1 ), toValues( o2 ) );
     }

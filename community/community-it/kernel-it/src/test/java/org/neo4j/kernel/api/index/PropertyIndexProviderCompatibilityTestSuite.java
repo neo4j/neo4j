@@ -256,7 +256,7 @@ public abstract class PropertyIndexProviderCompatibilityTestSuite extends IndexP
         List<ValueIndexEntryUpdate<?>> updates( List<NodeAndValue> values, long nodeIdOffset )
         {
             List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
-            values.forEach( entry -> updates.add( ValueIndexEntryUpdate.add( nodeIdOffset + entry.nodeId, descriptor.schema(), entry.value ) ) );
+            values.forEach( entry -> updates.add( ValueIndexEntryUpdate.add( nodeIdOffset + entry.nodeId, descriptor, entry.value ) ) );
             return updates;
         }
 

@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Value;
@@ -84,10 +83,10 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             Set<ValueTuple> duplicateChecker = new HashSet<>();
             for ( long id = 0; id < 30_000; id++ )
             {
-                ValueIndexEntryUpdate<SchemaDescriptor> update;
+                ValueIndexEntryUpdate<?> update;
                 do
                 {
-                    update = add( id, descriptor.schema(),
+                    update = add( id, descriptor,
                             random.randomValues().nextValueOfTypes( types ),
                             random.randomValues().nextValueOfTypes( types ),
                             random.randomValues().nextValueOfTypes( types ),
@@ -159,7 +158,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                             ValueTuple value = generateUniqueRandomValue( types, uniqueValues );
                             long id = nextId.getAndIncrement();
                             sortedValues.add( new ValueAndId( value, id ) );
-                            updates.add( add( id, descriptor.schema(), value.getValues() ) );
+                            updates.add( add( id, descriptor, value.getValues() ) );
                         }
                         else if ( type == 1 )
                         {   // update
@@ -169,7 +168,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                             ValueTuple newValue = generateUniqueRandomValue( types, uniqueValues );
                             uniqueValues.remove( existing.value );
                             sortedValues.add( new ValueAndId( newValue, existing.id ) );
-                            updates.add( ValueIndexEntryUpdate.change( existing.id, descriptor.schema(), existing.value.getValues(), newValue.getValues() ) );
+                            updates.add( ValueIndexEntryUpdate.change( existing.id, descriptor, existing.value.getValues(), newValue.getValues() ) );
                         }
                         else
                         {   // remove
@@ -177,7 +176,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                                     existing = random.among( sortedValues.toArray( new ValueAndId[0] ) );
                             sortedValues.remove( existing );
                             uniqueValues.remove( existing.value );
-                            updates.add( ValueIndexEntryUpdate.remove( existing.id, descriptor.schema(), existing.value.getValues() ) );
+                            updates.add( ValueIndexEntryUpdate.remove( existing.id, descriptor, existing.value.getValues() ) );
                         }
                     }
                 }
@@ -277,7 +276,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             List<ValueIndexEntryUpdate<?>> updates = new ArrayList<>();
             for ( ValueTuple value : values )
             {
-                updates.add( add( nextId.getAndIncrement(), descriptor.schema(), value.getValues() ) );
+                updates.add( add( nextId.getAndIncrement(), descriptor, value.getValues() ) );
             }
             return updates;
         }

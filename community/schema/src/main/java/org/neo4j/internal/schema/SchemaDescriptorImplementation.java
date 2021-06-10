@@ -322,12 +322,6 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     }
 
     @Override
-    public SchemaDescriptor schema()
-    {
-        return this;
-    }
-
-    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

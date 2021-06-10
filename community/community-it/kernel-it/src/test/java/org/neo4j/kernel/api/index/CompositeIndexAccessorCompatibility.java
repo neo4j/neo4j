@@ -46,6 +46,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
@@ -653,7 +654,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         Set<ValueTuple> duplicateChecker = new HashSet<>();
         for ( long id = 0; id < 10_000; id++ )
         {
-            ValueIndexEntryUpdate<SchemaDescriptor> update;
+            ValueIndexEntryUpdate<?> update;
             do
             {
                 update = add( id, descriptor.schema(),
@@ -1283,7 +1284,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         {
             // given
             Value[] value = new Value[]{random.nextValue( valueType ), random.nextValue( valueType )};
-            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor, value ) ) );
             assertEquals( singletonList( entityId ), query( exactQuery( value ) ) );
 
             // when
@@ -1293,7 +1294,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 newValue = new Value[]{random.nextValue( valueType ), random.nextValue( valueType )};
             }
             while ( ValueTuple.of( value ).equals( ValueTuple.of( newValue ) ) );
-            updateAndCommit( singletonList( IndexEntryUpdate.change( entityId, descriptor.schema(), value, newValue ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.change( entityId, descriptor, value, newValue ) ) );
 
             // then
             assertEquals( emptyList(), query( exactQuery( value ) ) );
@@ -1310,11 +1311,11 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         {
             // given
             Value[] value = new Value[]{random.nextValue( valueType ), random.nextValue( valueType )};
-            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor, value ) ) );
             assertEquals( singletonList( entityId ), query( exactQuery( value ) ) );
 
             // when
-            updateAndCommit( singletonList( IndexEntryUpdate.remove( entityId, descriptor.schema(), value ) ) );
+            updateAndCommit( singletonList( IndexEntryUpdate.remove( entityId, descriptor, value ) ) );
 
             // then
             assertEquals( emptyList(), query( exactQuery( value ) ) );
@@ -1454,13 +1455,13 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         return Values.dateArray( localDates );
     }
 
-    private static ValueIndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Object value1, Object value2 )
+    private static ValueIndexEntryUpdate<SchemaDescriptorSupplier> add( long nodeId, SchemaDescriptor schema, Object value1, Object value2 )
     {
         return add( nodeId, schema, Values.of( value1 ), Values.of( value2 ) );
     }
 
-    private static ValueIndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Value value1, Value value2 )
+    private static ValueIndexEntryUpdate<SchemaDescriptorSupplier> add( long nodeId, SchemaDescriptor schema, Value value1, Value value2 )
     {
-        return IndexEntryUpdate.add( nodeId, schema, value1, value2 );
+        return IndexEntryUpdate.add( nodeId, () -> schema, value1, value2 );
     }
 }

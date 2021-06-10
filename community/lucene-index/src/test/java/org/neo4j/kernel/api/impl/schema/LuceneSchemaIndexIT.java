@@ -271,7 +271,7 @@ class LuceneSchemaIndexIT
 
     private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, descriptor.schema(), Values.of( value ) );
+        return IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
     }
 
     private static Map<String,Integer> countTemplateMatches( List<String> nameTemplates, List<String> fileNames )

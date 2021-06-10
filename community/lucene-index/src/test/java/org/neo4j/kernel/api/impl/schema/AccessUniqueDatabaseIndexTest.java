@@ -166,17 +166,17 @@ class AccessUniqueDatabaseIndexTest
 
     private IndexEntryUpdate<?> add( long nodeId, Object propertyValue )
     {
-        return IndexEntryUpdate.add( nodeId, index.schema(), Values.of( propertyValue ) );
+        return IndexEntryUpdate.add( nodeId, index, Values.of( propertyValue ) );
     }
 
     private IndexEntryUpdate<?> change( long nodeId, Object oldValue, Object newValue )
     {
-        return IndexEntryUpdate.change( nodeId, index.schema(), Values.of( oldValue ), Values.of( newValue ) );
+        return IndexEntryUpdate.change( nodeId, index, Values.of( oldValue ), Values.of( newValue ) );
     }
 
     private IndexEntryUpdate<?> remove( long nodeId, Object oldValue )
     {
-        return IndexEntryUpdate.remove( nodeId, index.schema(), Values.of( oldValue ) );
+        return IndexEntryUpdate.remove( nodeId, index, Values.of( oldValue ) );
     }
 
     private static List<Long> getAllNodes( PartitionedIndexStorage indexStorage, String propertyValue ) throws IOException

@@ -137,9 +137,4 @@ class NoSchemaDescriptor implements SchemaDescriptor
         return new long[0];
     }
 
-    @Override
-    public SchemaDescriptor schema()
-    {
-        return null;
-    }
 }

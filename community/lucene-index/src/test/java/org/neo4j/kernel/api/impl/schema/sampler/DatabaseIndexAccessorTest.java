@@ -420,17 +420,17 @@ public class DatabaseIndexAccessorTest
 
     private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
-        return IndexQueryHelper.add( nodeId, index.schema(), value );
+        return IndexQueryHelper.add( nodeId, index, value );
     }
 
     private IndexEntryUpdate<?> remove( long nodeId, Object value )
     {
-        return IndexQueryHelper.remove( nodeId, index.schema(), value );
+        return IndexQueryHelper.remove( nodeId, index, value );
     }
 
     private IndexEntryUpdate<?> change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
+        return IndexQueryHelper.change( nodeId, index, valueBefore, valueAfter );
     }
 
     private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException

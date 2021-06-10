@@ -265,17 +265,17 @@ class LuceneSchemaIndexPopulatorTest
 
     private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
-        return IndexQueryHelper.add( nodeId, index.schema(), value );
+        return IndexQueryHelper.add( nodeId, index, value );
     }
 
     private IndexEntryUpdate<?> change( long nodeId, Object valueBefore, Object valueAfter )
     {
-        return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
+        return IndexQueryHelper.change( nodeId, index, valueBefore, valueAfter );
     }
 
     private IndexEntryUpdate<?> remove( long nodeId, Object removedValue )
     {
-        return IndexQueryHelper.remove( nodeId, index.schema(), removedValue );
+        return IndexQueryHelper.remove( nodeId, index, removedValue );
     }
 
     private void assertIndexedValues( Hit... expectedHits ) throws IOException
@@ -307,7 +307,7 @@ class LuceneSchemaIndexPopulatorTest
 
     private void addUpdate( IndexPopulator populator, long nodeId, Object value ) throws IndexEntryConflictException
     {
-        populator.add( singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ), NULL );
+        populator.add( singletonList( IndexQueryHelper.add( nodeId, index, value ) ), NULL );
     }
 
     private static void updatePopulator(

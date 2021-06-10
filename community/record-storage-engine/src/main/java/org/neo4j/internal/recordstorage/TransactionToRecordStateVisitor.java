@@ -205,7 +205,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             if ( constraint.enforcesUniqueness() )
             {
                 // Remove the index for the constraint as well
-                IndexDescriptor[] indexes = schemaStorage.indexGetForSchema( constraint.schema(), storeCursors );
+                IndexDescriptor[] indexes = schemaStorage.indexGetForSchema( constraint, storeCursors );
                 for ( IndexDescriptor index : indexes )
                 {
                     OptionalLong owningConstraintId = index.getOwningConstraintId();

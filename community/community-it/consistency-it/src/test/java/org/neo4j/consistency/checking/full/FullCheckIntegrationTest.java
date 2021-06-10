@@ -633,7 +633,7 @@ public class FullCheckIntegrationTest
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
                 // There is already another node (created in generateInitialData()) that has this value
-                updater.process( IndexEntryUpdate.add( nodeId, indexRule.schema(), values( indexRule ) ) );
+                updater.process( IndexEntryUpdate.add( nodeId, indexRule, values( indexRule ) ) );
             }
             accessor.force( NULL );
         }

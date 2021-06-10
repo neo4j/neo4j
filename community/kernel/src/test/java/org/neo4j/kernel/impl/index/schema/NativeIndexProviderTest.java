@@ -73,11 +73,11 @@ class NativeIndexProviderTest extends IndexProviderTests
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
-            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), someValue ) );
+            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor, someValue ) );
 
             // then
             // ... expect no failure on duplicate value
-            indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), someValue ) );
+            indexUpdater.process( IndexEntryUpdate.add( 2, descriptor, someValue ) );
         }
     }
 

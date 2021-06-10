@@ -22,40 +22,47 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class DropConstraintFailureException extends SchemaKernelException
 {
-    private final Object constraint;
+    private final SchemaDescriptorSupplier constraint;
+    private final String nameOrSchema;
 
     public DropConstraintFailureException( SchemaDescriptorSupplier constraint, Throwable cause )
     {
         super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint: " + cause.getMessage() );
         this.constraint = constraint;
+        this.nameOrSchema = null;
+    }
+
+    public DropConstraintFailureException( SchemaDescriptor constraint, Throwable cause )
+    {
+        this( () -> constraint, cause );
     }
 
     public DropConstraintFailureException( String nameOrSchema, Throwable cause )
     {
         // nameOrSchema is just 'name' or 'on schema'
         super( Status.Schema.ConstraintDropFailed, cause, "Unable to drop constraint `" + nameOrSchema + "`: " + cause.getMessage() );
-        this.constraint = nameOrSchema;
+        this.nameOrSchema = nameOrSchema;
+        this.constraint = null;
     }
 
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
         String message;
-        if ( constraint instanceof SchemaDescriptorSupplier )
+        if ( constraint != null )
         {
-            SchemaDescriptorSupplier schemaish = (SchemaDescriptorSupplier) constraint;
-            message = "Unable to drop constraint on " + schemaish.userDescription( tokenNameLookup ) + ": ";
+            message = "Unable to drop constraint on " + constraint.userDescription( tokenNameLookup ) + ": ";
 
         }
-        else if ( constraint instanceof String )
+        else if ( nameOrSchema != null )
         {
-            String name = (String) constraint;
-            message = "Unable to drop constraint `" + name + "`: ";
+            message = "Unable to drop constraint `" + nameOrSchema + "`: ";
         }
         else
         {

@@ -41,7 +41,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -436,12 +435,12 @@ class IndexRecoveryIT
 
             int labelId = ktx.tokenRead().nodeLabel( label.name() );
             int propertyKeyId = ktx.tokenRead().propertyKey( key );
-            LabelSchemaDescriptor schemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyId );
+            var schemaDescriptor = SchemaDescriptor.forLabel( labelId, propertyKeyId );
             for ( int number : new int[]{4, 10} )
             {
                 Node node = tx.createNode( label );
                 node.setProperty( key, number );
-                updates.add( IndexEntryUpdate.add( node.getId(), schemaDescriptor, Values.of( number ) ) );
+                updates.add( IndexEntryUpdate.add( node.getId(), () -> schemaDescriptor, Values.of( number ) ) );
             }
             tx.commit();
             return updates;

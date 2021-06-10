@@ -810,10 +810,9 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Iterator<ConstraintDescriptor>
-    constraintsGetForSchema( SchemaDescriptor schema )
+    public Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor schema )
     {
-        acquireSharedSchemaLock( schema );
+        acquireSharedSchemaLock( () -> schema );
         return getConstraintsForSchema( schema );
     }
 

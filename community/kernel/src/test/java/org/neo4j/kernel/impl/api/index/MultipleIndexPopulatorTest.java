@@ -33,8 +33,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -51,7 +51,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -91,7 +90,7 @@ class MultipleIndexPopulatorTest
     @Inject
     private JobScheduler jobScheduler;
 
-    private final LabelSchemaDescriptor index1 = SchemaDescriptor.forLabel( 1, 1 );
+    private final SchemaDescriptorSupplier index1 = () -> SchemaDescriptor.forLabel( 1, 1 );
     private IndexStoreView indexStoreView;
     private SchemaState schemaState;
     private MultipleIndexPopulator multipleIndexPopulator;
@@ -571,12 +570,12 @@ class MultipleIndexPopulatorTest
         IndexUpdater updater = mock( IndexUpdater.class );
         IndexPopulator populator = createIndexPopulator( updater );
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
-        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
+        var schema = SchemaDescriptor.forLabel( 1, 1 );
         addPopulator( populator, 1 );
 
         // when external updates comes in
-        ValueIndexEntryUpdate<LabelSchemaDescriptor> lowUpdate = IndexEntryUpdate.add( 10, schema, intValue( 99 ) );
-        ValueIndexEntryUpdate<LabelSchemaDescriptor> highUpdate = IndexEntryUpdate.add( 20, schema, intValue( 101 ) );
+        var lowUpdate = IndexEntryUpdate.add( 10, () -> schema, intValue( 99 ) );
+        var highUpdate = IndexEntryUpdate.add( 20, () -> schema, intValue( 101 ) );
         multipleIndexPopulator.queueConcurrentUpdate( lowUpdate );
         multipleIndexPopulator.queueConcurrentUpdate( highUpdate );
 
@@ -591,7 +590,7 @@ class MultipleIndexPopulatorTest
         verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );
     }
 
-    private static IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
+    private static IndexEntryUpdate<?> createIndexEntryUpdate( SchemaDescriptorSupplier schemaDescriptor )
     {
         return add( 1, schemaDescriptor, "theValue" );
     }

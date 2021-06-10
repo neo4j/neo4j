@@ -89,6 +89,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>kernel-api-test-utils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
         </dependency>

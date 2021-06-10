@@ -180,7 +180,7 @@ class IndexPopulationJobTest
         job.run();
 
         // THEN
-        IndexEntryUpdate<?> update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
+        IndexEntryUpdate<?> update = IndexEntryUpdate.add( nodeId, () -> descriptor, Values.of( value ) );
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
@@ -205,7 +205,7 @@ class IndexPopulationJobTest
 
         job.run();
 
-        IndexEntryUpdate<?> update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
+        IndexEntryUpdate<?> update = IndexEntryUpdate.add( nodeId, () -> descriptor, Values.of( value ) );
 
         assertTrue( populator.created );
         assertEquals( Collections.singletonList( update ), populator.includedSamples );
@@ -315,8 +315,8 @@ class IndexPopulationJobTest
         job.run();
 
         // THEN
-        IndexEntryUpdate<?> update1 = add( node1, descriptor, Values.of( value ) );
-        IndexEntryUpdate<?> update2 = add( node4, descriptor, Values.of( value ) );
+        IndexEntryUpdate<?> update1 = add( node1, () -> descriptor, Values.of( value ) );
+        IndexEntryUpdate<?> update2 = add( node4, () -> descriptor, Values.of( value ) );
 
         assertTrue( populator.created );
         assertEquals( Arrays.asList( update1, update2 ), populator.includedSamples );
@@ -713,7 +713,7 @@ class IndexPopulationJobTest
         {
             if ( update.getEntityId() == 2 )
             {
-                job.update( IndexEntryUpdate.change( nodeToChange, index, previousValue, newValue ) );
+                job.update( IndexEntryUpdate.change( nodeToChange, () -> index, previousValue, newValue ) );
             }
             added.add( Pair.of( update.getEntityId(), update.values()[0].asObjectCopy() ) );
         }
@@ -785,7 +785,7 @@ class IndexPopulationJobTest
         {
             if ( update.getEntityId() == 2 )
             {
-                job.update( IndexEntryUpdate.remove( nodeToDelete, index, valueToDelete ) );
+                job.update( IndexEntryUpdate.remove( nodeToDelete, () -> index, valueToDelete ) );
             }
             added.put( update.getEntityId(), update.values()[0].asObjectCopy() );
         }

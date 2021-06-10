@@ -36,8 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -91,7 +90,7 @@ class UniqueDatabaseIndexPopulatorTest
     private PartitionedIndexStorage indexStorage;
     private SchemaIndex index;
     private UniqueLuceneIndexPopulator populator;
-    private SchemaDescriptor schemaDescriptor;
+    private SchemaDescriptorSupplier schemaDescriptor;
 
     @BeforeEach
     void setUp()
@@ -101,7 +100,7 @@ class UniqueDatabaseIndexPopulatorTest
         index = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() )
                 .withIndexStorage( indexStorage )
                 .build();
-        schemaDescriptor = descriptor.schema();
+        schemaDescriptor = descriptor;
     }
 
     @AfterEach
@@ -430,7 +429,7 @@ class UniqueDatabaseIndexPopulatorTest
     @Test
     void sampleIncludedUpdates()
     {
-        LabelSchemaDescriptor schemaDescriptor = forLabel( 1, 1 );
+        SchemaDescriptorSupplier schemaDescriptor = () -> forLabel( 1, 1 );
         populator = newPopulator();
         List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 add( 1, schemaDescriptor, "foo" ),
@@ -475,7 +474,7 @@ class UniqueDatabaseIndexPopulatorTest
 
     private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
     {
-        IndexEntryUpdate<?> update = add( nodeId, descriptor.schema(), value );
+        IndexEntryUpdate<?> update = add( nodeId, descriptor, value );
         populator.add( singletonList( update ), NULL );
     }
 

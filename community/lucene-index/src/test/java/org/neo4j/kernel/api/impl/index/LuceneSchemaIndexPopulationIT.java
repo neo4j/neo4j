@@ -132,6 +132,6 @@ class LuceneSchemaIndexPopulationIT
 
     private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
-        return IndexEntryUpdate.add( nodeId, descriptor.schema(), Values.of( value ) );
+        return IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
     }
 }

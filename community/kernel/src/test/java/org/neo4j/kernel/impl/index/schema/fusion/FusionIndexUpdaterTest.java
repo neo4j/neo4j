@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumMap;
 import java.util.function.Function;
 
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
@@ -208,7 +207,7 @@ abstract class FusionIndexUpdaterTest
     private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
             throws IndexEntryConflictException
     {
-        IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
+        var update = add( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator ).process( update );
         for ( IndexUpdater populator : aliveUpdaters )
@@ -223,7 +222,7 @@ abstract class FusionIndexUpdaterTest
     private void verifyRemoveWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
             throws IndexEntryConflictException
     {
-        IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.remove( numberValues );
+        var update = FusionIndexTestHelp.remove( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator ).process( update );
         for ( IndexUpdater populator : aliveUpdaters )
@@ -238,7 +237,7 @@ abstract class FusionIndexUpdaterTest
     private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater correctPopulator, Value before,
             Value after ) throws IndexEntryConflictException
     {
-        IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.change( before, after );
+        var update = FusionIndexTestHelp.change( before, after );
         fusionIndexUpdater.process( update );
         verify( correctPopulator ).process( update );
         for ( IndexUpdater populator : aliveUpdaters )
@@ -271,7 +270,7 @@ abstract class FusionIndexUpdaterTest
             {
                 Value after = afterValues[afterIndex];
 
-                IndexEntryUpdate<LabelSchemaDescriptor> change = change( before, after );
+                var change = change( before, after );
                 fusionIndexUpdater.process( change );
 
                 if ( expectRemoveFrom != expectAddTo )

@@ -49,7 +49,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class IndexUpdateStorageTest
 {
     private static final IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    private static final SchemaDescriptorSupplier descriptor = SchemaDescriptor.forLabel( 1, 1 );
+    private static final SchemaDescriptorSupplier descriptor = () -> SchemaDescriptor.forLabel( 1, 1 );
 
     @Inject
     protected TestDirectory directory;

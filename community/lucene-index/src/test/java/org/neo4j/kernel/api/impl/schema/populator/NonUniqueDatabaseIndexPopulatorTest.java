@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -67,7 +68,7 @@ class NonUniqueDatabaseIndexPopulatorTest
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
-    private final SchemaDescriptor labelSchemaDescriptor = SchemaDescriptor.forLabel( 0, 0 );
+    private final SchemaDescriptorSupplier labelSchemaDescriptor = () -> SchemaDescriptor.forLabel( 0, 0 );
 
     @BeforeEach
     void setUp()
@@ -75,7 +76,7 @@ class NonUniqueDatabaseIndexPopulatorTest
         Path folder = testDir.directory( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
 
-        IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).withName( "index" ).materialise( 13 );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor.schema() ).withName( "index" ).materialise( 13 );
         index = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() )
                                         .withIndexStorage( indexStorage )
                                         .build();
@@ -151,7 +152,7 @@ class NonUniqueDatabaseIndexPopulatorTest
         try ( ValueIndexReader reader = index.getIndexReader();
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
-            int propertyKeyId = labelSchemaDescriptor.getPropertyId();
+            int propertyKeyId = labelSchemaDescriptor.schema().getPropertyId();
             reader.query( NULL_CONTEXT, allEntities, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
             assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }

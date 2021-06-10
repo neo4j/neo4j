@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -109,8 +108,8 @@ class IndexCRUDIT
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
-            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
-            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) );
+            var descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
+            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), () -> descriptor, Values.of( value1 ) ) ) );
             tx.commit();
         }
         // We get two updates because we both add a label and a property to be indexed
@@ -150,8 +149,8 @@ class IndexCRUDIT
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
-            LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
-            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) );
+            var descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
+            assertThat( writer.updatesCommitted ).isEqualTo( asSet( IndexEntryUpdate.add( node.getId(), () -> descriptor, Values.of( value ) ) ) );
             tx.commit();
         }
     }

@@ -528,14 +528,14 @@ abstract class Read implements TxStateHolder,
     @Override
     public void acquireSharedLookupLock( EntityType entityType )
     {
-        acquireSharedSchemaLock( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        acquireSharedSchemaLock( () -> SchemaDescriptor.forAnyEntityTokens( entityType ) );
         ktx.assertOpen();
     }
 
     @Override
     public void releaseSharedLookupLock( EntityType entityType )
     {
-        releaseSharedSchemaLock( SchemaDescriptor.forAnyEntityTokens( entityType ) );
+        releaseSharedSchemaLock( () -> SchemaDescriptor.forAnyEntityTokens( entityType ) );
         ktx.assertOpen();
     }
 }

@@ -33,6 +33,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -54,12 +55,12 @@ class SchemaDescriptorLookupSetTest
     void shouldLookupSingleKeyDescriptors()
     {
         // given
-        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor expected = SchemaDescriptor.forLabel( 1, 2 );
+        SchemaDescriptorLookupSet<SchemaDescriptorSupplier> set = new SchemaDescriptorLookupSet<>();
+        var expected = of( SchemaDescriptor.forLabel( 1, 2 ) );
         set.add( expected );
 
         // when
-        Set<SchemaDescriptor> descriptors = new HashSet<>();
+        var descriptors = new HashSet<SchemaDescriptorSupplier>();
         set.matchingDescriptorsForPartialListOfProperties( descriptors, entityTokens( 1 ), properties( 2 ) );
 
         // then
@@ -70,14 +71,14 @@ class SchemaDescriptorLookupSetTest
     void shouldLookupSingleKeyAndSharedCompositeKeyDescriptors()
     {
         // given
-        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor expected1 = SchemaDescriptor.forLabel( 1, 2 );
-        LabelSchemaDescriptor expected2 = SchemaDescriptor.forLabel( 1, 2, 3 );
+        var set = new SchemaDescriptorLookupSet<>();
+        var expected1 = of( SchemaDescriptor.forLabel( 1, 2 ) );
+        var expected2 = of( SchemaDescriptor.forLabel( 1, 2, 3 ) );
         set.add( expected1 );
         set.add( expected2 );
 
         // when
-        Set<SchemaDescriptor> descriptors = new HashSet<>();
+        var descriptors = new HashSet<SchemaDescriptorSupplier>();
         set.matchingDescriptorsForPartialListOfProperties( descriptors, entityTokens( 1 ), properties( 2 ) );
 
         // then
@@ -88,16 +89,16 @@ class SchemaDescriptorLookupSetTest
     void shouldLookupCompositeKeyDescriptor()
     {
         // given
-        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor descriptor1 = SchemaDescriptor.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor descriptor2 = SchemaDescriptor.forLabel( 1, 2, 4 );
-        LabelSchemaDescriptor descriptor3 = SchemaDescriptor.forLabel( 1, 2, 5, 6 );
+        var set = new SchemaDescriptorLookupSet<>();
+        var descriptor1 = of( SchemaDescriptor.forLabel( 1, 2, 3 ) );
+        var descriptor2 = of( SchemaDescriptor.forLabel( 1, 2, 4 ) );
+        var descriptor3 = of( SchemaDescriptor.forLabel( 1, 2, 5, 6 ) );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
 
         // when
-        Set<SchemaDescriptor> descriptors = new HashSet<>();
+        var descriptors = new HashSet<SchemaDescriptorSupplier>();
         set.matchingDescriptorsForCompleteListOfProperties( descriptors, entityTokens( 1 ), properties( 2, 5, 6 ) );
 
         // then
@@ -108,12 +109,12 @@ class SchemaDescriptorLookupSetTest
     void shouldLookupAllByEntityToken()
     {
         // given
-        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
-        LabelSchemaDescriptor descriptor1 = SchemaDescriptor.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor descriptor2 = SchemaDescriptor.forLabel( 1, 2, 4 );
-        LabelSchemaDescriptor descriptor3 = SchemaDescriptor.forLabel( 1, 2, 5, 6 );
-        LabelSchemaDescriptor descriptor4 = SchemaDescriptor.forLabel( 2, 2, 3 );
-        LabelSchemaDescriptor descriptor5 = SchemaDescriptor.forLabel( 3, 2, 5, 6 );
+        var set = new SchemaDescriptorLookupSet<>();
+        var descriptor1 = of( SchemaDescriptor.forLabel( 1, 2, 3 ) );
+        var descriptor2 = of( SchemaDescriptor.forLabel( 1, 2, 4 ) );
+        var descriptor3 = of( SchemaDescriptor.forLabel( 1, 2, 5, 6 ) );
+        var descriptor4 = of( SchemaDescriptor.forLabel( 2, 2, 3 ) );
+        var descriptor5 = of( SchemaDescriptor.forLabel( 3, 2, 5, 6 ) );
         set.add( descriptor1 );
         set.add( descriptor2 );
         set.add( descriptor3 );
@@ -121,7 +122,7 @@ class SchemaDescriptorLookupSetTest
         set.add( descriptor5 );
 
         // when
-        Set<SchemaDescriptor> descriptors = new HashSet<>();
+        var descriptors = new HashSet<SchemaDescriptorSupplier>();
         set.matchingDescriptors( descriptors, entityTokens( 1 ) );
 
         // then
@@ -143,8 +144,8 @@ class SchemaDescriptorLookupSetTest
     private void shouldAddRemoveAndLookupRandomDescriptors( boolean includeIdempotentAddsAndRemoves )
     {
         // given
-        List<SchemaDescriptor> all = new ArrayList<>();
-        SchemaDescriptorLookupSet<SchemaDescriptor> set = new SchemaDescriptorLookupSet<>();
+        var all = new ArrayList<SchemaDescriptorSupplier>();
+        var set = new SchemaDescriptorLookupSet<>();
         int highEntityKeyId = 8;
         int highPropertyKeyId = 8;
         int maxNumberOfEntityKeys = 3;
@@ -157,7 +158,7 @@ class SchemaDescriptorLookupSetTest
             int countToAdd = random.nextInt( 1, 5 );
             for ( int a = 0; a < countToAdd; a++ )
             {
-                SchemaDescriptor descriptor = randomSchemaDescriptor( highEntityKeyId, highPropertyKeyId, maxNumberOfEntityKeys, maxNumberOfPropertyKeys );
+                var descriptor = of( randomSchemaDescriptor( highEntityKeyId, highPropertyKeyId, maxNumberOfEntityKeys, maxNumberOfPropertyKeys ) );
                 if ( !includeIdempotentAddsAndRemoves && all.indexOf( descriptor ) != -1 )
                 {
                     // Oops, we randomly generated a descriptor that already exists
@@ -172,7 +173,7 @@ class SchemaDescriptorLookupSetTest
             int countToRemove = random.nextInt( 0, 2 );
             for ( int r = 0; r < countToRemove && !all.isEmpty(); r++ )
             {
-                SchemaDescriptor descriptor = all.remove( random.nextInt( all.size() ) );
+                var descriptor = all.remove( random.nextInt( all.size() ) );
                 set.remove( descriptor );
                 if ( includeIdempotentAddsAndRemoves )
                 {
@@ -191,7 +192,7 @@ class SchemaDescriptorLookupSetTest
                 int[] entityTokenIdsInts = randomUniqueSortedIntArray( highEntityKeyId, random.nextInt( 1, 3 ) );
                 long[] entityTokenIds = toLongArray( entityTokenIdsInts );
                 int[] propertyKeyIds = randomUniqueSortedIntArray( highPropertyKeyId, random.nextInt( 1, maxNumberOfPropertyKeys ) );
-                Set<SchemaDescriptor> actual = new HashSet<>();
+                var actual = new HashSet<SchemaDescriptorSupplier>();
 
                 // lookup by only entity tokens
                 actual.clear();
@@ -211,33 +212,33 @@ class SchemaDescriptorLookupSetTest
         }
     }
 
-    private static Predicate<SchemaDescriptor> filterByEntityAndPropertyComplete( int[] entityTokenIds, int[] propertyKeyIds )
+    private static Predicate<SchemaDescriptorSupplier> filterByEntityAndPropertyComplete( int[] entityTokenIds, int[] propertyKeyIds )
     {
-        return descriptor ->
+        return holder ->
         {
             IntPredicate propertyKeyPredicate = indexPropertyId -> contains( propertyKeyIds, indexPropertyId );
-            boolean propertiesAccepted = descriptor.propertySchemaType() == COMPLETE_ALL_TOKENS
-                    // For typical indexes (COMPLETE_ALL_TOKENS) all must match
-                    ? stream( descriptor.getPropertyIds() ).allMatch( propertyKeyPredicate )
-                    // For multi-token (e.g. full-text) descriptors any property key match is to be considered a match
-                    : stream( descriptor.getPropertyIds() ).anyMatch( propertyKeyPredicate );
-            return stream( descriptor.getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) && propertiesAccepted;
+            boolean propertiesAccepted = holder.schema().propertySchemaType() == COMPLETE_ALL_TOKENS
+                                         // For typical indexes (COMPLETE_ALL_TOKENS) all must match
+                                         ? stream( holder.schema().getPropertyIds() ).allMatch( propertyKeyPredicate )
+                                         // For multi-token (e.g. full-text) descriptors any property key match is to be considered a match
+                                         : stream( holder.schema().getPropertyIds() ).anyMatch( propertyKeyPredicate );
+            return stream( holder.schema().getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) && propertiesAccepted;
         };
     }
 
-    private static Predicate<SchemaDescriptor> filterByEntityAndPropertyPartial( int[] entityTokenIds, int[] propertyKeyIds )
+    private static Predicate<SchemaDescriptorSupplier> filterByEntityAndPropertyPartial( int[] entityTokenIds, int[] propertyKeyIds )
     {
-        return descriptor ->
-                stream( descriptor.getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) &&
-                stream( descriptor.getPropertyIds() ).anyMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
+        return holder ->
+                stream( holder.schema().getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) ) &&
+                stream( holder.schema().getPropertyIds() ).anyMatch( indexPropertyId -> contains( propertyKeyIds, indexPropertyId ) );
     }
 
-    private static Predicate<SchemaDescriptor> filterByEntity( int[] entityTokenIds )
+    private static Predicate<SchemaDescriptorSupplier> filterByEntity( int[] entityTokenIds )
     {
-        return descriptor -> stream( descriptor.getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) );
+        return holder -> stream( holder.schema().getEntityTokenIds() ).anyMatch( indexEntityId -> contains( entityTokenIds, indexEntityId ) );
     }
 
-    private static Set<SchemaDescriptor> expectedDescriptors( List<SchemaDescriptor> all, Predicate<SchemaDescriptor> filter )
+    private static Set<SchemaDescriptorSupplier> expectedDescriptors( List<SchemaDescriptorSupplier> all, Predicate<SchemaDescriptorSupplier> filter )
     {
         return asSet( Iterators.filter( filter, all.iterator() ) );
     }
@@ -295,5 +296,53 @@ class SchemaDescriptorLookupSetTest
     private static long[] entityTokens( long... labels )
     {
         return labels;
+    }
+
+    private static SchemaDescriptorSupplier of( SchemaDescriptor schema )
+    {
+        return new TestSchemaDescriptorSupplier( schema );
+    }
+
+    private static class TestSchemaDescriptorSupplier implements SchemaDescriptorSupplier
+    {
+        private final SchemaDescriptor schema;
+
+        TestSchemaDescriptorSupplier( SchemaDescriptor schema )
+        {
+            this.schema = schema;
+        }
+
+        @Override
+        public SchemaDescriptor schema()
+        {
+            return schema;
+        }
+
+        @Override
+        public String userDescription( TokenNameLookup tokenNameLookup )
+        {
+            return null;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            return schema.equals( ((TestSchemaDescriptorSupplier) o).schema );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return schema.hashCode();
+        }
     }
 }

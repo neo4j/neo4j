@@ -74,8 +74,8 @@ public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderC
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
                     p -> p.add( Arrays.asList(
-                    add( 1, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ),
-                    add( 2, descriptor.schema(), Values.of( "v1" ), Values.of( "v2" ) ) ), NULL ) );
+                    add( 1, descriptor, Values.of( "v1" ), Values.of( "v2" ) ),
+                    add( 2, descriptor, Values.of( "v1" ), Values.of( "v2" ) ) ), NULL ) );
 
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
@@ -115,8 +115,8 @@ public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderC
                 try
                 {
                     p.add( Arrays.asList(
-                            add( nodeId1, descriptor.schema(), value1, value2 ),
-                            add( nodeId2, descriptor.schema(), value1, value2 ) ), NULL );
+                            add( nodeId1, descriptor, value1, value2 ),
+                            add( nodeId2, descriptor, value1, value2 ) ), NULL );
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
@@ -144,8 +144,8 @@ public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderC
             {
                 // when
                 p.add( Arrays.asList(
-                        add( nodeId1, descriptor.schema(), value1, value2 ),
-                        add( nodeId2, descriptor.schema(), value1, value3 ) ), NULL );
+                        add( nodeId1, descriptor, value1, value2 ),
+                        add( nodeId2, descriptor, value1, value3 ) ), NULL );
 
                 TestNodePropertyAccessor propertyAccessor =
                         new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );

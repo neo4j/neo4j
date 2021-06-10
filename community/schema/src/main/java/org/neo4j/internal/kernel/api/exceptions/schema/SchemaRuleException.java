@@ -87,7 +87,7 @@ public class SchemaRuleException extends SchemaKernelException
                 throw new AssertionError( "Unknown constraint type: " + constraint.type() );
             }
         }
-        else
+        else if ( schemaThing instanceof IndexDescriptor )
         {
             IndexDescriptor index = (IndexDescriptor) schemaThing;
             IndexType indexType = index.getIndexType();
@@ -101,5 +101,6 @@ public class SchemaRuleException extends SchemaKernelException
                 return tagType + " index";
             }
         }
+        return tagType + " schema";
     }
 }
