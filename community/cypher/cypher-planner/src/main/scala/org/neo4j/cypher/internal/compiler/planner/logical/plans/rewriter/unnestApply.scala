@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
@@ -43,6 +44,8 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.topDown
+
+import scala.annotation.tailrec
 
 case class unnestApply(override val solveds: Solveds,
                        override val cardinalities: Cardinalities,
@@ -71,16 +74,16 @@ case class unnestApply(override val solveds: Solveds,
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case Apply(arg: Argument, rhs, _) =>
+    case RemovableApply(arg: Argument, rhs, _) =>
       assertArgumentHasCardinality1(arg)
       rhs
 
     // L Ax Arg => L
-    case Apply(lhs, _: Argument, _) =>
+    case RemovableApply(lhs, _: Argument, _) =>
       lhs
 
     // L Ax (Arg FE R) => L FE R
-    case apply@Apply(lhs, foreach@ForeachApply(arg: Argument, _, _, _), _) =>
+    case apply@RemovableApply(lhs, foreach@ForeachApply(arg: Argument, _, _, _), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryLeft(apply, lhs, foreach)
 
@@ -117,22 +120,22 @@ case class unnestApply(override val solveds: Solveds,
       unnestRightUnary(apply, lhs, expand)
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) =>
+    case apply@RemovableApply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryLeft(apply, lhs, join)
 
     // L Ax (L2 ROJ Arg) => L2 ROJ L
-    case apply@Apply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) =>
+    case apply@RemovableApply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryRight(apply, lhs, join)
 
-    // L Ax (OEX Arg) => OEX L
+    // L Ax (OEX Arg) => OEX (L Ax Arg)
     case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _), _) =>
       unnestRightUnary(apply, lhs, oex)
 
 
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
-    case apply@Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan, _)
+    case apply@RemovableApply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan, _)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
       val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))
@@ -140,9 +143,73 @@ case class unnestApply(override val solveds: Solveds,
       cardinalities.copy(apply.id, res.id)
       providedOrders.copy(rhsLeaf.id, res.id)
       res
+
+    // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree
+    case apply@Apply(lhs1, Apply(lhs2, rhs2, fromSubquery2), fromSubquery1) if isUnnestableUnaryPlanTree(lhs2) =>
+      val res = Apply(putOnTopOf(lhs1, lhs2), rhs2, fromSubquery1 || fromSubquery2)(attributes.copy(apply.id))
+      solveds.copy(apply.id, res.id)
+      cardinalities.set(res.id, cardinalities(apply.id))
+      providedOrders.copy(apply.id, res.id)
+      res
+
+    // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree && Ax.fromSubquery = false
+    case apply@RemovableApply(lhs1, innerApplyPlan@ApplyPlan(lhs2, _), _) if isUnnestableUnaryPlanTree(lhs2) =>
+      val res = innerApplyPlan.withLhs(putOnTopOf(lhs1, lhs2))(attributes.copy(apply.id))
+      solveds.copy(apply.id, res.id)
+      cardinalities.set(res.id, cardinalities(apply.id))
+      providedOrders.copy(apply.id, res.id)
+      res
   })
 
+  private def putOnTopOf(bottom: LogicalPlan, top: LogicalPlan): LogicalPlan = {
+    top match {
+      case _:Argument => bottom
+      case p:LogicalUnaryPlan =>
+        val inner = putOnTopOf(bottom, p.source)
+        val res = p.withLhs(inner)(attributes.copy(p.id))
+        solveds.copy(p.id, res.id)
+        cardinalities.set(res.id, cardinalities(p.id) * cardinalities(bottom.id))
+        providedOrders.copy(bottom.id, res.id)
+        res
+    }
+  }
+
+  @tailrec
+  private def isUnnestableUnaryPlanTree(plan: LogicalPlan): Boolean = {
+    plan match {
+      case UnnestableUnaryPlan(p) => isUnnestableUnaryPlanTree(p.source)
+      case _: Argument => true
+      case _ => false
+    }
+  }
+
   override def apply(input: AnyRef): AnyRef = fixedPoint(instance).apply(input)
+}
+
+object UnnestableUnaryPlan {
+  /**
+   * Plans whose behavior (result) would not change, if they were moved from RHS of Apply to LHS of same Apply.
+   * E.g., Distinct is NOT unnestable because on RHS of Apply it returns distinct rows PER ARGUMENT, where on LHS they are globally distinct.
+   */
+  def unapply(p: LogicalPlan): Option[LogicalUnaryPlan] = p match {
+    case p: Selection => Some(p)
+    case p: Projection => Some(p)
+    case p: Expand => Some(p)
+    case p: VarExpand => Some(p)
+    case _ => None
+  }
+}
+
+object RemovableApply {
+  /**
+   * An 'Apply' is removable if 'fromSubquery' is false.
+   * When 'fromSubquery' is true, the 'Apply' can only be _replaced_ with another 'Apply' that preserves that 'fromSubquery' is true.
+   */
+  def unapply(v: Apply): Option[(LogicalPlan, LogicalPlan, Boolean)] = v match {
+    case Apply(lhs, rhs, fromSubquery) if !fromSubquery => Some((lhs, rhs, fromSubquery))
+    case Apply(lhs, rhs: Argument, fromSubquery) => Some((lhs, rhs, fromSubquery))
+    case _ => None
+  }
 }
 
 trait UnnestingRewriter {
