@@ -164,26 +164,6 @@ class GBPTreeTest
     }
 
     @Test
-    void shouldFailToOpenOnDifferentMetaData() throws Exception
-    {
-        // GIVEN
-        try ( PageCache pageCache = createPageCache( 4 * defaultPageSize ) )
-        {
-            index( pageCache ).build().close();
-        }
-
-        // WHEN
-        SimpleLongLayout otherLayout = longLayout().withCustomerNameAsMetaData( "Something else" ).build();
-        try ( PageCache pageCache = createPageCache( defaultPageSize ) )
-        {
-            assertThatThrownBy( () -> index( pageCache ).with( otherLayout ).build(), "Should not load" ).isInstanceOf( MetadataMismatchException.class );
-        }
-
-        // THEN being able to open validates that the same meta data was read
-        // the test also closes the index afterwards
-    }
-
-    @Test
     void shouldFailToOpenOnDifferentLayout() throws Exception
     {
         // GIVEN
@@ -292,11 +272,11 @@ class GBPTreeTest
             {
                 assertTrue( cursor.next() );
 
-                Meta meta = Meta.read( cursor, layout );
+                Meta meta = Meta.read( cursor );
                 Meta newMeta = new Meta( meta.getFormatIdentifier(), meta.getFormatVersion(), unreasonablePageSize, layout );
 
                 cursor.setOffset( 0 );
-                newMeta.write( cursor, layout );
+                newMeta.write( cursor );
             }
 
             assertThatThrownBy( () -> index( pageCache ).build() )

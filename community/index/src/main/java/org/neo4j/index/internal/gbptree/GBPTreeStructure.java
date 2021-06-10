@@ -101,7 +101,7 @@ public class GBPTreeStructure<KEY, VALUE>
     private static void visitMeta( PageCursor cursor, GBPTreeVisitor visitor ) throws IOException
     {
         PageCursorUtil.goTo( cursor, "meta page", IdSpace.META_PAGE_ID );
-        Meta meta = Meta.read( cursor, null );
+        Meta meta = Meta.read( cursor );
         visitor.meta( meta );
     }
 

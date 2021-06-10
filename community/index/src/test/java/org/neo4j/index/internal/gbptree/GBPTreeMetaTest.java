@@ -45,11 +45,11 @@ class GBPTreeMetaTest
                 .build();
         Meta written = new Meta( (byte) 1, (byte) 2, PAGE_SIZE, layout );
         int offset = cursor.getOffset();
-        written.write( cursor, layout );
+        written.write( cursor );
 
         // when
         cursor.setOffset( offset );
-        Meta read = Meta.read( cursor, layout );
+        Meta read = Meta.read( cursor );
 
         // then
         assertEquals( written.getFormatIdentifier(), read.getFormatIdentifier() );

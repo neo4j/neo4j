@@ -99,17 +99,14 @@ public class Meta
     }
 
     /**
-     * Reads meta information from the meta page. Reading meta information also involves {@link Layout} in that
-     * it can have written layout-specific information to this page too. The layout identifier and its version
-     * that the returned {@link Meta} instance will have are the ones read from the page, not retrieved from {@link Layout}.
+     * Reads meta information from the meta page. The layout identifier and its version
+     * that the returned {@link Meta} instance will have are the ones read from the page.
      *
      * @param cursor {@link PageCursor} to read meta information from.
-     * @param layout {@link Layout} instance that will get the opportunity to read layout-specific data from the meta page.
-     * {@code layout} is allowed to be {@code null} where it won't be told to read layout-specific data from the meta page.
      * @return {@link Meta} instance with all meta information.
      * @throws IOException on {@link PageCursor} I/O error.
      */
-    static Meta read( PageCursor cursor, Layout<?,?> layout ) throws IOException
+    static Meta read( PageCursor cursor ) throws IOException
     {
         int format;
         int pageSize;
@@ -125,10 +122,6 @@ public class Meta
                 layoutIdentifier = cursor.getLong();
                 layoutMajorVersion = cursor.getInt();
                 layoutMinorVersion = cursor.getInt();
-                if ( layout != null )
-                {
-                    layout.readMetaData( cursor );
-                }
             }
             while ( cursor.shouldRetry() );
             checkOutOfBounds( cursor );
@@ -175,20 +168,17 @@ public class Meta
     }
 
     /**
-     * Writes meta information to the meta page. Writing meta information also involves {@link Layout} in that
-     * it can write layout-specific information to this page too.
+     * Writes meta information to the meta page.
      *
      * @param cursor {@link PageCursor} to read meta information from.
-     * @param layout {@link Layout} instance that will get the opportunity to write layout-specific data to the meta page.
      */
-    void write( PageCursor cursor, Layout<?,?> layout )
+    void write( PageCursor cursor )
     {
         cursor.putInt( allVersionsCombined() );
         cursor.putInt( getPageSize() );
         cursor.putLong( getLayoutIdentifier() );
         cursor.putInt( getLayoutMajorVersion() );
         cursor.putInt( getLayoutMinorVersion() );
-        layout.writeMetaData( cursor );
         checkOutOfBounds( cursor );
     }
 

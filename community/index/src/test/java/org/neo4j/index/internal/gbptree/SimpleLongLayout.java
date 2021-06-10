@@ -23,12 +23,9 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
 {
     private final int keyPadding;
-    private String customNameAsMetaData;
 
     public static class Builder
     {
@@ -36,7 +33,6 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         private int identifier = 999;
         private int majorVersion;
         private int minorVersion;
-        private String customNameAsMetaData = "test";
         private boolean fixedSize = true;
 
         public Builder withKeyPadding( int keyPadding )
@@ -63,12 +59,6 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
             return this;
         }
 
-        public Builder withCustomerNameAsMetaData( String customNameAsMetaData )
-        {
-            this.customNameAsMetaData = customNameAsMetaData;
-            return this;
-        }
-
         public Builder withFixedSize( boolean fixedSize )
         {
             this.fixedSize = fixedSize;
@@ -77,7 +67,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
 
         public SimpleLongLayout build()
         {
-            return new SimpleLongLayout( keyPadding, customNameAsMetaData, fixedSize, identifier, majorVersion, minorVersion );
+            return new SimpleLongLayout( keyPadding, fixedSize, identifier, majorVersion, minorVersion );
         }
     }
 
@@ -86,11 +76,10 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         return new Builder();
     }
 
-    private SimpleLongLayout( int keyPadding, String customNameAsMetaData, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
+    private SimpleLongLayout( int keyPadding, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
     {
         super( fixedSize, identifier, majorVersion, minorVersion );
         this.keyPadding = keyPadding;
-        this.customNameAsMetaData = customNameAsMetaData;
     }
 
     @Override
@@ -161,61 +150,6 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     public void readValue( PageCursor cursor, MutableLong into, int valueSize )
     {
         into.setValue( cursor.getLong() );
-    }
-
-    @Override
-    public void writeMetaData( PageCursor cursor )
-    {
-        writeString( cursor, customNameAsMetaData );
-        cursor.putInt( keyPadding );
-    }
-
-    private static void writeString( PageCursor cursor, String string )
-    {
-        byte[] bytes = string.getBytes( UTF_8 );
-        cursor.putInt( string.length() );
-        cursor.putBytes( bytes );
-    }
-
-    @Override
-    public void readMetaData( PageCursor cursor )
-    {
-        String name = readString( cursor );
-        if ( name == null )
-        {
-            return;
-        }
-
-        if ( customNameAsMetaData != null )
-        {
-            if ( !name.equals( customNameAsMetaData ) )
-            {
-                cursor.setCursorException( "Name '" + name +
-                        "' doesn't match expected '" + customNameAsMetaData + "'" );
-                return;
-            }
-        }
-        customNameAsMetaData = name;
-
-        int readKeyPadding = cursor.getInt();
-        if ( readKeyPadding != keyPadding )
-        {
-            cursor.setCursorException( "Key padding " + readKeyPadding + " doesn't match expected " + keyPadding );
-        }
-    }
-
-    private static String readString( PageCursor cursor )
-    {
-        int length = cursor.getInt();
-        if ( length < 0 || length >= cursor.getCurrentPageSize() )
-        {
-            cursor.setCursorException( "Unexpected length of string " + length );
-            return null;
-        }
-
-        byte[] bytes = new byte[length];
-        cursor.getBytes( bytes );
-        return new String( bytes, UTF_8 );
     }
 
     @Override

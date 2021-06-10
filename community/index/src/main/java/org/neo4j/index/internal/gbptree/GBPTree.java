@@ -604,7 +604,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             }
             else
             {
-                Meta meta = readMeta( layout, pagedFile, cursorContext );
+                Meta meta = readMeta( pagedFile, cursorContext );
                 meta.verify( layout );
                 format = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
             }
@@ -715,8 +715,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         boolean success = false;
         try
         {
-            // We're only interested in the page size really, so don't involve layout at this point
-            Meta meta = readMeta( null, pagedFile, cursorContext );
+            // We're only interested in the page size really
+            Meta meta = readMeta( pagedFile, cursorContext );
             if ( meta.getPageSize() != pageCache.pageSize() )
             {
                 throw new MetadataMismatchException( format(
@@ -971,12 +971,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         return metaCursor;
     }
 
-    private static <KEY,VALUE> Meta readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile, CursorContext cursorContext )
+    private static <KEY,VALUE> Meta readMeta( PagedFile pagedFile, CursorContext cursorContext )
             throws IOException
     {
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PF_SHARED_READ_LOCK, cursorContext ) )
         {
-            return Meta.read( metaCursor, layout );
+            return Meta.read( metaCursor );
         }
     }
 
@@ -985,7 +985,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), pageSize, layout );
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
         {
-            meta.write( metaCursor, layout );
+            meta.write( metaCursor );
         }
     }
 

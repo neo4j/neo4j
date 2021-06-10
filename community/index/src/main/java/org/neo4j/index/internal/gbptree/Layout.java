@@ -105,7 +105,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     void readValue( PageCursor cursor, VALUE into, int valueSize );
 
     /**
-     * Indicate if keys and values are fixed or dynamix size.
+     * Indicate if keys and values are fixed or dynamic size.
      * @return true if keys and values are fixed size, otherwise true.
      */
     boolean fixedSize();
@@ -139,28 +139,6 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @return minor version of layout. Will be compared to version written into meta page when opening index.
      */
     int minorVersion();
-
-    /**
-     * Writes meta data specific to this layout instance to {@code cursor} at its current offset.
-     *
-     * @param cursor {@link PageCursor} to write into, at its current offset.
-     */
-    default void writeMetaData( PageCursor cursor )
-    {   // no meta-data by default
-    }
-
-    /**
-     * Reads meta data specific to this layout instance from {@code cursor} at its current offset.
-     * The read meta data must also be verified against meta data provided in constructor of this Layout.
-     * Constructor-provided meta data can be {@code null} to skip this verification.
-     * if read meta data doesn't match with the meta data provided in constructor
-     * {@link PageCursor#setCursorException(String)} should be called with appropriate error message.
-     *
-     * @param cursor {@link PageCursor} to read from, at its current offset.
-     */
-    default void readMetaData( PageCursor cursor )
-    {   // no meta-data by default
-    }
 
     /**
      * Utility method for generating an {@link #identifier()}. Generates an 8-byte identifier from a short name
