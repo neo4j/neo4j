@@ -486,15 +486,12 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
 
   test ("should only use predicates marked as solved for cardinality estimation of node index seek") {
     val labelCardinality = 50
-    val propExistsSelectivity = 0.5
-    val propUniqueSelectivity = 0.0625
-    // because propUniqueSelectivity is a rather high value, we pick this as our range selectivity
-    val singlePropRangeSelectivity = sqrt(propUniqueSelectivity)
-    val singlePropEqualsSelectivity = sqrt(propUniqueSelectivity)
+    val existsSelectivity = 0.5
+    val uniqueSelectivity = 0.1
     val config = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", labelCardinality)
-      .addNodeIndex("Person", Seq("prop1", "prop2"), propExistsSelectivity, propUniqueSelectivity)
+      .addNodeIndex("Person", Seq("prop1", "prop2"), existsSelectivity, uniqueSelectivity)
       .build()
 
     val query = "MATCH (n:Person) WHERE n.prop1 > 0 AND n.prop2 = 0"
@@ -504,9 +501,10 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val cardinalities = planState.planningAttributes.effectiveCardinalities
     val nodeIndexSeekCardinality = plan.flatten.collectFirst{case lp:NodeIndexSeek => cardinalities.get(lp.id)}.get
 
-    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * propExistsSelectivity * singlePropRangeSelectivity)
+    // The range selectivity defaults to equality selectivity if there are few unique values.
+    nodeIndexSeekCardinality.amount shouldEqual (labelCardinality * existsSelectivity * sqrt(uniqueSelectivity))
 
     queryShouldHaveCardinality(config, query,
-      labelCardinality * propExistsSelectivity * singlePropRangeSelectivity * singlePropEqualsSelectivity)
+      labelCardinality * existsSelectivity * uniqueSelectivity)
   }
 }

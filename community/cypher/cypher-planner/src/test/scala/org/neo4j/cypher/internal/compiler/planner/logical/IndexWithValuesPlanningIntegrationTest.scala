@@ -1029,8 +1029,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   }
 
-  // This test is temporarily disabled while the nodeIndexSeekPlanProvider filters out implicit predicates.
-  ignore("should plan scan (node) with GetValue when composite existence constraint on projected property") {
+  test("should plan scan (node) with GetValue when composite existence constraint on projected property") {
     val query = s"MATCH (a:A) RETURN a.prop2"
 
     val planner = plannerBuilder()

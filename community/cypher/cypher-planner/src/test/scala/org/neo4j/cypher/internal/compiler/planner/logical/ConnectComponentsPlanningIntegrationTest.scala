@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
@@ -50,6 +51,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import java.lang
 import scala.util.Random
 
 class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
@@ -951,6 +953,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .addNodeIndex("Person", Seq("name"), 1.0, 0.01)
       .setRelationshipCardinality("(:Person)-[]->()", 400)
       .setRelationshipCardinality("()-[]->()", 400)
+      .withSetting(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold, lang.Long.valueOf(2000))
 
     val query =
       """MATCH (p0:Person { name:'n(0,0)' }),

@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.InitialState
@@ -60,6 +61,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.graphdb.config.Setting
 
 trait StatisticsBackedLogicalPlanningSupport {
 
@@ -145,7 +147,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                                                                         indexes: Seq[IndexDefinition] = Seq.empty,
                                                                         constraints: Seq[ExistenceConstraintDefinition] = Seq.empty,
                                                                         procedures: Set[ProcedureSignature] = Set.empty,
+                                                                        settings: Map[Setting[_], AnyRef] = Map.empty,
                                                                       ) {
+  def withSetting[T <: AnyRef](setting: Setting[T], value: T): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(settings = settings + (setting -> value))
+  }
 
   def addLabel(label: String): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(tokens = tokens.addLabel(label))
@@ -494,6 +500,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       resolver,
       planContext,
       options,
+      settings,
     )
   }
 }
@@ -502,6 +509,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
   resolver: LogicalPlanResolver,
   planContext: PlanContext,
   options: StatisticsBackedLogicalPlanningConfigurationBuilder.Options,
+  settings: Map[Setting[_], AnyRef],
 ) extends LogicalPlanConstructionTestSupport
   with AstConstructionTestSupport {
 
@@ -510,19 +518,21 @@ class StatisticsBackedLogicalPlanningConfiguration(
   }
 
   def planState(queryString: String): LogicalPlanState = {
-    val plannerConfiguration = CypherPlannerConfiguration.defaults()
+    val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
     val metrics = SimpleMetricsFactory.newMetrics(planContext, simpleExpressionEvaluator, plannerConfiguration, options.executionModel)
+
+    val iDPSolverConfig = new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
 
     val context = ContextHelper.create(
       planContext = planContext,
       cypherExceptionFactory = exceptionFactory,
       queryGraphSolver =
         if (options.connectComponentsPlanner) {
-          LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver()
+          LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver(iDPSolverConfig)
         } else {
-          LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver()
+          LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(iDPSolverConfig)
         },
       metrics = metrics,
       config = plannerConfiguration,

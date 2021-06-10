@@ -507,11 +507,11 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
     val nProp = prop("n", "prop")
     val nPropEqualsXProp = Equals(nProp, xProp)(pos)
-    val nPropEquals = equals(lit42, nProp)
+    val nPropEquals = equals(nProp, lit42)
 
     val nFoo = prop("n", "foo")
     val nFooEqualsXProp = Equals(nFoo, xProp)(pos)
-    val nFooEquals = equals(lit42, nFoo)
+    val nFooEquals = equals(nFoo, lit42)
 
 
     new given {
