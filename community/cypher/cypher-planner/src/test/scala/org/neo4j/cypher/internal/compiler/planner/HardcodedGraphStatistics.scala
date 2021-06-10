@@ -35,10 +35,10 @@ case object HardcodedGraphStatistics extends GraphStatistics {
   private val INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(.5).get
 
   def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
-    Some(INDEX_SELECTIVITY * Selectivity.of(index.properties.length).get)
+    Some(INDEX_SELECTIVITY ^ index.properties.length)
 
   def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
-    Some(INDEX_PROPERTY_EXISTS_SELECTIVITY * Selectivity.of(index.properties.length).get)
+    Some(INDEX_PROPERTY_EXISTS_SELECTIVITY ^ index.properties.length)
 
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(Cardinality.SINGLE)
